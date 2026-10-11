@@ -11,6 +11,14 @@ test('Office Management source-shaped login is the default entry, no authenticat
  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeDisabled();
  await expect(page.locator('.login-form-card')).toBeVisible();
  await expect(page.locator('.login-form-card .MuiTextField-root')).toHaveCount(2);
+ // Visual fidelity: inactive authentication must not dim the entire Office form.
+ const labelOpacity = await page.locator('.MuiInputLabel-root.Mui-disabled').first().evaluate(el=>Number(getComputedStyle(el).opacity));
+ const checkboxLabelOpacity = await page.locator('.MuiFormControlLabel-label').first().evaluate(el=>Number(getComputedStyle(el).opacity));
+ const submitOpacity = await page.getByRole('button',{name:'Sign in',exact:true}).evaluate(el=>Number(getComputedStyle(el).opacity));
+ expect(labelOpacity).toBeGreaterThan(0.95);
+ expect(checkboxLabelOpacity).toBeGreaterThan(0.95);
+ expect(submitOpacity).toBeGreaterThan(0.95);
+ await expect(page.locator('.office-source-language')).toHaveCount(0);
  if(info.project.name==='desktop-1280') await expect(page.locator('.login-brand-panel')).toBeVisible();
  if(info.project.name==='desktop-1280'){
    await expect(page.locator('.login-slide__image img')).toBeVisible();
@@ -39,17 +47,23 @@ test('Office Management source-shaped login is the default entry, no authenticat
 });
 
 test('original Office slider dots pause and help UI work, EN/BN remains usable',async({page},info)=>{
- await page.goto('/');
+ // Office source login has no standalone language switch. Change language via TaxPay's public header,
+ // then return to the login. This preserves EN/BN without adding new layout elements.
+ await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
+ await page.getByRole('button',{name:'অফিস লগইন'}).click();
  await expect(page.getByRole('heading',{name:'স্বাগতম'})).toBeVisible();
  await expect(page.getByRole('button',{name:'ট্যাক্সপে দেখুন'})).toBeVisible();
+ await page.getByRole('button',{name:'ট্যাক্সপে দেখুন'}).click();
  await page.getByRole('button',{name:'EN'}).click();
+ await page.getByRole('button',{name:'Office Login'}).click();
  await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
  if(info.project.name==='desktop-1280'){
   await page.getByRole('button',{name:'Pause slideshow'}).click();
   await expect(page.getByRole('button',{name:'Play slideshow'})).toBeVisible();
   await page.getByRole('button',{name:'Go to slide 2'}).click();
   await expect(page.getByRole('heading',{name:'Track Approvals Faster'})).toBeVisible();
+  await expect(page.getByText('Monitor pending, approved, and rejected items with clear status updates.')).toBeVisible();
  }
  await page.getByRole('button',{name:'Help & User Guide'}).click();
  await expect(page.getByRole('dialog',{name:'Help & User Guide'})).toBeVisible();
