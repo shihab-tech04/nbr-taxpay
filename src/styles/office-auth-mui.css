@@ -1,0 +1,15 @@
+/* Source MUI fields: original Office Management selectors and colors. All rules scoped to TaxPay login. */
+.office-auth-clone .MuiFormControl-root{width:100%;}
+.office-auth-clone .MuiOutlinedInput-root{border-radius:var(--radius-md,8px);background-color:var(--color-surface);transition:box-shadow 150ms var(--ease-standard);}
+.office-auth-clone .MuiOutlinedInput-notchedOutline{border-color:var(--color-border)}
+.office-auth-clone .MuiOutlinedInput-root:hover:not(.Mui-focused):not(.Mui-disabled) .MuiOutlinedInput-notchedOutline{border-color:var(--color-text-secondary)}
+.office-auth-clone .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--color-primary);border-width:2px}
+.office-auth-clone .MuiOutlinedInput-root.Mui-focused{box-shadow:0 0 0 3px rgba(75,86,148,.10)}
+.office-auth-clone .MuiInputLabel-root{color:var(--color-text-secondary)}
+.office-auth-clone .MuiInputLabel-root.Mui-focused{color:var(--color-primary)}
+.office-auth-clone .MuiInputLabel-root.Mui-disabled{opacity:.5}
+.office-auth-clone .MuiOutlinedInput-input{color:var(--color-text-primary);background:transparent}
+.office-auth-clone .MuiOutlinedInput-input::placeholder{color:var(--color-text-secondary);opacity:.6}
+.office-auth-clone .MuiInputAdornment-root{color:var(--color-text-secondary)}
+.office-auth-clone .MuiFormControlLabel-label{font-size:14px;color:var(--color-text-secondary);line-height:1.4}
+.office-auth-clone .MuiCheckbox-root.Mui-checked{color:var(--color-primary)}
