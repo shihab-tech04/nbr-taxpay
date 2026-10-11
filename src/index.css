@@ -1,3 +1,4 @@
+@import './styles/office-design.css';
 @import "tailwindcss";
 
 @layer base {

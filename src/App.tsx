@@ -3,6 +3,7 @@ import { TaxStateProvider, useTaxState } from './services/taxState';
 import { DemoNoticeBanner } from './components/layout/DemoNoticeBanner';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
+import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 
 // Screens
@@ -131,6 +132,8 @@ const MainRouter: React.FC = () => {
         return <PublicLanding />;
     }
   };
+
+  if (currentRoute === 'office_login') return <OfficeLoginPage />;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800">
