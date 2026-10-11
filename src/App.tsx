@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { TaxStateProvider, useTaxState } from './services/taxState';
-import { DemoNoticeBanner } from './components/layout/DemoNoticeBanner';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
@@ -137,7 +136,6 @@ const MainRouter: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800">
-      <DemoNoticeBanner />
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {renderActiveScreen()}
