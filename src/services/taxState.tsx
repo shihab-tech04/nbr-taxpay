@@ -53,7 +53,11 @@ export interface TaxStateContextType {
 const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined);
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentRoute, setCurrentRoute] = useState<string>('landing');
+  const [currentRoute, setCurrentRoute] = useState<string>(() => {
+    // Office login is the landing entry. Explicit deep links keep their existing routes.
+    const action = new URLSearchParams(window.location.search).get('action');
+    return action || 'office_login';
+  });
   const [routeParams, setRouteParams] = useState<Record<string, any>>({});
   const [language, setLanguage] = useState<Language>('en');
   const [userRole, setUserRole] = useState<UserRole>('GUEST');

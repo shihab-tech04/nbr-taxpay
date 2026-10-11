@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test('landing link opens the original 170-head reference without submitting a payment', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?action=landing');
   await expect(page.getByText('TaxPay development preview — not an official NBR gateway')).toBeVisible();
   await expect(page.getByText(/No funds are sent to the Government Treasury/)).toBeVisible();
   await page.getByRole('button', { name: /Browse Original Heads \(170\)/ }).click();
@@ -72,7 +72,7 @@ test('legacy source codes and legal provisions remain visibly separate', async (
 });
 
 test('public preview safety disclosure remains explicit in Bengali and on narrow screens', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByText('TaxPay উন্নয়নমূলক প্রিভিউ — সরকারি NBR গেটওয়ে নয়')).toBeVisible();
   await expect(page.getByText(/কোনো অর্থ ট্রেজারিতে স্থানান্তর হয় না/)).toBeVisible();
@@ -97,7 +97,7 @@ test('when source backend is unreachable, read-only offline fallback is explicit
 });
 
 test('footer does not claim government ownership or real challan issuance in EN/BN', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?action=landing');
   const footer = page.locator('footer');
   await expect(footer.getByText('TaxPay is an independent development preview, not an official NBR website.', { exact: false })).toBeVisible();
   await expect(footer.getByText('© 2026 TaxPay development preview — not an official NBR publication.')).toBeVisible();
@@ -107,7 +107,7 @@ test('footer does not claim government ownership or real challan issuance in EN/
 });
 
 test('shared header remains visibly TaxPay-branded and demo roles cannot imply officer authorization', async ({page})=>{
-  await page.goto('/');
+  await page.goto('/?action=landing');
   const header=page.locator('header').first();
   await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
   await expect(header.getByText('Independent Income Tax Payment Development Preview')).toBeVisible();

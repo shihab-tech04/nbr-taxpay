@@ -78,7 +78,7 @@ export const PublicLanding: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button type="button" onClick={() => navigate('office_login')}
               className="min-h-11 px-4 py-3 border border-amber-300 text-amber-100 hover:bg-emerald-800 rounded-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
-              {language === 'bn' ? 'অফিস লগইন ডিজাইন দেখুন' : 'Preview Office Login Design'}
+              {language === 'bn' ? 'অফিস লগইন' : 'Office Login'}
             </button>
             <button
               onClick={() => navigate('wizard')}
