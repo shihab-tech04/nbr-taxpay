@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('TaxPay cannot be mistaken for a government-owned portal', async ({page}) => {
-  await page.goto('/');
+  await page.goto('/?action=landing');
   await expect(page.getByText('TaxPay development preview — not an official NBR gateway')).toBeVisible();
   const header = page.locator('header').first();
   await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
@@ -30,7 +30,7 @@ test('travel tax simulation cannot be presented as a real immigration challan',a
 
 test('mobile navigation and home brand are keyboard accessible with 44px touch targets', async ({ page }, info) => {
   test.skip(info.project.name === 'desktop-1280', 'Mobile menu is intentionally hidden on desktop');
-  await page.goto('/');
+  await page.goto('/?action=landing');
   const header=page.locator('header').first();
   const home=header.getByRole('button',{name:'TaxPay home'});
   await expect(home).toBeVisible();
