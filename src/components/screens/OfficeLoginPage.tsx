@@ -4,13 +4,15 @@ import {useTaxState} from '../../services/taxState';
 import {OfficeThemeProvider} from '../office-ui/OfficeTheme';
 import {OfficeModal,OfficeButton} from '../office-ui/OfficeControls';
 import {LoginBrandPanel} from '../office-ui/auth/LoginBrandPanel';
-import {SourceOutlinedField,SourceCheckbox} from '../office-ui/auth/SourceFields';
+import {AppTextField} from '../office-ui/forms/AppTextField';
+import {AppPasswordField} from '../office-ui/forms/AppPasswordField';
+import {AppCheckbox} from '../office-ui/forms/AppCheckbox';
 
 /** Port of NBR Office Management src/app/pages/auth/LoginPage.tsx and
  * src/app/components/auth/LoginForm.tsx from commit 8a9523277e99f01a8af31294119d8e337f2edf74.
  * Three slide components and the original PNG artwork are copied unchanged.
  * Exceptions: TaxPay identity in place of NBR branding; auth remains gated/disabled;
- * MUI fields are represented by source-shaped outlined controls to keep lockfile stable.
+ * Source MUI form controls and matching dependency versions are now retained.
  */
 const CONTENT={
  en:{title:'TaxPay',subtitle:'Tax Payment Workspace',welcome:'Welcome back',intro:'Sign in to access your office workspace.',userId:'User ID',userIdPlaceholder:'Enter your User ID',password:'Password',passwordPlaceholder:'Enter your password',rememberMe:'Remember me',forgot:'Forgot password?',signIn:'Sign in',userManual:'Help & User Guide',needHelp:'Need help? Contact your system administrator.',publicHelper:'Browse the TaxPay public pages without an account.',publicButton:'Explore TaxPay',helpTitle:'Help & User Guide',helpCopy:'Contact the project administrator for account access.',close:'Close',slides:[['File Returns Online','Explore return records and related services in one place.'],['Track Approvals Faster','Follow pending and completed workflow items with clear status updates.'],['Stay Updated','Find important notices, system updates and tax information.']]},
@@ -40,10 +42,10 @@ function SourceLogin(){
              <button type="button" className="login-form-manual-btn" onClick={()=>setHelpOpen(true)}><BookOpen size={12} aria-hidden="true"/><span className="text-[14px]">{text.userManual}</span></button>
            </div>
            <div className="flex flex-col gap-5">
-             <SourceOutlinedField id="login-user-id" label={text.userId} placeholder={text.userIdPlaceholder}/>
-             <SourceOutlinedField id="login-password" label={text.password} placeholder={text.passwordPlaceholder} password/>
+             <AppTextField id="login-user-id" label={text.userId} value="" onChange={()=>{}} placeholder={text.userIdPlaceholder} disabled/>
+             <AppPasswordField id="login-password" label={text.password} value="" onChange={()=>{}} placeholder={text.passwordPlaceholder} disabled/>
              <div className="flex items-center justify-between gap-4 flex-wrap">
-               <SourceCheckbox label={text.rememberMe}/>
+               <AppCheckbox id="login-remember-me" label={text.rememberMe} checked={false} onChange={()=>{}} disabled/>
                <button type="button" onClick={()=>setHelpOpen(true)} className="login-form-link">{text.forgot}</button>
              </div>
              <button type="button" disabled className="login-form-submit"><span>{text.signIn}</span></button>

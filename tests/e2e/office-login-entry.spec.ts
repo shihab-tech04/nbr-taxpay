@@ -10,7 +10,7 @@ test('Office Management source-shaped login is the default entry, no authenticat
  await expect(page.getByLabel('Password',{exact:true})).toBeDisabled();
  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeDisabled();
  await expect(page.locator('.login-form-card')).toBeVisible();
- await expect(page.locator('.login-source-field')).toHaveCount(2);
+ await expect(page.locator('.login-form-card .MuiTextField-root')).toHaveCount(2);
  if(info.project.name==='desktop-1280') await expect(page.locator('.login-brand-panel')).toBeVisible();
  if(info.project.name==='desktop-1280'){
    await expect(page.locator('.login-slide__image img')).toBeVisible();
@@ -19,7 +19,7 @@ test('Office Management source-shaped login is the default entry, no authenticat
    await expect(page.getByRole('button',{name:'Go to slide 1'})).toBeVisible();
    const sliderBox=await page.locator('.login-slider').boundingBox();
    const imageBox=await page.locator('.login-slide__image').boundingBox();
-   const fieldBox=await page.locator('.login-source-field').first().boundingBox();
+   const fieldBox=await page.locator('.login-form-card .MuiOutlinedInput-root').first().boundingBox();
    expect(sliderBox).not.toBeNull();expect(imageBox).not.toBeNull();expect(fieldBox).not.toBeNull();
    expect(sliderBox!.height).toBeGreaterThanOrEqual(599);
    expect(Math.abs(imageBox!.height-400)).toBeLessThan(2);
