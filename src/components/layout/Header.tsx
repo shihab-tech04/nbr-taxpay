@@ -113,7 +113,7 @@ export const Header: React.FC = () => {
             <div className="flex min-w-0 max-w-full items-center gap-1.5 bg-emerald-900/90 rounded-md px-2.5 py-1 border border-emerald-700/70 text-xs">
               <UserCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <select
-                aria-label={language === 'bn' ? 'পরীক্ষামূলক ভূমিকা নির্বাচন; প্রকৃত অনুমতি নয়' : 'Demo role selector — not real authorization'}
+                aria-label={language === 'bn' ? 'নমুনা প্রোফাইল নির্বাচন; অ্যাকাউন্ট অ্যাক্সেস নয়' : 'Sample profile selector — not account access'}
                 value={userRole}
                 onChange={handleRoleChange}
                 className="min-w-0 max-w-full bg-transparent text-emerald-100 font-medium text-xs focus:outline-none cursor-pointer pr-1"
@@ -122,10 +122,10 @@ export const Header: React.FC = () => {
                 <option value="TAXPAYER_INDIVIDUAL" className="bg-emerald-950 text-white">Individual Taxpayer (Md. Tariqul)</option>
                 <option value="TAXPAYER_CORPORATE" className="bg-emerald-950 text-white">Corporate Taxpayer (Bengal Tech)</option>
                 <option value="WITHHOLDING_AGENT" className="bg-emerald-950 text-white">Withholding Agent (Padma Rail)</option>
-                <option value="OFFICER_MAKER" className="bg-emerald-950 text-amber-300">Demo Revenue Officer (Maker - ACT)</option>
-                <option value="OFFICER_REVIEWER" className="bg-emerald-950 text-amber-300">Demo Inspecting Officer (Reviewer - JCT)</option>
-                <option value="OFFICER_APPROVER" className="bg-emerald-950 text-amber-300">Demo Commissioner (Approver)</option>
-                <option value="COMMISSIONER_ADMIN" className="bg-emerald-950 text-amber-300">Demo System Admin / LTU Directorate</option>
+                <option value="OFFICER_MAKER" className="bg-emerald-950 text-amber-300">Example Revenue Officer (Maker - ACT)</option>
+                <option value="OFFICER_REVIEWER" className="bg-emerald-950 text-amber-300">Example Inspecting Officer (Reviewer - JCT)</option>
+                <option value="OFFICER_APPROVER" className="bg-emerald-950 text-amber-300">Example Commissioner (Approver)</option>
+                <option value="COMMISSIONER_ADMIN" className="bg-emerald-950 text-amber-300">Example System Admin / LTU Directorate</option>
               </select>
             </div>
 

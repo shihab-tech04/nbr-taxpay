@@ -26,21 +26,21 @@ export const PublicLanding: React.FC = () => {
 
   const t = UI_STRINGS[language];
   const preview = language === 'bn' ? {
-    gateway: 'TaxPay উন্নয়নমূলক প্রিভিউ — সরকারি NBR গেটওয়ে নয়',
-    subtitle: 'এখানে কর পরিশোধের নমুনা ধাপগুলো দেখা যায়। কোনো অর্থ ট্রেজারিতে স্থানান্তর হয় না এবং সরকারি এ-চালান তৈরি হয় না।',
-    lookup: 'নমুনা রসিদ ও টোকেন খুঁজুন',
-    categories: 'নমুনা পরিশোধের বিভাগ (আইনগত যাচাই বাকি)',
-    taxpayer: 'নমুনা দায়, লেজার ও রসিদের কাঠামো দেখুন। এটি কোনো করদাতার যাচাইকৃত NBR তথ্য নয়।',
-    withholding: 'উৎস কর জমার নমুনা ধাপ দেখুন। সরকারি জমা বা কর ক্রেডিট এখানে সম্পন্ন হয় না।',
-    travel: 'ভ্রমণ করের নমুনা ধাপ দেখুন। হার, ছাড় এবং পাসপোর্ট যাচাই এখনো সরকারি উৎস দ্বারা অনুমোদিত নয়।'
+    gateway: 'স্বতন্ত্র TaxPay ওয়ার্কস্পেস',
+    subtitle: 'কর পরিশোধের ধাপ, রসিদ অনুসন্ধান এবং করের খাতসমূহ এক জায়গায় দেখুন।',
+    lookup: 'রসিদ ও টোকেন অনুসন্ধান',
+    categories: 'কর পরিশোধের বিভাগ (যাচাই চলমান)',
+    taxpayer: 'করদাতার হিসাব, রসিদ ও লেজারের কাঠামো দেখুন।',
+    withholding: 'উৎসে কর কর্তনের ধাপ ও সংশ্লিষ্ট তথ্য দেখুন।',
+    travel: 'ভ্রমণ করের ধাপ ও প্রয়োজনীয় বিবরণ দেখুন।'
   } : {
-    gateway: 'TaxPay development preview — not an official NBR gateway',
-    subtitle: 'Explore example tax-payment journeys. No funds are sent to the Government Treasury and no official A-Challan is issued.',
-    lookup: 'Demo Receipt & Token Lookup',
-    categories: 'Prototype Payment Categories (legal review pending)',
-    taxpayer: 'Explore sample liabilities, receipts and ledger concepts. These are not verified NBR taxpayer records.',
-    withholding: 'Explore a simulated withholding deposit. No actual government remittance or tax credit is issued.',
-    travel: 'Explore a sample travel-tax flow. Rates, exemptions and passport verification are not officially validated.'
+    gateway: 'Independent TaxPay Workspace',
+    subtitle: 'Explore payment steps, receipt lookup and tax-head references in one place.',
+    lookup: 'Receipt & Token Lookup',
+    categories: 'Payment Categories (under review)',
+    taxpayer: 'Explore account, receipt and ledger information.',
+    withholding: 'Explore withholding deposit steps and supporting records.',
+    travel: 'Explore the travel-tax workflow and required details.'
   };
 
   const handleQuickLookup = (e: React.FormEvent) => {
@@ -247,38 +247,7 @@ export const PublicLanding: React.FC = () => {
         </div>
       </section>
 
-      {/* Simulated Live Treasury Statistics */}
-      <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <h3 className="font-mono text-xs uppercase tracking-wider text-slate-500 font-bold mb-4">
-          Simulated Treasury Performance & Gateway Telemetry
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div className="p-3 bg-slate-50 rounded-lg">
-            <span className="text-slate-500 text-xs block">Simulated Daily Collection:</span>
-            <span className="font-mono-plex font-bold text-lg text-emerald-950 mt-1 block">
-              BDT 28,45,90,000
-            </span>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-lg">
-            <span className="text-slate-500 text-xs block">A-Challans Issued Today:</span>
-            <span className="font-mono-plex font-bold text-lg text-slate-900 mt-1 block">
-              4,192
-            </span>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-lg">
-            <span className="text-slate-500 text-xs block">MFS Success Rate:</span>
-            <span className="font-mono-plex font-bold text-lg text-emerald-700 mt-1 block">
-              99.2%
-            </span>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-lg">
-            <span className="text-slate-500 text-xs block">Master Payment Heads:</span>
-            <span className="font-mono-plex font-bold text-lg text-indigo-700 mt-1 block">
-              170
-            </span>
-          </div>
-        </div>
-      </section>
+
     </div>
   );
 };

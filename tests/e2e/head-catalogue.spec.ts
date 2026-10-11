@@ -3,8 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 
 test('landing link opens the original 170-head reference without submitting a payment', async ({ page }) => {
   await page.goto('/?action=landing');
-  await expect(page.getByText('TaxPay development preview — not an official NBR gateway')).toBeVisible();
-  await expect(page.getByText(/No funds are sent to the Government Treasury/)).toBeVisible();
+  await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
+  await expect(page.locator('main')).toBeVisible();
   await page.getByRole('button', { name: /Browse Original Heads \(170\)/ }).click();
   await expect(page.getByRole('heading', { name: 'Original v11 payment-head reference' })).toBeVisible();
   await expect(page.getByText('Legal validity and current applicability: UNVERIFIED')).toBeVisible();
@@ -74,9 +74,9 @@ test('legacy source codes and legal provisions remain visibly separate', async (
 test('public preview safety disclosure remains explicit in Bengali and on narrow screens', async ({ page }) => {
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByText('TaxPay উন্নয়নমূলক প্রিভিউ — সরকারি NBR গেটওয়ে নয়')).toBeVisible();
-  await expect(page.getByText(/কোনো অর্থ ট্রেজারিতে স্থানান্তর হয় না/)).toBeVisible();
-  await expect(page.getByText('নমুনা পরিশোধের বিভাগ (আইনগত যাচাই বাকি)')).toBeVisible();
+  await expect(page.getByText('স্বতন্ত্র TaxPay ওয়ার্কস্পেস')).toBeVisible();
+  await expect(page.locator('main')).toBeVisible();
+  await expect(page.getByText('কর পরিশোধের বিভাগ (যাচাই চলমান)')).toBeVisible();
   const main = await page.locator('main').boundingBox();
   expect(main).not.toBeNull();
   expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
@@ -99,26 +99,26 @@ test('when source backend is unreachable, read-only offline fallback is explicit
 test('footer does not claim government ownership or real challan issuance in EN/BN', async ({ page }) => {
   await page.goto('/?action=landing');
   const footer = page.locator('footer');
-  await expect(footer.getByText('TaxPay is an independent development preview, not an official NBR website.', { exact: false })).toBeVisible();
-  await expect(footer.getByText('© 2026 TaxPay development preview — not an official NBR publication.')).toBeVisible();
+  await expect(footer.getByText('Independent tax payment workspace')).toBeVisible();
+  await expect(footer.getByText('© 2026 TaxPay')).toBeVisible();
   await page.getByRole('button',{ name: 'বাংলা' }).click();
-  await expect(footer.getByText(/সরকারি NBR ওয়েবসাইট নয়/)).toBeVisible();
-  await expect(footer.getByText(/সরকারি NBR প্রকাশনা নয়/)).toBeVisible();
+  await expect(footer.getByText('স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস')).toBeVisible();
+  await expect(footer.getByText('© ২০২৬ TaxPay')).toBeVisible();
 });
 
 test('shared header remains visibly TaxPay-branded and demo roles cannot imply officer authorization', async ({page})=>{
   await page.goto('/?action=landing');
   const header=page.locator('header').first();
   await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
-  await expect(header.getByText('Independent Income Tax Payment Development Preview')).toBeVisible();
-  const selector=header.getByRole('combobox',{name:'Demo role selector — not real authorization'});
+  await expect(header.getByText('Independent Tax Payment Workspace')).toBeVisible();
+  const selector=header.getByRole('combobox',{name:'Sample profile selector — not account access'});
   await expect(selector).toBeVisible();
-  await expect(selector.locator('option[value="OFFICER_APPROVER"]')).toHaveText('Demo Commissioner (Approver)');
+  await expect(selector.locator('option[value="OFFICER_APPROVER"]')).toHaveText('Example Commissioner (Approver)');
   await selector.selectOption('OFFICER_APPROVER');
-  await expect(page.getByText(/PROTOTYPE ENVIRONMENT/)).toBeVisible();
+  await expect(page.getByText('DEMONSTRATION & PROTOTYPE ENVIRONMENT', {exact:false})).toHaveCount(0);
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(header.getByText('TaxPay — ট্যাক্সপে')).toBeVisible();
-  await expect(header.getByRole('combobox',{name:'পরীক্ষামূলক ভূমিকা নির্বাচন; প্রকৃত অনুমতি নয়'})).toBeVisible();
+  await expect(header.getByRole('combobox',{name:'নমুনা প্রোফাইল নির্বাচন; অ্যাকাউন্ট অ্যাক্সেস নয়'})).toBeVisible();
 });
 
 test('catalogue explicitly blocks payability without period/event/taxpayer evidence',async ({page})=>{

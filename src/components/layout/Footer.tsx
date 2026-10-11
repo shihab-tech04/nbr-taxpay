@@ -1,5 +1,5 @@
 import React from 'react';
-import { Landmark, ShieldAlert, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
+import { Landmark, CheckCircle2 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { UI_STRINGS } from '../../services/localization';
 
@@ -16,14 +16,10 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-2 text-white">
               <Landmark className="w-5 h-5 text-amber-400" />
               <span className="font-serif-fraunces font-bold text-base">
-                NBR TaxPay Portal
+                TaxPay
               </span>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {language === 'bn'
-                ? 'TaxPay আয়কর পরিশোধ ব্যবস্থার উন্নয়নমূলক প্রিভিউ। এটি সরকারি NBR ওয়েবসাইট নয়; এখানে প্রকৃত অর্থ পরিশোধ বা সরকারি এ-চালান তৈরি হয় না।'
-                : 'TaxPay is an independent development preview, not an official NBR website. No actual tax payment or government A-Challan is issued.'}
-            </p>
+            <p className="text-xs text-slate-400 leading-relaxed">{language === 'bn' ? 'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস' : 'Independent tax payment workspace'}</p>
             <div className="pt-1">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-1 rounded border border-emerald-800">
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -145,23 +141,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Legal & Boundary Disclaimer */}
-        <div className="mt-8 pt-6 border-t border-slate-800 text-xs text-slate-400 space-y-2">
-          <div className="p-3 rounded bg-slate-800/60 border border-slate-700/60 flex items-start gap-2 text-amber-200/90">
-            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold text-amber-300">Mandatory Boundary Notice:</span> This application is an engineered modular demonstration preserving the v11 UI prototype. It is not connected to production Bangladesh Bank, ACS, or NBR servers. All financial transactions, challan numbers, and taxpayer records are simulated for development and audit review.
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 text-[11px] text-slate-500 font-mono">
-            <div>
-              {language === 'bn' ? '© ২০২৬ TaxPay উন্নয়নমূলক প্রিভিউ — সরকারি NBR প্রকাশনা নয়।' : '© 2026 TaxPay development preview — not an official NBR publication.'}
-            </div>
-            <div className="min-w-0 break-words">
-              Baseline SHA-256: f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b
-            </div>
-          </div>
-        </div>
+        <div className="mt-8 pt-4 border-t border-slate-800 text-xs text-slate-400"><p>{language === 'bn' ? '© ২০২৬ TaxPay' : '© 2026 TaxPay'}</p></div>
       </div>
     </footer>
   );

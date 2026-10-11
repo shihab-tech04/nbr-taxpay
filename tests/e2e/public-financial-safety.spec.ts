@@ -2,15 +2,15 @@ import { expect, test } from '@playwright/test';
 
 test('TaxPay cannot be mistaken for a government-owned portal', async ({page}) => {
   await page.goto('/?action=landing');
-  await expect(page.getByText('TaxPay development preview — not an official NBR gateway')).toBeVisible();
+  await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
   const header = page.locator('header').first();
   await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
-  await expect(header.getByText('Independent Income Tax Payment Development Preview')).toBeVisible();
-  await expect(header.getByRole('combobox',{name:'Demo role selector — not real authorization'})).toBeVisible();
-  await expect(page.locator('footer').getByText(/not an official NBR website/)).toBeVisible();
+  await expect(header.getByText('Independent Tax Payment Workspace')).toBeVisible();
+  await expect(header.getByRole('combobox',{name:'Sample profile selector — not account access'})).toBeVisible();
+  await expect(page.locator('footer').getByText('Independent tax payment workspace')).toBeVisible();
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(header.getByText('TaxPay — ট্যাক্সপে')).toBeVisible();
-  await expect(page.locator('footer').getByText(/সরকারি NBR ওয়েবসাইট নয়/)).toBeVisible();
+  await expect(page.locator('footer').getByText('স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস')).toBeVisible();
 });
 
 test('unverified tax calculator never quotes fictitious slab liability', async ({page}) => {

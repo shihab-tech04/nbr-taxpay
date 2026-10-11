@@ -4,9 +4,8 @@ export const UI_STRINGS: Record<Language, Record<string, string>> = {
   en: {
     // Brand & Header
     portalTitle: 'TaxPay',
-    portalSubtitle: 'Independent Income Tax Payment Development Preview',
+    portalSubtitle: 'Independent Tax Payment Workspace',
     govBadge: 'Government of the People\'s Republic of Bangladesh',
-    demoNotice: 'DEMONSTRATION & PROTOTYPE ENVIRONMENT - NOT CONNECTED TO NBR PRODUCTION / ACS / eRETURN SYSTEMS. ALL FINANCIAL TRANSACTIONS ARE SIMULATED.',
     
     // Navigation
     navPublicHome: 'Home',
@@ -75,9 +74,8 @@ export const UI_STRINGS: Record<Language, Record<string, string>> = {
   bn: {
     // Brand & Header
     portalTitle: 'TaxPay — ট্যাক্সপে',
-    portalSubtitle: 'স্বতন্ত্র আয়কর পরিশোধ ব্যবস্থার উন্নয়নমূলক প্রিভিউ',
+    portalSubtitle: 'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস',
     govBadge: 'গণপ্রজাতন্ত্রী বাংলাদেশ সরকার',
-    demoNotice: 'প্রদর্শন ও প্রোটোটাইপ পরিবেশ - এনবিআর উৎপাদন/এসিএস/ই-রিটার্ন ব্যবস্থার সাথে যুক্ত নয়। আর্থিক লেনদেনসমূহ সিমুলেটেড।',
     
     // Navigation
     navPublicHome: 'মূল পাতা',
