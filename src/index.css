@@ -1,5 +1,6 @@
 @import './styles/office-design.css';
 @import './styles/office-auth-source.css';
+@import './styles/office-auth-clone.css';
 @import "tailwindcss";
 
 @layer base {

@@ -1,0 +1,20 @@
+{
+  "office_source_sha": "8a9523277e99f01a8af31294119d8e337f2edf74",
+  "source_component_sha256": {
+    "LoginSlide.tsx": "03c76f0df6ffaa2cd8e12b2a43c68362c2b12f34d5f1ac36da01606799b233d4",
+    "LoginSlider.tsx": "5978cd9baa426da73ac2f47a82554f98eaf7f898b22f3c540659e1c40fc088cd",
+    "LoginBrandPanel.tsx": "ffe3d2950b313f763527a7af377432db271397cde90bae584815a57d5bf76f63"
+  },
+  "original_asset_sha256": {
+    "office-slide-file-returns.png": "152e2d3a9898eb09b40b50e7a80271369e7335aa1dfaffa4d02c3623bebc611b",
+    "office-slide-track-approvals.png": "182945fe662303201ac3b86b18f225dcba4d8791aa58b547d973d34a614c4eaf",
+    "office-slide-stay-updated.png": "4d1b980858de69c33ddda886c39828bc7f2df55a593d11b1e60a5a2939d6673a"
+  },
+  "intentional_differences": [
+    "NBR logo/brand replaced by independent TaxPay text and logo to avoid implying official NBR service",
+    "Original Redux login handler removed and sign-in disabled because actual authentication does not exist",
+    "MUI outlined input visual contract reproduced with dependency-free React elements because TaxPay lockfile does not include MUI",
+    "EN/BN switch retained to preserve existing TaxPay localization",
+    "Public Explore TaxPay entry retained in original special-registration button position"
+  ]
+}
