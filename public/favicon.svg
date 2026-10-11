@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TaxPay">
+  <rect width="64" height="64" rx="14" fill="#0B4A3A"/>
+  <path d="M17 20h30v6H35v25h-7V26H17z" fill="#F6ECD8"/>
+  <circle cx="47" cy="46" r="6" fill="#B7862C"/>
+</svg>

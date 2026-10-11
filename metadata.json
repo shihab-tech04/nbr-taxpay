@@ -1,0 +1,6 @@
+{
+  "name": "NBR TaxPay - Integrated Income Tax Payment Portal",
+  "description": "National Board of Revenue (NBR) Integrated Income Tax Payment Portal (TaxPay) prototype migrated to a robust, modular React/TypeScript application with 29 routes, 170 master payment heads, financial segregation, and officer workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,345 @@
+{
+  "schema_version": "1.0",
+  "source_of_truth": {
+    "story_registry": "NBR_TaxPay_360_End_to_End_User_Stories_v1_0_2026-10-10.json",
+    "sha256": "85062d15c50e7286a50176cddf97c126e931c638f0f641abe925174a871c2b9d",
+    "total_stories": 387,
+    "source_features": 150
+  },
+  "status_default": "DRAFT_NOT_TESTED_NOT_CERTIFIED",
+  "repository": "shihab2-tech/NBR-Tax-Payment",
+  "branch": "phase2b/auth-drafts-mobile-first-20261010",
+  "pull_request": 4,
+  "protected_baseline": "v11 source sha256 f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b",
+  "evidence": {
+    "source_fixture_sha256": "36ee10670f683e085c4a8b7c9ed5c557a4bbcfc52c4eb8700932eecbd5a4b3c2",
+    "source_records": 170,
+    "source_groups": 7,
+    "review_blocked": [
+      5,
+      150
+    ],
+    "automated_unit": {
+      "passed": 33,
+      "failed": 0,
+      "run_url": "https://github.com/shihab2-tech/NBR-Tax-Payment/actions/runs/38039834534"
+    },
+    "automated_browser": {
+      "passed": 66,
+      "failed": 0,
+      "skipped": 6,
+      "viewport_widths": [
+        320,
+        375,
+        1280
+      ],
+      "scoped_wcag_aa": true,
+      "run_url": "https://github.com/shihab2-tech/NBR-Tax-Payment/actions/runs/38039834534"
+    },
+    "supabase": {
+      "project_ref": "eyqhoavnitkrajvyqvxn",
+      "migrations_applied": 4,
+      "rls_enabled": true,
+      "forced": true,
+      "security_advisory_findings": 0,
+      "authenticated_e2e": "NOT_RUN",
+      "rls_protected_tables": 4,
+      "source_snapshot_count": 1,
+      "head_candidate_count": 170,
+      "unverified_nonexecutable_count": 170,
+      "blocked_source_ids": [
+        5,
+        150
+      ],
+      "anonymous_draft_select_denied": true,
+      "anonymous_draft_insert_denied": true,
+      "public_head_reference_read_verified": true,
+      "unverified_head_proposal_records": 0,
+      "proposal_owner_only_select": true,
+      "proposal_owner_only_insert": true,
+      "proposal_client_update_delete_denied": true
+    },
+    "correction_ingress": {
+      "applied_migrations": [
+        "taxpay_correction_inquiries_pending_evidence_20261010",
+        "taxpay_correction_change_proposals_pending_20261010"
+      ],
+      "supabase_project": "eyqhoavnitkrajvyqvxn",
+      "rls_forced": true,
+      "anonymous_reads_writes_denied": true,
+      "financial_record_mutation_allowed": false,
+      "database_security_advisor_findings": 0,
+      "registered_real_users": 0,
+      "authenticated_two_user_e2e": "NOT_RUN",
+      "correction_case_approval": "NOT_IMPLEMENTED",
+      "legal_receipt_ownership_verified": false,
+      "ci_status": "PENDING_FINAL_HEAD"
+    }
+  },
+  "entries": [
+    {
+      "story_id": "TPAY-US-CAT-001-F",
+      "status": "PARTIAL_SOURCE_AND_UI_TESTED",
+      "open": "Official accounting/legal mapping not verified; original seven v11 group display exists"
+    },
+    {
+      "story_id": "TPAY-US-CAT-001-N",
+      "status": "PARTIAL_DOMAIN_NEGATIVE_TESTED",
+      "open": "No real payment submission exists, so real withholding crossover blocking not E2E certified"
+    },
+    {
+      "story_id": "TPAY-US-CAT-002-F",
+      "status": "IMPLEMENTED_REFERENCE_ONLY_TESTED",
+      "open": "Official source workbook and live legal validity remain unverified"
+    },
+    {
+      "story_id": "TPAY-US-CAT-002-N",
+      "status": "PARTIAL_STILL_OPEN",
+      "open": "Legacy synthetic payment wizard remains a separate demo and has not been replaced with an approved financial master"
+    },
+    {
+      "story_id": "TPAY-US-CAT-003-F",
+      "status": "IMPLEMENTED_REFERENCE_SEARCH_TESTED",
+      "open": "Official accounting reference and production legal validity unavailable"
+    },
+    {
+      "story_id": "TPAY-US-CAT-003-N",
+      "status": "IMPLEMENTED_READ_ONLY_NO_MATCH_TESTED",
+      "open": "Production payment execution disabled pending official master"
+    },
+    {
+      "story_id": "TPAY-US-CAT-004-F",
+      "status": "IMPLEMENTED_REFERENCE_WARNING_TESTED",
+      "open": "Must enforce block on all future backend submission interfaces"
+    },
+    {
+      "story_id": "TPAY-US-CAT-004-N",
+      "status": "PARTIAL_NOT_PRODUCTION_CERTIFIED",
+      "open": "Backend financial head submission is not implemented; no live bypass test possible"
+    },
+    {
+      "story_id": "TPAY-US-CAT-005-F",
+      "status": "IMPLEMENTED_TESTED_UNVERIFIED_MAPPING",
+      "open": "1984/2023 legal mappings deliberately remain null until authority verified"
+    },
+    {
+      "story_id": "TPAY-US-CAT-005-N",
+      "status": "NEGATIVE_TESTED_UNVERIFIED_MAPPING",
+      "open": "No real legal or economic-code crosswalk is approved; payment execution remains unavailable"
+    },
+    {
+      "story_id": "TPAY-US-CAT-006-F",
+      "status": "BLOCKED_OFFICIAL_ACS_IBAS_SOURCE_MISSING",
+      "open": "v11 and React sources do not prove an official ACS/iBAS economic-code crosswalk"
+    },
+    {
+      "story_id": "TPAY-US-CAT-006-N",
+      "status": "FAIL_CLOSED_CANNOT_CERTIFY_ECONOMIC_CODES",
+      "open": "All 170 candidates hold null verified ACS economic codes and cannot execute"
+    },
+    {
+      "story_id": "TPAY-US-CAT-007-F",
+      "status": "PARTIAL_VERSIONED_PROTOTYPE_SOURCE_INSTALLED",
+      "open": "Official source bytes, effective dates and authorized legal approval workflow not yet provided"
+    },
+    {
+      "story_id": "TPAY-US-CAT-007-N",
+      "status": "PARTIAL_DATABASE_FAIL_CLOSED_VERIFIED",
+      "open": "No unverified source candidate is executable; human official-source approval E2E not yet built"
+    },
+    {
+      "story_id": "TPAY-US-CAT-008-F",
+      "status": "PARTIAL_PROPOSED_RULE_MODEL_SYNTHETIC_TESTED",
+      "open": "No controlling official taxpayer/event/year legal source or authorized economic-code mapping. Production applicability remains blocked."
+    },
+    {
+      "story_id": "TPAY-US-CAT-008-N",
+      "status": "PARTIAL_NEGATIVE_CROSS_YEAR_TAXPAYER_CONFLICT_TESTED",
+      "open": "Cross-year/taxpayer/event conflicts tested in isolated synthetic fixtures only; real gateway and entitlements unconnected."
+    },
+    {
+      "story_id": "TPAY-US-CAT-009-F",
+      "status": "PARTIAL_REVIEW_ONLY_PROPOSAL_UI_DB_TESTED",
+      "open": "No qualified official reviewer or legal/financial approval path; only immutable UNVERIFIED proposal stage exists."
+    },
+    {
+      "story_id": "TPAY-US-CAT-009-N",
+      "status": "PARTIAL_RLS_NO_APPROVAL_OR_EXECUTION_TESTED",
+      "open": "Anonymous operations denied; authenticated 2-user E2E pending; no server-side approval or executable mapping exists."
+    },
+    {
+      "story_id": "TPAY-US-COR-001-F",
+      "status": "PARTIAL_PRIVATE_UNVERIFIED_INQUIRY_UI_DB_INSTALLED",
+      "open": "Real verified claimant/receipt and financial correction case cannot be opened; new flow is evidence-pending private inquiry only"
+    },
+    {
+      "story_id": "TPAY-US-COR-001-N",
+      "status": "PARTIAL_LOCAL_AUTH_POSTGREST_HTTP_RLS_PASS_PERSISTENCE_UNRESOLVED",
+      "open": "Real local Supabase Auth/PostgREST tests now pass their HTTP assertions, including synthetic owner isolation and anonymous denials. Direct PostgreSQL cross-check found no corresponding auth.users or application rows after successful HTTP responses; durable database persistence remains unresolved.",
+      "reverification_2026_10_11": "Unchanged SQL contract test passed in PGlite for anonymous access denial and synthetic owner isolation; real Auth/PostgREST HTTP and authenticated local E2E remain NOT RUN because the saved local runtime is incomplete.",
+      "reverification_2026_10_12": "6 loopback Auth/PostgREST integration groups passed after the local implementation commit; direct BYPASSRLS SQL cross-check still does not find Auth or application records, so durable persistence remains NOT VERIFIED."
+    },
+    {
+      "story_id": "TPAY-US-COR-002-F",
+      "status": "PARTIAL_UNVERIFIED_BEFORE_AFTER_UI_DB_INSTALLED",
+      "open": "No verified original receipt or ownership and no authorized financial change; only evidence-pending inquiry"
+    },
+    {
+      "story_id": "TPAY-US-COR-002-N",
+      "status": "PARTIAL_LOCAL_AUTH_POSTGREST_HTTP_RLS_PASS_PERSISTENCE_UNRESOLVED",
+      "open": "Real local Supabase Auth/PostgREST tests now pass their HTTP assertions for owner-scoped draft/proposal/correction flows. Direct PostgreSQL cross-check found no corresponding rows after successful HTTP responses; durable database persistence remains unresolved. No approval, settlement, or financial mutation is enabled.",
+      "reverification_2026_10_11": "Unchanged SQL contract test passed in PGlite for evidence-pending, non-financial correction inquiry fields, anonymous denial, and owner isolation; real Auth/PostgREST HTTP and authenticated local E2E remain NOT RUN.",
+      "reverification_2026_10_12": "6 loopback Auth/PostgREST integration groups passed after the local implementation commit; direct BYPASSRLS SQL cross-check still does not find Auth or application records, so durable persistence remains NOT VERIFIED."
+    }
+  ],
+  "future_order": [
+    "TPAY-US-COR-003-F",
+    "TPAY-US-COR-003-N"
+  ],
+  "independent_implementation_checkpoints": [
+    {
+      "checkpoint_id": "TPAY-AUTH-SESSION-ISOLATION-20261011",
+      "original_story_ids": [],
+      "acceptance_status": "IMPLEMENTED_SYNTHETICALLY_VERIFIED_NOT_MAPPED_TO_387",
+      "branch": "local/taxpay-secureworkspace-enbn-20261011",
+      "parent_commit": "cbf6430b5d42b133b9d4c47870a9bbfdeed8d2e3",
+      "implementation_commits": [
+        "5875f55685e9f96f3b6f7d8ac010c5b7f05bf1e4",
+        "a09e1a3287e39d5a35e8af866c147b79f22c2f1a"
+      ],
+      "code": [
+        "src/components/screens/SecureWorkspace.tsx",
+        "src/services/secureWorkspaceCopy.ts",
+        "tests/e2e/secure-workspace-session-isolation.spec.ts"
+      ],
+      "verification": {
+        "secure_workspace_e2e": "12 passed, 0 failed across mobile 320px, mobile 375px, and desktop 1280px",
+        "domain_tests": "48 passed, 0 failed, 0 skipped",
+        "typecheck": "PASS",
+        "production_build": "PASS_WITH_EXISTING_LARGE_CHUNK_WARNING"
+      },
+      "behavior": "Sign-out uses the current browser session scope. When the server cannot confirm revocation, the Supabase client still clears the browser session; the EN/BN message states that local sign-out occurred and server revocation is unconfirmed. Synthetic owner A drafts and inquiries disappear and are not shown after synthetic owner B re-authenticates. English/Bengali and responsive overflow are checked.",
+      "original_story_blocker": "The checked-out repository and available COR-002/recovery documents identify COR-003-F/N as next but do not contain their original story definitions. No original story ID is claimed complete.",
+      "next_original_story_ids": [
+        "TPAY-US-COR-003-F",
+        "TPAY-US-COR-003-N"
+      ]
+    },
+    {
+      "checkpoint_id": "TPAY-PGLITE-MIGRATION-RLS-PERSISTENCE-20261011",
+      "original_story_ids": [
+        "TPAY-US-COR-001-N",
+        "TPAY-US-COR-002-N"
+      ],
+      "acceptance_status": "PARTIAL_LOCAL_PGLITE_VERIFIED_REAL_AUTH_POSTGREST_HTTP_PENDING",
+      "branch": "fix/mac-taxpay-responsive-regressions-20261012",
+      "parent_commit": "5386dc8acad335c6c437f501d9bf3508ded2e864",
+      "implementation_commits": [],
+      "code": [
+        "supabase/migrations/*.sql",
+        "tests/database/taxpay_rls_contract.test.ts"
+      ],
+      "verification": {
+        "runtime": "Deno 2.9.7; locked @electric-sql/pglite 0.4.5; cached-only execution",
+        "command": "TAXPAY_TEST_DATA_DIR=/private/tmp deno test --allow-env=TAXPAY_TEST_DATA_DIR --allow-read --allow-write --cached-only --config tests/database/deno.json tests/database/taxpay_rls_contract.test.ts",
+        "result": "3 passed, 0 failed",
+        "migration_execution_and_170_unverified_nonexecutable_source_identities": "PASS",
+        "filesystem_database_close_reopen_persistence": "PASS",
+        "synthetic_two_owner_draft_proposal_and_correction_inquiry_isolation": "PASS",
+        "anonymous_select_insert_update_denials": "PASS",
+        "real_supabase_auth_http": "NOT_RUN",
+        "real_postgrest_http": "NOT_RUN",
+        "interpretation": "The test supplies synthetic auth.uid() and Postgres roles inside PGlite. It does not exercise Supabase Auth, PostgREST, Edge Functions, or a live local Supabase stack."
+      },
+      "runtime_restore": {
+        "status": "BLOCKED_INCOMPLETE_SAVED_RUNTIME",
+        "saved_profile": "/Users/synesis/Development/ShihabUX-Local/environment/container-runtime-taxpay-20261011/colima/taxpay-supabase-20261011/colima.yaml",
+        "saved_profile_yaml_sha256": "c53741a62b54e696103e5c1b5fc3515c76035703025e9abae28d97544b68546e",
+        "saved_datadisk_sha256": "ab743e145f643a1f6237b7390baf2e6edc71d83997f5bf4ed40d975fb50ba423",
+        "saved_datadisk_logical_bytes": 53687091200,
+        "saved_datadisk_allocated_512_byte_blocks": 0,
+        "saved_lima_instance_metadata": "NOT_PRESENT in saved LIMA_HOME; limactl list found no instance",
+        "saved_docker_context": "NOT_PRESENT; isolated DOCKER_CONFIG lists only default unix:///var/run/docker.sock",
+        "current_docker_context": "default unix:///var/run/docker.sock; socket absent",
+        "taxpay_supabase_config": "supabase/config.toml absent from available TaxPay checkouts",
+        "preservation": "Saved archive and current ~/.colima were not modified."
+      },
+      "next_original_story_ids": [
+        "TPAY-US-COR-003-F",
+        "TPAY-US-COR-003-N"
+      ],
+      "next_story_blocker": "The overlay references a 387-story registry SHA256 85062d15c50e7286a50176cddf97c126e931c638f0f641abe925174a871c2b9d, but the named registry and original COR-003 definitions are absent from the available TaxPay source tree. No acceptance criteria were invented.",
+      "preserved_prior_ui_evidence": "77 responsive Playwright cases passed, 1 expected skip, 0 failures at 320px, 375px, and 1280px on the prior checkpoint; no source or assertion changes were made in this checkpoint."
+    },
+    {
+      "checkpoint_id": "TPAY-LOCAL-HTTP-AND-PREVIEW-20261012",
+      "original_story_ids": [
+        "TPAY-US-COR-001-N",
+        "TPAY-US-COR-002-N"
+      ],
+      "acceptance_status": "PARTIAL_HTTP_RLS_ASSERTIONS_PASS_DATABASE_PERSISTENCE_UNRESOLVED_PREVIEW_RUNNING",
+      "branch": "fix/mac-taxpay-responsive-regressions-20261012",
+      "parent_commit": "5386dc8acad335c6c437f501d9bf3508ded2e864",
+      "implementation_commits": [
+        "3f255a86bad54243fa192264b1334db15a5f2446"
+      ],
+      "code": [
+        "src/config/publicBackend.ts",
+        "tests/integration/localSupabaseHttp.mjs",
+        "supabase/config.toml",
+        "docs/STORY_EXECUTION_OVERLAY_v1.json"
+      ],
+      "preview": {
+        "url": "http://127.0.0.1:3000/",
+        "bind": "127.0.0.1:3000",
+        "node": "v24.21.0",
+        "vite_pid": 49027,
+        "server_log": "/private/tmp/taxpay-vite-dev.log",
+        "startup_verification": "HTTP 200; Chrome displayed the TaxPay Independent Development Preview at 127.0.0.1:3000.",
+        "frontend_backend_target": "http://127.0.0.1:54321 using local Supabase public key; no hosted or production endpoint configured for this process.",
+        "demonstration_data": "The home screen explicitly labels examples as simulated and not verified NBR taxpayer records."
+      },
+      "verification": {
+        "node_runtime": "PASS v24.21.0 via fnm",
+        "http_integration": "PASS: 6 groups: 170 non-executable catalogue rows; anonymous private-table denials; synthetic Auth signup and token refresh for two owners; owner-isolated draft HTTP reads/writes; forbidden status/cross-owner mutations denied; proposals and evidence-pending correction inquiries cannot approve or change finances.",
+        "pglite_contract": "3 passed, 0 failed (existing result; unchanged source migrations and 0.4.5 cache).",
+        "responsive_ui": "77 passed, 1 expected skip, 0 failed at 320px, 375px, and 1280px on prior checkpoint; not rerun for preview.",
+        "http_vs_database_discrepancy": "OPEN: Auth signup returned HTTP 200 and PostgREST draft insert/read returned HTTP 201/200 in separate requests, but direct SQL cross-check reported auth.users=0 and zero draft/proposal/inquiry rows. Therefore durable persistence and integrated Supabase certification are NOT VERIFIED.",
+        "migration_cli": "The Supabase CLI automatic reset/start migration path fails with SQLSTATE 42P07 (taxpay_payment_drafts already exists) on the first source migration. All seven unchanged source SQL migrations were applied successfully through local psql. No migration SQL or test input was changed.",
+        "original_story_registry": "COR-003-F/N and the 387-story registry remain unavailable; no acceptance criteria or assertions were invented.",
+        "integration_command": "fnm exec --using=24.21.0 npm run test:integration:local (with TAXPAY_LOCAL_SUPABASE_URL and TAXPAY_LOCAL_SUPABASE_ANON_KEY populated from local Supabase CLI status; test runner rejects non-loopback endpoints)",
+        "integration_result": "PASS: 6 groups, 0 failures, using 2 generated example.invalid users and local public key; no service-role key.",
+        "typecheck": "PASS: fnm exec --using=24.21.0 npm run lint (tsc --noEmit).",
+        "production_build": "PASS: fnm exec --using=24.21.0 npm run build; pre-existing large JavaScript chunk warning (943.86 kB).",
+        "database_crosscheck_detail": "The local postgres role reports BYPASSRLS=true. After an HTTP 200 synthetic signup and HTTP 201 insert followed by a separate HTTP 200 read returning the same row, direct SQL counts remained 0 for that auth.users id and draft id. Both Auth and PostgREST configured DB URLs use the same isolated db container hostname and /postgres; root cause not established.",
+        "migration_registry_crosscheck": "supabase migration list --local reports all seven local and database versions matching; direct SQL lookup of supabase_migrations.schema_migrations reports the relation absent. The automatic reset path still fails with SQLSTATE 42P07. This registry discrepancy is unresolved; no migration repair or reset performed.",
+        "gateway_target_check": "PASS: local Kong declarative configuration routes to local container hostnames; no hosted/production route found."
+      },
+      "local_runtime": {
+        "profile": "taxpay-supabase-local-20261011",
+        "docker_host": "unix:///Users/synesis/.colima/taxpay-supabase-local-20261011/docker.sock",
+        "docker_config": "/Users/synesis/Development/ShihabUX-Local/environment/container-runtime-taxpay-local-20261011/docker",
+        "supabase_api": "http://127.0.0.1:54321",
+        "database_port": "127.0.0.1:54322",
+        "linked_remote_project": false,
+        "services": "Existing synthetic-only local stack left running; no container restart performed for preview.",
+        "gateway_routes": "Verified generated Kong routes target the local Auth container on port 9999 and local PostgREST container on port 3000; the browser and test runner target only 127.0.0.1:54321.",
+        "core_health": "Local Auth and PostgREST health endpoints returned HTTP 200; local API and database ports are loopback-bound."
+      },
+      "backend_dependent_functions": [
+        "Supabase Auth sign-up/sign-in/session refresh and Secure Workspace identity",
+        "durable owner-scoped draft create/read/resume",
+        "owner-scoped proposal and correction-inquiry persistence",
+        "PostgREST catalogue reads and database-backed views"
+      ],
+      "safety": "No GitHub push, production endpoint, production database, real taxpayer calculation, payment, approval, or deployment used.",
+      "open_blockers": [
+        "Resolve why local Auth/PostgREST HTTP writes are visible on follow-up HTTP reads but absent from a BYPASSRLS PostgreSQL cross-check.",
+        "Reconcile Supabase CLI migration-list results with the direct SQL migration-history relation and the SQLSTATE 42P07 reset failure without resetting the active stack.",
+        "Original 387-story registry and COR-003-F/N requirements are unavailable; BL-03 remains OPEN."
+      ]
+    }
+  ],
+  "release_gate": "DRAFT_UNTIL_AUTHENTICATED_2USER_RLS_E2E_OFFICIAL_APPROVAL_AND_PRODUCTION_GATES",
+  "notes": "Only individual checks with direct source, GitHub Actions or Supabase read-back evidence are upgraded. Others remain DRAFT_NOT_TESTED_NOT_CERTIFIED. 23 Playwright cases passed and 4 viewport-duplicate backend tests were deliberately skipped; no weakening of assertions. Latest browser test adds Bengali preview safety disclosure at 320px,375px,1280px; 26 PASS, 4 deliberate API-viewport duplicate skips. Phase 2B/CAT009 exact commit 2b5f4cc6 automated evidence: 33 domain PASS, 66 browser/API PASS, 6 intentional viewport API skips; guarded live Supabase migration 4 readback PASS, security advisor 0, no actual authenticated account acceptance. Registry sequence corrected from nonexistent CAT-010 to original COR-001 F/N; source registry never contains CAT-010. COR-001 and COR-002 records are user-owned, unverified inquiries only. Neither a financial correction case nor an approved attribution change. All 387 original IDs retained."
+}
