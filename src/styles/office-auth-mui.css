@@ -13,3 +13,34 @@
 .office-auth-clone .MuiInputAdornment-root{color:var(--color-text-secondary)}
 .office-auth-clone .MuiFormControlLabel-label{font-size:14px;color:var(--color-text-secondary);line-height:1.4}
 .office-auth-clone .MuiCheckbox-root.Mui-checked{color:var(--color-primary)}
+
+/* Preserve Office Management's active-form visual hierarchy while safely disabling auth.
+   These are cosmetic overrides only: disabled inputs, checkbox and submit remain inert. */
+.office-auth-clone .MuiInputLabel-root.Mui-disabled {
+  opacity: 1 !important;
+  color: var(--color-text-secondary) !important;
+}
+.office-auth-clone .MuiOutlinedInput-root.Mui-disabled {
+  background-color: var(--color-surface) !important;
+}
+.office-auth-clone .MuiOutlinedInput-root.Mui-disabled .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border) !important;
+}
+.office-auth-clone .MuiOutlinedInput-input.Mui-disabled {
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+}
+.office-auth-clone .MuiFormControlLabel-root.Mui-disabled .MuiFormControlLabel-label {
+  opacity: 1 !important;
+  color: var(--color-text-secondary) !important;
+}
+.office-auth-clone .MuiCheckbox-root.Mui-disabled {
+  opacity: 1 !important;
+  color: var(--color-border) !important;
+}
+.office-auth-clone .login-form-submit:disabled {
+  opacity: 1;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+  cursor: not-allowed;
+}
