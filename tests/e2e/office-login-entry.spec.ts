@@ -55,7 +55,7 @@ test('original Office slider dots pause and help UI work, EN/BN remains usable',
  await expect(page.getByRole('heading',{name:'স্বাগতম'})).toBeVisible();
  await expect(page.getByRole('button',{name:'ট্যাক্সপে দেখুন'})).toBeVisible();
  await page.getByRole('button',{name:'ট্যাক্সপে দেখুন'}).click();
- await page.getByRole('button',{name:'EN'}).click();
+ await page.getByRole('button',{name:'EN',exact:true}).click();
  await page.getByRole('button',{name:'Office Login'}).click();
  await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
  if(info.project.name==='desktop-1280'){
