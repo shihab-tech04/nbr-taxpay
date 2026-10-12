@@ -41,6 +41,8 @@ const callbackUrl = (session: ReturnType<typeof makeSession>, attempt: number) =
 const drafts = {
   [userA.id]: [{
     id: 'synthetic-draft-a',
+    owner_uid: userA.id,
+    record_status: 'DRAFT',
     purpose: 'TAX_LIABILITY_PAYMENT',
     category: 'TAX_WITH_RETURN',
     assessment_year: '2026-27',
@@ -50,6 +52,8 @@ const drafts = {
   }],
   [userB.id]: [{
     id: 'synthetic-draft-b',
+    owner_uid: userB.id,
+    record_status: 'DRAFT',
     purpose: 'TAX_LIABILITY_PAYMENT',
     category: 'TAX_WITH_RETURN',
     assessment_year: '2026-27',

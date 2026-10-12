@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useTaxState } from '../../services/taxState';
-import { authRedirectUrl, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
+import { authRedirectUrl, verifiedDraftCategory, draftSeedForCategory, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
-import { confirmPrivateDraftUpdate, privateDraftToInput } from '../../services/privateDraftResume';
+import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
 import { CorrectionInquiries } from './CorrectionInquiries';
 import { UiButton, UiInput } from '../ui/Controls';
@@ -23,6 +23,8 @@ type SavedDraft = {
   amount_minor: number;
   memo: string | null;
   created_at: string;
+  owner_uid: string;
+  record_status: string;
 };
 
 const categoryOptions = (purpose: DraftPurpose) =>
@@ -39,10 +41,11 @@ const initial: DraftInput = {
 };
 
 export const SecureWorkspace: React.FC = () => {
-  const { language } = useTaxState();
+  const { language, routeParams } = useTaxState();
   const bn = language === 'bn';
   const copy = getSecureWorkspaceCopy(language);
   const sessionEpoch = useRef(0);
+  const currentAuthUserId = useRef<string | null>(null);
   const draftFormRef = useRef<HTMLFormElement>(null);
   const draftBeforeEditing = useRef<DraftInput | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -50,10 +53,14 @@ export const SecureWorkspace: React.FC = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState<WorkspaceMessage | null>(null);
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState<DraftInput>(initial);
+  const selectedDraftCategory = verifiedDraftCategory(routeParams?.draftCategory,
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('draftCategory') : null);
+  const seededDraft = (): DraftInput => draftSeedForCategory(selectedDraftCategory) ?? initial;
+  const [draft, setDraft] = useState<DraftInput>(seededDraft);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [rows, setRows] = useState<SavedDraft[]>([]);
   const [draftLoading, setDraftLoading] = useState(false);
+  const [draftLoadError, setDraftLoadError] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const messageText = message
     ? message.kind === 'copy'
@@ -68,18 +75,34 @@ export const SecureWorkspace: React.FC = () => {
     if (!client) { setAuthLoading(false); return; }
     let active = true;
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      if (active) { sessionEpoch.current++; setUser(session?.user ?? null); setAuthLoading(false); }
+      if (active) {
+        const nextId = session?.user?.id ?? null;
+        if (currentAuthUserId.current !== nextId) {
+          // Do not render private rows from the previous user while the new owner's GET is pending.
+          setRows([]);
+          setPendingDelete(null);
+          setEditingDraftId(null);
+        }
+        currentAuthUserId.current = nextId;
+        sessionEpoch.current++;
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      }
     });
     const startupRevision = sessionEpoch.current;
     client.auth.getUser().then(({ data, error }) => {
       if (active && shouldApplyInitialAuthResolution(startupRevision, sessionEpoch.current)) {
         sessionEpoch.current++;
+        currentAuthUserId.current = error ? null : data.user?.id ?? null;
+        setRows([]);
         setUser(error ? null : data.user);
         setAuthLoading(false);
       }
     }).catch(() => {
       if (active && shouldApplyInitialAuthResolution(startupRevision, sessionEpoch.current)) {
         sessionEpoch.current++;
+        currentAuthUserId.current = null;
+        setRows([]);
         setUser(null);
         setAuthLoading(false);
       }
@@ -87,9 +110,9 @@ export const SecureWorkspace: React.FC = () => {
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
 
-  const refresh = async (uid: string) => {
+  const refresh = async (uid: string): Promise<SavedDraft[]> => {
     const client = supabase;
-    if (!client) return;
+    if (!client) throw new Error('Backend disabled');
     const expectedEpoch = sessionEpoch.current;
     const { data: identity, error: identityError } = await client.auth.getUser();
     if (identityError || !sameAuthenticatedOwner(identity.user?.id, uid)) {
@@ -97,22 +120,29 @@ export const SecureWorkspace: React.FC = () => {
       throw new Error('SESSION_EXPIRED_LOAD');
     }
     const { data, error } = await client.from('taxpay_payment_drafts')
-      .select('id,purpose,category,assessment_year,amount_minor,memo,created_at')
+      .select('id,owner_uid,record_status,purpose,category,assessment_year,amount_minor,memo,created_at')
       .eq('owner_uid', uid).order('created_at', { ascending: false });
     if (error) throw error;
-    if (sessionEpoch.current === expectedEpoch) setRows((data ?? []) as SavedDraft[]);
+    if (sessionEpoch.current !== expectedEpoch) throw new Error('SESSION_EXPIRED_LOAD');
+    const verifiedRows = (data ?? []) as SavedDraft[];
+    setDraftLoadError(false);
+    setRows(verifiedRows);
+    return verifiedRows;
   };
 
   useEffect(() => {
     setPendingDelete(null);
     setEditingDraftId(null);
-    setDraft(initial);
+    setDraft(seededDraft());
     draftBeforeEditing.current = null;
-    if (!user) { setRows([]); setDraftLoading(false); return; }
+    setRows([]);
+    setDraftLoadError(false);
+    if (!user) { setDraftLoading(false); return; }
     let active = true;
     setDraftLoading(true);
     refresh(user.id).catch((error: Error) => {
       if (!active) return;
+      setDraftLoadError(true);
       if (error.message === 'SESSION_EXPIRED_LOAD') showMessage('sessionExpiredLoad');
       else showMessage('couldNotLoadDrafts', error.message);
     }).finally(() => { if (active) setDraftLoading(false); });
@@ -124,7 +154,8 @@ export const SecureWorkspace: React.FC = () => {
     if (!supabase) return;
     setBusy(true); setMessage(null);
     try {
-      const redirect = authRedirectUrl(window.location.origin, import.meta.env.BASE_URL);
+      const redirect = authRedirectUrl(window.location.origin, import.meta.env.BASE_URL,
+        selectedDraftCategory ?? undefined);
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { emailRedirectTo: redirect, shouldCreateUser: true }
@@ -146,7 +177,7 @@ export const SecureWorkspace: React.FC = () => {
     if (result.error) { setMessage({ kind: 'validation', englishText: result.error }); return; }
     const draftId = editingDraftId;
     setBusy(true); setMessage(null);
-    let persisted = false;
+    let acknowledgedId: string | null = null;
     try {
       const { data: current, error: authError } = await client.auth.getUser();
       if (authError || !sameAuthenticatedOwner(current.user?.id, user.id)) {
@@ -161,36 +192,70 @@ export const SecureWorkspace: React.FC = () => {
         memo: draft.memo.trim() || null
       };
       if (draftId) {
-        const { data: updatedRows, error } = await client.from('taxpay_payment_drafts')
-          .update(values).eq('id', draftId).eq('owner_uid', current.user!.id).select('id');
+        const original = rows.find(row => row.id === draftId && row.owner_uid === current.user!.id);
+        if (!original) { showMessage('draftConflict'); return; }
+        // Column-level optimistic matching: no new SQL version column, no lost update
+        // if another session edited any of the stored draft fields in the meantime.
+        const filteredUpdate = client.from('taxpay_payment_drafts')
+          .update(values).eq('id', draftId).eq('owner_uid', current.user!.id)
+          .eq('purpose', original.purpose).eq('category', original.category)
+          .eq('assessment_year', original.assessment_year)
+          .eq('amount_minor', original.amount_minor);
+        const { data: updatedRows, error } = original.memo === null
+          ? await filteredUpdate.is('memo', null).select('id')
+          : await filteredUpdate.eq('memo', original.memo).select('id');
         if (error) { showMessage('draftWasNotSaved', error.message); return; }
         if (!confirmPrivateDraftUpdate(draftId, updatedRows)) {
-          showMessage('draftUpdateNotConfirmed');
+          showMessage('draftConflict');
           return;
         }
+        acknowledgedId = draftId;
       } else {
-        const { error } = await client.from('taxpay_payment_drafts').insert({
+        const { data: insertedRows, error } = await client.from('taxpay_payment_drafts').insert({
           owner_uid: current.user!.id,
           ...values
-        });
+        }).select('id');
         if (error) { showMessage('draftWasNotSaved', error.message); return; }
+        if (!Array.isArray(insertedRows) || insertedRows.length !== 1 ||
+          typeof insertedRows[0]?.id !== 'string' || !insertedRows[0].id) {
+          showMessage('draftReadBackNotConfirmed');
+          return;
+        }
+        acknowledgedId = insertedRows[0].id;
       }
-      persisted = true;
+      // An HTTP success is insufficient: reselect under this specific authenticated owner.
+      // If the account changed while the request was in flight, do not show another owner's data.
+      const reread = await refresh(current.user!.id);
+      if (!confirmPrivateDraftReadBack({
+        id: acknowledgedId!, owner_uid: current.user!.id, ...values
+      }, reread)) {
+        showMessage('draftReadBackNotConfirmed');
+        return;
+      }
       setEditingDraftId(null);
       setDraft(draftId && draftBeforeEditing.current
         ? draftBeforeEditing.current
         : { ...draft, amount: '', memo: '' });
       draftBeforeEditing.current = null;
-      try {
-        await refresh(current.user!.id);
-      } catch {
-        showMessage('draftSavedRefreshFailed');
-        return;
-      }
       showMessage(draftId ? 'draftUpdated' : 'draftSaved');
     } catch (error) {
-      showMessage(persisted ? 'draftSavedRefreshFailed' : 'draftOperationFailed', persisted ? undefined : String(error));
+      // Network interruption after a write leaves the commit outcome unknown.
+      showMessage(acknowledgedId ? 'draftSavedRefreshFailed' : 'draftOperationFailed', String(error));
     } finally { setBusy(false); }
+  };
+
+  const retryLoad = async () => {
+    if (!user || busy || draftLoading) return;
+    setDraftLoading(true);
+    setDraftLoadError(false);
+    setMessage(null);
+    try {
+      await refresh(user.id);
+      showMessage('draftsRefreshed');
+    } catch (error) {
+      setDraftLoadError(true);
+      showMessage('couldNotLoadDrafts', String(error));
+    } finally { setDraftLoading(false); }
   };
 
   const resumeDraft = (row: SavedDraft) => {
@@ -226,12 +291,16 @@ export const SecureWorkspace: React.FC = () => {
       const { data: deletedRows, error } = await supabase.from('taxpay_payment_drafts')
         .delete().eq('id', id).eq('owner_uid', user.id).select('id');
       if (error) { showMessage('couldNotDeleteDraft', error.message); return; }
-      setPendingDelete(null);
-      await refresh(user.id);
       if (!confirmDraftDeletion(id, deletedRows)) {
         showMessage('deletionNotConfirmed');
         return;
       }
+      const reread = await refresh(user.id);
+      if (reread.some(row => row.id === id)) {
+        showMessage('deletionNotConfirmed');
+        return;
+      }
+      setPendingDelete(null);
       if (editingDraftId === id) {
         setEditingDraftId(null);
         setDraft(draftBeforeEditing.current ?? initial);
@@ -318,13 +387,19 @@ export const SecureWorkspace: React.FC = () => {
                 className="block w-full mt-2 border border-slate-300 rounded-lg p-3" rows={2}/>
             </label>
             <div className="flex flex-wrap gap-3">
-              <button type="submit" disabled={busy} className="min-h-11 px-5 py-3 rounded-lg bg-emerald-950 text-white font-semibold disabled:opacity-50">{editingDraftId ? copy.updateDraft : copy.saveDraft}</button>
+              <button type="submit" disabled={busy} className="min-h-11 px-5 py-3 rounded-lg bg-emerald-950 text-white font-semibold disabled:opacity-50">{busy ? copy.savingDraft : editingDraftId ? copy.updateDraft : copy.saveDraft}</button>
               {editingDraftId && <button type="button" disabled={busy} onClick={cancelDraftEditing} className="min-h-11 px-5 py-3 rounded-lg border border-slate-300 font-semibold disabled:opacity-50">{copy.cancelEditing}</button>}
             </div>
           </form>
           <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-3">
             <h2 className="font-serif-fraunces text-xl font-bold text-emerald-950">{copy.savedDrafts}</h2>
-            {draftLoading ? <p role="status" className="text-sm text-slate-600">{copy.loadingDrafts}</p> : rows.length === 0 ? <p className="text-sm text-slate-500">{copy.emptyDrafts}</p> : (
+            {message?.kind === 'copy' && ['couldNotLoadDrafts', 'sessionExpiredLoad', 'draftSavedRefreshFailed', 'draftReadBackNotConfirmed', 'draftConflict', 'deletionNotConfirmed'].includes(message.key) && (
+              <button type="button" disabled={busy || draftLoading} onClick={retryLoad}
+                className="min-h-11 px-4 py-2 border border-taxpay-primary text-taxpay-primary rounded-lg font-semibold focus-visible:outline focus-visible:outline-2">
+                {copy.retryLoad}
+              </button>
+            )}
+            {draftLoading ? <p role="status" className="text-sm text-slate-600">{copy.loadingDrafts}</p> : draftLoadError ? <p role="alert" className="text-sm text-taxpay-error">{copy.draftListUnavailable}</p> : rows.length === 0 ? <p className="text-sm text-slate-500">{copy.emptyDrafts}</p> : (
               <ul className="divide-y divide-slate-200">
                 {rows.map(row => <li key={row.id} className="py-3 flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 break-words">

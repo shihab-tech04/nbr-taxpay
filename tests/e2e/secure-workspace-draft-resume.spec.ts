@@ -18,6 +18,8 @@ test('authenticated owner resumes and updates a private draft in Bengali without
   const accessToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ sub: userId, aud: 'authenticated', role: 'authenticated', exp: expiresAt }))}.synthetic-signature`;
   const draft = {
     id: 'synthetic-private-draft-1',
+    owner_uid: userId,
+    record_status: 'DRAFT',
     purpose: 'TAX_LIABILITY_PAYMENT',
     category: 'TAX_WITH_RETURN',
     assessment_year: '2026-27',
@@ -26,7 +28,7 @@ test('authenticated owner resumes and updates a private draft in Bengali without
     created_at: '2026-01-01T00:00:00.000Z',
   };
   let patchCount = 0;
-  let updateFilters: { id: string | null; owner_uid: string | null } | null = null;
+  let updateFilters: { id: string | null; owner_uid: string | null; category: string | null; assessment_year: string | null; amount_minor: string | null; memo: string | null } | null = null;
   let updateBody: unknown = null;
 
   await page.addInitScript(({ storageKey, session }) => {
@@ -65,6 +67,10 @@ test('authenticated owner resumes and updates a private draft in Bengali without
       updateFilters = {
         id: url.searchParams.get('id'),
         owner_uid: url.searchParams.get('owner_uid'),
+        category: url.searchParams.get('category'),
+        assessment_year: url.searchParams.get('assessment_year'),
+        amount_minor: url.searchParams.get('amount_minor'),
+        memo: url.searchParams.get('memo'),
       };
       updateBody = request.postDataJSON();
       const payload = updateBody as Record<string, unknown>;
@@ -94,7 +100,11 @@ test('authenticated owner resumes and updates a private draft in Bengali without
 
   await expect(page.getByRole('status').filter({ hasText: 'ব্যক্তিগত খসড়ার পরিবর্তন সংরক্ষিত হয়েছে' }).last()).toBeVisible();
   expect(patchCount).toBe(1);
-  expect(updateFilters).toEqual({ id: `eq.${draft.id}`, owner_uid: `eq.${userId}` });
+  expect(updateFilters).toEqual({
+    id: `eq.${draft.id}`, owner_uid: `eq.${userId}`,
+    category: 'eq.TAX_WITH_RETURN', assessment_year: 'eq.2026-27',
+    amount_minor: 'eq.12345', memo: 'eq.Synthetic resume test note',
+  });
   expect(updateBody).toEqual({
     purpose: 'TAX_LIABILITY_PAYMENT',
     category: 'TAX_WITH_RETURN',

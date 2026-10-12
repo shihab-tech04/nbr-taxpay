@@ -36,3 +36,14 @@ GitHub repository access and the GitHub Pages publication workflow have been res
 Do not enable real payment initiation, trusted receipt generation, personal credit balances, taxpayer-account access, regulated tax calculations or claims of NBR endorsement until authorized source/legal acceptance, live system integrations, identity/role security, financial reconciliation and comprehensive regression evidence are independently certified.
 
 UI/demo success must not be presented as production readiness. Preserve officer workflows in the separate Office Management product.
+
+## Phase 02 extension (2026-10-12; separate from released citizen design)
+
+This source branch changes only the secure private-draft persistence safeguards, synthetic workspace tests, disposable database test harness, and backend documentation. **The deployed citizen design remains frozen.**
+
+- Browser insert/update/delete confirmation now requires a subsequent authenticated SELECT matching the exact owner, draft ID, purpose/category, assessment year, BDT minor amount, memo and `DRAFT` status (and absence after delete). Network ambiguity remains an explicit *not confirmed* state, never a payment success.
+- The local integration test requires both `TAXPAY_LOCAL_SUPABASE_URL` and a separate loopback `TAXPAY_LOCAL_PG_DSN`. It refuses non-loopback databases and fails if the draft cannot be read by direct SQL after PostgREST acknowledgement. A separate restart test reauthenticates both synthetic users and reads the same IDs again.
+- Read-only connection inspection of the project named `Tax Payer Payment` found six applied remote migration entries, no synthetic users/rows and no UPDATE grant/policy; the seventh repository update migration has **not** been applied there. Approval to use that hosted project as an isolated *development* environment is not established.
+- Source IDs 5 and 150 remain non-executable. The public GitHub Pages workflow continues to force a blank, disabled Supabase backend. Phase 02 cannot be labeled backend-certified without exact-head acceptance of isolated Auth/RLS and restart persistence and no remaining CI regressions.
+
+See `docs/TAXPAY_SUPABASE_BROWSER_CONNECTION.md` for observed schema facts and the still-unresolved Mac HTTP-versus-direct-SQL discrepancy. This text is not acceptance evidence for CI runs not yet completed.

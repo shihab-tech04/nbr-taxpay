@@ -142,6 +142,10 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(history.getByText('Previous value (unverified): 2024-25')).toBeVisible();
   await expect(history.getByText('Requested value (unverified): 2025-26')).toBeVisible();
 
+  // Restore the expanded navigation before exercising its language action at 320px.
+  // Preserve the real adaptive scroll behavior; never force-click a hidden control.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
   await page.getByRole('button', { name: 'বাংলা' }).click();
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
   await expect(historyBn.locator('summary')).toHaveText('অনুরোধের বিবরণ');
