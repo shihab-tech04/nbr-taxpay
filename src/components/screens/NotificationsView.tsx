@@ -47,7 +47,7 @@ export const NotificationsView: React.FC = () => {
       title: 'Sonali Bank A-Challan Gateway Scheduled Maintenance',
       type: 'INFO',
       date: 'Notice: 08 October 2026',
-      desc: 'Central treasury clearing batch synchronization scheduled on Saturday midnight 00:00 - 02:00. MFS gateways remain operational.',
+      desc: 'Demonstration notice only. No Treasury or payment gateway connection is configured.',
       actionLabel: null,
       actionRoute: null
     }
@@ -65,7 +65,7 @@ export const NotificationsView: React.FC = () => {
               Statutory Alerts & Demand Notifications
             </h1>
             <p className="text-xs text-slate-500">
-              Real-time communication from your assessment circle, demand notices, and advance tax deadlines.
+              Illustrative notifications. These are not official tax demands, NBR messages, or verified deadlines.
             </p>
           </div>
         </div>
@@ -102,7 +102,7 @@ export const NotificationsView: React.FC = () => {
                 <div className="pt-2 flex justify-end">
                   <button
                     onClick={() => al.actionRoute && navigate(al.actionRoute)}
-                    className="px-3 py-1.5 rounded bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-semibold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-semibold text-[11px] inline-flex items-center gap-1 cursor-pointer"
                   >
                     <span>{al.actionLabel}</span>
                     <ArrowRight className="w-3.5 h-3.5" />

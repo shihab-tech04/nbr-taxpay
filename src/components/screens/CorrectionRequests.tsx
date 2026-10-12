@@ -75,7 +75,7 @@ export const CorrectionRequests: React.FC = () => {
         </div>
 
         {submittedTicket && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-1">
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <span>Correction Ticket Logged: {submittedTicket}</span>
@@ -140,13 +140,13 @@ export const CorrectionRequests: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-emerald-900 mb-1">
+              <label className="block font-semibold text-taxpay-dark mb-1">
                 Proposed Correct Assessment Year *
               </label>
               <select
                 value={proposedAY}
                 onChange={(e) => setProposedAY(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50 font-bold text-emerald-950"
+                className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50 font-bold text-taxpay-dark"
               >
                 {ASSESSMENT_YEARS.map(ay => (
                   <option key={ay} value={ay}>{ay}</option>
@@ -167,7 +167,7 @@ export const CorrectionRequests: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-emerald-900 mb-1">
+              <label className="block font-semibold text-taxpay-dark mb-1">
                 Proposed Correct Circle
               </label>
               <input
@@ -195,7 +195,7 @@ export const CorrectionRequests: React.FC = () => {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-5 py-2.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+              className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Send className="w-4 h-4" />
               <span>Submit Correction Petition</span>
@@ -217,7 +217,7 @@ export const CorrectionRequests: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-mono-plex font-bold text-slate-900">{corr.ticketNo}</span>
                   <span className="text-slate-400">•</span>
-                  <span className="font-mono-plex text-emerald-900">{corr.challanNo}</span>
+                  <span className="font-mono-plex text-taxpay-dark">{corr.challanNo}</span>
                 </div>
                 <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
                   corr.workflowStage === 'APPROVER_FINALIZED' ? 'bg-emerald-100 text-emerald-800' :
@@ -245,7 +245,7 @@ export const CorrectionRequests: React.FC = () => {
               </p>
 
               {corr.approverRemarks && (
-                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900">
+                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-taxpay-dark">
                   <strong>Commissioner Approver Sanction:</strong> {corr.approverRemarks}
                 </div>
               )}

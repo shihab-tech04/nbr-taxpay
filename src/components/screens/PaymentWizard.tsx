@@ -147,7 +147,7 @@ export const PaymentWizard: React.FC = () => {
   if (step === 4 && createdReceipt) {
     return (
       <div className="space-y-6">
-        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-950 flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
@@ -162,7 +162,7 @@ export const PaymentWizard: React.FC = () => {
               setStep(1);
               setCreatedReceipt(null);
             }}
-            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-emerald-900 cursor-pointer"
+            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
           >
             New Payment
           </button>
@@ -194,13 +194,13 @@ export const PaymentWizard: React.FC = () => {
 
         {/* Stepper Header */}
         <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-center mb-6">
-          <div className={`p-2 rounded border ${step >= 1 ? 'bg-emerald-900 text-amber-300 border-emerald-900' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+          <div className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             1. Category & Head Code
           </div>
-          <div className={`p-2 rounded border ${step >= 2 ? 'bg-emerald-900 text-amber-300 border-emerald-900' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+          <div className={`p-2 rounded border ${step >= 2 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             2. Financial Breakdown
           </div>
-          <div className={`p-2 rounded border ${step >= 3 ? 'bg-emerald-900 text-amber-300 border-emerald-900' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+          <div className={`p-2 rounded border ${step >= 3 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             3. Review & Gateway
           </div>
         </div>
@@ -279,7 +279,7 @@ export const PaymentWizard: React.FC = () => {
                       onClick={() => !isBlocked && setSelectedHeadId(head.id)}
                       className={`p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-emerald-100/70 border-l-4 border-emerald-900'
+                          ? 'bg-emerald-100/70 border-l-4 border-taxpay-primary'
                           : isBlocked
                           ? 'bg-rose-50/60 opacity-70 cursor-not-allowed'
                           : 'hover:bg-white'
@@ -287,7 +287,7 @@ export const PaymentWizard: React.FC = () => {
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono-plex font-bold text-emerald-950">
+                          <span className="font-mono-plex font-bold text-taxpay-dark">
                             {head.economicCode}
                           </span>
                           <span className="font-semibold text-slate-800">
@@ -332,7 +332,7 @@ export const PaymentWizard: React.FC = () => {
             <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
-                className="px-5 py-2.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>Continue to Financial Amounts</span>
                 <ArrowRight className="w-4 h-4" />
@@ -346,7 +346,7 @@ export const PaymentWizard: React.FC = () => {
           <div className="space-y-5">
             <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
               <span className="text-slate-500 block">Selected Head:</span>
-              <div className="font-mono-plex font-bold text-sm text-emerald-950 mt-0.5">
+              <div className="font-mono-plex font-bold text-sm text-taxpay-dark mt-0.5">
                 {selectedHead?.economicCode} — {selectedHead?.nameEn}
               </div>
               <div className="text-[11px] text-emerald-800 mt-1">
@@ -355,7 +355,7 @@ export const PaymentWizard: React.FC = () => {
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-900">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
                 Payment Component Breakdown
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -418,7 +418,7 @@ export const PaymentWizard: React.FC = () => {
                 <span className="font-bold text-sm text-slate-800">
                   Total Payable Amount:
                 </span>
-                <span className="font-mono-plex font-bold text-xl text-emerald-900">
+                <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
                 </span>
               </div>
@@ -434,7 +434,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
               <button
                 onClick={handleStep2Next}
-                className="px-5 py-2.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>Continue to Review</span>
                 <ArrowRight className="w-4 h-4" />
@@ -457,7 +457,7 @@ export const PaymentWizard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block">e-TIN:</span>
-                  <strong className="font-mono-plex text-emerald-900">{taxpayerProfile.tin}</strong>
+                  <strong className="font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</strong>
                 </div>
                 <div>
                   <span className="text-slate-500 block">Assessment Year:</span>
@@ -465,13 +465,13 @@ export const PaymentWizard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block">Head Code:</span>
-                  <strong className="font-mono-plex text-emerald-900">{selectedHead?.economicCode}</strong>
+                  <strong className="font-mono-plex text-taxpay-dark">{selectedHead?.economicCode}</strong>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                 <span className="font-bold text-sm text-slate-800">Total Remittance:</span>
-                <span className="font-mono-plex font-bold text-xl text-emerald-900">
+                <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
                 </span>
               </div>
@@ -497,7 +497,7 @@ export const PaymentWizard: React.FC = () => {
                     onClick={() => setPaymentMethod(gw.id as any)}
                     className={`p-2.5 rounded-lg border text-xs font-semibold cursor-pointer text-center ${
                       paymentMethod === gw.id
-                        ? 'bg-emerald-900 text-white border-emerald-900'
+                        ? 'bg-taxpay-primary text-white border-taxpay-primary'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                     }`}
                   >
@@ -519,13 +519,13 @@ export const PaymentWizard: React.FC = () => {
               <button
                 disabled={isProcessing}
                 onClick={handleExecutePayment}
-                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span>Transmitting to A-Challan Gateway...</span>
                 ) : (
                   <>
-                    <CreditCard className="w-4 h-4 text-emerald-950" />
+                    <CreditCard className="w-4 h-4 text-taxpay-dark" />
                     <span>Confirm & Pay {formatCurrency(totalAmount, language)}</span>
                   </>
                 )}

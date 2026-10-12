@@ -1,6 +1,23 @@
 @import './styles/office-design.css';
 @import './styles/office-auth-source.css';
 @import "tailwindcss";
+@import "./styles/taxpay-citizen.css";
+
+@theme {
+  --color-taxpay-primary: #2C5EAD;
+  --color-taxpay-dark: #1E4484;
+  --color-taxpay-light: #EAF2FF;
+  --color-taxpay-secondary: #5CA8D8;
+  --color-taxpay-accent: #F4C95D;
+  --color-taxpay-background: #F6F9FE;
+  --color-taxpay-surface: #FFFFFF;
+  --color-taxpay-border: #DDE7F5;
+  --color-taxpay-text: #172033;
+  --color-taxpay-muted: #5F6B7A;
+  --color-taxpay-success: #238636;
+  --color-taxpay-warning: #D97706;
+  --color-taxpay-error: #C62828;
+}
 
 @layer base {
   body {

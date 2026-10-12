@@ -57,59 +57,52 @@ export const PublicLanding: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-12">
-      {/* Hero Banner with Official Crest & Forest Green Theme */}
-      <section className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 text-white rounded-2xl p-6 sm:p-10 shadow-xl border border-emerald-800 relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-3xl relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-2 bg-emerald-800/80 text-amber-300 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-700">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>{preview.gateway}</span>
-          </div>
-
-          <h1 className="font-serif-fraunces text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
-            Seamless & Transparent Income Tax Payments for Bangladesh
-          </h1>
-
-          <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed">
-            {preview.subtitle}
+      {/* Public-first introduction: payment services are discoverable without sign-in. */}
+      <section className="citizen-overview text-white rounded-2xl p-4 sm:p-8 border relative overflow-hidden">
+        <div className="max-w-3xl relative z-10 space-y-3">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
+            <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+            {preview.gateway}
           </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => navigate('office_login')}
-              className="min-h-11 px-4 py-3 border border-amber-300 text-amber-100 hover:bg-emerald-800 rounded-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
-              {language === 'bn' ? 'অফিস লগইন' : 'Office Login'}
+          <h1 className="font-serif-fraunces text-[1.7rem] sm:text-4xl font-bold tracking-tight leading-tight">
+            {language === 'bn' ? 'কর পরিশোধ ও পেমেন্টের অবস্থা' : 'Tax payments and payment status'}
+          </h1>
+          <p className="text-taxpay-light text-sm leading-relaxed">
+            {language === 'bn' ? 'কর পরিশোধের ধরন বাছুন, নমুনা রসিদ খুঁজুন অথবা নির্দেশনা দেখুন। এটি প্রকৃত অর্থ জমার সেবা নয়।' : 'Choose a payment purpose, look up a sample receipt or explore guidance. This demonstration cannot collect real payments.'}
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <button type="button"
+              onClick={() => document.getElementById('taxpay-payment-types')?.scrollIntoView({ behavior: 'smooth' })}
+              className="col-span-2 sm:col-span-1 min-h-11 px-4 py-2.5 bg-taxpay-accent text-taxpay-dark font-bold rounded-lg text-sm inline-flex items-center justify-center gap-2">
+              <CreditCard size={17} aria-hidden="true"/>
+              {language === 'bn' ? 'পেমেন্টের ধরন বাছুন' : 'Choose payment type'}
             </button>
-            <button
-              onClick={() => navigate('wizard')}
-              className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded-lg text-sm sm:text-base flex items-center gap-2 shadow-md transition-all cursor-pointer font-serif-fraunces"
-            >
-              <CreditCard className="w-5 h-5 text-emerald-950" />
-              <span>{t.btnPayNow}</span>
+            <button type="button" onClick={() => navigate('verify')}
+              className="min-h-11 px-3 py-2 rounded-lg border border-white/60 text-white text-xs sm:text-sm font-semibold hover:bg-white/10">
+              {language === 'bn' ? 'পেমেন্টের অবস্থা' : 'Payment status'}
             </button>
-
-            <button
-              onClick={() => navigate('guest')}
-              className="px-5 py-3 bg-emerald-800/80 hover:bg-emerald-800 text-white font-medium rounded-lg text-sm flex items-center gap-2 border border-emerald-700/80 cursor-pointer"
-            >
-              <span>Guest Fast Checkout</span>
-              <ArrowRight className="w-4 h-4 text-emerald-300" />
+            <button type="button" onClick={() => navigate('guidance')}
+              className="min-h-11 px-3 py-2 rounded-lg border border-white/60 text-white text-xs sm:text-sm font-semibold hover:bg-white/10">
+              {language === 'bn' ? 'সহায়তা' : 'Help'}
             </button>
-
-            <button
-              onClick={() => navigate('travel')}
-              className="px-4 py-3 bg-teal-900/60 hover:bg-teal-900 text-teal-200 font-medium rounded-lg text-sm flex items-center gap-2 border border-teal-700/60 cursor-pointer"
-            >
-              <Plane className="w-4 h-4 text-teal-400" />
-              <span>Pay Travel Tax</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-white/90">
+            <button onClick={() => navigate('guest')} className="min-h-11 hover:underline">
+              {language === 'bn' ? 'অতিথি পেমেন্ট' : 'Guest checkout'}
+            </button>
+            <button onClick={() => navigate('travel')} className="min-h-11 hover:underline">
+              {language === 'bn' ? 'ভ্রমণ কর' : 'Travel tax'}
+            </button>
+            <button onClick={() => navigate('office_login')} className="min-h-11 hover:underline">
+              {language === 'bn' ? 'অফিস লগইন' : 'Office login'}
             </button>
           </div>
         </div>
 
         {/* Floating Quick Challan Lookup Box */}
-        <div className="mt-8 pt-6 border-t border-emerald-800/80 max-w-2xl">
+        <div className="mt-8 pt-6 border-t border-taxpay-primary/80 max-w-2xl">
           <form onSubmit={handleQuickLookup} className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-200">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-taxpay-light">
               {preview.lookup}
             </label>
             <div className="flex gap-2">
@@ -120,12 +113,12 @@ export const PublicLanding: React.FC = () => {
                   placeholder="Enter Challan No (AC-...), Token (TKN-...), or Txn ID"
                   value={quickSearch}
                   onChange={(e) => setQuickSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-emerald-900/60 border border-emerald-700 text-white placeholder-emerald-400/70 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-taxpay-dark/60 border border-taxpay-primary text-white placeholder-emerald-400/70 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
               <button
                 type="submit"
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs sm:text-sm font-semibold rounded-lg cursor-pointer whitespace-nowrap"
+                className="px-4 py-2 bg-taxpay-primary hover:bg-taxpay-primary text-white text-xs sm:text-sm font-semibold rounded-lg cursor-pointer whitespace-nowrap"
               >
                 Verify Status
               </button>
@@ -141,7 +134,7 @@ export const PublicLanding: React.FC = () => {
       </section>
 
       {/* 7 Core Payment Categories Grid */}
-      <section className="space-y-4">
+      <section id="taxpay-payment-types" className="space-y-4 scroll-mt-24">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-serif-fraunces text-2xl font-bold text-slate-900">
@@ -153,7 +146,7 @@ export const PublicLanding: React.FC = () => {
           </div>
           <button
             onClick={() => navigate('head_catalogue')}
-            className="min-h-11 text-xs font-semibold text-emerald-800 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 flex items-center gap-1"
+            className="min-h-11 text-xs font-semibold text-taxpay-dark hover:text-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 flex items-center gap-1"
           >
             <span>Browse Original Heads (170)</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -162,21 +155,22 @@ export const PublicLanding: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(CATEGORY_LABELS).map(([key, label], idx) => (
-            <div
-              key={key}
-              onClick={() => navigate('wizard', { initialCategory: key })}
-              className="bg-white border border-slate-200 hover:border-emerald-600 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
-            >
+            <div key={key} className="relative bg-white border border-slate-200 hover:border-taxpay-primary rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between">
+              <button type="button"
+                className="absolute inset-0 z-10 rounded-xl w-full focus-visible:outline focus-visible:outline-3 focus-visible:outline-taxpay-primary"
+                aria-label={(language === 'bn' ? label.bn : label.en) + (language === 'bn' ? ' পেমেন্ট শুরু করুন' : ' — start guest payment')}
+                onClick={() => navigate(key === 'SOURCE_TAX_DEPOSIT' ? 'guestwh' : 'guest', { initialCategory: key })}>
+              </button>
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold text-xs group-hover:bg-emerald-900 group-hover:text-amber-300 transition-colors">
+                  <span className="w-8 h-8 rounded-lg bg-emerald-50 text-taxpay-dark flex items-center justify-center font-bold text-xs group-hover:bg-taxpay-dark group-hover:text-amber-300 transition-colors">
                     0{idx + 1}
                   </span>
                   <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                     {key.replace(/_/g, ' ')}
                   </span>
                 </div>
-                <h3 className="font-serif-fraunces font-bold text-base text-slate-900 group-hover:text-emerald-900 transition-colors">
+                <h3 className="font-serif-fraunces font-bold text-base text-slate-900 group-hover:text-taxpay-dark transition-colors">
                   {language === 'bn' ? label.bn : label.en}
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -184,7 +178,7 @@ export const PublicLanding: React.FC = () => {
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-800 group-hover:text-emerald-950">
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-taxpay-dark group-hover:text-taxpay-dark">
                 <span>Start Payment</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -196,7 +190,7 @@ export const PublicLanding: React.FC = () => {
       {/* Highlights & Portals Matrix */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-slate-900 text-white rounded-xl p-6 space-y-3">
-          <div className="w-10 h-10 rounded-lg bg-emerald-800 flex items-center justify-center text-amber-300">
+          <div className="w-10 h-10 rounded-lg bg-taxpay-primary flex items-center justify-center text-amber-300">
             <Users className="w-5 h-5" />
           </div>
           <h3 className="font-serif-fraunces font-bold text-lg">Taxpayer Workspace</h3>
@@ -207,17 +201,17 @@ export const PublicLanding: React.FC = () => {
             onClick={() => navigate('taxpayer_home')}
             className="mt-2 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
           >
-            <span>Enter Taxpayer Portal</span>
+            <span>{language === 'bn' ? 'নমুনা করদাতা দেখুন' : 'View sample taxpayer workspace'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="bg-emerald-900 text-white rounded-xl p-6 space-y-3">
-          <div className="w-10 h-10 rounded-lg bg-emerald-800 flex items-center justify-center text-amber-300">
+        <div className="bg-taxpay-dark text-white rounded-xl p-6 space-y-3">
+          <div className="w-10 h-10 rounded-lg bg-taxpay-primary flex items-center justify-center text-amber-300">
             <Building2 className="w-5 h-5" />
           </div>
           <h3 className="font-serif-fraunces font-bold text-lg">Withholding Agent Mode</h3>
-          <p className="text-xs text-emerald-100 leading-relaxed">
+          <p className="text-xs text-taxpay-light leading-relaxed">
             {preview.withholding}
           </p>
           <button

@@ -73,7 +73,7 @@ export const IncidentReporting: React.FC = () => {
         </div>
 
         {submittedTicket && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-1">
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <span>Incident Ticket Logged: {submittedTicket}</span>
@@ -249,7 +249,7 @@ export const IncidentReporting: React.FC = () => {
               </p>
 
               {inc.officerFindings && (
-                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900">
+                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-taxpay-dark">
                   <strong>Officer Resolution Findings:</strong> {inc.officerFindings}
                 </div>
               )}

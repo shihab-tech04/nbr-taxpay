@@ -24,7 +24,7 @@ interface GuestPaymentProps {
 }
 
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false }) => {
-  const { language, navigate, addPaymentReceipt } = useTaxState();
+  const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
 
   // Wizard state steps: 1: Taxpayer & Identification, 2: Head & Amount, 3: Review & Gateway, 4: Receipt
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -49,10 +49,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   // Category and Head selection
   const [category, setCategory] = useState<PaymentCategory>(
-    isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : 'TAX_WITH_RETURN'
+    isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : ((routeParams?.initialCategory as PaymentCategory) || 'TAX_WITH_RETURN')
   );
   const [selectedHeadId, setSelectedHeadId] = useState<number>(
-    isWithholdingMode ? 59 : 1
+    isWithholdingMode ? 59 : (MASTER_PAYMENT_HEADS.find(h => h.category === routeParams?.initialCategory)?.id || 1)
   );
   const [headSearch, setHeadSearch] = useState('');
 
@@ -76,6 +76,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
   }, [isWithholdingMode]);
 
+  useEffect(() => {
+    if (!isWithholdingMode && routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
+      const next = routeParams.initialCategory as PaymentCategory;
+      setCategory(next);
+      const firstHead = MASTER_PAYMENT_HEADS.find(h => h.category === next && !BLOCKED_HEAD_IDS.includes(h.id));
+      if (firstHead) setSelectedHeadId(firstHead.id);
+    }
+  }, [routeParams, isWithholdingMode]);
+
   // Filter available heads
   const availableHeads = MASTER_PAYMENT_HEADS.filter(head => {
     const matchCat = head.category === category;
@@ -87,7 +96,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return matchCat && matchQuery;
   });
 
-  const selectedHead = MASTER_PAYMENT_HEADS.find(h => h.id === selectedHeadId) || availableHeads[0];
+  const selectedHead = availableHeads.find(h => h.id === selectedHeadId) || availableHeads[0];
 
   const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
 
@@ -192,7 +201,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   if (step === 4 && createdReceipt) {
     return (
       <div className="space-y-6">
-        <div className="no-print p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-950 flex items-center justify-between">
+        <div className="no-print p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
@@ -207,7 +216,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               setStep(1);
               setCreatedReceipt(null);
             }}
-            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-emerald-900 cursor-pointer"
+            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
           >
             Initiate Another Payment
           </button>
@@ -230,7 +239,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               {isWithholdingMode ? 'Source Tax Deposit (TDS / TCS)' : 'Guest Income Tax Payment'}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Pay government taxes directly into Treasury without needing a registered portal login.
+              Explore illustrative guest payment steps without a live Treasury or payment gateway connection.
+            </p>
+            <p className="mt-2 text-xs font-semibold text-taxpay-dark" aria-live="polite">
+              Selected purpose: {CATEGORY_LABELS[category]?.en || 'Under review'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -242,13 +254,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
         {/* Stepper Progress */}
         <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-center mb-6">
-          <div className={`p-2 rounded border ${step >= 1 ? 'bg-emerald-900 text-amber-300 border-emerald-900' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+          <div className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             1. Payer & TIN Info
           </div>
-          <div className={`p-2 rounded border ${step >= 2 ? 'bg-emerald-900 text-amber-300 border-emerald-900' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+          <div className={`p-2 rounded border ${step >= 2 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             2. Head & Calculation
           </div>
-          <div className={`p-2 rounded border ${step >= 3 ? 'bg-emerald-900 text-amber-300 border-emerald-900' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+          <div className={`p-2 rounded border ${step >= 3 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             3. Review & Gateway
           </div>
         </div>
@@ -273,7 +285,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder="12-digit e-TIN format (demo only)"
                   value={tin}
                   onChange={(e) => setTin(e.target.value.replace(/\s+/g, ''))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-mono-plex"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
                 <span className="text-[11px] text-slate-500 mt-1 block">
                   12-digit format for demonstration only; no government identity check is performed.
@@ -289,7 +301,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder="Full name as registered on TIN certificate"
                   value={payerName}
                   onChange={(e) => setPayerName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 />
               </div>
 
@@ -300,7 +312,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <select
                   value={assessmentYear}
                   onChange={(e) => setAssessmentYear(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 >
                   {ASSESSMENT_YEARS.map(ay => (
                     <option key={ay} value={ay}>{ay}</option>
@@ -337,7 +349,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder="Contact number (demo only)"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-mono-plex"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
               </div>
 
@@ -350,7 +362,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder="taxpayer@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 />
               </div>
             </div>
@@ -397,7 +409,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   type="checkbox"
                   checked={isRepresentative}
                   onChange={(e) => setIsRepresentative(e.target.checked)}
-                  className="rounded text-emerald-800 focus:ring-emerald-700"
+                  className="rounded text-emerald-800 focus:ring-taxpay-primary"
                 />
                 <span>I am an authorized legal representative paying on behalf of this taxpayer</span>
               </label>
@@ -431,7 +443,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
-                className="px-5 py-2.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>Continue to Payment Head</span>
                 <ArrowRight className="w-4 h-4" />
@@ -457,7 +469,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   const firstInCat = MASTER_PAYMENT_HEADS.find(h => h.category === newCat);
                   if (firstInCat) setSelectedHeadId(firstInCat.id);
                 }}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-medium"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
               >
                 {Object.entries(CATEGORY_LABELS).map(([catKey, label]) => (
                   <option key={catKey} value={catKey}>
@@ -492,7 +504,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                       onClick={() => !isBlocked && setSelectedHeadId(head.id)}
                       className={`p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-emerald-100/70 border-l-4 border-emerald-900'
+                          ? 'bg-emerald-100/70 border-l-4 border-taxpay-primary'
                           : isBlocked
                           ? 'bg-rose-50/60 opacity-70 cursor-not-allowed'
                           : 'hover:bg-white'
@@ -500,7 +512,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono-plex font-bold text-emerald-950">
+                          <span className="font-mono-plex font-bold text-taxpay-dark">
                             {head.economicCode}
                           </span>
                           <span className="font-semibold text-slate-800">
@@ -549,7 +561,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
             {/* Financial Amounts Breakdown */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-900">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
                 Payment Amount Breakdown (BDT)
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -612,7 +624,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <span className="font-bold text-sm text-slate-800">
                   Total Payable Amount:
                 </span>
-                <span className="font-mono-plex font-bold text-lg text-emerald-900">
+                <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
                 </span>
               </div>
@@ -628,7 +640,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
               <button
                 onClick={handleStep2Next}
-                className="px-5 py-2.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>Continue to Review & Gateway</span>
                 <ArrowRight className="w-4 h-4" />
@@ -654,7 +666,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   </div>
                   <div>
                     <span className="text-slate-500">e-TIN:</span>{' '}
-                    <strong className="font-mono-plex text-emerald-900">{tin}</strong>
+                    <strong className="font-mono-plex text-taxpay-dark">{tin}</strong>
                   </div>
                   <div>
                     <span className="text-slate-500">Assessment Year:</span>{' '}
@@ -673,7 +685,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   </div>
                   <div>
                     <span className="text-slate-500">Head Code:</span>{' '}
-                    <strong className="font-mono-plex text-emerald-900">{selectedHead?.economicCode}</strong>
+                    <strong className="font-mono-plex text-taxpay-dark">{selectedHead?.economicCode}</strong>
                   </div>
                   <div>
                     <span className="text-slate-500">Head Title:</span>{' '}
@@ -689,7 +701,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
                 <span className="font-bold text-sm text-slate-800">Grand Total BDT:</span>
-                <span className="font-mono-plex font-bold text-xl text-emerald-900">
+                <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
                 </span>
               </div>
@@ -715,7 +727,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     onClick={() => setPaymentMethod(gw.id as any)}
                     className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
                       paymentMethod === gw.id
-                        ? 'bg-emerald-900 text-white border-emerald-900 shadow-sm'
+                        ? 'bg-taxpay-primary text-white border-taxpay-primary shadow-sm'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
                     }`}
                   >
@@ -748,13 +760,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <button
                 disabled={isProcessing}
                 onClick={handleExecutePayment}
-                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span>Processing Treasury Gateway...</span>
                 ) : (
                   <>
-                    <CreditCard className="w-4 h-4 text-emerald-950" />
+                    <CreditCard className="w-4 h-4 text-taxpay-dark" />
                     <span>Confirm & Pay {formatCurrency(totalAmount, language)}</span>
                   </>
                 )}

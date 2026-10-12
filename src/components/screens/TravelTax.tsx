@@ -99,7 +99,7 @@ export const TravelTax: React.FC = () => {
   if (createdReceipt) {
     return (
       <div className="space-y-6">
-        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-950 flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
@@ -111,7 +111,7 @@ export const TravelTax: React.FC = () => {
           </div>
           <button
             onClick={() => setCreatedReceipt(null)}
-            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-emerald-900 cursor-pointer"
+            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
           >
             New Travel Tax
           </button>
@@ -293,13 +293,13 @@ export const TravelTax: React.FC = () => {
             <button
               type="submit"
               disabled={isProcessing}
-              className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded-lg text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+              className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
             >
               {isProcessing ? (
                 <span>Generating Travel Challan...</span>
               ) : (
                 <>
-                  <CreditCard className="w-4 h-4 text-emerald-950" />
+                  <CreditCard className="w-4 h-4 text-taxpay-dark" />
                   <span>Pay Travel Tax & Get Token</span>
                 </>
               )}
