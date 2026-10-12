@@ -27,7 +27,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   };
   const ownerA = await createOwner();
   const ownerB = await createOwner();
-  const contextA = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  const contextA = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport: { width: 375, height: 812 } });
   const pageA = await contextA.newPage();
   const s = ownerA.session;
   await pageA.goto('/?action=secure_workspace#access_token=' + encodeURIComponent(s.access_token) +
@@ -63,9 +63,9 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(otherTab.getByRole('status').filter({ hasText: 'Private draft changes saved' })).toBeVisible();
   await otherTab.reload();
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
-  await expect(otherTab.getByText('124.50')).toBeVisible();
+  await expect(otherTab.getByText(/124\.50/)).toBeVisible();
 
-  const contextB = await browser.newContext({ viewport: { width: 320, height: 720 } });
+  const contextB = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport: { width: 320, height: 720 } });
   const pageB = await contextB.newPage();
   const b = ownerB.session;
   await pageB.goto('/?action=secure_workspace#access_token=' + encodeURIComponent(b.access_token) +
