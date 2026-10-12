@@ -13,48 +13,12 @@ import { useTaxState } from '../../services/taxState';
 
 export const ConnectedServices: React.FC = () => {
   const services = [
-    {
-      name: 'NBR e-Return Portal (etaxnbr.gov.bd)',
-      acronym: 'eReturn',
-      role: 'Annual Income Tax Return Electronic Filing',
-      status: 'LINKED',
-      lastSync: '10 mins ago',
-      features: 'Automatic tax credit sync, Form 173 payment attachment'
-    },
-    {
-      name: 'Central Tax Ledger (e-Ledger Core)',
-      acronym: 'eLedger',
-      role: 'Tax Credit & Demand Reconciliation Accounting Engine',
-      status: 'LINKED',
-      lastSync: 'Real-time via webhook',
-      features: 'Double-entry debit/credit posting, advance tax credit recognition'
-    },
-    {
-      name: 'e-TDS Withholding Tax Monitoring System',
-      acronym: 'eTDS',
-      role: 'Chapter VII Withholding Deductee Credit Verification',
-      status: 'LINKED',
-      lastSync: 'Real-time via webhook',
-      features: 'Deductee TIN matching, Form 54 certificate verification'
-    },
-    {
-      name: 'Automated Challan System (ACS A-Challan)',
-      acronym: 'A-Challan',
-      role: 'Bangladesh Bank Government Treasury Collection Engine',
-      status: 'LINKED',
-      lastSync: 'Active gateway session',
-      features: 'Instant treasury scroll assignment, 13-digit code validation'
-    },
-    {
-      name: 'Central e-TIN Registry (incometax.gov.bd)',
-      acronym: 'e-TIN',
-      role: 'Taxpayer Master Identification & Jurisdiction Lookup',
-      status: 'LINKED',
-      lastSync: 'On-demand verification',
-      features: '12-digit format check, circle & zone routing'
-    }
+    {name:'NBR e-Return',acronym:'eReturn',role:'Tax return service',status:'NOT CONNECTED',lastSync:'Never',features:'No return data or credit synchronization is configured.'},
+    {name:'e-Ledger',acronym:'eLedger',role:'Tax ledger service',status:'NOT CONNECTED',lastSync:'Never',features:'No authoritative liability, payment, credit or reconciliation exchange is configured.'},
+    {name:'e-TDS',acronym:'eTDS',role:'Withholding records',status:'NOT CONNECTED',lastSync:'Never',features:'No withholding certificate verification or deductee-credit import is configured.'},
+    {name:'Automated Challan System',acronym:'A-Challan',role:'Treasury payment evidence',status:'NOT CONNECTED',lastSync:'Never',features:'No live Treasury scroll, official receipt or gateway session is available.'},
+    {name:'e-TIN Registry',acronym:'e-TIN',role:'Taxpayer identification',status:'NOT CONNECTED',lastSync:'Never',features:'No real TIN registry verification or jurisdiction lookup is configured.'},
   ];
-
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -64,10 +28,10 @@ export const ConnectedServices: React.FC = () => {
           </div>
           <div>
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              Connected National Tax e-Services
+              External services — integration status
             </h1>
             <p className="text-xs text-slate-500">
-              Integrated national tax infrastructure status, single sign-on federation, and automatic data exchange.
+              Planned connections only. This independent TaxPay demonstration has no authenticated exchange with these government systems.
             </p>
           </div>
         </div>
@@ -84,17 +48,17 @@ export const ConnectedServices: React.FC = () => {
                 </div>
                 <p className="text-slate-600">{srv.role}</p>
                 <div className="text-[11px] text-slate-500 font-mono">
-                  Capabilities: {srv.features}
+                  Current boundary: {srv.features}
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-1.5">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>{srv.status}</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
-                  Sync: {srv.lastSync}
+                  Last successful sync: {srv.lastSync}
                 </span>
               </div>
             </div>
