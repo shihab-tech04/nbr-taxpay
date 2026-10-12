@@ -3,6 +3,7 @@ import { TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { Footer } from './components/layout/Footer';
+import { CitizenFooter } from './components/layout/CitizenFooter';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 
@@ -150,7 +151,7 @@ const MainRouter: React.FC = () => {
           </section>
         ) : renderActiveScreen()}
       </main>
-      <Footer />
+      {officerRoute ? <Footer /> : <CitizenFooter />}
       <ParityRegisterModal />
     </div>
   );
