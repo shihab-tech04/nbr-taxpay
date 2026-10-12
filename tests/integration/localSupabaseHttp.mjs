@@ -1,11 +1,44 @@
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
 const rawUrl = process.env.TAXPAY_LOCAL_SUPABASE_URL;
 const anonKey = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
 if (!rawUrl || !anonKey) {
   throw new Error('Set TAXPAY_LOCAL_SUPABASE_URL and TAXPAY_LOCAL_SUPABASE_ANON_KEY from the local Supabase CLI status output.');
 }
+
+/** This integration must not count an HTTP read as proof of direct PostgreSQL persistence.
+ * The DSN must target the SAME loopback Supabase PostgreSQL process as PostgREST.
+ * The test fails rather than silently passing if that independent SQL channel is absent.
+ */
+const directDsn = process.env.TAXPAY_LOCAL_PG_DSN;
+if (!directDsn) throw new Error('BLOCKED: set TAXPAY_LOCAL_PG_DSN to the local stack PostgreSQL URI. Direct SQL verification is mandatory.');
+const directPgUrl = new URL(directDsn);
+if (!['postgresql:', 'postgres:'].includes(directPgUrl.protocol) ||
+    !['127.0.0.1', 'localhost', '[::1]'].includes(directPgUrl.hostname) ||
+    !directPgUrl.pathname || directPgUrl.pathname === '/') {
+  throw new Error('Refusing direct SQL verification: DSN must reference a loopback PostgreSQL database.');
+}
+function directSqlDraft(id, amountMinor) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid synthetic draft UUID');
+  const query = `select json_build_object('database', current_database(), 'id', id, 'amount_minor', amount_minor, 'status', record_status)
+    from public.taxpay_payment_drafts where id = '${id}'::uuid;`;
+  const result = spawnSync('psql', ['--no-psqlrc', '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--command', query], {
+    env: { ...process.env, PGHOST: directPgUrl.hostname, PGPORT: directPgUrl.port || '5432',\n      PGDATABASE: decodeURIComponent(directPgUrl.pathname.slice(1)),\n      PGUSER: decodeURIComponent(directPgUrl.username), PGPASSWORD: decodeURIComponent(directPgUrl.password),\n      PGCONNECT_TIMEOUT: '5' },
+    encoding: 'utf8', timeout: 12000, input: undefined,
+    // Pass DSN through PG* environment rather than as a command-line argument.
+  });
+  if (result.error || result.status !== 0) throw new Error('BLOCKED: direct loopback PostgreSQL query failed; verify local psql, connection target and credentials.');
+  const lines = result.stdout.trim().split(/\\r?\\n/).filter(Boolean);
+  assert.equal(lines.length, 1, 'HTTP draft not found in independently queried PostgreSQL; inspect connection targets and migration history');
+  const row = JSON.parse(lines[0]);
+  assert.equal(row.id, id);
+  assert.equal(row.amount_minor, amountMinor);
+  assert.equal(row.status, 'DRAFT');
+  return row.database;
+}
+
 const base = new URL(rawUrl);
 if (base.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(base.hostname)) {
   throw new Error('Refusing to run: the configured Supabase URL is not an HTTP loopback address.');
@@ -135,6 +168,10 @@ async function createDraft(owner, amountMinor, memo) {
 
 const draftA = await createDraft(ownerA, 1250, 'Synthetic owner A');
 const draftB = await createDraft(ownerB, 2400, 'Synthetic owner B');
+const databaseA = directSqlDraft(draftA.id, 1250);
+const databaseB = directSqlDraft(draftB.id, 2400);
+assert.equal(databaseA, databaseB, 'Synthetic owners must connect to the same direct PostgreSQL database');
+pass('HTTP insert verified by independent loopback PostgreSQL read-back for both owners');
 for (const [owner, ownDraft, otherDraft] of [[ownerA, draftA, draftB], [ownerB, draftB, draftA]]) {
   const rows = await request('/rest/v1/taxpay_payment_drafts?select=id,owner_uid,amount_minor,memo,record_status', { token: owner.access_token });
   assert.equal(rows.response.status, 200);
@@ -159,6 +196,8 @@ const update = await request(`/rest/v1/taxpay_payment_drafts?id=eq.${draftA.id}&
 });
 assert.equal(update.response.status, 200);
 assert.deepEqual(update.data, [{ id: draftA.id, amount_minor: 1350, memo: 'Synthetic owner A resumed edit', record_status: 'DRAFT' }]);
+directSqlDraft(draftA.id, 1350);
+pass('HTTP resumed update read back independently from PostgreSQL');
 await expectDenied(`/rest/v1/taxpay_payment_drafts?id=eq.${draftA.id}`, {
   method: 'PATCH', token: ownerA.access_token, body: { record_status: 'SETTLED' },
 });
