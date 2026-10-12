@@ -1,0 +1,83 @@
+name: TaxPay Phase 02 - disposable Auth, RLS and draft persistence
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-backend:
+    name: Isolated local Supabase acceptance (no hosted credentials)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare direct PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Start isolated disposable Supabase (no cloud link)
+        run: |
+          # Intentionally no `supabase link`, project reference, hosted credentials or db push.
+          supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+
+      - name: Export only local synthetic API and SQL endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY|DB_URL)=' |
+            sed -e 's/^API_URL=/TAXPAY_LOCAL_SUPABASE_URL=/' \
+                -e 's/^ANON_KEY=/TAXPAY_LOCAL_SUPABASE_ANON_KEY=/' \
+                -e 's/^DB_URL=/TAXPAY_LOCAL_PG_DSN=/' >> "$GITHUB_ENV"
+          grep -q '^TAXPAY_LOCAL_SUPABASE_URL=' "$GITHUB_ENV"
+          grep -q '^TAXPAY_LOCAL_SUPABASE_ANON_KEY=' "$GITHUB_ENV"
+          grep -q '^TAXPAY_LOCAL_PG_DSN=' "$GITHUB_ENV"
+          echo "TAXPAY_LOCAL_RECOVERY_FILE=$RUNNER_TEMP/taxpay-restart-$GITHUB_RUN_ID.json" >> "$GITHUB_ENV"
+
+      - name: Verify applied migration count and owner-update grants
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 7
+          test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
+          test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
+          echo "PASS: seven migrations installed and five safe owner-update columns granted"
+
+      - name: Run real local Auth + PostgREST + direct SQL ownership checks
+        run: npm run test:integration:local
+
+      - name: Restart disposable database services without deleting volumes
+        run: |
+          supabase stop
+          supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+
+      - name: Reauthenticate both synthetic owners and verify exact rows after restart
+        run: node tests/integration/localDraftRestartReadBack.mjs
+
+      - name: Remove disposable synthetic credentials
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${TAXPAY_LOCAL_RECOVERY_FILE:-}" ]; then rm -f -- "$TAXPAY_LOCAL_RECOVERY_FILE"; fi
+          echo "No hosted Supabase project was linked or changed."
