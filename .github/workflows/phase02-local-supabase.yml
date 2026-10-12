@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: taxpay-phase02-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   disposable-backend:
     name: Isolated local Supabase acceptance (no hosted credentials)
