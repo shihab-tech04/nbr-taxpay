@@ -149,7 +149,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toHaveCount(0);
   // Mobile profile menu must execute actual local Auth sign-out, not a demo role switch.
   await pageB.goto('/?action=account_profile');
-  await expect(pageB.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
+  await expect(pageB.getByRole('heading', { name: 'Profile', exact: true, level: 1 })).toBeVisible();
   await pageB.getByRole('button', { name: 'Open menu' }).click();
   await pageB.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Sign out' }).click();
   await expect(pageB.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
