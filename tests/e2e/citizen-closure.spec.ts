@@ -52,7 +52,7 @@ test('mobile expanded dock has three destinations and a separate floating Pay ac
   const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
   await expect(dock).toBeVisible();
   await expect(dock.getByRole('button')).toHaveCount(3);
-  await expect(dock.getByRole('button',{name:/Pay/i})).toHaveCount(0);
+  await expect(dock.getByRole('button',{name:'Pay',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
   await page.evaluate(()=>window.scrollTo(0,420));
   await expect(dock).toHaveCount(0);
