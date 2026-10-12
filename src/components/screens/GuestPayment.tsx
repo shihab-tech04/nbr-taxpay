@@ -241,6 +241,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <p className="text-xs text-slate-500 mt-0.5">
               Explore illustrative guest payment steps without a live Treasury or payment gateway connection.
             </p>
+            <p className="mt-2 text-xs font-semibold text-taxpay-dark" aria-live="polite">
+              Selected purpose: {CATEGORY_LABELS[category]?.en || 'Under review'}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
