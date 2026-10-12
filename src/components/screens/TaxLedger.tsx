@@ -1,20 +1,11 @@
 import React from 'react';
-import { 
-  BookOpen, 
-  Download, 
-  CheckCircle2, 
-  AlertCircle, 
-  Building2, 
-  ShieldCheck,
-  TrendingDown,
-  TrendingUp,
-  CreditCard
-} from 'lucide-react';
+import { BookOpen, Download, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
 
 export const TaxLedger: React.FC = () => {
-  const { ledgerEntries, taxpayerProfile, language, navigate } = useTaxState();
+  const { ledgerEntries, language } = useTaxState();
+  const bn = language === 'bn';
 
   const totalDebits = ledgerEntries.reduce((acc, curr) => acc + curr.debit, 0);
   const totalCredits = ledgerEntries.reduce((acc, curr) => acc + curr.credit, 0);
@@ -30,10 +21,10 @@ export const TaxLedger: React.FC = () => {
             </div>
             <div>
               <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-                Illustrative Tax Ledger (not NBR verified)
+                {bn ? 'নমুনা লেজার (এনবিআর যাচাইকৃত নয়)' : 'Illustrative tax ledger (not NBR verified)'}
               </h1>
               <p className="text-xs text-slate-500">
-                Taxpayer e-TIN: <strong className="font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</strong> | Circle: {taxpayerProfile.taxCircle}
+                {bn ? 'শেয়ার করা নমুনা লেনদেন; কোনো করদাতার ব্যক্তিগত ব্যালেন্স নয়।' : 'Shared demonstration entries — not attributable to a specific taxpayer or TIN.'}
               </p>
             </div>
           </div>
@@ -44,30 +35,25 @@ export const TaxLedger: React.FC = () => {
                 const element = document.createElement('a');
                 const file = new Blob([JSON.stringify(ledgerEntries, null, 2)], { type: 'application/json' });
                 element.href = URL.createObjectURL(file);
-                element.download = `TaxLedger_${taxpayerProfile.tin}.json`;
+                element.download = 'TaxPay_shared_ledger_sample_NOT_OFFICIAL.json';
                 document.body.appendChild(element);
                 element.click();
                 document.body.removeChild(element);
+                URL.revokeObjectURL(element.href);
               }}
               className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export Ledger</span>
+              <span>{bn ? 'নমুনা লেজার নিন' : 'Export sample data'}</span>
             </button>
-            <button
-              onClick={() => navigate('wizard')}
-              className="px-4 py-2 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Deposit Tax</span>
-            </button>
+
           </div>
         </div>
 
         {/* Ledger Balance Highlights */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-xs">
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-slate-500 block">Total Assessed Debits (Liabilities):</span>
+            <span className="text-slate-500 block">{bn ? 'নমুনা ডেবিট (যাচাই হয়নি)' : 'Shared sample debits (unverified)'}</span>
             <div className="flex items-center gap-2 mt-1">
               <TrendingDown className="w-4 h-4 text-rose-600" />
               <span className="font-mono-plex font-bold text-lg text-rose-800">
@@ -77,7 +63,7 @@ export const TaxLedger: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-slate-500 block">Illustrative Credit Entries (unverified):</span>
+            <span className="text-slate-500 block">{bn ? 'নমুনা ক্রেডিট (যাচাই হয়নি)' : 'Shared sample credits (unverified)'}</span>
             <div className="flex items-center gap-2 mt-1">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
@@ -87,7 +73,7 @@ export const TaxLedger: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300">
-            <span className="text-emerald-800 font-medium block">Example Net Position (not recognized):</span>
+            <span className="text-emerald-800 font-medium block">{bn ? 'নমুনা হিসাবের পার্থক্য' : 'Shared sample difference (not recognized)'}</span>
             <div className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1">
               {netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}`}
             </div>
@@ -98,7 +84,7 @@ export const TaxLedger: React.FC = () => {
         </div>
 
         <p className="mb-4 text-xs text-slate-600">
-          These are fictional shared ledger fixtures without verified taxpayer ownership. They must not be used as credit balances or reconciliation evidence.
+          {bn ? 'এগুলো যৌথ নমুনা তথ্য; কোনো ব্যক্তির কর ক্রেডিট, বকেয়া বা সমন্বয়ের প্রমাণ নয়।' : 'These fictional shared records have no verified taxpayer owner. They are not a personal balance, tax demand, tax credit, or reconciliation evidence.'}
         </p>
         <div className="grid gap-3 md:hidden">
           {ledgerEntries.map(entry => (

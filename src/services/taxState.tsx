@@ -54,9 +54,9 @@ const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
-    // Office login is the landing entry. Explicit deep links keep their existing routes.
+    // Public payment discovery is the primary citizen entry. The existing office-login demo remains available by explicit deep link.
     const action = new URLSearchParams(window.location.search).get('action');
-    return action || 'office_login';
+    return action || 'landing';
   });
   const [routeParams, setRouteParams] = useState<Record<string, any>>({});
   const [language, setLanguage] = useState<Language>('en');
@@ -94,7 +94,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const onPopState = (event: PopStateEvent) => {
-      const route = new URLSearchParams(window.location.search).get('action') || 'office_login';
+      const route = new URLSearchParams(window.location.search).get('action') || 'landing';
       setCurrentRoute(route);
       setRouteParams(event.state?.taxpayParams || {});
       window.scrollTo({ top: 0, behavior: 'instant' });

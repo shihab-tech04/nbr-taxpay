@@ -1,231 +1,152 @@
 import React, { useState } from 'react';
-import { 
-  History, 
-  Search, 
-  Filter, 
-  Download, 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle,
-  Building2,
-  CreditCard,
-  Plus
-} from 'lucide-react';
+import { ArrowRight, Download, Search } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import { formatCurrency } from '../../services/numberFormat';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
-import { PaymentCategory } from '../../types/tax';
+import { CATEGORY_LABELS } from '../../data/paymentHeads';
+import { formatCurrency } from '../../services/numberFormat';
+import type { ChallanReceipt, PaymentCategory } from '../../types/tax';
+
+const statusText: Record<string, {en:string; bn:string}> = {
+  INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
+  GATEWAY_PENDING:{en:'Payment pending',bn:'পেমেন্ট অপেক্ষমাণ'},
+  GATEWAY_SUCCESS:{en:'Gateway completed (sample)',bn:'গেটওয়ে সম্পন্ন (নমুনা)'},
+  TREASURY_SCROLLED:{en:'Treasury recorded (sample)',bn:'ট্রেজারিতে নথিভুক্ত (নমুনা)'},
+  FAILED:{en:'Failed',bn:'ব্যর্থ'},
+  EXPIRED:{en:'Expired',bn:'মেয়াদ শেষ'},
+  REVERSED:{en:'Reversed',bn:'প্রত্যাবর্তিত'},
+  NOT_APPLICABLE:{en:'Not applicable',bn:'প্রযোজ্য নয়'},
+  PENDING_RECONCILIATION:{en:'Reconciliation pending',bn:'সমন্বয় অপেক্ষমাণ'},
+  CREDITED_TO_LEDGER:{en:'Credited (sample only)',bn:'ক্রেডিট (শুধু নমুনা)'},
+  CLAIMED_IN_RETURN:{en:'Claimed (sample only)',bn:'দাবিকৃত (শুধু নমুনা)'},
+  DISPUTED:{en:'Disputed',bn:'বিরোধপূর্ণ'}
+};
+
+const escapeCsv = (value: unknown) => {
+  let raw = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(raw)) raw = "'" + raw;
+  return '"' + raw.replace(/"/g, '""') + '"';
+};
 
 export const PaymentHistory: React.FC = () => {
-  const { receipts, selectReceipt, navigate, language, taxpayerProfile } = useTaxState();
-
-  const [search, setSearch] = useState('');
-  const [selectedAY, setSelectedAY] = useState<string>('ALL');
-  const [selectedCat, setSelectedCat] = useState<string>('ALL');
-
-  const filteredReceipts = receipts.filter(r => {
-    // A sample taxpayer never lists another example profile's receipts.
-    if (r.payerTin !== taxpayerProfile.tin) return false;
-    const matchSearch = search
-      ? r.challanNo.toLowerCase().includes(search.toLowerCase()) ||
-        r.tokenNumber.toLowerCase().includes(search.toLowerCase()) ||
-        r.payerName.toLowerCase().includes(search.toLowerCase())
-      : true;
-    const matchAY = selectedAY === 'ALL' || r.assessmentYear === selectedAY;
-    const matchCat = selectedCat === 'ALL' || r.paymentCategory === selectedCat;
-    return matchSearch && matchAY && matchCat;
-  });
-
-  const exportCsv = () => {
-    const headers = ['Challan No', 'Token', 'Category', 'Assessment Year', 'Payer Name', 'TIN', 'Amount', 'Date', 'Treasury Status'];
-    const rows = filteredReceipts.map(r => [
-      r.challanNo,
-      r.tokenNumber,
-      r.paymentCategory,
-      r.assessmentYear,
-      `"${r.payerName}"`,
-      r.payerTin,
-      r.totalAmount,
-      r.createdAt,
-      r.treasuryStatus
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `TaxPay_Challans_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const { receipts, selectReceipt, language, taxpayerProfile } = useTaxState();
+  const [query, setQuery] = useState('');
+  const [year, setYear] = useState('ALL');
+  const [category, setCategory] = useState('ALL');
+  const bn = language === 'bn';
+  const label = (en:string,bengali:string)=> bn ? bengali : en;
+  // payerTin is not authoritative taxpayer/credit ownership. Only initiated demo receipts
+  // are visible until a separate beneficiary and entitlement contract has been certified.
+  const filtered = receipts.filter(r => r.payerTin === taxpayerProfile.tin)
+    .filter(r => (r.challanNo + ' ' + r.tokenNumber + ' ' + r.payerName).toLowerCase().includes(query.trim().toLowerCase()))
+    .filter(r => year === 'ALL' || r.assessmentYear === year)
+    .filter(r => category === 'ALL' || r.paymentCategory === category);
+  const categoryText = (value: PaymentCategory) =>
+    bn ? (CATEGORY_LABELS[value]?.bn || value) : (CATEGORY_LABELS[value]?.en || value);
+  const statusLabel = (value:string) => statusText[value] ? (bn ? statusText[value].bn : statusText[value].en) : value;
+  const exportDemo = () => {
+    const headings=['DEMONSTRATION ONLY','Reference','Token','Payment category','Assessment year','Payer TIN (not credit owner)','Amount BDT','Treasury sample status','Credit sample status'];
+    const lines = filtered.map((r:ChallanReceipt)=>[
+      'Not government payment evidence',r.challanNo,r.tokenNumber,r.paymentCategory,r.assessmentYear,r.payerTin,r.totalAmount,r.treasuryStatus,r.taxCreditStatus
+    ].map(escapeCsv).join(','));
+    const csv=[headings.map(escapeCsv).join(','),...lines].join('\r\n');
+    const url=URL.createObjectURL(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='TaxPay_sample_payment_activity.csv';
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center">
-              <History className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-                Payment History & A-Challan Archive
-              </h1>
-              <p className="text-xs text-slate-500">
-                Illustrative payment records for the selected sample taxpayer. Treasury and NBR records are not connected.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={exportCsv}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
-            </button>
-            <button
-              onClick={() => navigate('wizard')}
-              className="px-4 py-2 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Payment</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Filters and Search Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 text-xs">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Search challan, token, or name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 font-mono-plex"
-            />
-          </div>
-
+    <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
+      <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
+        <p className="text-xs font-semibold text-taxpay-dark">{label('Sample records','নমুনা তথ্য')}</p>
+        <h1 className="mt-1 text-2xl font-bold text-taxpay-text">{label('Payments & activity','পেমেন্ট ও লেনদেন')}</h1>
+        <p className="mt-2 text-sm text-taxpay-muted">{label('Payments initiated under this example payer TIN. These records do not establish who receives tax credit.','এই নমুনা পরিশোধকারীর টিআইএন দিয়ে শুরু করা লেনদেন। এগুলো দিয়ে কর ক্রেডিটের মালিকানা নিশ্চিত হয় না।')}</p>
+      </header>
+      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
+        <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <select
-              value={selectedAY}
-              onChange={(e) => setSelectedAY(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
-            >
-              <option value="ALL">All Assessment Years</option>
-              {ASSESSMENT_YEARS.map(ay => (
-                <option key={ay} value={ay}>{ay}</option>
-              ))}
+            <label htmlFor="activity-search" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Search payments','পেমেন্ট খুঁজুন')}</label>
+            <div className="relative">
+              <Search aria-hidden="true" size={17} className="absolute left-3 top-3.5 text-taxpay-muted"/>
+              <input id="activity-search" type="search" value={query} onChange={e=>setQuery(e.target.value)}
+                placeholder={label('Reference or payer','রেফারেন্স বা পরিশোধকারী')}
+                className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white pl-10 pr-3 text-sm text-taxpay-text focus-visible:outline-taxpay-primary"/>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="activity-year" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Assessment year','করবর্ষ')}</label>
+            <select id="activity-year" value={year} onChange={e=>setYear(e.target.value)}
+              className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+              <option value="ALL">{label('All years','সব করবর্ষ')}</option>
+              {ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}
             </select>
           </div>
-
           <div>
-            <select
-              value={selectedCat}
-              onChange={(e) => setSelectedCat(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
-            >
-              <option value="ALL">All Payment Categories</option>
-              <option value="TAX_WITH_RETURN">Tax with Return</option>
-              <option value="ADVANCE_TAX">Advance Tax</option>
-              <option value="ASSESSED_DEMAND">Assessed Demand</option>
-              <option value="PENALTY">Penalty</option>
-              <option value="SOURCE_TAX_DEPOSIT">Source Tax Deposit</option>
-              <option value="APPELLATE_TRIBUNAL">Appellate Tribunal</option>
-              <option value="OTHER_TAX_PAYMENT">Other Tax Payment</option>
+            <label htmlFor="activity-category" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Payment type','পেমেন্টের ধরন')}</label>
+            <select id="activity-category" value={category} onChange={e=>setCategory(e.target.value)}
+              className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+              <option value="ALL">{label('All types','সব ধরন')}</option>
+              {Object.entries(CATEGORY_LABELS).map(([key,value])=><option key={key} value={key}>{bn?value.bn:value.en}</option>)}
             </select>
           </div>
         </div>
-
-        {/* Mobile-native activity cards retain the same data/actions as the desktop table. */}
-        <div className="grid gap-3 md:hidden">
-          {filteredReceipts.length === 0 && <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">No sample payments match your filters.</p>}
-          {filteredReceipts.map(rcpt => (
-            <article key={rcpt.id} className="rounded-xl border border-taxpay-border bg-white p-4 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="font-mono-plex font-bold text-sm text-taxpay-dark break-all">{rcpt.challanNo}</h2>
-                <strong className="text-sm text-taxpay-text">{formatCurrency(rcpt.totalAmount,language)}</strong>
-              </div>
-              <p className="text-xs text-slate-600">{rcpt.paymentCategory.replace(/_/g,' ')} · AY {rcpt.assessmentYear}</p>
-              <p className="text-xs">Treasury: {rcpt.treasuryStatus}</p>
-              <p className="text-xs">Tax credit: {rcpt.taxCreditStatus}</p>
-              <button type="button" onClick={() => selectReceipt(rcpt.id)} className="min-h-11 w-full rounded-lg bg-taxpay-light text-taxpay-dark font-semibold text-sm">
-                View demo receipt
-              </button>
-            </article>
-          ))}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <p aria-live="polite" className="text-sm text-taxpay-muted">{label('Example records','নমুনা লেনদেন')}: {filtered.length}</p>
+          <button type="button" onClick={exportDemo} disabled={!filtered.length}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
+            <Download aria-hidden="true" size={16}/>{label('Export sample CSV','নমুনা সিএসভি নিন')}
+          </button>
         </div>
-        {/* Desktop financial table */}
-        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
-              <tr>
-                <th className="px-3 py-2.5">A-Challan Number</th>
-                <th className="px-3 py-2.5">Token No</th>
-                <th className="px-3 py-2.5">Category</th>
-                <th className="px-3 py-2.5">Assessment Year</th>
-                <th className="px-3 py-2.5">Payer / Deductee</th>
-                <th className="px-3 py-2.5 text-right">Amount (BDT)</th>
-                <th className="px-3 py-2.5 text-center">Treasury Status</th>
-                <th className="px-3 py-2.5 text-center">Tax Credit Status</th>
-                <th className="px-3 py-2.5 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {filteredReceipts.map((rcpt) => (
-                <tr key={rcpt.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2.5 font-mono-plex font-bold text-taxpay-dark whitespace-nowrap">
-                    {rcpt.challanNo}
-                  </td>
-                  <td className="px-3 py-2.5 font-mono-plex text-slate-700 whitespace-nowrap">
-                    {rcpt.tokenNumber}
-                  </td>
-                  <td className="px-3 py-2.5 font-medium text-slate-900 whitespace-nowrap">
-                    {rcpt.paymentCategory.replace(/_/g, ' ')}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
-                    {rcpt.assessmentYear}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-800">
-                    <div className="font-medium truncate max-w-[160px]">{rcpt.payerName}</div>
-                    <div className="text-[10px] text-slate-500 font-mono-plex">{rcpt.payerTin}</div>
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-mono-plex font-bold text-slate-900 whitespace-nowrap">
-                    {formatCurrency(rcpt.totalAmount, language)}
-                  </td>
-                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      {rcpt.treasuryStatus}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      rcpt.taxCreditStatus === 'CREDITED_TO_LEDGER'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : rcpt.taxCreditStatus === 'NOT_APPLICABLE'
-                        ? 'bg-slate-200 text-slate-700'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {rcpt.taxCreditStatus}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
-                    <button
-                      onClick={() => selectReceipt(rcpt.id)}
-                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-taxpay-dark font-semibold cursor-pointer text-[11px]"
-                    >
-                      View Challan
-                    </button>
-                  </td>
+      </section>
+      <section aria-label={label('Payment records','পেমেন্টের তথ্য')} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+        {filtered.length===0 ? (
+          <div className="rounded-lg bg-taxpay-background p-5">
+            <h2 className="text-base font-semibold text-taxpay-text">{label('No matching sample records','মিল পাওয়া যায়নি')}</h2>
+            <p className="mt-1 text-sm text-taxpay-muted">{label('Try another reference, year, or payment type.','অন্য রেফারেন্স, করবর্ষ বা পেমেন্টের ধরন নির্বাচন করুন।')}</p>
+          </div>
+        ) : <>
+          <div className="grid gap-3 md:hidden">
+            {filtered.map(r=>(
+              <article key={r.id} className="min-w-0 rounded-lg border border-taxpay-border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="min-w-0 break-all font-mono-plex text-sm font-semibold text-taxpay-text">{r.challanNo}</h2>
+                  <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
+                </div>
+                <p className="mt-1 text-xs text-taxpay-muted">{categoryText(r.paymentCategory)} · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
+                <p className="mt-2 text-xs text-taxpay-muted">{label('Demo Treasury','নমুনা ট্রেজারি')}: {statusLabel(r.treasuryStatus)}</p>
+                <p className="text-xs text-taxpay-muted">{label('Demo tax credit','নমুনা কর ক্রেডিট')}: {statusLabel(r.taxCreditStatus)}</p>
+                <button type="button" onClick={()=>selectReceipt(r.id)}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
+                  {label('View sample receipt','নমুনা রসিদ দেখুন')} <ArrowRight aria-hidden="true" size={16}/>
+                </button>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-taxpay-background text-xs text-taxpay-muted">
+                <tr>
+                  <th scope="col" className="px-3 py-3">{label('Reference','রেফারেন্স')}</th>
+                  <th scope="col" className="px-3 py-3">{label('Payment type','পেমেন্টের ধরন')}</th>
+                  <th scope="col" className="px-3 py-3">{label('Year','বর্ষ')}</th>
+                  <th scope="col" className="px-3 py-3 text-right">{label('Amount','টাকার পরিমাণ')}</th>
+                  <th scope="col" className="px-3 py-3">{label('Demo status','নমুনা অবস্থা')}</th>
+                  <th scope="col" className="px-3 py-3">{label('Details','বিস্তারিত')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-taxpay-border">
+                {filtered.map(r=><tr key={r.id}>
+                  <td className="break-all px-3 py-3 font-mono-plex text-xs">{r.challanNo}</td>
+                  <td className="px-3 py-3">{categoryText(r.paymentCategory)}</td>
+                  <td className="whitespace-nowrap px-3 py-3">{r.assessmentYear}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">{formatCurrency(r.totalAmount,language)}</td>
+                  <td className="px-3 py-3">{statusLabel(r.treasuryStatus)}</td>
+                  <td className="px-3 py-3"><button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button></td>
+                </tr>)}
+              </tbody>
+            </table>
+          </div>
+        </>}
+      </section>
     </div>
   );
 };
