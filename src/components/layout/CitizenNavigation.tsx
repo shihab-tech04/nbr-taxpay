@@ -72,17 +72,18 @@ export function CitizenNavigation() {
     let last = window.scrollY;
     let accumulated = 0;
     const onScroll = () => {
-      if (window.matchMedia('(min-width: 768px)').matches) { setCompact(false); return; }
+      if (window.matchMedia('(min-width: 901px)').matches) { setCompact(false); return; }
       const next = window.scrollY;
       const delta = next - last;
       last = next;
-      if (next < 32) { accumulated = 0; setCompact(false); return; }
+      if (next < 72) { accumulated = 0; setCompact(false); return; }
+      if (Math.abs(delta) < 2) return;
       if ((delta > 0 && accumulated < 0) || (delta < 0 && accumulated > 0)) accumulated = 0;
       accumulated += delta;
-      if (next > 96 && accumulated > 20) { setCompact(true); accumulated = 0; }
-      if (accumulated < -14) { setCompact(false); accumulated = 0; }
+      if (next > 145 && accumulated > 28) { setCompact(true); accumulated = 0; }
+      if (accumulated < -24) { setCompact(false); accumulated = 0; }
     };
-    const onResize = () => { if (window.innerWidth >= 768) setCompact(false); };
+    const onResize = () => { if (window.innerWidth > 900) setCompact(false); };
     const isInput = (element: EventTarget | null) => element instanceof HTMLElement &&
       Boolean(element.closest('input, textarea, select, [contenteditable="true"]'));
     const onFocusIn = (event: FocusEvent) => setInputFocused(isInput(event.target));
