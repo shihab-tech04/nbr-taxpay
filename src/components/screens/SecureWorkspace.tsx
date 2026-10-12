@@ -45,6 +45,7 @@ export const SecureWorkspace: React.FC = () => {
   const bn = language === 'bn';
   const copy = getSecureWorkspaceCopy(language);
   const sessionEpoch = useRef(0);
+  const currentAuthUserId = useRef<string | null>(null);
   const draftFormRef = useRef<HTMLFormElement>(null);
   const draftBeforeEditing = useRef<DraftInput | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -70,18 +71,34 @@ export const SecureWorkspace: React.FC = () => {
     if (!client) { setAuthLoading(false); return; }
     let active = true;
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      if (active) { sessionEpoch.current++; setUser(session?.user ?? null); setAuthLoading(false); }
+      if (active) {
+        const nextId = session?.user?.id ?? null;
+        if (currentAuthUserId.current !== nextId) {
+          // Do not render private rows from the previous user while the new owner's GET is pending.
+          setRows([]);
+          setPendingDelete(null);
+          setEditingDraftId(null);
+        }
+        currentAuthUserId.current = nextId;
+        sessionEpoch.current++;
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      }
     });
     const startupRevision = sessionEpoch.current;
     client.auth.getUser().then(({ data, error }) => {
       if (active && shouldApplyInitialAuthResolution(startupRevision, sessionEpoch.current)) {
         sessionEpoch.current++;
+        currentAuthUserId.current = error ? null : data.user?.id ?? null;
+        setRows([]);
         setUser(error ? null : data.user);
         setAuthLoading(false);
       }
     }).catch(() => {
       if (active && shouldApplyInitialAuthResolution(startupRevision, sessionEpoch.current)) {
         sessionEpoch.current++;
+        currentAuthUserId.current = null;
+        setRows([]);
         setUser(null);
         setAuthLoading(false);
       }
@@ -113,7 +130,8 @@ export const SecureWorkspace: React.FC = () => {
     setEditingDraftId(null);
     setDraft(initial);
     draftBeforeEditing.current = null;
-    if (!user) { setRows([]); setDraftLoading(false); return; }
+    setRows([]);
+    if (!user) { setDraftLoading(false); return; }
     let active = true;
     setDraftLoading(true);
     refresh(user.id).catch((error: Error) => {
