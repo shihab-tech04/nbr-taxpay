@@ -13,11 +13,11 @@ import { useTaxState } from '../../services/taxState';
 
 export const ConnectedServices: React.FC = () => {
   const services = [
-    {name:'NBR e-Return',acronym:'eReturn',role:'Tax return service',status:'NOT CONNECTED',lastSync:'Never',features:'No return data or credit synchronization is configured.'},
-    {name:'e-Ledger',acronym:'eLedger',role:'Tax ledger service',status:'NOT CONNECTED',lastSync:'Never',features:'No authoritative liability, payment, credit or reconciliation exchange is configured.'},
-    {name:'e-TDS',acronym:'eTDS',role:'Withholding records',status:'NOT CONNECTED',lastSync:'Never',features:'No withholding certificate verification or deductee-credit import is configured.'},
-    {name:'Automated Challan System',acronym:'A-Challan',role:'Treasury payment evidence',status:'NOT CONNECTED',lastSync:'Never',features:'No live Treasury scroll, official receipt or gateway session is available.'},
-    {name:'e-TIN Registry',acronym:'e-TIN',role:'Taxpayer identification',status:'NOT CONNECTED',lastSync:'Never',features:'No real TIN registry verification or jurisdiction lookup is configured.'},
+    {name:'NBR e-Return',acronym:'eReturn',role:'Tax return service',status:'NOT CONNECTED',lastSync:'Never',features:'Return data and credits'},
+    {name:'e-Ledger',acronym:'eLedger',role:'Tax ledger service',status:'NOT CONNECTED',lastSync:'Never',features:'Liabilities, payments and credits'},
+    {name:'e-TDS',acronym:'eTDS',role:'Withholding records',status:'NOT CONNECTED',lastSync:'Never',features:'Withholding records and certificates'},
+    {name:'Automated Challan System',acronym:'A-Challan',role:'Treasury payment evidence',status:'NOT CONNECTED',lastSync:'Never',features:'Challans and payment records'},
+    {name:'e-TIN Registry',acronym:'e-TIN',role:'Taxpayer identification',status:'NOT CONNECTED',lastSync:'Never',features:'Identity and jurisdiction'},
   ];
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
@@ -28,10 +28,10 @@ export const ConnectedServices: React.FC = () => {
           </div>
           <div>
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              External services — integration status
+              Service connections
             </h1>
             <p className="text-xs text-slate-500">
-              Planned connections only. This independent TaxPay demonstration has no authenticated exchange with these government systems.
+              Current connection status
             </p>
           </div>
         </div>
@@ -48,7 +48,7 @@ export const ConnectedServices: React.FC = () => {
                 </div>
                 <p className="text-slate-600">{srv.role}</p>
                 <div className="text-[11px] text-slate-500 font-mono">
-                  Current boundary: {srv.features}
+                  {srv.features}
                 </div>
               </div>
 
@@ -58,7 +58,7 @@ export const ConnectedServices: React.FC = () => {
                   <span>{srv.status}</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
-                  Last successful sync: {srv.lastSync}
+                  Last sync: {srv.lastSync}
                 </span>
               </div>
             </div>
