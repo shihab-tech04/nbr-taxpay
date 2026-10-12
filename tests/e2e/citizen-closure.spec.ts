@@ -73,3 +73,13 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
 });
+
+
+test('guest payment-category selection enters the matching public journey without authentication',async({page})=>{
+  await page.goto('/');
+  await expect(page.getByRole('heading',{name:'Select a payment service'})).toBeVisible();
+  await page.locator('main').getByRole('button',{name:'Advance Tax',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+  await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+});

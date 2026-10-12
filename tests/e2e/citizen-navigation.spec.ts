@@ -50,6 +50,7 @@ test('scroll direction adapts four corners across approved mobile widths', async
     if(width<=900) {
       await page.evaluate(() => window.scrollTo(0,350));
       await expect(header).toHaveClass(/citizen-header--hidden/);
+      await expect(header).toHaveCSS('visibility','hidden');
       const corners=page.locator('.citizen-corner');
       await expect(corners).toHaveCount(3);
       await expect(page.locator('.citizen-corners').getByRole('button',{name:'Open menu'})).toBeVisible();
@@ -106,6 +107,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     if(width<=900) {
       await page.evaluate(()=>window.scrollTo(0,450));
       await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);
+      await expect(page.locator('.citizen-header')).toHaveCSS('visibility','hidden');
       await expect(page.locator('.citizen-corners').getByRole('button',{name:'Activity'})).toBeVisible();
       await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
       await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
