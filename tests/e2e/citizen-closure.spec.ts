@@ -74,6 +74,34 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
 });
 
+test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Open menu'}).click();
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
+
+  await expect(page.getByRole('heading',{name:'Certificate previews'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();
+  await expect(page.getByText('No official certificate is issued from this demonstration.')).toBeVisible();
+  await expect(page.getByText('Statutory certificates generated directly from Government Treasury deposit scrolls.')).toHaveCount(0);
+  await expect(page.getByText('In Good Standing')).toHaveCount(0);
+  await expect(page.getByText('Deputy Commissioner of Taxes')).toHaveCount(0);
+
+  await page.getByRole('button',{name:'Withholding deposit summary',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Withholding deposit summary'})).toBeVisible();
+  await expect(page.getByText('Deductee ownership')).toBeVisible();
+  await expect(page.getByText('Not verified',{exact:true}).first()).toBeVisible();
+
+  await page.getByRole('button',{name:'বাংলা'}).click();
+  await expect(page.getByRole('heading',{name:'সনদের নমুনা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'উৎসে কর জমার সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByText('এই প্রদর্শনী থেকে কোনো সরকারি সনদ ইস্যু করা হয় না।')).toBeVisible();
+
+  if (testInfo.project.name === 'mobile-320' || testInfo.project.name === 'desktop-1280') {
+    await page.screenshot({path:`test-results/screenshots/certificate-preview-bn-${testInfo.project.name}.png`,fullPage:false});
+  }
+});
+
 
 test('guest payment-category selection enters the matching public journey without authentication',async({page})=>{
   await page.goto('/');

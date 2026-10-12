@@ -65,6 +65,7 @@
 .citizen-dialog__title { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.75rem; }
 .citizen-dialog__title h2 { font-size:1.2rem; font-weight:750; color:var(--citizen-text); }
 .citizen-dialog__title button { min-width:44px; min-height:44px; display:grid; place-items:center; border-radius:.55rem; color:var(--citizen-primary-dark); }
+.citizen-dialog-language { display:flex; align-items:center; justify-content:center; gap:.45rem; min-width:64px; min-height:44px; margin:0 0 .75rem auto; padding:.5rem .75rem; border:1px solid var(--citizen-border); border-radius:.55rem; color:var(--citizen-primary-dark); font-weight:700; }
 .citizen-dialog__links { display:grid; gap:.45rem; }
 .citizen-dialog__links button { min-height:48px; border-radius:.7rem; text-align:left; padding:.75rem 1rem; background:var(--citizen-primary-light); color:var(--citizen-primary-dark); font-size:.94rem; font-weight:650; }
 .citizen-dialog__links button:hover { background:var(--citizen-border); }

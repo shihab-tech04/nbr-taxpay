@@ -37,6 +37,7 @@ export function CitizenNavigation() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const inputFocusedRef = useRef(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
@@ -72,6 +73,7 @@ export function CitizenNavigation() {
     let last = window.scrollY;
     let accumulated = 0;
     const onScroll = () => {
+      if (inputFocusedRef.current) { accumulated = 0; setCompact(false); return; }
       if (window.matchMedia('(min-width: 901px)').matches) { setCompact(false); return; }
       const next = window.scrollY;
       const delta = next - last;
@@ -86,8 +88,17 @@ export function CitizenNavigation() {
     const onResize = () => { if (window.innerWidth > 900) setCompact(false); };
     const isInput = (element: EventTarget | null) => element instanceof HTMLElement &&
       Boolean(element.closest('input, textarea, select, [contenteditable="true"]'));
-    const onFocusIn = (event: FocusEvent) => setInputFocused(isInput(event.target));
-    const onFocusOut = () => window.requestAnimationFrame(() => setInputFocused(isInput(document.activeElement)));
+    const onFocusIn = (event: FocusEvent) => {
+      const focused = isInput(event.target);
+      inputFocusedRef.current = focused;
+      if (focused) { accumulated = 0; setCompact(false); }
+      setInputFocused(focused);
+    };
+    const onFocusOut = () => window.requestAnimationFrame(() => {
+      const focused = isInput(document.activeElement);
+      inputFocusedRef.current = focused;
+      setInputFocused(focused);
+    });
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
     document.addEventListener('focusin', onFocusIn);
@@ -206,6 +217,9 @@ export function CitizenNavigation() {
             </div>
             {menuOpen ? (
               <>
+                <button type="button" className="citizen-dialog-language" onClick={() => setLanguage(bn ? 'en' : 'bn')}>
+                  <Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}
+                </button>
                 <div className="citizen-dialog__links">{[...links, ...(isTaxpayer ? moreLinks : [
                   {route:'incident',en:'Security reporting',bn:'নিরাপত্তা অভিযোগ'},
                   {route:'head_catalogue',en:'Payment head catalogue',bn:'কর খাতের তালিকা'},

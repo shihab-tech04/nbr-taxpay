@@ -27,31 +27,46 @@ test('secure workspace sign-in copy stays localized and fits the viewport', asyn
   await expect(page.getByRole('status').last()).toContainText('নিরাপদ সাইন-ইন লিংকের জন্য আপনার ইমেইল দেখুন।');
   expect(otpRequests).toBe(1);
 
-  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  if (await page.evaluate(() => window.innerWidth <= 900)) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const compactMenu = page.getByLabel('সংক্ষিপ্ত নেভিগেশন').getByRole('button', { name: 'মেনু খুলুন' });
+    await expect(compactMenu).toBeVisible();
+    await compactMenu.click();
+    await page.getByRole('dialog').getByRole('button', { name: 'EN', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+  }
   await expect(page.getByRole('status').last()).toContainText('Check your email for the secure sign-in link.');
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  const dialog = page.getByRole('dialog');
+  if (await dialog.isVisible()) {
+    await dialog.getByRole('button', { name: 'বাংলা', exact: true }).click();
+    await dialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
+  } else {
+    await page.getByRole('button', { name: 'বাংলা' }).click();
+  }
   await expect(page.getByRole('status').last()).toContainText('নিরাপদ সাইন-ইন লিংকের জন্য আপনার ইমেইল দেখুন।');
 
-  const width = await page.evaluate(() => ({
-    client: document.documentElement.clientWidth,
-    scroll: document.documentElement.scrollWidth,
-    overflowing: Array.from(document.querySelectorAll<HTMLElement>('*'))
-      .map(element => {
-        const rect = element.getBoundingClientRect();
-        return {
-          tag: element.tagName,
-          className: typeof element.className === 'string' ? element.className : '',
-          text: element.innerText?.slice(0, 60) ?? '',
-          left: Math.round(rect.left),
-          right: Math.round(rect.right),
-          clientWidth: element.clientWidth,
-          scrollWidth: element.scrollWidth,
-        };
-      })
-      .filter(element => element.right > document.documentElement.clientWidth + 1)
-      .sort((a, b) => b.right - a.right)
-      .slice(0, 8),
-  }));
+  const width = await page.evaluate(() => {
+    const client = document.documentElement.clientWidth;
+    const scroll = document.documentElement.scrollWidth;
+    const overflowing = scroll <= client + 1
+      ? []
+      : Array.from(document.querySelectorAll<HTMLElement>('body *'))
+        .flatMap(element => {
+          const rect = element.getBoundingClientRect();
+          if (rect.right <= client + 1) return [];
+          return [{
+            tag: element.tagName,
+            className: typeof element.className === 'string' ? element.className : '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+          }];
+        })
+        .slice(0, 8);
+    return { client, scroll, overflowing };
+  });
   expect(width.scroll, JSON.stringify(width.overflowing)).toBeLessThanOrEqual(width.client + 1);
 });
 
