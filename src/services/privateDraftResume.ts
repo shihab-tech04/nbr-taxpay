@@ -33,3 +33,11 @@ export function confirmPrivateDraftUpdate(expectedId: string, rows: unknown): bo
   const row = rows[0];
   return Boolean(row && typeof row === 'object' && 'id' in row && row.id === expectedId);
 }
+
+/** HTTP success is not enough: insertion needs exactly one newly returned draft identity. */
+export function confirmPrivateDraftInsert(rows: unknown): boolean {
+  if (!Array.isArray(rows) || rows.length !== 1) return false;
+  const row = rows[0];
+  return Boolean(row && typeof row === 'object' && 'id' in row &&
+    typeof row.id === 'string' && row.id.trim().length > 0);
+}
