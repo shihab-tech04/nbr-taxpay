@@ -36,8 +36,17 @@ export const TaxpayerHome: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      <section className="citizen-financial-intro" aria-label={language === 'bn' ? 'নমুনা কর অবস্থান' : 'Sample tax position'}>
+        <p className="citizen-eyebrow">{language === 'bn' ? 'করদাতার মূল পাতা · নমুনা তথ্য' : 'Taxpayer home · sample data'}</p>
+        <h2>{language === 'bn' ? 'আপনার কর অবস্থান' : 'Your tax position'}</h2>
+        <p>{language === 'bn' ? 'এখানের অঙ্কসমূহ উদাহরণমাত্র। কোনো কর দাবি, ট্রেজারি জমা বা স্বীকৃত কর ক্রেডিট যাচাই করা হয়নি।' : 'Amounts below are illustrative. No live liability, Treasury settlement or recognized tax credit has been verified.'}</p>
+        <div className="citizen-financial-links">
+          <button onClick={() => navigate('history')}>{language === 'bn' ? 'লেনদেন ও রসিদ' : 'Payments & activity'} →</button>
+          <button onClick={() => navigate('ledger')}>{language === 'bn' ? 'কর লেজার' : 'Tax ledger'} →</button>
+        </div>
+      </section>
       {/* Top Taxpayer Profile Banner */}
-      <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-950 text-white rounded-2xl p-6 shadow-lg border border-emerald-800">
+      <div className="citizen-overview text-white rounded-2xl p-5 shadow-sm border">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-emerald-800 border-2 border-amber-400/60 flex items-center justify-center text-amber-300 font-bold text-xl">
@@ -90,38 +99,38 @@ export const TaxpayerHome: React.FC = () => {
             {formatCurrency(totalPaid, language)}
           </span>
           <span className="text-[10px] text-emerald-700 block mt-0.5 font-medium">
-            {userReceipts.length} verified A-Challans
+            {userReceipts.length} illustrative receipts
           </span>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Current Ledger Credit:</span>
+          <span className="text-xs text-slate-500 block">Sample Ledger Entries:</span>
           <span className="font-mono-plex font-bold text-lg text-indigo-900 mt-1 block">
             {formatCurrency(ledgerEntries.reduce((sum, item) => sum + item.credit, 0), language)}
           </span>
           <span className="text-[10px] text-slate-500 block mt-0.5">
-            Auto-reconciled with e-Return
+            Not reconciled with eReturn / NBR
           </span>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Advance Tax Status:</span>
+          <span className="text-xs text-slate-500 block">Advance Tax (example):</span>
           <span className="font-mono-plex font-bold text-lg text-amber-700 mt-1 block">
             Q1 Deposited
           </span>
           <span className="text-[10px] text-slate-500 block mt-0.5">
-            Q2 due 15 Dec 2026
+            Dates and entitlement unverified
           </span>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Compliance Standing:</span>
+          <span className="text-xs text-slate-500 block">Sample Account Profile:</span>
           <span className="inline-flex items-center gap-1 font-bold text-emerald-700 text-sm mt-1">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Regular Taxpayer</span>
+            <span>Demonstration only</span>
           </span>
           <span className="text-[10px] text-slate-500 block mt-0.5">
-            Return AY 2024-25 Filed
+            Not connected to actual return records
           </span>
         </div>
       </div>
@@ -129,7 +138,7 @@ export const TaxpayerHome: React.FC = () => {
       {/* Taxpayer Services Grid (All 11 Sub-Screens) */}
       <div className="space-y-3">
         <h2 className="font-serif-fraunces font-bold text-xl text-slate-900">
-          Taxpayer Self-Service Portal Hub
+          More taxpayer services
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
@@ -143,14 +152,14 @@ export const TaxpayerHome: React.FC = () => {
             },
             {
               title: 'New Payment Wizard',
-              desc: 'Pay under any of the 170 master heads with auto fee and interest calculations.',
+              desc: 'Explore 170 source-unverified payment heads and illustrative amounts.',
               route: 'wizard',
               icon: CreditCard,
               color: 'text-amber-700 bg-amber-50'
             },
             {
               title: 'Payment History & Receipts',
-              desc: 'Search, filter, view, and print official A-Challan receipts and bank scrolls.',
+              desc: 'Search and view illustrative receipts and bank-scroll status.',
               route: 'history',
               icon: History,
               color: 'text-blue-700 bg-blue-50'
@@ -232,7 +241,7 @@ export const TaxpayerHome: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-serif-fraunces font-bold text-lg text-slate-900">
-            Recent Electronic A-Challans
+            Recent Sample Payment Records
           </h3>
           <button
             onClick={() => navigate('history')}
