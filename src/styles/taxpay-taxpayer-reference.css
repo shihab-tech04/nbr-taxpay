@@ -44,6 +44,14 @@
 .taxpay-taxpayer-reference .citizen-nav-link {
   color: #1B4D6B;
 }
+.taxpay-taxpayer-reference .citizen-flow-label {
+  color: #65676B;
+  opacity: 1;
+}
+.taxpay-taxpayer-reference .citizen-taxpayer-hero > div > p:not(.citizen-taxpayer-hero__eyebrow) {
+  color: #65676B;
+  opacity: 1;
+}
 .taxpay-taxpayer-reference .citizen-nav-link:hover,
 .taxpay-taxpayer-reference .citizen-nav-link[aria-current="page"] {
   background: #F0F2F5;
