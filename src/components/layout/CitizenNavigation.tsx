@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, ArrowRight, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { PaymentCategory, UserRole } from '../../types/tax';
 
@@ -20,7 +21,9 @@ const moreLinks: CitizenAction[] = [
   { route: 'corrections', en: 'Corrections', bn: 'সংশোধন' },
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' },
   { route: 'services', en: 'Connected Services', bn: 'সংযুক্ত সেবা' },
-  { route: 'notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' },
+  { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' },
+  { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল' },
+  { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' },
   { route: 'guidance', en: 'Help', bn: 'সহায়তা' },
   { route: 'secure_workspace', en: 'Account access', bn: 'অ্যাকাউন্ট প্রবেশ' }
 ];
@@ -29,6 +32,20 @@ const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 
 
 export function CitizenNavigation() {
   const { currentRoute, navigate, language, setLanguage, userRole, setUserRole } = useTaxState();
+  const { user: applicationUser } = useAccountIdentity();
+  const [signOutError, setSignOutError] = useState('');
+  const [signingOut, setSigningOut] = useState(false);
+  const logOut = async () => {
+    setSignOutError('');
+    setSigningOut(true);
+    try {
+      const result = await signOutApplicationAccount();
+      if (!result.ok) throw new Error(result.error);
+      setMenuOpen(false); setPayOpen(false);
+      setUserRole('GUEST'); navigate('landing');
+    } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
+    finally { setSigningOut(false); }
+  };
   const isTaxpayer = taxpayerRoles.includes(userRole);
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
@@ -231,6 +248,8 @@ export function CitizenNavigation() {
                   {route:'head_catalogue',en:'Payment head catalogue',bn:'কর খাতের তালিকা'},
                   {route:'secure_workspace',en:'Account access',bn:'অ্যাকাউন্ট প্রবেশ'}
                 ])].map(action)}</div>
+                {applicationUser && <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>}
+                {signOutError && <p role="alert" className="citizen-dialog__notice">{signOutError}</p>}
                 <label className="citizen-select-label" htmlFor="citizen-sample-role">{bn ? 'নমুনা প্রোফাইল (প্রকৃত লগইন নয়)' : 'Sample profile (not sign-in)'}</label>
                 <select id="citizen-sample-role" value={userRole} onChange={(event) => {
                   const role = event.target.value as UserRole;

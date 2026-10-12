@@ -59,6 +59,33 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   expect(created[0].amount_minor).toBe(12345);
   expect(created[0].record_status).toBe('DRAFT');
   const draftId = created[0].id as string;
+  // Account notifications are generated from the real owner's persisted drafts.
+  // They are not fabricated legal notices or mock network responses.
+  const accountTab = await contextA.newPage();
+  await accountTab.goto('/?action=account_notifications');
+  await expect(accountTab.getByRole('heading', { name: 'Private draft activity' })).toBeVisible();
+  await expect(accountTab.getByText('Private draft created')).toBeVisible();
+  await expect(accountTab.getByText('Draft only — no payment was submitted.')).toBeVisible();
+  await expect(accountTab.getByText(/Demand Notice DN-|BDT 47,400/)).toHaveCount(0);
+  await accountTab.getByRole('button', { name: 'Mark all as viewed' }).click();
+  await expect(accountTab.getByRole('status').filter({ hasText: 'Notification viewing status saved' })).toBeVisible();
+  await accountTab.getByRole('navigation', { name: 'Account pages' }).getByRole('button', { name: 'Profile settings' }).click();
+  await accountTab.getByLabel('Display name').fill('Synthetic test account A');
+  await accountTab.getByRole('button', { name: 'Save preferences' }).click();
+  await expect(accountTab.getByRole('status').filter({ hasText: 'Preferences saved' })).toBeVisible();
+  await accountTab.reload();
+  await expect(accountTab.getByLabel('Display name')).toHaveValue('Synthetic test account A');
+  await accountTab.getByRole('navigation', { name: 'Account pages' }).getByRole('button', { name: 'Profile', exact: true }).click();
+  await expect(accountTab.getByText('Synthetic test account A')).toBeVisible();
+  const metadataRead = await fetch(new URL('/auth/v1/user', url.origin), {
+    headers: { apikey: anonKey, Authorization: 'Bearer ' + s.access_token },
+  });
+  expect(metadataRead.status).toBe(200);
+  const metadata = await metadataRead.json();
+  expect(metadata.user_metadata?.taxpay_display_name).toBe('Synthetic test account A');
+  expect(typeof metadata.user_metadata?.taxpay_notifications_read_at).toBe('string');
+  await accountTab.close();
+
 
   // Revisit from a separate browser tab with the actual persisted session.
   // Hold a stale copy in another tab so a concurrent update cannot be silently overwritten.
@@ -120,6 +147,15 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await otherTab.getByRole('button', { name: 'Sign out' }).click();
   await expect(otherTab.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toHaveCount(0);
+  // Mobile profile menu must execute actual local Auth sign-out, not a demo role switch.
+  await pageB.goto('/?action=account_profile');
+  await expect(pageB.getByRole('heading', { name: 'Profile', exact: true, level: 1 })).toBeVisible();
+  await pageB.getByRole('button', { name: 'Open menu' }).click();
+  await pageB.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Sign out' }).click();
+  await expect(pageB.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
+  await pageB.goto('/?action=account_profile');
+  await expect(pageB.getByText('No authenticated account is signed in.')).toBeVisible();
+
   await contextB.close();
   await contextA.close();
 });
