@@ -64,8 +64,8 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   const accountTab = await contextA.newPage();
   await accountTab.goto('/?action=account_notifications');
   await expect(accountTab.getByRole('heading', { name: 'Private draft activity' })).toBeVisible();
-  await expect(accountTab.getByText('Private draft created')).toBeVisible();
-  await expect(accountTab.getByText('Draft only — no payment was submitted.')).toBeVisible();
+  await expect(accountTab.getByText('Draft saved')).toBeVisible();
+  await expect(accountTab.getByText('No payment made.')).toBeVisible();
   await expect(accountTab.getByText(/Demand Notice DN-|BDT 47,400/)).toHaveCount(0);
   await accountTab.getByRole('button', { name: 'Mark all as viewed' }).click();
   await expect(accountTab.getByRole('status').filter({ hasText: 'Notification viewing status saved' })).toBeVisible();
@@ -154,7 +154,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await pageB.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Sign out' }).click();
   await expect(pageB.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
   await pageB.goto('/?action=account_profile');
-  await expect(pageB.getByText('No authenticated account is signed in.')).toBeVisible();
+  await expect(pageB.getByText('Sign in to view your account.')).toBeVisible();
 
   await contextB.close();
   await contextA.close();
