@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { privateDraftToInput, confirmPrivateDraftUpdate } from '../src/services/privateDraftResume.ts';
+import { privateDraftToInput, confirmPrivateDraftUpdate, confirmPrivateDraftInsert } from '../src/services/privateDraftResume.ts';
 
 const validDraft = {
   id: 'synthetic-draft-1',
@@ -50,4 +50,11 @@ test('draft update migration limits columns and enforces owner-only RLS', () => 
   assert.match(sql, /CREATE POLICY taxpay_drafts_update_own[\s\S]*FOR UPDATE TO authenticated[\s\S]*USING \(\(select auth\.uid\(\)\) = owner_uid\)[\s\S]*WITH CHECK \(\(select auth\.uid\(\)\) = owner_uid\)/i);
   assert.doesNotMatch(sql, /GRANT\s+UPDATE\s+ON\s+public\.taxpay_payment_drafts/i);
   assert.doesNotMatch(sql, /GRANT UPDATE\s*\([^)]*\b(owner_uid|id|created_at|record_status)\b/i);
+});
+
+test('draft insert requires exactly one server-returned ID instead of a bare HTTP success', () => {
+  assert.equal(confirmPrivateDraftInsert([{ id: 'synthetic-new-draft' }]), true);
+  for (const rows of [null, undefined, [], [{}], [{ id: '' }], [{ id: 123 }], [{ id: 'a' }, { id: 'b' }], 'HTTP 201']) {
+    assert.equal(confirmPrivateDraftInsert(rows), false);
+  }
 });
