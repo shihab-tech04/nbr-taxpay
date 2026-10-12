@@ -225,7 +225,7 @@ export function CitizenNavigation() {
                 <div className="citizen-dialog__links">
                   {Object.entries(CATEGORY_LABELS).map(([key,item]) => (
                     <button key={key} type="button" className="citizen-payment-choice" onClick={() => chooseGuest(key)}>
-                      <span>{bn ? item.bn : item.en}</span><ArrowRight size={16} aria-hidden="true"/>
+                      <span>{key === 'OTHER_TAX_PAYMENT' ? (bn ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment') : (bn ? item.bn : item.en)}</span><ArrowRight size={16} aria-hidden="true"/>
                     </button>
                   ))}
                   <button type="button" className="citizen-payment-choice" onClick={() => chooseGuest('TRAVEL_TAX')}>
