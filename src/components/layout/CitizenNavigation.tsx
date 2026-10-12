@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, ShieldAlert, X } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
