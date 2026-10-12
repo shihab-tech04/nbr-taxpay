@@ -24,7 +24,7 @@ interface GuestPaymentProps {
 }
 
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false }) => {
-  const { language, navigate, addPaymentReceipt } = useTaxState();
+  const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
 
   // Wizard state steps: 1: Taxpayer & Identification, 2: Head & Amount, 3: Review & Gateway, 4: Receipt
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -49,10 +49,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   // Category and Head selection
   const [category, setCategory] = useState<PaymentCategory>(
-    isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : 'TAX_WITH_RETURN'
+    isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : ((routeParams?.initialCategory as PaymentCategory) || 'TAX_WITH_RETURN')
   );
   const [selectedHeadId, setSelectedHeadId] = useState<number>(
-    isWithholdingMode ? 59 : 1
+    isWithholdingMode ? 59 : (MASTER_PAYMENT_HEADS.find(h => h.category === routeParams?.initialCategory)?.id || 1)
   );
   const [headSearch, setHeadSearch] = useState('');
 
@@ -76,6 +76,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
   }, [isWithholdingMode]);
 
+  useEffect(() => {
+    if (!isWithholdingMode && routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
+      const next = routeParams.initialCategory as PaymentCategory;
+      setCategory(next);
+      const firstHead = MASTER_PAYMENT_HEADS.find(h => h.category === next && !BLOCKED_HEAD_IDS.includes(h.id));
+      if (firstHead) setSelectedHeadId(firstHead.id);
+    }
+  }, [routeParams, isWithholdingMode]);
+
   // Filter available heads
   const availableHeads = MASTER_PAYMENT_HEADS.filter(head => {
     const matchCat = head.category === category;
@@ -87,7 +96,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return matchCat && matchQuery;
   });
 
-  const selectedHead = MASTER_PAYMENT_HEADS.find(h => h.id === selectedHeadId) || availableHeads[0];
+  const selectedHead = availableHeads.find(h => h.id === selectedHeadId) || availableHeads[0];
 
   const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
 
@@ -230,7 +239,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               {isWithholdingMode ? 'Source Tax Deposit (TDS / TCS)' : 'Guest Income Tax Payment'}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Pay government taxes directly into Treasury without needing a registered portal login.
+              Explore illustrative guest payment steps without a live Treasury or payment gateway connection.
             </p>
           </div>
           <div className="flex items-center gap-2">
