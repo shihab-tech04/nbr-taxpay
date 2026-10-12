@@ -24,7 +24,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'আপনার কর অবস্থান'})).toBeVisible();
-  await expect(page.getByText('স্বীকৃত কর ক্রেডিট')).toBeVisible();
+  await expect(page.getByText('স্বীকৃত কর ক্রেডিট',{exact:true})).toBeVisible();
   await expect(page.getByText('যাচাই হয়নি',{exact:true})).toBeVisible();
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(322);
@@ -43,4 +43,20 @@ test('sample payment activity retains filtering and does not assert tax-credit o
   await page.getByLabel('Search payments').fill('THIS-REFERENCE-DOES-NOT-EXIST');
   await expect(page.getByText('No matching sample records')).toBeVisible();
   await expect(page.getByRole('button',{name:'Export sample CSV'})).toBeDisabled();
+});
+
+
+test('mobile expanded dock has three destinations and a separate floating Pay action',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/?action=landing');
+  const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+  await expect(dock).toBeVisible();
+  await expect(dock.getByRole('button')).toHaveCount(3);
+  await expect(dock.getByRole('button',{name:/Pay/i})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  await page.evaluate(()=>window.scrollTo(0,420));
+  await expect(dock).toHaveCount(0);
+  await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
+  await page.evaluate(()=>window.scrollBy(0,-90));
+  await expect(dock).toBeVisible();
 });
