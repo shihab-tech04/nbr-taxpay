@@ -90,3 +90,27 @@ test('browser back restores route and expanded navigation after payment entry',a
   await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
   await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
 });
+
+
+test('taxpayer full and compact views remain usable at six audited widths', async ({page},info) => {
+  test.skip(info.project.name!=='mobile-320','Single runner captures the full viewport matrix');
+  for (const width of [320,360,375,390,768,1280]) {
+    await page.setViewportSize({width,height:812});
+    await page.goto('/?action=taxpayer_home');
+    await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+    await expect(page.getByText('Taxpayer home · sample data')).toBeVisible();
+    await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
+    const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
+    expect(documentWidth).toBeLessThanOrEqual(width+2);
+    await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+    if(width<=900) {
+      await page.evaluate(()=>window.scrollTo(0,450));
+      await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);
+      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Activity'})).toBeVisible();
+      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
+      await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
+    } else {
+      await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
+    }
+  }
+});
