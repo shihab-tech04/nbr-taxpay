@@ -120,3 +120,30 @@
   .citizen-financial-links {display:flex;}
   .citizen-financial-links button {padding:.7rem 1rem;}
 }
+
+/* Citizen footer links never expose the separate Officer workspace. */
+.citizen-footer {
+  border-top:1px solid var(--citizen-border);
+  background:var(--citizen-surface);
+  color:var(--citizen-text);
+}
+.citizen-footer__inner {
+  max-width:1280px;
+  margin:0 auto;
+  padding:2rem 1rem;
+  display:grid;
+  gap:1.2rem;
+}
+.citizen-footer__intro {display:flex;gap:.7rem;align-items:center;color:var(--citizen-primary-dark);}
+.citizen-footer__intro strong {font-size:1rem;font-weight:800;}
+.citizen-footer__intro p {font-size:.75rem;color:var(--citizen-muted);}
+.citizen-footer__links {display:flex;flex-wrap:wrap;gap:.4rem 1.5rem;}
+.citizen-footer__links button {min-height:44px;font-size:.82rem;font-weight:650;color:var(--citizen-primary-dark);text-align:left;}
+.citizen-footer__links button:hover {text-decoration:underline;}
+.citizen-footer__disclaimer {display:flex;align-items:flex-start;gap:.55rem;font-size:.75rem;line-height:1.6;max-width:70ch;color:var(--citizen-muted);}
+.citizen-footer__disclaimer svg {flex:none;}
+@media(min-width:768px) {
+  .citizen-footer__inner {grid-template-columns:1fr 2fr;align-items:start;}
+  .citizen-footer__disclaimer {grid-column:1 / -1;}
+}
+@media print {.citizen-footer {display:none !important;}}
