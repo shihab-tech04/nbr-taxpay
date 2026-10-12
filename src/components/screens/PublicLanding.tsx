@@ -54,7 +54,7 @@ export const PublicLanding: React.FC = () => {
           {Object.entries(CATEGORY_LABELS).map(([key,item])=>(
             <button key={key} type="button" onClick={()=>openCategory(key as PaymentCategory)}
               className="flex min-h-14 min-w-0 items-center gap-3 rounded-lg border border-taxpay-border bg-white p-3 text-left hover:border-taxpay-primary hover:bg-taxpay-light">
-              <span className="min-w-0 flex-1 text-sm font-semibold text-taxpay-text">{bn?item.bn:item.en}</span>
+              <span className="min-w-0 flex-1 text-sm font-semibold text-taxpay-text">{key === 'OTHER_TAX_PAYMENT' ? label('Other Tax Payment','অন্যান্য কর পরিশোধ') : bn ? item.bn : item.en}</span>
               <ArrowRight size={17} className="shrink-0 text-taxpay-dark" aria-hidden="true"/>
             </button>
           ))}
