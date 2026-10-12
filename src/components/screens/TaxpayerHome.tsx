@@ -54,7 +54,7 @@ export const TaxpayerHome: React.FC = () => {
         <div>
           <p className="citizen-taxpayer-hero__eyebrow"><Landmark size={16} aria-hidden="true" />{label('Taxpayer workspace · sample profile', 'করদাতা ওয়ার্কস্পেস · নমুনা প্রোফাইল')}</p>
           <h1 id="taxpay-home-title">{label('My Tax Payments', 'আমার কর পেমেন্ট')}</h1>
-          <p>{label('A demonstration workspace for exploring payment activity and tax services. This sample profile is not a signed-in taxpayer account.', 'পেমেন্টের তথ্য ও করসেবা দেখার নমুনা ওয়ার্কস্পেস। এই নমুনা প্রোফাইলটি সাইন-ইন করা করদাতা অ্যাকাউন্ট নয়।')}</p>
+          <p>{label('Manage payment activity and access tax services.', 'পেমেন্টের তথ্য দেখুন এবং করসেবা ব্যবহার করুন।')}</p>
           <div className="citizen-taxpayer-hero__actions">
             <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate('wizard')}>
               <WalletCards size={18} aria-hidden="true" />{label('Start a sample payment', 'নমুনা পেমেন্ট শুরু করুন')}
@@ -71,25 +71,20 @@ export const TaxpayerHome: React.FC = () => {
         <div className="citizen-hub-section__heading">
           <div><p className="citizen-hub-eyebrow">{label('Account overview', 'অ্যাকাউন্টের সারসংক্ষেপ')}</p><h2 id="taxpay-summary-title">{label('Tax position', 'করের অবস্থান')}</h2></div>
         </div>
-        <p className="citizen-taxpayer-summary__notice">{label('This demonstration has no verified account-specific ledger owner, Treasury reconciliation or live taxpayer records. Sample transactions are not tax credit or payment proof.', 'এই প্রদর্শনীতে করদাতাভিত্তিক যাচাইকৃত লেজার, ট্রেজারি সমন্বয় বা প্রকৃত করদাতার তথ্য নেই। নমুনা লেনদেন কর ক্রেডিট বা পরিশোধের প্রমাণ নয়।')}</p>
         <div className="citizen-taxpayer-summary__cards">
           <article><span>{label('Outstanding tax', 'বকেয়া কর')}</span><strong>{label('Unavailable', 'পাওয়া যাচ্ছে না')}</strong></article>
           <article><span>{label('Recognized credit', 'স্বীকৃত কর ক্রেডিট')}</span><strong>{label('Unverified', 'যাচাই হয়নি')}</strong></article>
         </div>
-        <details className="citizen-taxpayer-summary__details">
-          <summary>{label('Why are balances unavailable?', 'ব্যালেন্স কেন পাওয়া যাচ্ছে না?')}</summary>
-          <p>{label('Live assessments, Treasury settlements, eTDS records and tax-credit ownership are not connected. A payer reference or sample receipt does not establish a personal credit.', 'প্রকৃত কর নির্ধারণ, ট্রেজারি জমা, ই-টিডিএস বা কর-ক্রেডিটের মালিকানা সংযুক্ত নয়। পরিশোধকারীর রেফারেন্স বা নমুনা রসিদ ব্যক্তিগত ক্রেডিট প্রমাণ করে না।')}</p>
-        </details>
       </section>
 
       <section className="citizen-taxpayer-profile" aria-label={label('Sample identity', 'নমুনা পরিচয়')}>
         <div className="citizen-taxpayer-profile__mark" aria-hidden="true"><Landmark size={20} /></div>
         <div className="min-w-0 flex-1">
-          <p className="citizen-hub-eyebrow">{label('Illustrative profile', 'নমুনা প্রোফাইল')}</p>
+          <p className="citizen-hub-eyebrow">{label('Profile', 'প্রোফাইল')}</p>
           <h2>{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</h2>
           <p>e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span> · {taxpayerProfile.type}</p>
         </div>
-        <span className="citizen-demo-pill">{label('Not verified', 'যাচাইকৃত নয়')}</span>
+        <span className="citizen-demo-pill">{label('Sample', 'নমুনা')}</span>
       </section>
 
       <section className="citizen-taxpayer-quick" aria-labelledby="taxpay-quick-title">
@@ -110,7 +105,6 @@ export const TaxpayerHome: React.FC = () => {
           <div><p className="citizen-hub-eyebrow">{label('Sample records', 'নমুনা তথ্য')}</p><h2 id="taxpay-recent-title">{label('Recent activity', 'সাম্প্রতিক লেনদেন')}</h2></div>
           <button type="button" onClick={() => navigate('history')} className="citizen-text-action">{label('View all', 'সব দেখুন')}<ArrowRight size={16} aria-hidden="true" /></button>
         </div>
-        <p className="citizen-taxpayer-activity__notice">{label('Example transactions initiated using this payer TIN; credit ownership is not verified.', 'এই পরিশোধকারীর টিআইএন দিয়ে শুরু করা নমুনা লেনদেন; ক্রেডিটের মালিকানা যাচাইকৃত নয়।')}</p>
         {initiatedExamples.length === 0 ? (
           <p className="citizen-taxpayer-activity__empty">{label('No sample transactions for this profile.', 'এই নমুনা প্রোফাইলে কোনো লেনদেন নেই।')}</p>
         ) : (
@@ -122,8 +116,8 @@ export const TaxpayerHome: React.FC = () => {
                   <strong className="shrink-0 tabular-nums">{formatCurrency(receipt.totalAmount, language)}</strong>
                 </div>
                 <div className="citizen-taxpayer-activity__statuses">
-                  <span>{label('Demo Treasury', 'নমুনা ট্রেজারি')}: {bn ? treasuryLabels[receipt.treasuryStatus].bn : treasuryLabels[receipt.treasuryStatus].en}</span>
-                  <span>{label('Demo tax credit', 'নমুনা কর ক্রেডিট')}: {bn ? creditLabels[receipt.taxCreditStatus].bn : creditLabels[receipt.taxCreditStatus].en}</span>
+                  <span>{label('Treasury status', 'ট্রেজারির অবস্থা')}: {bn ? treasuryLabels[receipt.treasuryStatus].bn : treasuryLabels[receipt.treasuryStatus].en}</span>
+                  <span>{label('Credit status', 'ক্রেডিটের অবস্থা')}: {bn ? creditLabels[receipt.taxCreditStatus].bn : creditLabels[receipt.taxCreditStatus].en}</span>
                 </div>
                 <button type="button" onClick={() => selectReceipt(receipt.id)} className="citizen-text-action">{label('View sample receipt', 'নমুনা রসিদ দেখুন')}<ArrowRight size={15} aria-hidden="true" /></button>
               </article>
