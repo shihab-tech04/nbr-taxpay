@@ -166,11 +166,21 @@ export const SecureWorkspace: React.FC = () => {
         memo: draft.memo.trim() || null
       };
       if (draftId) {
-        const { data: updatedRows, error } = await client.from('taxpay_payment_drafts')
-          .update(values).eq('id', draftId).eq('owner_uid', current.user!.id).select('id');
+        const original = rows.find(row => row.id === draftId && row.owner_uid === current.user!.id);
+        if (!original) { showMessage('draftConflict'); return; }
+        // Column-level optimistic matching: no new SQL version column, no lost update
+        // if another session edited any of the stored draft fields in the meantime.
+        const filteredUpdate = client.from('taxpay_payment_drafts')
+          .update(values).eq('id', draftId).eq('owner_uid', current.user!.id)
+          .eq('purpose', original.purpose).eq('category', original.category)
+          .eq('assessment_year', original.assessment_year)
+          .eq('amount_minor', original.amount_minor);
+        const { data: updatedRows, error } = original.memo === null
+          ? await filteredUpdate.is('memo', null).select('id')
+          : await filteredUpdate.eq('memo', original.memo).select('id');
         if (error) { showMessage('draftWasNotSaved', error.message); return; }
         if (!confirmPrivateDraftUpdate(draftId, updatedRows)) {
-          showMessage('draftUpdateNotConfirmed');
+          showMessage('draftConflict');
           return;
         }
         acknowledgedId = draftId;
@@ -206,6 +216,18 @@ export const SecureWorkspace: React.FC = () => {
       // Network interruption after a write leaves the commit outcome unknown.
       showMessage(acknowledgedId ? 'draftSavedRefreshFailed' : 'draftOperationFailed', String(error));
     } finally { setBusy(false); }
+  };
+
+  const retryLoad = async () => {
+    if (!user || busy || draftLoading) return;
+    setDraftLoading(true);
+    setMessage(null);
+    try {
+      await refresh(user.id);
+      showMessage('draftsRefreshed');
+    } catch (error) {
+      showMessage('couldNotLoadDrafts', String(error));
+    } finally { setDraftLoading(false); }
   };
 
   const resumeDraft = (row: SavedDraft) => {
@@ -337,12 +359,18 @@ export const SecureWorkspace: React.FC = () => {
                 className="block w-full mt-2 border border-slate-300 rounded-lg p-3" rows={2}/>
             </label>
             <div className="flex flex-wrap gap-3">
-              <button type="submit" disabled={busy} className="min-h-11 px-5 py-3 rounded-lg bg-emerald-950 text-white font-semibold disabled:opacity-50">{editingDraftId ? copy.updateDraft : copy.saveDraft}</button>
+              <button type="submit" disabled={busy} className="min-h-11 px-5 py-3 rounded-lg bg-emerald-950 text-white font-semibold disabled:opacity-50">{busy ? copy.savingDraft : editingDraftId ? copy.updateDraft : copy.saveDraft}</button>
               {editingDraftId && <button type="button" disabled={busy} onClick={cancelDraftEditing} className="min-h-11 px-5 py-3 rounded-lg border border-slate-300 font-semibold disabled:opacity-50">{copy.cancelEditing}</button>}
             </div>
           </form>
           <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-3">
             <h2 className="font-serif-fraunces text-xl font-bold text-emerald-950">{copy.savedDrafts}</h2>
+            {message?.kind === 'copy' && ['couldNotLoadDrafts', 'sessionExpiredLoad', 'draftSavedRefreshFailed', 'draftReadBackNotConfirmed', 'draftConflict', 'deletionNotConfirmed'].includes(message.key) && (
+              <button type="button" disabled={busy || draftLoading} onClick={retryLoad}
+                className="min-h-11 px-4 py-2 border border-taxpay-primary text-taxpay-primary rounded-lg font-semibold focus-visible:outline focus-visible:outline-2">
+                {copy.retryLoad}
+              </button>
+            )}
             {draftLoading ? <p role="status" className="text-sm text-slate-600">{copy.loadingDrafts}</p> : rows.length === 0 ? <p className="text-sm text-slate-500">{copy.emptyDrafts}</p> : (
               <ul className="divide-y divide-slate-200">
                 {rows.map(row => <li key={row.id} className="py-3 flex flex-wrap items-start justify-between gap-3">
