@@ -57,6 +57,7 @@ export const SecureWorkspace: React.FC = () => {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [rows, setRows] = useState<SavedDraft[]>([]);
   const [draftLoading, setDraftLoading] = useState(false);
+  const [draftLoadError, setDraftLoadError] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const messageText = message
     ? message.kind === 'copy'
@@ -121,6 +122,7 @@ export const SecureWorkspace: React.FC = () => {
     if (error) throw error;
     if (sessionEpoch.current !== expectedEpoch) throw new Error('SESSION_EXPIRED_LOAD');
     const verifiedRows = (data ?? []) as SavedDraft[];
+    setDraftLoadError(false);
     setRows(verifiedRows);
     return verifiedRows;
   };
@@ -131,11 +133,13 @@ export const SecureWorkspace: React.FC = () => {
     setDraft(initial);
     draftBeforeEditing.current = null;
     setRows([]);
+    setDraftLoadError(false);
     if (!user) { setDraftLoading(false); return; }
     let active = true;
     setDraftLoading(true);
     refresh(user.id).catch((error: Error) => {
       if (!active) return;
+      setDraftLoadError(true);
       if (error.message === 'SESSION_EXPIRED_LOAD') showMessage('sessionExpiredLoad');
       else showMessage('couldNotLoadDrafts', error.message);
     }).finally(() => { if (active) setDraftLoading(false); });
@@ -239,11 +243,13 @@ export const SecureWorkspace: React.FC = () => {
   const retryLoad = async () => {
     if (!user || busy || draftLoading) return;
     setDraftLoading(true);
+    setDraftLoadError(false);
     setMessage(null);
     try {
       await refresh(user.id);
       showMessage('draftsRefreshed');
     } catch (error) {
+      setDraftLoadError(true);
       showMessage('couldNotLoadDrafts', String(error));
     } finally { setDraftLoading(false); }
   };
@@ -389,7 +395,7 @@ export const SecureWorkspace: React.FC = () => {
                 {copy.retryLoad}
               </button>
             )}
-            {draftLoading ? <p role="status" className="text-sm text-slate-600">{copy.loadingDrafts}</p> : rows.length === 0 ? <p className="text-sm text-slate-500">{copy.emptyDrafts}</p> : (
+            {draftLoading ? <p role="status" className="text-sm text-slate-600">{copy.loadingDrafts}</p> : draftLoadError ? <p role="alert" className="text-sm text-taxpay-error">{copy.draftListUnavailable}</p> : rows.length === 0 ? <p className="text-sm text-slate-500">{copy.emptyDrafts}</p> : (
               <ul className="divide-y divide-slate-200">
                 {rows.map(row => <li key={row.id} className="py-3 flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 break-words">
