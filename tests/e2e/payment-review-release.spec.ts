@@ -71,7 +71,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'View sample taxpayer demonstration' }).click();
   await expect(page.getByRole('heading', { name: 'My Tax Payments' })).toBeVisible();
-  await expect(page.getByText('This sample profile is not a signed-in taxpayer account.')).toBeVisible();
+  await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Tax position' })).toBeVisible();
   await expect(page.getByText('Unavailable', { exact: true })).toBeVisible();
   await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
@@ -88,7 +88,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await switchToBangla();
   await expect(page.getByRole('heading', { name: 'আমার কর পেমেন্ট' })).toBeVisible();
-  await expect(page.getByText('এই নমুনা প্রোফাইলটি সাইন-ইন করা করদাতা অ্যাকাউন্ট নয়।')).toBeVisible();
+  await expect(page.getByText('করদাতা ওয়ার্কস্পেস · নমুনা প্রোফাইল')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'করের অবস্থান' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-bn');
@@ -132,9 +132,9 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByText(/পেমেন্ট সিমুলেশন চালান/)).toBeVisible();
-  await expect(page.getByText(/কোনো অর্থ স্থানান্তর হবে না/)).toBeVisible();
+  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান তৈরি হয় না/)).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
-  await expect(page.getByText('সিমুলেশন সম্পন্ন — কাল্পনিক নমুনা রসিদ তৈরি হয়েছে।')).toBeVisible();
+  await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('কাল্পনিক ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
@@ -176,15 +176,15 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   await expect(page.getByRole('alert')).toContainText('greater than zero');
   await page.getByLabel('Tax amount (৳)').fill('25000');
   await page.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(page.getByText('This is a prototype simulation.')).toBeVisible();
+  await expect(page.getByText('Preview only. No funds are transferred or official challan issued.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('heading', { name: 'নমুনা তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByText(/এটি একটি নমুনা সিমুলেশন/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'পেমেন্টের তথ্য পর্যালোচনা' })).toBeVisible();
+  await expect(page.getByText(/শুধু প্রিভিউ। অর্থ স্থানান্তর বা সরকারি চালান তৈরি হয় না/)).toBeVisible();
   await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
-  await expect(page.getByText('নমুনা পেমেন্ট ধাপ সম্পন্ন হয়েছে।')).toBeVisible();
+  await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
 
@@ -201,8 +201,8 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
 
 test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {
   await page.goto('/?action=travel');
-  await expect(page.getByRole('heading', { name: 'Travel tax demonstration' })).toBeVisible();
-  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
+  await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
   await expect(page.getByRole('radio', { name: /Air - North America/ }).first()).toBeVisible();
   await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
   await page.getByLabel('Passport number (synthetic data only)').fill('SAMPLE123');
