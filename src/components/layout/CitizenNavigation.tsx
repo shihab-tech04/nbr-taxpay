@@ -141,7 +141,10 @@ export function CitizenNavigation() {
             <span><strong>TaxPay</strong><small>{bn ? 'স্বতন্ত্র পেমেন্ট প্রদর্শনী' : 'Independent payment demonstration'}</small></span>
           </button>
           {inTransaction ? (
-            <p className="citizen-flow-label">{bn ? 'নমুনা পেমেন্ট প্রক্রিয়া · ধাপের নির্দেশনা অনুসরণ করুন' : 'Demo payment flow · use the step controls below'}</p>
+            <div className="citizen-flow-actions">
+              <p className="citizen-flow-label">{bn ? 'নমুনা পেমেন্ট প্রক্রিয়া · ধাপের নির্দেশনা অনুসরণ করুন' : 'Demo payment flow · use the step controls below'}</p>
+              <button type="button" className="citizen-language" onClick={() => setLanguage(bn ? 'en' : 'bn')}>{bn ? 'EN' : 'বাংলা'}</button>
+            </div>
           ) : (
             <>
               <nav className="citizen-header__links" aria-label={bn ? 'প্রধান নেভিগেশন' : 'Main navigation'}>
