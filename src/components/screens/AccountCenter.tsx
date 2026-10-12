@@ -20,7 +20,7 @@ const I18N = {
     alertsHelp: 'In-app notifications only.',
     notificationsTitle: 'Private draft activity', noticesInfo: 'Updates from your saved drafts.',
     noNotices: 'No stored draft activity for this account.', noDemoNotices: 'No notifications yet.',
-    load: 'Loading private activity…', loadError: 'Couldn't load notifications. Try again.',
+    load: 'Loading private activity…', loadError: 'Could not load notifications. Try again.',
     retry: 'Retry', markRead: 'Mark all as viewed', viewed: 'Viewed', new: 'New', draft: 'Draft saved',
     draftCaption: 'No payment made.', settingsSaved: 'Preferences saved to your application account.',
     readSaved: 'Notification viewing status saved to your account.', saveFailed: 'Could not save. Please retry.',
