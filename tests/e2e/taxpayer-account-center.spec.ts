@@ -17,13 +17,14 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
   await expect(page.getByText('নমুনা প্রদর্শনীতে ব্যক্তিগত বিজ্ঞপ্তি নেই।')).toBeVisible();
   await expect(page.getByText(/Demand Notice|Statutory Alerts|Advance Tax 2nd Quarter/)).toHaveCount(0);
   await page.getByRole('button',{name:'নমুনা প্রোফাইল থেকে বের হোন'}).click();
-  await expect(page.getByRole('heading',{name:'Understand your next tax-payment step'})).toBeVisible();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
 });
 
 test('profile and notification routes never expose private data to anonymous Guest or Officer',async({page})=>{
   await page.goto('/?action=account_notifications');
   await expect(page.getByRole('heading',{name:'Notifications'})).toBeVisible();
-  await expect(page.getByText('No authenticated account is signed in.')).toBeVisible();
+  await expect(page.getByText('The public demonstration has no active authentication or private database.')).toBeVisible();
   await expect(page.getByText('No private notifications in demonstration mode.')).toBeVisible();
   await expect(page.getByText(/Demand Notice DN-|BDT 47,400|Inspecting Joint Commissioner/)).toHaveCount(0);
   await page.goto('/?action=account_settings');
