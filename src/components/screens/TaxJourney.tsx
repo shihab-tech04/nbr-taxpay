@@ -23,7 +23,7 @@ export const TaxJourney: React.FC = () => {
       desc: 'Registered under Section 261. Jurisdiction permanently attached to Taxes Zone-08, Circle-164.',
       status: 'COMPLETED',
       date: '2020-03-15',
-      badge: 'VERIFIED'
+      badge: 'SAMPLE'
     },
     {
       id: 2,
@@ -60,7 +60,7 @@ export const TaxJourney: React.FC = () => {
     {
       id: 6,
       title: 'Issuance of Income Tax Clearance Certificate',
-      desc: 'Official clearance certificate under Section 240 for bank credit and tender eligibility.',
+      desc: 'Illustrative certificate screen. No legal clearance or official eligibility is established.',
       status: 'PENDING',
       date: 'Final Milestone',
       badge: 'CLEARANCE'
