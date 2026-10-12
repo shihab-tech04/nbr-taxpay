@@ -207,11 +207,11 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
   await page.getByLabel('Passport number (synthetic data only)').fill('SAMPLE123');
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('heading', { name: 'ভ্রমণ করের নমুনা' })).toBeVisible();
-  await expect(page.getByText(/বর্তমান আইনের সঙ্গে প্রত্যয়ন করা হয়নি/)).toBeVisible();
-  await expect(page.getByText('এই নমুনায় বয়স নেওয়া বা অব্যাহতি প্রয়োগ করা হয় না।')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
+  await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toBeVisible();
+  await expect(page.getByText('অব্যাহতি হিসাব করা হয় না।')).toBeVisible();
   await page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' }).click();
-  await expect(page.getByText(/কোনো সরকারি চালান ইস্যু হয়নি/)).toBeVisible();
+  await expect(page.getByText('ভ্রমণ করের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('এই নমুনা ব্যক্তিগত কর-ক্রেডিট তৈরি বা যাচাই করে না।')).toBeVisible();
