@@ -90,7 +90,7 @@ test('authenticated owner resumes and updates a private draft in Bengali without
   await page.getByLabel('ব্যক্তিগত নোট (ঐচ্ছিক)').fill('Synthetic unsaved draft to preserve');
   await expect(page.getByRole('button', { name: 'খসড়া পুনরায় খুলুন' })).toBeVisible();
   await page.getByRole('button', { name: 'খসড়া পুনরায় খুলুন' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'সংরক্ষিত ব্যক্তিগত খসড়া সম্পাদনা হচ্ছে' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'সংরক্ষিত খসড়া সম্পাদনা করছেন' })).toBeVisible();
   await expect(page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)')).toHaveValue('2026-27');
   await expect(page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)')).toHaveValue('123.45');
   await page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)').fill('2027-28');
