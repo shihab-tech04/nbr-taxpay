@@ -33,3 +33,32 @@ export function confirmPrivateDraftUpdate(expectedId: string, rows: unknown): bo
   const row = rows[0];
   return Boolean(row && typeof row === 'object' && 'id' in row && row.id === expectedId);
 }
+
+/** Evidence must come from a subsequent authenticated SELECT, not the HTTP INSERT/PATCH acknowledgement.
+ * Every financial field and row ownership must match. This is still not proof of disk persistence
+ * after a database restart; the isolated integration suite tests that separately.
+ */
+export type DraftReadBackExpectation = {
+  id: string;
+  owner_uid: string;
+  purpose: string;
+  category: string;
+  assessment_year: string;
+  amount_minor: number;
+  memo: string | null;
+};
+export function confirmPrivateDraftReadBack(expected: DraftReadBackExpectation, rows: unknown): boolean {
+  if (!expected.id || !expected.owner_uid || !Array.isArray(rows)) return false;
+  const matches = rows.filter(row => row && typeof row === 'object' &&
+    (row as Record<string, unknown>).id === expected.id);
+  if (matches.length !== 1) return false;
+  const row = matches[0] as Record<string, unknown>;
+  return row.owner_uid === expected.owner_uid &&
+    row.record_status === 'DRAFT' &&
+    row.purpose === expected.purpose &&
+    row.category === expected.category &&
+    row.assessment_year === expected.assessment_year &&
+    Number.isSafeInteger(expected.amount_minor) && expected.amount_minor > 0 &&
+    row.amount_minor === expected.amount_minor &&
+    row.memo === expected.memo;
+}
