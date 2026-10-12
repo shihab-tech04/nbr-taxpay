@@ -18,6 +18,8 @@ test('authenticated owner resumes and updates a private draft in Bengali without
   const accessToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ sub: userId, aud: 'authenticated', role: 'authenticated', exp: expiresAt }))}.synthetic-signature`;
   const draft = {
     id: 'synthetic-private-draft-1',
+    owner_uid: userId,
+    record_status: 'DRAFT',
     purpose: 'TAX_LIABILITY_PAYMENT',
     category: 'TAX_WITH_RETURN',
     assessment_year: '2026-27',
