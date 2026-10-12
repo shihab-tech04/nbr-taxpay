@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useTaxState } from '../../services/taxState';
-import { authRedirectUrl, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
+import { authRedirectUrl, verifiedDraftCategory, draftSeedForCategory, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
 import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
@@ -41,7 +41,7 @@ const initial: DraftInput = {
 };
 
 export const SecureWorkspace: React.FC = () => {
-  const { language } = useTaxState();
+  const { language, routeParams } = useTaxState();
   const bn = language === 'bn';
   const copy = getSecureWorkspaceCopy(language);
   const sessionEpoch = useRef(0);
@@ -53,7 +53,10 @@ export const SecureWorkspace: React.FC = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState<WorkspaceMessage | null>(null);
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState<DraftInput>(initial);
+  const selectedDraftCategory = verifiedDraftCategory(routeParams?.draftCategory,
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('draftCategory') : null);
+  const seededDraft = (): DraftInput => draftSeedForCategory(selectedDraftCategory) ?? initial;
+  const [draft, setDraft] = useState<DraftInput>(seededDraft);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [rows, setRows] = useState<SavedDraft[]>([]);
   const [draftLoading, setDraftLoading] = useState(false);
@@ -130,7 +133,7 @@ export const SecureWorkspace: React.FC = () => {
   useEffect(() => {
     setPendingDelete(null);
     setEditingDraftId(null);
-    setDraft(initial);
+    setDraft(seededDraft());
     draftBeforeEditing.current = null;
     setRows([]);
     setDraftLoadError(false);
@@ -151,7 +154,8 @@ export const SecureWorkspace: React.FC = () => {
     if (!supabase) return;
     setBusy(true); setMessage(null);
     try {
-      const redirect = authRedirectUrl(window.location.origin, import.meta.env.BASE_URL);
+      const redirect = authRedirectUrl(window.location.origin, import.meta.env.BASE_URL,
+        selectedDraftCategory ?? undefined);
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { emailRedirectTo: redirect, shouldCreateUser: true }
