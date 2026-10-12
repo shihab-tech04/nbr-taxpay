@@ -77,7 +77,7 @@ export const TaxLedger: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-slate-500 block">Total Realized Credits (Deposits & TDS):</span>
+            <span className="text-slate-500 block">Illustrative Credit Entries (unverified):</span>
             <div className="flex items-center gap-2 mt-1">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               <span className="font-mono-plex font-bold text-lg text-emerald-900">
@@ -87,18 +87,35 @@ export const TaxLedger: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300">
-            <span className="text-emerald-800 font-medium block">Net Recognized Ledger Position:</span>
+            <span className="text-emerald-800 font-medium block">Example Net Position (not recognized):</span>
             <div className="font-mono-plex font-bold text-lg text-emerald-950 mt-1">
               {netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}`}
             </div>
             <span className="text-[10px] text-emerald-700 block mt-0.5">
-              {netBalance >= 0 ? 'Surplus credit carryforward' : 'Demand settlement required'}
+              {netBalance >= 0 ? 'Sample surplus, not carryforward entitlement' : 'Sample deficit; no verified demand'}
             </span>
           </div>
         </div>
 
+        <p className="mb-4 text-xs text-slate-600">
+          These are fictional shared ledger fixtures without verified taxpayer ownership. They must not be used as credit balances or reconciliation evidence.
+        </p>
+        <div className="grid gap-3 md:hidden">
+          {ledgerEntries.map(entry => (
+            <article key={entry.id} className="rounded-xl border border-taxpay-border bg-white p-4 space-y-2">
+              <h2 className="text-sm font-semibold text-taxpay-text">{entry.headName}</h2>
+              <p className="text-xs text-slate-600">{entry.date} · AY {entry.assessmentYear}</p>
+              <p className="text-xs font-mono-plex break-all">{entry.headCode} · {entry.challanNo}</p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div><p>Debit · illustrative</p><strong>{formatCurrency(entry.debit,language)}</strong></div>
+                <div><p>Credit · illustrative</p><strong>{formatCurrency(entry.credit,language)}</strong></div>
+              </div>
+              <p className="text-xs font-semibold text-taxpay-dark">Demo status: {entry.status}</p>
+            </article>
+          ))}
+        </div>
         {/* Ledger Entries Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
