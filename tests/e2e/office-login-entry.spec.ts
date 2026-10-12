@@ -1,9 +1,9 @@
 import {expect, test} from '@playwright/test';
 
-test('published root presents recovered Office Management login composition without a fake sign-in', async ({page}, info) => {
+test('explicit office-login route preserves recovered composition without fake sign-in', async ({page}, info) => {
   const hostedAuthRequests: string[]=[];
   page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co')) hostedAuthRequests.push(request.url())});
-  await page.goto('/');
+  await page.goto('/?action=office_login');
   await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TaxPay',exact:true})).toBeVisible();
   await expect(page.getByRole('textbox',{name:'User ID'})).toBeDisabled();
@@ -29,8 +29,8 @@ test('published root presents recovered Office Management login composition with
   expect(hostedAuthRequests).toEqual([]);
 });
 
-test('Office login layout keeps source carousel controls and EN/BN navigation', async ({page}, info) => {
-  await page.goto('/');
+test('explicit Office login keeps source carousel controls and EN/BN navigation', async ({page}, info) => {
+  await page.goto('/?action=office_login');
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'স্বাগতম'})).toBeVisible();
   await expect(page.getByRole('button',{name:'ট্যাক্সপে দেখুন'})).toBeVisible();
@@ -47,4 +47,14 @@ test('Office login layout keeps source carousel controls and EN/BN navigation', 
   await expect(page.getByRole('dialog',{name:'Help & User Guide'})).toBeVisible();
   await page.getByRole('button',{name:'Close',exact:true}).first().click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+
+test('root opens public payment discovery; preserved office login is never a forced citizen entry',async({page})=>{
+  await page.goto('/');
+  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
+  await expect(page.locator('.office-auth')).toHaveCount(0);
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await expect(page.getByRole('dialog',{name:'Select payment type'})).toBeVisible();
 });
