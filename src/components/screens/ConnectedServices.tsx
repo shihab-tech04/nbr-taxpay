@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Link2, 
   ExternalLink, 
-  CheckCircle2, 
+  Unplug, 
   RefreshCw, 
   ShieldCheck, 
   Database,
@@ -54,7 +54,7 @@ export const ConnectedServices: React.FC = () => {
 
               <div className="flex flex-col items-end gap-1.5">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <Unplug className="w-3.5 h-3.5" />
                   <span>{srv.status}</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
