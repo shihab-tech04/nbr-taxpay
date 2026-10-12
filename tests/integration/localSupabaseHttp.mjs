@@ -25,12 +25,15 @@ function directSqlDraft(id, amountMinor) {
   const query = `select json_build_object('database', current_database(), 'id', id, 'amount_minor', amount_minor, 'status', record_status)
     from public.taxpay_payment_drafts where id = '${id}'::uuid;`;
   const result = spawnSync('psql', ['--no-psqlrc', '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--command', query], {
-    env: { ...process.env, PGHOST: directPgUrl.hostname, PGPORT: directPgUrl.port || '5432',\n      PGDATABASE: decodeURIComponent(directPgUrl.pathname.slice(1)),\n      PGUSER: decodeURIComponent(directPgUrl.username), PGPASSWORD: decodeURIComponent(directPgUrl.password),\n      PGCONNECT_TIMEOUT: '5' },
+    env: { ...process.env, PGHOST: directPgUrl.hostname, PGPORT: directPgUrl.port || '5432',
+      PGDATABASE: decodeURIComponent(directPgUrl.pathname.slice(1)),
+      PGUSER: decodeURIComponent(directPgUrl.username), PGPASSWORD: decodeURIComponent(directPgUrl.password),
+      PGCONNECT_TIMEOUT: '5' },
     encoding: 'utf8', timeout: 12000, input: undefined,
     // Pass DSN through PG* environment rather than as a command-line argument.
   });
   if (result.error || result.status !== 0) throw new Error('BLOCKED: direct loopback PostgreSQL query failed; verify local psql, connection target and credentials.');
-  const lines = result.stdout.trim().split(/\\r?\\n/).filter(Boolean);
+  const lines = result.stdout.trim().split(/\r?\n/).filter(Boolean);
   assert.equal(lines.length, 1, 'HTTP draft not found in independently queried PostgreSQL; inspect connection targets and migration history');
   const row = JSON.parse(lines[0]);
   assert.equal(row.id, id);
