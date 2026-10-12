@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 
 const rawUrl = process.env.TAXPAY_LOCAL_SUPABASE_URL;
 const anonKey = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
@@ -264,4 +265,16 @@ await expectDenied('/rest/v1/taxpay_correction_inquiries', {
 });
 pass('owner-only proposals and evidence-pending corrections cannot approve or mutate finances');
 
+// Private, temporary synthetic-only evidence for the separate post-restart test.
+// Never upload this file as a CI artifact; its test user passwords are disposable.
+if (process.env.TAXPAY_LOCAL_RECOVERY_FILE) {
+  writeFileSync(process.env.TAXPAY_LOCAL_RECOVERY_FILE, JSON.stringify({
+    database: databaseA,
+    owners: [
+      { email: ownerA.email, password: ownerA.password, uid: ownerA.id, draftId: draftA.id, amountMinor: 1350 },
+      { email: ownerB.email, password: ownerB.password, uid: ownerB.id, draftId: draftB.id, amountMinor: 2400 },
+    ],
+  }), { mode: 0o600, flag: 'wx' });
+  pass('restart evidence stored only in a temporary private synthetic credentials file');
+}
 console.log('RESULT 6 local Auth/PostgREST integration groups passed; no service-role key or non-loopback endpoint used.');
