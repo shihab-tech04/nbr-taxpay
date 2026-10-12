@@ -18,15 +18,15 @@ import { ReceiptView } from '../common/ReceiptView';
 
 const COPY = {
   en: {
-    title: 'Travel tax demonstration', intro: 'Illustrative form only. No passenger identity check, government fee collection, live gateway or immigration clearance is available.',
-    legalTitle: 'Legal status not verified', legalBody: 'Rates in this prototype come from the supplied reference concept and are not certified against current law. Confirm applicable rates and exemptions with an authoritative source before relying on them.',
+    title: 'Travel tax', intro: 'Enter your travel details.',
+    legalTitle: 'Legal status not verified', legalBody: 'Rates and exemptions are not verified. Check the applicable rules before use.',
     destination: 'Destination and travel mode', passenger: 'Passenger name (as in passport)', passengerPlaceholder: 'Example: MOHAMMED RAHMAN', passport: 'Passport number (synthetic data only)', passportPlaceholder: 'Demo reference only',
-    count: 'Outbound passenger count', countHint: 'This prototype does not collect ages or apply an exemption.',
+    count: 'Outbound passenger count', countHint: 'Exemptions are not calculated.',
     mobile: 'Mobile number (optional; no SMS is sent)', phonePlaceholder: 'Contact number (demo only)',
     port: 'Departure port', date: 'Departure date', total: 'Illustrative total', perPassenger: 'per passenger',
-    notice: 'Simulation only — no money is transferred and no official challan or travel clearance is created.', run: 'Run payment simulation', running: 'Running local simulation…',
-    complete: 'Travel payment simulation completed — no official challan was issued.', ref: 'Sample reference', noTravel: 'Do not present this sample at an airport, border, bank or government office. No tax was paid.', again: 'Start another demonstration',
-    requiredName: 'Enter the passenger name shown on the passport.', requiredPassport: 'Use synthetic test data only. This prototype cannot verify a passport or perform immigration clearance.'
+    notice: 'Preview only. No payment or travel clearance is issued.', run: 'Run payment simulation', running: 'Running local simulation…',
+    complete: 'Travel tax preview ready.', ref: 'Sample reference', noTravel: 'Not valid for travel or proof of payment.', again: 'Start another demonstration',
+    requiredName: 'Enter the passenger name shown on the passport.', requiredPassport: 'Use sample passport details. Passport verification is unavailable.'
   },
   bn: {
     title: 'ভ্রমণ করের নমুনা', intro: 'শুধু উদাহরণমূলক ফরম। যাত্রীর পরিচয় যাচাই, সরকারি ফি সংগ্রহ, লাইভ গেটওয়ে বা অভিবাসন ছাড়পত্র নেই।',
