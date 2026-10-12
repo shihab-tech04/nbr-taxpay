@@ -1,5 +1,6 @@
 import { PGlite } from '@electric-sql/pglite';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 const USER_A = '00000000-0000-4000-8000-000000000001';
 const USER_B = '00000000-0000-4000-8000-000000000002';
@@ -35,7 +36,7 @@ async function createDatabase() {
 
   for (const migration of MIGRATIONS) {
     const url = new URL(`../../supabase/migrations/${migration}`, import.meta.url);
-    await db.exec(await Deno.readTextFile(url));
+    await db.exec(await readFile(url, 'utf-8'));
   }
   return db;
 }

@@ -1,6 +1,0 @@
-{
-  "imports": {
-    "@electric-sql/pglite": "npm:@electric-sql/pglite@0.4.5"
-  },
-  "lock": true
-}
