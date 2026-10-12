@@ -66,7 +66,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
         </div>
       </div>
 
-      {/* Official A-Challan Document Container */}
+      {/* Unofficial printable demonstration receipt; never proof of payment or credit. */}
       <div className="print-card bg-white border border-slate-300 rounded-xl shadow-md p-6 sm:p-8 relative overflow-hidden text-slate-800 font-sans">
         {/* Subtle Watermark Stamp */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 select-none rotate-[-25deg]">
@@ -76,25 +76,25 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
         </div>
 
         {/* Challan Document Header */}
-        <div className="text-center pb-6 border-b-2 border-emerald-900 space-y-1 relative">
-          <div className="flex items-center justify-center gap-2 text-emerald-900">
+        <div className="text-center pb-6 border-b-2 border-taxpay-primary space-y-1 relative">
+          <div className="flex items-center justify-center gap-2 text-taxpay-dark">
             <Building2 className="w-8 h-8 text-emerald-800" />
-            <h1 className="font-serif-fraunces text-xl sm:text-2xl font-bold tracking-tight text-emerald-950">
-              Government of the People\'s Republic of Bangladesh
+            <h1 className="font-serif-fraunces text-xl sm:text-2xl font-bold tracking-tight text-taxpay-dark">
+              TaxPay — Unofficial Demonstration Receipt
             </h1>
           </div>
           <h2 className="text-sm sm:text-base font-semibold text-emerald-900">
-            National Board of Revenue (NBR) — Automated Challan (A-Challan)
+            Illustrative A-Challan Layout (not issued by NBR)
           </h2>
           <p className="text-xs text-slate-500 font-medium">
-            Electronic Treasury Deposit Receipt for Income Tax & Levies (Form TR-6/ACS)
+            Fictional data — not a Treasury settlement confirmation or official Form TR-6
           </p>
 
           <div className="absolute right-0 top-0 hidden sm:flex flex-col items-end">
             <div className="border border-slate-300 rounded p-1 bg-slate-50">
               <QrCode className="w-14 h-14 text-slate-800" />
             </div>
-            <span className="text-[10px] text-slate-500 font-mono mt-0.5">VERIFIED REPO</span>
+            <span className="text-[10px] text-slate-500 font-mono mt-0.5">DEMO ONLY</span>
           </div>
         </div>
 
