@@ -7,18 +7,108 @@ import {
   AlertCircle, 
   Building2, 
   Info, 
-  Lock, 
-  HelpCircle,
-  FileCheck2,
-  ShieldCheck
+  Lock
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
 import { MASTER_PAYMENT_HEADS, BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
-import { PaymentCategory, MasterPaymentHead, ChallanReceipt, PaymentLineItem } from '../../types/tax';
+import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
+import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
+
+const GUEST_COPY = {
+  en: {
+    withholdingMode: 'Withholding Agent Mode', publicPortal: 'Public Guest Portal',
+    sourceTaxTitle: 'Source Tax Deposit (TDS / TCS)', paymentTitle: 'Guest Income Tax Payment',
+    intro: 'Illustrative payment flow only. No live Treasury or payment gateway connection is available.',
+    selectedPurpose: 'Selected purpose', underReview: 'Under review', stepOf: (step: number) => `Step ${step} of 3`,
+    steps: ['Payer & TIN Info', 'Head & Calculation', 'Review & Payment Simulation'],
+    tinPlaceholder: 'e-TIN (demonstration only)', tinHint: 'At least 10 characters are required; no government identity check is performed.',
+    payerName: 'Payer Legal Name', payerNamePlaceholder: 'Full name as registered on TIN certificate',
+    year: 'Assessment Year', zoneCircle: 'Taxes Zone & Circle', zone: 'Taxes Zone', circle: 'Taxes Circle',
+    mobile: 'Mobile Number (optional; no SMS is sent in this demonstration)', mobilePlaceholder: 'Contact number (demo only)',
+    email: 'Email Address (optional)', deducteeDetails: 'Deductee (Supplier / Beneficiary) Particulars',
+    deducteeTin: 'Deductee TIN', deducteeTinPlaceholder: 'Beneficiary vendor 12-digit TIN',
+    deducteeName: 'Deductee Entity Name', deducteeNamePlaceholder: 'Beneficiary supplier / contractor name',
+    legalNote: 'Demonstration only; no actual deposit or tax credit is created. In a real source-tax deposit, credit is assigned to the Deductee TIN, not the depositing withholding agent.',
+    representativeCheck: 'I am an authorized legal representative paying on behalf of this taxpayer',
+    representativeName: 'Representative Name', representativeNamePlaceholder: 'Lawyer / CA / authorized relative',
+    representativeTin: 'Representative TIN', representativeTinPlaceholder: 'Representative 12-digit TIN',
+    continueHead: 'Continue to Payment Head', category: 'Payment Category',
+    selectHead: (count: number) => `Select Master Payment Head (${count} available in category)`,
+    searchHead: 'Filter by code or section...', blocked: 'BLOCKED', act: 'Act', legacy: 'Legacy', note: 'Note',
+    amountBreakdown: 'Payment Amount Breakdown (BDT)', taxAmount: 'Tax Amount (৳)', penalty: 'Penalty (৳)',
+    surcharge: 'Surcharge (৳)', interest: 'Interest (৳)', remarks: 'Payment Remarks / Invoice Reference (Optional)',
+    remarksPlaceholder: 'e.g. Assessment order #190 / Salary withholding month Oct 2026', total: 'Total Payable Amount:',
+    draft: 'Plan as a private draft', continueReview: 'Continue to Review', back: 'Back', backToHead: 'Back to Payment Head',
+    reviewTitle: 'Pre-submission Summary (Illustrative)', payer: 'Payer Name', jurisdiction: 'Jurisdiction',
+    headTitle: 'Payment Head', unspecified: 'Unspecified', grandTotal: 'Total Amount (BDT)',
+    channel: 'Select a Payment Channel (Simulation)', noFee: 'No fee (illustrative)', directTreasury: 'Treasury route (simulation)',
+    govSwitch: 'Government switch (simulated)',
+    simulationTitle: 'Payment simulation only',
+    simulationNotice: 'Selecting a payment channel and continuing runs a local demonstration. No money is transferred, no live gateway or Treasury is contacted, and the sample receipt and reference are not an official A-Challan or proof of payment.',
+    runSimulation: (amount: string) => `Run payment simulation · ${amount}`,
+    processing: 'Running payment simulation…',
+    completionTitle: 'Simulation complete — fictional sample receipt created.',
+    completionBody: 'Demonstration only. This is not an official A-Challan or proof of payment. Sample reference:',
+    anotherPayment: 'Start Another Demonstration',
+    invalidTin: 'Enter an e-TIN at least 10 characters long.',
+    requiredPayer: 'Enter the payer’s full legal name.',
+    requiredRepresentative: 'Enter the representative’s name and TIN to continue.',
+    requiredDeductee: 'Enter the deductee (supplier or beneficiary) TIN for this source-tax demonstration.',
+    requiredHead: 'Select an available payment head.',
+    blockedHead: (id: number) => `Payment head #${id} is blocked for owner review and cannot be selected for this demonstration.`,
+    positiveAmount: 'Enter a total amount greater than zero.',
+  },
+  bn: {
+    withholdingMode: 'উৎসে কর কর্তনকারীর মোড', publicPortal: 'পাবলিক অতিথি পোর্টাল',
+    sourceTaxTitle: 'উৎসে কর জমা (টিডিএস / টিসিএস)', paymentTitle: 'অতিথি আয়কর পরিশোধ',
+    intro: 'শুধু উদাহরণমূলক পেমেন্ট ধাপ। লাইভ ট্রেজারি বা পেমেন্ট গেটওয়ে সংযোগ নেই।',
+    selectedPurpose: 'নির্বাচিত উদ্দেশ্য', underReview: 'পর্যালোচনাধীন', stepOf: (step: number) => `ধাপ ${step} / ৩`,
+    steps: ['করদাতা ও টিআইএন তথ্য', 'খাত ও হিসাব', 'পর্যালোচনা ও পেমেন্ট সিমুলেশন'],
+    tinPlaceholder: 'ই-টিআইএন (শুধু প্রদর্শনী)', tinHint: 'কমপক্ষে ১০টি অক্ষর দিতে হবে; সরকারি পরিচয় যাচাই করা হয় না।',
+    payerName: 'করদাতার আইনগত নাম', payerNamePlaceholder: 'টিআইএন সনদে নিবন্ধিত পূর্ণ নাম',
+    year: 'করবর্ষ', zoneCircle: 'কর অঞ্চল ও সার্কেল', zone: 'কর অঞ্চল', circle: 'কর সার্কেল',
+    mobile: 'মোবাইল নম্বর (ঐচ্ছিক; এই প্রদর্শনীতে এসএমএস পাঠানো হয় না)', mobilePlaceholder: 'যোগাযোগ নম্বর (শুধু প্রদর্শনী)',
+    email: 'ইমেইল ঠিকানা (ঐচ্ছিক)', deducteeDetails: 'কর কর্তনগ্রহীতা (সরবরাহকারী / সুবিধাভোগী) তথ্য',
+    deducteeTin: 'কর কর্তনগ্রহীতার টিআইএন', deducteeTinPlaceholder: 'সুবিধাভোগী বিক্রেতার ১২ সংখ্যার টিআইএন',
+    deducteeName: 'কর কর্তনগ্রহীতা প্রতিষ্ঠানের নাম', deducteeNamePlaceholder: 'সুবিধাভোগী সরবরাহকারী / ঠিকাদারের নাম',
+    legalNote: 'শুধু প্রদর্শনী; এখানে কোনো প্রকৃত জমা বা কর ক্রেডিট তৈরি হয় না। প্রকৃত উৎসে কর জমায় ক্রেডিট কর কর্তনগ্রহীতার টিআইএন-এ বরাদ্দ হয়, জমাদানকারী উৎসে কর কর্তনকারীর নামে নয়।',
+    representativeCheck: 'আমি এই করদাতার পক্ষে পরিশোধকারী অনুমোদিত আইনগত প্রতিনিধি',
+    representativeName: 'প্রতিনিধির নাম', representativeNamePlaceholder: 'আইনজীবী / সিএ / অনুমোদিত আত্মীয়',
+    representativeTin: 'প্রতিনিধির টিআইএন', representativeTinPlaceholder: 'প্রতিনিধির ১২ সংখ্যার টিআইএন',
+    continueHead: 'পেমেন্ট খাতে এগিয়ে যান', category: 'পেমেন্টের শ্রেণি',
+    selectHead: (count: number) => `মাস্টার পেমেন্ট খাত নির্বাচন করুন (এই শ্রেণিতে ${count}টি)`,
+    searchHead: 'কোড বা ধারা দিয়ে খুঁজুন…', blocked: 'নির্বাচনযোগ্য নয়', act: 'আইন', legacy: 'পূর্ববর্তী আইন', note: 'নোট',
+    amountBreakdown: 'পেমেন্টের পরিমাণের হিসাব (টাকা)', taxAmount: 'কর (৳)', penalty: 'জরিমানা (৳)',
+    surcharge: 'সারচার্জ (৳)', interest: 'সুদ (৳)', remarks: 'পেমেন্টের মন্তব্য / ইনভয়েস রেফারেন্স (ঐচ্ছিক)',
+    remarksPlaceholder: 'যেমন: কর নির্ধারণ আদেশ #১৯০ / অক্টোবর ২০২৬-এর বেতন থেকে কর কর্তন', total: 'মোট প্রদেয় অর্থ:',
+    draft: 'ব্যক্তিগত খসড়া হিসেবে পরিকল্পনা করুন', continueReview: 'পর্যালোচনায় এগিয়ে যান', back: 'পূর্ববর্তী ধাপ', backToHead: 'পেমেন্ট খাতে ফিরুন',
+    reviewTitle: 'জমার আগে সারাংশ (উদাহরণ)', payer: 'করদাতার নাম', jurisdiction: 'এখতিয়ার',
+    headTitle: 'পেমেন্ট খাত', unspecified: 'উল্লেখ করা হয়নি', grandTotal: 'মোট অর্থ (টাকা)',
+    channel: 'পেমেন্ট মাধ্যম নির্বাচন করুন (সিমুলেশন)', noFee: 'কোনো ফি নেই (উদাহরণ)', directTreasury: 'ট্রেজারি রুট (সিমুলেশন)',
+    govSwitch: 'সরকারি সুইচ (সিমুলেটেড)',
+    simulationTitle: 'শুধু পেমেন্ট সিমুলেশন',
+    simulationNotice: 'পেমেন্ট মাধ্যম নির্বাচন করে এগোলে স্থানীয় প্রদর্শনী চলবে। কোনো অর্থ স্থানান্তর হবে না, লাইভ গেটওয়ে বা ট্রেজারির সঙ্গে যোগাযোগ হবে না, এবং নমুনা রসিদ ও রেফারেন্স সরকারি এ-চালান বা পেমেন্টের প্রমাণ নয়।',
+    runSimulation: (amount: string) => `পেমেন্ট সিমুলেশন চালান · ${amount}`,
+    processing: 'পেমেন্ট সিমুলেশন চলছে…',
+    completionTitle: 'সিমুলেশন সম্পন্ন — কাল্পনিক নমুনা রসিদ তৈরি হয়েছে।',
+    completionBody: 'শুধু প্রদর্শনী। এটি সরকারি এ-চালান বা পেমেন্টের প্রমাণ নয়। নমুনা রেফারেন্স:',
+    anotherPayment: 'আরেকটি প্রদর্শনী শুরু করুন',
+    invalidTin: 'কমপক্ষে ১০ অক্ষরের ই-টিআইএন দিন।',
+    requiredPayer: 'করদাতার পূর্ণ আইনগত নাম দিন।',
+    requiredRepresentative: 'এগোতে প্রতিনিধির নাম ও টিআইএন দিন।',
+    requiredDeductee: 'এই উৎসে করের প্রদর্শনীর জন্য কর কর্তনগ্রহীতা (সরবরাহকারী বা সুবিধাভোগী)-এর টিআইএন দিন।',
+    requiredHead: 'নির্বাচনযোগ্য একটি পেমেন্ট খাত নির্বাচন করুন।',
+    blockedHead: (id: number) => `পেমেন্ট খাত #${id} মালিকপক্ষের পর্যালোচনার জন্য অবরুদ্ধ; এই প্রদর্শনীতে এটি নির্বাচন করা যাবে না।`,
+    positiveAmount: 'শূন্যের বেশি মোট অর্থ দিন।',
+  },
+} as const;
+
+type GuestErrorField = 'tin' | 'payerName' | 'representativeName' | 'deducteeTin' | 'headId' | 'taxAmount';
+const ERROR_ID = 'guest-payment-error';
 
 interface GuestPaymentProps {
   isWithholdingMode?: boolean;
@@ -26,6 +116,8 @@ interface GuestPaymentProps {
 
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false }) => {
   const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
+  const commonCopy = UI_STRINGS[language];
+  const copy = GUEST_COPY[language];
 
   // Wizard state steps: 1: Taxpayer & Identification, 2: Head & Amount, 3: Review & Gateway, 4: Receipt
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -69,6 +161,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
+
+  const errorDescription = (field: GuestErrorField, hintId?: string) => {
+    const ids = [hintId, errorField === field && errorMessage ? ERROR_ID : undefined].filter(Boolean);
+    return ids.length ? ids.join(' ') : undefined;
+  };
+  const isFieldInvalid = (field: GuestErrorField) => errorField === field && Boolean(errorMessage);
+  const setValidationError = (message: string, field: GuestErrorField) => {
+    setErrorMessage(message);
+    setErrorField(field);
+  };
+  const clearValidationError = () => {
+    setErrorMessage('');
+    setErrorField(null);
+  };
 
   useEffect(() => {
     if (isWithholdingMode) {
@@ -91,6 +198,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const matchCat = head.category === category;
     const matchQuery = headSearch
       ? head.nameEn.toLowerCase().includes(headSearch.toLowerCase()) ||
+        head.nameBn.includes(headSearch) ||
         head.economicCode.includes(headSearch) ||
         head.sectionAct2023.toLowerCase().includes(headSearch.toLowerCase())
       : true;
@@ -103,45 +211,45 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const handleStep1Next = () => {
     if (!tin.trim() || tin.length < 10) {
-      setErrorMessage('Please enter a valid Taxpayer Identification Number (minimum 10-12 digits).');
+      setValidationError(copy.invalidTin, 'tin');
       return;
     }
     if (!payerName.trim()) {
-      setErrorMessage('Please enter the payer full legal name.');
+      setValidationError(copy.requiredPayer, 'payerName');
       return;
     }
     if (isRepresentative && (!representativeTin || !representativeName)) {
-      setErrorMessage('Representative name and TIN are required when paying on behalf of another taxpayer.');
+      setValidationError(copy.requiredRepresentative, 'representativeName');
       return;
     }
     if (isWithholdingMode && !deducteeTin.trim()) {
-      setErrorMessage('Deductee (supplier/beneficiary) TIN is mandatory for source tax deposits.');
+      setValidationError(copy.requiredDeductee, 'deducteeTin');
       return;
     }
-    setErrorMessage('');
+    clearValidationError();
     setStep(2);
   };
 
   const handleStep2Next = () => {
     if (!selectedHead) {
-      setErrorMessage('Please select a valid payment head.');
+      setValidationError(copy.requiredHead, 'headId');
       return;
     }
     if (BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
-      setErrorMessage(`Head #${selectedHead.id} is BLOCKED for owner review and cannot be processed.`);
+      setValidationError(copy.blockedHead(selectedHead.id), 'headId');
       return;
     }
     if (totalAmount <= 0) {
-      setErrorMessage('Total payable amount must be greater than zero.');
+      setValidationError(copy.positiveAmount, 'taxAmount');
       return;
     }
-    setErrorMessage('');
+    clearValidationError();
     setStep(3);
   };
 
   const handleExecutePayment = () => {
     setIsProcessing(true);
-    setErrorMessage('');
+    clearValidationError();
 
     setTimeout(() => {
       const year = new Date().getFullYear();
@@ -201,14 +309,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   if (step === 4 && createdReceipt) {
     return (
-      <div className="space-y-6">
-        <div className="no-print p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex items-center justify-between">
+      <div lang={language === 'bn' ? 'bn' : 'en'} className={`space-y-6 ${language === 'bn' ? 'font-bengali' : ''}`}>
+        <div className="no-print p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
-              <span className="font-bold">Simulation complete — fictional Treasury scroll created.</span>
+              <span className="font-bold">{copy.completionTitle}</span>
               <p className="text-xs text-emerald-800">
-                Demo receipt (not an official A-Challan). Reference: <strong className="font-mono">{createdReceipt.challanNo}</strong>
+                {copy.completionBody} <strong className="font-mono">{createdReceipt.challanNo}</strong>
               </p>
             </div>
           </div>
@@ -217,57 +325,55 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               setStep(1);
               setCreatedReceipt(null);
             }}
-            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
+            className="min-h-11 px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
           >
-            Initiate Another Payment
+            {copy.anotherPayment}
           </button>
         </div>
-        <ReceiptView receipt={createdReceipt} onBack={() => navigate('landing')} />
+        <div lang={language}>
+          <ReceiptView receipt={createdReceipt} onBack={() => navigate('landing')} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div lang={language === 'bn' ? 'bn' : 'en'} className={`max-w-4xl mx-auto space-y-6 pb-12 ${language === 'bn' ? 'font-bengali' : ''}`}>
       {/* Title & Mode Banner */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              {isWithholdingMode ? 'Withholding Agent Mode' : 'Public Guest Portal'}
+              {isWithholdingMode ? copy.withholdingMode : copy.publicPortal}
             </span>
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              {isWithholdingMode ? 'Source Tax Deposit (TDS / TCS)' : 'Guest Income Tax Payment'}
+              {isWithholdingMode ? copy.sourceTaxTitle : copy.paymentTitle}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Explore illustrative guest payment steps without a live Treasury or payment gateway connection.
+              {copy.intro}
             </p>
             <p className="mt-2 text-xs font-semibold text-taxpay-dark" aria-live="polite">
-              Selected purpose: {CATEGORY_LABELS[category]?.en || 'Under review'}
+              {copy.selectedPurpose}: {language === 'bn' ? CATEGORY_LABELS[category]?.bn || copy.underReview : CATEGORY_LABELS[category]?.en || copy.underReview}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              Step {step} of 3
+            <span aria-live="polite" className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              {copy.stepOf(step)}
             </span>
           </div>
         </div>
 
         {/* Stepper Progress */}
-        <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-center mb-6">
-          <div className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            1. Payer & TIN Info
-          </div>
-          <div className={`p-2 rounded border ${step >= 2 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            2. Head & Calculation
-          </div>
-          <div className={`p-2 rounded border ${step >= 3 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            3. Review & Gateway
-          </div>
-        </div>
+        <ol aria-label={language === 'bn' ? 'পেমেন্ট ধাপ' : 'Payment steps'} className="list-none grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-center mb-6">
+          {copy.steps.map((stepLabel, index) => (
+            <li key={stepLabel} aria-current={step === index + 1 ? 'step' : undefined} className={`min-h-11 p-2 rounded border ${step >= index + 1 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+              {index + 1}. {stepLabel}
+            </li>
+          ))}
+        </ol>
 
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <div id={ERROR_ID} role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -278,42 +384,45 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Taxpayer Identification Number (e-TIN) *
+                <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
+                  {commonCopy.tin} *
                 </label>
                 <input
+                  id="guest-tin"
                   type="text"
-                  placeholder="12-digit e-TIN format (demo only)"
+                  aria-invalid={isFieldInvalid('tin') || undefined}
+                  aria-describedby={errorDescription('tin', 'guest-tin-hint')}
+                  placeholder={copy.tinPlaceholder}
                   value={tin}
                   onChange={(e) => setTin(e.target.value.replace(/\s+/g, ''))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
-                <span className="text-[11px] text-slate-500 mt-1 block">
-                  12-digit format for demonstration only; no government identity check is performed.
+                <span id="guest-tin-hint" className="text-[11px] text-slate-500 mt-1 block">
+                  {copy.tinHint}
                 </span>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Payer Legal Name *
-                </label>
+                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{copy.payerName} *</label>
                 <input
+                  id="guest-payer-name"
                   type="text"
-                  placeholder="Full name as registered on TIN certificate"
+                  aria-invalid={isFieldInvalid('payerName') || undefined}
+                  aria-describedby={errorDescription('payerName')}
+                  placeholder={copy.payerNamePlaceholder}
                   value={payerName}
                   onChange={(e) => setPayerName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Assessment Year *
-                </label>
+                <label htmlFor="guest-assessment-year" className="block text-xs font-semibold text-slate-700 mb-1">{commonCopy.assessmentYear} *</label>
                 <select
+                  id="guest-assessment-year"
                   value={assessmentYear}
                   onChange={(e) => setAssessmentYear(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 >
                   {ASSESSMENT_YEARS.map(ay => (
                     <option key={ay} value={ay}>{ay}</option>
@@ -321,49 +430,53 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Taxes Zone & Circle
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={taxZone}
-                    onChange={(e) => setTaxZone(e.target.value)}
-                    className="px-2.5 py-2 text-xs rounded border border-slate-300"
-                  />
-                  <input
-                    type="text"
-                    value={taxCircle}
-                    onChange={(e) => setTaxCircle(e.target.value)}
-                    className="px-2.5 py-2 text-xs rounded border border-slate-300"
-                  />
+              <fieldset>
+                <legend className="block text-xs font-semibold text-slate-700 mb-1">{copy.zoneCircle}</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="guest-tax-zone" className="block text-xs text-slate-600 mb-1">{copy.zone}</label>
+                    <input
+                      id="guest-tax-zone"
+                      type="text"
+                      value={taxZone}
+                      onChange={(e) => setTaxZone(e.target.value)}
+                      className="min-h-11 w-full px-2.5 py-2 text-xs rounded border border-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="guest-tax-circle" className="block text-xs text-slate-600 mb-1">{copy.circle}</label>
+                    <input
+                      id="guest-tax-circle"
+                      type="text"
+                      value={taxCircle}
+                      onChange={(e) => setTaxCircle(e.target.value)}
+                      className="min-h-11 w-full px-2.5 py-2 text-xs rounded border border-slate-300"
+                    />
+                  </div>
                 </div>
-              </div>
+              </fieldset>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Mobile Number (for SMS token & receipt link)
-                </label>
+                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{copy.mobile}</label>
                 <input
+                  id="guest-phone"
                   type="text"
-                  placeholder="Contact number (demo only)"
+                  placeholder={copy.mobilePlaceholder}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email Address (optional)
-                </label>
+                <label htmlFor="guest-email" className="block text-xs font-semibold text-slate-700 mb-1">{copy.email}</label>
                 <input
+                  id="guest-email"
                   type="email"
                   placeholder="taxpayer@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 />
               </div>
             </div>
@@ -373,68 +486,79 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <div className="p-4 rounded-lg bg-teal-50 border border-teal-200 space-y-3">
                 <div className="flex items-center gap-2 text-teal-900 font-semibold text-xs">
                   <Building2 className="w-4 h-4 text-teal-700" />
-                  <span>Deductee (Supplier / Beneficiary) Particulars</span>
+                  <span>{copy.deducteeDetails}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-slate-700 font-medium mb-1">Deductee TIN *</label>
+                    <label htmlFor="guest-deductee-tin" className="block text-slate-700 font-medium mb-1">{copy.deducteeTin} *</label>
                     <input
+                      id="guest-deductee-tin"
                       type="text"
-                      placeholder="Beneficiary Vendor 12-digit TIN"
+                      aria-invalid={isFieldInvalid('deducteeTin') || undefined}
+                      aria-describedby={errorDescription('deducteeTin')}
+                      placeholder={copy.deducteeTinPlaceholder}
                       value={deducteeTin}
                       onChange={(e) => setDeducteeTin(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded border border-teal-300 font-mono-plex"
+                      className="min-h-11 w-full px-3 py-1.5 rounded border border-teal-300 font-mono-plex"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 font-medium mb-1">Deductee Entity Name</label>
+                    <label htmlFor="guest-deductee-name" className="block text-slate-700 font-medium mb-1">{copy.deducteeName}</label>
                     <input
+                      id="guest-deductee-name"
                       type="text"
-                      placeholder="Beneficiary Supplier / Contractor Name"
+                      placeholder={copy.deducteeNamePlaceholder}
                       value={deducteeName}
                       onChange={(e) => setDeducteeName(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded border border-teal-300"
+                      className="min-h-11 w-full px-3 py-1.5 rounded border border-teal-300"
                     />
                   </div>
                 </div>
                 <p className="text-[11px] text-teal-800 italic">
-                  Legal Note: The tax credit for this deposit will be assigned strictly to the Deductee TIN, not the depositing withholding agent.
+                  {copy.legalNote}
                 </p>
               </div>
             )}
 
             {/* Representative Checkbox */}
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+              <label className="min-h-11 flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
+                  id="guest-is-representative"
                   checked={isRepresentative}
                   onChange={(e) => setIsRepresentative(e.target.checked)}
                   className="rounded text-emerald-800 focus:ring-taxpay-primary"
                 />
-                <span>I am an authorized legal representative paying on behalf of this taxpayer</span>
+                <span>{copy.representativeCheck}</span>
               </label>
 
               {isRepresentative && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
                   <div>
-                    <label className="block text-slate-600 mb-1">Representative Name *</label>
+                    <label htmlFor="guest-representative-name" className="block text-slate-600 mb-1">{copy.representativeName} *</label>
                     <input
+                      id="guest-representative-name"
                       type="text"
-                      placeholder="Lawyer / CA / Authorized Relative"
+                      aria-invalid={isFieldInvalid('representativeName') || undefined}
+                      aria-describedby={errorDescription('representativeName')}
+                      placeholder={copy.representativeNamePlaceholder}
                       value={representativeName}
                       onChange={(e) => setRepresentativeName(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded border border-slate-300"
+                      className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-600 mb-1">Representative TIN *</label>
+                    <label htmlFor="guest-representative-tin" className="block text-slate-600 mb-1">{copy.representativeTin} *</label>
                     <input
+                      id="guest-representative-tin"
                       type="text"
-                      placeholder="Representative 12-digit TIN"
+                      aria-invalid={isFieldInvalid('representativeName') || undefined}
+                      aria-describedby={errorDescription('representativeName')}
+                      placeholder={copy.representativeTinPlaceholder}
                       value={representativeTin}
                       onChange={(e) => setRepresentativeTin(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
+                      className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                     />
                   </div>
                 </div>
@@ -444,9 +568,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
-                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="min-h-11 w-full sm:w-auto justify-center px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
-                <span>Continue to Payment Head</span>
+                <span>{copy.continueHead}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -458,10 +582,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           <div className="space-y-5">
             {/* Category Selector */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Payment Category
+              <label htmlFor="guest-category" className="block text-xs font-semibold text-slate-700 mb-1">
+                {commonCopy.category}
               </label>
               <select
+                id="guest-category"
                 disabled={isWithholdingMode}
                 value={category}
                 onChange={(e) => {
@@ -470,40 +595,40 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   const firstInCat = MASTER_PAYMENT_HEADS.find(h => h.category === newCat);
                   if (firstInCat) setSelectedHeadId(firstInCat.id);
                 }}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
+                className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
               >
                 {Object.entries(CATEGORY_LABELS).map(([catKey, label]) => (
                   <option key={catKey} value={catKey}>
-                    {label.en} ({label.bn})
+                    {language === 'bn' ? label.bn : label.en}
                   </option>
                 ))}
               </select>
             </div>
 
             {/* Payment Head Selector with 170 heads */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-slate-700">
-                  Select Master Payment Head ({availableHeads.length} available in category)
-                </label>
+            <fieldset className="grid grid-cols-1 sm:grid-cols-[1fr_14rem] gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
+              <legend className="block text-xs font-semibold text-slate-700 self-center">
+                {copy.selectHead(availableHeads.length)}
+              </legend>
                 <input
+                  id="guest-head-search"
                   type="text"
-                  placeholder="Filter by code or section..."
+                  aria-label={copy.searchHead}
+                  placeholder={copy.searchHead}
                   value={headSearch}
                   onChange={(e) => setHeadSearch(e.target.value)}
-                  className="px-2.5 py-1 text-xs rounded border border-slate-300 w-48"
+                  className="min-h-11 px-2.5 py-1 text-xs rounded border border-slate-300 w-full sm:w-56"
                 />
-              </div>
 
-              <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+              <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
                 {availableHeads.map(head => {
                   const isBlocked = BLOCKED_HEAD_IDS.includes(head.id);
                   const isSelected = selectedHead?.id === head.id;
                   return (
-                    <div
+                    <label
                       key={head.id}
-                      onClick={() => !isBlocked && setSelectedHeadId(head.id)}
-                      className={`p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
+                      htmlFor={`guest-head-${head.id}`}
+                      className={`min-h-11 p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                         isSelected
                           ? 'bg-emerald-100/70 border-l-4 border-taxpay-primary'
                           : isBlocked
@@ -516,114 +641,124 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                           <span className="font-mono-plex font-bold text-taxpay-dark">
                             {head.economicCode}
                           </span>
-                          <span className="font-semibold text-slate-800">
-                            {head.nameEn}
+                          <span className="font-semibold text-slate-800" lang={language === 'bn' ? 'bn' : 'en'}>
+                            {language === 'bn' ? head.nameBn : head.nameEn}
                           </span>
                           {isBlocked && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
                               <Lock className="w-3 h-3" />
-                              BLOCKED
+                              {copy.blocked}
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-bengali">
-                          {head.nameBn}
+                        <div className={`text-[11px] text-slate-500 ${language === 'bn' ? '' : 'font-bengali'}`} lang={language === 'bn' ? 'en' : 'bn'}>
+                          {language === 'bn' ? head.nameEn : head.nameBn}
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-slate-600">
-                          <span>Act: <strong>{head.sectionAct2023}</strong></span>
-                          <span>Legacy: {head.sectionOrdinance1984}</span>
-                          <span className="text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                        <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600">
+                          <span>{copy.act}: <strong lang="en">{head.sectionAct2023}</strong></span>
+                          <span>{copy.legacy}: <span lang="en">{head.sectionOrdinance1984}</span></span>
+                          <span lang="en" className="text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                             {head.verificationStatus}
                           </span>
                         </div>
                         {head.rateNote && (
                           <div className="text-[11px] text-emerald-800 font-medium">
-                            Note: {head.rateNote}
+                            {copy.note}: <span lang="en">{head.rateNote}</span>
                           </div>
                         )}
                         {head.blockedReason && (
-                          <div className="text-[11px] text-rose-700 font-medium">
+                          <div lang="en" className="text-[11px] text-rose-700 font-medium">
                             {head.blockedReason}
                           </div>
                         )}
                       </div>
                       <input
+                        id={`guest-head-${head.id}`}
                         type="radio"
+                        name="guest-payment-head"
+                        value={head.id}
                         checked={isSelected}
                         disabled={isBlocked}
                         onChange={() => !isBlocked && setSelectedHeadId(head.id)}
-                        className="mt-1"
+                        aria-invalid={isFieldInvalid('headId') || undefined}
+                        aria-describedby={errorDescription('headId')}
+                        className="mt-1 min-h-11 min-w-11 shrink-0 accent-emerald-800"
                       />
-                    </div>
+                    </label>
                   );
                 })}
               </div>
-            </div>
+            </fieldset>
 
             {/* Financial Amounts Breakdown */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
               <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
-                Payment Amount Breakdown (BDT)
+                {copy.amountBreakdown}
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Tax Amount (৳) *</label>
+                  <label htmlFor="guest-tax-amount" className="block text-slate-600 font-medium mb-1">{copy.taxAmount} *</label>
                   <input
+                    id="guest-tax-amount"
                     type="number"
                     min="0"
+                    aria-invalid={isFieldInvalid('taxAmount') || undefined}
+                    aria-describedby={errorDescription('taxAmount')}
                     value={taxAmount}
                     onChange={(e) => setTaxAmount(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
+                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Penalty (৳)</label>
+                  <label htmlFor="guest-penalty-amount" className="block text-slate-600 font-medium mb-1">{copy.penalty}</label>
                   <input
+                    id="guest-penalty-amount"
                     type="number"
                     min="0"
                     value={penaltyAmount}
                     onChange={(e) => setPenaltyAmount(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
+                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Surcharge (৳)</label>
+                  <label htmlFor="guest-surcharge-amount" className="block text-slate-600 font-medium mb-1">{copy.surcharge}</label>
                   <input
+                    id="guest-surcharge-amount"
                     type="number"
                     min="0"
                     value={surchargeAmount}
                     onChange={(e) => setSurchargeAmount(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
+                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Interest (৳)</label>
+                  <label htmlFor="guest-interest-amount" className="block text-slate-600 font-medium mb-1">{copy.interest}</label>
                   <input
+                    id="guest-interest-amount"
                     type="number"
                     min="0"
                     value={interestAmount}
                     onChange={(e) => setInterestAmount(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
+                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-600 text-xs font-medium mb-1">
-                  Payment Remarks / Invoice Reference (Optional)
-                </label>
+                <label htmlFor="guest-note" className="block text-slate-600 text-xs font-medium mb-1">{copy.remarks}</label>
                 <input
+                  id="guest-note"
                   type="text"
-                  placeholder="e.g. Assessment order #190 / Salary withholding month Oct 2026"
+                  placeholder={copy.remarksPlaceholder}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs rounded border border-slate-300"
+                  className="min-h-11 w-full px-3 py-1.5 text-xs rounded border border-slate-300"
                 />
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                 <span className="font-bold text-sm text-slate-800">
-                  Total Payable Amount:
+                  {copy.total}
                 </span>
                 <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
@@ -631,25 +766,25 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>
             </div>
 
-            <div className="flex justify-between pt-3">
+            <div className="flex flex-wrap justify-between gap-2 pt-3">
               <button
                 onClick={() => setStep(1)}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+                className="min-h-11 px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <span>{commonCopy.btnBack}</span>
               </button>
               {backendConfigured && (
                 <button type="button" onClick={() => navigate('secure_workspace', { draftCategory: category })}
                   className="min-h-11 px-4 py-2 border border-taxpay-primary text-taxpay-primary rounded-lg text-xs sm:text-sm font-semibold focus-visible:outline focus-visible:outline-2">
-                  {language === 'bn' ? 'ব্যক্তিগত খসড়া হিসেবে রাখুন' : 'Plan as a private draft'}
+                  {copy.draft}
                 </button>
               )}
               <button
                 onClick={handleStep2Next}
-                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="min-h-11 px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
-                <span>Continue to Review & Gateway</span>
+                <span>{copy.continueReview}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -662,52 +797,52 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {/* Challan Preview Summary Box */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4 text-xs">
               <h3 className="font-serif-fraunces font-bold text-base text-slate-900 border-b border-slate-200 pb-2">
-                Challan Pre-submission Summary
+                {copy.reviewTitle}
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <div>
-                    <span className="text-slate-500">Payer Name:</span>{' '}
+                    <span className="text-slate-500">{copy.payer}:</span>{' '}
                     <strong className="text-slate-900">{payerName}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500">e-TIN:</span>{' '}
+                    <span className="text-slate-500">{commonCopy.tin}:</span>{' '}
                     <strong className="font-mono-plex text-taxpay-dark">{tin}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500">Assessment Year:</span>{' '}
+                    <span className="text-slate-500">{commonCopy.assessmentYear}:</span>{' '}
                     <strong className="text-slate-900">{assessmentYear}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500">Jurisdiction:</span>{' '}
+                    <span className="text-slate-500">{copy.jurisdiction}:</span>{' '}
                     <span className="text-slate-800">{taxZone}, {taxCircle}</span>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <div>
-                    <span className="text-slate-500">Category:</span>{' '}
-                    <strong className="text-slate-900">{category}</strong>
+                    <span className="text-slate-500">{commonCopy.category}:</span>{' '}
+                    <strong className="text-slate-900">{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500">Head Code:</span>{' '}
+                    <span className="text-slate-500">{commonCopy.headCode}:</span>{' '}
                     <strong className="font-mono-plex text-taxpay-dark">{selectedHead?.economicCode}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500">Head Title:</span>{' '}
-                    <span className="text-slate-800">{selectedHead?.nameEn}</span>
+                    <span className="text-slate-500">{copy.headTitle}:</span>{' '}
+                    <span className="text-slate-800">{language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}</span>
                   </div>
                   {isWithholdingMode && (
                     <div className="text-teal-900 font-semibold bg-teal-100/60 p-1.5 rounded">
-                      Deductee TIN: {deducteeTin} ({deducteeName || 'Unspecified'})
+                      {copy.deducteeTin}: {deducteeTin} ({deducteeName || copy.unspecified})
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">Grand Total BDT:</span>
+                <span className="font-bold text-sm text-slate-800">{copy.grandTotal}:</span>
                 <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
                 </span>
@@ -716,30 +851,29 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
             {/* Gateway Provider Selection */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Select Electronic Payment Channel (Simulated Gateway)
-              </label>
+              <h3 id="guest-channel-heading" className="block text-xs font-bold uppercase tracking-wider text-slate-700">{copy.channel}</h3>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div role="group" aria-labelledby="guest-channel-heading" className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {[
-                  { id: 'BKASH', label: 'bKash MFS', fee: 'No fee' },
-                  { id: 'NAGAD', label: 'Nagad MFS', fee: 'No fee' },
-                  { id: 'ROCKET', label: 'Rocket DBBL', fee: 'No fee' },
-                  { id: 'SONALI_E_SHEBA', label: 'Sonali e-Sheba', fee: 'Direct Treasury' },
-                  { id: 'A_CHALLAN_CARD', label: 'Cards (Visa/MC)', fee: 'Gov Switch' }
+                  { id: 'BKASH', label: 'bKash MFS', fee: copy.noFee },
+                  { id: 'NAGAD', label: 'Nagad MFS', fee: copy.noFee },
+                  { id: 'ROCKET', label: 'Rocket DBBL', fee: copy.noFee },
+                  { id: 'SONALI_E_SHEBA', label: 'Sonali e-Sheba', fee: copy.directTreasury },
+                  { id: 'A_CHALLAN_CARD', label: 'Cards (Visa/MC)', fee: copy.govSwitch }
                 ].map(gw => (
                   <button
                     key={gw.id}
                     type="button"
+                    aria-pressed={paymentMethod === gw.id}
                     onClick={() => setPaymentMethod(gw.id as any)}
-                    className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                    className={`min-h-11 p-3 rounded-lg border text-left cursor-pointer transition-all ${
                       paymentMethod === gw.id
                         ? 'bg-taxpay-primary text-white border-taxpay-primary shadow-sm'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
                     }`}
                   >
                     <div className="font-bold text-xs">{gw.label}</div>
-                    <div className={`text-[10px] mt-0.5 ${paymentMethod === gw.id ? 'text-amber-300' : 'text-slate-500'}`}>
+                    <div className={`text-[10px] mt-0.5 ${paymentMethod === gw.id ? 'text-white' : 'text-slate-500'}`}>
                       {gw.fee}
                     </div>
                   </button>
@@ -747,34 +881,35 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>
             </div>
 
-            {/* Strict Legal Disclaimer */}
+            {/* Simulation notice */}
             <div className="p-3 rounded bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
               <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div>
-                <strong>Simulation Confirmation:</strong> Clicking "Confirm & Pay via Gateway" triggers a simulated payment authorization and instant A-Challan Treasury scroll generation. No actual funds are deducted.
+                <strong>{copy.simulationTitle}: </strong>{copy.simulationNotice}
               </div>
             </div>
 
-            <div className="flex justify-between pt-3">
+            <div className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-between">
               <button
                 disabled={isProcessing}
                 onClick={() => setStep(2)}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+                className="min-h-11 w-full justify-center px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5 sm:w-auto"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Head</span>
+                <span>{copy.backToHead}</span>
               </button>
               <button
                 disabled={isProcessing}
                 onClick={handleExecutePayment}
-                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                aria-busy={isProcessing}
+                className="min-h-11 w-full justify-center px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 sm:w-auto"
               >
                 {isProcessing ? (
-                  <span>Processing Treasury Gateway...</span>
+                  <span>{copy.processing}</span>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 text-taxpay-dark" />
-                    <span>Confirm & Pay {formatCurrency(totalAmount, language)}</span>
+                    <span>{copy.runSimulation(formatCurrency(totalAmount, language))}</span>
                   </>
                 )}
               </button>

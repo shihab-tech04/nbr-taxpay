@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, BookOpen, CircleHelp, CreditCard, Globe2, Home, Landmark, Menu, Receipt, ShieldAlert, X } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { PaymentCategory, UserRole } from '../../types/tax';
@@ -52,6 +52,12 @@ export function CitizenNavigation() {
     setMenuOpen(false);
     if (isTaxpayer) go('wizard');
     else setPayOpen(true);
+  };
+  const goHome = () => {
+    if (inTransaction && !window.confirm(bn
+      ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
+      : 'Leave this payment step? The information entered so far will be lost.')) return;
+    go(home);
   };
   const chooseGuest = (key: string) => {
     if (key === 'TRAVEL_TAX') { go('travel'); return; }
@@ -147,7 +153,7 @@ export function CitizenNavigation() {
     <>
       <header className={compact && !inTransaction ? 'citizen-header citizen-header--hidden' : 'citizen-header'}>
         <div className="citizen-header__inner">
-          <button type="button" className="citizen-brand" onClick={() => go(home)}
+          <button type="button" className="citizen-brand" onClick={goHome}
             aria-label={bn ? 'TaxPay মূল পাতা' : 'TaxPay home'}>
             <Landmark aria-hidden="true" size={24} />
             <span><strong>TaxPay</strong><small>{bn ? 'স্বতন্ত্র পেমেন্ট প্রদর্শনী' : 'Independent payment demonstration'}</small></span>
@@ -204,7 +210,7 @@ export function CitizenNavigation() {
       {showPay && !overlayOpen && (
         <button type="button" className={compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"} onClick={openPay}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
-          <CreditCard aria-hidden="true" size={19}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
+          <Plus aria-hidden="true" size={22}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
         </button>
       )}
       {overlayOpen && (

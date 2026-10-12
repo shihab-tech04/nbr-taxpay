@@ -24,6 +24,7 @@
   outline-offset: 3px;
 }
 .taxpay-citizen-shell main { min-width: 0; padding-bottom: 7rem; }
+.taxpay-citizen-shell main.citizen-main--transaction { padding-bottom: 1.5rem; }
 .citizen-header {
   position: sticky; top: 0; z-index: 40;
   color: white; background: var(--citizen-primary-dark);
@@ -99,6 +100,14 @@
   .citizen-header, .citizen-pay, .citizen-corners, .citizen-overlay { display:none !important; }
   .taxpay-citizen-shell main { padding-bottom:0; }
 }
+
+/* The payment wizard is a long form that owns the mobile viewport while active. */
+.taxpay-payment-wizard { min-width: 0; }
+.taxpay-payment-wizard input:not([type="radio"]),
+.taxpay-payment-wizard select { min-height: 44px; max-width: 100%; }
+.taxpay-payment-wizard button { min-height: 44px; }
+.taxpay-payment-wizard fieldset { width: 100%; }
+.taxpay-payment-wizard fieldset label:focus-within { outline: 2px solid var(--citizen-primary); outline-offset: -2px; }
 
 /* Citizen home components share Government Blue roles, not hard-coded screen colors. */
 .citizen-overview {
@@ -212,4 +221,182 @@
 }
 @media print {
   .citizen-bottom-nav { display:none !important; }
+}
+
+/* Public hub: a clear first step, grouped services and token-based service cards. */
+.citizen-public-hero, .citizen-taxpayer-hero {
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(16rem,.85fr);
+  align-items:center;
+  gap:clamp(1.25rem,4vw,2.5rem);
+  padding:clamp(1.25rem,4vw,2.25rem);
+  border:1px solid var(--citizen-primary);
+  border-radius:1.2rem;
+  color:white;
+  background:linear-gradient(125deg,var(--citizen-primary-dark),var(--citizen-primary));
+  box-shadow:0 10px 28px color-mix(in srgb,var(--citizen-primary-dark) 14%,transparent);
+}
+.citizen-public-hero__copy, .citizen-taxpayer-hero > div {min-width:0;}
+.citizen-public-hero__eyebrow, .citizen-taxpayer-hero__eyebrow {
+  display:flex;align-items:center;gap:.5rem;margin:0 0 .8rem;
+  color:white;font-size:.76rem;font-weight:750;letter-spacing:.025em;
+}
+.citizen-public-hero h1, .citizen-taxpayer-hero h1 {
+  max-width:18ch;margin:0;font-size:clamp(1.55rem,5vw,2.35rem);
+  font-weight:800;line-height:1.2;letter-spacing:-.025em;
+}
+.citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow),
+.citizen-taxpayer-hero > div > p:not(.citizen-taxpayer-hero__eyebrow) {
+  max-width:62ch;margin:.8rem 0 0;color:white;font-size:.9rem;line-height:1.65;opacity:.94;
+}
+.citizen-public-hero__actions, .citizen-taxpayer-hero__actions {
+  display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1.2rem;
+}
+.citizen-public-hero__actions button, .citizen-public-hero__actions a, .citizen-taxpayer-hero__actions button {
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  min-height:46px;padding:.7rem 1rem;border:1px solid transparent;border-radius:.7rem;
+  font-size:.84rem;font-weight:750;text-align:left;text-decoration:none;
+}
+.citizen-public-primary, .citizen-taxpayer-primary {background:white;color:var(--citizen-primary-dark);}
+.citizen-public-primary:hover, .citizen-taxpayer-primary:hover {background:var(--citizen-primary-light);}
+.citizen-public-secondary, .citizen-taxpayer-secondary {background:transparent;color:white;border-color:color-mix(in srgb,white 55%,transparent)!important;}
+.citizen-public-secondary:hover, .citizen-taxpayer-secondary:hover {background:color-mix(in srgb,white 13%,transparent);}
+.citizen-public-hero__copy > .citizen-public-hero__note {
+  margin:.7rem 0 0;font-size:.74rem;line-height:1.5;opacity:.86;
+}
+.citizen-public-hero__panel {
+  min-width:0;padding:1rem;border:1px solid var(--citizen-border);border-radius:1rem;
+  color:var(--citizen-text);background:var(--citizen-surface);
+  box-shadow:0 8px 24px color-mix(in srgb,var(--citizen-primary-dark) 12%,transparent);
+}
+.citizen-public-hero__panel-label {margin:0 0 .5rem;color:var(--citizen-muted);font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.06em;}
+.citizen-public-hero__panel > strong {display:block;margin:.25rem 0 .65rem;color:var(--citizen-text);font-size:.9rem;line-height:1.4;}
+.citizen-public-hero__panel ul {display:grid;gap:.55rem;margin:0;padding:0;list-style:none;}
+.citizen-public-hero__panel li {position:relative;padding-left:1rem;color:var(--citizen-muted);font-size:.75rem;line-height:1.5;}
+.citizen-public-hero__panel li::before {position:absolute;left:0;top:.35em;width:.4rem;height:.4rem;border-radius:50%;background:var(--citizen-primary);content:"";}
+.citizen-hub-section, .citizen-hub-lookup, .citizen-hub-support, .citizen-taxpayer-summary,
+.citizen-taxpayer-profile, .citizen-taxpayer-quick, .citizen-taxpayer-activity, .citizen-taxpayer-more {
+  min-width:0;padding:clamp(1rem,3vw,1.35rem);border:1px solid var(--citizen-border);
+  border-radius:1rem;background:var(--citizen-surface);
+}
+.citizen-hub-section__heading {display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;}
+.citizen-hub-section__heading h2, .citizen-hub-lookup h2, .citizen-hub-support h2 {
+  margin:.18rem 0 0;color:var(--citizen-text);font-size:1.15rem;font-weight:800;line-height:1.35;
+}
+.citizen-hub-section__heading p:not(.citizen-hub-eyebrow) {max-width:65ch;margin:.4rem 0 0;color:var(--citizen-muted);font-size:.8rem;line-height:1.55;}
+.citizen-hub-eyebrow {margin:0;color:var(--citizen-primary-dark);font-size:.7rem;font-weight:800;letter-spacing:.045em;}
+.citizen-demo-pill {display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:30px;padding:.3rem .65rem;border:1px solid var(--citizen-border);border-radius:999px;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);font-size:.7rem;font-weight:800;}
+.citizen-hub-quick-grid, .citizen-taxpayer-quick__grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;}
+.citizen-hub-quick-grid button, .citizen-taxpayer-quick__grid button {
+  display:flex;align-items:center;gap:.65rem;min-width:0;min-height:68px;padding:.75rem;
+  border:1px solid var(--citizen-border);border-radius:.8rem;color:var(--citizen-primary-dark);
+  background:var(--citizen-surface);font-size:.8rem;font-weight:750;text-align:left;
+}
+.citizen-hub-quick-grid button:hover, .citizen-taxpayer-quick__grid button:hover {border-color:var(--citizen-primary);background:var(--citizen-primary-light);}
+.citizen-hub-quick-grid button > svg:first-child {flex:none;width:19px;color:var(--citizen-primary);}
+.citizen-hub-quick-grid button > span {flex:1;min-width:0;overflow-wrap:anywhere;}
+.citizen-hub-quick-grid button > svg:last-child {flex:none;width:15px;margin-left:auto;}
+.citizen-hub-service-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;}
+.citizen-hub-service-grid > button {
+  display:flex;align-items:center;gap:.7rem;min-width:0;min-height:76px;padding:.8rem;
+  border:1px solid var(--citizen-border);border-radius:.8rem;color:var(--citizen-primary-dark);text-align:left;
+}
+.citizen-hub-service-grid > button:hover {border-color:var(--citizen-primary);background:var(--citizen-primary-light);}
+.citizen-hub-service-grid__icon {display:grid;place-items:center;flex:none;width:40px;height:40px;border:1px solid var(--citizen-primary-light);border-radius:.7rem;background:var(--citizen-bg);color:var(--citizen-primary);}
+.citizen-hub-service-grid__copy {display:flex;flex:1;flex-direction:column;gap:.22rem;min-width:0;}
+.citizen-hub-service-grid__copy strong {font-size:.8rem;line-height:1.35;}
+.citizen-hub-service-grid__copy small {color:var(--citizen-muted);font-size:.7rem;line-height:1.4;}
+.citizen-hub-service-grid > button > svg:last-child {flex:none;}
+.citizen-hub-more-services, .citizen-taxpayer-more, .citizen-taxpayer-summary__details {
+  margin-top:.8rem;border:1px solid var(--citizen-border);border-radius:.75rem;background:var(--citizen-bg);color:var(--citizen-text);
+}
+.citizen-hub-more-services summary, .citizen-taxpayer-more summary, .citizen-taxpayer-summary__details summary {
+  min-height:48px;padding:.85rem 1rem;color:var(--citizen-primary-dark);font-size:.82rem;font-weight:750;cursor:pointer;
+}
+.citizen-hub-more-services > div, .citizen-taxpayer-more > div {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;padding:0 .75rem .75rem;}
+.citizen-hub-more-services button, .citizen-taxpayer-more button {
+  display:flex;align-items:center;gap:.5rem;min-width:0;min-height:46px;padding:.55rem .7rem;
+  border:1px solid var(--citizen-border);border-radius:.6rem;background:var(--citizen-surface);
+  color:var(--citizen-primary-dark);font-size:.76rem;font-weight:700;text-align:left;
+}
+.citizen-hub-more-services button span, .citizen-taxpayer-more button span {flex:1;min-width:0;}
+.citizen-hub-more-services button:hover, .citizen-taxpayer-more button:hover {border-color:var(--citizen-primary);}
+.citizen-hub-category-note {margin:0 .9rem .6rem;color:var(--citizen-muted);font-size:.75rem;line-height:1.55;}
+.citizen-hub-catalogue-link {margin:0 .75rem .75rem!important;}
+.citizen-hub-steps ol {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:0;padding:0;list-style:none;}
+.citizen-hub-steps li {display:flex;align-items:flex-start;gap:.65rem;min-width:0;padding:.85rem;border-radius:.75rem;background:var(--citizen-bg);}
+.citizen-hub-steps li > span {display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:var(--citizen-primary);color:white;font-size:.76rem;font-weight:800;}
+.citizen-hub-steps li strong {display:block;color:var(--citizen-text);font-size:.8rem;}
+.citizen-hub-steps li p {margin:.25rem 0 0;color:var(--citizen-muted);font-size:.74rem;line-height:1.5;}
+.citizen-hub-lookup {display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:1.25rem;align-items:start;}
+.citizen-hub-lookup__intro {display:flex;gap:.75rem;min-width:0;}
+.citizen-hub-lookup__icon {display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:.7rem;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
+.citizen-hub-lookup__intro p {margin:.35rem 0 0;color:var(--citizen-muted);font-size:.77rem;line-height:1.5;}
+.citizen-hub-lookup form {min-width:0;}
+.citizen-hub-lookup label {display:block;margin-bottom:.4rem;color:var(--citizen-text);font-size:.77rem;font-weight:750;}
+.citizen-hub-lookup__controls {display:flex;gap:.55rem;min-width:0;}
+.citizen-hub-lookup input {width:100%;min-width:0;min-height:46px;padding:.65rem .75rem;border:1px solid var(--citizen-border);border-radius:.65rem;background:white;color:var(--citizen-text);font-size:.82rem;}
+.citizen-hub-lookup__controls button {display:inline-flex;align-items:center;justify-content:center;gap:.4rem;flex:none;min-height:46px;padding:.65rem .8rem;border-radius:.65rem;background:var(--citizen-primary);color:white;font-size:.77rem;font-weight:750;}
+.citizen-hub-lookup__controls button:hover {background:var(--citizen-primary-dark);}
+.citizen-hub-lookup__notice, .citizen-hub-lookup__error {margin:.45rem 0 0;color:var(--citizen-muted);font-size:.7rem;line-height:1.45;}
+.citizen-hub-lookup__error {color:var(--citizen-error);}
+.citizen-hub-support {display:flex;align-items:center;justify-content:space-between;gap:1.25rem;background:var(--citizen-bg);}
+.citizen-hub-support > div:first-child {display:flex;align-items:flex-start;gap:.75rem;min-width:0;}
+.citizen-hub-support > div:first-child > svg {flex:none;margin-top:.2rem;color:var(--citizen-primary);}
+.citizen-hub-support p {margin:.35rem 0 0;color:var(--citizen-muted);font-size:.77rem;line-height:1.5;}
+.citizen-hub-support__actions {display:flex;flex-wrap:wrap;gap:.5rem;}
+.citizen-hub-support__actions button, .citizen-text-action {display:inline-flex;align-items:center;gap:.4rem;min-height:44px;padding:.55rem .7rem;border:1px solid var(--citizen-border);border-radius:.6rem;background:var(--citizen-surface);color:var(--citizen-primary-dark);font-size:.76rem;font-weight:750;}
+.citizen-hub-support__actions button:hover, .citizen-text-action:hover {border-color:var(--citizen-primary);background:var(--citizen-primary-light);}
+
+/* The taxpayer home is a labeled demonstration dashboard; financial values stay unverified. */
+.citizen-taxpayer-hero {grid-template-columns:minmax(0,1fr) auto;align-items:start;}
+.citizen-taxpayer-hero__badge {display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:.35rem .7rem;border:1px solid color-mix(in srgb,white 55%,transparent);border-radius:999px;color:white;font-size:.72rem;font-weight:800;white-space:nowrap;}
+.citizen-taxpayer-summary__notice, .citizen-taxpayer-activity__notice {margin:0 0 .85rem;padding:.75rem .85rem;border-left:3px solid var(--citizen-warning);border-radius:.4rem;background:var(--citizen-bg);color:var(--citizen-muted);font-size:.76rem;line-height:1.55;}
+.citizen-taxpayer-summary__cards {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;}
+.citizen-taxpayer-summary__cards article {display:flex;flex-direction:column;gap:.4rem;min-width:0;padding:.9rem;border:1px solid var(--citizen-border);border-radius:.75rem;}
+.citizen-taxpayer-summary__cards span {color:var(--citizen-muted);font-size:.76rem;}
+.citizen-taxpayer-summary__cards strong {color:var(--citizen-text);font-size:1.05rem;}
+.citizen-taxpayer-summary__details {padding:0 .8rem .8rem;}
+.citizen-taxpayer-summary__details p {margin:0;padding:0 .3rem;color:var(--citizen-muted);font-size:.76rem;line-height:1.55;}
+.citizen-taxpayer-profile {display:flex;align-items:center;gap:.8rem;}
+.citizen-taxpayer-profile__mark {display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:.7rem;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
+.citizen-taxpayer-profile h2 {margin:.2rem 0;color:var(--citizen-text);font-size:.9rem;font-weight:750;}
+.citizen-taxpayer-profile p:last-child {margin:0;color:var(--citizen-muted);font-size:.7rem;overflow-wrap:anywhere;}
+.citizen-taxpayer-quick__grid button > span {display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:.65rem;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
+.citizen-taxpayer-quick__grid button > strong {flex:1;min-width:0;font-size:.78rem;line-height:1.35;}
+.citizen-taxpayer-quick__grid button > svg:last-child {flex:none;}
+.citizen-taxpayer-activity .citizen-hub-section__heading {align-items:center;}
+.citizen-taxpayer-activity__notice {margin-top:-.25rem;}
+.citizen-taxpayer-activity__empty {margin:0;padding:1rem;border-radius:.7rem;background:var(--citizen-bg);color:var(--citizen-muted);font-size:.8rem;}
+.citizen-taxpayer-activity__list {border-top:1px solid var(--citizen-border);}
+.citizen-taxpayer-activity__list article {padding:.9rem 0;border-bottom:1px solid var(--citizen-border);}
+.citizen-taxpayer-activity__row {display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;color:var(--citizen-text);}
+.citizen-taxpayer-activity__row p:nth-child(2) {margin:.3rem 0 0;color:var(--citizen-muted);font-size:.72rem;}
+.citizen-taxpayer-activity__row > strong {font-size:.84rem;}
+.citizen-taxpayer-activity__statuses {display:grid;gap:.25rem;margin:.65rem 0;color:var(--citizen-muted);font-size:.7rem;line-height:1.45;}
+.citizen-taxpayer-activity__list .citizen-text-action {min-height:44px;}
+.citizen-taxpayer-more {margin-top:0;}
+.citizen-taxpayer-more > div {grid-template-columns:repeat(2,minmax(0,1fr));}
+
+@media(max-width:720px) {
+  .citizen-public-hero {grid-template-columns:minmax(0,1fr);gap:1rem;}
+  .citizen-public-hero__panel {max-width:none;}
+  .citizen-hub-lookup {grid-template-columns:minmax(0,1fr);gap:.9rem;}
+  .citizen-hub-support {align-items:flex-start;flex-direction:column;}
+  .citizen-hub-support__actions {width:100%;}
+  .citizen-hub-support__actions button {flex:1;justify-content:center;}
+}
+@media(max-width:520px) {
+  .citizen-taxpayer-hero {grid-template-columns:minmax(0,1fr);}
+  .citizen-taxpayer-hero__badge {grid-row:1;justify-self:start;}
+  .citizen-hub-service-grid, .citizen-hub-more-services > div, .citizen-taxpayer-more > div {grid-template-columns:minmax(0,1fr);}
+  .citizen-hub-steps ol {grid-template-columns:minmax(0,1fr);}
+  .citizen-hub-steps li {min-height:64px;}
+  .citizen-hub-lookup__controls {flex-direction:column;}
+  .citizen-hub-lookup__controls button {width:100%;}
+  .citizen-hub-section__heading {gap:.65rem;}
+  .citizen-hub-section__heading h2, .citizen-hub-lookup h2, .citizen-hub-support h2 {font-size:1.05rem;}
+  .citizen-hub-quick-grid button, .citizen-taxpayer-quick__grid button {gap:.5rem;padding:.65rem;font-size:.74rem;}
+  .citizen-taxpayer-profile {align-items:flex-start;flex-wrap:wrap;}
+  .citizen-taxpayer-profile .citizen-demo-pill {margin-left:3.2rem;}
 }

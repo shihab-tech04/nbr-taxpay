@@ -10,10 +10,10 @@ test('root loads public payment choices rather than a forced officer login',asyn
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
-  await expect(page.getByRole('heading',{name:'Your tax position'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
   await expect(page.getByText('Recognized credit')).toBeVisible();
   await expect(page.getByText('Unverified', {exact:true})).toBeVisible();
-  await expect(page.getByText('Not reconciled with eReturn / NBR')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
@@ -23,7 +23,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
   await page.getByRole('button',{name:'বাংলা'}).click();
-  await expect(page.getByRole('heading',{name:'আপনার কর অবস্থান'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'আমার কর পেমেন্ট'})).toBeVisible();
   await expect(page.getByText('স্বীকৃত কর ক্রেডিট',{exact:true})).toBeVisible();
   await expect(page.getByText('যাচাই হয়নি',{exact:true})).toBeVisible();
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
@@ -64,6 +64,7 @@ test('mobile expanded dock has three destinations and a separate floating Pay ac
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByText('More taxpayer services', { exact: true }).click();
   await page.getByRole('button',{name:'Dashboard'}).click();
   await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
   await expect(page.getByText('No verified eTDS deductions or deductee credits are connected.')).toBeVisible();
@@ -105,8 +106,8 @@ test('certificate previews stay non-official, match the selected type and locali
 
 test('guest payment-category selection enters the matching public journey without authentication',async({page})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Select a payment service'})).toBeVisible();
-  await page.locator('main').getByRole('button',{name:'Advance Tax',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Understand your next tax-payment step'})).toBeVisible();
+  await page.locator('main').getByRole('button',{name:/Advance Tax/}).click();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
   await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
   await expect(page.locator('.citizen-pay')).toHaveCount(0);

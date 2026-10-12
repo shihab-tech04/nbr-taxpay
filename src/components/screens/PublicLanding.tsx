@@ -1,112 +1,173 @@
 import React, { useState } from 'react';
-import { ArrowRight, CircleHelp, FileSearch, Landmark, Search, ShieldAlert } from 'lucide-react';
+import { ArrowRight, CircleHelp, FileSearch, Landmark, Search, ShieldAlert, WalletCards } from 'lucide-react';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { useTaxState } from '../../services/taxState';
 import type { PaymentCategory } from '../../types/tax';
+
+const featuredCategories: PaymentCategory[] = [
+  'TAX_WITH_RETURN', 'ADVANCE_TAX', 'SOURCE_TAX_DEPOSIT', 'OTHER_TAX_PAYMENT'
+];
 
 export const PublicLanding: React.FC = () => {
   const { language, navigate, lookupReceipt, selectReceipt } = useTaxState();
   const [reference, setReference] = useState('');
   const [notFound, setNotFound] = useState(false);
   const bn = language === 'bn';
-  const label = (en:string,bengali:string)=>bn?bengali:en;
+  const label = (en: string, bengali: string) => bn ? bengali : en;
 
-  const openCategory=(key:PaymentCategory)=>{
+  const openCategory = (key: PaymentCategory) => {
     setNotFound(false);
-    if(key==='SOURCE_TAX_DEPOSIT') navigate('guestwh');
-    else navigate('guest',{initialCategory:key});
+    if (key === 'SOURCE_TAX_DEPOSIT') navigate('guestwh');
+    else navigate('guest', { initialCategory: key });
   };
-  const handleLookup=(event:React.FormEvent<HTMLFormElement>)=>{
+  const handleLookup = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const ref=reference.trim();
-    if(!ref){setNotFound(true);return;}
-    const found=lookupReceipt(ref);
-    if(found) {setNotFound(false);selectReceipt(found.id);}
+    const ref = reference.trim();
+    if (!ref) { setNotFound(true); return; }
+    const found = lookupReceipt(ref);
+    if (found) { setNotFound(false); selectReceipt(found.id); }
     else setNotFound(true);
   };
+  const focusReceiptLookup = () => {
+    document.getElementById('citizen-lookup-reference')?.focus();
+  };
+  const remainingCategories = Object.entries(CATEGORY_LABELS)
+    .filter(([key]) => !featuredCategories.includes(key as PaymentCategory));
 
   return (
-    <div className={`mx-auto max-w-5xl space-y-5 pb-12 ${bn?'font-bengali':''}`}>
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-7" aria-labelledby="citizen-guest-title">
-        <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold text-taxpay-dark">
-          <Landmark size={16} aria-hidden="true"/>
-          {label('Independent TaxPay Workspace','স্বতন্ত্র TaxPay ওয়ার্কস্পেস')}
-        </p>
-        <h1 id="citizen-guest-title" className="max-w-3xl text-2xl font-bold leading-snug text-taxpay-text sm:text-3xl">
-          {label('Select a payment service','পেমেন্ট সেবা নির্বাচন করুন')}
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-taxpay-muted">
-          {label('Browse income-tax and travel-tax payment journeys. This is a demonstration, not a live payment service.','আয়কর ও ভ্রমণ কর পরিশোধের ধাপ দেখুন। এটি নমুনা প্রদর্শনী, প্রকৃত পেমেন্ট সেবা নয়।')}
-        </p>
+    <div className={`citizen-public-hub mx-auto max-w-5xl space-y-5 pb-12 ${bn ? 'font-bengali' : ''}`}>
+      <section className="citizen-public-hero" aria-labelledby="citizen-guest-title">
+        <div className="citizen-public-hero__copy">
+          <p className="citizen-public-hero__eyebrow"><Landmark size={16} aria-hidden="true" />
+            {label('Public TaxPay guide', 'TaxPay জনসেবা নির্দেশিকা')}
+          </p>
+          <h1 id="citizen-guest-title">{label('Understand your next tax-payment step', 'আপনার পরবর্তী কর পরিশোধের ধাপ জানুন')}</h1>
+          <p>{label('Explore payment journeys, check sample references and find guidance. This independent prototype is not a live NBR or Treasury service.', 'পেমেন্টের ধাপ দেখুন, নমুনা রেফারেন্স যাচাই করুন এবং নির্দেশনা খুঁজুন। এই স্বতন্ত্র প্রোটোটাইপ প্রকৃত এনবিআর বা ট্রেজারি সেবা নয়।')}</p>
+          <div className="citizen-public-hero__actions">
+            <a className="citizen-public-primary" href="#citizen-payment-options">
+              <WalletCards size={18} aria-hidden="true" /> {label('Browse payment services', 'পেমেন্ট সেবা দেখুন')}
+            </a>
+            <button type="button" className="citizen-public-secondary" onClick={() => navigate('secure_workspace')}>
+              {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')} <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+          <p className="citizen-public-hero__note">{label('Explore the sample payment journeys without signing in. No money is transferred.', 'সাইন-ইন ছাড়াই নমুনা পেমেন্টের ধাপ দেখা যায়। কোনো অর্থ স্থানান্তর হয় না।')}</p>
+        </div>
+        <aside className="citizen-public-hero__panel" aria-label={label('Prototype status', 'নমুনা সেবার অবস্থা')}>
+          <p className="citizen-public-hero__panel-label">{label('Prototype status', 'নমুনা সেবার অবস্থা')}</p>
+          <strong>{label('Independent TaxPay demonstration', 'স্বতন্ত্র TaxPay প্রদর্শনী')}</strong>
+          <ul>
+            <li>{label('Forms and receipts use sample data.', 'ফর্ম ও রসিদে নমুনা তথ্য ব্যবহৃত হয়।')}</li>
+            <li>{label('No live payment gateway or official NBR/Treasury record is connected.', 'কোনো প্রকৃত পেমেন্ট গেটওয়ে বা এনবিআর/ট্রেজারির সরকারি তথ্য সংযুক্ত নয়।')}</li>
+          </ul>
+        </aside>
       </section>
 
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="citizen-payment-options">
-        <div className="mb-3 flex items-start justify-between gap-3">
+      <section className="citizen-hub-section" aria-labelledby="citizen-hub-quick-title">
+        <div className="citizen-hub-section__heading">
           <div>
-            <h2 id="citizen-payment-options" className="text-lg font-bold text-taxpay-text">{label('Payment options','পেমেন্টের ধরন')}</h2>
-            <p className="mt-1 text-xs text-taxpay-muted">{label('Choose a purpose to view its required information.','প্রয়োজনীয় তথ্য দেখতে পেমেন্টের ধরন নির্বাচন করুন।')}</p>
+            <p className="citizen-hub-eyebrow">{label('Public services', 'জনসেবা')}</p>
+            <h2 id="citizen-hub-quick-title">{label('Quick access', 'দ্রুত প্রবেশ')}</h2>
           </div>
-          <span className="inline-flex shrink-0 rounded-md bg-taxpay-light px-2.5 py-1.5 text-xs font-semibold text-taxpay-dark">
-            {label('Demo','নমুনা')}
-          </span>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {Object.entries(CATEGORY_LABELS).map(([key,item])=>(
-            <button key={key} type="button" onClick={()=>openCategory(key as PaymentCategory)}
-              className="flex min-h-14 min-w-0 items-center gap-3 rounded-lg border border-taxpay-border bg-white p-3 text-left hover:border-taxpay-primary hover:bg-taxpay-light">
-              <span className="min-w-0 flex-1 text-sm font-semibold text-taxpay-text">{key === 'OTHER_TAX_PAYMENT' ? label('Other Tax Payment','অন্যান্য কর পরিশোধ') : bn ? item.bn : item.en}</span>
-              <ArrowRight size={17} className="shrink-0 text-taxpay-dark" aria-hidden="true"/>
-            </button>
-          ))}
-          <button type="button" onClick={()=>navigate('travel')}
-            className="flex min-h-14 min-w-0 items-center gap-3 rounded-lg border border-taxpay-border bg-white p-3 text-left hover:border-taxpay-primary hover:bg-taxpay-light">
-            <span className="min-w-0 flex-1 text-sm font-semibold text-taxpay-text">{label('Travel Tax','ভ্রমণ কর')}</span>
-            <ArrowRight size={17} className="shrink-0 text-taxpay-dark" aria-hidden="true"/>
+        <div className="citizen-hub-quick-grid">
+          <button type="button" onClick={() => navigate('verify')}>
+            <FileSearch aria-hidden="true" /><span>{label('Payment status', 'পেমেন্টের অবস্থা')}</span><ArrowRight aria-hidden="true" />
+          </button>
+          <button type="button" onClick={focusReceiptLookup}>
+            <Search aria-hidden="true" /><span>{label('Find a sample receipt', 'নমুনা রসিদ খুঁজুন')}</span><ArrowRight aria-hidden="true" />
+          </button>
+          <button type="button" onClick={() => navigate('guidance')}>
+            <CircleHelp aria-hidden="true" /><span>{label('Guidance & FAQs', 'নির্দেশনা ও প্রশ্নোত্তর')}</span><ArrowRight aria-hidden="true" />
+          </button>
+          <button type="button" onClick={() => navigate('incident')}>
+            <ShieldAlert aria-hidden="true" /><span>{label('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}</span><ArrowRight aria-hidden="true" />
           </button>
         </div>
-        <details className="mt-3 rounded-lg bg-taxpay-background p-3 text-sm text-taxpay-muted">
-          <summary className="cursor-pointer font-semibold text-taxpay-dark">{label('About these payment categories','পেমেন্টের ধরন সম্পর্কে')}</summary>
-          <p className="mt-2 leading-relaxed">{label('The 170 source-derived payment-head records are under legal review. Selecting a category does not certify its rate, eligibility or government accounting code.','উৎস থেকে নেওয়া ১৭০টি করের খাতের আইনগত যাচাই চলমান। একটি খাত নির্বাচন করলেই হার, যোগ্যতা বা সরকারি হিসাব কোড যাচাইকৃত হয় না।')}</p>
-          <button type="button" onClick={()=>navigate('head_catalogue')}
-            className="mt-2 inline-flex min-h-11 items-center gap-1 font-semibold text-taxpay-dark hover:underline">
-            {label('Browse Original Heads (170)','মূল করের খাত দেখুন (১৭০)')} <ArrowRight size={16} aria-hidden="true"/>
+      </section>
+
+      <section className="citizen-hub-section" aria-labelledby="citizen-payment-options">
+        <div className="citizen-hub-section__heading">
+          <div>
+            <p className="citizen-hub-eyebrow">{label('Payment services', 'পেমেন্ট সেবা')}</p>
+            <h2 id="citizen-payment-options">{label('Choose a payment journey', 'পেমেন্টের ধাপ বাছুন')}</h2>
+            <p>{label('These routes open a demonstration form. Rates, eligibility and government accounting codes are not legally certified.', 'এগুলো নমুনা ফর্ম খোলে। হার, যোগ্যতা ও সরকারি হিসাব কোড আইনগতভাবে প্রত্যয়ন করা হয়নি।')}</p>
+          </div>
+          <span className="citizen-demo-pill">{label('Prototype', 'নমুনা')}</span>
+        </div>
+        <div className="citizen-hub-service-grid">
+          {featuredCategories.map(key => {
+            const item = CATEGORY_LABELS[key];
+            return (
+              <button key={key} type="button" onClick={() => openCategory(key)}>
+                <span className="citizen-hub-service-grid__icon"><WalletCards size={19} aria-hidden="true" /></span>
+                <span className="citizen-hub-service-grid__copy"><strong>{key === 'OTHER_TAX_PAYMENT' ? label('Other tax payment', 'অন্যান্য কর পরিশোধ') : bn ? item.bn : item.en}</strong><small>{key === 'SOURCE_TAX_DEPOSIT' ? label('Withholding-agent journey', 'উৎসে কর কর্তনকারীর ধাপ') : label('Open sample journey', 'নমুনা ধাপ খুলুন')}</small></span>
+                <ArrowRight size={17} aria-hidden="true" />
+              </button>
+            );
+          })}
+          <button type="button" onClick={() => navigate('travel')}>
+            <span className="citizen-hub-service-grid__icon"><Landmark size={19} aria-hidden="true" /></span>
+            <span className="citizen-hub-service-grid__copy"><strong>{label('Travel Tax', 'ভ্রমণ কর')}</strong><small>{label('Open sample journey', 'নমুনা ধাপ খুলুন')}</small></span>
+            <ArrowRight size={17} aria-hidden="true" />
+          </button>
+        </div>
+        {remainingCategories.length > 0 && (
+          <details className="citizen-hub-more-services">
+            <summary>{label('More payment types', 'আরও পেমেন্টের ধরন')}</summary>
+            <div>
+              {remainingCategories.map(([key, item]) => (
+                <button key={key} type="button" onClick={() => openCategory(key as PaymentCategory)}>
+                  <span>{bn ? item.bn : item.en}</span><ArrowRight size={16} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
+        <details className="citizen-hub-more-services">
+          <summary>{label('About these payment categories', 'পেমেন্টের ধরন সম্পর্কে')}</summary>
+          <p className="citizen-hub-category-note">{label('The 170 source-derived payment-head records are under legal review. Selecting a category does not certify its rate, eligibility or government accounting code.', 'উৎস থেকে নেওয়া ১৭০টি করের খাতের আইনগত যাচাই চলমান। একটি খাত নির্বাচন করলেই হার, যোগ্যতা বা সরকারি হিসাব কোড যাচাইকৃত হয় না।')}</p>
+          <button type="button" className="citizen-hub-catalogue-link" onClick={() => navigate('head_catalogue')}>
+            {label('Browse Original Heads (170)', 'মূল করের খাত দেখুন (১৭০)')} <ArrowRight size={16} aria-hidden="true" />
           </button>
         </details>
       </section>
 
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="citizen-receipt-lookup">
-        <div className="mb-3 flex items-center gap-2">
-          <FileSearch size={19} className="text-taxpay-dark" aria-hidden="true"/>
-          <h2 id="citizen-receipt-lookup" className="text-lg font-bold text-taxpay-text">{label('Find a sample receipt','নমুনা রসিদ খুঁজুন')}</h2>
+      <section className="citizen-hub-section citizen-hub-steps" aria-labelledby="citizen-how-title">
+        <div className="citizen-hub-section__heading">
+          <div>
+            <p className="citizen-hub-eyebrow">{label('A simple guide', 'সহজ নির্দেশনা')}</p>
+            <h2 id="citizen-how-title">{label('How a payment journey works', 'পেমেন্টের ধাপ যেভাবে চলে')}</h2>
+          </div>
+        </div>
+        <ol>
+          <li><span>1</span><div><strong>{label('Choose a service', 'সেবা বাছুন')}</strong><p>{label('Select a payment purpose or travel-tax demonstration.', 'পেমেন্টের উদ্দেশ্য বা ভ্রমণ করের নমুনা বাছুন।')}</p></div></li>
+          <li><span>2</span><div><strong>{label('Enter the requested details', 'চাওয়া তথ্য লিখুন')}</strong><p>{label('Review each field and the sample payment-head information.', 'প্রতিটি ঘর ও নমুনা পেমেন্ট-খাতের তথ্য যাচাই করুন।')}</p></div></li>
+          <li><span>3</span><div><strong>{label('Review the result', 'ফলাফল যাচাই করুন')}</strong><p>{label('A prototype receipt confirms only that the local demonstration ran.', 'নমুনা রসিদ শুধু স্থানীয় প্রদর্শনী সম্পন্ন হওয়ার কথা জানায়।')}</p></div></li>
+        </ol>
+      </section>
+
+      <section className="citizen-hub-lookup" aria-labelledby="citizen-receipt-lookup">
+        <div className="citizen-hub-lookup__intro">
+          <span className="citizen-hub-lookup__icon"><Search size={20} aria-hidden="true" /></span>
+          <div>
+            <h2 id="citizen-receipt-lookup">{label('Find a sample receipt', 'নমুনা রসিদ খুঁজুন')}</h2>
+            <p>{label('Search a challan, token or transaction reference from this demonstration.', 'এই প্রদর্শনীর চালান, টোকেন বা লেনদেনের রেফারেন্স খুঁজুন।')}</p>
+          </div>
         </div>
         <form onSubmit={handleLookup}>
-          <label htmlFor="citizen-lookup-reference" className="mb-1 block text-sm font-semibold text-taxpay-text">
-            {label('Challan, token or transaction reference','চালান, টোকেন বা লেনদেনের রেফারেন্স')}
-          </label>
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+          <label htmlFor="citizen-lookup-reference">{label('Challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স')}</label>
+          <div className="citizen-hub-lookup__controls">
             <input id="citizen-lookup-reference" type="text" value={reference}
-              onChange={event=>{setReference(event.target.value);setNotFound(false);}}
-              placeholder={label('Enter a sample reference','নমুনা রেফারেন্স লিখুন')}
-              className="min-h-11 w-full min-w-0 flex-1 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text"/>
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:bg-taxpay-dark">
-              <Search size={17} aria-hidden="true"/> {label('Search','খুঁজুন')}
-            </button>
+              onChange={event => { setReference(event.target.value); setNotFound(false); }}
+              placeholder={label('Enter a sample reference', 'নমুনা রেফারেন্স লিখুন')} />
+            <button type="submit"><Search size={17} aria-hidden="true" />{label('Search sample records', 'নমুনা তথ্য খুঁজুন')}</button>
           </div>
-          {notFound && <p role="status" className="mt-2 text-sm text-taxpay-error">{label('No matching demonstration reference. Check the number and try again.','কোনো নমুনা রেফারেন্স পাওয়া যায়নি। নম্বর যাচাই করে আবার চেষ্টা করুন।')}</p>}
-          <p className="mt-2 text-xs text-taxpay-muted">{label('Search checks sample data only, not Treasury or official NBR records.','অনুসন্ধান শুধু নমুনা তথ্যে হয়, ট্রেজারি বা এনবিআরের সরকারি তথ্যে নয়।')}</p>
+          {notFound && <p role="status" className="citizen-hub-lookup__error">{label('No matching demonstration reference. Check the number and try again.', 'কোনো নমুনা রেফারেন্স পাওয়া যায়নি। নম্বর যাচাই করে আবার চেষ্টা করুন।')}</p>}
+          <p className="citizen-hub-lookup__notice">{label('This is not an official NBR or Treasury status lookup.', 'এটি এনবিআর বা ট্রেজারির সরকারি অবস্থা যাচাই নয়।')}</p>
         </form>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2" aria-label={label('Other services','অন্যান্য সেবা')}>
-        <button type="button" onClick={()=>navigate('verify')}
-          className="flex min-h-14 items-center gap-3 rounded-lg border border-taxpay-border bg-white p-4 text-left text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light">
-          <FileSearch size={19} aria-hidden="true"/><span className="flex-1">{label('Payment status','পেমেন্টের অবস্থা')}</span><ArrowRight size={16} aria-hidden="true"/>
-        </button>
-        <button type="button" onClick={()=>navigate('incident')}
-          className="flex min-h-14 items-center gap-3 rounded-lg border border-taxpay-border bg-white p-4 text-left text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light">
-          <ShieldAlert size={19} aria-hidden="true"/><span className="flex-1">{label('Report a payment problem','পেমেন্টের সমস্যা জানান')}</span><ArrowRight size={16} aria-hidden="true"/>
-        </button>
-      </section>
     </div>
   );
 };

@@ -1,20 +1,19 @@
-import React from 'react';
-import { 
-  Printer, 
-  Download, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
-  ShieldCheck, 
-  QrCode, 
+import React, { useEffect } from 'react';
+import {
+  Printer,
+  Download,
+  CheckCircle,
+  ShieldCheck,
+  QrCode,
   ArrowLeft,
   Building2,
   Copy,
   Info
 } from 'lucide-react';
 import { ChallanReceipt } from '../../types/tax';
-import { formatCurrency, toBengaliNumeral } from '../../services/numberFormat';
+import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
+import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
 
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
@@ -23,30 +22,97 @@ interface ReceiptViewProps {
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => {
   const { language, navigate } = useTaxState();
+  const bn = language === 'bn';
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+  const labels = bn ? {
+    back: 'রেকর্ডে ফিরুন', print: 'নমুনা রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
+    title: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ', subtitle: 'নমুনা এ-চালান বিন্যাস (এনবিআর ইস্যু করেনি)',
+    fictional: 'কাল্পনিক তথ্য — ট্রেজারি জমার নিশ্চয়তা বা সরকারি ফরম টিআর-৬ নয়', demo: 'শুধু নমুনা',
+    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'নমুনা সময়', copy: 'চালান নম্বর কপি করুন',
+    payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ',
+    zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নমুনা নিষ্পত্তির তথ্য',
+    paymentMethod: 'নমুনা পেমেন্ট পদ্ধতি', transaction: 'কাল্পনিক লেনদেন রেফারেন্স',
+    scroll: 'কাল্পনিক ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'নমুনা স্ক্রল রেফারেন্স নেই',
+    withholdingTitle: 'উৎসে কর জমার নোটিশ', deductedFor: 'কর কর্তনগ্রহীতার টিআইএন-এর পক্ষে নমুনা জমা:',
+    noAgentCredit: 'এই প্রদর্শনীতে কর কর্তনকারীর ব্যক্তিগত আয়কর ক্রেডিট তৈরি বা যাচাই হয় না।',
+    breakdown: 'পেমেন্টের বিবরণ ও খাত', headCode: 'অর্থনৈতিক খাত কোড', description: 'খাতের বিবরণ',
+    tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'নমুনা মোট অর্থ:',
+    treasuryStatus: 'নমুনা ট্রেজারি অবস্থা', simulated: 'সিমুলেটেড', noTransfer: 'শুধু নমুনা অবস্থা; সরকারি অর্থ স্থানান্তর হয়নি।',
+    credit: 'কর ক্রেডিট স্বীকৃতি', notApplicable: 'প্রযোজ্য নয়', pending: 'সমন্বয়ের অপেক্ষায়',
+    credited: 'নমুনা ক্রেডিট অবস্থা (যাচাই হয়নি)', claimed: 'নমুনা দাবির অবস্থা (যাচাই হয়নি)', disputed: 'বিরোধপূর্ণ',
+    noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।',
+    noNbrCredit: 'এই প্রদর্শনী সরকারি কর-ক্রেডিট প্রমাণ করে না।', noPersonalCredit: 'এই নমুনা ব্যক্তিগত কর-ক্রেডিট তৈরি বা যাচাই করে না।',
+    demoReference: 'নমুনা রেফারেন্স (ক্রিপ্টোগ্রাফিক যাচাই নয়):', noSignature: 'কোনো সরকারি ই-স্বাক্ষর নেই',
+    noIssuance: 'শুধু সিমুলেশন — এনবিআর বা ব্যাংক ইস্যু/স্বাক্ষর করেনি'
+  } : {
+    back: 'Back to records', print: 'Print demo receipt', export: 'Export sample record (JSON)',
+    title: 'TaxPay — Unofficial demonstration receipt', subtitle: 'Illustrative A-Challan layout (not issued by NBR)',
+    fictional: 'Fictional data — not a Treasury settlement confirmation or official Form TR-6', demo: 'DEMO ONLY',
+    challan: 'Sample challan number', token: 'Sample token number', timestamp: 'Sample timestamp', copy: 'Copy sample challan number',
+    payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year',
+    zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Sample settlement details',
+    paymentMethod: 'Sample payment method', transaction: 'Fictional transaction reference',
+    scroll: 'Fictional Treasury scroll reference', pendingScroll: 'No sample scroll reference',
+    withholdingTitle: 'Withholding deposit notice', deductedFor: 'Illustrative deposit for deductee TIN:',
+    noAgentCredit: 'This demonstration does not create or verify personal income tax credit for the withholding agent.',
+    breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
+    tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Sample total amount:',
+    treasuryStatus: 'Sample Treasury status', simulated: 'SIMULATED', noTransfer: 'Sample status only; no government funds were transferred.',
+    credit: 'Tax credit recognition', notApplicable: 'NOT APPLICABLE', pending: 'PENDING RECONCILIATION',
+    credited: 'CREDITED TO LEDGER (SAMPLE / UNVERIFIED)', claimed: 'CLAIMED IN RETURN (SAMPLE / UNVERIFIED)', disputed: 'DISPUTED',
+    noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.',
+    noNbrCredit: 'This demonstration does not establish a real NBR credit.', noPersonalCredit: 'This sample does not create or verify a personal tax credit.',
+    demoReference: 'Sample reference (not a cryptographic verification hash):', noSignature: 'No official electronic signature',
+    noIssuance: 'Simulation only — not issued or signed by NBR or a bank'
+  };
+  const creditStatusLabel = {
+    NOT_APPLICABLE: labels.notApplicable,
+    PENDING_RECONCILIATION: labels.pending,
+    CREDITED_TO_LEDGER: labels.credited,
+    CLAIMED_IN_RETURN: labels.claimed,
+    DISPUTED: labels.disputed
+  }[receipt.taxCreditStatus];
+  const treasuryStatusLabels = {
+    INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
+    GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
+    GATEWAY_SUCCESS: bn ? 'গেটওয়েতে সফল' : 'GATEWAY_SUCCESS',
+    TREASURY_SCROLLED: bn ? 'ট্রেজারিতে নথিভুক্ত' : 'TREASURY_SCROLLED',
+    FAILED: bn ? 'ব্যর্থ' : 'FAILED',
+    EXPIRED: bn ? 'মেয়াদ শেষ' : 'EXPIRED',
+    REVERSED: bn ? 'প্রত্যাবর্তিত' : 'REVERSED'
+  }[receipt.treasuryStatus];
+  const paymentMethodLabels = {
+    BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', SONALI_E_SHEBA: 'Sonali e-Sheba',
+    A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS'
+  }[receipt.paymentMethod];
 
   const handleCopy = (text: string) => {
     navigator.clipboard?.writeText(text);
   };
+  const itemName = (item: ChallanReceipt['items'][number]) => bn
+    ? MASTER_PAYMENT_HEADS.find(head => head.id === item.headId && head.nameEn === item.headNameEn)?.nameBn || item.headNameEn
+    : item.headNameEn;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
+    <div className={`space-y-4 max-w-4xl mx-auto${bn ? ' font-bengali' : ''}`} lang={language}>
       {/* Top Actions Bar */}
       <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
         <button
           onClick={onBack || (() => navigate('history'))}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:text-emerald-950 px-3 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
+          aria-label={labels.back}
+          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:text-emerald-950 px-3 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Records</span>
+          <span>{labels.back}</span>
         </button>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-800 hover:bg-emerald-900 text-white px-3.5 py-1.5 rounded cursor-pointer shadow-sm"
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold bg-emerald-800 hover:bg-emerald-900 text-white px-3.5 py-1.5 rounded cursor-pointer shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print Demo Receipt</span>
+            <span>{labels.print}</span>
           </button>
           <button
             onClick={() => {
@@ -58,20 +124,20 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               element.click();
               document.body.removeChild(element);
             }}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded cursor-pointer border border-slate-300"
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded cursor-pointer border border-slate-300"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Export Record (JSON)</span>
+            <span>{labels.export}</span>
           </button>
         </div>
       </div>
 
       {/* Unofficial printable demonstration receipt; never proof of payment or credit. */}
-      <div className="print-card bg-white border border-slate-300 rounded-xl shadow-md p-6 sm:p-8 relative overflow-hidden text-slate-800 font-sans">
+      <div className="print-card bg-white border border-slate-300 rounded-xl shadow-md p-4 sm:p-8 relative overflow-hidden text-slate-800 font-sans" lang={language}>
         {/* Subtle Watermark Stamp */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 select-none rotate-[-25deg]">
           <div className="text-center font-bold text-7xl font-mono border-8 border-slate-900 p-8 rounded-3xl">
-            NBR TAXPAY DEMO SIMULATION
+            {bn ? 'এনবিআর ট্যাক্সপে নমুনা সিমুলেশন' : 'NBR TAXPAY DEMO SIMULATION'}
           </div>
         </div>
 
@@ -80,36 +146,38 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
           <div className="flex items-center justify-center gap-2 text-taxpay-dark">
             <Building2 className="w-8 h-8 text-emerald-800" />
             <h1 className="font-serif-fraunces text-xl sm:text-2xl font-bold tracking-tight text-taxpay-dark">
-              TaxPay — Unofficial Demonstration Receipt
+              {labels.title}
             </h1>
           </div>
           <h2 className="text-sm sm:text-base font-semibold text-emerald-900">
-            Illustrative A-Challan Layout (not issued by NBR)
+            {labels.subtitle}
           </h2>
           <p className="text-xs text-slate-500 font-medium">
-            Fictional data — not a Treasury settlement confirmation or official Form TR-6
+            {labels.fictional}
           </p>
 
           <div className="absolute right-0 top-0 hidden sm:flex flex-col items-end">
             <div className="border border-slate-300 rounded p-1 bg-slate-50">
               <QrCode className="w-14 h-14 text-slate-800" />
             </div>
-            <span className="text-[10px] text-slate-500 font-mono mt-0.5">DEMO ONLY</span>
+            <span className="text-[10px] text-slate-500 font-mono mt-0.5">{labels.demo}</span>
           </div>
         </div>
 
         {/* Challan Identifiers Ribbon */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 my-5 text-xs">
           <div>
-            <span className="text-slate-500 block">Challan Number:</span>
+            <span className="text-slate-500 block">{labels.challan}:</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono-plex font-bold text-sm text-emerald-950">
                 {receipt.challanNo}
               </span>
-              <button 
+              <button
                 onClick={() => handleCopy(receipt.challanNo)}
-                className="no-print text-slate-400 hover:text-slate-700" 
-                title="Copy Challan No"
+                type="button"
+                aria-label={labels.copy}
+                title={labels.copy}
+                className="no-print grid min-h-11 min-w-11 place-items-center rounded text-slate-500 hover:text-slate-900"
               >
                 <Copy className="w-3.5 h-3.5" />
               </button>
@@ -117,14 +185,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
           </div>
 
           <div>
-            <span className="text-slate-500 block">Token Number:</span>
+            <span className="text-slate-500 block">{labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
               {receipt.tokenNumber}
             </span>
           </div>
 
           <div>
-            <span className="text-slate-500 block">Deposit Timestamp:</span>
+            <span className="text-slate-500 block">{labels.timestamp}:</span>
             <span className="font-mono-plex font-medium text-slate-800 mt-0.5 block">
               {receipt.completedAt || receipt.createdAt}
             </span>
@@ -135,46 +203,46 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6 text-xs border-b border-slate-200 pb-6">
           <div className="space-y-2">
             <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-900 border-b border-emerald-100 pb-1">
-              Payer & Taxpayer Particulars
+              {labels.payerDetails}
             </h3>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Payer Name:</span>
+              <span className="text-slate-500">{labels.payer}:</span>
               <span className="col-span-2 font-semibold text-slate-900">{receipt.payerName}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">e-TIN:</span>
+              <span className="text-slate-500">{labels.tin}:</span>
               <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{receipt.payerTin}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Assessment Year:</span>
+              <span className="text-slate-500">{labels.year}:</span>
               <span className="col-span-2 font-bold text-slate-800">{receipt.assessmentYear}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Taxes Zone:</span>
+              <span className="text-slate-500">{labels.zone}:</span>
               <span className="col-span-2 text-slate-800">{receipt.taxZone}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Taxes Circle:</span>
+              <span className="text-slate-500">{labels.circle}:</span>
               <span className="col-span-2 text-slate-800">{receipt.taxCircle}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-900 border-b border-emerald-100 pb-1">
-              Treasury & Settlement Clearing
+              {labels.treasurySection}
             </h3>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Payment Gateway:</span>
-              <span className="col-span-2 font-medium text-slate-900">{receipt.paymentMethod}</span>
+              <span className="text-slate-500">{labels.paymentMethod}:</span>
+              <span className="col-span-2 font-medium text-slate-900">{paymentMethodLabels}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Gateway Txn ID:</span>
+              <span className="text-slate-500">{labels.transaction}:</span>
               <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Treasury Scroll:</span>
+              <span className="text-slate-500">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
-                {receipt.treasuryScrollNo || 'Pending Scroll Confirmation'}
+                {receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
             </div>
 
@@ -183,11 +251,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] space-y-1">
                 <span className="font-bold text-amber-900 block flex items-center gap-1">
                   <Info className="w-3.5 h-3.5 text-amber-700" />
-                  Withholding Tax Deposit Notice
+                  {labels.withholdingTitle}
                 </span>
                 <p className="text-amber-800 leading-tight">
-                  Deposited on behalf of Deductee TIN: <strong className="font-mono">{receipt.deducteeTin || 'Unspecified Vendor'}</strong>.
-                  This deposit does NOT constitute a personal income tax credit for the withholding agent.
+                  {labels.deductedFor} <strong className="font-mono">{receipt.deducteeTin || (bn ? 'উল্লেখ নেই' : 'Unspecified')}</strong>. {labels.noAgentCredit}
                 </p>
               </div>
             )}
@@ -197,19 +264,46 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
         {/* Financial Line Items Table */}
         <div className="my-6">
           <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-900 mb-2">
-            Payment Breakdown & Head Classification
+            {labels.breakdown}
           </h3>
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="min-w-full divide-y divide-slate-200 text-xs">
+          <div className="overflow-hidden border border-slate-200 rounded-lg">
+            <div className="divide-y divide-slate-200 bg-white sm:hidden" data-testid="receipt-breakdown-mobile">
+              {receipt.items.map((item, idx) => (
+                <article key={idx} className="p-3 space-y-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{labels.headCode}</p>
+                    <p className="break-all font-mono-plex text-xs font-semibold text-emerald-900">{item.economicCode}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold leading-snug text-slate-900">{itemName(item)}</h4>
+                    {item.note && <p className="mt-1 break-words text-[11px] leading-snug text-slate-600">{item.note}</p>}
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-200 pt-3 text-xs">
+                    <div><dt className="text-slate-500">{labels.tax}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.taxAmount, language)}</dd></div>
+                    <div><dt className="text-slate-500">{labels.penalty}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.penaltyAmount, language)}</dd></div>
+                    <div><dt className="text-slate-500">{labels.surcharge}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.surchargeAmount, language)}</dd></div>
+                    <div><dt className="text-slate-500">{labels.interest}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.interestAmount, language)}</dd></div>
+                  </dl>
+                  <div className="flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 font-semibold text-emerald-950">
+                    <span>{labels.total}</span><span className="shrink-0 font-mono-plex">{formatCurrency(item.totalAmount, language)}</span>
+                  </div>
+                </article>
+              ))}
+              <div className="flex items-center justify-between gap-3 bg-emerald-50 px-3 py-3 text-sm font-bold text-emerald-950">
+                <span>{labels.grandTotal}</span><span className="shrink-0 font-mono-plex">{formatCurrency(receipt.totalAmount, language)}</span>
+              </div>
+            </div>
+            <div className="hidden overflow-x-auto sm:block" data-testid="receipt-breakdown-table">
+            <table className="min-w-[720px] divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
                 <tr>
-                  <th className="px-3 py-2.5">Economic Head Code</th>
-                  <th className="px-3 py-2.5">Head Description</th>
-                  <th className="px-3 py-2.5 text-right">Tax (BDT)</th>
-                  <th className="px-3 py-2.5 text-right">Penalty</th>
-                  <th className="px-3 py-2.5 text-right">Surcharge</th>
-                  <th className="px-3 py-2.5 text-right">Interest</th>
-                  <th className="px-3 py-2.5 text-right font-bold">Total (BDT)</th>
+                  <th scope="col" className="px-3 py-2.5">{labels.headCode}</th>
+                  <th scope="col" className="px-3 py-2.5">{labels.description}</th>
+                  <th scope="col" className="px-3 py-2.5 text-right">{labels.tax}</th>
+                  <th scope="col" className="px-3 py-2.5 text-right">{labels.penalty}</th>
+                  <th scope="col" className="px-3 py-2.5 text-right">{labels.surcharge}</th>
+                  <th scope="col" className="px-3 py-2.5 text-right">{labels.interest}</th>
+                  <th scope="col" className="px-3 py-2.5 text-right font-bold">{labels.total}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -219,7 +313,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
                       {item.economicCode}
                     </td>
                     <td className="px-3 py-2 text-slate-800">
-                      <div className="font-medium">{item.headNameEn}</div>
+                      <div className="font-medium">
+                        {itemName(item)}
+                      </div>
                       {item.note && <div className="text-[11px] text-slate-500 italic">{item.note}</div>}
                     </td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.taxAmount, language)}</td>
@@ -235,7 +331,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               <tfoot className="bg-emerald-50/60 font-bold border-t-2 border-slate-300">
                 <tr>
                   <td colSpan={6} className="px-3 py-2.5 text-right text-emerald-950 uppercase">
-                    Grand Total Remitted:
+                    {labels.grandTotal}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono-plex text-sm text-emerald-950">
                     {formatCurrency(receipt.totalAmount, language)}
@@ -243,6 +339,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
                 </tr>
               </tfoot>
             </table>
+            </div>
           </div>
         </div>
 
@@ -254,12 +351,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               <CheckCircle className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-700 block">Treasury Status:</span>
+              <span className="font-semibold text-slate-700 block">{labels.treasuryStatus}:</span>
               <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {receipt.treasuryStatus}
+                {labels.simulated}: {treasuryStatusLabels}
               </span>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Simulated Treasury status only; no government funds were transferred.
+                {labels.noTransfer}
               </p>
             </div>
           </div>
@@ -270,7 +367,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-700 block">Tax Credit Recognition:</span>
+              <span className="font-semibold text-slate-700 block">{labels.credit}:</span>
               <span className={`inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold border ${
                 receipt.taxCreditStatus === 'CREDITED_TO_LEDGER'
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
@@ -278,12 +375,11 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
                   ? 'bg-slate-200 text-slate-700 border-slate-300'
                   : 'bg-amber-100 text-amber-800 border-amber-300'
               }`}>
-                {receipt.taxCreditStatus}
+                {creditStatusLabel}
               </span>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                {receipt.taxCreditStatus === 'NOT_APPLICABLE'
-                  ? 'No automatic agent credit; deductee entitlement requires separate verification.'
-                  : 'No real NBR credit is established by this demonstration record.'}
+                {receipt.isWithholding ? labels.noAgentEntitlement :
+                  receipt.taxCreditStatus === 'NOT_APPLICABLE' ? labels.noPersonalCredit : labels.noNbrCredit}
               </p>
             </div>
           </div>
@@ -292,17 +388,17 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
         {/* Signatures & Certification Block */}
         <div className="mt-8 pt-6 border-t border-slate-200 flex flex-wrap justify-between items-end gap-4 text-xs text-slate-500">
           <div>
-            <p className="font-mono text-[11px]">Demo reference (not a cryptographic verification hash):</p>
+            <p className="font-mono text-[11px]">{labels.demoReference}</p>
             <p className="font-mono text-[10px] text-slate-400">
               DEMO:{receipt.id}-{receipt.challanNo}
             </p>
           </div>
           <div className="text-right">
             <div className="font-serif-fraunces font-bold text-slate-700 text-sm">
-              No official electronic signature
+              {labels.noSignature}
             </div>
             <p className="text-[10px] text-slate-400">
-              Simulation only — not issued or signed by NBR or a bank
+              {labels.noIssuance}
             </p>
           </div>
         </div>

@@ -21,8 +21,8 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
-  await expect(page.getByText('Taxpayer home · sample data')).toBeVisible();
-  await expect(page.getByText('Not reconciled with eReturn / NBR')).toBeVisible();
+  await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
 });
 
 test('guest menu preserves clear demo profile separation and keyboard escape', async ({page}) => {
@@ -88,8 +88,28 @@ test('browser back restores route and expanded navigation after payment entry',a
   await page.getByRole('dialog',{name:'Select payment type'}).getByRole('button',{name:'Advance Tax',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
   await page.goBack();
-  await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
+  await expect(page.getByText('Public TaxPay guide')).toBeVisible();
   await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
+});
+
+test('leaving an active payment through the logo confirms before discarding entered details', async ({page}) => {
+  await page.goto('/?action=guest');
+  await page.getByLabel('Taxpayer Identification Number (e-TIN)').fill('123456789012');
+  const prompt = page.waitForEvent('dialog');
+  const clickHome = page.getByRole('button', { name: 'TaxPay home' }).click();
+  const dialog = await prompt;
+  expect(dialog.type()).toBe('confirm');
+  expect(dialog.message()).toContain('information entered so far will be lost');
+  await dialog.dismiss();
+  await clickHome;
+  await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
+  await expect(page.getByLabel('Taxpayer Identification Number (e-TIN)')).toHaveValue('123456789012');
+
+  const confirmExit = page.waitForEvent('dialog');
+  const clickHomeAgain = page.getByRole('button', { name: 'TaxPay home' }).click();
+  await (await confirmExit).accept();
+  await clickHomeAgain;
+  await expect(page.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
 });
 
 
@@ -99,7 +119,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=taxpayer_home');
     await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
-    await expect(page.getByText('Taxpayer home · sample data')).toBeVisible();
+    await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width+2);
