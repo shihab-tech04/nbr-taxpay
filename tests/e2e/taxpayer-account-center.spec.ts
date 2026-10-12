@@ -6,7 +6,7 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Profile',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Profile',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
   await expect(page.getByText('Illustrative profile — not verified')).toBeVisible();
   await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
   await page.getByRole('navigation',{name:'Account pages'}).getByRole('button',{name:'Profile settings'}).click();
