@@ -52,7 +52,7 @@ export const CertificatesView: React.FC = () => {
               <FileText size={20} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-taxpay-dark">{label('DEMONSTRATION PREVIEW', 'নমুনা প্রদর্শনী')}</p>
+              <p className="text-xs font-bold text-taxpay-dark">{label('PREVIEW', 'প্রিভিউ')}</p>
               <h1 id="certificate-preview-title" className="mt-1 text-xl font-bold leading-snug text-taxpay-text sm:text-2xl">
                 {label('Certificate previews', 'সনদের নমুনা')}
               </h1>
@@ -67,16 +67,8 @@ export const CertificatesView: React.FC = () => {
             className="no-print inline-flex min-h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:bg-taxpay-dark"
           >
             <Printer size={17} aria-hidden="true" />
-            {label('Print sample preview', 'নমুনা প্রিভিউ প্রিন্ট')}
+            {label('Print preview', 'নমুনা প্রিভিউ প্রিন্ট')}
           </button>
-        </div>
-
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-taxpay-border bg-taxpay-background p-3 text-sm leading-relaxed text-taxpay-text" role="note">
-          <ShieldAlert className="mt-0.5 shrink-0 text-taxpay-dark" size={18} aria-hidden="true" />
-          <p>{label(
-            'Illustrative interface data only. This preview does not verify a payment, Treasury settlement, tax-credit owner or eligibility.',
-            'শুধু নমুনা প্রদর্শনের তথ্য। এই প্রিভিউ কোনো পেমেন্ট, ট্রেজারি জমা, কর ক্রেডিটের মালিকানা বা যোগ্যতা যাচাই করে না।'
-          )}</p>
         </div>
 
         <div className="mt-5 border-t border-taxpay-border pt-4">
@@ -104,7 +96,7 @@ export const CertificatesView: React.FC = () => {
                 <FileText size={18} aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-taxpay-dark">{label('SAMPLE SUMMARY', 'নমুনা সারসংক্ষেপ')}</p>
+                <p className="text-xs font-bold text-taxpay-dark">{label('SUMMARY', 'সারসংক্ষেপ')}</p>
                 <h2 id="certificate-summary-title" className="mt-1 text-lg font-bold leading-snug text-taxpay-text">
                   {bn ? selectedOption.bn : selectedOption.en}
                 </h2>
@@ -120,9 +112,6 @@ export const CertificatesView: React.FC = () => {
               ))}
             </dl>
 
-            <p className="mt-4 border-t border-taxpay-border pt-3 text-sm font-semibold leading-relaxed text-taxpay-dark">
-              {label('Not an issued certificate, payment receipt, tax-credit record or travel clearance.', 'এটি ইস্যুকৃত সনদ, পেমেন্ট রসিদ, কর ক্রেডিটের রেকর্ড বা ভ্রমণ ছাড়পত্র নয়।')}
-            </p>
           </section>
         </div>
       </section>
