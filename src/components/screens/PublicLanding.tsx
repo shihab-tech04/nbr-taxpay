@@ -57,51 +57,44 @@ export const PublicLanding: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-12">
-      {/* Hero Banner with Official Crest & Forest Green Theme */}
-      <section className="citizen-overview text-white rounded-2xl p-6 sm:p-8 border relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-3xl relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-2 bg-taxpay-primary/80 text-amber-300 px-3 py-1 rounded-full text-xs font-semibold border border-taxpay-primary">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>{preview.gateway}</span>
-          </div>
-
-          <h1 className="font-serif-fraunces text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
-            Seamless & Transparent Income Tax Payments for Bangladesh
-          </h1>
-
-          <p className="text-taxpay-light/90 text-sm sm:text-base leading-relaxed">
-            {preview.subtitle}
+      {/* Public-first introduction: payment services are discoverable without sign-in. */}
+      <section className="citizen-overview text-white rounded-2xl p-4 sm:p-8 border relative overflow-hidden">
+        <div className="max-w-3xl relative z-10 space-y-3">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
+            <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+            {preview.gateway}
           </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => navigate('office_login')}
-              className="min-h-11 px-4 py-3 border border-amber-300 text-amber-100 hover:bg-taxpay-primary rounded-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
-              {language === 'bn' ? 'অফিস লগইন' : 'Office Login'}
-            </button>
-            <button
+          <h1 className="font-serif-fraunces text-[1.7rem] sm:text-4xl font-bold tracking-tight leading-tight">
+            {language === 'bn' ? 'কর পরিশোধ ও পেমেন্টের অবস্থা' : 'Tax payments and payment status'}
+          </h1>
+          <p className="text-taxpay-light text-sm leading-relaxed">
+            {language === 'bn' ? 'কর পরিশোধের ধরন বাছুন, নমুনা রসিদ খুঁজুন অথবা নির্দেশনা দেখুন। এটি প্রকৃত অর্থ জমার সেবা নয়।' : 'Choose a payment purpose, look up a sample receipt or explore guidance. This demonstration cannot collect real payments.'}
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <button type="button"
               onClick={() => document.getElementById('taxpay-payment-types')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-6 py-3 bg-taxpay-accent hover:bg-taxpay-accent text-taxpay-dark font-bold rounded-lg text-sm sm:text-base flex items-center gap-2 shadow-md transition-all cursor-pointer font-serif-fraunces"
-            >
-              <CreditCard className="w-5 h-5 text-taxpay-dark" />
-              <span>{language === 'bn' ? 'পেমেন্টের ধরন বাছুন' : 'Choose a payment type'}</span>
+              className="col-span-2 sm:col-span-1 min-h-11 px-4 py-2.5 bg-taxpay-accent text-taxpay-dark font-bold rounded-lg text-sm inline-flex items-center justify-center gap-2">
+              <CreditCard size={17} aria-hidden="true"/>
+              {language === 'bn' ? 'পেমেন্টের ধরন বাছুন' : 'Choose payment type'}
             </button>
-
-            <button
-              onClick={() => navigate('guest')}
-              className="px-5 py-3 bg-taxpay-primary/80 hover:bg-taxpay-primary text-white font-medium rounded-lg text-sm flex items-center gap-2 border border-taxpay-primary/80 cursor-pointer"
-            >
-              <span>Guest Fast Checkout</span>
-              <ArrowRight className="w-4 h-4 text-taxpay-light" />
+            <button type="button" onClick={() => navigate('verify')}
+              className="min-h-11 px-3 py-2 rounded-lg border border-white/60 text-white text-xs sm:text-sm font-semibold hover:bg-white/10">
+              {language === 'bn' ? 'পেমেন্টের অবস্থা' : 'Payment status'}
             </button>
-
-            <button
-              onClick={() => navigate('travel')}
-              className="px-4 py-3 bg-taxpay-dark/60 hover:bg-taxpay-dark text-taxpay-light font-medium rounded-lg text-sm flex items-center gap-2 border border-teal-700/60 cursor-pointer"
-            >
-              <Plane className="w-4 h-4 text-teal-400" />
-              <span>Pay Travel Tax</span>
+            <button type="button" onClick={() => navigate('guidance')}
+              className="min-h-11 px-3 py-2 rounded-lg border border-white/60 text-white text-xs sm:text-sm font-semibold hover:bg-white/10">
+              {language === 'bn' ? 'সহায়তা' : 'Help'}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-white/90">
+            <button onClick={() => navigate('guest')} className="min-h-11 hover:underline">
+              {language === 'bn' ? 'অতিথি পেমেন্ট' : 'Guest checkout'}
+            </button>
+            <button onClick={() => navigate('travel')} className="min-h-11 hover:underline">
+              {language === 'bn' ? 'ভ্রমণ কর' : 'Travel tax'}
+            </button>
+            <button onClick={() => navigate('office_login')} className="min-h-11 hover:underline">
+              {language === 'bn' ? 'অফিস লগইন' : 'Office login'}
             </button>
           </div>
         </div>
