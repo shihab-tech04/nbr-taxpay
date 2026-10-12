@@ -53,6 +53,8 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   const draftId = created[0].id as string;
 
   // Revisit from a separate browser tab with the actual persisted session.
+  // Hold a stale copy in another tab so a concurrent update cannot be silently overwritten.
+  await pageA.getByRole('button', { name: 'Resume draft' }).click();
   const otherTab = await contextA.newPage();
   await otherTab.goto('/?action=secure_workspace');
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
@@ -64,6 +66,22 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await otherTab.reload();
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
   await expect(otherTab.getByText(/124\.50/)).toBeVisible();
+
+  // Optimistic concurrency must fail closed when this first tab still holds old values.
+  await pageA.getByLabel('Proposed amount (BDT)').fill('125.00');
+  await pageA.getByRole('button', { name: 'Save draft changes' }).click();
+  await expect(pageA.getByRole('status').filter({ hasText: 'changed in another session' })).toBeVisible();
+  await pageA.getByRole('button', { name: 'Retry loading drafts' }).click();
+  await expect(pageA.getByRole('status').filter({ hasText: 'Private drafts reloaded' })).toBeVisible();
+
+  // New browser context rehydrates the real client session and reads the same saved record.
+  const restored = await browser.newContext({ baseURL: 'http://127.0.0.1:4173',
+    storageState: await contextA.storageState(), viewport: { width: 360, height: 740 } });
+  const restoredPage = await restored.newPage();
+  await restoredPage.goto('/?action=secure_workspace');
+  await expect(restoredPage.getByRole('heading', { name: 'Signed-in application user' })).toBeVisible();
+  await expect(restoredPage.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
+  await restored.close();
 
   const contextB = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport: { width: 320, height: 720 } });
   const pageB = await contextB.newPage();
@@ -78,6 +96,16 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   });
   expect(otherRead.status).toBe(200);
   expect(await otherRead.json()).toEqual([]);
+
+  // Confirm deletion and requery through the real owner token, not a mocked success.
+  await otherTab.getByRole('button', { name: 'Delete draft' }).click();
+  await otherTab.getByRole('button', { name: 'Confirm delete' }).click();
+  await expect(otherTab.getByRole('status').filter({ hasText: 'Draft deleted' })).toBeVisible();
+  const afterDelete = await fetch(new URL('/rest/v1/taxpay_payment_drafts?select=id&id=eq.' + draftId, url.origin), {
+    headers: { apikey: anonKey, Authorization: 'Bearer ' + s.access_token },
+  });
+  expect(afterDelete.status).toBe(200);
+  expect(await afterDelete.json()).toEqual([]);
 
   await otherTab.getByRole('button', { name: 'Sign out' }).click();
   await expect(otherTab.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
