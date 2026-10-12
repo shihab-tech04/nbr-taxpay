@@ -2,6 +2,7 @@
 @import './styles/office-auth-source.css';
 @import "tailwindcss";
 @import "./styles/taxpay-citizen.css";
+@import "./styles/taxpay-taxpayer-reference.css";
 
 @theme {
   --color-taxpay-primary: #2C5EAD;
