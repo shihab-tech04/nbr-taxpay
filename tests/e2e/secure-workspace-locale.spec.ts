@@ -61,8 +61,10 @@ test('sign-in and localized workspace remain usable at all six Phase 02 widths',
   for (const width of [320, 360, 375, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: width >= 768 ? 800 : 740 });
     for (const mode of ['en', 'bn'] as const) {
-      await page.getByRole('button', { name: mode === 'bn' ? 'বাংলা' : 'EN', exact: true }).click();
       const section = page.locator('section[lang]').first();
+      if (await section.getAttribute('lang') !== mode) {
+        await page.getByRole('button', { name: mode === 'bn' ? 'বাংলা' : 'EN', exact: true }).click();
+      }
       await expect(section).toHaveAttribute('lang', mode);
       const email = page.getByRole('textbox', { name: mode === 'bn' ? 'ইমেইল ঠিকানা' : 'Email address' });
       await expect(email).toBeVisible();
