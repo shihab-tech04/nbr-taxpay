@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('TaxPay cannot be mistaken for a government-owned portal', async ({page}) => {
   await page.goto('/?action=landing');
-  await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
+  await expect(page.getByText('Public TaxPay guide')).toBeVisible();
   const header = page.locator('header').first();
   await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
   await expect(header.getByText('Independent payment demonstration')).toBeVisible();
@@ -27,8 +27,8 @@ test('unverified tax calculator never quotes fictitious slab liability', async (
 
 test('travel tax simulation cannot be presented as a real immigration challan',async ({page})=>{
   await page.goto('/?action=travel');
-  await expect(page.getByText(/No official passenger verification, government fee collection or immigration clearance/)).toBeVisible();
-  await expect(page.getByText(/SOURCE NOT IN INPUTS \/ LEGAL VALIDITY UNVERIFIED/)).toBeVisible();
+  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toBeVisible();
+  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toBeVisible();
 });
 
 test('mobile navigation and home brand are keyboard accessible with 44px touch targets', async ({ page }, info) => {

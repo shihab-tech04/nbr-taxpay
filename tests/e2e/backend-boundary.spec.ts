@@ -105,8 +105,8 @@ test('income tax guidance refuses unverified calculations and official-payment p
 
 test('travel-tax page explicitly denies real official receipts and clearance', async ({ page }) => {
   await page.goto('/?action=travel');
-  await expect(page.getByText(/No official passenger verification, government fee collection or immigration clearance/)).toBeVisible();
-  await expect(page.getByText(/SOURCE NOT IN INPUTS \/ LEGAL VALIDITY UNVERIFIED/)).toBeVisible();
+  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toBeVisible();
+  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toBeVisible();
 });
 
 test('anonymous users cannot read or write source change proposals', async ({ request }, info) => {

@@ -3,7 +3,7 @@ import {expect,test} from '@playwright/test';
 const publicRoutes=['landing','guest','guestwh','travel','verify','incident','guidance','head_catalogue'] as const;
 const privateRoutes={
   taxpayer_home: {kind:'home',button:''},
-  dashboard: {kind:'button',button:'Dashboard'},
+  dashboard: {kind:'button',button:'Home'},
   wizard: {kind:'pay',button:'Pay — select payment type'},
   history: {kind:'button',button:'Payments & activity'},
   ledger: {kind:'button',button:'Tax ledger'},

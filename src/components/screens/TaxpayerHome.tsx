@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BookOpen, FileCheck2, FileClock, Landmark, LayoutDashboard, Bell, Receipt, Link2, FilePenLine } from 'lucide-react';
+import { Activity, ArrowRight, Bell, BookOpen, FileCheck2, FileClock, FilePenLine, Landmark, Link2, LayoutDashboard, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
 import type { TreasuryStatus, TaxCreditStatus } from '../../types/tax';
@@ -8,132 +8,138 @@ type Destination = {
   route: string;
   en: string;
   bn: string;
-  Icon: React.ComponentType<{size?:number; 'aria-hidden'?: boolean}>;
+  Icon: React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }>;
 };
-const destinations: Destination[] = [
-  {route:'dashboard',en:'Dashboard',bn:'কর সারসংক্ষেপ',Icon:LayoutDashboard},
-  {route:'history',en:'Payments & activity',bn:'পেমেন্ট ও লেনদেন',Icon:Receipt},
-  {route:'ledger',en:'Tax ledger',bn:'কর লেজার',Icon:BookOpen},
-  {route:'journey',en:'Tax journey',bn:'করের ইতিহাস',Icon:FileClock},
-  {route:'certificates',en:'Certificates',bn:'সনদপত্র',Icon:FileCheck2},
-  {route:'corrections',en:'Corrections',bn:'সংশোধন',Icon:FilePenLine},
-  {route:'notifications',en:'Notifications',bn:'বিজ্ঞপ্তি',Icon:Bell},
-  {route:'services',en:'Connected services',bn:'সংযুক্ত সেবা',Icon:Link2}
+const secondaryDestinations: Destination[] = [
+  { route: 'dashboard', en: 'Dashboard', bn: 'কর সারসংক্ষেপ', Icon: LayoutDashboard },
+  { route: 'journey', en: 'Tax journey', bn: 'করের ইতিহাস', Icon: FileClock },
+  { route: 'notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell },
+  { route: 'services', en: 'Connected services', bn: 'সংযুক্ত সেবা', Icon: Link2 }
 ];
 
-const treasuryLabels: Record<TreasuryStatus, {en:string;bn:string}> = {
-  INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
-  GATEWAY_PENDING:{en:'Gateway pending',bn:'গেটওয়েতে অপেক্ষমাণ'},
-  GATEWAY_SUCCESS:{en:'Gateway success (sample)',bn:'গেটওয়েতে সফল (নমুনা)'},
-  TREASURY_SCROLLED:{en:'Treasury-scrolled (sample)',bn:'ট্রেজারিতে নথিভুক্ত (নমুনা)'},
-  FAILED:{en:'Failed',bn:'ব্যর্থ'},
-  EXPIRED:{en:'Expired',bn:'মেয়াদ শেষ'},
-  REVERSED:{en:'Reversed',bn:'বাতিল / প্রত্যাবর্তিত'}
+const treasuryLabels: Record<TreasuryStatus, { en: string; bn: string }> = {
+  INITIATED: { en: 'Initiated', bn: 'শুরু হয়েছে' },
+  GATEWAY_PENDING: { en: 'Gateway pending', bn: 'গেটওয়েতে অপেক্ষমাণ' },
+  GATEWAY_SUCCESS: { en: 'Gateway success (sample)', bn: 'গেটওয়েতে সফল (নমুনা)' },
+  TREASURY_SCROLLED: { en: 'Treasury-scrolled (sample)', bn: 'ট্রেজারিতে নথিভুক্ত (নমুনা)' },
+  FAILED: { en: 'Failed', bn: 'ব্যর্থ' },
+  EXPIRED: { en: 'Expired', bn: 'মেয়াদ শেষ' },
+  REVERSED: { en: 'Reversed', bn: 'বাতিল / প্রত্যাবর্তিত' }
 };
-const creditLabels: Record<TaxCreditStatus,{en:string;bn:string}> = {
-  NOT_APPLICABLE:{en:'Not applicable',bn:'প্রযোজ্য নয়'},
-  PENDING_RECONCILIATION:{en:'Awaiting reconciliation',bn:'সমন্বয়ের অপেক্ষায়'},
-  CREDITED_TO_LEDGER:{en:'Sample credited state (unverified)',bn:'নমুনা ক্রেডিট অবস্থা (যাচাই হয়নি)'},
-  CLAIMED_IN_RETURN:{en:'Sample claim state (unverified)',bn:'নমুনা দাবির অবস্থা (যাচাই হয়নি)'},
-  DISPUTED:{en:'Disputed',bn:'বিরোধপূর্ণ'}
+const creditLabels: Record<TaxCreditStatus, { en: string; bn: string }> = {
+  NOT_APPLICABLE: { en: 'Not applicable', bn: 'প্রযোজ্য নয়' },
+  PENDING_RECONCILIATION: { en: 'Awaiting reconciliation', bn: 'সমন্বয়ের অপেক্ষায়' },
+  CREDITED_TO_LEDGER: { en: 'Sample credited state (unverified)', bn: 'নমুনা ক্রেডিট অবস্থা (যাচাই হয়নি)' },
+  CLAIMED_IN_RETURN: { en: 'Sample claim state (unverified)', bn: 'নমুনা দাবির অবস্থা (যাচাই হয়নি)' },
+  DISPUTED: { en: 'Disputed', bn: 'বিরোধপূর্ণ' }
 };
 
 export const TaxpayerHome: React.FC = () => {
   const { taxpayerProfile, receipts, navigate, selectReceipt, language } = useTaxState();
   const bn = language === 'bn';
-  // This fixture has payerTin, not a verified tax-credit owner. It must never be used to
-  // compute a personal ledger balance or prove that this account received tax credit.
-  const initiatedExamples = receipts.filter(r => r.payerTin === taxpayerProfile.tin).slice(0,3);
-  const label = (en:string, bengali:string) => bn ? bengali : en;
+  // The fixture is keyed by payer TIN, not verified tax-credit ownership. It must not
+  // be used to compute a personal ledger balance or imply that this is a real account.
+  const initiatedExamples = receipts.filter(r => r.payerTin === taxpayerProfile.tin).slice(0, 3);
+  const label = (en: string, bengali: string) => bn ? bengali : en;
+  const quickDestinations: Destination[] = [
+    { route: 'history', en: 'Payments & activity', bn: 'পেমেন্ট ও লেনদেন', Icon: Activity },
+    { route: 'ledger', en: 'Tax ledger', bn: 'কর লেজার', Icon: BookOpen },
+    { route: 'certificates', en: 'Certificates', bn: 'সনদপত্র', Icon: FileCheck2 },
+    { route: 'corrections', en: 'Corrections', bn: 'সংশোধন', Icon: FilePenLine }
+  ];
 
   return (
-    <div className={`mx-auto max-w-5xl space-y-5 pb-12 ${bn ? 'font-bengali' : ''}`}>
-      <section aria-label={label('Taxpayer overview','করদাতার সারসংক্ষেপ')} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <p className="text-xs font-semibold text-taxpay-dark">{label('Taxpayer home · sample data','করদাতার মূল পাতা · নমুনা তথ্য')}</p>
-            <h1 className="text-2xl font-bold leading-snug text-taxpay-text sm:text-3xl">{label('Your tax position','আপনার কর অবস্থান')}</h1>
-            <p className="text-sm text-taxpay-muted">{label('Balances are not connected to NBR or Treasury.','ব্যালেন্স এনবিআর বা ট্রেজারির সাথে সংযুক্ত নয়।')}</p>
+    <div className={`citizen-taxpayer-home mx-auto max-w-5xl space-y-5 pb-12 ${bn ? 'font-bengali' : ''}`}>
+      <section className="citizen-taxpayer-hero" aria-labelledby="taxpay-home-title">
+        <div>
+          <p className="citizen-taxpayer-hero__eyebrow"><Landmark size={16} aria-hidden="true" />{label('Taxpayer workspace · sample profile', 'করদাতা ওয়ার্কস্পেস · নমুনা প্রোফাইল')}</p>
+          <h1 id="taxpay-home-title">{label('My Tax Payments', 'আমার কর পেমেন্ট')}</h1>
+          <p>{label('A demonstration workspace for exploring payment activity and tax services. This sample profile is not a signed-in taxpayer account.', 'পেমেন্টের তথ্য ও করসেবা দেখার নমুনা ওয়ার্কস্পেস। এই নমুনা প্রোফাইলটি সাইন-ইন করা করদাতা অ্যাকাউন্ট নয়।')}</p>
+          <div className="citizen-taxpayer-hero__actions">
+            <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate('wizard')}>
+              <WalletCards size={18} aria-hidden="true" />{label('Start a sample payment', 'নমুনা পেমেন্ট শুরু করুন')}
+            </button>
+            <button type="button" className="citizen-taxpayer-secondary" onClick={() => navigate('secure_workspace')}>
+              {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')}<ArrowRight size={16} aria-hidden="true" />
+            </button>
           </div>
-          <span className="inline-flex items-center rounded-md bg-taxpay-light px-3 py-2 text-xs font-semibold text-taxpay-dark">
-            {label('Demo only','শুধু নমুনা')}
-          </span>
         </div>
+        <span className="citizen-taxpayer-hero__badge">{label('Demo only', 'শুধু নমুনা')}</span>
+      </section>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="min-w-0 rounded-lg border border-taxpay-border p-4">
-            <p className="text-xs text-taxpay-muted">{label('Outstanding tax','বকেয়া কর')}</p>
-            <p className="mt-2 text-lg font-semibold text-taxpay-text">{label('Unavailable','পাওয়া যাচ্ছে না')}</p>
-          </div>
-          <div className="min-w-0 rounded-lg border border-taxpay-border p-4">
-            <p className="text-xs text-taxpay-muted">{label('Recognized credit','স্বীকৃত কর ক্রেডিট')}</p>
-            <p className="mt-2 text-lg font-semibold text-taxpay-text">{label('Unverified','যাচাই হয়নি')}</p>
-          </div>
+      <section className="citizen-taxpayer-summary" aria-labelledby="taxpay-summary-title">
+        <div className="citizen-hub-section__heading">
+          <div><p className="citizen-hub-eyebrow">{label('Account overview', 'অ্যাকাউন্টের সারসংক্ষেপ')}</p><h2 id="taxpay-summary-title">{label('Tax position', 'করের অবস্থান')}</h2></div>
         </div>
-        <details className="mt-3 rounded-lg bg-taxpay-background p-3 text-sm text-taxpay-muted">
-          <summary className="cursor-pointer font-semibold text-taxpay-dark">{label('Why are balances unavailable?','ব্যালেন্স কেন পাওয়া যাচ্ছে না?')}</summary>
-          <p className="mt-2 leading-relaxed">{label('This demonstration has no verified account-specific ledger owner, Treasury reconciliation or live taxpayer records. Sample transactions are not tax credit or payment proof.','এই প্রদর্শনীতে করদাতাভিত্তিক যাচাইকৃত লেজার, ট্রেজারি সমন্বয় বা প্রকৃত করদাতার তথ্য নেই। নমুনা লেনদেন কর ক্রেডিট বা পরিশোধের প্রমাণ নয়।')}</p>
+        <p className="citizen-taxpayer-summary__notice">{label('This demonstration has no verified account-specific ledger owner, Treasury reconciliation or live taxpayer records. Sample transactions are not tax credit or payment proof.', 'এই প্রদর্শনীতে করদাতাভিত্তিক যাচাইকৃত লেজার, ট্রেজারি সমন্বয় বা প্রকৃত করদাতার তথ্য নেই। নমুনা লেনদেন কর ক্রেডিট বা পরিশোধের প্রমাণ নয়।')}</p>
+        <div className="citizen-taxpayer-summary__cards">
+          <article><span>{label('Outstanding tax', 'বকেয়া কর')}</span><strong>{label('Unavailable', 'পাওয়া যাচ্ছে না')}</strong></article>
+          <article><span>{label('Recognized credit', 'স্বীকৃত কর ক্রেডিট')}</span><strong>{label('Unverified', 'যাচাই হয়নি')}</strong></article>
+        </div>
+        <details className="citizen-taxpayer-summary__details">
+          <summary>{label('Why are balances unavailable?', 'ব্যালেন্স কেন পাওয়া যাচ্ছে না?')}</summary>
+          <p>{label('Live assessments, Treasury settlements, eTDS records and tax-credit ownership are not connected. A payer reference or sample receipt does not establish a personal credit.', 'প্রকৃত কর নির্ধারণ, ট্রেজারি জমা, ই-টিডিএস বা কর-ক্রেডিটের মালিকানা সংযুক্ত নয়। পরিশোধকারীর রেফারেন্স বা নমুনা রসিদ ব্যক্তিগত ক্রেডিট প্রমাণ করে না।')}</p>
         </details>
       </section>
 
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Sample identity','নমুনা পরিচয়')}>
-        <div className="flex items-center gap-3">
-          <div aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-taxpay-light text-taxpay-dark"><Landmark size={22}/></div>
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-taxpay-text">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</h2>
-            <p className="text-xs text-taxpay-muted">e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span> · {taxpayerProfile.type}</p>
-          </div>
+      <section className="citizen-taxpayer-profile" aria-label={label('Sample identity', 'নমুনা পরিচয়')}>
+        <div className="citizen-taxpayer-profile__mark" aria-hidden="true"><Landmark size={20} /></div>
+        <div className="min-w-0 flex-1">
+          <p className="citizen-hub-eyebrow">{label('Illustrative profile', 'নমুনা প্রোফাইল')}</p>
+          <h2>{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</h2>
+          <p>e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span> · {taxpayerProfile.type}</p>
+        </div>
+        <span className="citizen-demo-pill">{label('Not verified', 'যাচাইকৃত নয়')}</span>
+      </section>
+
+      <section className="citizen-taxpayer-quick" aria-labelledby="taxpay-quick-title">
+        <div className="citizen-hub-section__heading">
+          <div><p className="citizen-hub-eyebrow">{label('Your services', 'আপনার সেবা')}</p><h2 id="taxpay-quick-title">{label('Quick access', 'দ্রুত প্রবেশ')}</h2></div>
+        </div>
+        <div className="citizen-taxpayer-quick__grid">
+          {quickDestinations.map(({ route, en, bn: bnName, Icon }) => (
+            <button type="button" key={route} onClick={() => navigate(route)}>
+              <span><Icon size={20} aria-hidden={true} /></span><strong>{bn ? bnName : en}</strong><ArrowRight size={16} aria-hidden="true" />
+            </button>
+          ))}
         </div>
       </section>
 
-      <section aria-labelledby="taxpay-recent-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id="taxpay-recent-title" className="text-lg font-bold text-taxpay-text">{label('Recent activity','সাম্প্রতিক লেনদেন')}</h2>
-          <button type="button" onClick={()=>navigate('history')} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light">
-            {label('View all','সব দেখুন')} <ArrowRight size={16} aria-hidden="true"/>
-          </button>
+      <section aria-labelledby="taxpay-recent-title" className="citizen-taxpayer-activity">
+        <div className="citizen-hub-section__heading">
+          <div><p className="citizen-hub-eyebrow">{label('Sample records', 'নমুনা তথ্য')}</p><h2 id="taxpay-recent-title">{label('Recent activity', 'সাম্প্রতিক লেনদেন')}</h2></div>
+          <button type="button" onClick={() => navigate('history')} className="citizen-text-action">{label('View all', 'সব দেখুন')}<ArrowRight size={16} aria-hidden="true" /></button>
         </div>
-        <p className="mb-3 text-xs text-taxpay-muted">{label('Example transactions initiated using this payer TIN; credit ownership is not verified.','এই পরিশোধকারীর টিআইএন দিয়ে শুরু করা নমুনা লেনদেন; ক্রেডিটের মালিকানা যাচাইকৃত নয়।')}</p>
+        <p className="citizen-taxpayer-activity__notice">{label('Example transactions initiated using this payer TIN; credit ownership is not verified.', 'এই পরিশোধকারীর টিআইএন দিয়ে শুরু করা নমুনা লেনদেন; ক্রেডিটের মালিকানা যাচাইকৃত নয়।')}</p>
         {initiatedExamples.length === 0 ? (
-          <p className="rounded-lg bg-taxpay-background p-4 text-sm text-taxpay-muted">{label('No sample transactions for this profile.','এই নমুনা প্রোফাইলে কোনো লেনদেন নেই।')}</p>
+          <p className="citizen-taxpayer-activity__empty">{label('No sample transactions for this profile.', 'এই নমুনা প্রোফাইলে কোনো লেনদেন নেই।')}</p>
         ) : (
-          <div className="divide-y divide-taxpay-border">
+          <div className="citizen-taxpayer-activity__list">
             {initiatedExamples.map(receipt => (
-              <article key={receipt.id} className="py-3 first:pt-0 last:pb-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="break-all font-mono-plex text-sm font-semibold text-taxpay-text">{receipt.challanNo}</p>
-                    <p className="mt-1 text-xs text-taxpay-muted">{label('Assessment year','করবর্ষ')} {receipt.assessmentYear}</p>
-                  </div>
-                  <p className="shrink-0 text-sm font-semibold tabular-nums text-taxpay-text">{formatCurrency(receipt.totalAmount,language)}</p>
+              <article key={receipt.id}>
+                <div className="citizen-taxpayer-activity__row">
+                  <div className="min-w-0"><p className="break-all font-mono-plex text-sm font-semibold">{receipt.challanNo}</p><p>{label('Assessment year', 'করবর্ষ')} {receipt.assessmentYear}</p></div>
+                  <strong className="shrink-0 tabular-nums">{formatCurrency(receipt.totalAmount, language)}</strong>
                 </div>
-                <p className="mt-2 text-xs text-taxpay-muted">{label('Demo Treasury','নমুনা ট্রেজারি')}: {bn ? treasuryLabels[receipt.treasuryStatus].bn : treasuryLabels[receipt.treasuryStatus].en}</p>
-                <p className="text-xs text-taxpay-muted">{label('Demo tax credit','নমুনা কর ক্রেডিট')}: {bn ? creditLabels[receipt.taxCreditStatus].bn : creditLabels[receipt.taxCreditStatus].en}</p>
-                <button type="button" onClick={()=>selectReceipt(receipt.id)} className="mt-2 min-h-11 rounded-md px-2 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light">
-                  {label('View sample receipt','নমুনা রসিদ দেখুন')} <span aria-hidden="true">→</span>
-                </button>
+                <div className="citizen-taxpayer-activity__statuses">
+                  <span>{label('Demo Treasury', 'নমুনা ট্রেজারি')}: {bn ? treasuryLabels[receipt.treasuryStatus].bn : treasuryLabels[receipt.treasuryStatus].en}</span>
+                  <span>{label('Demo tax credit', 'নমুনা কর ক্রেডিট')}: {bn ? creditLabels[receipt.taxCreditStatus].bn : creditLabels[receipt.taxCreditStatus].en}</span>
+                </div>
+                <button type="button" onClick={() => selectReceipt(receipt.id)} className="citizen-text-action">{label('View sample receipt', 'নমুনা রসিদ দেখুন')}<ArrowRight size={15} aria-hidden="true" /></button>
               </article>
             ))}
           </div>
         )}
       </section>
 
-      <section aria-labelledby="taxpay-services-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <h2 id="taxpay-services-title" className="text-lg font-bold text-taxpay-text">{label('Services','সেবাসমূহ')}</h2>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {destinations.map(({route,en,bn:bnName,Icon})=>(
-            <button type="button" key={route} onClick={()=>navigate(route)}
-              className="flex min-h-12 items-center gap-3 rounded-lg border border-taxpay-border bg-white px-3 py-3 text-left text-sm font-semibold text-taxpay-text hover:border-taxpay-primary hover:bg-taxpay-light">
-              <Icon size={19} aria-hidden={true}/>
-              <span className="min-w-0 flex-1">{bn ? bnName : en}</span>
-              <ArrowRight size={16} aria-hidden={true}/>
-            </button>
+      <details className="citizen-taxpayer-more">
+        <summary>{label('More taxpayer services', 'আরও করদাতা সেবা')}</summary>
+        <div>
+          {secondaryDestinations.map(({ route, en, bn: bnName, Icon }) => (
+            <button type="button" key={route} onClick={() => navigate(route)}><Icon size={18} aria-hidden={true} /><span>{bn ? bnName : en}</span><ArrowRight size={15} aria-hidden="true" /></button>
           ))}
         </div>
-        <p className="mt-3 text-xs text-taxpay-muted">{label('Not reconciled with eReturn / NBR','ই-রিটার্ন / এনবিআরের সাথে সমন্বিত নয়')}</p>
-      </section>
+      </details>
     </div>
   );
 };

@@ -5,22 +5,52 @@ import {
   ArrowLeft, 
   CheckCircle, 
   AlertCircle, 
-  Lock, 
-  Search, 
-  Building2, 
-  Info,
-  Calendar,
-  Layers
+  Lock
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { MASTER_PAYMENT_HEADS, BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
-import { PaymentCategory, MasterPaymentHead, ChallanReceipt, PaymentLineItem } from '../../types/tax';
+import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { ReceiptView } from '../common/ReceiptView';
 
+const COPY = {
+  en: {
+    title: 'Income tax payment', eyebrow: 'Taxpayer demonstration', taxpayer: 'Sample taxpayer', step: 'Step', of: 'of',
+    stages: ['Category and head', 'Amount breakdown', 'Review and simulation'],
+    year: 'Assessment year', category: 'Payment category', head: 'Select a payment head', search: 'Filter by code or title', review: 'Review demonstration details',
+    blocked: 'Unavailable for review', unverified: 'Source and legal validity unverified', act: 'Act reference', legacy: 'Legacy reference', note: 'Note',
+    continueAmounts: 'Continue to amounts', continueReview: 'Continue to review', back: 'Back',
+    selectedHead: 'Selected head', amountBreakdown: 'Payment amount breakdown (BDT)', tax: 'Tax amount (৳)', penalty: 'Penalty (৳)', surcharge: 'Surcharge (৳)', interest: 'Interest (৳)',
+    reference: 'Payment reference or assessment note (optional)', referencePlaceholder: 'e.g. Self-assessment return deposit', total: 'Total payable amount',
+    payer: 'Payer', tin: 'e-TIN', headCode: 'Head code', remittance: 'Total amount', channel: 'Demonstration payment method',
+    simulationNotice: 'This is a prototype simulation. It does not contact a payment provider or Treasury and does not transfer money or create a tax credit.',
+    runSimulation: 'Run payment simulation', running: 'Running local simulation…',
+    complete: 'Demonstration payment flow completed.', receipt: 'Simulated receipt reference:', newPayment: 'Start another demonstration',
+    selectActive: 'Select an available payment head.', blockedError: (id: number) => `Head #${id} is unavailable while its source is reviewed.`,
+    positive: 'Enter an amount greater than zero to continue.'
+  },
+  bn: {
+    title: 'আয়কর পরিশোধ', eyebrow: 'করদাতার নমুনা প্রদর্শনী', taxpayer: 'নমুনা করদাতা', step: 'ধাপ', of: '/',
+    stages: ['কর পরিশোধের ধরন ও খাত', 'পরিমাণের বিবরণ', 'পর্যালোচনা ও সিমুলেশন'],
+    year: 'করবর্ষ', category: 'কর পরিশোধের ধরন', head: 'কর পরিশোধের খাত বাছুন', search: 'কোড বা শিরোনাম দিয়ে খুঁজুন', review: 'নমুনা তথ্য পর্যালোচনা',
+    blocked: 'পর্যালোচনা চলায় অনুপলব্ধ', unverified: 'উৎস ও আইনি বৈধতা যাচাই হয়নি', act: 'আইনের ধারা', legacy: 'পুরোনো রেফারেন্স', note: 'নোট',
+    continueAmounts: 'পরিমাণে এগিয়ে যান', continueReview: 'পর্যালোচনায় এগিয়ে যান', back: 'ফিরে যান',
+    selectedHead: 'নির্বাচিত খাত', amountBreakdown: 'পরিশোধের পরিমাণের বিবরণ (টাকা)', tax: 'কর (৳)', penalty: 'জরিমানা (৳)', surcharge: 'সারচার্জ (৳)', interest: 'সুদ (৳)',
+    reference: 'পেমেন্ট রেফারেন্স বা কর নির্ধারণের নোট (ঐচ্ছিক)', referencePlaceholder: 'যেমন, স্বনির্ধারণী রিটার্ন জমা', total: 'মোট প্রদেয় অর্থ',
+    payer: 'করদাতা', tin: 'ই-টিআইএন', headCode: 'খাতের কোড', remittance: 'মোট অর্থ', channel: 'নমুনা পেমেন্ট পদ্ধতি',
+    simulationNotice: 'এটি একটি নমুনা সিমুলেশন। কোনো পেমেন্ট সেবা বা ট্রেজারির সঙ্গে সংযোগ করে না; অর্থ স্থানান্তর বা কর-ক্রেডিটও তৈরি করে না।',
+    runSimulation: 'পেমেন্ট সিমুলেশন চালান', running: 'স্থানীয় সিমুলেশন চলছে…',
+    complete: 'নমুনা পেমেন্ট ধাপ সম্পন্ন হয়েছে।', receipt: 'নমুনা রসিদ রেফারেন্স:', newPayment: 'আরেকটি নমুনা শুরু করুন',
+    selectActive: 'উপলভ্য পেমেন্ট খাত বাছুন।', blockedError: (id: number) => `খাত #${id} এর উৎস পর্যালোচনায় থাকায় এটি অনুপলভ্য।`,
+    positive: 'এগিয়ে যেতে শূন্যের বেশি পরিমাণ লিখুন।'
+  }
+} as const;
+
 export const PaymentWizard: React.FC = () => {
   const { taxpayerProfile, addPaymentReceipt, routeParams, language, navigate } = useTaxState();
+  const bn = language === 'bn';
+  const t = COPY[language];
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -58,6 +88,7 @@ export const PaymentWizard: React.FC = () => {
     const matchCat = head.category === category;
     const matchQuery = headSearch
       ? head.nameEn.toLowerCase().includes(headSearch.toLowerCase()) ||
+        head.nameBn.includes(headSearch) ||
         head.economicCode.includes(headSearch) ||
         head.sectionAct2023.toLowerCase().includes(headSearch.toLowerCase())
       : true;
@@ -70,11 +101,11 @@ export const PaymentWizard: React.FC = () => {
 
   const handleStep1Next = () => {
     if (!selectedHead) {
-      setErrorMessage('Please select an active payment head.');
+      setErrorMessage(t.selectActive);
       return;
     }
     if (BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
-      setErrorMessage(`Head #${selectedHead.id} is explicitly BLOCKED for owner review.`);
+      setErrorMessage(t.blockedError(selectedHead.id));
       return;
     }
     setErrorMessage('');
@@ -83,7 +114,7 @@ export const PaymentWizard: React.FC = () => {
 
   const handleStep2Next = () => {
     if (totalAmount <= 0) {
-      setErrorMessage('Total payable amount must be greater than zero.');
+      setErrorMessage(t.positive);
       return;
     }
     setErrorMessage('');
@@ -147,13 +178,13 @@ export const PaymentWizard: React.FC = () => {
   if (step === 4 && createdReceipt) {
     return (
       <div className="space-y-6">
-        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex flex-wrap items-center justify-between gap-3" lang={language}>
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
-              <span className="font-bold">Demonstration payment flow completed.</span>
+              <span className="font-bold">{t.complete}</span>
               <p className="text-xs text-emerald-800">
-                Simulated receipt reference: <strong className="font-mono">{createdReceipt.challanNo}</strong>
+                {t.receipt} <strong className="font-mono">{createdReceipt.challanNo}</strong>
               </p>
             </div>
           </div>
@@ -162,9 +193,9 @@ export const PaymentWizard: React.FC = () => {
               setStep(1);
               setCreatedReceipt(null);
             }}
-            className="px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
+            className="min-h-11 px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
           >
-            New Payment
+            {t.newPayment}
           </button>
         </div>
         <ReceiptView receipt={createdReceipt} onBack={() => navigate('taxpayer_home')} />
@@ -173,40 +204,40 @@ export const PaymentWizard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="taxpay-payment-wizard max-w-4xl mx-auto space-y-6 pb-4" lang={language}>
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              Taxpayer Electronic Payment Gateway
+              {t.eyebrow}
             </span>
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              Income Tax Payment Wizard
+              {t.title}
             </h1>
             <p className="text-xs text-slate-500">
-              Taxpayer: <strong className="text-slate-800">{taxpayerProfile.nameEn}</strong> (TIN: {taxpayerProfile.tin})
+              {t.taxpayer}: <strong className="text-slate-800">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</strong> ({t.tin}: {taxpayerProfile.tin})
             </p>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            Step {step} of 3
+            {t.step} {step} {t.of} 3
           </span>
         </div>
 
         {/* Stepper Header */}
-        <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-center mb-6">
-          <div className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            1. Category & Head Code
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-center mb-6" aria-label={bn ? 'পেমেন্টের ধাপ' : 'Payment steps'}>
+          <div aria-current={step === 1 ? 'step' : undefined} className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+            1. {t.stages[0]}
           </div>
-          <div className={`p-2 rounded border ${step >= 2 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            2. Financial Breakdown
+          <div aria-current={step === 2 ? 'step' : undefined} className={`p-2 rounded border ${step >= 2 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+            2. {t.stages[1]}
           </div>
-          <div className={`p-2 rounded border ${step >= 3 ? 'bg-taxpay-primary text-amber-300 border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            3. Review & Gateway
+          <div aria-current={step === 3 ? 'step' : undefined} className={`p-2 rounded border ${step >= 3 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+            3. {t.stages[2]}
           </div>
         </div>
 
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <div id="wizard-error" role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -217,11 +248,11 @@ export const PaymentWizard: React.FC = () => {
           <div className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Assessment Year *
+                <label htmlFor="wizard-assessment-year" className="block font-semibold text-slate-700 mb-1">
+                  {t.year} *
                 </label>
                 <select
-                  value={assessmentYear}
+                  id="wizard-assessment-year" value={assessmentYear}
                   onChange={(e) => setAssessmentYear(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
                 >
@@ -232,11 +263,11 @@ export const PaymentWizard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Payment Category (7 Statutory Types) *
+                <label htmlFor="wizard-payment-category" className="block font-semibold text-slate-700 mb-1">
+                  {t.category} *
                 </label>
                 <select
-                  value={category}
+                  id="wizard-payment-category" value={category}
                   onChange={(e) => {
                     const newCat = e.target.value as PaymentCategory;
                     setCategory(newCat);
@@ -247,7 +278,7 @@ export const PaymentWizard: React.FC = () => {
                 >
                   {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
-                      {label.en}
+                      {bn ? label.bn : label.en}
                     </option>
                   ))}
                 </select>
@@ -256,28 +287,28 @@ export const PaymentWizard: React.FC = () => {
 
             {/* Master Heads List */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-slate-700">
-                  Select Economic Accounting Head ({availableHeads.length} available)
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label htmlFor="wizard-head-search" className="block text-xs font-semibold text-slate-700">
+                  {t.head} ({availableHeads.length})
                 </label>
                 <input
                   type="text"
-                  placeholder="Filter by code or title..."
+                  id="wizard-head-search" aria-label={t.search} placeholder={t.search}
                   value={headSearch}
                   onChange={(e) => setHeadSearch(e.target.value)}
-                  className="px-2.5 py-1 text-xs rounded border border-slate-300 w-48"
+                  className="min-h-11 w-full sm:w-48 px-2.5 py-2 text-xs rounded border border-slate-300"
                 />
               </div>
 
-              <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+              <fieldset aria-label={t.head} aria-describedby={errorMessage ? 'wizard-error' : undefined} className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50 min-w-0">
                 {availableHeads.map(head => {
                   const isBlocked = BLOCKED_HEAD_IDS.includes(head.id);
                   const isSelected = selectedHead?.id === head.id;
                   return (
-                    <div
+                    <label
                       key={head.id}
-                      onClick={() => !isBlocked && setSelectedHeadId(head.id)}
-                      className={`p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
+                      htmlFor={`wizard-head-${head.id}`}
+                      className={`min-h-12 p-3 text-xs flex items-start justify-between gap-3 ${isBlocked ? 'cursor-not-allowed' : 'cursor-pointer'} transition-colors ${
                         isSelected
                           ? 'bg-emerald-100/70 border-l-4 border-taxpay-primary'
                           : isBlocked
@@ -291,50 +322,49 @@ export const PaymentWizard: React.FC = () => {
                             {head.economicCode}
                           </span>
                           <span className="font-semibold text-slate-800">
-                            {head.nameEn}
+                            {bn ? head.nameBn : head.nameEn}
                           </span>
                           {isBlocked && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
                               <Lock className="w-3 h-3" />
-                              BLOCKED
+                              {t.blocked}
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-bengali">
-                          {head.nameBn}
-                        </div>
-                        <div className="flex items-center gap-3 text-[10px] text-slate-600">
-                          <span>Act: <strong>{head.sectionAct2023}</strong></span>
-                          <span>Legacy: {head.sectionOrdinance1984}</span>
+                        {!bn && <div className="text-[11px] text-slate-500 font-bengali">{head.nameBn}</div>}
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-600">
+                          <span>{t.act}: <strong>{head.sectionAct2023}</strong></span>
+                          <span>{t.legacy}: {head.sectionOrdinance1984}</span>
                           <span className="text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                            {head.verificationStatus}
+                            {t.unverified}
                           </span>
                         </div>
                         {head.rateNote && (
                           <div className="text-[11px] text-emerald-800 font-medium">
-                            Note: {head.rateNote}
+                            {t.note}: {head.rateNote}
                           </div>
                         )}
                       </div>
                       <input
-                        type="radio"
+                        id={`wizard-head-${head.id}`} name="wizard-payment-head" type="radio"
                         checked={isSelected}
                         disabled={isBlocked}
-                        onChange={() => !isBlocked && setSelectedHeadId(head.id)}
-                        className="mt-1"
+                        onChange={() => setSelectedHeadId(head.id)}
+                        aria-label={bn ? head.nameBn : head.nameEn}
+                        className="mt-1 h-5 w-5 shrink-0 accent-emerald-800"
                       />
-                    </div>
+                    </label>
                   );
                 })}
-              </div>
+              </fieldset>
             </div>
 
             <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
-                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
-                <span>Continue to Financial Amounts</span>
+                <span>{t.continueAmounts}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -345,55 +375,65 @@ export const PaymentWizard: React.FC = () => {
         {step === 2 && (
           <div className="space-y-5">
             <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
-              <span className="text-slate-500 block">Selected Head:</span>
+              <span className="text-slate-500 block">{t.selectedHead}:</span>
               <div className="font-mono-plex font-bold text-sm text-taxpay-dark mt-0.5">
-                {selectedHead?.economicCode} — {selectedHead?.nameEn}
+                {selectedHead?.economicCode} — {bn ? selectedHead?.nameBn : selectedHead?.nameEn}
               </div>
               <div className="text-[11px] text-emerald-800 mt-1">
-                Act Reference: {selectedHead?.sectionAct2023} | Assessment Year: {assessmentYear}
+                {t.act}: {selectedHead?.sectionAct2023} | {t.year}: {assessmentYear}
               </div>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
               <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
-                Payment Component Breakdown
+                {t.amountBreakdown}
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Tax Amount (৳) *</label>
+                  <label htmlFor="wizard-tax-amount" className="block text-slate-600 font-medium mb-1">{t.tax} *</label>
                   <input
+                    id="wizard-tax-amount"
                     type="number"
                     min="0"
+                    inputMode="decimal"
+                    aria-invalid={Boolean(errorMessage)}
+                    aria-describedby={errorMessage ? 'wizard-error' : undefined}
                     value={taxAmount}
                     onChange={(e) => setTaxAmount(Number(e.target.value))}
                     className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Penalty (৳)</label>
+                  <label htmlFor="wizard-penalty" className="block text-slate-600 font-medium mb-1">{t.penalty}</label>
                   <input
+                    id="wizard-penalty"
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={penaltyAmount}
                     onChange={(e) => setPenaltyAmount(Number(e.target.value))}
                     className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Surcharge (৳)</label>
+                  <label htmlFor="wizard-surcharge" className="block text-slate-600 font-medium mb-1">{t.surcharge}</label>
                   <input
+                    id="wizard-surcharge"
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={surchargeAmount}
                     onChange={(e) => setSurchargeAmount(Number(e.target.value))}
                     className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Simple Interest (৳)</label>
+                  <label htmlFor="wizard-interest" className="block text-slate-600 font-medium mb-1">{t.interest}</label>
                   <input
+                    id="wizard-interest"
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={interestAmount}
                     onChange={(e) => setInterestAmount(Number(e.target.value))}
                     className="w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
@@ -402,12 +442,13 @@ export const PaymentWizard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-600 text-xs font-medium mb-1">
-                  Payment Reference / Assessment Note (Optional)
+                <label htmlFor="wizard-payment-reference" className="block text-slate-600 text-xs font-medium mb-1">
+                  {t.reference}
                 </label>
                 <input
+                  id="wizard-payment-reference"
                   type="text"
-                  placeholder="e.g. Self-assessment return deposit AY 2025-2026"
+                  placeholder={t.referencePlaceholder}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="w-full px-3 py-1.5 text-xs rounded border border-slate-300"
@@ -416,7 +457,7 @@ export const PaymentWizard: React.FC = () => {
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                 <span className="font-bold text-sm text-slate-800">
-                  Total Payable Amount:
+                  {t.total}:
                 </span>
                 <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
@@ -430,13 +471,13 @@ export const PaymentWizard: React.FC = () => {
                 className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <span>{t.back}</span>
               </button>
               <button
                 onClick={handleStep2Next}
-                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
-                <span>Continue to Review</span>
+                <span>{t.continueReview}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -448,29 +489,29 @@ export const PaymentWizard: React.FC = () => {
           <div className="space-y-6">
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3 text-xs">
               <h3 className="font-serif-fraunces font-bold text-base text-slate-900 border-b border-slate-200 pb-2">
-                Pre-submission Challan Verification
+                {t.review}
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <span className="text-slate-500 block">Payer & Taxpayer:</span>
-                  <strong className="text-slate-900">{taxpayerProfile.nameEn}</strong>
+                  <span className="text-slate-500 block">{t.payer}:</span>
+                  <strong className="text-slate-900">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">e-TIN:</span>
+                  <span className="text-slate-500 block">{t.tin}:</span>
                   <strong className="font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Assessment Year:</span>
+                  <span className="text-slate-500 block">{t.year}:</span>
                   <strong className="text-slate-900">{assessmentYear}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Head Code:</span>
+                  <span className="text-slate-500 block">{t.headCode}:</span>
                   <strong className="font-mono-plex text-taxpay-dark">{selectedHead?.economicCode}</strong>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">Total Remittance:</span>
+                <span className="font-bold text-sm text-slate-800">{t.remittance}:</span>
                 <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
                 </span>
@@ -480,9 +521,9 @@ export const PaymentWizard: React.FC = () => {
             {/* Gateway choices */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Payment Channel
+                {t.channel}
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2" role="group" aria-label={t.channel}>
                 {[
                   { id: 'BKASH', label: 'bKash MFS' },
                   { id: 'NAGAD', label: 'Nagad MFS' },
@@ -495,7 +536,8 @@ export const PaymentWizard: React.FC = () => {
                     key={gw.id}
                     type="button"
                     onClick={() => setPaymentMethod(gw.id as any)}
-                    className={`p-2.5 rounded-lg border text-xs font-semibold cursor-pointer text-center ${
+                    aria-pressed={paymentMethod === gw.id}
+                    className={`min-h-11 p-2.5 rounded-lg border text-xs font-semibold cursor-pointer text-center ${
                       paymentMethod === gw.id
                         ? 'bg-taxpay-primary text-white border-taxpay-primary'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
@@ -507,6 +549,10 @@ export const PaymentWizard: React.FC = () => {
               </div>
             </div>
 
+            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950" role="note">
+              {t.simulationNotice}
+            </p>
+
             <div className="flex justify-between pt-3">
               <button
                 disabled={isProcessing}
@@ -514,7 +560,7 @@ export const PaymentWizard: React.FC = () => {
                 className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <span>{t.back}</span>
               </button>
               <button
                 disabled={isProcessing}
@@ -522,11 +568,11 @@ export const PaymentWizard: React.FC = () => {
                 className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
               >
                 {isProcessing ? (
-                  <span>Transmitting to A-Challan Gateway...</span>
+                  <span>{t.running}</span>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 text-taxpay-dark" />
-                    <span>Confirm & Pay {formatCurrency(totalAmount, language)}</span>
+                    <span>{t.runSimulation} · {formatCurrency(totalAmount, language)}</span>
                   </>
                 )}
               </button>
