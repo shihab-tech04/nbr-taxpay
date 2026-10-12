@@ -30,7 +30,7 @@ export const CertificatesView: React.FC = () => {
             </div>
             <div>
               <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-                Official Tax Certificates & Clearance Slips
+                Sample certificates — not government issued
               </h1>
               <p className="text-xs text-slate-500">
                 Statutory certificates generated directly from Government Treasury deposit scrolls.
@@ -105,7 +105,7 @@ export const CertificatesView: React.FC = () => {
             <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-2">
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-slate-500 block">Total Payments Verified:</span>
+                  <span className="text-slate-500 block">Sample payment records:</span>
                   <span className="font-mono-plex font-bold text-base text-taxpay-dark">
                     {formatCurrency(totalPaid, language)}
                   </span>
@@ -126,7 +126,7 @@ export const CertificatesView: React.FC = () => {
             </div>
 
             <p className="text-[11px] text-slate-500 italic">
-              This electronic certificate is issued pursuant to Section 240 of the Income Tax Act 2023. Authenticity may be verified via the TaxPay portal using the reference token below.
+              This is a fictional certificate preview, not an official NBR issuance, legal clearance, or verifiable government document.
             </p>
           </div>
 
