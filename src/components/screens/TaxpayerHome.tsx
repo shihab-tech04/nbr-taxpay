@@ -252,7 +252,19 @@ export const TaxpayerHome: React.FC = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 sm:hidden">
+          {userReceipts.length === 0 && <p className="text-sm text-slate-600">No sample receipts for this profile.</p>}
+          {userReceipts.map(rcpt => (
+            <article key={rcpt.id} className="rounded-xl border border-taxpay-border p-3 space-y-2">
+              <p className="text-sm font-bold text-taxpay-dark break-all">{rcpt.challanNo}</p>
+              <p className="text-xs text-slate-600">AY {rcpt.assessmentYear} · {rcpt.paymentCategory.replace(/_/g,' ')}</p>
+              <p className="font-semibold text-sm">{formatCurrency(rcpt.totalAmount,language)}</p>
+              <p className="text-xs">Demo Treasury state: {rcpt.treasuryStatus}</p>
+              <button type="button" onClick={() => selectReceipt(rcpt.id)} className="min-h-11 w-full rounded-lg bg-taxpay-light text-taxpay-dark font-semibold text-sm">View sample receipt</button>
+            </article>
+          ))}
+        </div>
+        <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
