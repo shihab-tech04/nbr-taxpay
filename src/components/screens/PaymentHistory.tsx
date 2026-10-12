@@ -140,8 +140,26 @@ export const PaymentHistory: React.FC = () => {
           </div>
         </div>
 
-        {/* Challans Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+        {/* Mobile-native activity cards retain the same data/actions as the desktop table. */}
+        <div className="grid gap-3 md:hidden">
+          {filteredReceipts.length === 0 && <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">No sample payments match your filters.</p>}
+          {filteredReceipts.map(rcpt => (
+            <article key={rcpt.id} className="rounded-xl border border-taxpay-border bg-white p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-mono-plex font-bold text-sm text-taxpay-dark break-all">{rcpt.challanNo}</h2>
+                <strong className="text-sm text-taxpay-text">{formatCurrency(rcpt.totalAmount,language)}</strong>
+              </div>
+              <p className="text-xs text-slate-600">{rcpt.paymentCategory.replace(/_/g,' ')} · AY {rcpt.assessmentYear}</p>
+              <p className="text-xs">Treasury: {rcpt.treasuryStatus}</p>
+              <p className="text-xs">Tax credit: {rcpt.taxCreditStatus}</p>
+              <button type="button" onClick={() => selectReceipt(rcpt.id)} className="min-h-11 w-full rounded-lg bg-taxpay-light text-taxpay-dark font-semibold text-sm">
+                View demo receipt
+              </button>
+            </article>
+          ))}
+        </div>
+        {/* Desktop financial table */}
+        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
