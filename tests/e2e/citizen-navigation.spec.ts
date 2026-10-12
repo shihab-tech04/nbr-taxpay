@@ -47,7 +47,7 @@ test('scroll direction adapts four corners across approved mobile widths', async
     await page.screenshot({path:'test-results/screenshots/guest-expanded-'+width+'.png',fullPage:false});
     const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(pageWidth).toBeLessThanOrEqual(width+2);
-    if(width<768) {
+    if(width<=900) {
       await page.evaluate(() => window.scrollTo(0,350));
       await expect(header).toHaveClass(/citizen-header--hidden/);
       const corners=page.locator('.citizen-corner');
