@@ -4,7 +4,7 @@ import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useTaxState } from '../../services/taxState';
 import { authRedirectUrl, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
-import { confirmPrivateDraftUpdate, privateDraftToInput } from '../../services/privateDraftResume';
+import { confirmPrivateDraftUpdate, confirmPrivateDraftInsert, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
 import { CorrectionInquiries } from './CorrectionInquiries';
 import { UiButton, UiInput } from '../ui/Controls';
@@ -176,8 +176,7 @@ export const SecureWorkspace: React.FC = () => {
           ...values
         }).select('id');
         if (error) { showMessage('draftWasNotSaved', error.message); return; }
-        if (!Array.isArray(insertedRows) || insertedRows.length !== 1 ||
-            typeof insertedRows[0]?.id !== 'string' || !insertedRows[0].id) {
+        if (!confirmPrivateDraftInsert(insertedRows)) {
           showMessage('draftUpdateNotConfirmed');
           return;
         }
