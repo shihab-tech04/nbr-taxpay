@@ -93,7 +93,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const selectedReceipt = receipts.find(r => r.id === selectedReceiptId) || receipts[0] || null;
+  const selectedReceipt = selectedReceiptId ? receipts.find(r => r.id === selectedReceiptId) || null : null;
 
   const logAuditAction = (action: string, targetId: string, details: string) => {
     const newLog: AuditLog = {
