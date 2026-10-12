@@ -106,3 +106,23 @@ jobs:
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1
+
+      - name: Read back published Pages HTML
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: |
+          test -n "$PAGE_URL"
+          echo "Read-back target: $PAGE_URL"
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --location --max-time 20 "$PAGE_URL" -o /tmp/taxpay-live.html &&
+               grep -q 'TaxPay — Independent Development Preview' /tmp/taxpay-live.html &&
+               grep -q '/nbr-taxpay/assets/' /tmp/taxpay-live.html; then
+              echo "PASS: public Pages HTML and asset prefix read back from $PAGE_URL"
+              exit 0
+            fi
+            echo "Pages content not yet ready (attempt $attempt of 12)"
+            sleep 10
+          done
+          echo "FAIL: public Pages HTML could not be verified" >&2
+          exit 1

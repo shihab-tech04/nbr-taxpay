@@ -1,27 +1,38 @@
-# Release gate — local status
+# TaxPay Release Gate — Static Demonstration (2026-10-12)
 
 ## Decision
 
-**Not certified for production.** The snapshot is a static demonstration frontend. It does not authorize real taxpayer use, legal tax decisions, authentication, payment, treasury receipt issuance, or production deployment.
+**Static citizen-facing demonstration only. NOT certified for operational NBR use.**
 
-## Evidence
+GitHub repository access and the GitHub Pages publication workflow have been restored. The published artifact deliberately disables hosted Supabase/Auth/backend configuration and cannot take real payments, issue government challans, certify tax liability, reconcile Treasury settlement or recognize tax credit.
 
-| Gate | Observed result |
+## Verified GitHub publication checkpoint
+
+- Repository: https://github.com/shihab-tech04/nbr-taxpay
+- PR #8: merged into `main` (adaptive Guest/Taxpayer navigation and Government Blue tokens).
+- PR #10: merged into `main` at `3e6dc11c25dd1fedae7ea4eaa463e101f55c13c8` (tested citizen/financial safety baseline).
+- GitHub Actions run [#38215540503](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38215540503) completed successfully, with both **Build and verify static preview** and **Publish verified static build** jobs passing.
+- The expected project-site path is `/nbr-taxpay/`. An independent HTTP/browser read-back of the public Pages URL was not available in this audit environment; the successful deploy job is the publication evidence.
+- Newer commits, including the final Guest/Taxpayer UX closure work, require their own successful build and main-branch deploy evidence before being described as live.
+
+## Verified checks and boundaries
+
+| Gate | Current assessment |
 |---|---|
-| Sanitized source snapshot and independent release history | PASS locally; see the external checkpoint and bundle manifest |
-| Secret scan of release source, Git history, and built assets | 0 Gitleaks findings |
-| TypeScript check | PASS |
-| Domain tests | 48/48 PASS |
-| Pages-mode production build | PASS; large JavaScript chunk warning remains |
-| Public-backend-disabled browser smoke | 3/3 PASS at 320px, 375px, and desktop |
-| Full browser suite | 77 PASS, 3 backend-dependent assertions fail closed, 16 SKIPPED |
-| Auth/PostgREST persistence and full local Supabase certification | NOT VERIFIED |
-| Legal/regulatory source acceptance | NOT VERIFIED |
-| GitHub repository access and publication | BLOCKED: authenticated API returns 404 for the target and lists no repositories for the owner |
-| Public Pages website | NOT DEPLOYED; requested URL currently returns GitHub Pages 404 |
+| Repository access and GitHub PR workflow | VERIFIED, no longer blocked by 404 |
+| TypeScript and domain test execution | PASS on the cited main CI run |
+| Citizen route/browser safety checks | PASS on the cited main CI run |
+| Static Pages build, `/nbr-taxpay/` asset base and backend-disabled checks | PASS on the cited main CI run |
+| GitHub Pages deployment job | PASS on the cited main CI run |
+| Actual public URL rendered independently | NOT VERIFIED |
+| Real Supabase Auth, RLS and durable taxpayer persistence | NOT VERIFIED |
+| Treasury/ACS/eTDS/eReturn/eLedger authoritative integration | NOT IMPLEMENTED/NOT VERIFIED |
+| Tax-law/payment-head legal source certification | NOT VERIFIED; original 170-record catalogue remains a candidate reference |
+| User-identity, taxpayer-vs-payer credit ownership, correction authorization | NOT PRODUCTION CERTIFIED |
+| WCAG 2.2 AA end-to-end and complete device/AT usability certification | NOT VERIFIED (targeted automated checks only) |
 
-See TEST_REPORT.md for exact commands and failure details.
+## Required conditions for any future operational release
 
-## Publication and use boundary
+Do not enable real payment initiation, trusted receipt generation, personal credit balances, taxpayer-account access, regulated tax calculations or claims of NBR endorsement until authorized source/legal acceptance, live system integrations, identity/role security, financial reconciliation and comprehensive regression evidence are independently certified.
 
-A GitHub Pages build is configured to contain only the static frontend with hosted authentication and backend access disabled. Successful local checks do not establish an actual GitHub deployment. Any later publication requires access to the intended repository and a successful remote build/deployment read-back. Production tax, payment, legal, and backend acceptance remain separate unresolved requirements.
+UI/demo success must not be presented as production readiness. Preserve officer workflows in the separate Office Management product.
