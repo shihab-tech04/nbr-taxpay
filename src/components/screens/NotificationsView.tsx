@@ -47,7 +47,7 @@ export const NotificationsView: React.FC = () => {
       title: 'Sonali Bank A-Challan Gateway Scheduled Maintenance',
       type: 'INFO',
       date: 'Notice: 08 October 2026',
-      desc: 'Central treasury clearing batch synchronization scheduled on Saturday midnight 00:00 - 02:00. MFS gateways remain operational.',
+      desc: 'Demonstration notice only. No Treasury or payment gateway connection is configured.',
       actionLabel: null,
       actionRoute: null
     }
@@ -65,7 +65,7 @@ export const NotificationsView: React.FC = () => {
               Statutory Alerts & Demand Notifications
             </h1>
             <p className="text-xs text-slate-500">
-              Real-time communication from your assessment circle, demand notices, and advance tax deadlines.
+              Illustrative notifications. These are not official tax demands, NBR messages, or verified deadlines.
             </p>
           </div>
         </div>
