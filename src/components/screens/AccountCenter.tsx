@@ -74,7 +74,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     setName(typeof user?.user_metadata?.taxpay_display_name === 'string'
       ? user.user_metadata.taxpay_display_name : '');
     setShowNotifications(user?.user_metadata?.taxpay_in_app_notifications !== false);
-    setPreferredLanguage(language);
+    const storedLanguage = user?.user_metadata?.taxpay_language;
+    setPreferredLanguage(storedLanguage === 'bn' || storedLanguage === 'en' ? storedLanguage : language);
     setFeedback(null);
   }, [user?.id]);
 
@@ -144,7 +145,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     try {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
-      setNotices([]); setFeedback({error:false,content:t.loggedOut});
+      setNotices([]); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
       navigate('landing');
     } catch { setFeedback({error:true,content:t.logoutFailed}); }
     finally { setBusy(false); }
