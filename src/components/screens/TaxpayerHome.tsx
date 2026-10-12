@@ -1,318 +1,140 @@
 import React from 'react';
-import { 
-  User, 
-  CreditCard, 
-  History, 
-  BookOpen, 
-  Award, 
-  Bell, 
-  Link, 
-  ShieldCheck, 
-  ArrowRight, 
-  AlertCircle, 
-  CheckCircle2, 
-  Clock, 
-  FileText,
-  MapPin,
-  Building2,
-  HelpCircle,
-  FileEdit
-} from 'lucide-react';
+import { ArrowRight, BookOpen, FileCheck2, FileClock, HelpCircle, Landmark, LayoutDashboard, Bell, CircleHelp, Receipt, Link2, FilePenLine } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import { formatCurrency, formatNumber } from '../../services/numberFormat';
+import { formatCurrency } from '../../services/numberFormat';
+import type { TreasuryStatus, TaxCreditStatus } from '../../types/tax';
+
+type Destination = {
+  route: string;
+  en: string;
+  bn: string;
+  Icon: React.ComponentType<{size?:number; 'aria-hidden'?: boolean}>;
+};
+const destinations: Destination[] = [
+  {route:'dashboard',en:'Dashboard',bn:'কর সারসংক্ষেপ',Icon:LayoutDashboard},
+  {route:'history',en:'Payments & activity',bn:'পেমেন্ট ও লেনদেন',Icon:Receipt},
+  {route:'ledger',en:'Tax ledger',bn:'কর লেজার',Icon:BookOpen},
+  {route:'journey',en:'Tax journey',bn:'করের ইতিহাস',Icon:FileClock},
+  {route:'certificates',en:'Certificates',bn:'সনদপত্র',Icon:FileCheck2},
+  {route:'corrections',en:'Corrections',bn:'সংশোধন',Icon:FilePenLine},
+  {route:'notifications',en:'Notifications',bn:'বিজ্ঞপ্তি',Icon:Bell},
+  {route:'services',en:'Connected services',bn:'সংযুক্ত সেবা',Icon:Link2}
+];
+
+const treasuryLabels: Record<TreasuryStatus, {en:string;bn:string}> = {
+  INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
+  GATEWAY_PENDING:{en:'Gateway pending',bn:'গেটওয়েতে অপেক্ষমাণ'},
+  GATEWAY_SUCCESS:{en:'Gateway success (sample)',bn:'গেটওয়েতে সফল (নমুনা)'},
+  TREASURY_SCROLLED:{en:'Treasury-scrolled (sample)',bn:'ট্রেজারিতে নথিভুক্ত (নমুনা)'},
+  FAILED:{en:'Failed',bn:'ব্যর্থ'},
+  EXPIRED:{en:'Expired',bn:'মেয়াদ শেষ'},
+  REVERSED:{en:'Reversed',bn:'বাতিল / প্রত্যাবর্তিত'}
+};
+const creditLabels: Record<TaxCreditStatus,{en:string;bn:string}> = {
+  NOT_APPLICABLE:{en:'Not applicable',bn:'প্রযোজ্য নয়'},
+  PENDING_RECONCILIATION:{en:'Awaiting reconciliation',bn:'সমন্বয়ের অপেক্ষায়'},
+  CREDITED_TO_LEDGER:{en:'Sample credited state (unverified)',bn:'নমুনা ক্রেডিট অবস্থা (যাচাই হয়নি)'},
+  CLAIMED_IN_RETURN:{en:'Sample claim state (unverified)',bn:'নমুনা দাবির অবস্থা (যাচাই হয়নি)'},
+  DISPUTED:{en:'Disputed',bn:'বিরোধপূর্ণ'}
+};
 
 export const TaxpayerHome: React.FC = () => {
-  const { 
-    taxpayerProfile, 
-    receipts, 
-    ledgerEntries, 
-    navigate, 
-    selectReceipt, 
-    language 
-  } = useTaxState();
-
-  const userReceipts = receipts.filter(r => r.payerTin === taxpayerProfile.tin);
-  const totalPaid = userReceipts.reduce((acc, curr) => acc + curr.totalAmount, 0);
+  const { taxpayerProfile, receipts, navigate, selectReceipt, language } = useTaxState();
+  const bn = language === 'bn';
+  // This fixture has payerTin, not a verified tax-credit owner. It must never be used to
+  // compute a personal ledger balance or prove that this account received tax credit.
+  const initiatedExamples = receipts.filter(r => r.payerTin === taxpayerProfile.tin).slice(0,3);
+  const label = (en:string, bengali:string) => bn ? bengali : en;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      <section className="citizen-financial-intro" aria-label={language === 'bn' ? 'নমুনা কর অবস্থান' : 'Sample tax position'}>
-        <p className="citizen-eyebrow">{language === 'bn' ? 'করদাতার মূল পাতা · নমুনা তথ্য' : 'Taxpayer home · sample data'}</p>
-        <h1>{language === 'bn' ? 'আপনার কর অবস্থান' : 'Your tax position'}</h1>
-        <p>{language === 'bn' ? 'এখানের অঙ্কসমূহ উদাহরণমাত্র। কোনো কর দাবি, ট্রেজারি জমা বা স্বীকৃত কর ক্রেডিট যাচাই করা হয়নি।' : 'Amounts below are illustrative. No live liability, Treasury settlement or recognized tax credit has been verified.'}</p>
-        <div className="citizen-financial-links">
-          <button onClick={() => navigate('history')}>{language === 'bn' ? 'লেনদেন ও রসিদ' : 'Payments & activity'} →</button>
-          <button onClick={() => navigate('ledger')}>{language === 'bn' ? 'কর লেজার' : 'Tax ledger'} →</button>
+    <div className={`mx-auto max-w-5xl space-y-5 pb-12 ${bn ? 'font-bengali' : ''}`}>
+      <section aria-label={label('Taxpayer overview','করদাতার সারসংক্ষেপ')} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-semibold text-taxpay-dark">{label('Sample taxpayer account','নমুনা করদাতা অ্যাকাউন্ট')}</p>
+            <h1 className="text-2xl font-bold leading-snug text-taxpay-text sm:text-3xl">{label('Your tax position','আপনার কর অবস্থান')}</h1>
+            <p className="text-sm text-taxpay-muted">{label('Balances are not connected to NBR or Treasury.','ব্যালেন্স এনবিআর বা ট্রেজারির সাথে সংযুক্ত নয়।')}</p>
+          </div>
+          <span className="inline-flex items-center rounded-md bg-taxpay-light px-3 py-2 text-xs font-semibold text-taxpay-dark">
+            {label('Demo only','শুধু নমুনা')}
+          </span>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="min-w-0 rounded-lg border border-taxpay-border p-4">
+            <p className="text-xs text-taxpay-muted">{label('Outstanding tax','বকেয়া কর')}</p>
+            <p className="mt-2 text-lg font-semibold text-taxpay-text">{label('Unavailable','পাওয়া যাচ্ছে না')}</p>
+          </div>
+          <div className="min-w-0 rounded-lg border border-taxpay-border p-4">
+            <p className="text-xs text-taxpay-muted">{label('Recognized credit','স্বীকৃত কর ক্রেডিট')}</p>
+            <p className="mt-2 text-lg font-semibold text-taxpay-text">{label('Unverified','যাচাই হয়নি')}</p>
+          </div>
+        </div>
+        <details className="mt-3 rounded-lg bg-taxpay-background p-3 text-sm text-taxpay-muted">
+          <summary className="cursor-pointer font-semibold text-taxpay-dark">{label('Why are balances unavailable?','ব্যালেন্স কেন পাওয়া যাচ্ছে না?')}</summary>
+          <p className="mt-2 leading-relaxed">{label('This demonstration has no verified account-specific ledger owner, Treasury reconciliation or live taxpayer records. Sample transactions are not tax credit or payment proof.','এই প্রদর্শনীতে করদাতাভিত্তিক যাচাইকৃত লেজার, ট্রেজারি সমন্বয় বা প্রকৃত করদাতার তথ্য নেই। নমুনা লেনদেন কর ক্রেডিট বা পরিশোধের প্রমাণ নয়।')}</p>
+        </details>
+      </section>
+
+      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Sample identity','নমুনা পরিচয়')}>
+        <div className="flex items-center gap-3">
+          <div aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-taxpay-light text-taxpay-dark"><Landmark size={22}/></div>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold text-taxpay-text">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</h2>
+            <p className="text-xs text-taxpay-muted">e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span> · {taxpayerProfile.type}</p>
+          </div>
         </div>
       </section>
-      {/* Top Taxpayer Profile Banner */}
-      <div className="citizen-overview text-white rounded-2xl p-5 shadow-sm border">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-800 border-2 border-amber-400/60 flex items-center justify-center text-amber-300 font-bold text-xl">
-              {taxpayerProfile.nameEn.charAt(0)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif-fraunces text-xl sm:text-2xl font-bold">
-                  {language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}
-                </h2>
-                <span className="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded-full font-mono border border-emerald-700">
-                  {taxpayerProfile.type}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-emerald-200 mt-1 font-mono">
-                <span>e-TIN: <strong className="text-amber-300 font-mono-plex">{taxpayerProfile.tin}</strong></span>
-                {taxpayerProfile.nid && <span>NID: {taxpayerProfile.nid}</span>}
-                {taxpayerProfile.bin && <span>BIN: {taxpayerProfile.bin}</span>}
-              </div>
-              <p className="text-xs text-emerald-300/80 mt-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{taxpayerProfile.taxZone} — {taxpayerProfile.taxCircle}</span>
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('wizard')}
-              className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 shadow-sm cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4 text-taxpay-dark" />
-              <span>Make Tax Payment</span>
-            </button>
-            <button
-              onClick={() => navigate('dashboard')}
-              className="px-4 py-2.5 bg-emerald-800/80 hover:bg-taxpay-dark text-white font-medium rounded-lg text-xs sm:text-sm border border-emerald-700 cursor-pointer"
-            >
-              <span>Dashboard</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Total Payments (FY 2024-26):</span>
-          <span className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1 block">
-            {formatCurrency(totalPaid, language)}
-          </span>
-          <span className="text-[10px] text-emerald-700 block mt-0.5 font-medium">
-            {userReceipts.length} illustrative receipts
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Sample Ledger Entries:</span>
-          <span className="font-mono-plex font-bold text-lg text-indigo-900 mt-1 block">
-            {formatCurrency(ledgerEntries.reduce((sum, item) => sum + item.credit, 0), language)}
-          </span>
-          <span className="text-[10px] text-slate-500 block mt-0.5">
-            Not reconciled with eReturn / NBR
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Advance Tax (example):</span>
-          <span className="font-mono-plex font-bold text-lg text-amber-700 mt-1 block">
-            Q1 Deposited
-          </span>
-          <span className="text-[10px] text-slate-500 block mt-0.5">
-            Dates and entitlement unverified
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block">Sample Account Profile:</span>
-          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 text-sm mt-1">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Demonstration only</span>
-          </span>
-          <span className="text-[10px] text-slate-500 block mt-0.5">
-            Not connected to actual return records
-          </span>
-        </div>
-      </div>
-
-      {/* Taxpayer Services Grid (All 11 Sub-Screens) */}
-      <div className="space-y-3">
-        <h2 className="font-serif-fraunces font-bold text-xl text-slate-900">
-          More taxpayer services
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-          {[
-            {
-              title: 'Obligations Dashboard',
-              desc: 'Annual liability schedule, advance tax quarters, and TDS ledger summaries.',
-              route: 'dashboard',
-              icon: FileText,
-              color: 'text-emerald-700 bg-emerald-50'
-            },
-            {
-              title: 'New Payment Wizard',
-              desc: 'Explore 170 source-unverified payment heads and illustrative amounts.',
-              route: 'wizard',
-              icon: CreditCard,
-              color: 'text-amber-700 bg-amber-50'
-            },
-            {
-              title: 'Payment History & Receipts',
-              desc: 'Search and view illustrative receipts and bank-scroll status.',
-              route: 'history',
-              icon: History,
-              color: 'text-blue-700 bg-blue-50'
-            },
-            {
-              title: 'Tax Ledger Account',
-              desc: 'Running ledger balance of debits (assessments) and credits (payments).',
-              route: 'ledger',
-              icon: BookOpen,
-              color: 'text-indigo-700 bg-indigo-50'
-            },
-            {
-              title: 'Tax Assessment Journey',
-              desc: 'Track milestones from registration to advance tax, return, and tax clearance.',
-              route: 'journey',
-              icon: MapPin,
-              color: 'text-teal-700 bg-teal-50'
-            },
-            {
-              title: 'Payment Certificates',
-              desc: 'Download annual tax payment certificates, withholding proofs, and travel tax slips.',
-              route: 'certificates',
-              icon: Award,
-              color: 'text-purple-700 bg-purple-50'
-            },
-            {
-              title: 'Correction Requests',
-              desc: 'Submit and track correction requests for erroneous assessment years or circles.',
-              route: 'corrections',
-              icon: FileEdit,
-              color: 'text-rose-700 bg-rose-50'
-            },
-            {
-              title: 'Notices & Demand Alerts',
-              desc: 'View statutory demand notices, penalty warnings, and commissioner orders.',
-              route: 'notifications',
-              icon: Bell,
-              color: 'text-amber-800 bg-amber-50'
-            },
-            {
-              title: 'Connected e-Services',
-              desc: 'Direct interoperability status with NBR eReturn, eLedger, and eTDS systems.',
-              route: 'services',
-              icon: Link,
-              color: 'text-slate-700 bg-slate-100'
-            }
-          ].map((item, idx) => {
-            const Icon = item.icon;
-            return (
-              <article
-                key={idx}
-                className="relative bg-white border border-slate-200 hover:border-taxpay-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between"
-              >
-                <button type="button"
-                  aria-label={`Open ${item.title}`}
-                  onClick={() => navigate(item.route)}
-                  className="absolute inset-0 z-10 w-full rounded-xl focus-visible:outline focus-visible:outline-3 focus-visible:outline-taxpay-primary" />
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={`p-2 rounded-lg ${item.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-taxpay-dark transition-colors">
-                      {item.title}
-                    </h3>
-                  </div>
-                  <p className="text-slate-500 leading-relaxed">
-                    {item.desc}
-                  </p>
-                </div>
-                <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-emerald-800 font-semibold group-hover:text-taxpay-dark">
-                  <span>Open screen</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Recent Challans Quick Table */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-serif-fraunces font-bold text-lg text-slate-900">
-            Recent Sample Payment Records
-          </h3>
-          <button
-            onClick={() => navigate('history')}
-            className="text-xs font-semibold text-emerald-800 hover:text-taxpay-dark flex items-center gap-1 cursor-pointer"
-          >
-            <span>View All ({userReceipts.length})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+      <section aria-labelledby="taxpay-recent-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="taxpay-recent-title" className="text-lg font-bold text-taxpay-text">{label('Recent activity','সাম্প্রতিক লেনদেন')}</h2>
+          <button type="button" onClick={()=>navigate('history')} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light">
+            {label('View all','সব দেখুন')} <ArrowRight size={16} aria-hidden="true"/>
           </button>
         </div>
+        <p className="mb-3 text-xs text-taxpay-muted">{label('Example transactions initiated using this payer TIN; credit ownership is not verified.','এই পরিশোধকারীর টিআইএন দিয়ে শুরু করা নমুনা লেনদেন; ক্রেডিটের মালিকানা যাচাইকৃত নয়।')}</p>
+        {initiatedExamples.length === 0 ? (
+          <p className="rounded-lg bg-taxpay-background p-4 text-sm text-taxpay-muted">{label('No sample transactions for this profile.','এই নমুনা প্রোফাইলে কোনো লেনদেন নেই।')}</p>
+        ) : (
+          <div className="divide-y divide-taxpay-border">
+            {initiatedExamples.map(receipt => (
+              <article key={receipt.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-all font-mono-plex text-sm font-semibold text-taxpay-text">{receipt.challanNo}</p>
+                    <p className="mt-1 text-xs text-taxpay-muted">{label('Assessment year','করবর্ষ')} {receipt.assessmentYear}</p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold tabular-nums text-taxpay-text">{formatCurrency(receipt.totalAmount,language)}</p>
+                </div>
+                <p className="mt-2 text-xs text-taxpay-muted">{label('Demo Treasury','নমুনা ট্রেজারি')}: {bn ? treasuryLabels[receipt.treasuryStatus].bn : treasuryLabels[receipt.treasuryStatus].en}</p>
+                <p className="text-xs text-taxpay-muted">{label('Demo tax credit','নমুনা কর ক্রেডিট')}: {bn ? creditLabels[receipt.taxCreditStatus].bn : creditLabels[receipt.taxCreditStatus].en}</p>
+                <button type="button" onClick={()=>selectReceipt(receipt.id)} className="mt-2 min-h-11 rounded-md px-2 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light">
+                  {label('View sample receipt','নমুনা রসিদ দেখুন')} <span aria-hidden="true">→</span>
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
-        <div className="grid gap-3 sm:hidden">
-          {userReceipts.length === 0 && <p className="text-sm text-slate-600">No sample receipts for this profile.</p>}
-          {userReceipts.map(rcpt => (
-            <article key={rcpt.id} className="rounded-xl border border-taxpay-border p-3 space-y-2">
-              <p className="text-sm font-bold text-taxpay-dark break-all">{rcpt.challanNo}</p>
-              <p className="text-xs text-slate-600">AY {rcpt.assessmentYear} · {rcpt.paymentCategory.replace(/_/g,' ')}</p>
-              <p className="font-semibold text-sm">{formatCurrency(rcpt.totalAmount,language)}</p>
-              <p className="text-xs">Demo Treasury state: {rcpt.treasuryStatus}</p>
-              <button type="button" onClick={() => selectReceipt(rcpt.id)} className="min-h-11 w-full rounded-lg bg-taxpay-light text-taxpay-dark font-semibold text-sm">View sample receipt</button>
-            </article>
+      <section aria-labelledby="taxpay-services-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <h2 id="taxpay-services-title" className="text-lg font-bold text-taxpay-text">{label('Services','সেবাসমূহ')}</h2>
+          <span title={label('Each service uses demonstration records only.','প্রতিটি সেবায় শুধু নমুনা তথ্য দেখানো হয়।')} aria-label={label('Demonstration services','নমুনা সেবাসমূহ')} className="text-taxpay-muted"><CircleHelp size={16}/></span>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {destinations.map(({route,en,bn:bnName,Icon})=>(
+            <button type="button" key={route} onClick={()=>navigate(route)}
+              className="flex min-h-12 items-center gap-3 rounded-lg border border-taxpay-border bg-white px-3 py-3 text-left text-sm font-semibold text-taxpay-text hover:border-taxpay-primary hover:bg-taxpay-light">
+              <Icon size={19} aria-hidden={true}/>
+              <span className="min-w-0 flex-1">{bn ? bnName : en}</span>
+              <ArrowRight size={16} aria-hidden={true}/>
+            </button>
           ))}
         </div>
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
-              <tr>
-                <th className="px-3 py-2.5">Challan Number</th>
-                <th className="px-3 py-2.5">Category</th>
-                <th className="px-3 py-2.5">Assessment Year</th>
-                <th className="px-3 py-2.5 text-right">Amount (BDT)</th>
-                <th className="px-3 py-2.5 text-center">Treasury Status</th>
-                <th className="px-3 py-2.5 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {userReceipts.map((rcpt) => (
-                <tr key={rcpt.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2 font-mono-plex font-bold text-taxpay-dark">
-                    {rcpt.challanNo}
-                  </td>
-                  <td className="px-3 py-2 text-slate-800 font-medium">
-                    {rcpt.paymentCategory}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {rcpt.assessmentYear}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono-plex font-semibold text-slate-900">
-                    {formatCurrency(rcpt.totalAmount, language)}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      {rcpt.treasuryStatus}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <button
-                      onClick={() => selectReceipt(rcpt.id)}
-                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-taxpay-dark font-semibold cursor-pointer text-[11px]"
-                    >
-                      View Receipt
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <p className="mt-3 text-xs text-taxpay-muted">{label('Not reconciled with eReturn / NBR','ই-রিটার্ন / এনবিআরের সাথে সমন্বিত নয়')}</p>
+      </section>
     </div>
   );
 };
