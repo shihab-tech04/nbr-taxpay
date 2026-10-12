@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, BookOpen, CreditCard, Globe2, Home, Landmark, Menu, Receipt, ShieldAlert, X } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, CircleHelp, CreditCard, Globe2, Home, Landmark, Menu, Receipt, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { PaymentCategory, UserRole } from '../../types/tax';
@@ -162,6 +162,23 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
+      {!inTransaction && !compact && !overlayOpen && (
+        <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
+          {links.map(item => {
+            const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
+              item.route === 'verify' ? Receipt : item.route === 'history' ? Activity : CircleHelp;
+            return (
+              <button type="button" key={item.route} onClick={()=>go(item.route)}
+                aria-current={currentRoute === item.route ? 'page' : undefined}
+                className="citizen-bottom-nav__item">
+                <Icon size={20} aria-hidden="true"/>
+                <span>{label(item)}</span>
+              </button>
+            );
+          })}
+          <span aria-hidden="true" className="citizen-bottom-nav__pay-space"/>
+        </nav>
+      )}
       {!inTransaction && compact && !overlayOpen && (
         <div className="citizen-corners" aria-label={bn ? 'সংক্ষিপ্ত নেভিগেশন' : 'Compact navigation'}>
           <button className="citizen-corner citizen-corner--top-left" onClick={() => setMenuOpen(true)}
@@ -174,7 +191,7 @@ export function CitizenNavigation() {
         </div>
       )}
       {showPay && !overlayOpen && (
-        <button type="button" className="citizen-pay" onClick={openPay}
+        <button type="button" className={compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"} onClick={openPay}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
           <CreditCard aria-hidden="true" size={19}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
         </button>
