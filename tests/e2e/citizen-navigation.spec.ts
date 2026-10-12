@@ -8,7 +8,7 @@ test('guest payment selection preserves purpose without entering taxpayer wizard
   await pay.click();
   const picker = page.getByRole('dialog',{name:'Select payment type'});
   await expect(picker).toBeVisible();
-  await expect(picker.getByRole('button',{name:'Travel Tax'})).toBeVisible();
+  await expect(picker.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
   await picker.getByRole('button',{name:'Advance Tax'}).click();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
   await expect(page.getByText('Advance Tax',{exact:true}).first()).toBeVisible();
@@ -52,9 +52,9 @@ test('scroll direction adapts four corners across approved mobile widths', async
       await expect(header).toHaveClass(/citizen-header--hidden/);
       const corners=page.locator('.citizen-corner');
       await expect(corners).toHaveCount(3);
-      await expect(page.getByRole('button',{name:'Open menu'})).toBeVisible();
-      await expect(page.getByRole('button',{name:'Payment Status'})).toBeVisible();
-      await expect(page.getByRole('button',{name:'Home',exact:true})).toBeVisible();
+      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Open menu'})).toBeVisible();
+      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Payment Status'})).toBeVisible();
+      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home',exact:true})).toBeVisible();
       await expect(page.locator('.citizen-pay')).toBeVisible();
       await page.screenshot({path:'test-results/screenshots/guest-compact-'+width+'.png',fullPage:false});
       await page.evaluate(() => window.scrollBy(0,-60));
