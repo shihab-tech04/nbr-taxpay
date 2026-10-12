@@ -209,11 +209,14 @@ export const TaxpayerHome: React.FC = () => {
           ].map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div
+              <article
                 key={idx}
-                onClick={() => navigate(item.route)}
-                className="bg-white border border-slate-200 hover:border-emerald-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                className="relative bg-white border border-slate-200 hover:border-taxpay-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between"
               >
+                <button type="button"
+                  aria-label={`Open ${item.title}`}
+                  onClick={() => navigate(item.route)}
+                  className="absolute inset-0 z-10 w-full rounded-xl focus-visible:outline focus-visible:outline-3 focus-visible:outline-taxpay-primary" />
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className={`p-2 rounded-lg ${item.color}`}>
@@ -228,10 +231,10 @@ export const TaxpayerHome: React.FC = () => {
                   </p>
                 </div>
                 <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-emerald-800 font-semibold group-hover:text-taxpay-dark">
-                  <span>Open Screen</span>
+                  <span>Open screen</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
