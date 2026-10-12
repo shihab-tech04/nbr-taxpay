@@ -13,6 +13,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { backendConfigured } from '../../services/supabaseClient';
 import { MASTER_PAYMENT_HEADS, BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { PaymentCategory, MasterPaymentHead, ChallanReceipt, PaymentLineItem } from '../../types/tax';
@@ -638,6 +639,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </button>
+              {backendConfigured && (
+                <button type="button" onClick={() => navigate('secure_workspace', { draftCategory: category })}
+                  className="min-h-11 px-4 py-2 border border-taxpay-primary text-taxpay-primary rounded-lg text-xs sm:text-sm font-semibold focus-visible:outline focus-visible:outline-2">
+                  {language === 'bn' ? 'ব্যক্তিগত খসড়া হিসেবে রাখুন' : 'Plan as a private draft'}
+                </button>
+              )}
               <button
                 onClick={handleStep2Next}
                 className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
