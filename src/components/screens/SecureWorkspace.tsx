@@ -169,11 +169,18 @@ export const SecureWorkspace: React.FC = () => {
           return;
         }
       } else {
-        const { error } = await client.from('taxpay_payment_drafts').insert({
+        // An HTTP 201 without RETURNING data is not evidence that the draft was inserted.
+        // Require the server to return exactly one ID before displaying a saved state.
+        const { data: insertedRows, error } = await client.from('taxpay_payment_drafts').insert({
           owner_uid: current.user!.id,
           ...values
-        });
+        }).select('id');
         if (error) { showMessage('draftWasNotSaved', error.message); return; }
+        if (!Array.isArray(insertedRows) || insertedRows.length !== 1 ||
+            typeof insertedRows[0]?.id !== 'string' || !insertedRows[0].id) {
+          showMessage('draftUpdateNotConfirmed');
+          return;
+        }
       }
       persisted = true;
       setEditingDraftId(null);
