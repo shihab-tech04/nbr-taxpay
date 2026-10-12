@@ -4,7 +4,7 @@ import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useTaxState } from '../../services/taxState';
 import { authRedirectUrl, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
-import { confirmPrivateDraftUpdate, privateDraftToInput } from '../../services/privateDraftResume';
+import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
 import { CorrectionInquiries } from './CorrectionInquiries';
 import { UiButton, UiInput } from '../ui/Controls';
@@ -23,6 +23,8 @@ type SavedDraft = {
   amount_minor: number;
   memo: string | null;
   created_at: string;
+  owner_uid: string;
+  record_status: string;
 };
 
 const categoryOptions = (purpose: DraftPurpose) =>
@@ -87,9 +89,9 @@ export const SecureWorkspace: React.FC = () => {
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
 
-  const refresh = async (uid: string) => {
+  const refresh = async (uid: string): Promise<SavedDraft[]> => {
     const client = supabase;
-    if (!client) return;
+    if (!client) throw new Error('Backend disabled');
     const expectedEpoch = sessionEpoch.current;
     const { data: identity, error: identityError } = await client.auth.getUser();
     if (identityError || !sameAuthenticatedOwner(identity.user?.id, uid)) {
@@ -97,10 +99,13 @@ export const SecureWorkspace: React.FC = () => {
       throw new Error('SESSION_EXPIRED_LOAD');
     }
     const { data, error } = await client.from('taxpay_payment_drafts')
-      .select('id,purpose,category,assessment_year,amount_minor,memo,created_at')
+      .select('id,owner_uid,record_status,purpose,category,assessment_year,amount_minor,memo,created_at')
       .eq('owner_uid', uid).order('created_at', { ascending: false });
     if (error) throw error;
-    if (sessionEpoch.current === expectedEpoch) setRows((data ?? []) as SavedDraft[]);
+    if (sessionEpoch.current !== expectedEpoch) throw new Error('SESSION_EXPIRED_LOAD');
+    const verifiedRows = (data ?? []) as SavedDraft[];
+    setRows(verifiedRows);
+    return verifiedRows;
   };
 
   useEffect(() => {
@@ -146,7 +151,7 @@ export const SecureWorkspace: React.FC = () => {
     if (result.error) { setMessage({ kind: 'validation', englishText: result.error }); return; }
     const draftId = editingDraftId;
     setBusy(true); setMessage(null);
-    let persisted = false;
+    let acknowledgedId: string | null = null;
     try {
       const { data: current, error: authError } = await client.auth.getUser();
       if (authError || !sameAuthenticatedOwner(current.user?.id, user.id)) {
@@ -168,28 +173,38 @@ export const SecureWorkspace: React.FC = () => {
           showMessage('draftUpdateNotConfirmed');
           return;
         }
+        acknowledgedId = draftId;
       } else {
-        const { error } = await client.from('taxpay_payment_drafts').insert({
+        const { data: insertedRows, error } = await client.from('taxpay_payment_drafts').insert({
           owner_uid: current.user!.id,
           ...values
-        });
+        }).select('id');
         if (error) { showMessage('draftWasNotSaved', error.message); return; }
+        if (!Array.isArray(insertedRows) || insertedRows.length !== 1 ||
+          typeof insertedRows[0]?.id !== 'string' || !insertedRows[0].id) {
+          showMessage('draftReadBackNotConfirmed');
+          return;
+        }
+        acknowledgedId = insertedRows[0].id;
       }
-      persisted = true;
+      // An HTTP success is insufficient: reselect under this specific authenticated owner.
+      // If the account changed while the request was in flight, do not show another owner's data.
+      const reread = await refresh(current.user!.id);
+      if (!confirmPrivateDraftReadBack({
+        id: acknowledgedId!, owner_uid: current.user!.id, ...values
+      }, reread)) {
+        showMessage('draftReadBackNotConfirmed');
+        return;
+      }
       setEditingDraftId(null);
       setDraft(draftId && draftBeforeEditing.current
         ? draftBeforeEditing.current
         : { ...draft, amount: '', memo: '' });
       draftBeforeEditing.current = null;
-      try {
-        await refresh(current.user!.id);
-      } catch {
-        showMessage('draftSavedRefreshFailed');
-        return;
-      }
       showMessage(draftId ? 'draftUpdated' : 'draftSaved');
     } catch (error) {
-      showMessage(persisted ? 'draftSavedRefreshFailed' : 'draftOperationFailed', persisted ? undefined : String(error));
+      // Network interruption after a write leaves the commit outcome unknown.
+      showMessage(acknowledgedId ? 'draftSavedRefreshFailed' : 'draftOperationFailed', String(error));
     } finally { setBusy(false); }
   };
 
@@ -226,12 +241,16 @@ export const SecureWorkspace: React.FC = () => {
       const { data: deletedRows, error } = await supabase.from('taxpay_payment_drafts')
         .delete().eq('id', id).eq('owner_uid', user.id).select('id');
       if (error) { showMessage('couldNotDeleteDraft', error.message); return; }
-      setPendingDelete(null);
-      await refresh(user.id);
       if (!confirmDraftDeletion(id, deletedRows)) {
         showMessage('deletionNotConfirmed');
         return;
       }
+      const reread = await refresh(user.id);
+      if (reread.some(row => row.id === id)) {
+        showMessage('deletionNotConfirmed');
+        return;
+      }
+      setPendingDelete(null);
       if (editingDraftId === id) {
         setEditingDraftId(null);
         setDraft(draftBeforeEditing.current ?? initial);
