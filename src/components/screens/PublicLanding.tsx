@@ -58,7 +58,7 @@ export const PublicLanding: React.FC = () => {
   return (
     <div className="space-y-10 pb-12">
       {/* Hero Banner with Official Crest & Forest Green Theme */}
-      <section className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 text-white rounded-2xl p-6 sm:p-10 shadow-xl border border-emerald-800 relative overflow-hidden">
+      <section className="citizen-overview text-white rounded-2xl p-6 sm:p-8 border relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-96 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-3xl relative z-10 space-y-4">
@@ -81,11 +81,11 @@ export const PublicLanding: React.FC = () => {
               {language === 'bn' ? 'অফিস লগইন' : 'Office Login'}
             </button>
             <button
-              onClick={() => navigate('wizard')}
+              onClick={() => document.getElementById('taxpay-payment-types')?.scrollIntoView({ behavior: 'smooth' })}
               className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded-lg text-sm sm:text-base flex items-center gap-2 shadow-md transition-all cursor-pointer font-serif-fraunces"
             >
               <CreditCard className="w-5 h-5 text-emerald-950" />
-              <span>{t.btnPayNow}</span>
+              <span>{language === 'bn' ? 'পেমেন্টের ধরন বাছুন' : 'Choose a payment type'}</span>
             </button>
 
             <button
@@ -141,7 +141,7 @@ export const PublicLanding: React.FC = () => {
       </section>
 
       {/* 7 Core Payment Categories Grid */}
-      <section className="space-y-4">
+      <section id="taxpay-payment-types" className="space-y-4 scroll-mt-24">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-serif-fraunces text-2xl font-bold text-slate-900">
@@ -164,7 +164,7 @@ export const PublicLanding: React.FC = () => {
           {Object.entries(CATEGORY_LABELS).map(([key, label], idx) => (
             <div
               key={key}
-              onClick={() => navigate('wizard', { initialCategory: key })}
+              onClick={() => navigate(key === 'SOURCE_TAX_DEPOSIT' ? 'guestwh' : 'guest', { initialCategory: key })}
               className="bg-white border border-slate-200 hover:border-emerald-600 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
@@ -207,7 +207,7 @@ export const PublicLanding: React.FC = () => {
             onClick={() => navigate('taxpayer_home')}
             className="mt-2 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
           >
-            <span>Enter Taxpayer Portal</span>
+            <span>{language === 'bn' ? 'নমুনা করদাতা দেখুন' : 'View sample taxpayer workspace'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
