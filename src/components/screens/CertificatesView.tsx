@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Printer, ShieldAlert } from 'lucide-react';
+import { FileText, Printer } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
 
