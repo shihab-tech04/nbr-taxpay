@@ -29,12 +29,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+          cache: npm
 
-      # TEMPORARY LOCKFILE BOOTSTRAP — remove after committing generated lock.
-      - name: Bootstrap missing lockfile for reproducible npm ci
-        run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          node -e "const f=require('fs');const b=f.readFileSync('package-lock.json').toString('base64');for(let i=0;i<b.length;i+=4000)console.log('TAXPAY_LOCKPART:'+i/4000+':'+b.slice(i,i+4000))"
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
@@ -51,7 +47,17 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts
+        run: npx playwright test tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts
+
+      - name: Upload responsive citizen screenshots and Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-citizen-browser-evidence
+          path: |
+            test-results/screenshots/
+            playwright-report/
+          if-no-files-found: ignore
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
