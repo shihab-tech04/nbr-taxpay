@@ -32,7 +32,6 @@ test('the exact palette applies only to taxpayer screens, not Guest or Officer',
   expect(await taxpayer.evaluate(el => getComputedStyle(el).color)).toBe(exactReference.text);
   expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim())).toUpperCase()).toBe('#1B4D6B');
   expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--reference-focus').trim())).toUpperCase()).toBe('#3A7CA5');
-  await expect(page.getByRole('heading', {name:'Private payment drafts',exact:false}).first()).toHaveCount(0).catch(()=>{});
   await page.goto('/?action=officer_home');
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
   await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
