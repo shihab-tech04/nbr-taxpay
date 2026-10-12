@@ -25,6 +25,7 @@ import { TaxJourney } from './components/screens/TaxJourney';
 import { CertificatesView } from './components/screens/CertificatesView';
 import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
+import { AccountCenter } from './components/screens/AccountCenter';
 import { ConnectedServices } from './components/screens/ConnectedServices';
 import { OfficerHome } from './components/screens/OfficerHome';
 import { Taxpayer360 } from './components/screens/Taxpayer360';
@@ -45,8 +46,8 @@ import { HeadCatalogue } from './components/screens/HeadCatalogue';
 const MainRouter: React.FC = () => {
   const { currentRoute, navigate, userRole, setUserRole, language } = useTaxState();
   const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
-  const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','services'].includes(currentRoute);
-  const privateSampleGate = privateTaxpayerRoute && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
+  const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
+  const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const transactionRoute = ['guest','guestwh','travel','wizard'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
   // Guest payment and Officer routes never inherit this reference palette.
@@ -103,7 +104,12 @@ const MainRouter: React.FC = () => {
       case 'corrections':
         return <CorrectionRequests />;
       case 'notifications':
+      case 'account_notifications':
         return <NotificationsView />;
+      case 'account_profile':
+        return <AccountCenter page="profile" />;
+      case 'account_settings':
+        return <AccountCenter page="settings" />;
       case 'services':
         return <ConnectedServices />;
 
