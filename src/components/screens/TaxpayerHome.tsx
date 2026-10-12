@@ -38,7 +38,7 @@ export const TaxpayerHome: React.FC = () => {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       <section className="citizen-financial-intro" aria-label={language === 'bn' ? 'নমুনা কর অবস্থান' : 'Sample tax position'}>
         <p className="citizen-eyebrow">{language === 'bn' ? 'করদাতার মূল পাতা · নমুনা তথ্য' : 'Taxpayer home · sample data'}</p>
-        <h2>{language === 'bn' ? 'আপনার কর অবস্থান' : 'Your tax position'}</h2>
+        <h1>{language === 'bn' ? 'আপনার কর অবস্থান' : 'Your tax position'}</h1>
         <p>{language === 'bn' ? 'এখানের অঙ্কসমূহ উদাহরণমাত্র। কোনো কর দাবি, ট্রেজারি জমা বা স্বীকৃত কর ক্রেডিট যাচাই করা হয়নি।' : 'Amounts below are illustrative. No live liability, Treasury settlement or recognized tax credit has been verified.'}</p>
         <div className="citizen-financial-links">
           <button onClick={() => navigate('history')}>{language === 'bn' ? 'লেনদেন ও রসিদ' : 'Payments & activity'} →</button>
@@ -54,9 +54,9 @@ export const TaxpayerHome: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-serif-fraunces text-xl sm:text-2xl font-bold">
+                <h2 className="font-serif-fraunces text-xl sm:text-2xl font-bold">
                   {language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}
-                </h1>
+                </h2>
                 <span className="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded-full font-mono border border-emerald-700">
                   {taxpayerProfile.type}
                 </span>
