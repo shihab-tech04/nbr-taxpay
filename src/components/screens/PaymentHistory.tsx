@@ -25,6 +25,8 @@ export const PaymentHistory: React.FC = () => {
   const [selectedCat, setSelectedCat] = useState<string>('ALL');
 
   const filteredReceipts = receipts.filter(r => {
+    // A sample taxpayer never lists another example profile's receipts.
+    if (r.payerTin !== taxpayerProfile.tin) return false;
     const matchSearch = search
       ? r.challanNo.toLowerCase().includes(search.toLowerCase()) ||
         r.tokenNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -71,7 +73,7 @@ export const PaymentHistory: React.FC = () => {
                 Payment History & A-Challan Archive
               </h1>
               <p className="text-xs text-slate-500">
-                Comprehensive repository of all Treasury scrolled tax payments, tokens, and bank clearing receipts.
+                Illustrative payment records for the selected sample taxpayer. Treasury and NBR records are not connected.
               </p>
             </div>
           </div>
