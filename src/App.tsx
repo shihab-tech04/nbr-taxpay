@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
+import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { Footer } from './components/layout/Footer';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
@@ -40,7 +41,10 @@ import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, navigate } = useTaxState();
+  const { currentRoute, navigate, userRole, setUserRole, language } = useTaxState();
+  const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
+  const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','services'].includes(currentRoute);
+  const privateSampleGate = privateTaxpayerRoute && userRole === 'GUEST';
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -135,10 +139,16 @@ const MainRouter: React.FC = () => {
   if (currentRoute === 'office_login') return <OfficeLoginPage />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800">
-      <Header />
+    <div className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : "taxpay-citizen-shell min-h-screen flex flex-col font-sans"}>
+      {officerRoute ? <Header /> : <CitizenNavigation />}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {renderActiveScreen()}
+        {privateSampleGate ? (
+          <section className="citizen-account-gate">
+            <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
+            <p>{language === "bn" ? "অতিথি হিসেবে ব্যক্তিগত লেনদেন, লেজার বা করদাতার রেকর্ড দেখা যায় না। নমুনা প্রোফাইল দিয়ে শুধুমাত্র প্রদর্শনী দেখুন।" : "Guest access does not reveal private balances, tax records or ledgers. A sample profile opens fictional demonstration data, not a real account."}</p>
+            <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "নমুনা করদাতা প্রদর্শনী" : "View sample taxpayer demonstration"}</button>
+          </section>
+        ) : renderActiveScreen()}
       </main>
       <Footer />
       <ParityRegisterModal />
