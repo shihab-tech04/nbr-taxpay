@@ -16,17 +16,17 @@ import { ReceiptView } from '../common/ReceiptView';
 
 const COPY = {
   en: {
-    title: 'Income tax payment', eyebrow: 'Taxpayer demonstration', taxpayer: 'Sample taxpayer', step: 'Step', of: 'of',
-    stages: ['Category and head', 'Amount breakdown', 'Review and simulation'],
-    year: 'Assessment year', category: 'Payment category', head: 'Select a payment head', search: 'Filter by code or title', review: 'Review demonstration details',
-    blocked: 'Unavailable for review', unverified: 'Source and legal validity unverified', act: 'Act reference', legacy: 'Legacy reference', note: 'Note',
+    title: 'Income tax payment', eyebrow: 'Payment details', taxpayer: 'Sample taxpayer', step: 'Step', of: 'of',
+    stages: ['Category and head', 'Amount breakdown', 'Review'],
+    year: 'Assessment year', category: 'Payment category', head: 'Select a payment head', search: 'Filter by code or title', review: 'Review payment details',
+    blocked: 'Unavailable for review', unverified: 'Under review', act: 'Act reference', legacy: 'Legacy reference', note: 'Note',
     continueAmounts: 'Continue to amounts', continueReview: 'Continue to review', back: 'Back',
     selectedHead: 'Selected head', amountBreakdown: 'Payment amount breakdown (BDT)', tax: 'Tax amount (৳)', penalty: 'Penalty (৳)', surcharge: 'Surcharge (৳)', interest: 'Interest (৳)',
     reference: 'Payment reference or assessment note (optional)', referencePlaceholder: 'e.g. Self-assessment return deposit', total: 'Total payable amount',
-    payer: 'Payer', tin: 'e-TIN', headCode: 'Head code', remittance: 'Total amount', channel: 'Demonstration payment method',
-    simulationNotice: 'This is a prototype simulation. It does not contact a payment provider or Treasury and does not transfer money or create a tax credit.',
+    payer: 'Payer', tin: 'e-TIN', headCode: 'Head code', remittance: 'Total amount', channel: 'Payment method (preview)',
+    simulationNotice: 'Preview only. No funds are transferred or official challan issued.',
     runSimulation: 'Run payment simulation', running: 'Running local simulation…',
-    complete: 'Demonstration payment flow completed.', receipt: 'Simulated receipt reference:', newPayment: 'Start another demonstration',
+    complete: 'Payment preview ready.', receipt: 'Simulated receipt reference:', newPayment: 'Start another payment preview',
     selectActive: 'Select an available payment head.', blockedError: (id: number) => `Head #${id} is unavailable while its source is reviewed.`,
     positive: 'Enter an amount greater than zero to continue.'
   },
@@ -39,7 +39,7 @@ const COPY = {
     selectedHead: 'নির্বাচিত খাত', amountBreakdown: 'পরিশোধের পরিমাণের বিবরণ (টাকা)', tax: 'কর (৳)', penalty: 'জরিমানা (৳)', surcharge: 'সারচার্জ (৳)', interest: 'সুদ (৳)',
     reference: 'পেমেন্ট রেফারেন্স বা কর নির্ধারণের নোট (ঐচ্ছিক)', referencePlaceholder: 'যেমন, স্বনির্ধারণী রিটার্ন জমা', total: 'মোট প্রদেয় অর্থ',
     payer: 'করদাতা', tin: 'ই-টিআইএন', headCode: 'খাতের কোড', remittance: 'মোট অর্থ', channel: 'নমুনা পেমেন্ট পদ্ধতি',
-    simulationNotice: 'এটি একটি নমুনা সিমুলেশন। কোনো পেমেন্ট সেবা বা ট্রেজারির সঙ্গে সংযোগ করে না; অর্থ স্থানান্তর বা কর-ক্রেডিটও তৈরি করে না।',
+    simulationNotice: 'শুধু প্রিভিউ। অর্থ স্থানান্তর বা সরকারি চালান তৈরি হয় না।',
     runSimulation: 'পেমেন্ট সিমুলেশন চালান', running: 'স্থানীয় সিমুলেশন চলছে…',
     complete: 'নমুনা পেমেন্ট ধাপ সম্পন্ন হয়েছে।', receipt: 'নমুনা রসিদ রেফারেন্স:', newPayment: 'আরেকটি নমুনা শুরু করুন',
     selectActive: 'উপলভ্য পেমেন্ট খাত বাছুন।', blockedError: (id: number) => `খাত #${id} এর উৎস পর্যালোচনায় থাকায় এটি অনুপলভ্য।`,
