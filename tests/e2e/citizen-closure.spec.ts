@@ -60,3 +60,16 @@ test('mobile expanded dock has three destinations and a separate floating Pay ac
   await page.evaluate(()=>window.scrollBy(0,-90));
   await expect(dock).toBeVisible();
 });
+
+test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Dashboard'}).click();
+  await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
+  await expect(page.getByText('No verified eTDS deductions or deductee credits are connected.')).toBeVisible();
+  await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
+  await expect(page.getByText('BDT 47,400')).toHaveCount(0);
+  await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
+  await page.getByRole('button',{name:'বাংলা'}).click();
+  await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
+});
