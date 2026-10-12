@@ -20,9 +20,15 @@ The repository names these six files `202610100001` through `202610100006`, and 
 ## Original Mac discrepancy
 An earlier Mac local Supabase HTTP test reported successful Auth, PostgREST INSERT and GET, while a separately issued direct PostgreSQL query did not find the row. This is **unresolved**. The hosted TaxPay project above is distinct from the Mac loopback stack and presently contains no such synthetic users or drafts. Its empty tables cannot establish the root cause of the earlier *local* mismatch. Plausible causes to test include connecting psql to another local stack/port/project/database, a reset between observations, or a nonidentical query or transaction context; **none is confirmed**.
 
-The amended `tests/integration/localSupabaseHttp.mjs` now **requires** a loopback `TAXPAY_LOCAL_PG_DSN`, runs `psql` against the independent PostgreSQL channel, and compares the exact inserted IDs, amounts and subsequent updates to their HTTP responses. It fails closed if that direct read is absent or targets no matching row. A successful PostgREST response is never counted as PostgreSQL persistence proof on its own. Restart/reconnection must still be demonstrated in the same disposable stack and recorded separately.
+The amended `tests/integration/localSupabaseHttp.mjs` now **requires** a loopback `TAXPAY_LOCAL_PG_DSN`, runs `psql` against the independent PostgreSQL channel, and compares the exact inserted IDs, amounts and subsequent updates to their HTTP responses. It fails closed if that direct read is absent or targets no matching row. A successful PostgREST response is never counted as PostgreSQL persistence proof on its own. A separate disposable-stack CI run has now demonstrated real database stop/start and exact two-owner Auth, HTTP and SQL read-back; see the evidence section below. This does not establish the original Mac instance's root cause.
 
 ## Authorization and evidence gate
 Do not write to the connected hosted project until it is explicitly designated as the isolated TaxPay development database. Do not touch NBR eReturn, HRIS or other products. Synthetic accounts only. Separate real application-account authentication from verified legal eTIN ownership; no financial operations or backend integration can be enabled by this test.
 
-Status: **PARTIAL — code prepared, read-only hosted schema observed, local direct SQL discrepancy NOT VERIFIED, backend release BLOCKED.**
+## Verified executable local evidence (not a hosted installation)
+
+- GitHub Actions run `38220816892` on PR #12 successfully applied all seven repository migrations to disposable Supabase and verified owner-only SQL grants/policies, two authentic synthetic Auth users, independent SQL matches for HTTP INSERT/PATCH, cross-owner denial, and two owner drafts surviving a real stop/start with reauthentication and direct SQL read-back.
+- GitHub Actions run `38226080937` successfully exercised disposable Mailpit email delivery, the real one-time verification link, redirect to the originally selected secure workspace, Auth identity read-back, and replay denial. It repeated the local restart acceptance without hosted service changes.
+- These tests establish a reproducible *local* persistence and email-authentication interface, not a conclusion that the earlier Mac HTTP-to-Postgres discrepancy had any particular cause.
+
+Status: **PARTIAL — local synthetic Auth/RLS/durable draft acceptance PASS; connected hosted migration reconciliation and any hosted authentication release BLOCKED; original Mac mismatch root cause NOT VERIFIED.**
