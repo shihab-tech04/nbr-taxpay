@@ -39,7 +39,8 @@ test('sample payment activity retains filtering and does not assert tax-credit o
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
   await page.getByRole('button',{name:'Payments & activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByText(/do not establish who receives tax credit/)).toBeVisible();
+  await expect(page.getByText('Sample records',{exact:true})).toBeVisible();
+  await expect(page.getByText('Personal tax credit recognized')).toHaveCount(0);
   await page.getByLabel('Search payments').fill('THIS-REFERENCE-DOES-NOT-EXIST');
   await expect(page.getByText('No matching sample records')).toBeVisible();
   await expect(page.getByRole('button',{name:'Export sample CSV'})).toBeDisabled();
@@ -67,7 +68,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await page.getByText('More taxpayer services', { exact: true }).click();
   await page.getByRole('button',{name:'Dashboard'}).click();
   await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
-  await expect(page.getByText('No verified eTDS deductions or deductee credits are connected.')).toBeVisible();
+  await expect(page.getByText('No withholding records available.')).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
   await expect(page.getByText('BDT 47,400')).toHaveCount(0);
   await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
