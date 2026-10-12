@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BookOpen, FileCheck2, FileClock, HelpCircle, Landmark, LayoutDashboard, Bell, CircleHelp, Receipt, Link2, FilePenLine } from 'lucide-react';
+import { ArrowRight, BookOpen, FileCheck2, FileClock, Landmark, LayoutDashboard, Bell, Receipt, Link2, FilePenLine } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
 import type { TreasuryStatus, TaxCreditStatus } from '../../types/tax';
@@ -51,7 +51,7 @@ export const TaxpayerHome: React.FC = () => {
       <section aria-label={label('Taxpayer overview','করদাতার সারসংক্ষেপ')} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <p className="text-xs font-semibold text-taxpay-dark">{label('Sample taxpayer account','নমুনা করদাতা অ্যাকাউন্ট')}</p>
+            <p className="text-xs font-semibold text-taxpay-dark">{label('Taxpayer home · sample data','করদাতার মূল পাতা · নমুনা তথ্য')}</p>
             <h1 className="text-2xl font-bold leading-snug text-taxpay-text sm:text-3xl">{label('Your tax position','আপনার কর অবস্থান')}</h1>
             <p className="text-sm text-taxpay-muted">{label('Balances are not connected to NBR or Treasury.','ব্যালেন্স এনবিআর বা ট্রেজারির সাথে সংযুক্ত নয়।')}</p>
           </div>
@@ -121,7 +121,6 @@ export const TaxpayerHome: React.FC = () => {
       <section aria-labelledby="taxpay-services-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
         <div className="mb-3 flex items-center gap-2">
           <h2 id="taxpay-services-title" className="text-lg font-bold text-taxpay-text">{label('Services','সেবাসমূহ')}</h2>
-          <span title={label('Each service uses demonstration records only.','প্রতিটি সেবায় শুধু নমুনা তথ্য দেখানো হয়।')} aria-label={label('Demonstration services','নমুনা সেবাসমূহ')} className="text-taxpay-muted"><CircleHelp size={16}/></span>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {destinations.map(({route,en,bn:bnName,Icon})=>(
