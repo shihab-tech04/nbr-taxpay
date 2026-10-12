@@ -330,7 +330,7 @@ export const SecureWorkspace: React.FC = () => {
   };
 
   return (
-    <section lang={bn ? 'bn' : 'en'} className="max-w-4xl mx-auto space-y-5 pb-12">
+    <section lang={bn ? 'bn' : 'en'} className="taxpayer-reference-secure max-w-4xl mx-auto space-y-5 pb-12">
       <header className="bg-white border border-slate-200 rounded-xl p-6">
         <h1 className="font-serif-fraunces text-2xl font-bold text-emerald-950">{copy.workspaceTitle}</h1>
         <p className="text-sm text-slate-600 mt-2">{copy.workspaceDescription}</p>
