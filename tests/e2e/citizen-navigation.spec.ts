@@ -11,7 +11,7 @@ test('guest payment selection preserves purpose without entering taxpayer wizard
   await expect(picker.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
   await picker.getByRole('button',{name:'Advance Tax'}).click();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
-  await expect(page.getByText('Advance Tax',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
   await expect(page.getByText('Demo payment flow')).toBeVisible();
 });
