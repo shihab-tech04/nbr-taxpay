@@ -5,6 +5,7 @@ test('landing link opens the original 170-head reference without submitting a pa
   await page.goto('/?action=landing');
   await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
   await expect(page.locator('main')).toBeVisible();
+  await page.getByText('About these payment categories').click();
   await page.getByRole('button', { name: /Browse Original Heads \(170\)/ }).click();
   await expect(page.getByRole('heading', { name: 'Original v11 payment-head reference' })).toBeVisible();
   await expect(page.getByText('Legal validity and current applicability: UNVERIFIED')).toBeVisible();
@@ -76,7 +77,8 @@ test('public preview safety disclosure remains explicit in Bengali and on narrow
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByText('স্বতন্ত্র TaxPay ওয়ার্কস্পেস')).toBeVisible();
   await expect(page.locator('main')).toBeVisible();
-  await expect(page.getByText('কর পরিশোধের বিভাগ (যাচাই চলমান)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'পেমেন্টের ধরন' })).toBeVisible();
+  await expect(page.getByText('নমুনা', {exact:true}).first()).toBeVisible();
   const main = await page.locator('main').boundingBox();
   expect(main).not.toBeNull();
   expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
