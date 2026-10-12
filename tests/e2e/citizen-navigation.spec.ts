@@ -79,3 +79,14 @@ test('citizen navigation has no automated serious accessibility violations',asyn
   const results=await new AxeBuilder({page}).include('.citizen-header').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
   expect(results.violations).toEqual([]);
 });
+
+
+test('browser back restores route and expanded navigation after payment entry',async({page})=>{
+  await page.goto('/?action=landing');
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await page.getByRole('dialog',{name:'Select payment type'}).getByRole('button',{name:'Advance Tax',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText('Independent TaxPay Workspace')).toBeVisible();
+  await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
+});
