@@ -1,18 +1,18 @@
 /* TaxPay citizen-only semantic tokens. Officer theme and routes are untouched. */
 .taxpay-citizen-shell {
-  --citizen-primary: #2C5EAD;
-  --citizen-primary-dark: #1E4484;
-  --citizen-primary-light: #EAF2FF;
-  --citizen-secondary: #5CA8D8;
-  --citizen-accent: #F4C95D;
-  --citizen-bg: #F6F9FE;
-  --citizen-surface: #FFFFFF;
-  --citizen-border: #DDE7F5;
-  --citizen-text: #172033;
-  --citizen-muted: #5F6B7A;
-  --citizen-success: #238636;
-  --citizen-warning: #D97706;
-  --citizen-error: #C62828;
+  --citizen-primary: var(--color-taxpay-primary);
+  --citizen-primary-dark: var(--color-taxpay-dark);
+  --citizen-primary-light: var(--color-taxpay-light);
+  --citizen-secondary: var(--color-taxpay-secondary);
+  --citizen-accent: var(--color-taxpay-accent);
+  --citizen-bg: var(--color-taxpay-background);
+  --citizen-surface: var(--color-taxpay-surface);
+  --citizen-border: var(--color-taxpay-border);
+  --citizen-text: var(--color-taxpay-text);
+  --citizen-muted: var(--color-taxpay-muted);
+  --citizen-success: var(--color-taxpay-success);
+  --citizen-warning: var(--color-taxpay-warning);
+  --citizen-error: var(--color-taxpay-error);
   background: var(--citizen-bg);
   color: var(--citizen-text);
   min-width: 0;
@@ -95,4 +95,26 @@
 @media print {
   .citizen-header, .citizen-pay, .citizen-corners, .citizen-overlay { display:none !important; }
   .taxpay-citizen-shell main { padding-bottom:0; }
+}
+
+/* Citizen home components share Government Blue roles, not hard-coded screen colors. */
+.citizen-overview {
+  background:linear-gradient(125deg,var(--citizen-primary-dark),var(--citizen-primary));
+  border-color:var(--citizen-primary);
+}
+.citizen-financial-intro {
+  background:var(--citizen-surface);
+  border:1px solid var(--citizen-border);
+  border-radius:1.1rem;
+  padding:1.25rem;
+}
+.citizen-eyebrow { font-size:.75rem; font-weight:750; letter-spacing:.035em; color:var(--citizen-primary-dark); }
+.citizen-financial-intro h1 { font-size:clamp(1.4rem,5vw,2rem); font-weight:750; line-height:1.25; margin:.45rem 0; }
+.citizen-financial-intro p:not(.citizen-eyebrow) { color:var(--citizen-muted); font-size:.85rem; line-height:1.6; }
+.citizen-financial-links {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;margin-top:1rem;}
+.citizen-financial-links button {background:var(--citizen-primary-light);border-radius:.65rem;color:var(--citizen-primary-dark);font-size:.8rem;font-weight:700;min-height:48px;padding:.55rem;}
+@media(min-width:768px) {
+  .citizen-financial-intro {padding:1.7rem;}
+  .citizen-financial-links {display:flex;}
+  .citizen-financial-links button {padding:.7rem 1rem;}
 }
