@@ -97,7 +97,7 @@ export const TaxJourney: React.FC = () => {
                   isDone
                     ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
                     : isAction
-                    ? 'bg-amber-400 text-emerald-950 border-amber-500 animate-pulse'
+                    ? 'bg-amber-400 text-taxpay-dark border-amber-500 animate-pulse'
                     : 'bg-white text-slate-400 border-slate-300'
                 }`}>
                   {isDone ? <CheckCircle2 className="w-4 h-4" /> : m.id}
@@ -135,7 +135,7 @@ export const TaxJourney: React.FC = () => {
                     {isAction && (
                       <button
                         onClick={() => navigate('wizard', { initialCategory: 'ADVANCE_TAX' })}
-                        className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded text-xs cursor-pointer flex items-center gap-1"
+                        className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded text-xs cursor-pointer flex items-center gap-1"
                       >
                         <CreditCard className="w-3.5 h-3.5" />
                         <span>Pay Advance Tax Installment</span>

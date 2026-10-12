@@ -40,7 +40,7 @@ export const TaxpayerDashboard: React.FC = () => {
 
           <button
             onClick={() => navigate('wizard')}
-            className="px-4 py-2 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+            className="px-4 py-2 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <CreditCard className="w-4 h-4" />
             <span>Pay Current Obligation</span>
@@ -51,7 +51,7 @@ export const TaxpayerDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
             <span className="text-slate-500 block">Total Tax Deposited (FY 2024-2026):</span>
-            <span className="font-mono-plex font-bold text-xl text-emerald-950 block">
+            <span className="font-mono-plex font-bold text-xl text-taxpay-dark block">
               {formatCurrency(totalPaid, language)}
             </span>
             <span className="text-emerald-700 font-semibold block text-[11px]">
@@ -103,12 +103,12 @@ export const TaxpayerDashboard: React.FC = () => {
           {/* Q1 */}
           <div className="p-3.5 rounded-lg border bg-emerald-50/70 border-emerald-300 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-emerald-950">1st Quarter (25%)</span>
+              <span className="font-bold text-taxpay-dark">1st Quarter (25%)</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-700" />
             </div>
             <div className="text-[11px] text-slate-600">Due: 15 September 2025</div>
-            <div className="font-mono-plex font-bold text-emerald-900 text-sm">BDT 25,000</div>
-            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 text-emerald-900">
+            <div className="font-mono-plex font-bold text-taxpay-dark text-sm">BDT 25,000</div>
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 text-taxpay-dark">
               PAID & SCROLLED
             </span>
           </div>
@@ -123,7 +123,7 @@ export const TaxpayerDashboard: React.FC = () => {
             <div className="font-mono-plex font-bold text-slate-900 text-sm">BDT 25,000</div>
             <button
               onClick={() => navigate('wizard', { initialCategory: 'ADVANCE_TAX' })}
-              className="w-full py-1 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold rounded text-[11px] cursor-pointer"
+              className="w-full py-1 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded text-[11px] cursor-pointer"
             >
               Pay Q2 Now
             </button>
@@ -166,7 +166,7 @@ export const TaxpayerDashboard: React.FC = () => {
           </div>
           <button
             onClick={() => navigate('ledger')}
-            className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer"
+            className="text-xs font-semibold text-emerald-800 hover:text-taxpay-dark flex items-center gap-1 cursor-pointer"
           >
             <span>View Full Ledger</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -190,8 +190,8 @@ export const TaxpayerDashboard: React.FC = () => {
                 <td className="px-3 py-2 text-slate-500 font-mono">2025-09-20</td>
                 <td className="px-3 py-2 font-medium text-slate-900">Bengal Tech Innovations Ltd.</td>
                 <td className="px-3 py-2 text-slate-600">S.94 (Professional IT Consultancy TDS)</td>
-                <td className="px-3 py-2 font-mono-plex text-emerald-900 font-bold">AC-2025-09-99482103</td>
-                <td className="px-3 py-2 text-right font-mono-plex font-bold text-emerald-900">
+                <td className="px-3 py-2 font-mono-plex text-taxpay-dark font-bold">AC-2025-09-99482103</td>
+                <td className="px-3 py-2 text-right font-mono-plex font-bold text-taxpay-dark">
                   {formatCurrency(12000, language)}
                 </td>
                 <td className="px-3 py-2 text-center">
@@ -204,8 +204,8 @@ export const TaxpayerDashboard: React.FC = () => {
                 <td className="px-3 py-2 text-slate-500 font-mono">2025-06-30</td>
                 <td className="px-3 py-2 font-medium text-slate-900">Eastern Bank PLC</td>
                 <td className="px-3 py-2 text-slate-600">S.102 (Bank Interest on Savings Account)</td>
-                <td className="px-3 py-2 font-mono-plex text-emerald-900 font-bold">AC-2025-06-44102918</td>
-                <td className="px-3 py-2 text-right font-mono-plex font-bold text-emerald-900">
+                <td className="px-3 py-2 font-mono-plex text-taxpay-dark font-bold">AC-2025-06-44102918</td>
+                <td className="px-3 py-2 text-right font-mono-plex font-bold text-taxpay-dark">
                   {formatCurrency(3450, language)}
                 </td>
                 <td className="px-3 py-2 text-center">

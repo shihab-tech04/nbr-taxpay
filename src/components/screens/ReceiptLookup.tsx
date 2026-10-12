@@ -60,11 +60,11 @@ export const ReceiptLookup: React.FC = () => {
                 placeholder="Demo challan or token reference0 or BKSH-TXN-90283182"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-slate-300 font-mono-plex focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-slate-300 font-mono-plex focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
               />
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-6 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <Search className="w-4 h-4" />
                 <span>Verify Now</span>
@@ -116,7 +116,7 @@ export const ReceiptLookup: React.FC = () => {
         {/* Found Result Preview Card */}
         {searchResult && searchResult !== 'NOT_FOUND' && (
           <div className="mt-6 space-y-4">
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-6 h-6 text-emerald-700" />
                 <div>
@@ -129,7 +129,7 @@ export const ReceiptLookup: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => selectReceipt(searchResult.id)}
-                  className="px-3.5 py-1.5 rounded bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-1.5 rounded bg-emerald-800 hover:bg-taxpay-primary text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Open Full Challan</span>

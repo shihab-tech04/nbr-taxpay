@@ -33,7 +33,7 @@ export const TaxLedger: React.FC = () => {
                 Illustrative Tax Ledger (not NBR verified)
               </h1>
               <p className="text-xs text-slate-500">
-                Taxpayer e-TIN: <strong className="font-mono-plex text-emerald-900">{taxpayerProfile.tin}</strong> | Circle: {taxpayerProfile.taxCircle}
+                Taxpayer e-TIN: <strong className="font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</strong> | Circle: {taxpayerProfile.taxCircle}
               </p>
             </div>
           </div>
@@ -56,7 +56,7 @@ export const TaxLedger: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('wizard')}
-              className="px-4 py-2 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <CreditCard className="w-4 h-4" />
               <span>Deposit Tax</span>
@@ -80,7 +80,7 @@ export const TaxLedger: React.FC = () => {
             <span className="text-slate-500 block">Illustrative Credit Entries (unverified):</span>
             <div className="flex items-center gap-2 mt-1">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
-              <span className="font-mono-plex font-bold text-lg text-emerald-900">
+              <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
                 {formatCurrency(totalCredits, language)}
               </span>
             </div>
@@ -88,7 +88,7 @@ export const TaxLedger: React.FC = () => {
 
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300">
             <span className="text-emerald-800 font-medium block">Example Net Position (not recognized):</span>
-            <div className="font-mono-plex font-bold text-lg text-emerald-950 mt-1">
+            <div className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1">
               {netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}`}
             </div>
             <span className="text-[10px] text-emerald-700 block mt-0.5">
@@ -141,7 +141,7 @@ export const TaxLedger: React.FC = () => {
                     <div className="font-medium">{entry.headName}</div>
                     <div className="text-[10px] text-slate-500 font-mono-plex">{entry.headCode}</div>
                   </td>
-                  <td className="px-3 py-2 font-mono-plex text-emerald-900 font-bold whitespace-nowrap">
+                  <td className="px-3 py-2 font-mono-plex text-taxpay-dark font-bold whitespace-nowrap">
                     {entry.challanNo}
                   </td>
                   <td className="px-3 py-2 text-right font-mono-plex font-bold text-rose-700">

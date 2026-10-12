@@ -41,7 +41,7 @@ export const CertificatesView: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.print()}
-              className="px-3.5 py-1.5 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print Certificate</span>
@@ -73,10 +73,10 @@ export const CertificatesView: React.FC = () => {
         {/* Certificate Printable Render Frame */}
         <div className="print-card border-2 border-slate-800 rounded-xl p-8 bg-slate-50/40 relative overflow-hidden text-slate-900 space-y-6">
           <div className="text-center space-y-1 border-b border-slate-300 pb-5">
-            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-950 text-amber-400 flex items-center justify-center font-bold text-xl border border-amber-400">
+            <div className="w-12 h-12 mx-auto rounded-full bg-taxpay-dark text-amber-400 flex items-center justify-center font-bold text-xl border border-amber-400">
               NBR
             </div>
-            <h2 className="font-serif-fraunces text-xl font-bold uppercase tracking-tight text-emerald-950">
+            <h2 className="font-serif-fraunces text-xl font-bold uppercase tracking-tight text-taxpay-dark">
               Government of the People\'s Republic of Bangladesh
             </h2>
             <h3 className="text-sm font-semibold text-slate-800">
@@ -88,7 +88,7 @@ export const CertificatesView: React.FC = () => {
           </div>
 
           <div className="text-center">
-            <span className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-emerald-100 text-emerald-900 border border-emerald-300">
+            <span className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-emerald-100 text-taxpay-dark border border-emerald-300">
               {selectedCert === 'ANNUAL_PAYMENT'
                 ? 'Income Tax Payment & Clearance Certificate'
                 : selectedCert === 'WITHHOLDING_PROOF'
@@ -99,14 +99,14 @@ export const CertificatesView: React.FC = () => {
 
           <div className="text-xs text-slate-700 leading-relaxed space-y-3">
             <p>
-              This is to certify that <strong className="text-slate-950 font-bold">{taxpayerProfile.nameEn}</strong>, holder of Taxpayer Identification Number (e-TIN) <strong className="font-mono-plex text-emerald-950">{taxpayerProfile.tin}</strong>, assessed under Circle-164, Taxes Zone-08, has remitted the following statutory direct taxes into the Bangladesh Government Treasury through electronic A-Challan:
+              This is to certify that <strong className="text-slate-950 font-bold">{taxpayerProfile.nameEn}</strong>, holder of Taxpayer Identification Number (e-TIN) <strong className="font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</strong>, assessed under Circle-164, Taxes Zone-08, has remitted the following statutory direct taxes into the Bangladesh Government Treasury through electronic A-Challan:
             </p>
 
             <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-2">
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-slate-500 block">Total Payments Verified:</span>
-                  <span className="font-mono-plex font-bold text-base text-emerald-900">
+                  <span className="font-mono-plex font-bold text-base text-taxpay-dark">
                     {formatCurrency(totalPaid, language)}
                   </span>
                 </div>

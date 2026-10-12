@@ -102,7 +102,7 @@ export const NotificationsView: React.FC = () => {
                 <div className="pt-2 flex justify-end">
                   <button
                     onClick={() => al.actionRoute && navigate(al.actionRoute)}
-                    className="px-3 py-1.5 rounded bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-semibold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-semibold text-[11px] inline-flex items-center gap-1 cursor-pointer"
                   >
                     <span>{al.actionLabel}</span>
                     <ArrowRight className="w-3.5 h-3.5" />

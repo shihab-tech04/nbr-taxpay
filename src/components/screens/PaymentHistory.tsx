@@ -88,7 +88,7 @@ export const PaymentHistory: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('wizard')}
-              className="px-4 py-2 bg-emerald-900 hover:bg-emerald-950 text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>New Payment</span>
@@ -177,7 +177,7 @@ export const PaymentHistory: React.FC = () => {
             <tbody className="divide-y divide-slate-200 bg-white">
               {filteredReceipts.map((rcpt) => (
                 <tr key={rcpt.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2.5 font-mono-plex font-bold text-emerald-950 whitespace-nowrap">
+                  <td className="px-3 py-2.5 font-mono-plex font-bold text-taxpay-dark whitespace-nowrap">
                     {rcpt.challanNo}
                   </td>
                   <td className="px-3 py-2.5 font-mono-plex text-slate-700 whitespace-nowrap">
@@ -215,7 +215,7 @@ export const PaymentHistory: React.FC = () => {
                   <td className="px-3 py-2.5 text-center whitespace-nowrap">
                     <button
                       onClick={() => selectReceipt(rcpt.id)}
-                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-emerald-900 font-semibold cursor-pointer text-[11px]"
+                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-taxpay-dark font-semibold cursor-pointer text-[11px]"
                     >
                       View Challan
                     </button>
