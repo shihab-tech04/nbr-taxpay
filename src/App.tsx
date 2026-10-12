@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
+import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { Footer } from './components/layout/Footer';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
@@ -47,6 +48,9 @@ const MainRouter: React.FC = () => {
   const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','services'].includes(currentRoute);
   const privateSampleGate = privateTaxpayerRoute && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const transactionRoute = ['guest','guestwh','travel','wizard'].includes(currentRoute);
+  // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
+  // Guest payment and Officer routes never inherit this reference palette.
+  const taxpayerReference = !officerRoute && ((privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace');
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -141,8 +145,9 @@ const MainRouter: React.FC = () => {
   if (currentRoute === 'office_login') return <OfficeLoginPage />;
 
   return (
-    <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : "taxpay-citizen-shell min-h-screen flex flex-col font-sans"}>
+    <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : `taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
       {officerRoute ? <Header /> : <CitizenNavigation />}
+      {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
         {privateSampleGate ? (
           <section className="citizen-account-gate">
