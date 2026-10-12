@@ -40,7 +40,7 @@ for (let tries = 0; tries < 30 && !detail; tries++) {
 assert.ok(detail, 'No real local Auth email arrived at the disposable Mailpit inbox');
 const source = [detail.Text, detail.HTML, detail.TextBody, detail.HtmlBody].filter(Boolean).join('\n')
   .replace(/&amp;/g, '&').replace(/&#38;/g, '&');
-const match = source.match(/https?:\/\/[^\\s"'<>]+\/auth\/v1\/verify\?[^\\s"'<>]+/i);
+const match = source.match(/https?:\/\/[^\s"'<>]+\/auth\/v1\/verify\?[^\s"'<>]+/i);
 assert.ok(match, 'Local Auth email did not contain its one-time verification link');
 const link = new URL(match[0].replace(/[),.;]+$/, ''));
 assert.equal(link.origin, api.origin, 'Verification link is not for the same disposable Supabase instance');
