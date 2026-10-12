@@ -44,7 +44,7 @@ const MainRouter: React.FC = () => {
   const { currentRoute, navigate, userRole, setUserRole, language } = useTaxState();
   const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
   const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','services'].includes(currentRoute);
-  const privateSampleGate = privateTaxpayerRoute && userRole === 'GUEST';
+  const privateSampleGate = privateTaxpayerRoute && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
