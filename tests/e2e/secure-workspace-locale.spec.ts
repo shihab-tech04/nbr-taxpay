@@ -54,3 +54,30 @@ test('secure workspace sign-in copy stays localized and fits the viewport', asyn
   }));
   expect(width.scroll, JSON.stringify(width.overflowing)).toBeLessThanOrEqual(width.client + 1);
 });
+
+
+test('sign-in and localized workspace remain usable at all six Phase 02 widths', async ({ page }) => {
+  await page.goto('/?action=secure_workspace');
+  for (const width of [320, 360, 375, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: width >= 768 ? 800 : 740 });
+    for (const mode of ['en', 'bn'] as const) {
+      const section = page.locator('section[lang]').first();
+      if (await section.getAttribute('lang') !== mode) {
+        await page.getByRole('button', { name: mode === 'bn' ? 'বাংলা' : 'EN', exact: true }).click();
+      }
+      await expect(section).toHaveAttribute('lang', mode);
+      const email = page.getByRole('textbox', { name: mode === 'bn' ? 'ইমেইল ঠিকানা' : 'Email address' });
+      await expect(email).toBeVisible();
+      await expect(email).toHaveAttribute('type', 'email');
+      await email.focus();
+      await expect(email).toBeFocused();
+      const send = page.getByRole('button', { name: mode === 'bn' ? 'সাইন ইন লিংক পাঠান' : 'Email sign-in link' });
+      await expect(send).toBeVisible();
+      const bounds = await page.evaluate(() => ({
+        client: document.documentElement.clientWidth,
+        scroll: document.documentElement.scrollWidth,
+      }));
+      expect(bounds.scroll, mode + ' at ' + width + 'px overflows').toBeLessThanOrEqual(bounds.client + 1);
+    }
+  }
+});

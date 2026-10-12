@@ -72,6 +72,9 @@ jobs:
       - name: Run real local Auth + PostgREST + direct SQL ownership checks
         run: npm run test:integration:local
 
+      - name: Verify actual email magic-link authentication against disposable Mailpit
+        run: node tests/integration/localMagicLinkAuth.mjs
+
       - name: Install headless Chromium for real local authenticated UI
         run: npx playwright install chromium
 
