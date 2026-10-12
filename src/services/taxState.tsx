@@ -83,13 +83,30 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const navigate = (route: string, params: Record<string, any> = {}) => {
     setCurrentRoute(route);
     setRouteParams(params);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Keep the UI route in browser history without exposing payment form details in a URL.
+    const next = new URL(window.location.href);
+    next.searchParams.set('action', route);
+    if (next.href !== window.location.href) {
+      window.history.pushState({ taxpayRoute: route, taxpayParams: params }, '', next);
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      const route = new URLSearchParams(window.location.search).get('action') || 'office_login';
+      setCurrentRoute(route);
+      setRouteParams(event.state?.taxpayParams || {});
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const selectReceipt = (id: string | null) => {
     setSelectedReceiptId(id);
     if (id) {
-      setCurrentRoute('payment_details');
+      navigate('payment_details');
     }
   };
 
