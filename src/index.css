@@ -1,6 +1,7 @@
 @import './styles/office-design.css';
 @import './styles/office-auth-source.css';
 @import "tailwindcss";
+@import "./styles/taxpay-citizen.css";
 
 @layer base {
   body {
