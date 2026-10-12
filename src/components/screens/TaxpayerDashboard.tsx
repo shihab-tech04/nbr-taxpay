@@ -158,7 +158,7 @@ export const TaxpayerDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-serif-fraunces font-bold text-lg text-slate-900">
-              Verified TDS Credits Withheld by Third Parties
+              Illustrative TDS entries (unverified)
             </h3>
             <p className="text-xs text-slate-500">
               Taxes deducted at source under Chapter VII by your clients, employer, or banks and scrolled into Treasury.
@@ -196,7 +196,7 @@ export const TaxpayerDashboard: React.FC = () => {
                 </td>
                 <td className="px-3 py-2 text-center">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                    VERIFIED & CREDITED
+                    SAMPLE — NOT VERIFIED
                   </span>
                 </td>
               </tr>
@@ -210,7 +210,7 @@ export const TaxpayerDashboard: React.FC = () => {
                 </td>
                 <td className="px-3 py-2 text-center">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                    VERIFIED & CREDITED
+                    SAMPLE — NOT VERIFIED
                   </span>
                 </td>
               </tr>
