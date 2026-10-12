@@ -53,7 +53,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await page.screenshot({path:'test-results/screenshots/taxpayer-reference-desktop-1600.png',fullPage:false});
   await rail.getByRole('button',{name:'Tax ledger'}).click();
   await expect(rail.getByRole('button',{name:'Tax ledger'})).toHaveAttribute('aria-current','page');
-  await expect(page.getByText('Shared demonstration entries')).toBeVisible();
+  await expect(page.getByText('Example entries · Not an account statement')).toBeVisible();
   await rail.getByRole('button',{name:'Account access'}).click();
   await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
