@@ -150,7 +150,7 @@ export function CitizenNavigation() {
               </nav>
               <div className="citizen-header__utilities">
                 <button type="button" className="citizen-language" onClick={() => setLanguage(bn ? 'en' : 'bn')}
-                  aria-label={bn ? 'Switch to English' : 'বাংলায় দেখুন'}><Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}</button>
+                  title={bn ? 'Switch to English' : 'বাংলায় দেখুন'}><Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}</button>
                 <button type="button" className="citizen-menu-open" onClick={() => setMenuOpen(true)}
                   aria-label={bn ? 'মেনু খুলুন' : 'Open menu'}><Menu size={22} aria-hidden="true"/></button>
               </div>
