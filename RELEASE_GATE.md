@@ -1,49 +1,37 @@
-# TaxPay Release Gate — Static Demonstration (2026-10-12)
+# TaxPay Phase 02 — controlled release and verified evidence (2026-10-12)
 
-## Decision
+## Public publication boundary — mandatory
 
-**Static citizen-facing demonstration only. NOT certified for operational NBR use.**
+**The public website is an independent, backend-disabled demonstration, NOT an operational NBR system.** The GitHub Pages workflow always uses `VITE_SUPABASE_DISABLED=true`, an empty Supabase URL and an empty browser key, and checks that no hosted Supabase project URL or synthetic taxpayer data are bundled. No hosted private accounts or payment services are enabled by source-code deployment.
 
-GitHub repository access and the GitHub Pages publication workflow have been restored. The published artifact deliberately disables hosted Supabase/Auth/backend configuration and cannot take real payments, issue government challans, certify tax liability, reconcile Treasury settlement or recognize tax credit.
+Preserve Government Blue, accepted Guest payment-first and mobile Taxpayer navigation, floating Pay action, EN/BN layouts, payment-head fail-closed rules, Office Management separation and current UI. Do not publish real authentication, taxpayer records, payment processing, ACS, Treasury, official challans, eTIN ownership inference or financial credits.
 
-## Verified GitHub publication checkpoint
+## Published GitHub source and real Pages read-back
 
 - Repository: https://github.com/shihab-tech04/nbr-taxpay
-- PR #8: merged into `main` (adaptive Guest/Taxpayer navigation and Government Blue tokens).
-- PR #10: merged into `main` at `3e6dc11c25dd1fedae7ea4eaa463e101f55c13c8` (tested citizen/financial safety baseline).
-- GitHub Actions run [#38215540503](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38215540503) completed successfully, with both **Build and verify static preview** and **Publish verified static build** jobs passing.
-- The expected project-site path is `/nbr-taxpay/`. An independent HTTP/browser read-back of the public Pages URL was not available in this audit environment; the successful deploy job is the publication evidence.
-- Newer commits, including the final Guest/Taxpayer UX closure work, require their own successful build and main-branch deploy evidence before being described as live.
+- Merged Phase 01 citizen UX: PRs #8, #9, #10 and #11.
+- Phase 02 implementation: PR #12, merged as `87e557214ab2e40bfbbbed65f0b27b33191c21cb`.
+- `main` GitHub Actions [run 38221709411](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38221709411): both static build and Pages deployment **SUCCESS**. Deployment log confirms HTTP read-back of HTML and `/nbr-taxpay/assets/` on https://shihab-tech04.github.io/nbr-taxpay/.
+- Exact public release beyond this commit must be verified from its own merged SHA, CI and publication logs. A working PR is not proof that changes have gone live.
 
-## Verified checks and boundaries
+## Executed isolated Supabase acceptance — distinct from the public release
 
-| Gate | Current assessment |
-|---|---|
-| Repository access and GitHub PR workflow | VERIFIED, no longer blocked by 404 |
-| TypeScript and domain test execution | PASS on the cited main CI run |
-| Citizen route/browser safety checks | PASS on the cited main CI run |
-| Static Pages build, `/nbr-taxpay/` asset base and backend-disabled checks | PASS on the cited main CI run |
-| GitHub Pages deployment job | PASS on the cited main CI run |
-| Actual public URL rendered independently | NOT VERIFIED |
-| Real Supabase Auth, RLS and durable taxpayer persistence | NOT VERIFIED |
-| Treasury/ACS/eTDS/eReturn/eLedger authoritative integration | NOT IMPLEMENTED/NOT VERIFIED |
-| Tax-law/payment-head legal source certification | NOT VERIFIED; original 170-record catalogue remains a candidate reference |
-| User-identity, taxpayer-vs-payer credit ownership, correction authorization | NOT PRODUCTION CERTIFIED |
-| WCAG 2.2 AA end-to-end and complete device/AT usability certification | NOT VERIFIED (targeted automated checks only) |
+- [Run 38220816892](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38220816892) on PR #12 exact head `4c7ac42e07314f604b1f695fa9fc512d6e092bbc`: **SUCCESS**. Disposable local stack applied seven SQL migrations; owner UPDATE policy and five limited UPDATE columns read back. Real Supabase Auth/PostgREST requests for two synthetic application users passed ownership, RLS, status-lock, separate direct PostgreSQL read-back, UI create/edit/conflict/delete, and account isolation. Following a real stop/start, both accounts reauthenticated and exact synthetic draft IDs survived through API and independent SQL.
+- [Run 38226080937](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38226080937) on Phase 02 verification PR head `8b2f9a6534c5f5eb82002e2b2095bbde08793e78`: **SUCCESS**. Real local email Auth request, disposable Mailpit delivery, single-use magic-link verification, original secure-workspace return path and Auth identity read-back passed; the local draft persistence/restart suite passed again. No hosted service was linked or changed.
+- These are synthetic, isolated acceptance results. An HTTP success alone is never equivalent to persistent PostgreSQL read-back or official taxpayer identity.
 
-## Required conditions for any future operational release
+## Open gates and exact limitations
 
-Do not enable real payment initiation, trusted receipt generation, personal credit balances, taxpayer-account access, regulated tax calculations or claims of NBR endorsement until authorized source/legal acceptance, live system integrations, identity/role security, financial reconciliation and comprehensive regression evidence are independently certified.
+| Gate | Classification | Explanation |
+| --- | --- | --- |
+| Approved Guest/Taxpayer public demonstration | PASS | Backend disabled; Pages publication and read-back verified |
+| Disposable Auth, RLS, two-owner private draft CRUD and restart | PASS | Real local tests above; no fake financial submissions |
+| Local magic-link receipt, verification, one-use replay denial | PASS | Run 38226080937 |
+| Hosted Tax Payer Payment project `eyqhoavnitkrajvyqvxn` | BLOCKED | Its six remote migration identities are not reconciled to seven repository versions and the owner UPDATE policy/grants are absent. Read-only inspection does not authorize writes |
+| Previous Mac HTTP versus independent PostgreSQL row discrepancy | NOT VERIFIED | New controlled local test cannot reproduce it; exact root cause on the original Mac is unknown |
+| Production taxpayer identity/eTIN binding, official payment heads, ACS/Treasury, challan, tax credit | BLOCKED | Outside the approved Phase 02 release; no external authorization or authoritative integration |
+| Complete human-assistive accessibility certification | NOT VERIFIED | Targeted automated responsive, focus, EN/BN checks do not establish full WCAG 2.2 AA conformance |
 
-UI/demo success must not be presented as production readiness. Preserve officer workflows in the separate Office Management product.
+Source IDs 5 and 150 remain blocked and non-executable. No payment, Treasury or official ledger posting is permitted.
 
-## Phase 02 extension (2026-10-12; separate from released citizen design)
-
-This source branch changes only the secure private-draft persistence safeguards, synthetic workspace tests, disposable database test harness, and backend documentation. **The deployed citizen design remains frozen.**
-
-- Browser insert/update/delete confirmation now requires a subsequent authenticated SELECT matching the exact owner, draft ID, purpose/category, assessment year, BDT minor amount, memo and `DRAFT` status (and absence after delete). Network ambiguity remains an explicit *not confirmed* state, never a payment success.
-- The local integration test requires both `TAXPAY_LOCAL_SUPABASE_URL` and a separate loopback `TAXPAY_LOCAL_PG_DSN`. It refuses non-loopback databases and fails if the draft cannot be read by direct SQL after PostgREST acknowledgement. A separate restart test reauthenticates both synthetic users and reads the same IDs again.
-- Read-only connection inspection of the project named `Tax Payer Payment` found six applied remote migration entries, no synthetic users/rows and no UPDATE grant/policy; the seventh repository update migration has **not** been applied there. Approval to use that hosted project as an isolated *development* environment is not established.
-- Source IDs 5 and 150 remain non-executable. The public GitHub Pages workflow continues to force a blank, disabled Supabase backend. Phase 02 cannot be labeled backend-certified without exact-head acceptance of isolated Auth/RLS and restart persistence and no remaining CI regressions.
-
-See `docs/TAXPAY_SUPABASE_BROWSER_CONNECTION.md` for observed schema facts and the still-unresolved Mac HTTP-versus-direct-SQL discrepancy. This text is not acceptance evidence for CI runs not yet completed.
+**Deployment decision:** publish only verified, safe Phase 02 frontend/source-test/document changes through the existing disabled-backend GitHub Pages workflow after exact-head CI. Keep actual backend activation limited to an approved isolated environment and never represent the public site as a live secure taxpayer account system.
