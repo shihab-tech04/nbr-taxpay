@@ -78,7 +78,7 @@
 .citizen-account-gate h1 { font-size:1.35rem; font-weight:750; margin-bottom:.75rem; }
 .citizen-account-gate p { margin-bottom:1rem; color:var(--citizen-muted); }
 .citizen-account-gate button { min-height:44px; padding:.75rem 1rem; background:var(--citizen-primary); color:white; border-radius:.5rem; }
-@media(max-width:767px) {
+@media(max-width:900px) {
   .citizen-header__inner { min-height:60px; }
   .citizen-header__links { display:none; }
   .citizen-menu-open { display:flex; }
@@ -87,7 +87,7 @@
   .citizen-header__utilities { margin-left:auto; }
   .citizen-dialog { padding:1rem; border-radius:1rem 1rem .6rem .6rem; }
 }
-@media(min-width:768px) {
+@media(min-width:901px) {
   .citizen-corners { display:none; }
   .citizen-overlay { align-items:center; }
 }
