@@ -11,6 +11,7 @@ import {
   GatewayHealth,
   TaxpayerProfile
 } from '../types/tax';
+import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -24,6 +25,7 @@ import {
 
 export interface TaxStateContextType {
   currentRoute: string;
+  demoUser: DemoUser | null;
   routeParams: Record<string, any>;
   navigate: (route: string, params?: Record<string, any>) => void;
   language: Language;
@@ -60,7 +62,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   const [routeParams, setRouteParams] = useState<Record<string, any>>({});
   const [language, setLanguage] = useState<Language>('en');
-  const [userRole, setUserRole] = useState<UserRole>('GUEST');
+  const [demoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
+  const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
@@ -197,6 +200,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <TaxStateContext.Provider
       value={{
         currentRoute,
+        demoUser,
         routeParams,
         navigate,
         language,
