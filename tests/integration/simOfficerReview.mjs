@@ -37,8 +37,13 @@ async function newUser(){
  return {id:uid,token:session.access_token};
 }
 const maker=await newUser(),reviewer=await newUser(),approver=await newUser(),outsider=await newUser();
+const payer=await newUser(),otherBeneficiary=await newUser();
 for(const [who,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROVER']]){
  assert.ok(psql(`insert into public.taxpay_officer_roles(user_uid,role) values('${who.id}'::uuid,'${role}') returning role`).startsWith(role));
+}
+// Assign two distinct verified fictional profiles through controlled local DB fixtures.
+for(const [profile,identity] of [['user1',payer],['user2',otherBeneficiary]]){
+ assert.equal(psql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by) values('${profile}','${identity.id}'::uuid,'${approver.id}'::uuid) returning user_id`),profile);
 }
 const originalReviewRequests=psql('select count(*) from public.taxpay_payment_requests');
 const nonce=randomUUID();
@@ -46,11 +51,15 @@ const lines=[
  {beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:11900},
  {beneficiary:'user2',category:'PENALTY',assessmentYear:'2026-27',amountMinor:1100}
 ];
-const create=await req('/rest/v1/rpc/sim_submit_payment',{p_payer_id:'user1',p_lines:lines,p_idempotency_key:nonce});
+assert.ok((await req('/rest/v1/rpc/sim_submit_payment',{p_payer_id:'user1',p_lines:lines,p_idempotency_key:nonce})).status>=400,
+ 'Anonymous legacy payment submission MUST be disabled');
+assert.ok((await req('/rest/v1/rpc/sim_my_payment_history',{p_view:'beneficiary'},outsider.token)).status>=400,
+ 'Unbound outsider may not inspect private payment histories');
+const create=await req('/rest/v1/rpc/sim_submit_my_payment',{p_lines:lines,p_idempotency_key:nonce},payer.token);
 assert.equal(create.status,200,JSON.stringify(create.data));
 const txid=create.data.transactionId;
 assert.match(txid,/^[a-f0-9-]{36}$/i);
-const first=(await req('/rest/v1/rpc/sim_payment_history',{p_user_id:null,p_view:'all'})).data.find(x=>x.transactionId===txid);
+const first=(await req('/rest/v1/rpc/sim_payment_history',{p_user_id:null,p_view:'all'},reviewer.token)).data.find(x=>x.transactionId===txid);
 assert.equal(first.reviewStatus,'PENDING_OFFICER');
 assert.equal(first.totalMinor,13000);
 assert.equal(first.allocations.length,2);
@@ -80,14 +89,14 @@ assert.equal(ap.status,200,JSON.stringify(ap.data));assert.equal(ap.data,'APPROV
 assert.ok((await act(approver.token,'APPROVER_CLOSE','Cannot change closed review')).status>=400);
 console.log('PASS: Maker, Reviewer and Approver distinct sequential SQL transitions with exact idempotency');
 
-const final=(await req('/rest/v1/rpc/sim_payment_history',{p_user_id:null,p_view:'all'})).data.find(x=>x.transactionId===txid);
+const final=(await req('/rest/v1/rpc/sim_payment_history',{p_user_id:null,p_view:'all'},reviewer.token)).data.find(x=>x.transactionId===txid);
 assert.equal(final.state,'SIMULATED');assert.equal(final.reviewStatus,'APPROVER_CLOSED');
 assert.deepEqual(final.events.slice(-3).map(e=>e.action),[
  'OFFICER_MAKER_ACKNOWLEDGED','OFFICER_REVIEWER_VERIFIED','OFFICER_APPROVER_CLOSED'
 ]);
 assert.equal(psql(`select count(*) from public.sim_payment_officer_decisions where transaction_id='${txid}'::uuid`),'3');
-for(const beneficiary of ['user1','user2']){
- const notices=(await req('/rest/v1/rpc/sim_payment_notices',{p_user_id:beneficiary})).data
+for(const [beneficiary,owner] of [['user1',payer],['user2',otherBeneficiary]]){
+ const notices=(await req('/rest/v1/rpc/sim_my_payment_notices',{},owner.token)).data
   .filter(n=>n.transactionId===txid);
  assert.equal(notices.length,4,'one creation notice plus three officer decisions');
 }
