@@ -134,9 +134,9 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Use the exact verified Office source even if main changes during parallel work.
-          git -C "$OFFICE_DIR" fetch --depth 1 origin 34a952f4738adc584aaf0eeba1f7710dabbebd92
-          git -C "$OFFICE_DIR" checkout --detach 34a952f4738adc584aaf0eeba1f7710dabbebd92
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "34a952f4738adc584aaf0eeba1f7710dabbebd92"
+          git -C "$OFFICE_DIR" fetch --depth 1 origin 0cc5930773a54de43e3966b9d0e2a94981b96e58
+          git -C "$OFFICE_DIR" checkout --detach 0cc5930773a54de43e3966b9d0e2a94981b96e58
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "0cc5930773a54de43e3966b9d0e2a94981b96e58"
           npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
