@@ -56,6 +56,7 @@ export const PaymentWizard: React.FC = () => {
   const t = COPY[language];
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [introduction, setIntroduction] = useState<'category'|'information'|'details'>('category');
 
   // Initial category from params if any
   const [category, setCategory] = useState<PaymentCategory>(
@@ -67,7 +68,7 @@ export const PaymentWizard: React.FC = () => {
   const [headSearch, setHeadSearch] = useState('');
 
   // Breakdown
-  const [taxAmount, setTaxAmount] = useState<number>(25000);
+  const [taxAmount, setTaxAmount] = useState<number>(0);
   const [penaltyAmount, setPenaltyAmount] = useState<number>(0);
   const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
   const [interestAmount, setInterestAmount] = useState<number>(0);
@@ -116,7 +117,7 @@ export const PaymentWizard: React.FC = () => {
   };
 
   const handleStep2Next = () => {
-    if (totalAmount <= 0) {
+    if (![taxAmount,penaltyAmount,surchargeAmount,interestAmount].every(n=>Number.isFinite(n)&&n>=0&&Math.round(n*100)===n*100) || !Number.isFinite(totalAmount) || totalAmount <= 0) {
       setErrorMessage(t.positive);
       return;
     }
@@ -148,8 +149,8 @@ export const PaymentWizard: React.FC = () => {
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-wiz-${Date.now()}`,
-        challanNo: `AC-${year}-${randChallan}`,
-        tokenNumber: `TKN-${randToken}`,
+        challanNo: `SIM-${year}-${randChallan}`,
+        tokenNumber: `SIM-TKN-${randToken}`,
         paymentCategory: category,
         assessmentYear,
         payerName: taxpayerProfile.nameEn,
@@ -161,10 +162,10 @@ export const PaymentWizard: React.FC = () => {
         items: [lineItem],
         totalAmount,
         paymentMethod,
-        gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
+        gatewayTransactionId: `SIM-${paymentMethod.substring(0, 4)}-${Math.floor(10000000 + Math.random() * 90000000)}`,
+        treasuryScrollNo: 'NOT_ISSUED_SIMULATION',
         treasuryDate: now,
-        treasuryStatus: 'TREASURY_SCROLLED',
+        treasuryStatus: 'GATEWAY_PENDING',
         taxCreditStatus: category === 'SOURCE_TAX_DEPOSIT' ? 'NOT_APPLICABLE' : 'PENDING_RECONCILIATION',
         createdAt: now,
         completedAt: now,
@@ -178,8 +179,67 @@ export const PaymentWizard: React.FC = () => {
     }, 1200);
   };
 
-  // Synthetic user1–user10 go through the real SQL transaction composer, not the old session receipt preview.
+
+  // Only synthetic user1–user10 and verified bound accounts can write to shared SQL.
   if(demoUser||authenticatedUser) return <DemoPaymentActivity/>;
+  const chooseParent=(key:PaymentCategory)=>{
+    setCategory(key);
+    const first=MASTER_PAYMENT_HEADS.find(h=>h.category===key&&!BLOCKED_HEAD_IDS.includes(h.id));
+    if(first)setSelectedHeadId(first.id);
+    setHeadSearch('');
+    setErrorMessage('');
+  };
+  if(introduction!=='details')return <section className="taxpay-guided-payment mx-auto max-w-4xl space-y-5 pb-12" lang={language}>
+    <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
+      <p className="text-sm font-semibold text-taxpay-dark">{bn?'করদাতা ওয়ার্কস্পেস':'Taxpayer workspace'}</p>
+      <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{bn?'পেমেন্ট করুন':'Make Payment'}</h1>
+      <p className="mt-2 text-sm text-taxpay-muted">{t.simulationNotice}</p>
+    </header>
+    <nav className="taxpay-guided-steps" aria-label={bn?'পেমেন্টের অগ্রগতি':'Payment progress'}>
+      {[
+        {en:'Payment category',bn:'পেমেন্টের ধরন'},
+        {en:'Category information',bn:'বিভাগের তথ্য'},
+        {en:'Make payment',bn:'পেমেন্টের তথ্য'},
+        {en:'Payment simulation',bn:'পেমেন্ট সিমুলেশন'},
+        {en:'Result',bn:'ফলাফল'}
+      ].map((item,i)=><div key={i} className="taxpay-guided-step" aria-current={i===(introduction==='category'?0:1)?'step':undefined} data-done={i<(introduction==='category'?0:1)}>
+        <span className="taxpay-guided-step__number">{i+1}</span><span>{bn?item.bn:item.en}</span>
+      </div>)}
+    </nav>
+    <section className="taxpay-guided-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
+      {introduction==='category'?<div className="taxpay-guided-body">
+        <h2>{bn?'আপনি কোন ধরনের কর পরিশোধ করতে চান?':'What would you like to pay?'}</h2>
+        <div className="taxpay-guided-categories" role="group" aria-label={bn?'মূল পেমেন্টের ধরন':'Parent payment category'}>
+          {Object.entries(CATEGORY_LABELS).map(([key,item])=><button type="button" key={key}
+            className="taxpay-guided-category" aria-pressed={category===key}
+            onClick={()=>chooseParent(key as PaymentCategory)}>
+            <span className="taxpay-guided-category__check" aria-hidden="true">{category===key?'✓':''}</span>
+            <strong>{bn?item.bn:item.en}</strong>
+            <span>{bn?'পেমেন্টের উদ্দেশ্য ও করবর্ষ যাচাই করে এগিয়ে যান।':'Verify payment purpose and assessment year before continuing.'}</span>
+          </button>)}
+        </div>
+        <div className="taxpay-guided-footer">
+          <button className="taxpay-guided-secondary" type="button" onClick={()=>navigate('taxpayer_home')}>{bn?'বাতিল':'Cancel'}</button>
+          <button className="taxpay-guided-primary" type="button" onClick={()=>setIntroduction('information')}>{bn?'এগিয়ে যান':'Continue'} →</button>
+        </div>
+      </div>:<div className="taxpay-guided-body">
+        <h2>{bn?CATEGORY_LABELS[category].bn:CATEGORY_LABELS[category].en}</h2>
+        <p>{bn?'সঠিক করবর্ষ, খাত, করদাতার তথ্য ও সংশ্লিষ্ট নথি যাচাই করুন। এখানে স্বয়ংক্রিয়ভাবে কর দায় নির্ধারণ করা হয় না।':'Verify the correct assessment year, payment head, taxpayer details and supporting evidence. No tax liability is calculated automatically.'}</p>
+        <div className="taxpay-guided-information">
+          <h3>{bn?'পেমেন্টের আগে যা প্রয়োজন':'Before making payment'}</h3>
+          <ul>
+            <li>{bn?'প্রযোজ্য করবর্ষ ও খাত নির্বাচন করুন।':'Select the relevant assessment year and reviewed payment head.'}</li>
+            <li>{bn?'প্রমাণ অনুযায়ী কর, জরিমানা, সারচার্জ ও সুদের পরিমাণ লিখুন।':'Enter tax, penalty, surcharge and interest only when supported by your records.'}</li>
+            <li>{bn?'পর্যালোচনা করে কেবল নমুনা সিমুলেশন চালান; সরকারি চালান তৈরি হবে না।':'Review the preview before simulation; no official challan will be issued.'}</li>
+          </ul>
+        </div>
+        <div className="taxpay-guided-footer">
+          <button className="taxpay-guided-secondary" type="button" onClick={()=>setIntroduction('category')}>{bn?'পূর্ববর্তী':'Back'}</button>
+          <button className="taxpay-guided-primary" type="button" onClick={()=>setIntroduction('details')}>{bn?'পেমেন্টের তথ্য দিন':'Make payment'} →</button>
+        </div>
+      </div>}
+    </section>
+  </section>;
 
   if (step === 4 && createdReceipt) {
     return (
