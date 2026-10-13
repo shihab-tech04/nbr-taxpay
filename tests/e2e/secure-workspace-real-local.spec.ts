@@ -152,7 +152,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(pageB.getByRole('heading', { name: 'Profile', exact: true, level: 1 })).toBeVisible();
   await pageB.getByRole('button', { name: 'Open menu' }).click();
   await pageB.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Sign out' }).click();
-  await expect(pageB.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
+  await expect(pageB.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
   await pageB.goto('/?action=account_profile');
   await expect(pageB.getByText('Sign in to view your account.')).toBeVisible();
 
