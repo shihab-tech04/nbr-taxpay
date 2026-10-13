@@ -25,7 +25,7 @@ test('explicit office-login route preserves recovered composition without fake s
   expect(root).not.toBeNull();
   expect(root!.x + root!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
   await page.getByRole('button',{name:'Explore TaxPay'}).click();
-  await expect(page.getByText('INCOME TAX PAYMENT INFORMATION')).toBeVisible();
+  await expect(page.getByText('INCOME TAX PAYMENT INFORMATION', {exact:true})).toBeVisible();
   expect(hostedAuthRequests).toEqual([]);
 });
 
