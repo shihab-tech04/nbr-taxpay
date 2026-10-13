@@ -164,7 +164,7 @@ const MainRouter: React.FC = () => {
     <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : `taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
       {officerRoute ? <Header /> : publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
-      <main id={publicInformationRoute ? 'main-content' : undefined} className={`flex-1 ${publicInformationRoute ? 'max-w-[1504px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
+      <main id={publicInformationRoute ? 'main-content' : undefined} className={`flex-1 ${publicInformationRoute ? 'max-w-[1360px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
         {privateSampleGate ? (
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
