@@ -61,15 +61,22 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
   return {context,page};
  }
  const taxpayer=await visit(payer,'http://127.0.0.1:4173/?action=history');
- await expect(taxpayer.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:16000});
+ await expect(taxpayer.page.getByRole('heading',{name:'Make Payment'})).toBeVisible({timeout:16000});
+ await taxpayer.page.getByRole('button',{name:'Continue',exact:true}).click();
+ await expect(taxpayer.page.getByRole('heading',{name:'Category information'})).toBeVisible();
+ await taxpayer.page.getByRole('button',{name:'Make payment',exact:true}).click();
+ await expect(taxpayer.page.getByRole('heading',{name:'Make payment',exact:true})).toBeVisible();
  await expect(taxpayer.page.getByText('user8 · Connected simulation workspace')).toBeVisible();
  await taxpayer.page.getByLabel('Amount (BDT)').first().fill('123.45');
  await taxpayer.page.getByRole('button',{name:'Add beneficiary / category'}).click();
  await taxpayer.page.getByLabel('Pay for').nth(1).selectOption('user9');
  await taxpayer.page.getByLabel('Payment category').nth(1).selectOption('PENALTY');
  await taxpayer.page.getByLabel('Amount (BDT)').nth(1).fill('6.55');
- await taxpayer.page.getByRole('button',{name:'Simulate and save payment'}).click();
- await expect(taxpayer.page.getByText(/Saved and verified in shared SQL/)).toBeVisible({timeout:18000});
+ await taxpayer.page.getByRole('button',{name:'Review payment',exact:true}).click();
+ await expect(taxpayer.page.getByRole('heading',{name:'Payment simulation'})).toBeVisible();
+ await taxpayer.page.getByRole('button',{name:'Run payment simulation',exact:true}).click();
+ await expect(taxpayer.page.getByText('Simulation saved successfully')).toBeVisible({timeout:18000});
+ await expect(taxpayer.page.getByText(/No funds moved or official tax credit was created/)).toBeVisible();
  const own=await rpc('sim_my_payment_history',{p_view:'payer'},payer.access_token);
  expect(own.status,JSON.stringify(own.data)).toBe(200);
  const item=(own.data as Array<{id:string;transactionId:string;totalMinor:number;reviewStatus:string;

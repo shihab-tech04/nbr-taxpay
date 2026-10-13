@@ -27,7 +27,7 @@ const moreLinks: CitizenAction[] = [
   { route: 'guidance', en: 'Help', bn: 'সহায়তা' },
   { route: 'secure_workspace', en: 'Account access', bn: 'অ্যাকাউন্ট প্রবেশ' }
 ];
-const transactionRoutes = new Set(['guest', 'guestwh', 'travel', 'wizard']);
+const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
@@ -48,7 +48,7 @@ export function CitizenNavigation() {
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
-  const isTaxpayer = taxpayerRoles.includes(userRole);
+  const isTaxpayer = taxpayerRoles.includes(userRole) || Boolean(applicationUser);
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
@@ -60,7 +60,7 @@ export function CitizenNavigation() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
-  const showPay = !inTransaction && !inputFocused;
+  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused;
   const go = (route: string) => {
     setMenuOpen(false);
     setPayOpen(false);
@@ -73,7 +73,7 @@ export function CitizenNavigation() {
     else setPayOpen(true);
   };
   const goHome = () => {
-    if (inTransaction && !window.confirm(bn
+    if ((inTransaction || currentRoute === 'wizard') && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
     go(home);
@@ -191,7 +191,7 @@ export function CitizenNavigation() {
               <div className="citizen-header__utilities">
                 <button type="button" className="citizen-header__notification" onClick={() => go(isTaxpayer ? 'account_notifications' : 'secure_workspace')}
                   aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'} title={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell size={23} aria-hidden="true"/></button>
-                <button type="button" className="citizen-language citizen-desktop-control" onClick={() => setLanguage(bn ? 'en' : 'bn')}
+                <button type="button" className={currentRoute === 'wizard' ? 'citizen-language' : 'citizen-language citizen-desktop-control'} onClick={() => setLanguage(bn ? 'en' : 'bn')}
                   title={bn ? 'Switch to English' : 'বাংলায় দেখুন'}><Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}</button>
                 <button type="button" className="citizen-menu-open citizen-desktop-control" onClick={() => setMenuOpen(true)}
                   aria-label={bn ? 'মেনু খুলুন' : 'Open menu'} aria-haspopup="dialog" aria-expanded={menuOpen}><Menu size={22} aria-hidden="true"/></button>
@@ -200,7 +200,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {!inTransaction && !compact && !overlayOpen && (
+      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
@@ -229,7 +229,7 @@ export function CitizenNavigation() {
       )}
       {showPay && !overlayOpen && (
         <button type="button" className={compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"} onClick={openPay}
-          aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
+          aria-label={isTaxpayer ? (bn ? 'পেমেন্ট করুন' : 'Make Payment') : (bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type')}>
           <Plus aria-hidden="true" size={22}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
         </button>
       )}

@@ -32,7 +32,7 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
   await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  await expect(page.locator('button.citizen-pay[aria-label="Make Payment"]')).toBeVisible();
 });
 test('taxpayer mobile home and activity support Bangla without overflows',async({page})=>{
   await page.setViewportSize({width:320,height:740});
