@@ -105,8 +105,9 @@ const MainRouter: React.FC = () => {
       case 'corrections':
         return <CorrectionRequests />;
       case 'notifications':
-      case 'account_notifications':
         return <NotificationsView />;
+      case 'account_notifications':
+        return <AccountCenter page="notifications" />;
       case 'account_profile':
         return <AccountCenter page="profile" />;
       case 'account_settings':
