@@ -469,3 +469,9 @@
 .citizen-demo-account-switch p {font-size:.8rem;font-weight:700;color:var(--citizen-text);}
 .citizen-demo-account-switch button {min-height:44px;padding:.55rem .75rem;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);border:1px solid var(--citizen-border);border-radius:.6rem;text-align:center;font-size:.8rem;font-weight:750;}
 .citizen-demo-account-switch button:hover {border-color:var(--citizen-primary);}
+
+/* Later public-hero grid rules must not override the 720px single-column breakpoint. */
+@media (max-width:720px) {
+  .public-information-hero { grid-template-columns:minmax(0,1fr); }
+  .public-information-hero > * { min-width:0; max-width:100%; }
+}
