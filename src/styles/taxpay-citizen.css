@@ -400,3 +400,66 @@
   .citizen-taxpayer-profile {align-items:flex-start;flex-wrap:wrap;}
   .citizen-taxpayer-profile .citizen-demo-pill {margin-left:3.2rem;}
 }
+
+
+/* Public information hub: uses the existing TaxPay color tokens, type and breakpoints. */
+.public-home-header { position:sticky; top:0; z-index:55; background:var(--citizen-primary-dark); color:white; box-shadow:0 2px 12px color-mix(in srgb,var(--citizen-primary-dark) 18%,transparent); }
+.public-home-header__inner {max-width:80rem; min-height:74px; padding:.65rem clamp(1rem,3vw,2rem); margin:auto; display:flex; align-items:center; gap:clamp(1rem,3vw,2rem);}
+.public-home-brand {display:flex; align-items:center; gap:.8rem; min-width:0; flex:none; color:white; text-decoration:none;}
+.public-home-brand img {height:43px; max-width:95px; width:auto; object-fit:contain; background:white; border-radius:.4rem; padding:.22rem;}
+.public-home-brand span {display:flex; flex-direction:column; line-height:1.2;}
+.public-home-brand strong {font-size:1.12rem; font-weight:800;}
+.public-home-brand small {font-size:.65rem; opacity:.9; margin-top:.25rem;}
+.public-home-nav {display:flex; align-items:center; gap:clamp(.6rem,1.6vw,1.35rem); margin-left:auto;}
+.public-home-nav a {color:white; text-decoration:none; font-size:.8rem; font-weight:650; line-height:1.3; padding:.55rem .1rem; white-space:nowrap;}
+.public-home-nav a:hover {text-decoration:underline; text-underline-offset:.3rem;}
+.public-home-header__tools {display:flex; align-items:center; gap:.5rem;}
+.public-home-language,.public-home-menu {display:inline-flex; gap:.35rem; align-items:center; justify-content:center; min-height:44px; padding:.55rem .6rem; color:white; border-radius:.6rem; border:1px solid color-mix(in srgb,white 45%,transparent); font-weight:700; font-size:.77rem;}
+.public-home-menu {display:none; min-width:44px;}
+.public-information-hub {scroll-margin-top:90px;}
+.public-information-hub [id] {scroll-margin-top:95px;}
+.public-information-hero {grid-template-columns:minmax(0,1.35fr) minmax(250px,.8fr);}
+.public-information-hero .citizen-public-hero__copy h1 {max-width:15ch;}
+.public-information-hero .public-home-login {min-width:152px; gap:.7rem;}
+.public-information-guide {align-self:center;}
+.public-information-guide h2 {font-size:1.15rem;font-weight:800; line-height:1.3; margin:0 0 1.1rem;}
+.public-information-guide ol {display:grid;gap:.8rem;padding:0;margin:0;list-style:none;}
+.public-information-guide li {display:flex;gap:.9rem;align-items:flex-start;border-top:1px solid var(--citizen-border);padding-top:.8rem;}
+.public-information-guide li span {font-size:.85rem;font-weight:800;color:var(--citizen-primary);}
+.public-information-guide li p {font-size:.8rem;line-height:1.5;color:var(--citizen-text);}
+.public-info-topic-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;}
+.public-info-topic {min-width:0;padding:1rem;border:1px solid var(--citizen-border);border-radius:.85rem;background:var(--citizen-bg);}
+.public-info-topic h3 {font-weight:800;font-size:.93rem;margin:.8rem 0 .35rem;}
+.public-info-topic p {color:var(--citizen-muted);font-size:.78rem;line-height:1.65;}
+.public-info-guides {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;}
+.public-info-guides article {min-width:0;padding:1rem;border:1px solid var(--citizen-border);border-radius:.85rem;display:flex;flex-direction:column;gap:.6rem;}
+.public-info-guides article > svg {width:25px;height:25px;color:var(--citizen-primary);}
+.public-info-guides h3 {font-size:.9rem;font-weight:800;line-height:1.45;}
+.public-info-guides p {font-size:.77rem;color:var(--citizen-muted);line-height:1.65;}
+.public-info-source {display:flex;align-items:flex-start;gap:.6rem;margin-top:1rem;padding:.9rem;background:var(--citizen-bg);border-radius:.75rem;color:var(--citizen-muted);font-size:.77rem;line-height:1.6;}
+.public-info-source svg {flex:none;color:var(--citizen-primary);}
+.public-info-source a {color:var(--citizen-primary-dark);font-weight:750;text-decoration:underline;}
+.public-info-faq {display:grid;gap:.5rem;}
+.public-info-faq details {border:1px solid var(--citizen-border);border-radius:.75rem;padding:0 1rem;}
+.public-info-faq summary {cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 0;color:var(--citizen-text);font-weight:750;font-size:.82rem;}
+.public-info-faq summary::after {content:'+';font-size:1.2rem;color:var(--citizen-primary);}
+.public-info-faq details[open] summary::after {content:'−';}
+.public-info-faq details p {color:var(--citizen-muted);font-size:.8rem;line-height:1.65;padding:0 0 .85rem;}
+.public-info-section h2 svg {display:inline;vertical-align:middle;color:var(--citizen-primary);}
+@media(max-width:900px){
+  .public-home-header__inner {min-height:66px;}
+  .public-home-menu {display:inline-flex;}
+  .public-home-nav {display:none;position:absolute;top:100%;left:0;right:0;margin:0;padding:.7rem 1rem 1rem;background:var(--citizen-primary-dark);box-shadow:0 9px 18px #17203326;flex-direction:column;align-items:stretch;gap:.2rem;}
+  .public-home-nav--open {display:flex;}
+  .public-home-nav a {min-height:44px;display:flex;align-items:center;padding:.65rem .75rem;border-radius:.45rem;}
+  .public-home-nav a:hover {background:var(--citizen-primary);}
+  .public-home-header__tools {margin-left:auto;}
+  .public-info-guides {grid-template-columns:minmax(0,1fr);}
+}
+@media(max-width:600px){
+  .public-info-topic-grid {grid-template-columns:minmax(0,1fr);}
+  .public-home-brand img {height:38px;max-width:75px;}
+  .public-home-brand small {font-size:.6rem;}
+  .public-information-hero .citizen-public-hero__copy h1 {max-width:none;}
+  .public-information-hero .public-home-login {width:100%;}
+}
