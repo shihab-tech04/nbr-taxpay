@@ -1,11 +1,13 @@
-import React from 'react';
-import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, Landmark, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, Landmark, ReceiptText, ShieldCheck, WalletCards, Plane, Search } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import {PublicServiceModal, type PublicService} from './PublicServiceModal';
 
-const OFFICE_LOGIN = 'https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions';
 
 export const PublicLanding: React.FC = () => {
-  const { language } = useTaxState();
+  const { language, navigate } = useTaxState();
+  const [openService,setOpenService] = useState<PublicService|null>(null);
+  const openGuide=(category:string)=>navigate('user_guide',{category});
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
   const topics = [
@@ -32,8 +34,9 @@ export const PublicLanding: React.FC = () => {
         <p className="citizen-public-hero__eyebrow"><Landmark size={16} aria-hidden="true" />{t('Income tax payment information', 'আয়কর পরিশোধের তথ্যসেবা')}</p>
         <h1 id="public-home-title">{t('Understand tax payments. Stay in control.', 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।')}</h1>
         <p>{t('Explore payment guidance. Manage your transactions after login.', 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।')}</p>
-        <div className="citizen-public-hero__actions">
-          <a className="citizen-public-primary public-home-login" href={OFFICE_LOGIN}>{t('Login', 'লগইন')} <ArrowRight size={18} aria-hidden="true" /></a>
+        <div className="citizen-public-hero__actions public-guest-actions">
+          <button type="button" className="citizen-public-primary public-guest-action" onClick={()=>setOpenService('status')}><Search size={18} aria-hidden="true"/>{t('Check payment status & receipt','পেমেন্টের অবস্থা ও রসিদ দেখুন')}</button>
+          <button type="button" className="citizen-public-secondary public-guest-action" onClick={()=>setOpenService('travel')}><Plane size={18} aria-hidden="true"/>{t('Pay travel tax','ভ্রমণ কর পরিশোধ')}</button>
         </div>
       </div>
       <aside className="citizen-public-hero__panel public-information-guide" aria-labelledby="prepare-title">
@@ -52,7 +55,7 @@ export const PublicLanding: React.FC = () => {
         <p className="citizen-hub-eyebrow">{t('Payment information', 'কর পরিশোধের তথ্য')}</p>
         <h2 id="payment-types-title">{t('Explore payment types', 'কর পরিশোধের ধরন জানুন')}</h2>
         <p>{t('Choose a payment category.', 'পেমেন্টের ধরন বেছে নিন।')}</p>
-      </div></div>
+      </div><button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
       <div className="public-info-topic-grid">
         {topics.map(({Icon,title,copy})=><article className="public-info-topic" key={title}>
           <span className="citizen-hub-service-grid__icon"><Icon size={20} aria-hidden="true" /></span>
@@ -66,7 +69,7 @@ export const PublicLanding: React.FC = () => {
         <p className="citizen-hub-eyebrow">{t('The process', 'পরিশোধের প্রক্রিয়া')}</p>
         <h2 id="steps-title">{t('How it works', 'যেভাবে কাজ করে')}</h2>
         <p>{t('Three simple steps.', 'তিনটি সহজ ধাপ।')}</p>
-      </div></div>
+      </div><button type="button" className="public-more-link" onClick={()=>openGuide('status')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
       <ol>
         <li><span>1</span><div><strong>{t('Read the guidance', 'নির্দেশনা পড়ুন')}</strong><p>{t('Choose a payment purpose.', 'পেমেন্টের উদ্দেশ্য বাছুন।')}</p></div></li>
         <li><span>2</span><div><strong>{t('Access your account', 'অ্যাকাউন্টে প্রবেশ করুন')}</strong><p>{t('View your transactions.', 'নিজের লেনদেন দেখুন।')}</p></div></li>
@@ -79,7 +82,7 @@ export const PublicLanding: React.FC = () => {
         <p className="citizen-hub-eyebrow">{t('Guidance', 'তথ্য ও নির্দেশনা')}</p>
         <h2 id="knowledge-title">{t('Payment guidance', 'পেমেন্ট নির্দেশনা')}</h2>
         <p>{t('Prepare, check and keep records.', 'প্রস্তুতি, যাচাই ও রেকর্ড।')}</p>
-      </div></div>
+      </div><button type="button" className="public-more-link" onClick={()=>openGuide('records')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
       <div className="public-info-guides">
         {guides.map((g,i)=><article key={g.title}>
           {i === 0 ? <ClipboardCheck aria-hidden="true" /> : i === 1 ? <ShieldCheck aria-hidden="true" /> : <ReceiptText aria-hidden="true" />}
@@ -93,10 +96,11 @@ export const PublicLanding: React.FC = () => {
       <div className="citizen-hub-section__heading"><div>
         <p className="citizen-hub-eyebrow">{t('Help', 'সহায়তা কেন্দ্র')}</p>
         <h2 id="faq-title"><CircleHelp size={22} aria-hidden="true" /> {t('Frequently asked questions', 'সাধারণ জিজ্ঞাসা')}</h2>
-      </div></div>
+      </div><button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
       <div className="public-info-faq">
         {questions.map(item=><details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
       </div>
     </section>
+    {openService&&<PublicServiceModal service={openService} onClose={()=>setOpenService(null)}/>}
   </div>;
 };

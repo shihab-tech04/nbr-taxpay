@@ -73,7 +73,7 @@ test('public information home has bilingual safety copy and no prototype status'
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'কর পরিশোধের ধরন জানুন'})).toBeVisible();
- await expect(page.locator('footer').getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
+ await expect(page.locator('footer').getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toBeVisible();
  await expect(page.getByText('Prototype status')).toHaveCount(0);
  const bounds=await page.locator('main').boundingBox();
  expect(bounds).not.toBeNull();
@@ -98,10 +98,10 @@ test('public footer accurately describes service and does not promise challan is
  await page.goto('/?action=landing');
  const footer=page.locator('footer');
  await expect(footer.getByText('Income tax payment information')).toBeVisible();
- await expect(footer.getByText('This information service does not collect money or issue official challans.')).toBeVisible();
+ await expect(footer.getByText('No government payments or challans are issued here.')).toBeVisible();
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(footer.getByText('আয়কর পরিশোধের তথ্য')).toBeVisible();
- await expect(footer.getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
+ await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toBeVisible();
 });
 
 test('public header exposes information only and no role impersonation control',async({page})=>{
@@ -111,7 +111,7 @@ test('public header exposes information only and no role impersonation control',
  await expect(header.getByText('TaxPay',{exact:true})).toBeVisible();
  await expect(header.getByRole('button',{name:'Menu'})).toBeVisible();
  await header.getByRole('button',{name:'Menu'}).click();
- await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Guides'})).toBeVisible();
+ await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
  await page.keyboard.press('Escape');

@@ -20,6 +20,6 @@ test('demo user exit clears the non-authenticated account parameter',async({page
  await page.getByRole('button',{name:'Open menu'}).click();
  await page.getByRole('button',{name:'Exit demonstration account'}).click();
  await expect(page).not.toHaveURL(/demoUser=/);
- await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toBeVisible();
+ await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
