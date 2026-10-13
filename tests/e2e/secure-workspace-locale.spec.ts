@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 test('secure workspace sign-in copy stays localized and fits the viewport', async ({ page }) => {
   let otpRequests = 0;
@@ -14,7 +15,7 @@ test('secure workspace sign-in copy stays localized and fits the viewport', asyn
   await expect(workspace).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { name: 'Secure TaxPay workspace' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page, 'bn');
   await expect(workspace).toHaveAttribute('lang', 'bn');
   await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByText('ইমেইলে সাইন-ইন লিংক পাঠানো হবে।')).toBeVisible();
@@ -28,21 +29,19 @@ test('secure workspace sign-in copy stays localized and fits the viewport', asyn
   expect(otpRequests).toBe(1);
 
   if (await page.evaluate(() => window.innerWidth <= 900)) {
+    // Keep the scroll-aware compact-state coverage with the new English label.
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const compactMenu = page.getByLabel('সংক্ষিপ্ত নেভিগেশন').getByRole('button', { name: 'মেনু খুলুন' });
     await expect(compactMenu).toBeVisible();
     await compactMenu.click();
-    await page.getByRole('dialog').getByRole('button', { name: 'EN', exact: true }).click();
+    await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English',exact:true}).click();
+    await expect(page.getByRole('status').last()).toContainText('Check your email for the secure sign-in link.');
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা',exact:true}).click();
+    await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
   } else {
-    await page.getByRole('button', { name: 'EN', exact: true }).click();
-  }
-  await expect(page.getByRole('status').last()).toContainText('Check your email for the secure sign-in link.');
-  const dialog = page.getByRole('dialog');
-  if (await dialog.isVisible()) {
-    await dialog.getByRole('button', { name: 'বাংলা', exact: true }).click();
-    await dialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
-  } else {
-    await page.getByRole('button', { name: 'বাংলা' }).click();
+    await setWorkspaceLanguage(page, 'en');
+    await expect(page.getByRole('status').last()).toContainText('Check your email for the secure sign-in link.');
+    await setWorkspaceLanguage(page, 'bn');
   }
   await expect(page.getByRole('status').last()).toContainText('নিরাপদ সাইন-ইন লিংকের জন্য আপনার ইমেইল দেখুন।');
 
@@ -78,7 +77,7 @@ test('sign-in and localized workspace remain usable at all six Phase 02 widths',
     for (const mode of ['en', 'bn'] as const) {
       const section = page.locator('section[lang]').first();
       if (await section.getAttribute('lang') !== mode) {
-        await page.getByRole('button', { name: mode === 'bn' ? 'বাংলা' : 'EN', exact: true }).click();
+        await setWorkspaceLanguage(page, mode);
       }
       await expect(section).toHaveAttribute('lang', mode);
       const email = page.getByRole('textbox', { name: mode === 'bn' ? 'ইমেইল ঠিকানা' : 'Email address' });
