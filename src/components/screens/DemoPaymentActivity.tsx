@@ -91,7 +91,8 @@ export const DemoPaymentActivity:React.FC=()=>{
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
       <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস')}</p>
       <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
-      <p className="mt-2 text-sm text-taxpay-muted">{privateMode?txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।'):txt('Public fictional sandbox. All sample profiles and transactions are public; do not enter personal data. No real payment or credit.','এটি উন্মুক্ত কাল্পনিক পরীক্ষা। ব্যক্তিগত তথ্য লিখবেন না; বাস্তব পেমেন্ট বা ক্রেডিট নয়।')}</p>
+      <p className="mt-2 text-sm text-taxpay-muted">{privateMode?txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।'):txt('Simulation only: no real payment, government challan or tax credit.','শুধু সিমুলেশন: বাস্তব পেমেন্ট, সরকারি চালান বা কর ক্রেডিট নেই।')}</p>
+      {!privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Public fictional sandbox. All sample accounts are unverified examples; do not enter personal data.','উন্মুক্ত কাল্পনিক নমুনা। ব্যক্তিগত তথ্য প্রবেশ করাবেন না।')}</p>}
     </header>
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New simulated payment','নতুন সিমুলেটেড পেমেন্ট')}>
