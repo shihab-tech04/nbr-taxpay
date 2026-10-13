@@ -40,6 +40,7 @@ const maker=await newUser(),reviewer=await newUser(),approver=await newUser(),ou
 for(const [who,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROVER']]){
  assert.ok(psql(`insert into public.taxpay_officer_roles(user_uid,role) values('${who.id}'::uuid,'${role}') returning role`).startsWith(role));
 }
+const originalReviewRequests=psql('select count(*) from public.taxpay_payment_requests');
 const nonce=randomUUID();
 const lines=[
  {beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:11900},
@@ -92,5 +93,5 @@ for(const beneficiary of ['user1','user2']){
 }
 assert.equal(psql(`select state||','||review_status||','||simulation_only from public.sim_payment_transactions where id='${txid}'::uuid`),
  'SIMULATED,APPROVER_CLOSED,t');
-assert.equal(psql("select count(*) from public.taxpay_payment_requests"),'0');
+assert.equal(psql('select count(*) from public.taxpay_payment_requests'),originalReviewRequests);
 console.log('RESULT SIM_OFFICER_REVIEW PASS: owner/beneficiary notices, no government credit, no Treasury mutation, audit read-back');
