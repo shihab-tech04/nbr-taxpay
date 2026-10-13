@@ -42,11 +42,11 @@ test('sample payment activity retains filtering and does not assert tax-credit o
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
   await page.getByRole('button',{name:'Payments & activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByText('Sample records',{exact:true})).toBeVisible();
+  await expect(page.getByText('Activity overview',{exact:true})).toBeVisible();
   await expect(page.getByText('Personal tax credit recognized')).toHaveCount(0);
   await page.getByLabel('Search payments').fill('THIS-REFERENCE-DOES-NOT-EXIST');
-  await expect(page.getByText('No matching sample records')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Export sample CSV'})).toBeDisabled();
+  await expect(page.getByText('No matching records')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Export records'})).toBeDisabled();
 });
 
 
