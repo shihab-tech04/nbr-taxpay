@@ -4,7 +4,7 @@ test('root is a public information hub with a header Login and no payment action
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
- await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.office-auth')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
@@ -57,7 +57,7 @@ test('public mobile navigation offers information anchors but no payment initiat
  await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await page.getByRole('button',{name:'Menu'}).click();
- await expect(page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Payment types'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'})).toBeVisible();
  await page.keyboard.press('Escape');
  await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
 });
