@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {formatCurrency} from '../../services/numberFormat';
+import {CATEGORY_LABELS} from '../../data/paymentHeads';
 import {
   simulationUsers,simulationCategories,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
@@ -9,10 +9,26 @@ import {
 } from '../../services/simulatedPaymentsApi';
 
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
-const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
+const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:''});
+const categoryHelp:Record<SimulationCategory,{en:string;bn:string}>={
+  TAX_WITH_RETURN:{en:'A payment entered in connection with an income tax return. Confirm the return and relevant assessment year before proceeding.',bn:'আয়কর রিটার্নের সঙ্গে সম্পর্কিত পেমেন্ট। এগোনোর আগে রিটার্ন ও প্রযোজ্য করবর্ষ যাচাই করুন।'},
+  ADVANCE_TAX:{en:'An advance payment entry. Check the period and payer before entering an amount.',bn:'অগ্রিম পেমেন্টের এন্ট্রি। পরিমাণ দেওয়ার আগে সময়কাল ও প্রদানকারী যাচাই করুন।'},
+  ASSESSED_DEMAND:{en:'A payment against an assessed demand. Keep the relevant assessment notice available for reference.',bn:'ধার্যকৃত দাবির বিপরীতে পেমেন্ট। সংশ্লিষ্ট কর নির্ধারণের নোটিশ যাচাই করুন।'},
+  PENALTY:{en:'A penalty or interest payment entry. The amount must come from an independently verified obligation.',bn:'জরিমানা বা সুদের পেমেন্ট এন্ট্রি। স্বাধীনভাবে যাচাইকৃত দায় অনুযায়ী পরিমাণ নির্ধারণ করুন।'},
+  SOURCE_TAX_DEPOSIT:{en:'A withholding-related deposit entry. Check the deductor, recipient, period and supporting records.',bn:'উৎসে কর সম্পর্কিত জমার এন্ট্রি। কর্তনকারী, প্রাপক, সময়কাল ও প্রমাণ যাচাই করুন।'},
+  APPELLATE_TRIBUNAL:{en:'An appeal-related payment entry. Verify the relevant order, notice and applicable payment requirement.',bn:'আপিল-সম্পর্কিত পেমেন্ট এন্ট্রি। সংশ্লিষ্ট আদেশ, নোটিশ ও পেমেন্টের শর্ত যাচাই করুন।'},
+  OTHER_TAX_PAYMENT:{en:'An additional payment category. Verify the precise payment purpose before continuing.',bn:'অন্যান্য পেমেন্টের খাত। এগোনোর আগে নির্দিষ্ট উদ্দেশ্য যাচাই করুন।'}
+};
+const guidedSteps=[
+  {en:'Payment category',bn:'পেমেন্টের ধরন'},
+  {en:'Category information',bn:'বিভাগের তথ্য'},
+  {en:'Make payment',bn:'পেমেন্টের তথ্য'},
+  {en:'Payment simulation',bn:'পেমেন্ট সিমুলেশন'},
+  {en:'Result',bn:'ফলাফল'}
+];
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
 export const DemoPaymentActivity:React.FC=()=>{
-  const {demoUser,language}=useTaxState();
+  const {demoUser,language,routeParams,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
@@ -29,6 +45,13 @@ export const DemoPaymentActivity:React.FC=()=>{
   const [nonce,setNonce]=useState(()=>crypto.randomUUID());
   const [saving,setSaving]=useState(false);
   const [submitMessage,setSubmitMessage]=useState('');
+  const [flowError,setFlowError]=useState('');
+  const [stage,setStage]=useState<1|2|3|4|5>(1);
+  const [parentCategory,setParentCategory]=useState<SimulationCategory>(()=>{
+    const candidate=routeParams?.initialCategory as SimulationCategory;
+    return simulationCategories.includes(candidate)?candidate:'TAX_WITH_RETURN';
+  });
+  const [confirmation,setConfirmation]=useState<{reference:string;totalMinor:number;count:number}|null>(null);
 
   useEffect(()=>{
     if(!authenticatedUser){setBoundId(null);setBindingError('');return;}
@@ -37,7 +60,7 @@ export const DemoPaymentActivity:React.FC=()=>{
       .catch(e=>{if(active)setBindingError(e instanceof Error?e.message:'Profile authorization unavailable');});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
-  useEffect(()=>{if(!id)return;setLines([freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');},[id]);
+  useEffect(()=>{if(!id)return;setLines([{...freshLine(id),category:parentCategory}]);setNonce(crypto.randomUUID());setSubmitMessage('');setConfirmation(null);setStage(1);},[id]);
   useEffect(()=>{
     if(!id)return;
     let active=true;
@@ -57,13 +80,13 @@ export const DemoPaymentActivity:React.FC=()=>{
 
   const modify=(index:number,field:keyof EditableLine,value:string)=>{
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
-    setNonce(crypto.randomUUID());setSubmitMessage('');
+    setNonce(crypto.randomUUID());setSubmitMessage('');setFlowError('');
   };
-  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
+  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,{...freshLine(id),category:parentCategory}]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const removeLine=(index:number)=>{if(lines.length>1){setLines(old=>old.filter((_,i)=>i!==index));setNonce(crypto.randomUUID());setSubmitMessage('');}};
-  const submit=useCallback(async(e:React.FormEvent)=>{
-    e.preventDefault();if(!id||saving)return;
-    setSaving(true);setSubmitMessage('');
+  const submit=useCallback(async()=>{
+    if(!id||saving||stage!==4)return;
+    setSaving(true);setSubmitMessage('');setFlowError('');
     try{
       const checked:SimulationLine[]=lines.map(l=>({
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
@@ -74,11 +97,33 @@ export const DemoPaymentActivity:React.FC=()=>{
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
-      setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
-      setSubmitMessage(txt('Saved and verified in shared SQL: ','SQL-এ সংরক্ষিত ও যাচাইকৃত: ')+result.reference+(result.replayed?' (idempotent replay)':''));
-    }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
+      setView('payer');setRevision(v=>v+1);
+      setConfirmation({reference:result.reference,totalMinor:expected,count:checked.length});
+      setStage(5);
+      setSubmitMessage(txt('Simulation saved and reconciled with shared SQL. No funds moved or official tax credit was created.','সিমুলেশন সংরক্ষিত এবং SQL রিড-ব্যাকে মিলেছে। কোনো অর্থ স্থানান্তর বা সরকারি কর ক্রেডিট তৈরি হয়নি।'));
+    }catch(err){setFlowError(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
-  },[id,lines,nonce,saving,language,privateMode]);
+  },[id,lines,nonce,saving,language,privateMode,stage]);
+  const chooseCategory=(value:SimulationCategory)=>{
+    if(saving)return;
+    setParentCategory(value);
+    setLines(old=>old.map((line,index)=>index===0?{...line,category:value}:line));
+    setNonce(crypto.randomUUID());setFlowError('');
+  };
+  const goReview=()=>{
+    try{
+      if(!lines.length)throw Error(txt('Add at least one allocation.','অন্তত একটি বরাদ্দ যোগ করুন।'));
+      const parsed=lines.map(line=>parseSimulatedAmount(line.amount));
+      const total=parsed.reduce((sum,n)=>sum+n,0);
+      if(!Number.isSafeInteger(total)||total<=0)throw Error(txt('Enter a valid positive amount.','সঠিক ধনাত্মক পরিমাণ লিখুন।'));
+      setFlowError('');setStage(4);
+    }catch(e){setFlowError(e instanceof Error?e.message:'Check the payment amounts');}
+  };
+  const restart=()=>{
+    if(!id)return;
+    setLines([{...freshLine(id),category:parentCategory}]);setNonce(crypto.randomUUID());setConfirmation(null);
+    setFlowError('');setSubmitMessage('');setStage(1);
+  };
 
   if(authLoading&&!demoUser)return <main className="mx-auto max-w-5xl p-6"><p role="status">Checking protected account…</p></main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-5xl space-y-3 p-6">
@@ -87,18 +132,57 @@ export const DemoPaymentActivity:React.FC=()=>{
     <p className="text-sm text-taxpay-muted">An authorized Approver must assign one fictional user1–user10 profile to this authenticated account. No other profile can be selected by URL.</p>
   </main>;
   if(!id)return null;
-  return <main className="mx-auto max-w-5xl space-y-5 pb-12" lang={language}>
+  return <main className="taxpay-guided-payment mx-auto max-w-5xl space-y-5 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
       <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস')}</p>
-      <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
+      <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Make Payment','পেমেন্ট করুন')}</h1>
       <p className="mt-2 text-sm text-taxpay-muted">{privateMode?txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।'):txt('Simulation only: no real payment, government challan or tax credit.','শুধু সিমুলেশন: বাস্তব পেমেন্ট, সরকারি চালান বা কর ক্রেডিট নেই।')}</p>
       {!privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Public fictional sandbox. All sample accounts are unverified examples; do not enter personal data.','উন্মুক্ত কাল্পনিক নমুনা। ব্যক্তিগত তথ্য প্রবেশ করাবেন না।')}</p>}
     </header>
 
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New simulated payment','নতুন সিমুলেটেড পেমেন্ট')}>
-      <h2 className="text-lg font-bold text-taxpay-text">{txt('Create a combined payment','একাধিক বরাদ্দের পেমেন্ট তৈরি করুন')}</h2>
-      <p className="mt-1 text-sm text-taxpay-muted">{txt('Combine your own and other beneficiaries, categories and years in one atomic transaction.','একটি লেনদেনে নিজের ও অন্যের, একাধিক খাত ও একাধিক করবর্ষের বরাদ্দ রাখুন।')}</p>
-      <form onSubmit={e=>void submit(e)} className="mt-4 space-y-4">
+    <nav className="taxpay-guided-steps" aria-label={txt('Payment progress','পেমেন্টের অগ্রগতি')}>
+      {guidedSteps.map((item,index)=><div key={index} className="taxpay-guided-step" aria-current={stage===index+1?'step':undefined} data-done={stage>index+1}>
+        <span className="taxpay-guided-step__number">{stage>index+1?'✓':index+1}</span>
+        <span>{bn?item.bn:item.en}</span>
+      </div>)}
+    </nav>
+    <section className="taxpay-guided-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('Guided payment','নির্দেশিত পেমেন্ট')}>
+      <h2 className="text-lg font-bold text-taxpay-text">{bn?guidedSteps[stage-1].bn:guidedSteps[stage-1].en}</h2>
+      <p className="mt-1 text-sm text-taxpay-muted">{txt('Complete each step in order. This is a simulation, not a real tax payment.','প্রতিটি ধাপ পর্যায়ক্রমে সম্পন্ন করুন। এটি সিমুলেশন, প্রকৃত কর পরিশোধ নয়।')}</p>
+      {stage===1&&<div className="taxpay-guided-body">
+        <h3>{txt('What would you like to pay?','আপনি কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
+        <div className="taxpay-guided-categories" role="group" aria-label={txt('Parent payment category','মূল পেমেন্টের ধরন')}>
+          {simulationCategories.map(cat=><button type="button" key={cat} className="taxpay-guided-category" aria-pressed={parentCategory===cat} onClick={()=>chooseCategory(cat)}>
+            <span className="taxpay-guided-category__check" aria-hidden="true">{parentCategory===cat?'✓':''}</span>
+            <strong>{bn?CATEGORY_LABELS[cat].bn:CATEGORY_LABELS[cat].en}</strong>
+            <span>{bn?categoryHelp[cat].bn:categoryHelp[cat].en}</span>
+          </button>)}
+        </div>
+        <div className="taxpay-guided-footer">
+          <button type="button" className="taxpay-guided-secondary" onClick={()=>navigate('taxpayer_home')}>{txt('Cancel','বাতিল')}</button>
+          <button type="button" className="taxpay-guided-primary" onClick={()=>setStage(2)}>{txt('Continue','এগিয়ে যান')} →</button>
+        </div>
+      </div>}
+      {stage===2&&<div className="taxpay-guided-body">
+        <h3>{bn?CATEGORY_LABELS[parentCategory].bn:CATEGORY_LABELS[parentCategory].en}</h3>
+        <p>{bn?categoryHelp[parentCategory].bn:categoryHelp[parentCategory].en}</p>
+        <div className="taxpay-guided-information">
+          <h4>{txt('Before you continue','এগোনোর আগে')}</h4>
+          <ul>
+            <li>{txt('Confirm who the payment is for, and the correct assessment year.','কার জন্য পেমেন্ট ও সঠিক করবর্ষ যাচাই করুন।')}</li>
+            <li>{txt('Enter the amount from your own supporting records. Tax liability is not calculated here.','নিজের প্রমাণপত্র অনুযায়ী পরিমাণ লিখুন। এখানে কর দায় গণনা করা হয় না।')}</li>
+            <li>{txt('You can add multiple beneficiaries and categories in one simulated transaction.','একটি সিমুলেটেড লেনদেনে একাধিক করদাতা ও খাত যোগ করতে পারবেন।')}</li>
+            <li>{txt('Only a successful server read-back will show the simulation result.','সার্ভার থেকে সফল রিড-ব্যাকের পরই সিমুলেশনের ফলাফল দেখানো হবে।')}</li>
+          </ul>
+        </div>
+        <div className="taxpay-guided-footer">
+          <button type="button" className="taxpay-guided-secondary" onClick={()=>setStage(1)}>{txt('Back','পূর্ববর্তী')}</button>
+          <button type="button" className="taxpay-guided-primary" onClick={()=>setStage(3)}>{txt('Make payment','পেমেন্টের তথ্য দিন')} →</button>
+        </div>
+      </div>}
+      {stage===3&&<p className="taxpay-guided-context">{bn?CATEGORY_LABELS[parentCategory].bn:CATEGORY_LABELS[parentCategory].en} · {txt('Enter your allocations','বরাদ্দের তথ্য দিন')}</p>}
+      {flowError&&<p className="taxpay-guided-error" role="alert">{flowError}</p>}
+      {stage===3&&<form onSubmit={e=>{e.preventDefault();goReview();}} className="mt-4 space-y-4">
         {lines.map((line,index)=><fieldset key={index} className="rounded-lg border border-taxpay-border p-3 sm:p-4">
           <legend className="px-2 text-sm font-semibold text-taxpay-text">{txt('Allocation','বরাদ্দ')} {index+1}</legend>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -125,13 +209,50 @@ export const DemoPaymentActivity:React.FC=()=>{
         </fieldset>)}
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" disabled={lines.length>=20||saving} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
-          <button type="submit" disabled={saving} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white disabled:opacity-50">{saving?txt('Saving…','সংরক্ষণ হচ্ছে…'):txt('Simulate and save payment','পেমেন্ট সিমুলেট করে সংরক্ষণ করুন')}</button>
+          <button type="submit" disabled={saving} className="taxpay-guided-primary">{txt('Review payment','পেমেন্ট পর্যালোচনা')} →</button>
         </div>
-        {submitMessage&&<p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-text">{submitMessage}</p>}
-      </form>
+        <div className="taxpay-guided-footer">
+          <button type="button" className="taxpay-guided-secondary" onClick={()=>setStage(2)}>{txt('Back','পূর্ববর্তী')}</button>
+        </div>
+      </form>}
+      {stage===4&&<div className="taxpay-guided-body">
+        <h3>{txt('Review and run simulation','পর্যালোচনা করে সিমুলেশন চালান')}</h3>
+        <p>{txt('No money is transferred. Confirm the category, beneficiary, year and amount for each allocation.','অর্থ স্থানান্তর হবে না। প্রতিটি বরাদ্দের খাত, করদাতা, করবর্ষ ও পরিমাণ যাচাই করুন।')}</p>
+        <div className="taxpay-guided-review">
+          {lines.map((line,index)=><article key={index}>
+            <strong>{txt('Allocation','বরাদ্দ')} {index+1}</strong>
+            <p>{bn?CATEGORY_LABELS[line.category].bn:CATEGORY_LABELS[line.category].en}</p>
+            <p>{line.beneficiary} · {txt('Assessment year','করবর্ষ')} {line.assessmentYear}</p>
+            <strong>{formatSimulatedAmount(parseSimulatedAmount(line.amount))}</strong>
+          </article>)}
+        </div>
+        <p className="taxpay-guided-total"><span>{txt('Total simulated amount','মোট সিমুলেটেড অর্থ')}</span>
+          <strong>{formatSimulatedAmount(lines.reduce((sum,line)=>sum+parseSimulatedAmount(line.amount),0))}</strong></p>
+        <p className="taxpay-guided-safety">{txt('Simulation only. No banking gateway, official challan, Treasury settlement or tax credit.','শুধু সিমুলেশন। ব্যাংকিং গেটওয়ে, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নয়।')}</p>
+        <div className="taxpay-guided-footer">
+          <button type="button" className="taxpay-guided-secondary" disabled={saving} onClick={()=>setStage(3)}>{txt('Back','পূর্ববর্তী')}</button>
+          <button type="button" className="taxpay-guided-primary" disabled={saving} onClick={()=>void submit()}>{saving?txt('Checking server…','সার্ভার যাচাই চলছে…'):txt('Run payment simulation','পেমেন্ট সিমুলেশন চালান')} →</button>
+        </div>
+      </div>}
+      {stage===5&&confirmation&&<div className="taxpay-guided-body" role="status" aria-live="polite">
+        <div className="taxpay-guided-result-icon" aria-hidden="true">✓</div>
+        <h3>{txt('Simulation saved successfully','সিমুলেশন সফলভাবে সংরক্ষিত')}</h3>
+        <p>{submitMessage}</p>
+        <div className="taxpay-guided-information">
+          <h4>{txt('Simulation reference','সিমুলেশন রেফারেন্স')}</h4>
+          <p className="taxpay-guided-reference">{confirmation.reference}</p>
+          <p>{txt('Allocations','বরাদ্দ')}: {confirmation.count}</p>
+          <p>{txt('Simulated amount','সিমুলেটেড অর্থ')}: {formatSimulatedAmount(confirmation.totalMinor)}</p>
+          <p>{txt('Office review may remain pending. This is not a government receipt.','অফিসের পর্যালোচনা অপেক্ষমাণ থাকতে পারে। এটি সরকারি রসিদ নয়।')}</p>
+        </div>
+        <div className="taxpay-guided-footer">
+          <a className="taxpay-guided-secondary" href="#taxpay-guided-history">{txt('View transaction activity','লেনদেনের ইতিহাস দেখুন')}</a>
+          <button type="button" className="taxpay-guided-primary" onClick={restart}>{txt('Make another payment','আরেকটি পেমেন্ট করুন')} →</button>
+        </div>
+      </div>}
     </section>
 
-    <nav className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইতিহাসের ধরন')}>
+<nav id="taxpay-guided-history" className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইতিহাসের ধরন')}>
       {(['beneficiary','payer'] as const).map(mode=><button key={mode} type="button" aria-pressed={view===mode} onClick={()=>setView(mode)}
         className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 font-semibold text-taxpay-dark">
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
