@@ -85,7 +85,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await switchToBangla();
   await expect(page.getByRole('heading', { name: 'আমার কর পেমেন্ট' })).toBeVisible();
-  await expect(page.getByText('করদাতা ওয়ার্কস্পেস · নমুনা প্রোফাইল')).toBeVisible();
+  await expect(page.getByText('করদাতা ওয়ার্কস্পেস')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'করের অবস্থান' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-bn');
@@ -128,7 +128,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByText(/পেমেন্ট সিমুলেশন চালান/)).toBeVisible();
-  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান তৈরি হয় না/)).toBeVisible();
+  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
@@ -177,7 +177,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্টের তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByText(/শুধু প্রিভিউ। অর্থ স্থানান্তর বা সরকারি চালান তৈরি হয় না/)).toBeVisible();
+  await expect(page.getByText(/ডেমো লেনদেন — অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
   await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
