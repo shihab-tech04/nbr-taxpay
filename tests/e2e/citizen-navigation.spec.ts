@@ -1,19 +1,14 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('guest payment selection preserves purpose without entering taxpayer wizard', async ({page}) => {
-  await page.goto('/?action=landing');
-  const pay = page.getByRole('button',{name:'Pay — select payment type'});
-  await expect(pay).toBeVisible();
-  await pay.click();
-  const picker = page.getByRole('dialog',{name:'Select payment type'});
-  await expect(picker).toBeVisible();
-  await expect(picker.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
-  await picker.getByRole('button',{name:'Advance Tax'}).click();
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
-  await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
-  await expect(page.locator('.citizen-pay')).toHaveCount(0);
-  await expect(page.getByText('Demo payment flow')).toBeVisible();
+test('public home does not open guest payment wizard via a primary action',async({page})=>{
+ await page.goto('/?action=landing');
+ await expect(page.getByRole('link',{name:'Login'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
+ await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+ await page.goto('/?action=guest');
+ await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
@@ -25,45 +20,37 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
 });
 
-test('guest menu preserves clear demo profile separation and keyboard escape', async ({page}) => {
-  await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Open menu'}).click();
-  const menu = page.getByRole('dialog',{name:'Services & menu'});
-  await expect(menu.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toBeVisible();
-  await expect(menu.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toHaveValue('GUEST');
-  await page.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
-  await page.getByRole('button',{name:'বাংলা'}).click();
-  await expect(page.getByRole('button',{name:'মেনু খুলুন'})).toBeVisible();
+test('public menu contains informational navigation with no sample profile selector',async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ await page.goto('/?action=landing');
+ await page.getByRole('button',{name:'Menu'}).click();
+ const nav=page.getByRole('navigation',{name:'Primary navigation'});
+ await expect(nav.getByRole('link',{name:'FAQs'})).toBeVisible();
+ await expect(page.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toHaveCount(0);
+ await page.keyboard.press('Escape');
+ await expect(nav).toBeHidden();
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await expect(page.getByRole('button',{name:'মেনু'})).toBeVisible();
 });
 
-test('scroll direction adapts four corners across approved mobile widths', async ({page}, info) => {
-  test.skip(info.project.name !== 'mobile-320', 'All width matrix runs once to avoid duplicates');
-  for(const width of [320,360,375,390,768,1280]) {
-    await page.setViewportSize({width,height:812});
-    await page.goto('/?action=landing');
-    const header = page.locator('.citizen-header');
-    await expect(header).toBeVisible();
-    await page.screenshot({path:'test-results/screenshots/guest-expanded-'+width+'.png',fullPage:false});
-    const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    expect(pageWidth).toBeLessThanOrEqual(width+2);
-    if(width<=900) {
-      await page.evaluate(() => window.scrollTo(0,350));
-      await expect(header).toHaveClass(/citizen-header--hidden/);
-      await expect(header).toHaveCSS('visibility','hidden');
-      const corners=page.locator('.citizen-corner');
-      await expect(corners).toHaveCount(3);
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Open menu'})).toBeVisible();
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Payment Status'})).toBeVisible();
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home',exact:true})).toBeVisible();
-      await expect(page.locator('.citizen-pay')).toBeVisible();
-      await page.screenshot({path:'test-results/screenshots/guest-compact-'+width+'.png',fullPage:false});
-      await page.evaluate(() => window.scrollBy(0,-60));
-      await expect(header).not.toHaveClass(/citizen-header--hidden/);
-    } else {
-      await expect(header.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
-    }
+test('public information header and sections fit all six approved widths',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-320','One runner covers six widths');
+ for(const width of [320,360,375,390,768,1280]){
+  await page.setViewportSize({width,height:812});
+  await page.goto('/?action=landing');
+  await expect(page.locator('.public-home-header')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+  if(width<=900){
+    await page.getByRole('button',{name:'Menu'}).click();
+    await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeVisible();
+    await page.keyboard.press('Escape');
+  }else{
+    await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeVisible();
   }
+ }
 });
 
 test('payment flow suppresses global pay and keeps account demo in both languages',async({page})=>{
@@ -77,19 +64,17 @@ test('payment flow suppresses global pay and keeps account demo in both language
 test('citizen navigation has no automated serious accessibility violations',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile navigation audit evaluated in 320/375 variants');
   await page.goto('/?action=landing');
-  const results=await new AxeBuilder({page}).include('.citizen-header').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
+  const results=await new AxeBuilder({page}).include('.public-home-header').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
   expect(results.violations).toEqual([]);
 });
 
 
-test('browser back restores route and expanded navigation after payment entry',async({page})=>{
-  await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await page.getByRole('dialog',{name:'Select payment type'}).getByRole('button',{name:'Advance Tax',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
-  await page.goBack();
-  await expect(page.getByText('Public TaxPay guide')).toBeVisible();
-  await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
+test('public guidance links stay on-page without authorizing account access',async({page})=>{
+ await page.goto('/?action=landing');
+ await page.getByRole('link',{name:'Payment types'}).first().click();
+ await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
+ await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
 test('leaving an active payment through the logo confirms before discarding entered details', async ({page}) => {
@@ -109,7 +94,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   const clickHomeAgain = page.getByRole('button', { name: 'TaxPay home' }).click();
   await (await confirmExit).accept();
   await clickHomeAgain;
-  await expect(page.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
 });
 
 
