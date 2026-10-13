@@ -12,6 +12,13 @@ Hierarchy for product decisions: controlling tax law and government integration 
 - Navigation and existing prototype routes stay intact unless a tested story directly modifies them. Simulated role switcher is **not authorization**.
 - English/Bangla record labels preserve source text verbatim (including source typos/omissions) and keep legal currency separate from translation.
 
+## Shared modal pattern (implemented)
+- Use `src/components/ui/TaxPayModal.tsx` for new citizen-facing modal dialogs; do not rebuild one-off headers, body scroll containers or footers.
+- One left-aligned h2 title and one right-aligned 44px close icon; separate header and body with a border divider.
+- Use a single contained, independently scrollable body. Footer is a separate persistent area with a top divider; provide feature actions through the footer slot, otherwise a localizable Close action is provided.
+- The shared shell handles overlay dismissal, Escape, keyboard focus containment, initial close focus, focus restoration, scroll lock, mobile full-height layout and print exclusion of controls.
+- Preserve feature-specific inputs, error states, consent rules and visual/functional protection. Apply gradually to relevant guest/taxpayer dialogs; do not redesign certified officer screens.
+
 ## Mobile first implementation gates
 1. Baseline viewport 320px, then 375px, tablet ~768px, desktop ~1280px. Never design desktop first and rely on shrinking.
 2. Content reflows without clipping or page-wide horizontal scrolling; complex financial tables adapt to cards/overflow only within their own scroll region.
