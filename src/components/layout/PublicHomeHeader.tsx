@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Globe2, Landmark, Menu, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 
@@ -9,6 +9,7 @@ export function PublicHomeHeader() {
   const [menuOpen,setMenuOpen] = useState(false);
   const [logoFailed,setLogoFailed] = useState(false);
   const bn = language === 'bn';
+  useEffect(() => { if (!menuOpen) return; const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, [menuOpen]);
   const labels=[
     {target:'#public-home-title',en:'Home',bn:'মূল পাতা'},
     {target:'#public-payment-types',en:'Payment types',bn:'পেমেন্টের ধরন'},
@@ -27,7 +28,7 @@ export function PublicHomeHeader() {
         {labels.map(item=><a href={item.target} key={item.target} onClick={()=>setMenuOpen(false)}>{bn?item.bn:item.en}</a>)}
       </nav>
       <div className="public-home-header__tools">
-        <button type="button" className="public-home-language" onClick={()=>setLanguage(bn?'en':'bn')} aria-label={bn?'Switch to English':'বাংলায় দেখুন'}><Globe2 size={17} aria-hidden="true"/>{bn?'EN':'বাংলা'}</button>
+        <button type="button" className="public-home-language" onClick={()=>setLanguage(bn?'en':'bn')} aria-label={bn?'EN':'বাংলা'}><Globe2 size={17} aria-hidden="true"/>{bn?'EN':'বাংলা'}</button>
         <button type="button" className="public-home-menu" aria-controls="public-home-nav" aria-expanded={menuOpen} onClick={()=>setMenuOpen(value=>!value)} aria-label={bn?'মেনু':'Menu'}>{menuOpen?<X size={21}/>:<Menu size={21}/>}</button>
       </div>
     </div>
