@@ -1115,3 +1115,149 @@
     gap:.65rem;
   }
 }
+
+
+/* Shared TaxPay modal v1: reusable header / scrollable content / footer. */
+.taxpay-citizen-shell .taxpay-modal__overlay {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:clamp(.6rem, 2.5vw, 1.5rem);
+}
+.taxpay-citizen-shell .taxpay-modal {
+  width:min(100%, 760px);
+  height:auto;
+  max-height:calc(100dvh - 2rem);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid var(--citizen-border);
+  border-radius:1rem;
+  background:var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] {
+  width:min(100%, 1000px);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__header {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:1rem 1.35rem;
+  min-height:72px;
+  margin:0;
+  border:0;
+  border-bottom:1px solid var(--citizen-border);
+  background:var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__title {
+  flex:1 1 auto;
+  min-width:0;
+  margin:0;
+  color:var(--citizen-text);
+  font-family:'Manrope',system-ui,sans-serif;
+  font-size:clamp(1.05rem,1.8vw,1.25rem);
+  font-weight:800;
+  line-height:1.4;
+  letter-spacing:-.015em;
+  overflow-wrap:anywhere;
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__close {
+  flex:0 0 44px;
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  padding:0;
+  border:1px solid var(--citizen-border);
+  border-radius:.6rem;
+  color:var(--citizen-text);
+  background:var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__close:hover {
+  background:var(--citizen-primary-light);
+  color:var(--citizen-primary-dark);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__body {
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  padding:1.25rem 1.35rem;
+  background:var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__body > .public-service-dialog__notice {
+  margin:0 0 1.15rem;
+  padding:.7rem .85rem;
+  background:var(--citizen-primary-light);
+  border:1px solid var(--citizen-border);
+  border-radius:.65rem;
+  font-size:.78rem;
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:.6rem;
+  min-height:72px;
+  padding:.8rem 1.35rem;
+  border-top:1px solid var(--citizen-border);
+  background:var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer-close {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:96px;
+  min-height:44px;
+  padding:.6rem 1rem;
+  border:1px solid var(--citizen-border);
+  border-radius:.6rem;
+  background:var(--citizen-surface);
+  color:var(--citizen-primary-dark);
+  font-size:.85rem;
+  font-weight:750;
+  line-height:1.35;
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer-close:hover {
+  background:var(--citizen-primary-light);
+}
+.taxpay-citizen-shell .taxpay-modal :focus-visible {
+  outline:3px solid var(--citizen-primary);
+  outline-offset:2px;
+}
+@media(max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal__overlay {
+    padding:0;
+    align-items:stretch;
+  }
+  .taxpay-citizen-shell .taxpay-modal,
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] {
+    width:100%;
+    max-width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border:0;
+    border-radius:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__header {
+    padding:.8rem 1rem;
+    min-height:68px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__body {
+    padding:1rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer {
+    padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+    min-height:68px;
+  }
+}
+@media print {
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer {display:none!important;}
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__body {
+    overflow:visible;max-height:none;padding:0;
+  }
+}
