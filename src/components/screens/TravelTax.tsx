@@ -56,6 +56,8 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const bn = language === 'bn';
   const t = COPY[language];
 
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [furthestStep, setFurthestStep] = useState<0 | 1 | 2>(0);
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
   const [passengerCount, setPassengerCount] = useState(1);
   const [passengerName, setPassengerName] = useState('');
@@ -133,210 +135,185 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
     }, 1000);
   };
 
-  if (createdReceipt) {
-    return (
-      <div className={`space-y-6${bn ? ' font-bengali' : ''}`} lang={language}>
-        <div className="p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
-            <div>
-              <p className="font-bold">{t.complete}</p>
-              <p className="text-xs text-emerald-800">
-                {t.ref}: <strong className="font-mono">{createdReceipt.tokenNumber}</strong>. {t.noTravel}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setCreatedReceipt(null)}
-            className="min-h-11 px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
-          >
-            {t.again}
-          </button>
-        </div>
-        <ReceiptView receipt={createdReceipt} onBack={() => navigate('landing')} />
-      </div>
-    );
-  }
 
+  const workflow = bn
+    ? { steps: ['যাত্রাপথ', 'যাত্রীর তথ্য', 'পর্যালোচনা'], select: 'গন্তব্য ও যাতায়াতের ধরন নির্বাচন',
+        passenger: 'যাত্রীর তথ্য', review: 'তথ্য পর্যালোচনা', summary: 'পেমেন্ট সারাংশ',
+        rate: 'নমুনা হার', people: 'যাত্রী', route: 'যাত্রাপথ', status: 'অবস্থা',
+        continue: 'যাত্রীর তথ্য দিন', reviewNext: 'পর্যালোচনায় যান', back: 'পূর্ববর্তী',
+        estimate: 'উদাহরণমূলক মোট অর্থ', sample: 'শুধু প্রিভিউ',
+        caution: 'হার ও অব্যাহতি যাচাইকৃত নয়। এটি নমুনা হিসাব, সরকারি পেমেন্ট নয়।',
+        ready: 'প্রিভিউ প্রস্তুত', newPreview: 'নতুন প্রিভিউ', noPayment: 'কোনো পেমেন্ট হয়নি',
+        missing: 'যাত্রীর নমুনা নাম ও পাসপোর্ট রেফারেন্স দিন।',
+        hint: 'প্রকৃত পাসপোর্ট তথ্য দেবেন না। নমুনা তথ্য ব্যবহার করুন।' }
+    : { steps: ['Travel route', 'Passenger details', 'Review'], select: 'Choose destination & travel mode',
+        passenger: 'Passenger information', review: 'Review travel details', summary: 'Payment summary',
+        rate: 'Sample rate', people: 'Passengers', route: 'Travel route', status: 'Status',
+        continue: 'Continue to passenger details', reviewNext: 'Continue to review', back: 'Back',
+        estimate: 'Illustrative total', sample: 'Preview only',
+        caution: 'Rates and exemptions are not verified. This is a sample estimate, not a government payment.',
+        ready: 'Preview ready', newPreview: 'Start a new preview', noPayment: 'No payment processed',
+        missing: 'Enter a sample passenger name and passport reference.',
+        hint: 'Use fictional information, not real passport details.' };
+
+  const goStep = (target: 0 | 1 | 2) => {
+    setError('');
+    setStep(target);
+    setFurthestStep(previous => Math.max(previous, target) as 0 | 1 | 2);
+    document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
+  };
+  const continueStep = () => {
+    if (step === 0) { goStep(1); return; }
+    if (!passengerName.trim()) { setError(t.requiredName); return; }
+    if (!passportNumber.trim()) { setError(t.requiredPassport); return; }
+    if (passengerCount < 1 || passengerCount > 10 || !travelDate) {
+      setError(workflow.missing); return;
+    }
+    goStep(2);
+  };
+  const reset = () => {
+    setCreatedReceipt(null); setStep(0); setFurthestStep(0);
+    setPassengerName(''); setPassportNumber(''); setPhone('');
+    setPassengerCount(1); setSelectedRouteIdx(0); setError('');
+    document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
+  };
   return (
-    <div className={`max-w-4xl mx-auto space-y-6 pb-4${bn ? ' font-bengali' : ''}`} lang={language}>
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-4 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center">
-            <Plane className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              {t.title}
-            </h1>
-            <p className="text-xs text-slate-500">
-              {t.intro}
-            </p>
-          </div>
-        </div>
-
-        {/* Notice of Unverified Status */}
-        <div className="mb-5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-          <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-          <div>
-            <strong className="block">{t.legalTitle}:</strong> {t.legalBody}
-          </div>
-        </div>
-
-        <form onSubmit={handlePayTravelTax} className="space-y-6">
-          {error && (
-            <div id="travel-tax-error" role="alert" aria-live="assertive" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Route & Destination Selector */}
-          <div>
-            <fieldset>
-              <legend className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">{t.destination}</legend>
-            <div className="space-y-2" role="radiogroup" aria-label={t.destination}>
+    <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
+      <div className="travel-flow__main">
+        {!embedded && <h1 className="travel-flow__standalone-title">{t.title}</h1>}
+        <nav className="travel-flow__steps" aria-label={bn ? 'ভ্রমণ করের ধাপ' : 'Travel tax steps'}>
+          {workflow.steps.map((name, idx) => (
+            <button key={name} type="button" disabled={!!createdReceipt || idx > furthestStep}
+              aria-current={idx === step ? 'step' : undefined}
+              className={'travel-flow__step' + (idx === step ? ' travel-flow__step--current' : '')}
+              onClick={() => goStep(idx as 0 | 1 | 2)}>
+              <span className="travel-flow__step-count" aria-hidden="true">{idx + 1}</span><span>{name}</span>
+            </button>
+          ))}
+        </nav>
+        <form id="travel-tax-form" onSubmit={handlePayTravelTax} noValidate>
+          {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
+          {step === 0 && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
+            <header className="travel-flow__section-header">
+              <h3 id="travel-route-heading">{workflow.select}</h3>
+              <p>{t.intro}</p>
+            </header>
+            <fieldset className="travel-flow__routes">
+              <legend className="sr-only">{t.destination}</legend>
               {TRAVEL_TAX_RATES.map((item, idx) => (
-                <label
-                  key={idx}
-                  htmlFor={`travel-tax-route-${idx}`}
-                  className={`min-h-12 p-3.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between gap-3 transition-all ${
-                    selectedRouteIdx === idx
-                      ? 'bg-teal-50/80 border-teal-700 shadow-sm'
-                      : 'bg-white hover:bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="space-y-1">
-                    <div className="font-semibold text-slate-900">{bn ? item.routeBn : item.route}</div>
-                    {!bn && <div className="text-[11px] text-slate-500 font-bengali">{item.routeBn}</div>}
-                    <div className="text-[10px] text-slate-500">{bn ? 'আইনি সূত্র যাচাই হয়নি' : 'Legal source not verified'}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono-plex font-bold text-sm text-teal-900">
-                      {formatCurrency(item.amount, language)}
-                    </span>
-                    <span className="text-[10px] text-slate-500 block">{t.perPassenger}</span>
-                  </div>
-                  <input id={`travel-tax-route-${idx}`} className="h-5 w-5 shrink-0 accent-teal-800" type="radio" name="travel-tax-route" value={idx} checked={selectedRouteIdx === idx} onChange={() => setSelectedRouteIdx(idx)} />
+                <label key={idx} htmlFor={'travel-tax-route-' + idx}
+                  className={'travel-flow__route' + (idx === selectedRouteIdx ? ' travel-flow__route--selected' : '')}>
+                  <span className="travel-flow__route-copy">
+                    <strong>{bn ? item.routeBn : item.route}</strong>
+                    {!bn && <span lang="bn">{item.routeBn}</span>}
+                  </span>
+                  <span className="travel-flow__route-price">
+                    <strong>{formatCurrency(item.amount, language)}</strong>
+                    <small>{t.perPassenger}</small>
+                  </span>
+                  <input id={'travel-tax-route-' + idx} type="radio" name="travel-tax-route"
+                    checked={idx === selectedRouteIdx} onChange={() => setSelectedRouteIdx(idx)} />
                 </label>
               ))}
-            </div>
             </fieldset>
-          </div>
+          </section>}
 
-          {/* Passenger Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label htmlFor="travel-passenger-name" className="block font-semibold text-slate-700 mb-1">{t.passenger} *</label>
-              <input
-                id="travel-passenger-name"
-                type="text"
-                required
-                aria-describedby={error ? 'travel-tax-error' : undefined}
-                placeholder={t.passengerPlaceholder}
-                value={passengerName}
-                onChange={(e) => setPassengerName(e.target.value.toUpperCase())}
-                className="min-h-11 w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
-              />
+          {step === 1 && <section className="travel-flow__panel" aria-labelledby="travel-passenger-heading">
+            <header className="travel-flow__section-header">
+              <h3 id="travel-passenger-heading">{workflow.passenger}</h3>
+              <p>{workflow.hint}</p>
+            </header>
+            <div className="travel-flow__fields">
+              <div className="travel-flow__field">
+                <label htmlFor="travel-passenger-name">{t.passenger} *</label>
+                <input id="travel-passenger-name" type="text" autoComplete="off" value={passengerName}
+                  placeholder={t.passengerPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
+                  onChange={e => setPassengerName(e.target.value.toUpperCase())} />
+              </div>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-passport">{t.passport} *</label>
+                <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
+                  placeholder={t.passportPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
+                  onChange={e => setPassportNumber(e.target.value.toUpperCase().replace(/\s+/g, ''))} />
+              </div>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-passenger-count">{t.count}</label>
+                <input id="travel-passenger-count" type="number" min="1" max="10" value={passengerCount}
+                  onChange={e => setPassengerCount(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))} />
+                <p className="travel-flow__field-hint">{t.countHint}</p>
+              </div>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-mobile">{t.mobile}</label>
+                <input id="travel-mobile" type="text" autoComplete="off" value={phone}
+                  placeholder={t.phonePlaceholder} onChange={e => setPhone(e.target.value)} />
+              </div>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-departure-port">{t.port}</label>
+                <select id="travel-departure-port" value={departurePort}
+                  onChange={e => setDeparturePort(e.target.value)}>
+                  {DEPARTURE_PORTS.map(port => <option key={port.value} value={port.value}>{bn ? port.bn : port.en}</option>)}
+                </select>
+              </div>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-departure-date">{t.date}</label>
+                <input id="travel-departure-date" type="date" value={travelDate}
+                  onChange={e => setTravelDate(e.target.value)} />
+              </div>
             </div>
+          </section>}
 
-            <div>
-              <label htmlFor="travel-passport" className="block font-semibold text-slate-700 mb-1">{t.passport} *</label>
-              <input
-                id="travel-passport"
-                type="text"
-                required
-                aria-describedby={error ? 'travel-tax-error' : undefined}
-                placeholder={t.passportPlaceholder}
-                value={passportNumber}
-                onChange={(e) => setPassportNumber(e.target.value.toUpperCase().replace(/\s+/g, ''))}
-                className="min-h-11 w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex font-bold"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="travel-passenger-count" className="block font-semibold text-slate-700 mb-1">{t.count}</label>
-              <input
-                id="travel-passenger-count"
-                type="number"
-                min="1"
-                max="10"
-                value={passengerCount}
-                onChange={(e) => setPassengerCount(Math.max(1, parseInt(e.target.value) || 1))}
-                className="min-h-11 w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex"
-              />
-              <span className="text-[10px] text-slate-500 mt-1 block">
-                {t.countHint}
-              </span>
-            </div>
-
-            <div>
-              <label htmlFor="travel-mobile" className="block font-semibold text-slate-700 mb-1">{t.mobile}</label>
-              <input
-                id="travel-mobile"
-                type="text"
-                placeholder={t.phonePlaceholder}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="min-h-11 w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="travel-departure-port" className="block font-semibold text-slate-700 mb-1">{t.port}</label>
-              <select
-                id="travel-departure-port"
-                value={departurePort}
-                onChange={(e) => setDeparturePort(e.target.value)}
-                className="min-h-11 w-full px-3 py-2 rounded-lg border border-slate-300"
-              >
-                {DEPARTURE_PORTS.map(port => <option key={port.value} value={port.value}>{bn ? port.bn : port.en}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="travel-departure-date" className="block font-semibold text-slate-700 mb-1">{t.date}</label>
-              <input
-                id="travel-departure-date"
-                type="date"
-                value={travelDate}
-                onChange={(e) => setTravelDate(e.target.value)}
-                className="min-h-11 w-full px-3 py-2 rounded-lg border border-slate-300"
-              />
-            </div>
-          </div>
-
-          {/* Checkout Breakdown */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <span className="text-xs text-slate-500 block">{t.total}:</span>
-              <span className="font-mono-plex font-bold text-2xl text-teal-900">
-                {formatCurrency(totalAmount, language)}
-              </span>
-              <span className="text-[11px] text-slate-500 block mt-0.5">
-                ({passengerCount} × {formatCurrency(unitRate, language)} / {t.perPassenger})
-              </span>
-              <p className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950" role="note">{t.notice}</p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isProcessing}
-              aria-busy={isProcessing}
-              className="min-h-11 w-full sm:w-auto justify-center px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
-            >
-              {isProcessing ? (
-                <span>{t.running}</span>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 text-taxpay-dark" />
-                  <span>{t.run}</span>
-                </>
-              )}
-            </button>
-          </div>
+          {step === 2 && <section className="travel-flow__panel" aria-labelledby="travel-review-heading">
+            <header className="travel-flow__section-header">
+              <h3 id="travel-review-heading">{createdReceipt ? t.complete : workflow.review}</h3>
+              <p>{createdReceipt ? t.noTravel : t.notice}</p>
+            </header>
+            {createdReceipt ? <div className="travel-flow__receipt">
+              <p className="travel-flow__receipt-label" role="status">
+                <CheckCircle size={18} aria-hidden="true" />{workflow.ready} · {t.ref}: {createdReceipt.tokenNumber}
+              </p>
+              <ReceiptView receipt={createdReceipt} embedded={embedded}
+                onBack={() => navigate('landing')} />
+            </div> : <dl className="travel-flow__review">
+              <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
+              <div><dt>{t.passenger}</dt><dd>{passengerName}</dd></div>
+              <div><dt>{t.passport}</dt><dd>{passportNumber}</dd></div>
+              <div><dt>{t.count}</dt><dd>{passengerCount}</dd></div>
+              <div><dt>{t.port}</dt><dd>{DEPARTURE_PORTS.find(p => p.value === departurePort)?.[language]}</dd></div>
+              <div><dt>{t.date}</dt><dd>{travelDate}</dd></div>
+            </dl>}
+          </section>}
+          {!createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
+            onClick={() => goStep((step - 1) as 0 | 1 | 2)}>
+            <ArrowRight className="travel-flow__back-icon" size={16} aria-hidden="true" />{workflow.back}
+          </button>}
         </form>
       </div>
+      <aside className="travel-flow__summary" aria-label={workflow.summary}>
+        <div className="travel-flow__summary-title">
+          <CreditCard size={18} aria-hidden="true" />
+          <h3>{workflow.summary}</h3>
+        </div>
+        <p className="travel-flow__summary-label">{workflow.estimate}</p>
+        <strong className="travel-flow__total">{formatCurrency(totalAmount, language)}</strong>
+        <dl className="travel-flow__summary-list">
+          <div><dt>{workflow.rate}</dt><dd>{formatCurrency(unitRate, language)}</dd></div>
+          <div><dt>{workflow.people}</dt><dd>{passengerCount}</dd></div>
+          <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
+          {createdReceipt && <div><dt>{t.ref}</dt><dd>{createdReceipt.tokenNumber}</dd></div>}
+          <div><dt>{workflow.status}</dt><dd>{createdReceipt ? workflow.noPayment : workflow.sample}</dd></div>
+        </dl>
+        <p className="travel-flow__caution" role="note"><Info size={16} aria-hidden="true" />{workflow.caution}</p>
+        {createdReceipt ? <button type="button" className="travel-flow__primary" onClick={reset}>
+          {workflow.newPreview}
+        </button> : step === 2 ? <button key="generate" type="button" className="travel-flow__primary"
+          onClick={() => document.getElementById('travel-tax-form') instanceof HTMLFormElement &&
+            (document.getElementById('travel-tax-form') as HTMLFormElement).requestSubmit()}
+          disabled={isProcessing} aria-busy={isProcessing}>
+          <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : t.run}
+        </button> : <button key="advance" type="button" className="travel-flow__primary" onClick={continueStep}>
+          {step === 0 ? workflow.continue : workflow.reviewNext}<ArrowRight size={17} aria-hidden="true" />
+        </button>}
+      </aside>
     </div>
   );
 };

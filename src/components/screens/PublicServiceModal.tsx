@@ -22,14 +22,7 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
       onClose={onClose}
     >
       {service === 'travel' ? (
-        <>
-          <div className="public-service-dialog__notice" role="note">
-            {bn
-              ? 'শুধু নমুনা কার্যপ্রবাহ। সরকারি পেমেন্ট বা যাচাইকৃত রসিদ ইস্যু হয় না।'
-              : 'Demonstration workflow only. No government payment or verified receipt is issued.'}
-          </div>
-          <TravelTax embedded />
-        </>
+        <TravelTax embedded />
       ) : (
         <ReceiptLookup embedded />
       )}
