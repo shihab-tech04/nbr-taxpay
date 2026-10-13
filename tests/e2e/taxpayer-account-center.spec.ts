@@ -46,7 +46,7 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
   await rail.getByRole('button',{name:'Exit sample'}).click();
-  await expect(page.getByRole('heading',{name:'Understand your next tax-payment step'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
 });
 
 test('account UI retains no horizontal overflow at six mobile and desktop widths',async({page},info)=>{
