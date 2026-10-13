@@ -13,6 +13,7 @@ import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
+import { PublicReport } from './components/screens/PublicReport';
 import { GuestPayment } from './components/screens/GuestPayment';
 import { TravelTax } from './components/screens/TravelTax';
 import { ReceiptLookup } from './components/screens/ReceiptLookup';
@@ -86,7 +87,7 @@ const MainRouter: React.FC = () => {
       case 'verify':
         return <ReceiptLookup />;
       case 'incident':
-        return <IncidentReporting />;
+        return <PublicReport />;
       case 'architecture':
         return <ArchitectureView />;
 
