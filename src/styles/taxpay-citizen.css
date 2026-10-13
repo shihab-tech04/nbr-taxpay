@@ -494,7 +494,7 @@
   border-bottom:1px solid var(--citizen-border);
   box-shadow:0 4px 16px color-mix(in srgb,var(--citizen-primary-dark) 7%,transparent);
 }
-.public-home-header__inner {max-width:1504px;min-height:78px;padding:.65rem clamp(1rem,3vw,2rem);gap:clamp(.8rem,2vw,1.75rem);}
+.public-home-header__inner {max-width:1360px;min-height:78px;padding:.65rem clamp(1rem,3vw,2rem);gap:clamp(.8rem,2vw,1.75rem);}
 .public-home-skip-link {
   position:absolute;top:.3rem;left:1rem;z-index:60;display:inline-flex;align-items:center;gap:.4rem;
   min-height:44px;padding:.55rem .8rem;border-radius:.55rem;background:var(--citizen-primary-dark);color:white;
@@ -512,7 +512,7 @@
 .public-home-nav a:hover {background:var(--citizen-primary-light);color:var(--citizen-primary-dark);text-decoration:none;}
 .public-home-language,.public-home-menu {background:white;color:var(--citizen-primary-dark);border-color:var(--citizen-border);}
 .public-home-language:hover,.public-home-menu:hover {background:var(--citizen-primary-light);border-color:var(--citizen-primary);}
-.public-information-hub {max-width:1440px;scroll-margin-top:96px;}
+.public-information-hub {max-width:1296px;scroll-margin-top:96px;}
 .public-information-hub [id] {scroll-margin-top:104px;}
 .public-information-hero {
   grid-template-columns:minmax(0,1.25fr) minmax(265px,.78fr);
@@ -945,7 +945,7 @@
 .public-guide-source{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;background:var(--citizen-bg);padding:1rem;border-radius:.7rem;margin-top:1rem;font-size:.78rem;color:var(--citizen-muted);}
 .public-guide-source a{display:inline-flex;align-items:center;gap:.35rem;color:var(--citizen-primary-dark);font-weight:750;text-decoration:underline;}
 .public-footer{border-top:1px solid var(--citizen-border);background:var(--citizen-surface);padding-bottom:0!important;}
-.public-footer__inner{max-width:1504px;margin:0 auto;padding:2rem clamp(1rem,3vw,2rem) 1rem;display:grid;grid-template-columns:minmax(240px,1fr) minmax(280px,1.25fr);gap:1.5rem 2rem;}
+.public-footer__inner{max-width:1360px;margin:0 auto;padding:2rem clamp(1rem,3vw,2rem) 1rem;display:grid;grid-template-columns:minmax(240px,1fr) minmax(280px,1.25fr);gap:1.5rem 2rem;}
 .public-footer__identity{display:flex;align-items:start;gap:.75rem;}
 .public-footer__identity img{width:46px;height:46px;object-fit:contain;flex:none;}
 .public-footer__identity strong{font-size:1.05rem;font-weight:800;color:var(--citizen-primary-dark);}
@@ -1079,4 +1079,39 @@
   .taxpay-taxpayer-reference .citizen-mobile-menu-trigger,
   .taxpay-taxpayer-reference .citizen-header__notification { color:var(--citizen-primary); }
   .citizen-dialog__account .citizen-dialog-signout:disabled { opacity:.55; cursor:wait; }
+}
+
+/* Locked TaxPay design: narrower public shell and centered, icon-led navigation. */
+@media(min-width:901px){
+  .public-home-header__inner{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    align-items:center;
+    column-gap:clamp(.7rem,1.5vw,1.5rem);
+    max-width:1360px;
+    width:100%;
+  }
+  .public-home-brand{justify-self:start;}
+  .public-home-nav{
+    justify-self:center;
+    margin-left:0;
+    justify-content:center;
+    gap:clamp(.25rem,.7vw,.85rem);
+  }
+  .public-home-header__tools{justify-self:end;margin-left:0;}
+}
+.public-home-nav a:not(.public-home-login-link){
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.38rem;
+}
+.public-home-nav a svg{flex-shrink:0;}
+@media(max-width:900px){
+  .public-home-header__inner{display:flex;}
+  .public-home-nav{align-items:stretch;}
+  .public-home-nav a:not(.public-home-login-link){
+    justify-content:flex-start;
+    gap:.65rem;
+  }
 }

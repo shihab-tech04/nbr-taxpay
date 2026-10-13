@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Globe2, Menu, X } from 'lucide-react';
+import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import governmentSeal from '../../assets/bangladesh-government-seal.svg';
 
 const LOGIN_URL = 'https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions';
 const LINKS = [
-  {route:'landing',en:'Home',bn:'মূল পাতা'},
-  {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর'},
-  {route:'incident',en:'Report',bn:'অভিযোগ'}
+  {route:'landing',en:'Home',bn:'মূল পাতা',Icon:House},
+  {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর',Icon:CircleHelp},
+  {route:'incident',en:'Report',bn:'অভিযোগ',Icon:ShieldAlert}
 ] as const;
 
 export function PublicHomeHeader() {
@@ -25,7 +25,7 @@ export function PublicHomeHeader() {
     <a key={item.route} href={item.route==='landing' ? import.meta.env.BASE_URL : '?action='+item.route}
       aria-current={currentRoute===item.route?'page':undefined}
       onClick={event=>{event.preventDefault();navigate(item.route);setMenuOpen(false);}}>
-      {bn?item.bn:item.en}
+      <item.Icon size={16} aria-hidden="true"/>{bn?item.bn:item.en}
     </a>;
   const login=(mobile:boolean)=>
     <a href={LOGIN_URL} className={mobile?'public-home-login-link public-home-login-link--mobile':'public-home-login-link public-home-login-link--desktop'}
