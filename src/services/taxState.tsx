@@ -62,7 +62,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   const [routeParams, setRouteParams] = useState<Record<string, any>>({});
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
-  const [demoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
+  const [demoUser, setDemoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
@@ -95,6 +95,14 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
+    // Legacy sample deep-link state must not survive entry to real account access.
+    if (route === 'secure_workspace' || route === 'landing') {
+      next.searchParams.delete('demoUser');
+      if (demoUser) {
+        setDemoUser(null);
+        setUserRole('GUEST');
+      }
+    }
     if (next.href !== window.location.href) {
       window.history.pushState({ taxpayRoute: route, taxpayParams: params }, '', next);
     }
