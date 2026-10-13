@@ -55,7 +55,11 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
   return {page,context};
  };
  const one=await visit(payer,'history',{width:375,height:812});
- await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
+ await expect(one.page.getByRole('heading',{name:'Make Payment'})).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Continue',exact:true}).click();
+ await expect(one.page.getByRole('heading',{name:'Category information'})).toBeVisible();
+ await one.page.getByRole('button',{name:'Make payment',exact:true}).click();
+ await expect(one.page.getByRole('heading',{name:'Make payment',exact:true})).toBeVisible();
  await expect(one.page.getByText('user6 · Connected simulation workspace')).toBeVisible();
  await one.page.getByLabel('Amount (BDT)').first().fill('150.25');
  await one.page.getByRole('button',{name:'Add beneficiary / category'}).click();
@@ -63,8 +67,11 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  await one.page.getByLabel('Payment category').nth(1).selectOption('PENALTY');
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2025-26');
  await one.page.getByLabel('Amount (BDT)').nth(1).fill('23.50');
- await one.page.getByRole('button',{name:'Simulate and save payment'}).click();
- await expect(one.page.getByRole('status').filter({hasText:'Saved and verified in shared SQL'})).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Review payment',exact:true}).click();
+ await expect(one.page.getByRole('heading',{name:'Payment simulation'})).toBeVisible();
+ await one.page.getByRole('button',{name:'Run payment simulation',exact:true}).click();
+ await expect(one.page.getByText('Simulation saved successfully')).toBeVisible({timeout:15000});
+ await expect(one.page.getByText(/No funds moved or official tax credit was created/)).toBeVisible();
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
@@ -75,7 +82,7 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  expect(admin.status).toBe(200);
  expect((admin.data as Array<{transactionId:string}>).some(t=>t.transactionId===tx!.transactionId)).toBe(true);
  const two=await visit(beneficiary,'history',{width:320,height:730});
- await expect(two.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
+ await expect(two.page.getByRole('heading',{name:'Make Payment'})).toBeVisible({timeout:15000});
  await expect(two.page.getByText(tx!.id).first()).toBeVisible({timeout:15000});
  await expect(two.page.getByText('৳23.50').first()).toBeVisible();
  await two.page.goto('/?action=notifications');
