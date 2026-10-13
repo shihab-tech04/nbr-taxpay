@@ -1,4 +1,17 @@
 import {expect,test} from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+// Preserve bilingual assertions while using the navigation control visible at each width.
+async function switchTaxpayerToBangla(page: Page) {
+  const mobileMenu = page.locator('.citizen-mobile-menu-trigger');
+  if (await mobileMenu.isVisible()) {
+    await mobileMenu.click();
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
+    await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
+  } else {
+    await page.locator('.citizen-header').getByRole('button',{name:'বাংলা'}).click();
+  }
+}
 
 test('root is a public information hub with a header Login and no payment action',async({page})=>{
  await page.goto('/');
@@ -25,7 +38,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.setViewportSize({width:320,height:740});
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'বাংলা'}).click();
+  await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'আমার কর পেমেন্ট'})).toBeVisible();
   await expect(page.getByText('স্বীকৃত কর ক্রেডিট',{exact:true})).toBeVisible();
   await expect(page.getByText('যাচাই হয়নি',{exact:true})).toBeVisible();
@@ -72,7 +85,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
   await expect(page.getByText('BDT 47,400')).toHaveCount(0);
   await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
-  await page.getByRole('button',{name:'বাংলা'}).click();
+  await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
 });
 
@@ -94,7 +107,7 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(page.getByText('Deductee ownership')).toBeVisible();
   await expect(page.getByText('Not verified',{exact:true}).first()).toBeVisible();
 
-  await page.getByRole('button',{name:'বাংলা'}).click();
+  await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'সনদের নমুনা'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'উৎসে কর জমার সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByText('এই প্রদর্শনী থেকে কোনো সরকারি সনদ ইস্যু করা হয় না।')).toBeVisible();
