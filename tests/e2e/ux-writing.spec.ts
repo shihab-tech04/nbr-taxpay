@@ -5,11 +5,14 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
   await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
-  await expect(page.getByText('Demo only',{exact:true})).toBeVisible();
+  await expect(page.getByText('Demo',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
   await expect(page.getByText('Unavailable',{exact:true})).toBeVisible();
   await expect(page.getByText('Unverified',{exact:true})).toBeVisible();
   await expect(page.getByText('This demonstration has no verified account-specific ledger owner')).toHaveCount(0);
+  await expect(page.getByText('Sample profile · not a verified taxpayer')).toHaveCount(0);
+  await expect(page.getByText('Preview only · No payments or government receipts issued.')).toHaveCount(0);
+  await expect(page.getByText('Taxpayer workspace · sample profile')).toHaveCount(0);
   await expect(page.getByText('Why are balances unavailable?')).toHaveCount(0);
   await page.getByText('More taxpayer services').click();
   await page.getByRole('button',{name:'Dashboard',exact:true}).click();
