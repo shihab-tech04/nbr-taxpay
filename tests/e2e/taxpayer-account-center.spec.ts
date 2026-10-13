@@ -16,7 +16,7 @@ test('taxpayer account pages never present a synthetic identity as signed in',as
   await page.getByRole('button',{name:'Open menu'}).click();
   const dialog=page.getByRole('dialog',{name:'Services & menu'});
   await dialog.getByRole('button',{name:'বাংলা'}).click();
-  await dialog.getByRole('button',{name:'বন্ধ করুন'}).click();
+  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page.getByRole('heading',{name:'প্রোফাইল সেটিংস'})).toBeVisible();
   await page.getByRole('navigation',{name:'অ্যাকাউন্ট পৃষ্ঠা'}).getByRole('button',{name:'বিজ্ঞপ্তি'}).click();
   await expect(page.getByText(/Demand Notice|Statutory Alerts|Advance Tax 2nd Quarter/)).toHaveCount(0);
