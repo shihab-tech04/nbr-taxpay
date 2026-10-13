@@ -111,7 +111,7 @@ test('public header exposes information only and no role impersonation control',
  await expect(header.getByText('TaxPay',{exact:true})).toBeVisible();
  await expect(header.getByRole('button',{name:'Menu'})).toBeVisible();
  await header.getByRole('button',{name:'Menu'}).click();
- await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Guides'})).toBeVisible();
+ await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
  await page.keyboard.press('Escape');
