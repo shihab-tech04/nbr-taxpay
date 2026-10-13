@@ -42,7 +42,9 @@ export function CitizenNavigation() {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
       setMenuOpen(false); setPayOpen(false);
-      setUserRole('GUEST'); navigate('landing');
+      setUserRole('GUEST');
+      // A full public reload discards any account-scoped in-memory state and closed-dialog remnants.
+      window.location.assign(import.meta.env.BASE_URL);
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
