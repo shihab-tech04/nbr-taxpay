@@ -37,13 +37,31 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
     expect(results.violations.map(({ id, impact, nodes }) => ({ id, impact, targets: nodes.flatMap(node => node.target) }))).toEqual([]);
   };
   const switchToBangla = async () => {
-    const languageButton = page.getByRole('button', { name: 'বাংলা' });
-    const headerIsCollapsed = await page.locator('.citizen-header--hidden').count() > 0;
-    if (!headerIsCollapsed && await languageButton.isVisible()) await languageButton.click();
-    else {
-      await page.locator('.citizen-corners').getByRole('button', { name: 'Open menu' }).click();
-      await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
+    // Public header keeps its language control. Taxpayer mobile places it
+    // under Navigation, while desktop retains the header utility.
+    // Reset the scroll-aware header before using its current-viewport control.
+    // This also asserts that the expanded header returns on an upward scroll.
+    if (!(await page.locator('.public-home-header').isVisible())) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
     }
+    if (await page.locator('.public-home-header').isVisible()) {
+      await page.locator('.public-home-header').getByRole('button',{name:'বাংলা'}).click();
+      return;
+    }
+    if (await page.locator('.citizen-mobile-menu-trigger').isVisible()) {
+      await page.locator('.citizen-mobile-menu-trigger').click();
+      await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
+      await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
+      return;
+    }
+    if (await page.locator('.citizen-corners').count()) {
+      await page.locator('.citizen-corners').getByRole('button',{name:'Open menu'}).click();
+      await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
+      await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
+      return;
+    }
+    await page.locator('.citizen-header').getByRole('button',{name:'বাংলা'}).click();
   };
 
   await page.goto('/?action=landing');
@@ -77,7 +95,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await expect(page.getByRole('button', { name: 'Certificates' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Corrections' })).toBeVisible();
   await page.getByText('More taxpayer services', { exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Notifications' })).toBeVisible();
+  await expect(page.locator('.citizen-taxpayer-more').getByRole('button', { name: 'Notifications' })).toBeVisible();
   await page.getByText('More taxpayer services', { exact: true }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-en');

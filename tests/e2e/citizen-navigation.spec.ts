@@ -55,12 +55,12 @@ test('public information header and sections fit all requested widths',async({pa
  }
 });
 
-test('payment flow suppresses global pay and keeps account demo in both languages',async({page})=>{
+test('payment flow suppresses global pay and preserves bilingual step guidance',async({page})=>{
   await page.goto('/?action=travel');
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
-  await expect(page.getByText('Demo payment flow')).toBeVisible();
+  await expect(page.getByText('Payment steps', { exact: false })).toBeVisible();
   await page.getByRole('button',{name:'বাংলা'}).click();
-  await expect(page.getByText('নমুনা পেমেন্ট প্রক্রিয়া')).toBeVisible();
+  await expect(page.getByText('পেমেন্টের ধাপ', { exact: false })).toBeVisible();
 });
 
 test('citizen navigation has no automated serious accessibility violations',async({page},info)=>{
@@ -116,7 +116,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
       await page.evaluate(()=>window.scrollTo(0,450));
       await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);
       await expect(page.locator('.citizen-header')).toHaveCSS('visibility','hidden');
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Activity'})).toBeVisible();
+      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Notifications'})).toBeVisible();
       await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
       await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
     } else {
@@ -172,3 +172,43 @@ test('mobile navigation opens FAQs and Report in English and Bengali',async({pag
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();
 });
 
+
+test('taxpayer mobile header, compact corners and two-tier full-width menu are accessible',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-375','One mobile workflow verifies requested navigation behavior');
+ await page.setViewportSize({width:375,height:812});
+ await page.goto('/?action=taxpayer_home');
+ await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+ const header=page.locator('.citizen-header');
+ await expect(header.getByRole('button',{name:'Open menu'})).toBeVisible();
+ await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
+ const bounds=await page.evaluate(()=>{
+   const bar=document.querySelector('.citizen-header')!.getBoundingClientRect();
+   const menu=document.querySelector('.citizen-mobile-menu-trigger')!.getBoundingClientRect();
+   const brand=document.querySelector('.citizen-brand')!.getBoundingClientRect();
+   const notice=document.querySelector('.citizen-header__notification')!.getBoundingClientRect();
+   return {menuX:menu.x,brandCenter:brand.x+brand.width/2,barCenter:bar.x+bar.width/2,noticeX:notice.x};
+ });
+ expect(bounds.menuX).toBeLessThan(bounds.brandCenter);
+ expect(Math.abs(bounds.brandCenter-bounds.barCenter)).toBeLessThanOrEqual(3);
+ expect(bounds.noticeX).toBeGreaterThan(bounds.brandCenter);
+ await header.getByRole('button',{name:'Open menu'}).click();
+ const dialog=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(dialog).toBeVisible();
+ await expect(dialog.getByRole('navigation',{name:'Services navigation'})).toBeVisible();
+ await expect(dialog.getByRole('region',{name:'Language and account'})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Sign in'})).toBeVisible();
+ const edge=await dialog.boundingBox();
+ expect(edge).not.toBeNull();
+ expect(Math.abs(edge!.x)).toBeLessThanOrEqual(1);
+ expect(Math.abs(edge!.width-375)).toBeLessThanOrEqual(2);
+ await expect(dialog.getByText(/Demo scenario|Exit demonstration account|Account: user1/)).toHaveCount(0);
+ await dialog.getByRole('button',{name:'বাংলা'}).click();
+ await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('navigation',{name:'সেবার নেভিগেশন'})).toBeVisible();
+ await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
+ await dialog.getByRole('button',{name:'Close'}).click();
+ await page.evaluate(()=>window.scrollTo(0,500));
+ await expect(header).toHaveClass(/citizen-header--hidden/);
+ const corners=page.locator('.citizen-corners');
+ for(const name of ['Open menu','Notifications','Home'])await expect(corners.getByRole('button',{name})).toBeVisible();
+ await expect(page.locator('.citizen-pay--compact')).toBeVisible();
+});

@@ -14,7 +14,13 @@ test('public preview keeps Auth and drafts disabled without explicit backend con
   await expect(page.getByText('Sign-in and saved drafts are not available right now.')).toBeVisible();
   await expect.poll(() => hostedSupabaseRequests).toEqual([]);
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  if (await page.locator('.citizen-mobile-menu-trigger').isVisible()) {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  } else {
+    await page.locator('.citizen-header').getByRole('button', { name: 'বাংলা' }).click();
+  }
   await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'অ্যাকাউন্ট আপাতত চালু নেই' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toHaveCount(0);
