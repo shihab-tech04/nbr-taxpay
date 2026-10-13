@@ -13,6 +13,7 @@ create table if not exists public.taxpay_officer_roles (
 create table if not exists public.taxpay_payment_requests (
   id uuid primary key default gen_random_uuid(),
   owner_uid uuid not null references auth.users(id),
+  source_draft_id uuid references public.taxpay_payment_drafts(id),
   purpose text not null check (purpose in ('TAX_LIABILITY_PAYMENT','WITHHOLDING_TAX_DEPOSIT')),
   category text not null check (category in ('TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY','SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT')),
   assessment_year text not null check (assessment_year ~ '^20[0-9]{2}-[0-9]{2}$'),
@@ -23,6 +24,7 @@ create table if not exists public.taxpay_payment_requests (
   tax_credit_status text not null default 'NOT_VERIFIED' check (tax_credit_status = 'NOT_VERIFIED'),
   processing_mode text not null default 'NON_FINANCIAL_REVIEW' check (processing_mode = 'NON_FINANCIAL_REVIEW'),
   submitted_at timestamptz not null default now(),
+  unique (owner_uid,source_draft_id),
   constraint taxpay_request_purpose_category check ((purpose = 'WITHHOLDING_TAX_DEPOSIT') = (category = 'SOURCE_TAX_DEPOSIT'))
 );
 create index if not exists taxpay_payment_requests_owner_recent on public.taxpay_payment_requests (owner_uid,submitted_at desc);
@@ -130,14 +132,14 @@ alter table public.taxpay_in_app_notifications enable row level security;
 revoke all on public.taxpay_officer_roles,public.taxpay_payment_requests,public.taxpay_review_decisions,public.taxpay_request_events,public.taxpay_in_app_notifications from public,anon,authenticated;
 grant select on public.taxpay_officer_roles to authenticated;
 grant select on public.taxpay_payment_requests,public.taxpay_review_decisions,public.taxpay_request_events,public.taxpay_in_app_notifications to authenticated;
-grant insert(owner_uid,purpose,category,assessment_year,amount_minor,memo) on public.taxpay_payment_requests to authenticated;
+grant insert(owner_uid,source_draft_id,purpose,category,assessment_year,amount_minor,memo) on public.taxpay_payment_requests to authenticated;
 grant update(is_read) on public.taxpay_in_app_notifications to authenticated;
 
 create policy taxpay_officer_roles_self on public.taxpay_officer_roles for select to authenticated using(user_uid=(select auth.uid()));
 create policy taxpay_requests_read_owner_officer on public.taxpay_payment_requests for select to authenticated
   using(owner_uid=(select auth.uid()) or (select public.taxpay_is_officer()));
 create policy taxpay_requests_insert_owner on public.taxpay_payment_requests for insert to authenticated
-  with check(owner_uid=(select auth.uid()));
+  with check(owner_uid=(select auth.uid()) and (source_draft_id is null or exists(select 1 from public.taxpay_payment_drafts d where d.id=source_draft_id and d.owner_uid=(select auth.uid()))));
 create policy taxpay_decisions_read_owner_officer on public.taxpay_review_decisions for select to authenticated
   using((select public.taxpay_is_officer()) or exists(select 1 from public.taxpay_payment_requests p where p.id=request_id and p.owner_uid=(select auth.uid())));
 create policy taxpay_events_read_owner_officer on public.taxpay_request_events for select to authenticated
