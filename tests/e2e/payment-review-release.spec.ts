@@ -218,12 +218,16 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
   await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
   await expect(page.getByRole('radio', { name: /Air - North America/ }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Continue to passenger details' }).click();
   await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
   await page.getByLabel('Passport number (synthetic data only)').fill('SAMPLE123');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
   await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toBeVisible();
   await expect(page.getByText('অব্যাহতি হিসাব করা হয় না।')).toBeVisible();
+  await page.getByRole('button', { name: 'পর্যালোচনায় যান' }).click();
+  await expect(page.getByRole('heading', { name: 'তথ্য পর্যালোচনা' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' })).toBeVisible();
   await page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' }).click();
   await expect(page.getByText('ভ্রমণ করের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
