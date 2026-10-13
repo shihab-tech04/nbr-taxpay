@@ -1574,3 +1574,43 @@
   .travel-flow__steps,.travel-flow__summary {display:none!important;}
   .travel-flow__main {height:auto;overflow:visible;padding:0;}
 }
+
+
+/* TaxPay modal standard: step actions belong in the shared footer, not the summary. */
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer-actions {
+  display:flex;
+  flex:0 1 auto;
+  min-width:0;
+  align-items:center;
+  justify-content:flex-end;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .taxpay-modal__footer {
+  justify-content:space-between;
+  gap:.75rem;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .taxpay-modal__footer-actions {
+  flex:1 1 auto;
+}
+.taxpay-citizen-shell .taxpay-modal__footer-actions .travel-flow__primary {
+  width:auto;
+  min-width:min(100%,240px);
+  max-width:100%;
+  min-height:44px;
+  padding:.65rem 1rem;
+  margin:0;
+  white-space:normal;
+}
+@media(max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .taxpay-modal__footer {
+    gap:.55rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .taxpay-modal__footer-close {
+    min-width:80px;
+    padding:.55rem .65rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal__footer-actions .travel-flow__primary {
+    min-width:0;
+    font-size:.75rem;
+    padding:.55rem .6rem;
+  }
+}
