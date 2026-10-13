@@ -74,3 +74,47 @@ test('public guide and guest launcher pass WCAG automated A/AA',async({page},inf
  const results=await new AxeBuilder({page}).include('.public-guide-page').include('.public-home-header').include('.public-footer').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
  expect(results.violations).toEqual([]);
 });
+
+
+test('guest receipt lookup keeps a compact accessible layout and honest demo results',async({page})=>{
+ await page.goto('/?action=landing');
+ await page.getByRole('button',{name:'Check payment status & receipt'}).click();
+ const dialog=page.getByRole('dialog',{name:'Payment status & receipt'});
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.receipt-lookup--embedded')).toHaveCount(1);
+ await expect(dialog.locator('.receipt-lookup__page-header')).toHaveCount(0);
+ await expect(dialog.getByLabel('Challan, token or transaction reference')).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Search records'})).toBeDisabled();
+ const dialogBox=await dialog.boundingBox();
+ expect(dialogBox).not.toBeNull();
+ expect(dialogBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+ const samples=dialog.locator('.receipt-lookup__sample');
+ await expect(samples).toHaveCount(3);
+ await samples.first().click();
+ await expect(dialog.getByRole('heading',{name:'Sample receipt found'})).toBeVisible();
+ await expect(dialog.getByText('not verified',{exact:false}).first()).toBeVisible();
+ await dialog.getByPlaceholder('Enter a reference').fill('NO-SUCH-DEMO-REFERENCE-12345');
+ await expect(dialog.getByRole('heading',{name:'Sample receipt found'})).toHaveCount(0);
+ await dialog.getByRole('button',{name:'Search records'}).click();
+ await expect(dialog.getByRole('heading',{name:'No matching record'})).toBeVisible();
+ await expect(dialog.getByText('If money was debited, contact your bank or payment provider.')).toBeVisible();
+ const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+ expect(overflow).toBeLessThanOrEqual(2);
+ await page.keyboard.press('Escape');
+ await expect(dialog).toHaveCount(0);
+});
+
+test('guest receipt modal localizes labels and remains keyboard accessible',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-320','Bilingual guest modal at smallest viewport');
+ await page.goto('/?action=landing');
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await page.getByRole('button',{name:'পেমেন্টের অবস্থা ও রসিদ দেখুন'}).click();
+ const dialog=page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'});
+ await expect(dialog.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toBeVisible();
+ await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'রেকর্ড খুঁজুন'})).toBeDisabled();
+ const a11y=await new AxeBuilder({page}).include('.public-service-dialog[data-public-service="status"]').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
+ expect(a11y.violations).toEqual([]);
+ await page.keyboard.press('Escape');
+ await expect(dialog).toHaveCount(0);
+});
