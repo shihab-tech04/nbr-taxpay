@@ -1,31 +1,35 @@
 import { expect, test } from '@playwright/test';
 
-test('sample taxpayer can navigate a fictional profile and personal settings without impersonating a login',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-375','One end-to-end responsive sample journey');
+test('taxpayer account pages never present a synthetic identity as signed in',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','One end-to-end mobile account journey');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
-  await expect(page.getByText('Demo account')).toBeVisible();
+  await expect(page.getByText('Sign-in is currently unavailable.')).toBeVisible();
+  await expect(page.getByText('Demo account')).toHaveCount(0);
+  await expect(page.getByText('DEMO-TIN-001',{exact:false})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
   await page.getByRole('navigation',{name:'Account pages'}).getByRole('button',{name:'Profile settings'}).click();
-  await expect(page.getByRole('combobox',{name:'Interface language'})).toBeVisible();
-  await page.getByRole('combobox',{name:'Interface language'}).selectOption('bn');
+  await expect(page.getByRole('combobox',{name:'Interface language'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Open menu'}).click();
+  const dialog=page.getByRole('dialog',{name:'Services & menu'});
+  await dialog.getByRole('button',{name:'বাংলা'}).click();
+  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page.getByRole('heading',{name:'প্রোফাইল সেটিংস'})).toBeVisible();
   await page.getByRole('navigation',{name:'অ্যাকাউন্ট পৃষ্ঠা'}).getByRole('button',{name:'বিজ্ঞপ্তি'}).click();
-  await expect(page.getByText('এখনো কোনো বিজ্ঞপ্তি নেই।')).toBeVisible();
   await expect(page.getByText(/Demand Notice|Statutory Alerts|Advance Tax 2nd Quarter/)).toHaveCount(0);
-  await page.getByRole('button',{name:'ডেমো থেকে বের হোন'}).click();
-  await expect(page).toHaveURL(/action=landing/);
-  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
+  await page.getByRole('button',{name:'মেনু খুলুন'}).click();
+  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'সাইন ইন'}).click();
+  await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
 });
 
 test('profile and notification routes never expose private data to anonymous Guest or Officer',async({page})=>{
   await page.goto('/?action=account_notifications');
   await expect(page.getByRole('heading',{name:'Notifications'})).toBeVisible();
   await expect(page.getByText('Sign-in is currently unavailable.')).toBeVisible();
-  await expect(page.getByText('No notifications yet.')).toBeVisible();
+  await expect(page.getByText('No notifications yet.')).toHaveCount(0);
   await expect(page.getByText(/Demand Notice DN-|BDT 47,400|Inspecting Joint Commissioner/)).toHaveCount(0);
   await page.goto('/?action=account_settings');
   await expect(page.getByRole('heading',{name:'Profile settings'})).toBeVisible();
@@ -45,8 +49,8 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
-  await rail.getByRole('button',{name:'Exit demo'}).click();
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await rail.getByRole('button',{name:'Sign in'}).click();
+  await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
 });
 
 test('account UI retains no horizontal overflow at six mobile and desktop widths',async({page},info)=>{

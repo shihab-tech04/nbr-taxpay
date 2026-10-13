@@ -5,10 +5,13 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
-  await expect(page.getByText('Demo',{exact:true})).toBeVisible();
+  await expect(page.getByText('Demo',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
   await expect(page.getByText('Unavailable',{exact:true})).toBeVisible();
   await expect(page.getByText('Unverified',{exact:true})).toBeVisible();
+  await expect(page.getByText('Demo scenario', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('Exit demonstration account', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('DEMO-TIN-001', { exact: false })).toHaveCount(0);
   await expect(page.getByText('This demonstration has no verified account-specific ledger owner')).toHaveCount(0);
   await expect(page.getByText('Sample profile · not a verified taxpayer')).toHaveCount(0);
   await expect(page.getByText('Preview only · No payments or government receipts issued.')).toHaveCount(0);
@@ -19,7 +22,9 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
   await expect(page.getByText('Live assessments, Treasury settlements, eTDS records')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Advance tax instalments'})).toBeVisible();
-  await page.getByRole('button',{name:'বাংলা'}).click();
+  await page.getByRole('button',{name:'Open menu'}).click();
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
+  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByText('প্রকৃত কর নির্ধারণ, ট্রেজারি জমা, ই-টিডিএস')).toHaveCount(0);
 });

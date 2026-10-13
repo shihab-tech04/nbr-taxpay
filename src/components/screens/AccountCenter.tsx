@@ -60,10 +60,9 @@ const I18N = {
 } as const;
 
 export function AccountCenter({ page }: { page: AccountPage }) {
-  const { language, setLanguage, navigate, userRole, setUserRole, taxpayerProfile } = useTaxState();
+  const { language, setLanguage, navigate, setUserRole } = useTaxState();
   const { user, loading } = useAccountIdentity();
   const t = I18N[language];
-  const sample = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
   const [name, setName] = useState('');
   const [showNotifications, setShowNotifications] = useState(true);
   const [preferredLanguage, setPreferredLanguage] = useState<'en'|'bn'>(language);
@@ -177,7 +176,6 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
     return new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-GB', {day:'numeric',month:'short',year:'numeric'}).format(new Date(value));
   };
-  const sampleOnly = !user && sample;
   return (
     <section className="taxpayer-account-center" lang={language} aria-labelledby="taxpay-account-title">
       <header className="taxpayer-account-heading">
@@ -197,29 +195,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       {loading ? <p role="status" className="taxpayer-account-panel">{language === 'bn' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : 'Checking account…'}</p>
         : !user ? (
           <section className="taxpayer-account-panel">
-            <h2>{sampleOnly ? t.demo : t.accountAccess}</h2>
-            <p>{sampleOnly ? t.demoNotice : !backendConfigured ? t.unavailable : t.guest}</p>
-            {sampleOnly && page === 'profile' && (
-              <dl className="taxpayer-account-facts">
-                <div><dt>{t.name}</dt><dd>{language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</dd></div>
-                <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{taxpayerProfile.type}</dd></div>
-              </dl>
-            )}
-            {sampleOnly && page === 'settings' && (
-              <div className="taxpayer-account-fields">
-                <label htmlFor="taxpay-demo-language">{t.language}</label>
-                <select id="taxpay-demo-language" value={language} onChange={e => setLanguage(e.target.value as 'en'|'bn')}>
-                  <option value="en">{t.english}</option><option value="bn">{t.bangla}</option>
-                </select>
-                <p>{t.consent}</p>
-              </div>
-            )}
-            {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
+            <h2>{t.accountAccess}</h2>
+            <p>{!backendConfigured ? t.unavailable : t.guest}</p>
             <div className="taxpayer-account-actions">
               <button type="button" onClick={() => navigate('secure_workspace')}>{t.accountAccess}</button>
-              {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
-                setUserRole('GUEST'); navigate('landing');
-              }}>{t.exitDemo}</button>}
             </div>
           </section>
         ) : (
