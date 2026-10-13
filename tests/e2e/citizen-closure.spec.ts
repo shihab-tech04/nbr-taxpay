@@ -1,12 +1,15 @@
 import {expect,test} from '@playwright/test';
 
-test('root loads public payment choices rather than a forced officer login',async({page})=>{
-  await page.goto('/');
-  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
-  await expect(page.locator('.office-auth')).toHaveCount(0);
-  await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await expect(page.getByRole('dialog',{name:'Select payment type'})).toBeVisible();
+test('root is a public information hub with one Login call to action',async({page})=>{
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Login'})).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
+ await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ await expect(page.locator('.office-auth')).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
 });
+
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
@@ -47,19 +50,16 @@ test('sample payment activity retains filtering and does not assert tax-credit o
 });
 
 
-test('mobile expanded dock has three destinations and a separate floating Pay action',async({page})=>{
-  await page.setViewportSize({width:390,height:844});
-  await page.goto('/?action=landing');
-  const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
-  await expect(dock).toBeVisible();
-  await expect(dock.getByRole('button')).toHaveCount(3);
-  await expect(dock.getByRole('button',{name:'Pay',exact:true})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
-  await page.evaluate(()=>window.scrollTo(0,420));
-  await expect(dock).toHaveCount(0);
-  await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
-  await page.evaluate(()=>window.scrollBy(0,-90));
-  await expect(dock).toBeVisible();
+test('public mobile navigation offers information anchors but no payment initiation',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/?action=landing');
+ await expect(page.locator('.public-home-header')).toBeVisible();
+ await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
+ await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ await page.getByRole('button',{name:'Menu'}).click();
+ await expect(page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Payment types'})).toBeVisible();
+ await page.keyboard.press('Escape');
+ await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
 });
 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
@@ -105,11 +105,13 @@ test('certificate previews stay non-official, match the selected type and locali
 });
 
 
-test('guest payment-category selection enters the matching public journey without authentication',async({page})=>{
-  await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Understand your next tax-payment step'})).toBeVisible();
-  await page.locator('main').getByRole('button',{name:/Advance Tax/}).click();
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
-  await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
-  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+test('home payment categories inform visitors rather than initiating transactions',async({page})=>{
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'Advance income tax'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Withholding tax'})).toBeVisible();
+ await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
+ await page.goto('/?action=guest');
+ await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
+
