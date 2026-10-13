@@ -220,7 +220,7 @@ export const PaymentWizard: React.FC = () => {
         </div>
         <div className="taxpay-guided-footer">
           <button className="taxpay-guided-secondary" type="button" onClick={()=>navigate('taxpayer_home')}>{bn?'বাতিল':'Cancel'}</button>
-          <button className="taxpay-guided-primary" type="button" onClick={()=>setIntroduction('information')}>{bn?'এগিয়ে যান':'Continue'} →</button>
+          <button className="taxpay-guided-primary" type="button" onClick={()=>setIntroduction('information')}>{bn?'এগিয়ে যান':'Continue'} <span aria-hidden="true">→</span></button>
         </div>
       </div>:<div className="taxpay-guided-body">
         <h2>{bn?CATEGORY_LABELS[category].bn:CATEGORY_LABELS[category].en}</h2>
@@ -235,7 +235,7 @@ export const PaymentWizard: React.FC = () => {
         </div>
         <div className="taxpay-guided-footer">
           <button className="taxpay-guided-secondary" type="button" onClick={()=>setIntroduction('category')}>{bn?'পূর্ববর্তী':'Back'}</button>
-          <button className="taxpay-guided-primary" type="button" onClick={()=>setIntroduction('details')}>{bn?'পেমেন্টের তথ্য দিন':'Make payment'} →</button>
+          <button className="taxpay-guided-primary" type="button" onClick={()=>setIntroduction('details')}>{bn?'পেমেন্টের তথ্য দিন':'Make payment'} <span aria-hidden="true">→</span></button>
         </div>
       </div>}
     </section>
