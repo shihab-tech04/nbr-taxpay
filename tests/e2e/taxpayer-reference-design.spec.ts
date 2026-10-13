@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-/** Reference token assertions come from the Sobaike Janao source, not screenshots. */
+/** Regression contract: Public and Taxpayer share Government Blue theme; taxpayer reference layout remains protected. */
 const exactReference = {
-  primary: 'rgb(27, 77, 107)',
-  background: 'rgb(240, 242, 245)',
-  text: 'rgb(5, 5, 5)',
-  border: 'rgb(228, 230, 235)',
-  focus: 'rgb(58, 124, 165)'
+  primary: 'rgb(44, 94, 173)',
+  background: 'rgb(246, 249, 254)',
+  text: 'rgb(23, 32, 51)',
+  border: 'rgb(221, 231, 245)',
+  focus: 'rgb(92, 168, 216)'
 } as const;
 
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
@@ -16,22 +16,25 @@ async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await expect(page.getByText('Taxpayer workspace')).toBeVisible();
 }
 
-test('the exact palette applies only to taxpayer screens, not Guest or Officer', async ({page}) => {
+test('Public and Taxpayer share exact Government Blue tokens while Officer remains isolated', async ({page}) => {
   await page.goto('/?action=landing');
   const guest = page.locator('.taxpay-citizen-shell');
   await expect(guest).toBeVisible();
   await expect(guest).not.toHaveClass(/taxpay-taxpayer-reference/);
   const originalColor = await guest.evaluate(el => getComputedStyle(el).getPropertyValue('--citizen-primary').trim());
   const guestTheme = await guest.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim());
-  expect(originalColor.startsWith('var(') || originalColor !== '#1B4D6B').toBeTruthy();
+  expect(originalColor.startsWith('var(') || originalColor.toLowerCase() === '#2c5ead').toBeTruthy();
   expect(guestTheme.toLowerCase()).toBe('#2c5ead');
   await page.goto('/?action=secure_workspace');
   const taxpayer = page.locator('.taxpay-taxpayer-reference');
   await expect(taxpayer).toBeVisible();
   expect(await taxpayer.evaluate(el => getComputedStyle(el).backgroundColor)).toBe(exactReference.background);
   expect(await taxpayer.evaluate(el => getComputedStyle(el).color)).toBe(exactReference.text);
-  expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim())).toUpperCase()).toBe('#1B4D6B');
-  expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--reference-focus').trim())).toUpperCase()).toBe('#3A7CA5');
+  expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim())).toUpperCase()).toBe('#2C5EAD');
+  expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--reference-focus').trim())).toUpperCase()).toBe('#5CA8D8');
+  const taxpayerTheme = await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim());
+  expect(taxpayerTheme.toLowerCase()).toBe(guestTheme.toLowerCase());
+  expect(await taxpayer.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Manrope');
   await page.goto('/?action=officer_home');
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
