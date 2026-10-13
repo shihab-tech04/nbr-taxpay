@@ -48,7 +48,7 @@ test('five-stage category → guidance → allocation → server simulation → 
   await page.getByRole('button',{name:/Run payment simulation/}).click();
   await expect(page.getByRole('heading',{name:'Result'})).toBeVisible();
   await expect(page.getByText('Simulation saved successfully')).toBeVisible();
-  await expect(page.locator('.taxpay-guided-reference').getByText('SIM-TEST-001',{exact:true})).toBeVisible();
+  await expect(page.locator('.taxpay-guided-reference')).toHaveText('SIM-TEST-001');
   await expect(page.getByText(/No funds moved or official tax credit was created/)).toBeVisible();
   expect(writes,'Exactly one SQL operation').toBe(1);
   await expect(page.locator('.taxpay-guided-payment')).toBeVisible();
