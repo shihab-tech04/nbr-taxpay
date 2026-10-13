@@ -298,7 +298,7 @@ export const TaxpayerHome: React.FC = () => {
 
       <section className="life-services" aria-labelledby="life-tools-title">
         <div className="life-section-heading"><div><p className="life-section-kicker">{label('QUICK ACCESS','দ্রুত প্রবেশ')}</p><h2 id="life-tools-title">{label('Your services','আপনার সেবা')}</h2></div></div>
-        <div className="life-services__grid">{tools.map(({Icon,title,sub,route}) => <button type="button" key={route} onClick={() => navigate(route)}><span className="life-services__icon"><Icon size={21} aria-hidden="true"/></span><span className="life-services__copy"><strong>{title}</strong><small>{sub}</small></span><ArrowUpRight size={17} aria-hidden="true"/></button>)}</div>
+        <div className="life-services__grid">{tools.map(({Icon,title,sub,route}) => <button type="button" key={route} aria-label={title} onClick={() => navigate(route)}><span className="life-services__icon"><Icon size={21} aria-hidden="true"/></span><span className="life-services__copy"><strong>{title}</strong><small>{sub}</small></span><ArrowUpRight size={17} aria-hidden="true"/></button>)}</div>
       </section>
       <details className="citizen-taxpayer-more life-more">
         <summary>{label('More taxpayer services','আরও করদাতা সেবা')}</summary>
