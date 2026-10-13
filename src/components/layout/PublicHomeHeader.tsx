@@ -27,6 +27,9 @@ export function PublicHomeHeader() {
         const section = document.getElementById(item.id);
         if (section && section.getBoundingClientRect().top <= 148) next = item.id;
       }
+      if (window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10) {
+        next = NAV_ITEMS[NAV_ITEMS.length - 1].id;
+      }
       setActiveId(previous => previous === next ? previous : next);
     };
     window.addEventListener('scroll', updateActive, {passive: true});
