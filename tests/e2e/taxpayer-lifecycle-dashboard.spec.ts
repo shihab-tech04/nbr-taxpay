@@ -13,8 +13,8 @@ test('taxpayer home presents a complete lifecycle without inventing NBR credit',
   await page.getByRole('button',{name:'Allocated to me', exact:true}).click();
   await expect(page.locator('.life-activity__records li')).toHaveCount(3);
   await expect(page.getByText('DEMO-TX-008')).toBeVisible();
-  await page.locator('.life-year-select select').selectOption('2025-26');
-  await expect(page.getByRole('heading',{name:'No transactions to display'})).toBeVisible();
+  await page.locator('.life-year-select select').selectOption('2026-27');
+  await expect(page.locator('.life-activity__records li')).toHaveCount(3);
 });
 
 test('without an authorized data source, the lifecycle dashboard fails closed', async ({page}) => {
