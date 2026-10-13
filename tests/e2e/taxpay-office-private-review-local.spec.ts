@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 /** Real TaxPay private review → original Office React UI → private account notifications.
  * This test refuses hosted endpoints, uses only disposable local Auth/PostgREST/PostgreSQL,
  * and never simulates a statutory payment or grants a real tax credit.
+ * All positive decisions require read-back from the disposable SQL database.
  */
 test('general authenticated taxpayer private draft to officer decisions to owner notification',async({browser})=>{
  test.setTimeout(135_000);
