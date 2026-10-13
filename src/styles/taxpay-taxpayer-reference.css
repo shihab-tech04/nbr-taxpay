@@ -5,19 +5,6 @@
  * A sample role remains a demo profile, not a verified taxpayer identity.
  */
 .taxpay-citizen-shell.taxpay-taxpayer-reference {
-
-
-
-
-
-
-
-
-
-
-
-
-
   --reference-primary-active: var(--color-taxpay-primary);
   --reference-focus: var(--color-taxpay-secondary);
   --reference-overlay: rgba(5,5,5,.55);
@@ -34,18 +21,18 @@
   outline-offset: 2px;
 }
 .taxpay-taxpayer-reference .citizen-header {
-  color: var(--color-taxpay-text);
-  background: var(--color-taxpay-surface);
-  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-surface);
+  background: var(--color-taxpay-dark);
+  border-color: var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .citizen-brand,
 .taxpay-taxpayer-reference .citizen-language,
 .taxpay-taxpayer-reference .citizen-menu-open,
 .taxpay-taxpayer-reference .citizen-nav-link {
-  color: var(--color-taxpay-primary);
+  color: var(--color-taxpay-surface);
 }
 .taxpay-taxpayer-reference .citizen-flow-label {
-  color: var(--color-taxpay-muted);
+  color: var(--color-taxpay-surface);
   opacity: 1;
 }
 .taxpay-taxpayer-reference .citizen-taxpayer-hero > div > p:not(.citizen-taxpayer-hero__eyebrow) {
@@ -54,7 +41,7 @@
 }
 .taxpay-taxpayer-reference .citizen-nav-link:hover,
 .taxpay-taxpayer-reference .citizen-nav-link[aria-current="page"] {
-  background: var(--color-taxpay-background);
+  background: var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .citizen-bottom-nav {
   background: var(--color-taxpay-surface);
