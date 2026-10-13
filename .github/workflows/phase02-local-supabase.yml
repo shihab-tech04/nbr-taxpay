@@ -150,7 +150,7 @@ jobs:
             sleep 2
           done
           curl -fsS -o /dev/null http://127.0.0.1:4174/payments/transactions
-          npx playwright test tests/e2e/taxpay-office-complete-local.spec.ts --project=mobile-375
+          npx playwright test tests/e2e/taxpay-office-complete-local.spec.ts tests/e2e/taxpay-office-private-review-local.spec.ts --project=mobile-375 --workers=1
 
       - name: Restart disposable database services without deleting volumes
         run: |
