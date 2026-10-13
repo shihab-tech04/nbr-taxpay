@@ -29,6 +29,10 @@ export const DemoPaymentActivity:React.FC=()=>{
   const [nonce,setNonce]=useState(()=>crypto.randomUUID());
   const [saving,setSaving]=useState(false);
   const [submitMessage,setSubmitMessage]=useState('');
+  const [paymentStage,setPaymentStage]=useState<0|1|2|3>(0);
+  const [parentCategory,setParentCategory]=useState<SimulationCategory>('TAX_WITH_RETURN');
+  const [completedReference,setCompletedReference]=useState('');
+  const chooseCategory=(category:SimulationCategory)=>{setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
 
   useEffect(()=>{
     if(!authenticatedUser){setBoundId(null);setBindingError('');return;}
@@ -37,7 +41,7 @@ export const DemoPaymentActivity:React.FC=()=>{
       .catch(e=>{if(active)setBindingError(e instanceof Error?e.message:'Profile authorization unavailable');});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
-  useEffect(()=>{if(!id)return;setLines([freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');},[id]);
+  useEffect(()=>{if(!id)return;setLines([freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');setPaymentStage(0);},[id]);
   useEffect(()=>{
     if(!id||!privateMode)return;
     let active=true;
@@ -75,7 +79,8 @@ export const DemoPaymentActivity:React.FC=()=>{
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
-      setSubmitMessage(txt('Saved and verified in shared SQL: ','SQL-এ সংরক্ষিত ও যাচাইকৃত: ')+result.reference+(result.replayed?' (idempotent replay)':''));
+      setCompletedReference(result.reference);setPaymentStage(3);
+      setSubmitMessage(txt('Simulation saved and verified: ','সিমুলেশন সংরক্ষিত ও যাচাইকৃত: ')+result.reference+(result.replayed?' (idempotent replay)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
   },[id,lines,nonce,saving,language,privateMode]);
@@ -103,9 +108,42 @@ export const DemoPaymentActivity:React.FC=()=>{
     </header>
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New simulated payment','নতুন সিমুলেটেড পেমেন্ট')}>
+      <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Make payment','পেমেন্ট'),txt('Simulation','সিমুলেশন'),txt('Result','ফলাফল')].map((name,index)=>
+          <li key={name} aria-current={(paymentStage===0&&index===0)||(paymentStage===1&&index===1)||(paymentStage===2&&index===2)||(paymentStage===3&&index===4)?'step':undefined}
+            className={`rounded-lg border px-3 py-3 text-xs font-semibold ${(paymentStage===0&&index===0)||(paymentStage===1&&index===1)||(paymentStage===2&&(index===2||index===3))||(paymentStage===3&&index===4)?'border-taxpay-primary bg-taxpay-primary text-white':'border-taxpay-border bg-slate-50 text-taxpay-muted'}`}>
+            {index+1}. {name}</li>)}
+      </ol>
+      {paymentStage===0&&<div className="space-y-4">
+        <h2 className="text-xl font-bold text-taxpay-text">{txt('Choose payment category','পেমেন্টের শ্রেণি নির্বাচন করুন')}</h2>
+        <p className="text-sm text-taxpay-muted">{txt('Select the main category before entering payment details.','পেমেন্টের বিস্তারিত দেওয়ার আগে মূল শ্রেণি নির্বাচন করুন।')}</p>
+        <div className="grid gap-3 sm:grid-cols-2">{simulationCategories.map(category=>
+          <button key={category} type="button" onClick={()=>chooseCategory(category)} className="min-h-20 rounded-xl border border-taxpay-border p-4 text-left font-semibold text-taxpay-dark hover:border-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+            <span className="block">{category.replace(/_/g,' ')}</span>
+            <span className="mt-2 block text-xs font-normal text-taxpay-muted">{txt('View category information →','শ্রেণির তথ্য দেখুন →')}</span>
+          </button>)}</div>
+      </div>}
+      {paymentStage===1&&<div className="space-y-4">
+        <h2 className="text-xl font-bold text-taxpay-text">{txt('Information before payment','পেমেন্টের আগে প্রয়োজনীয় তথ্য')}</h2>
+        <p className="font-semibold text-taxpay-dark">{parentCategory.replace(/_/g,' ')}</p>
+        <p className="text-sm text-taxpay-muted">{txt('For this test transaction, supply the beneficiary, assessment year, payment category and BDT amount. Additional allocations can be added to one simulated transaction.','পরীক্ষামূলক লেনদেনের জন্য সুবিধাভোগী, করবর্ষ, পেমেন্টের শ্রেণি এবং টাকার পরিমাণ দিন। একই সিমুলেশনে একাধিক বরাদ্দ যোগ করা যায়।')}</p>
+        <p className="rounded-lg border border-taxpay-border bg-slate-50 p-4 text-sm">{txt('Simulation only: this does not move money, establish a tax liability, grant tax credit or issue a government challan.','শুধু সিমুলেশন: এতে অর্থ স্থানান্তর, কর দায় নির্ধারণ, কর ক্রেডিট বা সরকারি চালান তৈরি হয় না।')}</p>
+        <div className="flex flex-wrap justify-between gap-3">
+          <button type="button" onClick={()=>setPaymentStage(0)} className="min-h-11 rounded-lg border border-taxpay-border px-5 font-semibold">{txt('Back','পূর্ববর্তী')}</button>
+          <button type="button" onClick={()=>setPaymentStage(2)} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white">{txt('Make Payment →','পেমেন্ট করুন →')}</button>
+        </div>
+      </div>}
+      {paymentStage===3&&<div className="space-y-4" role="status">
+        <h2 className="text-xl font-bold text-taxpay-text">{txt('Payment simulation completed','পেমেন্ট সিমুলেশন সম্পন্ন')}</h2>
+        <p className="text-sm text-taxpay-muted">{txt('The simulated transaction was read back from the test database. This is not a real payment or government receipt.','পরীক্ষামূলক ডাটাবেসে লেনদেনটি যাচাই করা হয়েছে। এটি বাস্তব পেমেন্ট বা সরকারি রসিদ নয়।')}</p>
+        <p className="rounded-lg border border-taxpay-border p-4 font-mono text-sm break-all">{completedReference}</p>
+        <button type="button" onClick={()=>{setPaymentStage(0);setSubmitMessage('');}} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white">{txt('Make another payment','আরও একটি পেমেন্ট করুন')}</button>
+      </div>}
+      {paymentStage===2&&<>
       <h2 className="text-lg font-bold text-taxpay-text">{txt('Create a combined payment','একাধিক বরাদ্দের পেমেন্ট তৈরি করুন')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{txt('Combine your own and other beneficiaries, categories and years in one atomic transaction.','একটি লেনদেনে নিজের ও অন্যের, একাধিক খাত ও একাধিক করবর্ষের বরাদ্দ রাখুন।')}</p>
       <form onSubmit={e=>void submit(e)} className="mt-4 space-y-4">
+        <button type="button" onClick={()=>setPaymentStage(1)} className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold">{txt('← Category information','← শ্রেণির তথ্য')}</button>
         {lines.map((line,index)=><fieldset key={index} className="rounded-lg border border-taxpay-border p-3 sm:p-4">
           <legend className="px-2 text-sm font-semibold text-taxpay-text">{txt('Allocation','বরাদ্দ')} {index+1}</legend>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -135,7 +173,7 @@ export const DemoPaymentActivity:React.FC=()=>{
           <button type="submit" disabled={saving} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white disabled:opacity-50">{saving?txt('Saving…','সংরক্ষণ হচ্ছে…'):txt('Simulate and save payment','পেমেন্ট সিমুলেট করে সংরক্ষণ করুন')}</button>
         </div>
         {submitMessage&&<p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-text">{submitMessage}</p>}
-      </form>
+      </form></>}
     </section>
 
     <nav className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইতিহাসের ধরন')}>
