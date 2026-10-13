@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('public page does not claim real payment processing or grant account roles',async({page})=>{
  await page.goto('/?action=landing');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
- await expect(page.getByText('This information service does not collect money or issue official challans.')).toBeVisible();
+ await expect(page.getByText('No government payments or challans are issued here.')).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
@@ -11,7 +11,7 @@ test('public page does not claim real payment processing or grant account roles'
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'সাধারণ জিজ্ঞাসা'})).toBeVisible();
- await expect(page.getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
+ await expect(page.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toBeVisible();
 });
 
 test('unverified tax calculator never quotes fictitious slab liability', async ({page}) => {
