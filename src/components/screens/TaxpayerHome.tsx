@@ -35,7 +35,7 @@ const creditLabels: Record<TaxCreditStatus, { en: string; bn: string }> = {
 };
 
 export const TaxpayerHome: React.FC = () => {
-  const { taxpayerProfile, receipts, navigate, selectReceipt, language } = useTaxState();
+  const { taxpayerProfile, receipts, navigate, selectReceipt, language, demoUser } = useTaxState();
   const bn = language === 'bn';
   // The fixture is keyed by payer TIN, not verified tax-credit ownership. It must not
   // be used to compute a personal ledger balance or imply that this is a real account.
@@ -67,6 +67,11 @@ export const TaxpayerHome: React.FC = () => {
         <span className="citizen-taxpayer-hero__badge">{label('Demo only', 'শুধু নমুনা')}</span>
       </section>
 
+      {demoUser && <section className="citizen-hub-section" aria-label={label('Selected account scenario', 'নির্বাচিত অ্যাকাউন্টের ধরন')}>
+        <div className="citizen-hub-section__heading"><div><p className="citizen-hub-eyebrow">{label('Demonstration account', 'নমুনা অ্যাকাউন্ট')} · {demoUser.id}</p><h2>{bn ? demoUser.nameBn : demoUser.nameEn}</h2>
+          <p>{bn ? demoUser.focusBn : demoUser.focusEn}</p></div></div>
+        <p className="citizen-hub-category-note">{label('This scenario uses reference records only. It does not authenticate a taxpayer or grant access to government payment data.', 'এখানে শুধু নমুনা তথ্য দেখানো হয়। এটি করদাতার পরিচয় যাচাই বা সরকারি পেমেন্ট তথ্যের প্রবেশাধিকার নয়।')}</p>
+      </section>}
       <section className="citizen-taxpayer-summary" aria-labelledby="taxpay-summary-title">
         <div className="citizen-hub-section__heading">
           <div><p className="citizen-hub-eyebrow">{label('Account overview', 'অ্যাকাউন্টের সারসংক্ষেপ')}</p><h2 id="taxpay-summary-title">{label('Tax position', 'করের অবস্থান')}</h2></div>

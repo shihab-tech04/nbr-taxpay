@@ -31,7 +31,7 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel', 'wizard']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, demoUser } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -42,7 +42,9 @@ export function CitizenNavigation() {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
       setMenuOpen(false); setPayOpen(false);
-      setUserRole('GUEST'); navigate('landing');
+      setUserRole('GUEST');
+      // A full public reload discards any account-scoped in-memory state and closed-dialog remnants.
+      window.location.assign(import.meta.env.BASE_URL);
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
@@ -250,12 +252,14 @@ export function CitizenNavigation() {
                 ])].map(action)}</div>
                 {applicationUser && <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>}
                 {signOutError && <p role="alert" className="citizen-dialog__notice">{signOutError}</p>}
+                {demoUser ? <div className="citizen-demo-account-switch"><p>{bn ? `অ্যাকাউন্ট: ${demoUser.id} · ${demoUser.nameBn}` : `Account: ${demoUser.id} · ${demoUser.nameEn}`}</p><button type="button" onClick={() => window.location.assign(import.meta.env.BASE_URL)}>{bn?'অ্যাকাউন্ট থেকে বের হন':'Exit demonstration account'}</button></div> : <>
                 <label className="citizen-select-label" htmlFor="citizen-sample-role">{bn ? 'নমুনা প্রোফাইল (প্রকৃত লগইন নয়)' : 'Sample profile (not sign-in)'}</label>
                 <select id="citizen-sample-role" value={userRole} onChange={(event) => {
                   const role = event.target.value as UserRole;
                   setUserRole(role);
                   go(role === 'GUEST' ? 'landing' : 'taxpayer_home');
                 }}>{profileOptions.map(p => <option key={p.value} value={p.value}>{bn ? p.bn : p.en}</option>)}</select>
+                </>}
               </>
             ) : (
               <>

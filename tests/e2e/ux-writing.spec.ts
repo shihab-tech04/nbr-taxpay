@@ -33,16 +33,16 @@ test('tax journey has no fabricated completed legal obligations, dates or Treasu
   await expect(page.getByText(/Requirement fulfilled|Section 154 requirement fulfilled|Due: 15 Dec 2025|Deadline: 30 Nov 2025|SCROLLED|ACTION DUE/)).toHaveCount(0);
 });
 
-test('public home and travel use concise bilingual copy without hiding payment safety',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-320','Run one bilingual content regression');
-  await page.goto('/');
-  await expect(page.getByText('Find payment services, reference details and guidance.')).toBeVisible();
-  await expect(page.getByText('No payments are processed here.')).toBeVisible();
-  await expect(page.locator('footer').getByText('Preview only · No payments or government receipts issued.')).toBeVisible();
-  await expect(page.getByText('This is not an official NBR or Treasury status lookup.')).toHaveCount(0);
-  await page.getByRole('button',{name:'বাংলা'}).click();
-  await expect(page.getByText('পেমেন্ট সেবা, রেফারেন্সের তথ্য ও নির্দেশনা খুঁজুন।')).toBeVisible();
-  await page.goto('/?action=travel');
-  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
-  await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
+test('public information copy is concise and bilingual while preserving payment safety',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-320','One bilingual content runner');
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+ await expect(page.locator('footer').getByText('This information service does not collect money or issue official challans.')).toBeVisible();
+ await expect(page.getByText('Prototype status')).toHaveCount(0);
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+ await page.goto('/?action=travel');
+ await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
+ await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
 });
+
