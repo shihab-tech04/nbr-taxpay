@@ -12,7 +12,8 @@ permissions:
 
 concurrency:
   group: taxpay-pages-${{ github.ref }}
-  cancel-in-progress: false
+  # Obsolete PR checks may cancel each other, but main-branch releases never do.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
