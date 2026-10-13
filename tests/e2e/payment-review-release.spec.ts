@@ -169,11 +169,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     await page.getByTestId('receipt-breakdown-table').screenshot({ path: 'docs/acceptance-evidence/2026-10-12/guest-receipt-lines-bn-desktop-1280.png' });
   }
 
-  if (info.project.name.startsWith('mobile')) {
-    await page.getByRole('button', { name: 'মেনু খুলুন' }).click();
-    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'English' }).click();
-    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Close' }).click();
-  } else await page.getByRole('button', { name: 'EN' }).first().click();
+  await page.getByRole('button', { name: 'EN' }).click();
   await expect(page.getByRole('heading', { name: 'TaxPay — Unofficial demonstration receipt' })).toBeVisible();
   await expect(page.getByText('Fictional Treasury scroll reference:')).toBeVisible();
 });
