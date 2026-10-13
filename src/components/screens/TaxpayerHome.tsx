@@ -35,7 +35,7 @@ const creditLabels: Record<TaxCreditStatus, { en: string; bn: string }> = {
 };
 
 export const TaxpayerHome: React.FC = () => {
-  const { taxpayerProfile, receipts, navigate, selectReceipt, language, demoUser } = useTaxState();
+  const { taxpayerProfile, receipts, navigate, selectReceipt, language } = useTaxState();
   const bn = language === 'bn';
   // The fixture is keyed by payer TIN, not verified tax-credit ownership. It must not
   // be used to compute a personal ledger balance or imply that this is a real account.
@@ -57,21 +57,15 @@ export const TaxpayerHome: React.FC = () => {
           <p>{label('Manage payment activity and access tax services.', 'পেমেন্টের তথ্য দেখুন এবং করসেবা ব্যবহার করুন।')}</p>
           <div className="citizen-taxpayer-hero__actions">
             <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate('wizard')}>
-              <WalletCards size={18} aria-hidden="true" />{label('Explore payment flow', 'পেমেন্টের ধাপ দেখুন')}
+              <WalletCards size={18} aria-hidden="true" />{label('Payment services', 'পেমেন্ট সেবা')}
             </button>
             <button type="button" className="citizen-taxpayer-secondary" onClick={() => navigate('secure_workspace')}>
               {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')}<ArrowRight size={16} aria-hidden="true" />
             </button>
           </div>
         </div>
-        <span className="citizen-taxpayer-hero__badge">{label('Demo', 'ডেমো')}</span>
       </section>
 
-      {demoUser && <section className="citizen-hub-section" aria-label={label('Selected account scenario', 'নির্বাচিত অ্যাকাউন্টের ধরন')}>
-        <div className="citizen-hub-section__heading"><div><p className="citizen-hub-eyebrow">{label('Demo scenario', 'ডেমো পরিস্থিতি')} · {demoUser.id}</p><h2>{bn ? demoUser.nameBn : demoUser.nameEn}</h2>
-          <p>{bn ? demoUser.focusBn : demoUser.focusEn}</p></div></div>
-        <p className="citizen-hub-category-note">{label('Example records; no taxpayer account is connected.', 'উদাহরণস্বরূপ তথ্য; করদাতার প্রকৃত অ্যাকাউন্ট সংযুক্ত নয়।')}</p>
-      </section>}
       <section className="citizen-taxpayer-summary" aria-labelledby="taxpay-summary-title">
         <div className="citizen-hub-section__heading">
           <div><p className="citizen-hub-eyebrow">{label('Account overview', 'অ্যাকাউন্টের সারসংক্ষেপ')}</p><h2 id="taxpay-summary-title">{label('Tax position', 'করের অবস্থান')}</h2></div>
@@ -86,8 +80,8 @@ export const TaxpayerHome: React.FC = () => {
         <div className="citizen-taxpayer-profile__mark" aria-hidden="true"><Landmark size={20} /></div>
         <div className="min-w-0 flex-1">
           <p className="citizen-hub-eyebrow">{label('Profile', 'প্রোফাইল')}</p>
-          <h2>{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</h2>
-          <p>e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span> · {taxpayerProfile.type}</p>
+          <h2>{label('Account profile', 'অ্যাকাউন্ট প্রোফাইল')}</h2>
+          <p>{label('Sign in to view verified taxpayer details.', 'যাচাইকৃত করদাতার তথ্য দেখতে সাইন ইন করুন।')}</p>
         </div>
       </section>
 
