@@ -162,7 +162,7 @@ export const TaxpayerHome: React.FC = () => {
             'One place to follow your payment journey — from starting a transaction to checking settlement, reconciliation and evidence.',
             'পেমেন্ট শুরু থেকে সরকারি জমা, সমন্বয় ও প্রমাণ যাচাই—সব ধাপ এক জায়গায় দেখুন।'
           )}</p>
-          <div className="life-hero__actions">
+          <div className="life-hero__actions citizen-taxpayer-hero__actions">
             <button type="button" className="life-button life-button--primary" onClick={() => navigate('history')}>
               <Activity size={18} aria-hidden="true"/>{label('Payments & activity','পেমেন্ট ও লেনদেন')}<ArrowRight size={17} aria-hidden="true"/>
             </button>
