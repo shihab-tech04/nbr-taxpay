@@ -180,6 +180,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   return (
     <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
       <div className="travel-flow__main">
+        {!embedded && <h1 className="travel-flow__standalone-title">{t.title}</h1>}
         <nav className="travel-flow__steps" aria-label={bn ? 'ভ্রমণ করের ধাপ' : 'Travel tax steps'}>
           {workflow.steps.map((name, idx) => (
             <button key={name} type="button" disabled={!!createdReceipt || idx > furthestStep}
@@ -239,6 +240,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
                 <label htmlFor="travel-passenger-count">{t.count}</label>
                 <input id="travel-passenger-count" type="number" min="1" max="10" value={passengerCount}
                   onChange={e => setPassengerCount(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))} />
+                <p className="travel-flow__field-hint">{t.countHint}</p>
               </div>
               <div className="travel-flow__field">
                 <label htmlFor="travel-mobile">{t.mobile}</label>
@@ -303,10 +305,12 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         <p className="travel-flow__caution" role="note"><Info size={16} aria-hidden="true" />{workflow.caution}</p>
         {createdReceipt ? <button type="button" className="travel-flow__primary" onClick={reset}>
           {workflow.newPreview}
-        </button> : step === 2 ? <button type="submit" form="travel-tax-form" className="travel-flow__primary"
+        </button> : step === 2 ? <button key="generate" type="button" className="travel-flow__primary"
+          onClick={() => document.getElementById('travel-tax-form') instanceof HTMLFormElement &&
+            (document.getElementById('travel-tax-form') as HTMLFormElement).requestSubmit()}
           disabled={isProcessing} aria-busy={isProcessing}>
           <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : t.run}
-        </button> : <button type="button" className="travel-flow__primary" onClick={continueStep}>
+        </button> : <button key="advance" type="button" className="travel-flow__primary" onClick={continueStep}>
           {step === 0 ? workflow.continue : workflow.reviewNext}<ArrowRight size={17} aria-hidden="true" />
         </button>}
       </aside>
