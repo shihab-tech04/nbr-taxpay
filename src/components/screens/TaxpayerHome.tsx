@@ -48,7 +48,7 @@ export const TaxpayerHome: React.FC = () => {
             <p className="mt-3 text-xs text-[#d0eadb]">{sample?t('Example workspace · not a verified taxpayer account','নমুনা ওয়ার্কস্পেস · যাচাইকৃত করদাতা অ্যাকাউন্ট নয়'):t('Signed-in application · tax credit still requires independent verification','সাইন ইন করা অ্যাপ · কর ক্রেডিটের পৃথক যাচাই প্রয়োজন')}</p>
           </div>
           <div className="citizen-taxpayer-hero__actions flex flex-wrap gap-3">
-            <button type="button" onClick={()=>navigate('wizard')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#f3e4b5] px-5 py-3 text-sm font-extrabold text-[#214537] transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><Plus size={18} aria-hidden="true"/>{t('Start a payment','পেমেন্ট শুরু করুন')}</button>
+            <button type="button" onClick={()=>navigate('wizard')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#f3e4b5] px-5 py-3 text-sm font-extrabold text-[#214537] transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><Plus size={18} aria-hidden="true"/>{t('Make Payment','পেমেন্ট করুন')}</button>
             <button type="button" onClick={()=>navigate('history')} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/35 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"><Activity size={17} aria-hidden="true"/>{demoUser?t('Payments & activity','পেমেন্ট ও লেনদেন'):t('Track payments','পেমেন্ট ট্র্যাক করুন')}<ArrowRight size={16} aria-hidden="true"/></button>
           </div>
         </div>
