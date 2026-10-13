@@ -85,7 +85,7 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  });
  const forgeryPage=await strangerShell.newPage();
  await forgeryPage.goto('http://127.0.0.1:4174/payments/transactions');
- await expect(forgeryPage.getByLabel('Authorized officer email')).toBeVisible({timeout:20000});
+ await expect(forgeryPage.getByLabel('User ID')).toBeVisible({timeout:20000});
  await expect(forgeryPage.getByRole('heading',{name:'Officer review inbox'})).toHaveCount(0);
  await strangerShell.close();
  console.log('CROSS_APP E2 PASS: forged localStorage Office login does not authorize connected Admin shell');
