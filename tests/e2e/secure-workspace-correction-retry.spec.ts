@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 const projectRef = 'nbr-taxpay-test';
 const syntheticSupabaseUrl = `https://${projectRef}.invalid`;
@@ -146,7 +147,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   // Preserve the real adaptive scroll behavior; never force-click a hidden control.
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page, 'bn');
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
   await expect(historyBn.locator('summary')).toHaveText('অনুরোধের বিবরণ');
   await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.')).toBeVisible();
