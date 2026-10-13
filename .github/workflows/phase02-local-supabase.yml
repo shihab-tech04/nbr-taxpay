@@ -39,6 +39,9 @@ jobs:
         with:
           version: latest
 
+      - name: Remove stale local TaxPay containers before starting
+        run: supabase stop --no-backup || true
+
       - name: Start isolated disposable Supabase (no cloud link)
         run: |
           # Intentionally no `supabase link`, project reference, hosted credentials or db push.
@@ -101,4 +104,5 @@ jobs:
         shell: bash
         run: |
           if [ -n "${TAXPAY_LOCAL_RECOVERY_FILE:-}" ]; then rm -f -- "$TAXPAY_LOCAL_RECOVERY_FILE"; fi
+          supabase stop --no-backup || true
           echo "No hosted Supabase project was linked or changed."
