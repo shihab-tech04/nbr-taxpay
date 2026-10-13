@@ -126,7 +126,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
 });
 
 
-test('public header retains 1440px width and routes to the User Guide',async({page},info)=>{
+test('public header centers icons at 1296px and routes to User Guide',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','Desktop at 1600px');
  await page.setViewportSize({width:1600,height:900});
  await page.goto('/?action=landing');
@@ -139,11 +139,17 @@ test('public header retains 1440px width and routes to the User Guide',async({pa
  await expect(login).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
  await expect(home).toHaveAttribute('aria-current','page');
  await expect(report).toBeVisible();
+ for(const link of [home,faq,report]) await expect(link.locator('svg')).toHaveCount(1);
+ const headerBox=await page.locator('.public-home-header__inner').boundingBox();
+ const navBox=await nav.boundingBox();
+ expect(headerBox).not.toBeNull();
+ expect(navBox).not.toBeNull();
+ expect(Math.abs(navBox!.x+navBox!.width/2-(headerBox!.x+headerBox!.width/2))).toBeLessThanOrEqual(5);
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  const bounds=await page.locator('.public-information-hub').boundingBox();
  expect(bounds).not.toBeNull();
- expect(bounds!.width).toBeGreaterThanOrEqual(1430);
- expect(bounds!.width).toBeLessThanOrEqual(1442);
+ expect(bounds!.width).toBeGreaterThanOrEqual(1285);
+ expect(bounds!.width).toBeLessThanOrEqual(1298);
  await faq.click();
  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
  await expect(faq).toHaveAttribute('aria-current','page');
