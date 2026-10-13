@@ -95,6 +95,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
+    // Deprecated fixture selectors must not persist across application navigation.
+    next.searchParams.delete('demoUser');
     if (next.href !== window.location.href) {
       window.history.pushState({ taxpayRoute: route, taxpayParams: params }, '', next);
     }
