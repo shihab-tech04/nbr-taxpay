@@ -1,9 +1,10 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {AccountCenter} from './AccountCenter';
 import {formatCurrency} from '../../services/numberFormat';
 import {
-  simulationUsers,simulationCategories,loadSimulationHistory,submitSimulatedPayment,
+  simulationUsers,simulationCategories,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
@@ -12,12 +13,11 @@ type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assess
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
 export const DemoPaymentActivity:React.FC=()=>{
-  const {demoUser,language}=useTaxState();
+  const {language}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
-  const privateMode=Boolean(authenticatedUser);
-  const id=(privateMode?boundId:demoUser?.id) as SimulationUser|undefined;
+  const id=boundId as SimulationUser|undefined;
   const bn=language==='bn';
   const txt=(en:string,bengali:string)=>bn?bengali:en;
   const [view,setView]=useState<'beneficiary'|'payer'>('beneficiary');
@@ -44,7 +44,7 @@ export const DemoPaymentActivity:React.FC=()=>{
     setRows([]);setLoading(true);setLoadError('');
     const run=async()=>{
       try{
-        const next=privateMode?await getPrivateSimulationHistory(view):await loadSimulationHistory(id,view);
+        const next=await getPrivateSimulationHistory(view);
         if(active){setRows(next);setLoadError('');setLoading(false);}
       }catch(e){
         if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
@@ -53,7 +53,7 @@ export const DemoPaymentActivity:React.FC=()=>{
     void run();
     const timer=window.setInterval(()=>void run(),7000);
     return()=>{active=false;window.clearInterval(timer);};
-  },[id,view,revision,privateMode]);
+  },[id,view,revision]);
 
   const modify=(index:number,field:keyof EditableLine,value:string)=>{
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
@@ -69,8 +69,8 @@ export const DemoPaymentActivity:React.FC=()=>{
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
       }));
-      const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
-      const readback=privateMode?await getPrivateSimulationHistory('payer'):await loadSimulationHistory(id,'payer');
+      const result=await submitPrivateSimulationPayment(checked,nonce);
+      const readback=await getPrivateSimulationHistory('payer');
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
@@ -78,21 +78,20 @@ export const DemoPaymentActivity:React.FC=()=>{
       setSubmitMessage(txt('Saved and verified in shared SQL: ','SQL-এ সংরক্ষিত ও যাচাইকৃত: ')+result.reference+(result.replayed?' (idempotent replay)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
-  },[id,lines,nonce,saving,language,privateMode]);
+  },[id,lines,nonce,saving,language]);
 
-  if(authLoading&&!demoUser)return <main className="mx-auto max-w-5xl p-6"><p role="status">Checking protected account…</p></main>;
-  if(privateMode&&!id)return <main className="mx-auto max-w-5xl space-y-3 p-6">
+  if(authLoading)return <main className="mx-auto max-w-5xl p-6"><p role="status">Checking protected account…</p></main>;
+  if(!authenticatedUser)return <AccountCenter page="profile"/>;
+  if(!id)return <main className="mx-auto max-w-5xl space-y-3 p-6">
     <h1 className="text-xl font-semibold text-taxpay-text">Protected simulation payment account</h1>
     <p role="status">{bindingError||'Checking your verified account assignment…'}</p>
     <p className="text-sm text-taxpay-muted">An authorized Approver must assign one fictional user1–user10 profile to this authenticated account. No other profile can be selected by URL.</p>
   </main>;
-  if(!id)return null;
   return <main className="mx-auto max-w-5xl space-y-5 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
       <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস')}</p>
       <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
-      <p className="mt-2 text-sm text-taxpay-muted">{privateMode?txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।'):txt('Simulation only: no real payment, government challan or tax credit.','শুধু সিমুলেশন: বাস্তব পেমেন্ট, সরকারি চালান বা কর ক্রেডিট নেই।')}</p>
-      {!privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Public fictional sandbox. All sample accounts are unverified examples; do not enter personal data.','উন্মুক্ত কাল্পনিক নমুনা। ব্যক্তিগত তথ্য প্রবেশ করাবেন না।')}</p>}
+      <p className="mt-2 text-sm text-taxpay-muted">{txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।')}</p>
     </header>
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New simulated payment','নতুন সিমুলেটেড পেমেন্ট')}>
