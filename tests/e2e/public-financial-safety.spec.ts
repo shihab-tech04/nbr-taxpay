@@ -6,7 +6,7 @@ test('public page does not claim real payment processing or grant account roles'
  await expect(page.getByText('This information service does not collect money or issue official challans.')).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
- await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
  await expect(page.getByRole('heading',{name:'Frequently asked questions'})).toBeVisible();
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
