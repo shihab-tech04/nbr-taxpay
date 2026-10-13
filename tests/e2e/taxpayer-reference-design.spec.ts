@@ -88,10 +88,10 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=page.locator('.taxpay-payment-wizard');
     await expect(payment).toBeVisible();
-    await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
-    if(width<768) {
-      await expect(payment.locator('> div').first()).toHaveCSS('border-top-width','0px');
-    }
+    await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(1);
+    await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
+    await expect(page.locator('.citizen-pay')).toHaveCount(0);
+    await expect(page.locator('.citizen-header')).toBeVisible();
     const after=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(after,'Taxpayer payment form has overflow at '+width).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-input-en-'+width+'.png',fullPage:false});
