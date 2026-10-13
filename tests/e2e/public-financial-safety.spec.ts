@@ -1,19 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-test('TaxPay cannot be mistaken for a government-owned portal', async ({page}) => {
-  await page.goto('/?action=landing');
-  await expect(page.getByText('Public TaxPay guide')).toBeVisible();
-  const header = page.locator('header').first();
-  await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
-  await expect(header.getByText('Tax payment services')).toBeVisible();
-  await page.getByRole('button',{name:'Open menu'}).click();
-  await expect(page.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
-  await page.getByRole('button',{name:'Close',exact:true}).click();
-  await expect(page.locator('footer').getByText('Independent tax payment workspace')).toBeVisible();
-  await page.getByRole('button',{name:'বাংলা'}).click();
-  await expect(header.getByText('TaxPay',{exact:true})).toBeVisible();
-  await expect(page.locator('footer').getByText('স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস')).toBeVisible();
+test('public page does not claim real payment processing or grant account roles',async({page})=>{
+ await page.goto('/?action=landing');
+ await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+ await expect(page.getByText('This information service does not collect money or issue official challans.')).toBeVisible();
+ await expect(page.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toHaveCount(0);
+ await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+ await expect(page.getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
 });
 
 test('unverified tax calculator never quotes fictitious slab liability', async ({page}) => {
@@ -31,25 +26,24 @@ test('travel tax simulation cannot be presented as a real immigration challan',a
   await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
 });
 
-test('mobile navigation and home brand are keyboard accessible with 44px touch targets', async ({ page }, info) => {
-  test.skip(info.project.name === 'desktop-1280', 'Mobile menu is intentionally hidden on desktop');
-  await page.goto('/?action=landing');
-  const header=page.locator('header').first();
-  const home=header.getByRole('button',{name:'TaxPay home'});
-  await expect(home).toBeVisible();
-  await home.focus();
-  await expect(home).toBeFocused();
-  const menu=header.getByRole('button',{name:'Open menu'});
-  await expect(menu).toBeVisible();
-  const bounds=await menu.boundingBox();
-  expect(bounds).not.toBeNull();
-  expect(bounds!.width).toBeGreaterThanOrEqual(43.5);
-  expect(bounds!.height).toBeGreaterThanOrEqual(43.5);
-  await menu.click();
-  await expect(page.getByRole('dialog',{name:'Services & menu'})).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button',{name:'বাংলা'}).click();
-  await expect(header.getByRole('button',{name:'TaxPay মূল পাতা'})).toBeVisible();
-  await expect(header.getByRole('button',{name:'মেনু খুলুন'})).toBeVisible();
+test('public mobile information menu is keyboard usable with accessible targets',async({page},info)=>{
+ test.skip(info.project.name==='desktop-1280','Mobile navigation only');
+ await page.goto('/?action=landing');
+ const header=page.locator('.public-home-header');
+ const home=header.getByRole('link',{name:/TaxPay/});
+ await expect(home).toBeVisible();
+ await home.focus(); await expect(home).toBeFocused();
+ const menu=header.getByRole('button',{name:'Menu'});
+ await expect(menu).toBeVisible();
+ const bounds=await menu.boundingBox();
+ expect(bounds).not.toBeNull();
+ expect(bounds!.width).toBeGreaterThanOrEqual(43.5);
+ expect(bounds!.height).toBeGreaterThanOrEqual(43.5);
+ await menu.click();
+ await expect(header.getByRole('navigation',{name:'Primary navigation'})).toBeVisible();
+ await page.keyboard.press('Escape');
+ await expect(header.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await expect(header.getByRole('button',{name:'মেনু'})).toBeVisible();
 });
+
