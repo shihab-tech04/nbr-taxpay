@@ -35,9 +35,9 @@ export function PublicServiceModal({service,onClose}:{service:PublicService,onCl
         <div><p>{bn?'সাইন ইন ছাড়াই':'Without signing in'}</p><h2 id="public-service-title">{title}</h2></div>
         <button ref={close} type="button" onClick={onClose} aria-label={bn?'বন্ধ করুন':'Close modal'}><X size={20}/></button>
       </header>
-      <div className="public-service-dialog__notice" role="note">
+      {service==='travel' && <div className="public-service-dialog__notice" role="note">
         {bn?'শুধু নমুনা কার্যপ্রবাহ। সরকারি পেমেন্ট বা যাচাইকৃত রসিদ ইস্যু হয় না।':'Demonstration workflow only. No government payment or verified receipt is issued.'}
-      </div>
+      </div>}
       <div className="public-service-dialog__body" key={service}>
         {service==='travel'?<TravelTax embedded/>:<ReceiptLookup embedded/>}
       </div>

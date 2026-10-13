@@ -18,12 +18,13 @@ import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
   onBack?: () => void;
+  embedded?: boolean;
 }
 
-export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => {
+export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false }) => {
   const { language, navigate } = useTaxState();
   const bn = language === 'bn';
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
     back: 'রেকর্ডে ফিরুন', print: 'নমুনা রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
     title: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ', subtitle: 'নমুনা এ-চালান বিন্যাস (এনবিআর ইস্যু করেনি)',
@@ -94,25 +95,25 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
     : item.headNameEn;
 
   return (
-    <div className={`space-y-4 max-w-4xl mx-auto${bn ? ' font-bengali' : ''}`} lang={language}>
+    <div className={`receipt-view ${embedded ? 'receipt-view--embedded' : 'receipt-view--page'} space-y-4 max-w-4xl mx-auto${bn ? ' font-bengali' : ''}`} lang={language}>
       {/* Top Actions Bar */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-        <button
+      <div className="receipt-view__actions no-print flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+        {!embedded && <button
           onClick={onBack || (() => navigate('history'))}
           aria-label={labels.back}
           className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:text-emerald-950 px-3 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>{labels.back}</span>
-        </button>
+        </button>}
 
-        <div className="flex items-center gap-2">
+        <div className="receipt-view__action-group flex items-center gap-2">
           <button
             onClick={() => window.print()}
             className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold bg-emerald-800 hover:bg-emerald-900 text-white px-3.5 py-1.5 rounded cursor-pointer shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>{labels.print}</span>
+            <span>{embedded ? (bn ? 'প্রিন্ট প্রিভিউ' : 'Print preview') : labels.print}</span>
           </button>
           <button
             onClick={() => {
@@ -127,47 +128,51 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
             className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded cursor-pointer border border-slate-300"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{labels.export}</span>
+            <span>{embedded ? (bn ? 'JSON ডাউনলোড' : 'Download JSON') : labels.export}</span>
           </button>
         </div>
       </div>
 
       {/* Unofficial printable demonstration receipt; never proof of payment or credit. */}
-      <div className="print-card bg-white border border-slate-300 rounded-xl shadow-md p-4 sm:p-8 relative overflow-hidden text-slate-800 font-sans" lang={language}>
+      <div className="receipt-view__paper print-card bg-white border border-slate-300 rounded-xl shadow-md p-4 sm:p-8 relative overflow-hidden text-slate-800 font-sans" lang={language}>
         {/* Subtle Watermark Stamp */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 select-none rotate-[-25deg]">
+        {!embedded && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 select-none rotate-[-25deg]">
           <div className="text-center font-bold text-7xl font-mono border-8 border-slate-900 p-8 rounded-3xl">
             {bn ? 'এনবিআর ট্যাক্সপে নমুনা সিমুলেশন' : 'NBR TAXPAY DEMO SIMULATION'}
           </div>
-        </div>
+        </div>}
 
-        {/* Challan Document Header */}
-        <div className="text-center pb-6 border-b-2 border-taxpay-primary space-y-1 relative">
-          <div className="flex items-center justify-center gap-2 text-taxpay-dark">
-            <Building2 className="w-8 h-8 text-emerald-800" />
-            <h1 className="font-serif-fraunces text-xl sm:text-2xl font-bold tracking-tight text-taxpay-dark">
-              {labels.title}
-            </h1>
-          </div>
-          <h2 className="text-sm sm:text-base font-semibold text-emerald-900">
-            {labels.subtitle}
-          </h2>
-          <p className="text-xs text-slate-500 font-medium">
-            {labels.fictional}
-          </p>
-
-          <div className="absolute right-0 top-0 hidden sm:flex flex-col items-end">
-            <div className="border border-slate-300 rounded p-1 bg-slate-50">
-              <QrCode className="w-14 h-14 text-slate-800" />
+        {/* A single concise, accurate disclosure replaces the repeated demo copy in this modal. */}
+        {embedded ? (
+          <header className="receipt-view__header">
+            <div className="receipt-view__heading">
+              <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
+              <p className="receipt-view__status" role="note">
+                {bn ? 'নমুনা রেকর্ড · সরকারি চালান নয়' : 'Sample record · Not an official challan'}
+              </p>
             </div>
-            <span className="text-[10px] text-slate-500 font-mono mt-0.5">{labels.demo}</span>
+          </header>
+        ) : (
+          <div className="text-center pb-6 border-b-2 border-taxpay-primary space-y-1 relative">
+            <div className="flex items-center justify-center gap-2 text-taxpay-dark">
+              <Building2 className="w-8 h-8 text-emerald-800" />
+              <h1 className="font-serif-fraunces text-xl sm:text-2xl font-bold tracking-tight text-taxpay-dark">
+                {labels.title}
+              </h1>
+            </div>
+            <h2 className="text-sm sm:text-base font-semibold text-emerald-900">{labels.subtitle}</h2>
+            <p className="text-xs text-slate-500 font-medium">{labels.fictional}</p>
+            <div className="absolute right-0 top-0 hidden sm:flex flex-col items-end">
+              <div className="border border-slate-300 rounded p-1 bg-slate-50"><QrCode className="w-14 h-14 text-slate-800" /></div>
+              <span className="text-[10px] text-slate-500 font-mono mt-0.5">{labels.demo}</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Challan Identifiers Ribbon */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 my-5 text-xs">
           <div>
-            <span className="text-slate-500 block">{labels.challan}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono-plex font-bold text-sm text-emerald-950">
                 {receipt.challanNo}
@@ -185,14 +190,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
           </div>
 
           <div>
-            <span className="text-slate-500 block">{labels.token}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
               {receipt.tokenNumber}
             </span>
           </div>
 
           <div>
-            <span className="text-slate-500 block">{labels.timestamp}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'তারিখ ও সময়' : 'Date & time') : labels.timestamp}:</span>
             <span className="font-mono-plex font-medium text-slate-800 mt-0.5 block">
               {receipt.completedAt || receipt.createdAt}
             </span>
@@ -267,7 +272,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
             {labels.breakdown}
           </h3>
           <div className="overflow-hidden border border-slate-200 rounded-lg">
-            <div className="divide-y divide-slate-200 bg-white sm:hidden" data-testid="receipt-breakdown-mobile">
+            <div className="receipt-view__cards divide-y divide-slate-200 bg-white sm:hidden" data-testid="receipt-breakdown-mobile">
               {receipt.items.map((item, idx) => (
                 <article key={idx} className="p-3 space-y-3">
                   <div>
@@ -293,7 +298,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
                 <span>{labels.grandTotal}</span><span className="shrink-0 font-mono-plex">{formatCurrency(receipt.totalAmount, language)}</span>
               </div>
             </div>
-            <div className="hidden overflow-x-auto sm:block" data-testid="receipt-breakdown-table">
+            <div className="receipt-view__table hidden overflow-x-auto sm:block" data-testid="receipt-breakdown-table">
             <table className="min-w-[720px] divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
                 <tr>
@@ -355,9 +360,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                 {labels.simulated}: {treasuryStatusLabels}
               </span>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              {!embedded && <p className="text-[11px] text-slate-500 mt-0.5">
                 {labels.noTransfer}
-              </p>
+              </p>}
             </div>
           </div>
 
@@ -377,16 +382,16 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               }`}>
                 {creditStatusLabel}
               </span>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              {!embedded && <p className="text-[11px] text-slate-500 mt-0.5">
                 {receipt.isWithholding ? labels.noAgentEntitlement :
                   receipt.taxCreditStatus === 'NOT_APPLICABLE' ? labels.noPersonalCredit : labels.noNbrCredit}
-              </p>
+              </p>}
             </div>
           </div>
         </div>
 
         {/* Signatures & Certification Block */}
-        <div className="mt-8 pt-6 border-t border-slate-200 flex flex-wrap justify-between items-end gap-4 text-xs text-slate-500">
+        {!embedded && <div className="mt-8 pt-6 border-t border-slate-200 flex flex-wrap justify-between items-end gap-4 text-xs text-slate-500">
           <div>
             <p className="font-mono text-[11px]">{labels.demoReference}</p>
             <p className="font-mono text-[10px] text-slate-400">
@@ -401,7 +406,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack }) => 
               {labels.noIssuance}
             </p>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );
