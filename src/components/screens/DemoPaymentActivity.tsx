@@ -195,7 +195,7 @@ export const DemoPaymentActivity:React.FC=()=>{
           <p className="mt-2 text-xs text-taxpay-muted">{txt('Shared SQL transaction · no Treasury settlement or tax credit','SQL লেনদেন · সরকারি পেমেন্ট বা কর ক্রেডিট নয়')}</p>
           <h3 className="mt-4 font-semibold text-taxpay-text">{txt('Allocation details','বরাদ্দের বিবরণ')}</h3>
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
-            <div><p>{a.beneficiary} · {a.simulationCategoryLabels[category][bn?'bn':'en']}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
+            <div><p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
             <p className="font-semibold tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p></li>)}</ul>
           <details className="mt-3 rounded-lg border border-taxpay-border p-3"><summary className="cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
             <ol className="mt-2 space-y-2">{tx.events.map(e=><li key={e.id} className="text-sm"><p className="font-semibold">{e.action}</p><p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p></li>)}</ol>
