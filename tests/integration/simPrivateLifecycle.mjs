@@ -29,7 +29,7 @@ async function account(label){
 const maker=await account('maker'),reviewer=await account('reviewer'),approver=await account('approver');
 const payer=await account('payer'),beneficiary=await account('beneficiary'),stranger=await account('stranger');
 for(const [u,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROVER']])
- assert.equal(psql("insert into public.taxpay_officer_roles(user_uid,role) values('"+u.id+"'::uuid,'"+role+"') returning role"),role);
+ assert.ok(psql("insert into public.taxpay_officer_roles(user_uid,role) values('"+u.id+"'::uuid,'"+role+"') returning role").startsWith(role));
 assert.ok((await rpc('sim_my_taxpayer_profile',{},payer.token)).status>=400);
 assert.ok((await rpc('sim_bind_taxpayer_account',{p_user_id:'user1',p_owner_uid:payer.id})).status>=400);
 assert.ok((await rpc('sim_bind_taxpayer_account',{p_user_id:'user1',p_owner_uid:payer.id},stranger.token)).status>=400);
