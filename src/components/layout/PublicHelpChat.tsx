@@ -44,7 +44,7 @@ export function PublicHelpChat(){
     <input id="taxpay-help-message" value={input} onChange={e=>setInput(e.target.value)} placeholder={bn?'প্রশ্ন লিখুন':'Ask a question'} maxLength={250}/>
     <button type="submit" disabled={!input.trim()} aria-label={bn?'পাঠান':'Send'}><Send size={17}/></button>
    </form>
-   <button className="public-help-more" type="button" onClick={()=>{setOpen(false);navigate('user_guide');}}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</button>
+   <a className="public-help-more" href={import.meta.env.BASE_URL+'?action=user_guide&lang='+language}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</a>
    <p className="public-help-limit">{bn?'স্বয়ংক্রিয় আইন বা কর হিসাব নয়।':'Not tax advice or a calculation service.'}</p>
   </section>}
   <button className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
