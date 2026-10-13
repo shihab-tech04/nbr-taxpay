@@ -202,7 +202,7 @@ export const DemoPaymentActivity:React.FC=()=>{
               </select>
             </label>
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Amount (BDT)','টাকার পরিমাণ (৳)')}
-              <input required inputMode="decimal" autoComplete="off" className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.amount} onChange={e=>modify(index,'amount',e.target.value)} placeholder="100.00"/>
+              <input inputMode="decimal" autoComplete="off" className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.amount} onChange={e=>modify(index,'amount',e.target.value)} placeholder="100.00"/>
             </label>
           </div>
           {lines.length>1&&<button type="button" onClick={()=>removeLine(index)} className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold">{txt('Remove allocation','বরাদ্দ বাদ দিন')}</button>}
