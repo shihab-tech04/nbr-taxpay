@@ -631,7 +631,7 @@
 }
 .taxpay-guided-primary,.taxpay-guided-secondary {
   display: inline-flex; align-items: center; justify-content: center; text-align: center;
-  min-height: 46px; padding: 11px 22px; border-radius: 10px;
+  gap: 8px; min-height: 46px; padding: 11px 22px; border-radius: 10px;
   font-weight: 700; font-size: 14px; line-height: 1.4; cursor: pointer;
 }
 .taxpay-guided-primary {
