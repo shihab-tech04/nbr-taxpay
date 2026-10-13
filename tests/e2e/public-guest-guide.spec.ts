@@ -239,7 +239,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  test.skip(info.project.name!=='mobile-320','Smallest viewport EN/BN stepper');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
- await page.getByRole('button',{name:'ভ্রমণ কর দিন'}).click();
+ await page.getByRole('button',{name:'ভ্রমণ কর পরিশোধ'}).click();
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
  await expect(modal.getByRole('navigation',{name:'ভ্রমণ করের ধাপ'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'যাত্রীর তথ্য দিন'})).toBeVisible();
