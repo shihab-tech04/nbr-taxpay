@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 const projectRef = 'nbr-taxpay-test';
 const syntheticSupabaseUrl = `https://${projectRef}.invalid`;
@@ -163,9 +164,9 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await expect(page.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
   await expect(page.getByText(/PRIVATE-OWNER-A-/)).toHaveCount(0);
   await expect(page.getByText('SYN-A-REF-100001')).toHaveCount(0);
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page, 'bn');
   await expect(page.getByRole('status').filter({ hasText: 'এই ব্রাউজার থেকে সাইন আউট হয়েছে। সার্ভার সেশন বাতিল নিশ্চিত করতে পারেনি:' })).toBeVisible();
-  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await setWorkspaceLanguage(page, 'en');
   expect(logoutScopes).toEqual(['local']);
 
   await page.goto(callbackUrl(makeSession(userA), 1));
@@ -187,7 +188,7 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await expect(page.getByText('SYN-B-REF-100002 — Pending evidence — not an approved correction')).toBeVisible();
   await expect(page.getByText('SYN-A-REF-100001')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page, 'bn');
   await expect(page.getByRole('heading', { name: 'সাইন-ইন করা অ্যাপ ব্যবহারকারী' })).toBeVisible();
   await expect(page.getByText('PRIVATE-OWNER-B-DRAFT')).toBeVisible();
   const dimensions = await page.evaluate(() => ({
