@@ -130,9 +130,9 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_SUPABASE_URL); if(!['127.0.0.1','localhost'].includes(u.hostname))process.exit(1)"
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
-          git clone --depth 1 --branch integration/isolated-crossapp-browser-20261013 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          git clone --depth 1 --branch security/real-office-auth-gate-20261013 https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # The cross-app test must never run against an unexpected Office source revision.
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "a236f4915efdbd25b3a833fe86005fdc66f474fe"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "e1d1732f140d2e10c4f317f0a76b02801bb867aa"
           npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
