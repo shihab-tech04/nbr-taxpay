@@ -35,10 +35,36 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Verify TypeScript and domain constraints
+      - name: Verify TypeScript contracts
+        run: npm run lint
+
+      # Original domain assertions include a nine-transaction SQL projection test.
+      # Hosted anonymous access is restricted, so execute the SAME assertions
+      # against real disposable PostgREST with the controlled 9-row seed fixture.
+      - name: Prepare disposable Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Start isolated domain fixture (no cloud link)
         run: |
-          npm run lint
-          npm run test:domain
+          set -euo pipefail
+          supabase stop --no-backup || true
+          supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' |
+            sed -e 's/^API_URL=/TAXPAY_LOCAL_SUPABASE_URL=/' \
+                -e 's/^ANON_KEY=/TAXPAY_LOCAL_SUPABASE_ANON_KEY=/' \
+                -e 's/="\(.*\)"$/=\1/' >> "$GITHUB_ENV"
+          grep -q '^TAXPAY_LOCAL_SUPABASE_URL=' "$GITHUB_ENV"
+          grep -q '^TAXPAY_LOCAL_SUPABASE_ANON_KEY=' "$GITHUB_ENV"
+
+      - name: Restore exact nine-transaction synthetic fixture
+        run: |
+          set -euo pipefail
+          docker exec -i supabase_db_NBR-TaxPay-responsive-check-20261012 psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seeds/20261013_user1_to_user5_simulation.sql
+
+      - name: Run ALL original domain assertions against local PostgREST
+        run: npm run test:domain
 
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
@@ -61,6 +87,10 @@ jobs:
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts
+
+      - name: Stop disposable domain fixture
+        if: always()
+        run: supabase stop --no-backup || true
 
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()
