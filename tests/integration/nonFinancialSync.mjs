@@ -38,7 +38,7 @@ async function user() {
 function pass(s){console.log('PASS '+s)}
 const a=await user(),b=await user(),officer=await user();
 assert.notEqual(a.id,b.id);assert.notEqual(a.id,officer.id);
-assert.equal(psql(`insert into public.taxpay_officer_roles(user_uid,role) values('${officer.id}'::uuid,'REVIEWER') returning role`),'REVIEWER');
+assert.equal(psql(`insert into public.taxpay_officer_roles(user_uid,role) values('${officer.id}'::uuid,'REVIEWER') returning role`).split('\n')[0],'REVIEWER');
 pass('three independent synthetic identities; officer role assigned only by direct DB authority');
 
 const anon=await http('/rest/v1/taxpay_payment_requests?select=id');
