@@ -144,7 +144,11 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     expect(axe.violations.map(({ id, impact, nodes }) => ({ id, impact, count: nodes.length, targets: nodes.flatMap(node => node.target) }))).toEqual([]);
   }
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  if (info.project.name.startsWith('mobile')) {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  } else await page.getByRole('button', { name: 'বাংলা' }).first().click();
   await expect(page.getByText(/পেমেন্ট সিমুলেশন চালান/)).toBeVisible();
   await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
@@ -169,7 +173,11 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     await page.getByTestId('receipt-breakdown-table').screenshot({ path: 'docs/acceptance-evidence/2026-10-12/guest-receipt-lines-bn-desktop-1280.png' });
   }
 
-  await page.getByRole('button', { name: 'EN' }).click();
+  if (info.project.name.startsWith('mobile')) {
+    await page.getByRole('button', { name: 'মেনু খুলুন' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'English' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Close' }).click();
+  } else await page.getByRole('button', { name: 'EN' }).first().click();
   await expect(page.getByRole('heading', { name: 'TaxPay — Unofficial demonstration receipt' })).toBeVisible();
   await expect(page.getByText('Fictional Treasury scroll reference:')).toBeVisible();
 });
