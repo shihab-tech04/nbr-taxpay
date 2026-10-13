@@ -32,7 +32,12 @@ export const NotificationsView:React.FC=()=>{
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !notices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
         <ul className="divide-y divide-taxpay-border">{notices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{label('Simulated payment recorded','সিমুলেটেড পেমেন্ট সংরক্ষিত')} · {n.messageCode.replace(/_/g,' ')}</h2>
+          <h2 className="text-base font-semibold text-taxpay-text">{({
+            SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
+            SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
+            SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
+          } as Record<string,string>)[n.messageCode] ??
+          label('Simulated payment recorded','সিমুলেটেড পেমেন্ট সংরক্ষিত')}</h2>
           <p className="break-all text-sm text-taxpay-muted">{n.transactionId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
         </li>)}</ul>}
     </section>

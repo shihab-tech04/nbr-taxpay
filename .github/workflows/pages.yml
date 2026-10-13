@@ -50,6 +50,11 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/payment-review-release.spec.ts
 
+      - name: Verify connected fictional Start Payment entry on a mobile viewport
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/connected-simulation-navigation.spec.ts --project=mobile-375
+
       - name: Verify isolated synthetic workspace browser journeys (mock transport only)
         env:
           VITE_SUPABASE_DISABLED: 'false'

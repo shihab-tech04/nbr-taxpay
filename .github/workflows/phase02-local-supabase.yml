@@ -9,9 +9,9 @@ permissions:
   contents: read
 
 concurrency:
-  # One disposable stack/port is shared by backend CI; serialize every PR to avoid collisions.
-  group: taxpay-phase02-disposable-supabase
-  cancel-in-progress: false
+  # Each GitHub-hosted runner has isolated loopback ports; avoid cross-PR cancellation.
+  group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   disposable-backend:
@@ -68,12 +68,12 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 9
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 10
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_transactions') is not null")" = t
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_allocations') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
-          echo "PASS: nine migrations installed; original five safe owner-update grants retained; synthetic ledger tables present"
+          echo "PASS: ten migrations installed; original five safe owner-update grants retained; synthetic ledger tables present"
 
       - name: Verify atomic multi-beneficiary synthetic payment API, RLS and rollback
         shell: bash
@@ -82,11 +82,20 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/simulatedPaymentAcceptance.sql
 
+      - name: Verify new synthetic officer review DDL is installed
+        run: |
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          test "$(psql -X -Atqc "select to_regclass('public.sim_payment_officer_decisions') is not null")" = t
+          test "$(psql -X -Atqc "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='sim_payment_officer_action'")" = 1
+
       - name: Run real local Auth + PostgREST + direct SQL ownership checks
         run: npm run test:integration:local
 
       - name: Verify non-financial taxpayer-to-officer SQL, RLS, notifications and idempotency
         run: node tests/integration/nonFinancialSync.mjs
+
+      - name: Verify real local three-officer simulation statuses and recipient notifications
+        run: node tests/integration/simOfficerReview.mjs
 
       - name: Verify actual email magic-link authentication against disposable Mailpit
         run: node tests/integration/localMagicLinkAuth.mjs

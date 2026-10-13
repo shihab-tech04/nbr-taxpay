@@ -10,7 +10,7 @@ export type SimulationCategory=typeof simulationCategories[number];
 export type SimulationLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amountMinor:number};
 export type SimulationAllocation=SimulationLine&{id:string;lineNo:number};
 export type SimulationEvent={id:number;action:string;note:string;occurredAt:string};
-export type SimulationTransaction={id:string;transactionId:string;payer:SimulationUser;state:'SIMULATED'|'PENDING'|'FAILED'|'REVERSED';createdAt:string;simulationOnly:true;totalMinor:number;allocations:SimulationAllocation[];events:SimulationEvent[]};
+export type SimulationTransaction={id:string;transactionId:string;payer:SimulationUser;state:'SIMULATED'|'PENDING'|'FAILED'|'REVERSED';createdAt:string;simulationOnly:true;totalMinor:number;reviewStatus:string;allocations:SimulationAllocation[];events:SimulationEvent[]};
 export type SimulationNotice={id:number;userId:SimulationUser;transactionId:string;messageCode:string;createdAt:string;isRead:boolean};
 export type SimSubmission={transactionId:string;reference:string;totalMinor:number;replayed:boolean};
 async function rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
