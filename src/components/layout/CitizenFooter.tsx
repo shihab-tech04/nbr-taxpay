@@ -26,8 +26,8 @@ export function CitizenFooter(){
         </button>)}
       </nav>
       <p className="citizen-footer__disclaimer"><ShieldAlert size={15} aria-hidden="true"/>
-        {bn?'স্বতন্ত্র প্রদর্শনী। কোনো প্রকৃত অর্থ জমা, সরকারি রসিদ বা স্বীকৃত কর ক্রেডিট প্রদান করা হয় না।':
-          'Independent demonstration. It does not collect money, issue an official government receipt or establish a tax credit.'}
+        {bn?'শুধু প্রিভিউ · প্রকৃত পেমেন্ট বা সরকারি রসিদ ইস্যু হয় না।':
+          'Preview only · No payments or government receipts issued.'}
       </p>
     </div>
   </footer>;

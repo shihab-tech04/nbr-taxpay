@@ -40,10 +40,10 @@ export const ReceiptLookup: React.FC = () => {
           </div>
           <div className="min-w-0">
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              Sample Receipt & Token Lookup
+              Receipt lookup
             </h1>
             <p className="text-xs text-slate-500">
-              Search locally generated demonstration records. This is not official challan verification or confirmation of Treasury settlement or NBR tax credit.
+              Find a saved reference.
             </p>
           </div>
         </div>
@@ -52,12 +52,12 @@ export const ReceiptLookup: React.FC = () => {
         <form onSubmit={handleSearch} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Search sample challan, token, or transaction reference
+              Challan, token or transaction reference
             </label>
             <div className="flex flex-col sm:flex-row gap-2 min-w-0">
               <input
                 type="text"
-                placeholder="Enter a demonstration reference"
+                placeholder="Enter a reference"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full min-w-0 sm:flex-1 px-4 py-2.5 text-sm rounded-lg border border-slate-300 font-mono-plex focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
@@ -67,14 +67,14 @@ export const ReceiptLookup: React.FC = () => {
                 className="w-full sm:w-auto justify-center min-h-11 px-4 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <Search className="w-4 h-4" />
-                <span>Search sample records</span>
+                <span>Search records</span>
               </button>
             </div>
           </div>
 
           {/* Quick Preset Queries for Demonstration Testing */}
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span>Try sample records:</span>
+            <span>Try a reference:</span>
             {receipts.slice(0, 3).map(r => (
               <button
                 key={r.id}
@@ -96,18 +96,18 @@ export const ReceiptLookup: React.FC = () => {
           <div className="mt-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-2">
             <div className="flex items-center gap-2 font-bold text-sm text-rose-800">
               <AlertCircle className="w-5 h-5 text-rose-600" />
-              <span>No matching sample record</span>
+              <span>No matching record</span>
             </div>
             <p className="text-xs text-rose-700">
-              No matching record exists in this local demonstration for: <strong className="font-mono">{query}</strong>.
+              No record found for: <strong className="font-mono">{query}</strong>.
             </p>
             <div className="text-[11px] text-rose-600 space-y-1 pt-1">
-              <p>• If money was debited from your bank or MFS wallet without an A-Challan being generated, please report this incident immediately.</p>
+              <p>If money was debited, contact your bank or payment provider.</p>
               <button
                 onClick={() => navigate('incident')}
                 className="font-bold underline hover:text-rose-900 cursor-pointer"
               >
-                File an Incident Report for Unreconciled Transaction
+                Report a payment issue
               </button>
             </div>
           </div>
@@ -120,9 +120,9 @@ export const ReceiptLookup: React.FC = () => {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-6 h-6 text-emerald-700" />
                 <div>
-                  <h3 className="font-bold text-sm">Sample receipt found — not government verified</h3>
+                  <h3 className="font-bold text-sm">Sample receipt found</h3>
                   <p className="text-xs text-emerald-800">
-                    Illustrative scroll reference: <strong className="font-mono">{searchResult.treasuryScrollNo}</strong> — no official Treasury confirmation
+                    Sample scroll reference: <strong className="font-mono">{searchResult.treasuryScrollNo}</strong> (not verified)
                   </p>
                 </div>
               </div>

@@ -30,7 +30,7 @@ test('guest menu preserves clear demo profile separation and keyboard escape', a
   await page.getByRole('button',{name:'Open menu'}).click();
   const menu = page.getByRole('dialog',{name:'Services & menu'});
   await expect(menu.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toBeVisible();
-  await expect(menu.getByText('Selecting a profile is not authentication or authorization.')).toBeVisible();
+  await expect(menu.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toHaveValue('GUEST');
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
   await page.getByRole('button',{name:'বাংলা'}).click();

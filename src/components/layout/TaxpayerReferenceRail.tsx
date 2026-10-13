@@ -44,7 +44,7 @@ export function TaxpayerReferenceRail() {
       <div>
         <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(sampleProfile ? 'taxpayer_home' : 'landing')}>
           <Landmark size={23} aria-hidden={true} />
-          <span><strong>TaxPay</strong><small>{bn ? 'স্বতন্ত্র কর পেমেন্ট প্রদর্শনী' : 'Independent tax payment demo'}</small></span>
+          <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
         <button className="taxpayer-reference-main-action" type="button" onClick={() => navigate(sampleProfile ? 'wizard' : 'landing')}>
           <WalletCards size={18} aria-hidden={true} />

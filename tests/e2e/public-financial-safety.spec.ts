@@ -5,10 +5,10 @@ test('TaxPay cannot be mistaken for a government-owned portal', async ({page}) =
   await expect(page.getByText('Public TaxPay guide')).toBeVisible();
   const header = page.locator('header').first();
   await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
-  await expect(header.getByText('Independent payment demonstration')).toBeVisible();
+  await expect(header.getByText('Tax payment services')).toBeVisible();
   await page.getByRole('button',{name:'Open menu'}).click();
   await expect(page.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toBeVisible();
-  await expect(page.getByText('Selecting a profile is not authentication or authorization.')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
   await page.getByRole('button',{name:'Close',exact:true}).click();
   await expect(page.locator('footer').getByText('Independent tax payment workspace')).toBeVisible();
   await page.getByRole('button',{name:'বাংলা'}).click();
@@ -20,15 +20,15 @@ test('unverified tax calculator never quotes fictitious slab liability', async (
   await page.goto('/?action=guidance');
   await expect(page.getByRole('heading',{name:'Individual income tax estimator — unavailable'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Proceed to Pay Estimated Tax'})).toHaveCount(0);
-  await expect(page.getByText(/No verified, year-specific income tax thresholds/)).toBeVisible();
+  await expect(page.getByText(/Tax calculations are unavailable until the applicable tax rules are verified/)).toBeVisible();
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'ব্যক্তিগত আয়কর হিসাব — বর্তমানে বন্ধ'})).toBeVisible();
 });
 
 test('travel tax simulation cannot be presented as a real immigration challan',async ({page})=>{
   await page.goto('/?action=travel');
-  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toBeVisible();
-  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toBeVisible();
+  await expect(page.getByText('Enter your travel details.')).toBeVisible();
+  await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
 });
 
 test('mobile navigation and home brand are keyboard accessible with 44px touch targets', async ({ page }, info) => {

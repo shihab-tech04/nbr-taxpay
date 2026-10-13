@@ -59,7 +59,6 @@ export const PaymentHistory: React.FC = () => {
       <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
         <p className="text-xs font-semibold text-taxpay-dark">{label('Sample records','নমুনা তথ্য')}</p>
         <h1 className="mt-1 text-2xl font-bold text-taxpay-text">{label('Payments & activity','পেমেন্ট ও লেনদেন')}</h1>
-        <p className="mt-2 text-sm text-taxpay-muted">{label('Payments initiated under this example payer TIN. These records do not establish who receives tax credit.','এই নমুনা পরিশোধকারীর টিআইএন দিয়ে শুরু করা লেনদেন। এগুলো দিয়ে কর ক্রেডিটের মালিকানা নিশ্চিত হয় না।')}</p>
       </header>
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -90,7 +89,7 @@ export const PaymentHistory: React.FC = () => {
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <p aria-live="polite" className="text-sm text-taxpay-muted">{label('Example records','নমুনা লেনদেন')}: {filtered.length}</p>
+          <p aria-live="polite" className="text-sm text-taxpay-muted">{label('Records','রেকর্ড')}: {filtered.length}</p>
           <button type="button" onClick={exportDemo} disabled={!filtered.length}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
             <Download aria-hidden="true" size={16}/>{label('Export sample CSV','নমুনা সিএসভি নিন')}
@@ -112,8 +111,8 @@ export const PaymentHistory: React.FC = () => {
                   <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
                 </div>
                 <p className="mt-1 text-xs text-taxpay-muted">{categoryText(r.paymentCategory)} · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
-                <p className="mt-2 text-xs text-taxpay-muted">{label('Demo Treasury','নমুনা ট্রেজারি')}: {statusLabel(r.treasuryStatus)}</p>
-                <p className="text-xs text-taxpay-muted">{label('Demo tax credit','নমুনা কর ক্রেডিট')}: {statusLabel(r.taxCreditStatus)}</p>
+                <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {statusLabel(r.treasuryStatus)}</p>
+                <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
                 <button type="button" onClick={()=>selectReceipt(r.id)}
                   className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
                   {label('View sample receipt','নমুনা রসিদ দেখুন')} <ArrowRight aria-hidden="true" size={16}/>

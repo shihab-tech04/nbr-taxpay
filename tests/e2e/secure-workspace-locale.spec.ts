@@ -17,7 +17,7 @@ test('secure workspace sign-in copy stays localized and fits the viewport', asyn
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(workspace).toHaveAttribute('lang', 'bn');
   await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
-  await expect(page.getByText('ইমেইল অ্যাক্সেস করদাতার পক্ষে কাজ করার আইনগত অনুমতি প্রমাণ করে না।')).toBeVisible();
+  await expect(page.getByText('ইমেইলে সাইন-ইন লিংক পাঠানো হবে।')).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Signed-in application user' })).toHaveCount(0);

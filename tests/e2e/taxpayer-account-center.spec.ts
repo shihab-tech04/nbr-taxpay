@@ -14,7 +14,7 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
   await page.getByRole('combobox',{name:'Interface language'}).selectOption('bn');
   await expect(page.getByRole('heading',{name:'প্রোফাইল সেটিংস'})).toBeVisible();
   await page.getByRole('navigation',{name:'অ্যাকাউন্ট পৃষ্ঠা'}).getByRole('button',{name:'বিজ্ঞপ্তি'}).click();
-  await expect(page.getByText('নমুনা প্রদর্শনীতে ব্যক্তিগত বিজ্ঞপ্তি নেই।')).toBeVisible();
+  await expect(page.getByText('এখনো কোনো বিজ্ঞপ্তি নেই।')).toBeVisible();
   await expect(page.getByText(/Demand Notice|Statutory Alerts|Advance Tax 2nd Quarter/)).toHaveCount(0);
   await page.getByRole('button',{name:'নমুনা প্রোফাইল থেকে বের হোন'}).click();
   await expect(page).toHaveURL(/action=landing/);
@@ -24,8 +24,8 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
 test('profile and notification routes never expose private data to anonymous Guest or Officer',async({page})=>{
   await page.goto('/?action=account_notifications');
   await expect(page.getByRole('heading',{name:'Notifications'})).toBeVisible();
-  await expect(page.getByText('The public demonstration has no active authentication or private database.')).toBeVisible();
-  await expect(page.getByText('No private notifications in demonstration mode.')).toBeVisible();
+  await expect(page.getByText('Sign-in is currently unavailable.')).toBeVisible();
+  await expect(page.getByText('No notifications yet.')).toBeVisible();
   await expect(page.getByText(/Demand Notice DN-|BDT 47,400|Inspecting Joint Commissioner/)).toHaveCount(0);
   await page.goto('/?action=account_settings');
   await expect(page.getByRole('heading',{name:'Profile settings'})).toBeVisible();
@@ -44,7 +44,7 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   for(const label of ['Profile','Notifications','Profile settings'])await expect(rail.getByRole('button',{name:label,exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
-  await expect(page.getByText('No private notifications in demonstration mode.')).toBeVisible();
+  await expect(page.getByText('No notifications yet.')).toBeVisible();
   await rail.getByRole('button',{name:'Exit sample'}).click();
   await expect(page.getByRole('heading',{name:'Understand your next tax-payment step'})).toBeVisible();
 });

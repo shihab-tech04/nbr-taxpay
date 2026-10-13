@@ -7,9 +7,9 @@ export const TaxpayerDashboard: React.FC = () => {
   const bn=language==='bn';
   const label=(en:string,bengali:string)=>bn?bengali:en;
   const rows=[
-    {en:'Outstanding tax',bn:'বকেয়া কর',detailEn:'No verified assessment or demand record',detailBn:'যাচাইকৃত কর নির্ধারণ বা দাবির তথ্য নেই'},
-    {en:'Recognized credits',bn:'স্বীকৃত কর ক্রেডিট',detailEn:'No verified entitlement or ledger reconciliation',detailBn:'যাচাইকৃত ক্রেডিট বা লেজার সমন্বয়ের তথ্য নেই'},
-    {en:'Advance tax status',bn:'অগ্রিম করের অবস্থা',detailEn:'Assessment-year schedule not verified',detailBn:'করবর্ষভিত্তিক সময়সূচি যাচাইকৃত নয়'}
+    {en:'Outstanding tax',bn:'বকেয়া কর',detailEn:'Assessment not available',detailBn:'কর নির্ধারণ পাওয়া যায়নি'},
+    {en:'Recognized credits',bn:'স্বীকৃত কর ক্রেডিট',detailEn:'Credit records not available',detailBn:'ক্রেডিটের তথ্য পাওয়া যায়নি'},
+    {en:'Advance tax status',bn:'অগ্রিম করের অবস্থা',detailEn:'Schedule not available',detailBn:'সময়সূচি পাওয়া যায়নি'}
   ];
   return (
     <div className={`mx-auto max-w-5xl space-y-5 pb-12 ${bn?'font-bengali':''}`}>
@@ -17,7 +17,6 @@ export const TaxpayerDashboard: React.FC = () => {
         <p className="text-xs font-semibold text-taxpay-dark">{label('Sample taxpayer · account overview','নমুনা করদাতা · হিসাবের সারসংক্ষেপ')}</p>
         <h1 className="mt-1 text-2xl font-bold text-taxpay-text sm:text-3xl">{label('Tax dashboard','কর সারসংক্ষেপ')}</h1>
         <p className="mt-2 text-sm text-taxpay-muted">{bn?taxpayerProfile.nameBn:taxpayerProfile.nameEn} · e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span></p>
-        <p className="mt-3 rounded-md bg-taxpay-background p-3 text-sm text-taxpay-muted">{label('Live assessments, Treasury settlements, eTDS records and tax-credit ownership are not connected in this demonstration.','এই প্রদর্শনীতে প্রকৃত কর নির্ধারণ, ট্রেজারি জমা, ই-টিডিএস বা কর ক্রেডিটের মালিকানার তথ্য সংযুক্ত নয়।')}</p>
       </header>
 
       <section aria-labelledby="tax-summary-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
@@ -31,10 +30,6 @@ export const TaxpayerDashboard: React.FC = () => {
             </div>
           ))}
         </div>
-        <details className="mt-3 rounded-lg bg-taxpay-background p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-taxpay-dark">{label('What counts as recognized credit?','স্বীকৃত কর ক্রেডিট কী?')}</summary>
-          <p className="mt-2 text-sm leading-relaxed text-taxpay-muted">{label('A simulated challan, payer reference or gateway success does not establish Treasury settlement or NBR tax credit. Verified owner and reconciliation records are required.','নমুনা চালান, পরিশোধকারীর রেফারেন্স বা গেটওয়ের সফল অবস্থা ট্রেজারি জমা বা এনবিআরের কর ক্রেডিট নিশ্চিত করে না। মালিকানা ও সমন্বয়ের যাচাইকৃত তথ্য প্রয়োজন।')}</p>
-        </details>
       </section>
 
       <section aria-labelledby="tax-advance-title" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
@@ -42,7 +37,6 @@ export const TaxpayerDashboard: React.FC = () => {
           <CalendarDays size={20} className="text-taxpay-dark" aria-hidden="true"/>
           <h2 id="tax-advance-title" className="text-lg font-bold text-taxpay-text">{label('Advance tax instalments','অগ্রিম করের কিস্তি')}</h2>
         </div>
-        <p className="mb-3 text-sm text-taxpay-muted">{label('Quarterly schedule, due dates, rates and paid states require verified tax-year data. No instalment is marked paid here.','ত্রৈমাসিক সময়সূচি, তারিখ, হার ও পরিশোধের অবস্থা যাচাইকৃত করবর্ষের তথ্যসাপেক্ষ। এখানে কোনো কিস্তি পরিশোধিত দেখানো হয়নি।')}</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[1,2,3,4].map(q=>(
             <div key={q} className="rounded-lg border border-taxpay-border bg-taxpay-background p-3">
@@ -58,7 +52,7 @@ export const TaxpayerDashboard: React.FC = () => {
           <Receipt size={20} className="text-taxpay-dark" aria-hidden="true"/>
           <h2 id="tax-withholding-title" className="text-lg font-bold text-taxpay-text">{label('Withholding / TDS','উৎসে কর কর্তন / টিডিএস')}</h2>
         </div>
-        <p className="text-sm text-taxpay-muted">{label('No verified eTDS deductions or deductee credits are connected. Example records must not be treated as tax paid on your behalf.','যাচাইকৃত ই-টিডিএস কর্তন বা করদাতার ক্রেডিট সংযুক্ত নেই। নমুনা তথ্যকে আপনার পক্ষে পরিশোধিত কর হিসেবে ধরা যাবে না।')}</p>
+        <p className="text-sm text-taxpay-muted">{label('No withholding records available.','উৎসে কর কর্তনের তথ্য পাওয়া যায়নি।')}</p>
       </section>
 
       <nav aria-label={label('Related tax services','সংশ্লিষ্ট কর সেবা')} className="grid gap-3 sm:grid-cols-2">
@@ -66,7 +60,7 @@ export const TaxpayerDashboard: React.FC = () => {
           <History size={19} aria-hidden="true"/><span className="flex-1">{label('Payment activity','পেমেন্টের তথ্য')}</span><ArrowRight size={16} aria-hidden="true"/>
         </button>
         <button type="button" onClick={()=>navigate('ledger')} className="flex min-h-12 items-center gap-3 rounded-lg border border-taxpay-border bg-white p-4 text-left font-semibold text-taxpay-dark hover:bg-taxpay-light">
-          <BookOpen size={19} aria-hidden="true"/><span className="flex-1">{label('View shared sample ledger','নমুনা লেজার দেখুন')}</span><ArrowRight size={16} aria-hidden="true"/>
+          <BookOpen size={19} aria-hidden="true"/><span className="flex-1">{label('View ledger','লেজার দেখুন')}</span><ArrowRight size={16} aria-hidden="true"/>
         </button>
       </nav>
     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, ShieldAlert, X } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
@@ -173,7 +173,7 @@ export function CitizenNavigation() {
           <button type="button" className="citizen-brand" onClick={goHome}
             aria-label={bn ? 'TaxPay মূল পাতা' : 'TaxPay home'}>
             <Landmark aria-hidden="true" size={24} />
-            <span><strong>TaxPay</strong><small>{bn ? 'স্বতন্ত্র পেমেন্ট প্রদর্শনী' : 'Independent payment demonstration'}</small></span>
+            <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
           </button>
           {inTransaction ? (
             <div className="citizen-flow-actions">
@@ -256,11 +256,10 @@ export function CitizenNavigation() {
                   setUserRole(role);
                   go(role === 'GUEST' ? 'landing' : 'taxpayer_home');
                 }}>{profileOptions.map(p => <option key={p.value} value={p.value}>{bn ? p.bn : p.en}</option>)}</select>
-                <p className="citizen-dialog__notice"><ShieldAlert size={16} aria-hidden="true"/> {bn ? 'শুধু নমুনা তথ্য; প্রকৃত অ্যাকাউন্ট বা অনুমোদন নয়।' : 'Illustrative records only. Selecting a profile is not authentication or authorization.'}</p>
               </>
             ) : (
               <>
-                <p className="citizen-dialog__intro">{bn ? 'এগুলো নমুনা পেমেন্ট প্রক্রিয়া। প্রকৃত অর্থ জমা বা কর ক্রেডিট হয় না।' : 'Explore demonstration payment journeys. No real payment or tax credit is created.'}</p>
+                <p className="citizen-dialog__intro">{bn ? 'পেমেন্টের ধরন দেখুন। প্রকৃত অর্থ জমা হয় না।' : 'Preview payment options. No funds are transferred.'}</p>
                 <div className="citizen-dialog__links">
                   {Object.entries(CATEGORY_LABELS).map(([key,item]) => (
                     <button key={key} type="button" className="citizen-payment-choice" onClick={() => chooseGuest(key)}>
@@ -271,7 +270,7 @@ export function CitizenNavigation() {
                     <span>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span><ArrowRight size={16} aria-hidden="true"/>
                   </button>
                 </div>
-                <p className="citizen-dialog__notice"><BookOpen size={16} aria-hidden="true"/> {bn ? 'খাতের আইনগত যাচাই অসম্পূর্ণ।' : 'Payment-head legal classification remains unverified.'}</p>
+                <p className="citizen-dialog__notice"><BookOpen size={16} aria-hidden="true"/> {bn ? 'পেমেন্টের খাত পর্যালোচনাধীন।' : 'Payment heads under review.'}</p>
               </>
             )}
           </div>

@@ -42,7 +42,7 @@ export const PublicLanding: React.FC = () => {
             {label('Public TaxPay guide', 'TaxPay জনসেবা নির্দেশিকা')}
           </p>
           <h1 id="citizen-guest-title">{label('Understand your next tax-payment step', 'আপনার পরবর্তী কর পরিশোধের ধাপ জানুন')}</h1>
-          <p>{label('Explore payment journeys, check sample references and find guidance. This independent prototype is not a live NBR or Treasury service.', 'পেমেন্টের ধাপ দেখুন, নমুনা রেফারেন্স যাচাই করুন এবং নির্দেশনা খুঁজুন। এই স্বতন্ত্র প্রোটোটাইপ প্রকৃত এনবিআর বা ট্রেজারি সেবা নয়।')}</p>
+          <p>{label('Find payment services, reference details and guidance.', 'পেমেন্ট সেবা, রেফারেন্সের তথ্য ও নির্দেশনা খুঁজুন।')}</p>
           <div className="citizen-public-hero__actions">
             <a className="citizen-public-primary" href="#citizen-payment-options">
               <WalletCards size={18} aria-hidden="true" /> {label('Browse payment services', 'পেমেন্ট সেবা দেখুন')}
@@ -51,15 +51,11 @@ export const PublicLanding: React.FC = () => {
               {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')} <ArrowRight size={16} aria-hidden="true" />
             </button>
           </div>
-          <p className="citizen-public-hero__note">{label('Explore the sample payment journeys without signing in. No money is transferred.', 'সাইন-ইন ছাড়াই নমুনা পেমেন্টের ধাপ দেখা যায়। কোনো অর্থ স্থানান্তর হয় না।')}</p>
         </div>
-        <aside className="citizen-public-hero__panel" aria-label={label('Prototype status', 'নমুনা সেবার অবস্থা')}>
-          <p className="citizen-public-hero__panel-label">{label('Prototype status', 'নমুনা সেবার অবস্থা')}</p>
-          <strong>{label('Independent TaxPay demonstration', 'স্বতন্ত্র TaxPay প্রদর্শনী')}</strong>
-          <ul>
-            <li>{label('Forms and receipts use sample data.', 'ফর্ম ও রসিদে নমুনা তথ্য ব্যবহৃত হয়।')}</li>
-            <li>{label('No live payment gateway or official NBR/Treasury record is connected.', 'কোনো প্রকৃত পেমেন্ট গেটওয়ে বা এনবিআর/ট্রেজারির সরকারি তথ্য সংযুক্ত নয়।')}</li>
-          </ul>
+        <aside className="citizen-public-hero__panel" aria-label={label('Service status', 'সেবার অবস্থা')}>
+          <p className="citizen-public-hero__panel-label">{label('Service status', 'সেবার অবস্থা')}</p>
+          <strong>{label('Payment preview', 'পেমেন্ট প্রিভিউ')}</strong>
+          <p>{label('No payments are processed here.', 'এখানে প্রকৃত পেমেন্ট হয় না।')}</p>
         </aside>
       </section>
 
@@ -91,7 +87,7 @@ export const PublicLanding: React.FC = () => {
           <div>
             <p className="citizen-hub-eyebrow">{label('Payment services', 'পেমেন্ট সেবা')}</p>
             <h2 id="citizen-payment-options">{label('Choose a payment journey', 'পেমেন্টের ধাপ বাছুন')}</h2>
-            <p>{label('These routes open a demonstration form. Rates, eligibility and government accounting codes are not legally certified.', 'এগুলো নমুনা ফর্ম খোলে। হার, যোগ্যতা ও সরকারি হিসাব কোড আইনগতভাবে প্রত্যয়ন করা হয়নি।')}</p>
+            <p>{label('Select a payment type to continue.', 'এগোতে পেমেন্টের ধরন বাছুন।')}</p>
           </div>
           <span className="citizen-demo-pill">{label('Prototype', 'নমুনা')}</span>
         </div>
@@ -101,14 +97,14 @@ export const PublicLanding: React.FC = () => {
             return (
               <button key={key} type="button" onClick={() => openCategory(key)}>
                 <span className="citizen-hub-service-grid__icon"><WalletCards size={19} aria-hidden="true" /></span>
-                <span className="citizen-hub-service-grid__copy"><strong>{key === 'OTHER_TAX_PAYMENT' ? label('Other tax payment', 'অন্যান্য কর পরিশোধ') : bn ? item.bn : item.en}</strong><small>{key === 'SOURCE_TAX_DEPOSIT' ? label('Withholding-agent journey', 'উৎসে কর কর্তনকারীর ধাপ') : label('Open sample journey', 'নমুনা ধাপ খুলুন')}</small></span>
+                <span className="citizen-hub-service-grid__copy"><strong>{key === 'OTHER_TAX_PAYMENT' ? label('Other tax payment', 'অন্যান্য কর পরিশোধ') : bn ? item.bn : item.en}</strong><small>{key === 'SOURCE_TAX_DEPOSIT' ? label('Withholding-agent journey', 'উৎসে কর কর্তনকারীর ধাপ') : label('View details', 'বিস্তারিত দেখুন')}</small></span>
                 <ArrowRight size={17} aria-hidden="true" />
               </button>
             );
           })}
           <button type="button" onClick={() => navigate('travel')}>
             <span className="citizen-hub-service-grid__icon"><Landmark size={19} aria-hidden="true" /></span>
-            <span className="citizen-hub-service-grid__copy"><strong>{label('Travel Tax', 'ভ্রমণ কর')}</strong><small>{label('Open sample journey', 'নমুনা ধাপ খুলুন')}</small></span>
+            <span className="citizen-hub-service-grid__copy"><strong>{label('Travel Tax', 'ভ্রমণ কর')}</strong><small>{label('View details', 'বিস্তারিত দেখুন')}</small></span>
             <ArrowRight size={17} aria-hidden="true" />
           </button>
         </div>
@@ -126,7 +122,7 @@ export const PublicLanding: React.FC = () => {
         )}
         <details className="citizen-hub-more-services">
           <summary>{label('About these payment categories', 'পেমেন্টের ধরন সম্পর্কে')}</summary>
-          <p className="citizen-hub-category-note">{label('The 170 source-derived payment-head records are under legal review. Selecting a category does not certify its rate, eligibility or government accounting code.', 'উৎস থেকে নেওয়া ১৭০টি করের খাতের আইনগত যাচাই চলমান। একটি খাত নির্বাচন করলেই হার, যোগ্যতা বা সরকারি হিসাব কোড যাচাইকৃত হয় না।')}</p>
+          <p className="citizen-hub-category-note">{label('Payment-head codes and applicability are under review.', 'পেমেন্টের খাতের কোড ও প্রযোজ্যতা পর্যালোচনাধীন।')}</p>
           <button type="button" className="citizen-hub-catalogue-link" onClick={() => navigate('head_catalogue')}>
             {label('Browse Original Heads (170)', 'মূল করের খাত দেখুন (১৭০)')} <ArrowRight size={16} aria-hidden="true" />
           </button>
@@ -141,9 +137,9 @@ export const PublicLanding: React.FC = () => {
           </div>
         </div>
         <ol>
-          <li><span>1</span><div><strong>{label('Choose a service', 'সেবা বাছুন')}</strong><p>{label('Select a payment purpose or travel-tax demonstration.', 'পেমেন্টের উদ্দেশ্য বা ভ্রমণ করের নমুনা বাছুন।')}</p></div></li>
-          <li><span>2</span><div><strong>{label('Enter the requested details', 'চাওয়া তথ্য লিখুন')}</strong><p>{label('Review each field and the sample payment-head information.', 'প্রতিটি ঘর ও নমুনা পেমেন্ট-খাতের তথ্য যাচাই করুন।')}</p></div></li>
-          <li><span>3</span><div><strong>{label('Review the result', 'ফলাফল যাচাই করুন')}</strong><p>{label('A prototype receipt confirms only that the local demonstration ran.', 'নমুনা রসিদ শুধু স্থানীয় প্রদর্শনী সম্পন্ন হওয়ার কথা জানায়।')}</p></div></li>
+          <li><span>1</span><div><strong>{label('Choose a service', 'সেবা বাছুন')}</strong><p>{label('Select a payment purpose.', 'পেমেন্টের উদ্দেশ্য বাছুন।')}</p></div></li>
+          <li><span>2</span><div><strong>{label('Enter the requested details', 'চাওয়া তথ্য লিখুন')}</strong><p>{label('Check your entries before continuing.', 'পরবর্তী ধাপে যাওয়ার আগে তথ্য দেখুন।')}</p></div></li>
+          <li><span>3</span><div><strong>{label('Review the result', 'ফলাফল যাচাই করুন')}</strong><p>{label('Review the preview receipt.', 'রসিদের প্রিভিউ দেখুন।')}</p></div></li>
         </ol>
       </section>
 
@@ -152,7 +148,7 @@ export const PublicLanding: React.FC = () => {
           <span className="citizen-hub-lookup__icon"><Search size={20} aria-hidden="true" /></span>
           <div>
             <h2 id="citizen-receipt-lookup">{label('Find a sample receipt', 'নমুনা রসিদ খুঁজুন')}</h2>
-            <p>{label('Search a challan, token or transaction reference from this demonstration.', 'এই প্রদর্শনীর চালান, টোকেন বা লেনদেনের রেফারেন্স খুঁজুন।')}</p>
+            <p>{label('Search by challan, token or reference.', 'চালান, টোকেন বা রেফারেন্স দিয়ে খুঁজুন।')}</p>
           </div>
         </div>
         <form onSubmit={handleLookup}>
@@ -164,7 +160,6 @@ export const PublicLanding: React.FC = () => {
             <button type="submit"><Search size={17} aria-hidden="true" />{label('Search sample records', 'নমুনা তথ্য খুঁজুন')}</button>
           </div>
           {notFound && <p role="status" className="citizen-hub-lookup__error">{label('No matching demonstration reference. Check the number and try again.', 'কোনো নমুনা রেফারেন্স পাওয়া যায়নি। নম্বর যাচাই করে আবার চেষ্টা করুন।')}</p>}
-          <p className="citizen-hub-lookup__notice">{label('This is not an official NBR or Treasury status lookup.', 'এটি এনবিআর বা ট্রেজারির সরকারি অবস্থা যাচাই নয়।')}</p>
         </form>
       </section>
 
