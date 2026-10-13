@@ -114,3 +114,16 @@ test('private drafts receive reference inputs while backend remains disabled on 
   await expect(workspace).toBeVisible();
   expect(calls).toEqual([]);
 });
+
+test('taxpayer home and ledger follow the shared Public theme without legacy emerald styling',async({page})=>{
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  const shell=page.locator('.taxpay-taxpayer-reference');
+  await expect(shell).toHaveCount(1);
+  await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
+  const hero=page.getByRole('heading',{name:'My Tax Payments'}).locator('xpath=ancestor::header');
+  await expect(hero).toHaveCSS('background-color','rgb(30, 68, 132)');
+  await page.getByRole('button',{name:'Tax ledger'}).first().click();
+  await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
+  await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
+});
