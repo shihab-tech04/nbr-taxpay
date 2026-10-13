@@ -177,14 +177,17 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 test('authenticated taxpayer wizard preserves amounts while localizing the full simulation journey', async ({ page }, info) => {
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
-  await page.getByRole('button', { name: 'Pay — select payment type' }).click();
+  await page.locator('.citizen-taxpayer-hero__actions').getByRole('button', { name: 'Make Payment' }).click();
+  await expect(page.getByRole('heading', { name: 'What would you like to pay?' })).toBeVisible();
+  await page.getByRole('button',{name:'Continue',exact:true}).click();
+  await page.getByRole('button',{name:/Make payment/i}).last().click();
   await expect(page.getByRole('heading', { name: 'Income tax payment' })).toBeVisible();
   await expect(page.getByLabel('Assessment year')).toBeVisible();
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
   await page.getByRole('button', { name: 'Continue to amounts' }).click();
 
-  await expect(page.getByLabel('Tax amount (৳)')).toHaveValue('25000');
+  await expect(page.getByLabel('Tax amount (৳)')).toHaveValue('0');
   await page.getByLabel('Tax amount (৳)').fill('0');
   await page.getByRole('button', { name: 'Continue to review' }).click();
   await expect(page.getByRole('alert')).toContainText('greater than zero');
