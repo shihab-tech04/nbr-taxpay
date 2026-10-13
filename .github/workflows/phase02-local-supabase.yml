@@ -9,9 +9,9 @@ permissions:
   contents: read
 
 concurrency:
-  # One disposable stack/port is shared by backend CI; serialize every PR to avoid collisions.
-  group: taxpay-phase02-disposable-supabase
-  cancel-in-progress: false
+  # Each GitHub-hosted runner has isolated loopback ports; avoid cross-PR cancellation.
+  group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   disposable-backend:
