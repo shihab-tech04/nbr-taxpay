@@ -90,6 +90,9 @@ jobs:
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_officer_decisions') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='sim_payment_officer_action'")" = 1
 
+      - name: Preserve original 9-record, 16-allocation, 10-user graph assertions with anonymous access locked
+        run: node tests/integration/simulationGraphIntegrity.mjs
+
       - name: Run real local Auth + PostgREST + direct SQL ownership checks
         run: npm run test:integration:local
 
