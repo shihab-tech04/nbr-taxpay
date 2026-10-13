@@ -656,6 +656,66 @@
 .lifecycle-dashboard .life-services__copy strong { color: var(--life-ink); font-size: 12px; line-height: 1.4; }
 .lifecycle-dashboard .life-services__copy small { color: #728177; font-size: 10px; line-height: 1.4; }
 .lifecycle-dashboard .life-services__grid button > svg { flex: none; color: var(--life-green); }
+/* Keep the existing tax-position information contract while using a compact
+   disclosure that cannot be mistaken for a computed account balance. */
+.lifecycle-dashboard .life-position {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 19px;
+  margin-top: 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--life-border);
+  border-radius: 13px;
+  background: var(--life-white);
+}
+.lifecycle-dashboard .life-position__heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--life-green);
+}
+.lifecycle-dashboard .life-position__heading h2 {
+  margin: 0;
+  color: var(--life-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-position__detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.lifecycle-dashboard .life-position__detail p {
+  margin: 0;
+  color: #697f71;
+  font-size: 11px;
+}
+.lifecycle-dashboard .life-position__detail strong {
+  color: var(--life-ink);
+  font-size: 12px;
+}
+.lifecycle-dashboard .life-position__note {
+  flex: 1 1 220px;
+  margin: 0;
+  color: #71827a;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.lifecycle-dashboard .life-more {
+  margin-top: 13px;
+  background: var(--life-white);
+  border: 1px solid var(--life-border);
+  border-radius: 13px;
+}
+.lifecycle-dashboard .life-more summary {
+  color: var(--life-green);
+  font-size: 12px;
+}
+.lifecycle-dashboard .life-more button {
+  color: var(--life-ink);
+  background: #f6f9f5;
+}
 @media (min-width: 1440px) {
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > .lifecycle-dashboard {
     max-width: 1220px;
