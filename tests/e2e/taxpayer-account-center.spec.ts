@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('sample taxpayer can navigate a fictional profile and personal settings without impersonating a login',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','One end-to-end responsive sample journey');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
@@ -39,7 +39,7 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   test.skip(info.project.name!=='desktop-1280','Desktop rail tested on 1600px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   for(const label of ['Profile','Notifications','Profile settings'])await expect(rail.getByRole('button',{name:label,exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Notifications'}).click();
