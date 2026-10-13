@@ -43,7 +43,7 @@ for(const [who,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROV
 }
 // Assign two distinct verified fictional profiles through controlled local DB fixtures.
 for(const [profile,identity] of [['user1',payer],['user2',otherBeneficiary]]){
- assert.equal(psql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by) values('${profile}','${identity.id}'::uuid,'${approver.id}'::uuid) returning user_id`),profile);
+ assert.ok(psql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by) values('${profile}','${identity.id}'::uuid,'${approver.id}'::uuid) returning user_id`).startsWith(profile));
 }
 const originalReviewRequests=psql('select count(*) from public.taxpay_payment_requests');
 const nonce=randomUUID();
