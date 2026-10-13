@@ -202,8 +202,8 @@ test('taxpayer mobile header, compact corners and two-tier full-width menu are a
  expect(Math.abs(edge!.width-375)).toBeLessThanOrEqual(2);
  await expect(dialog.getByText(/Demo scenario|Exit demonstration account|Account: user1/)).toHaveCount(0);
  await dialog.getByRole('button',{name:'বাংলা'}).click();
- await expect(dialog.getByRole('navigation',{name:'সেবার নেভিগেশন'})).toBeVisible();
- await dialog.getByRole('button',{name:'English'}).click();
+ await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('navigation',{name:'সেবার নেভিগেশন'})).toBeVisible();
+ await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
  await dialog.getByRole('button',{name:'Close'}).click();
  await page.evaluate(()=>window.scrollTo(0,500));
  await expect(header).toHaveClass(/citizen-header--hidden/);
