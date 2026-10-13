@@ -1,16 +1,12 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('landing link opens the original 170-head reference without submitting a payment', async ({ page }) => {
-  await page.goto('/?action=landing');
-  await expect(page.getByText('Public TaxPay guide')).toBeVisible();
-  await expect(page.locator('main')).toBeVisible();
-  await page.getByText('About these payment categories').click();
-  await page.getByRole('button', { name: /Browse Original Heads \(170\)/ }).click();
-  await expect(page.getByRole('heading', { name: 'Original v11 payment-head reference' })).toBeVisible();
-  await expect(page.getByText('Legal validity and current applicability: UNVERIFIED')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Surcharge', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Pay', exact: true })).toHaveCount(0);
+test('original 170-head source reference remains available read-only on its dedicated route',async({page})=>{
+ await page.goto('/?action=head_catalogue');
+ await expect(page.getByRole('heading',{name:'Original v11 payment-head reference'})).toBeVisible();
+ await expect(page.getByText('Legal validity and current applicability: UNVERIFIED')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Surcharge',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Pay',exact:true})).toHaveCount(0);
 });
 
 test('search is exact-source, no silent fallback, and owner-review IDs stay blocked', async ({ page }) => {
@@ -72,16 +68,16 @@ test('legacy source codes and legal provisions remain visibly separate', async (
   await expect(page.getByText(/ACS Treasury economic code: NOT VERIFIED/)).toBeVisible();
 });
 
-test('public preview safety disclosure remains explicit in Bengali and on narrow screens', async ({ page }) => {
-  await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByText('TaxPay জনসেবা নির্দেশিকা')).toBeVisible();
-  await expect(page.locator('main')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'পেমেন্টের ধাপ বাছুন' })).toBeVisible();
-  await expect(page.getByText('নমুনা', {exact:true}).first()).toBeVisible();
-  const main = await page.locator('main').boundingBox();
-  expect(main).not.toBeNull();
-  expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
+test('public information home has bilingual safety copy and no prototype status',async({page})=>{
+ await page.goto('/?action=landing');
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'কর পরিশোধের ধরন জানুন'})).toBeVisible();
+ await expect(page.locator('footer').getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
+ await expect(page.getByText('Prototype status')).toHaveCount(0);
+ const bounds=await page.locator('main').boundingBox();
+ expect(bounds).not.toBeNull();
+ expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+2);
 });
 
 test('source integrity is announced only after verified read-only backend match', async ({ page }) => {
@@ -98,31 +94,28 @@ test('when source backend is unreachable, read-only offline fallback is explicit
   await expect(page.getByText('Legal validity and current applicability: UNVERIFIED')).toBeVisible();
 });
 
-test('footer does not claim government ownership or real challan issuance in EN/BN', async ({ page }) => {
-  await page.goto('/?action=landing');
-  const footer = page.locator('footer');
-  await expect(footer.getByText('Independent tax payment workspace')).toBeVisible();
-  await expect(footer.getByText('Independent demonstration. It does not collect money, issue an official government receipt or establish a tax credit.')).toBeVisible();
-  await page.getByRole('button',{ name: 'বাংলা' }).click();
-  await expect(footer.getByText('স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস')).toBeVisible();
-  await expect(footer.getByText('স্বতন্ত্র প্রদর্শনী। কোনো প্রকৃত অর্থ জমা, সরকারি রসিদ বা স্বীকৃত কর ক্রেডিট প্রদান করা হয় না।')).toBeVisible();
+test('public footer accurately describes service and does not promise challan issuance',async({page})=>{
+ await page.goto('/?action=landing');
+ const footer=page.locator('footer');
+ await expect(footer.getByText('Income tax payment information')).toBeVisible();
+ await expect(footer.getByText('This information service does not collect money or issue official challans.')).toBeVisible();
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ await expect(footer.getByText('আয়কর পরিশোধের তথ্য')).toBeVisible();
+ await expect(footer.getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
 });
 
-test('public header keeps sample profiles separate from officer authorization', async ({page})=>{
-  await page.goto('/?action=landing');
-  const header=page.locator('header').first();
-  await expect(header.getByText('TaxPay', {exact:true})).toBeVisible();
-  await expect(header.getByText('Independent payment demonstration')).toBeVisible();
-  await header.getByRole('button',{name:'Open menu'}).click();
-  const selector=page.getByRole('dialog',{name:'Services & menu'}).getByRole('combobox',{name:'Sample profile (not sign-in)'});
-  await expect(selector).toBeVisible();
-  await expect(selector.locator('option[value="GUEST"]')).toHaveText('Public guest');
-  await expect(selector.locator('option[value="TAXPAYER_INDIVIDUAL"]')).toHaveText('Sample individual');
-  await expect(selector.locator('option[value="OFFICER_APPROVER"]')).toHaveCount(0);
-  await expect(page.getByText('Illustrative records only. Selecting a profile is not authentication or authorization.')).toBeVisible();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
-  await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('combobox',{name:'নমুনা প্রোফাইল (প্রকৃত লগইন নয়)'})).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('combobox').locator('option[value="OFFICER_APPROVER"]')).toHaveCount(0);
+test('public header exposes information only and no role impersonation control',async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ await page.goto('/?action=landing');
+ const header=page.locator('.public-home-header');
+ await expect(header.getByText('TaxPay',{exact:true})).toBeVisible();
+ await expect(header.getByRole('button',{name:'Menu'})).toBeVisible();
+ await header.getByRole('button',{name:'Menu'}).click();
+ await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Guides'})).toBeVisible();
+ await expect(page.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
+ await page.keyboard.press('Escape');
+ await expect(header.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
 });
 
 test('catalogue explicitly blocks payability without period/event/taxpayer evidence',async ({page})=>{
