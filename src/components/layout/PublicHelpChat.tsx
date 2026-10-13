@@ -35,7 +35,7 @@ export function PublicHelpChat(){
     <div ref={last}/>
    </div>
    <div className="public-help-topics">
-    {GUIDE_CONTENT.slice(0,3).map(g=><button type="button" key={g.id} onClick={()=>respond(bn?g.bn:g.en)}>{bn?g.bn:g.en}</button>)}
+    {GUIDE_CONTENT.slice(0,3).map(g=><button type="button" key={g.id} onClick={()=>{setMessages(prev=>[...prev,{from:'user',value:bn?g.bn:g.en},{from:'assistant',value:g.faqs[0]?.a[bn?1:0]||g.description[bn?1:0]}]);setInput('');}}>{bn?g.bn:g.en}</button>)}
    </div>
    <form onSubmit={e=>{e.preventDefault();respond(input);}}><label className="sr-only" htmlFor="taxpay-help-message">{bn?'আপনার প্রশ্ন':'Your question'}</label>
     <input id="taxpay-help-message" value={input} onChange={e=>setInput(e.target.value)} placeholder={bn?'প্রশ্ন লিখুন':'Ask a question'} maxLength={250}/>
