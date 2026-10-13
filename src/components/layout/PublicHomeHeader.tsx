@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Globe2, Landmark, Menu, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { NBR_LOGO_DATA_URI } from '../../data/nbrLogoData';
 
-const NBR_LOGO = 'https://raw.githubusercontent.com/shihab-tech04/NBR-Officemanagment-UI-V2/main/src/assets/logos/nbr-logo.png';
+const NBR_LOGO = NBR_LOGO_DATA_URI;
 
 export function PublicHomeHeader() {
   const { language, setLanguage } = useTaxState();
