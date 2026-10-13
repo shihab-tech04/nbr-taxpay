@@ -39,6 +39,12 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   const switchToBangla = async () => {
     // Public header keeps its language control. Taxpayer mobile places it
     // under Navigation, while desktop retains the header utility.
+    // Reset the scroll-aware header before using its current-viewport control.
+    // This also asserts that the expanded header returns on an upward scroll.
+    if (!(await page.locator('.public-home-header').isVisible())) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
+    }
     if (await page.locator('.public-home-header').isVisible()) {
       await page.locator('.public-home-header').getByRole('button',{name:'বাংলা'}).click();
       return;
