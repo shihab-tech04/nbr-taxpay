@@ -671,8 +671,8 @@
 .citizen-dialog__language-row .citizen-dialog-language { margin:0; }
 .citizen-dialog__account .citizen-dialog-signout {
   width:100%; min-height:44px; margin:0; padding:.65rem 1rem;
-  background:var(--citizen-primary-light); color:var(--citizen-primary-dark);
-  border:1px solid var(--citizen-border); border-radius:.65rem;
+  background:var(--citizen-primary); color:var(--citizen-surface);
+  border:1px solid var(--citizen-primary); border-radius:.65rem;
   font-weight:750; text-align:center;
 }
 @media(max-width:900px) {
@@ -690,7 +690,7 @@
     justify-self:center; justify-content:center; min-width:0; gap:.55rem; white-space:nowrap;
   }
   .citizen-header__inner--standard .citizen-brand small { display:none; }
-  .citizen-header__inner--standard .citizen-brand strong { font-size:1.1rem; }
+  .citizen-header__inner--standard .citizen-brand strong { font-size:1.25rem; }
   .citizen-header__inner--standard .citizen-header__utilities { margin:0; justify-self:end; }
   .citizen-header__inner--standard .citizen-desktop-control { display:none; }
   .citizen-overlay { padding:0; align-items:flex-end; }
@@ -701,4 +701,10 @@
 }
 @media(min-width:901px) {
   .citizen-dialog__navigation { max-height:50dvh; }
+}
+
+@media(max-width:900px) {
+  .taxpay-taxpayer-reference .citizen-mobile-menu-trigger,
+  .taxpay-taxpayer-reference .citizen-header__notification { color:var(--citizen-primary); }
+  .citizen-dialog__account .citizen-dialog-signout:disabled { opacity:.55; cursor:wait; }
 }
