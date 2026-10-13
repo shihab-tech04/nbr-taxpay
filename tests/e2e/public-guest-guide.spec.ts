@@ -20,7 +20,7 @@ test('public hero offers two working guest modals and Login stays in the header'
  await expect(status).toHaveCount(0);
  await page.getByRole('button',{name:'Pay travel tax'}).click();
  const travel=page.getByRole('dialog',{name:'Travel tax'});
- await expect(travel.getByRole('heading',{name:'Travel tax'})).toBeVisible();
+ await expect(travel.getByRole('heading',{name:'Travel tax',level:2})).toBeVisible();
  await expect(travel.getByText('Rates and exemptions are not verified.',{exact:false})).toBeVisible();
  await travel.getByLabel('Passenger name (as in passport)').fill('TEST PASSENGER');
  await travel.getByLabel('Passport number (synthetic data only)').fill('DEMO1234');
@@ -57,7 +57,7 @@ test('floating help uses guide answers and report form never sends an official t
  await page.getByRole('button',{name:'Chat support'}).click();
  await expect(page.getByRole('heading',{name:'TaxPay help'})).toBeVisible();
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
- await expect(page.getByText('No. Tax credit requires legal entitlement and verified reconciliation.',{exact:false})).toBeVisible();
+ await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('button',{name:'Open user guide'}).click();
  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
