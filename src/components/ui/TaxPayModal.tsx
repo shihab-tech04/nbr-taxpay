@@ -7,6 +7,7 @@ export interface TaxPayModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   closeLabel?: string;
+  closeIconLabel?: string;
   className?: string;
   service?: string;
 }
@@ -22,6 +23,7 @@ export function TaxPayModal({
   children,
   footer,
   closeLabel = 'Close',
+  closeIconLabel = 'Close modal',
   className = '',
   service,
 }: TaxPayModalProps) {
@@ -95,7 +97,7 @@ export function TaxPayModal({
             type="button"
             className="taxpay-modal__close"
             onClick={onClose}
-            aria-label={closeLabel}
+            aria-label={closeIconLabel}
           >
             <X size={20} aria-hidden="true" />
           </button>
