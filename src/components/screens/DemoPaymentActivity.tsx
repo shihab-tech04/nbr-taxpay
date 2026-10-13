@@ -47,7 +47,12 @@ export const DemoPaymentActivity:React.FC=()=>{
             </div>
             <p className="text-base font-bold tabular-nums text-taxpay-text">{formatCurrency(visibleMinor/100,language)}</p>
           </div>
-          <p className="mt-2 text-xs text-taxpay-muted">{label('Visible allocation amount; full transaction','দৃশ্যমান বরাদ্দের পরিমাণ; সম্পূর্ণ লেনদেন')}: {formatCurrency(transactionTotalMinor(tx)/100,language)} · {label('No tax credit','কোনো কর ক্রেডিট নেই')}</p>
+          <p className="mt-2 text-xs text-taxpay-muted">
+            {perspective==='payer' && tx.payer===id
+              ? <>{label('Full payment instruction total','সম্পূর্ণ পেমেন্ট নির্দেশের মোট পরিমাণ')}: {formatCurrency(transactionTotalMinor(tx)/100,language)} · </>
+              : <>{label('Only your allocation is displayed','শুধু আপনার বরাদ্দ দেখানো হয়েছে')} · </>}
+            {label('No tax credit','কোনো কর ক্রেডিট নেই')}
+          </p>
           <h3 className="mt-4 text-sm font-semibold text-taxpay-text">{label('Beneficiary allocations','সুবিধাভোগীর বরাদ্দ')}</h3>
           <ul className="mt-2 divide-y divide-taxpay-border">
             {visible.map(a=><li key={a.id} className="flex flex-wrap items-start justify-between gap-2 py-2 text-sm">
