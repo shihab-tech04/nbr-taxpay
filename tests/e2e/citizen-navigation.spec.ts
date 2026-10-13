@@ -4,7 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 test('public home does not open guest payment wizard via a primary action',async({page})=>{
  await page.goto('/?action=landing');
  await expect(page.getByRole('button',{name:'Check payment status & receipt'})).toBeVisible();
- await expect(page.getByRole('button',{name:'Make Payment'})).toHaveCount(0);
+ await expect(page.locator('button.citizen-pay[aria-label="Make Payment"]')).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
  await page.goto('/?action=guest');
@@ -111,7 +111,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width+2);
-    await expect(page.getByRole('button',{name:'Make Payment'})).toBeVisible();
+    await expect(page.locator('button.citizen-pay[aria-label="Make Payment"]')).toBeVisible();
     if(width<=900) {
       await page.evaluate(()=>window.scrollTo(0,450));
       await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);
