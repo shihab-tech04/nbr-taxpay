@@ -56,8 +56,8 @@ export const TaxpayerHome: React.FC = () => {
           <h1 id="taxpay-home-title">{label('My Tax Payments', 'আমার কর পেমেন্ট')}</h1>
           <p>{label('Manage payment activity and access tax services.', 'পেমেন্টের তথ্য দেখুন এবং করসেবা ব্যবহার করুন।')}</p>
           <div className="citizen-taxpayer-hero__actions">
-            <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate(demoUser ? 'history' : 'wizard')}>
-              <WalletCards size={18} aria-hidden="true" />{demoUser ? label('Payments & activity', 'পেমেন্ট ও লেনদেন') : label('Explore payment flow', 'পেমেন্টের ধাপ দেখুন')}
+            <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate('wizard')}>
+              <WalletCards size={18} aria-hidden="true" />{label('Make Payment', 'পেমেন্ট করুন')}
             </button>
             <button type="button" className="citizen-taxpayer-secondary" onClick={() => navigate('secure_workspace')}>
               {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')}<ArrowRight size={16} aria-hidden="true" />
