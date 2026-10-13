@@ -27,7 +27,7 @@ const moreLinks: CitizenAction[] = [
   { route: 'guidance', en: 'Help', bn: 'সহায়তা' },
   { route: 'secure_workspace', en: 'Account access', bn: 'অ্যাকাউন্ট প্রবেশ' }
 ];
-const transactionRoutes = new Set(['guest', 'guestwh', 'travel', 'wizard']);
+const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
@@ -48,7 +48,7 @@ export function CitizenNavigation() {
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
-  const isTaxpayer = taxpayerRoles.includes(userRole);
+  const isTaxpayer = taxpayerRoles.includes(userRole) || Boolean(applicationUser);
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
@@ -229,7 +229,7 @@ export function CitizenNavigation() {
       )}
       {showPay && !overlayOpen && (
         <button type="button" className={compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"} onClick={openPay}
-          aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
+          aria-label={isTaxpayer ? (bn ? 'পেমেন্ট করুন' : 'Make Payment') : (bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type')}>
           <Plus aria-hidden="true" size={22}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
         </button>
       )}
