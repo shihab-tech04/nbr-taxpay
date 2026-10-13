@@ -38,9 +38,9 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
   psql("update auth.users set email_confirmed_at=coalesce(email_confirmed_at,now()) where id='"+info.user.id+"'::uuid");
   return {id:info.user.id,email,session:info};
  }
- const payer=await account('sim-ui-user6'),beneficiary=await account('sim-ui-user7'),approver=await account('sim-ui-approver');
+ const payer=await account('sim-ui-user9'),beneficiary=await account('sim-ui-user10'),approver=await account('sim-ui-approver');
  psql("insert into public.taxpay_officer_roles(user_uid,role) values('"+approver.id+"'::uuid,'APPROVER')");
- for(const [profile,who] of [['user6',payer],['user7',beneficiary]] as const){
+ for(const [profile,who] of [['user9',payer],['user10',beneficiary]] as const){
   const b=await request('/rest/v1/rpc/sim_bind_taxpayer_email',{p_user_id:profile,p_email:who.email},approver.session.access_token);
   expect(b.status,JSON.stringify(b.data)).toBe(200);
   expect(b.data).toBe(profile);
@@ -56,10 +56,10 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  };
  const one=await visit(payer,'history',{width:375,height:812});
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
- await expect(one.page.getByText('user6 · Connected simulation workspace')).toBeVisible();
+ await expect(one.page.getByText('user9 · Connected simulation workspace')).toBeVisible();
  await one.page.getByLabel('Amount (BDT)').first().fill('150.25');
  await one.page.getByRole('button',{name:'Add beneficiary / category'}).click();
- await one.page.getByLabel('Pay for').nth(1).selectOption('user7');
+ await one.page.getByLabel('Pay for').nth(1).selectOption('user10');
  await one.page.getByLabel('Payment category').nth(1).selectOption('PENALTY');
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2025-26');
  await one.page.getByLabel('Amount (BDT)').nth(1).fill('23.50');
@@ -68,7 +68,7 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
-  .find(t=>t.totalMinor===17375 && t.allocations.some(a=>a.beneficiary==='user7'));
+  .find(t=>t.totalMinor===17375 && t.allocations.some(a=>a.beneficiary==='user10'));
  expect(tx).toBeTruthy();
  expect(tx!.allocations.reduce((sum,a)=>sum+a.amountMinor,0)).toBe(17375);
  const admin=await request('/rest/v1/rpc/sim_payment_history',{p_user_id:null,p_view:'all'},approver.session.access_token);
