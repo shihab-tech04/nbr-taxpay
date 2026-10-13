@@ -70,27 +70,30 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 
-      - name: Compile static application without backend configuration
+      - name: Compile public review-only application with scoped hosted Auth / RLS
         env:
           GITHUB_PAGES: 'true'
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
 
-      - name: Verify Pages base and backend isolation
+      - name: Verify Pages base, scoped public endpoint and financial safety
         shell: bash
         run: |
           test -s dist/index.html
           grep -q '/nbr-taxpay/assets/' dist/index.html
           ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
           ! grep -q '/src/main.tsx' dist/index.html
-          ! grep -REq 'https://[[:alnum:]-]+\.supabase\.co' dist/assets
+          grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets
+          # Ensure no unrelated hosted Supabase projects or privileged key formats leak.
+          ! grep -REq 'sb_secret_|service_role' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{17}([^0-9]|$)' dist/assets
           ! grep -REq '\+?880[0-9 ()-]{8,}' dist/assets
           find dist/assets -type f -name '*.js' -size +0c | grep -q .
-          echo 'PASS: Pages base is /nbr-taxpay/ and no hosted Supabase endpoint is bundled'
+          echo 'PASS: public Pages build has approved publishable-only review endpoint; no privileged key shipped'
 
       - name: Upload Pages artifact (main only)
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
