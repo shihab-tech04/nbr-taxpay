@@ -3,7 +3,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {formatCurrency} from '../../services/numberFormat';
 import {
-  simulationUsers,simulationCategories,loadSimulationHistory,submitSimulatedPayment,
+  simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
@@ -119,13 +119,13 @@ export const DemoPaymentActivity:React.FC=()=>{
         <p className="text-sm text-taxpay-muted">{txt('Select the main category before entering payment details.','পেমেন্টের বিস্তারিত দেওয়ার আগে মূল শ্রেণি নির্বাচন করুন।')}</p>
         <div className="grid gap-3 sm:grid-cols-2">{simulationCategories.map(category=>
           <button key={category} type="button" onClick={()=>chooseCategory(category)} className="min-h-20 rounded-xl border border-taxpay-border p-4 text-left font-semibold text-taxpay-dark hover:border-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
-            <span className="block">{category.replace(/_/g,' ')}</span>
+            <span className="block">{simulationCategoryLabels[category][bn?'bn':'en']}</span>
             <span className="mt-2 block text-xs font-normal text-taxpay-muted">{txt('View category information →','শ্রেণির তথ্য দেখুন →')}</span>
           </button>)}</div>
       </div>}
       {paymentStage===1&&<div className="space-y-4">
         <h2 className="text-xl font-bold text-taxpay-text">{txt('Information before payment','পেমেন্টের আগে প্রয়োজনীয় তথ্য')}</h2>
-        <p className="font-semibold text-taxpay-dark">{parentCategory.replace(/_/g,' ')}</p>
+        <p className="font-semibold text-taxpay-dark">{simulationCategoryLabels[parentCategory][bn?'bn':'en']}</p>
         <p className="text-sm text-taxpay-muted">{txt('For this test transaction, supply the beneficiary, assessment year, payment category and BDT amount. Additional allocations can be added to one simulated transaction.','পরীক্ষামূলক লেনদেনের জন্য সুবিধাভোগী, করবর্ষ, পেমেন্টের শ্রেণি এবং টাকার পরিমাণ দিন। একই সিমুলেশনে একাধিক বরাদ্দ যোগ করা যায়।')}</p>
         <p className="rounded-lg border border-taxpay-border bg-slate-50 p-4 text-sm">{txt('Simulation only: this does not move money, establish a tax liability, grant tax credit or issue a government challan.','শুধু সিমুলেশন: এতে অর্থ স্থানান্তর, কর দায় নির্ধারণ, কর ক্রেডিট বা সরকারি চালান তৈরি হয় না।')}</p>
         <div className="flex flex-wrap justify-between gap-3">
@@ -195,7 +195,7 @@ export const DemoPaymentActivity:React.FC=()=>{
           <p className="mt-2 text-xs text-taxpay-muted">{txt('Shared SQL transaction · no Treasury settlement or tax credit','SQL লেনদেন · সরকারি পেমেন্ট বা কর ক্রেডিট নয়')}</p>
           <h3 className="mt-4 font-semibold text-taxpay-text">{txt('Allocation details','বরাদ্দের বিবরণ')}</h3>
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
-            <div><p>{a.beneficiary} · {a.category.replace(/_/g,' ')}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
+            <div><p>{a.beneficiary} · {a.simulationCategoryLabels[category][bn?'bn':'en']}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
             <p className="font-semibold tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p></li>)}</ul>
           <details className="mt-3 rounded-lg border border-taxpay-border p-3"><summary className="cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
             <ol className="mt-2 space-y-2">{tx.events.map(e=><li key={e.id} className="text-sm"><p className="font-semibold">{e.action}</p><p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p></li>)}</ol>
