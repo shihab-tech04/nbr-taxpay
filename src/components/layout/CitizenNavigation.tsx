@@ -191,7 +191,7 @@ export function CitizenNavigation() {
               <div className="citizen-header__utilities">
                 <button type="button" className="citizen-header__notification" onClick={() => go(isTaxpayer ? 'account_notifications' : 'secure_workspace')}
                   aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'} title={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell size={23} aria-hidden="true"/></button>
-                <button type="button" className="citizen-language citizen-desktop-control" onClick={() => setLanguage(bn ? 'en' : 'bn')}
+                <button type="button" className={currentRoute === 'wizard' ? 'citizen-language' : 'citizen-language citizen-desktop-control'} onClick={() => setLanguage(bn ? 'en' : 'bn')}
                   title={bn ? 'Switch to English' : 'বাংলায় দেখুন'}><Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}</button>
                 <button type="button" className="citizen-menu-open citizen-desktop-control" onClick={() => setMenuOpen(true)}
                   aria-label={bn ? 'মেনু খুলুন' : 'Open menu'} aria-haspopup="dialog" aria-expanded={menuOpen}><Menu size={22} aria-hidden="true"/></button>
