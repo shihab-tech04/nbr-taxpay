@@ -6,13 +6,13 @@ import {loadSimulationNotices,getBoundSimulationUser,getPrivateSimulationNotices
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
 export const NotificationsView:React.FC=()=>{
-  const {demoUser,language}=useTaxState();
+  const {demoUser,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
   const [busyNotice,setBusyNotice]=useState<number|null>(null);
   const privateMode=Boolean(authenticatedUser);
-  const id=(privateMode?boundId:demoUser?.id) as SimulationUser|undefined;
+  const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
   const [notices,setNotices]=useState<SimulationNotice[]>([]);
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
@@ -26,7 +26,7 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;};
   },[authenticatedUser?.id]);
   useEffect(()=>{
-    if(!id)return;
+    if(!id||!privateMode)return;
     let active=true;setNotices([]);setLoading(true);setError('');
     const read=async()=>{
       try{const data=privateMode?await getPrivateSimulationNotices():await loadSimulationNotices(id);if(active){setNotices(data);setLoading(false);setError('');}}
@@ -46,7 +46,12 @@ export const NotificationsView:React.FC=()=>{
     }catch(e){setError(e instanceof Error?e.message:'Notification update failed');}
     finally{setBusyNotice(null);}
   };
-  if(authLoading&&!demoUser)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
+  if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
+  if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-3 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
+    <h1 className="text-2xl font-bold text-taxpay-text">{label('Sign in to view payment notifications','পেমেন্ট বিজ্ঞপ্তি দেখতে সাইন ইন করুন')}</h1>
+    <p className="text-sm text-taxpay-muted">{label('Payment notifications are available only for a verified, bound account. Anonymous simulation access is disabled.','পেমেন্ট বিজ্ঞপ্তি কেবল যাচাইকৃত ও সংযুক্ত অ্যাকাউন্টের জন্য উপলব্ধ। বেনামী প্রবেশ বন্ধ।')}</p>
+    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('secure_workspace')}>{label('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button>
+  </main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
   if(!id)return <AccountCenter page="notifications"/>;
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
