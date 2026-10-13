@@ -59,7 +59,7 @@ export const TaxpayerHome: React.FC = () => {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             {Icon:WalletCards, title:t('Outstanding tax','বকেয়া কর'), value:t('Unavailable','পাওয়া যাচ্ছে না'), hint:t('No verified assessment source','যাচাইকৃত কর নির্ধারণ নেই'), tone:'bg-[#e7f0e9]'},
-            {Icon:ShieldCheck, title:t('Recognized credit','স্বীকৃত কর ক্রেডিট'), value:t('Unverified','যাচাইকৃত নয়'), hint:t('Do not infer from payment receipt','রসিদ থেকে ক্রেডিট অনুমান নয়'), tone:'bg-[#f4ecdc]'},
+            {Icon:ShieldCheck, title:t('Recognized credit','স্বীকৃত কর ক্রেডিট'), value:t('Unverified','যাচাই হয়নি'), hint:t('Do not infer from payment receipt','রসিদ থেকে ক্রেডিট অনুমান নয়'), tone:'bg-[#f4ecdc]'},
             {Icon:Clock3, title:t('Pending reconciliation','সমন্বয়ের অপেক্ষায়'), value:t('Not established','নির্ধারিত নয়'), hint:t('Requires verified treasury and ownership records','ট্রেজারি ও মালিকানার প্রমাণ প্রয়োজন'), tone:'bg-[#e8ecf4]'},
             {Icon:ReceiptText, title:t('Verified paid total','যাচাইকৃত মোট পরিশোধ'), value:t('Not connected','সংযুক্ত নয়'), hint:t('No authoritative total connected','কর্তৃত্বপূর্ণ মোট তথ্য সংযুক্ত নয়'), tone:'bg-[#f0ece5]'}
           ].map(({Icon,title,value,hint,tone})=>(
