@@ -112,7 +112,7 @@ test('authenticated owner resumes and updates a private draft in Bengali without
     amount_minor: 12450,
     memo: 'Synthetic updated note',
   });
-  await expect(page.getByText(/১২৪\.৫০/)).toBeVisible();
+  await expect(page.getByText('BDT ১২৪.৫০ · শুধু ব্যক্তিগত খসড়া')).toBeVisible();
   await expect(page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)')).toHaveValue('2030-31');
   await expect(page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)')).toHaveValue('400.00');
   await expect(page.getByLabel('ব্যক্তিগত নোট (ঐচ্ছিক)')).toHaveValue('Synthetic unsaved draft to preserve');

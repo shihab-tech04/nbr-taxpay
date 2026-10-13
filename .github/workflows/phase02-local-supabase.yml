@@ -9,8 +9,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: taxpay-phase02-${{ github.ref }}
-  cancel-in-progress: true
+  # One disposable stack/port is shared by backend CI; serialize every PR to avoid collisions.
+  group: taxpay-phase02-disposable-supabase
+  cancel-in-progress: false
 
 jobs:
   disposable-backend:
@@ -39,6 +40,9 @@ jobs:
         with:
           version: latest
 
+      - name: Remove stale local TaxPay containers before starting
+        run: supabase stop --no-backup || true
+
       - name: Start isolated disposable Supabase (no cloud link)
         run: |
           # Intentionally no `supabase link`, project reference, hosted credentials or db push.
@@ -64,13 +68,16 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 7
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 8
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
-          echo "PASS: seven migrations installed and five safe owner-update columns granted"
+          echo "PASS: eight migrations installed and five safe owner-update columns granted"
 
       - name: Run real local Auth + PostgREST + direct SQL ownership checks
         run: npm run test:integration:local
+
+      - name: Verify non-financial taxpayer-to-officer SQL, RLS, notifications and idempotency
+        run: node tests/integration/nonFinancialSync.mjs
 
       - name: Verify actual email magic-link authentication against disposable Mailpit
         run: node tests/integration/localMagicLinkAuth.mjs
@@ -98,4 +105,5 @@ jobs:
         shell: bash
         run: |
           if [ -n "${TAXPAY_LOCAL_RECOVERY_FILE:-}" ]; then rm -f -- "$TAXPAY_LOCAL_RECOVERY_FILE"; fi
+          supabase stop --no-backup || true
           echo "No hosted Supabase project was linked or changed."

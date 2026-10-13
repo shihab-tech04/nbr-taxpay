@@ -7,6 +7,7 @@ import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
 import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
 import { CorrectionInquiries } from './CorrectionInquiries';
+import { SharedReviewRequests } from './SharedReviewRequests';
 import { UiButton, UiInput } from '../ui/Controls';
 import { DRAFT_CATEGORIES, validateDraft, type DraftCategory, type DraftInput, type DraftPurpose } from '../../services/draftValidation';
 import { getSecureWorkspaceCopy, localizeDraftValidationError, secureWorkspaceMessage, type SecureWorkspaceMessageKey } from '../../services/secureWorkspaceCopy';
@@ -420,6 +421,7 @@ export const SecureWorkspace: React.FC = () => {
               </ul>
             )}
           </section>
+          <SharedReviewRequests key={'review-'+user.id} authenticatedUserId={user.id} language={language} drafts={rows} />
           <SourceChangeProposals key={user.id} authenticatedUserId={user.id} language={language} />
           <CorrectionInquiries key={'cor-'+user.id} authenticatedUserId={user.id} language={language} />
         </>
