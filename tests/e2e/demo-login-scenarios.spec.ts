@@ -16,7 +16,7 @@ test('all ten demo URLs show a synthetic taxpayer scenario, not authenticated go
 test('demo user exit clears the non-authenticated account parameter',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','One mobile exit journey');
  await page.goto('/?action=taxpayer_home&demoUser=user3');
- await expect(page.getByText('Demonstration account · user3')).toBeVisible();
+ await expect(page.getByText('Demo scenario · user3')).toBeVisible();
  await page.getByRole('button',{name:'Open menu'}).click();
  await page.getByRole('button',{name:'Exit demonstration account'}).click();
  await expect(page).not.toHaveURL(/demoUser=/);
