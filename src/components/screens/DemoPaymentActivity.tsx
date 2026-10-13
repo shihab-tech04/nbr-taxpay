@@ -160,7 +160,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         </div>
         <div className="taxpay-guided-footer">
           <button type="button" className="taxpay-guided-secondary" onClick={()=>navigate('taxpayer_home')}>{txt('Cancel','বাতিল')}</button>
-          <button type="button" className="taxpay-guided-primary" onClick={()=>setStage(2)}>{txt('Continue','এগিয়ে যান')} →</button>
+          <button type="button" className="taxpay-guided-primary" onClick={()=>setStage(2)}>{txt('Continue','এগিয়ে যান')} <span aria-hidden="true">→</span></button>
         </div>
       </div>}
       {stage===2&&<div className="taxpay-guided-body">
@@ -177,7 +177,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         </div>
         <div className="taxpay-guided-footer">
           <button type="button" className="taxpay-guided-secondary" onClick={()=>setStage(1)}>{txt('Back','পূর্ববর্তী')}</button>
-          <button type="button" className="taxpay-guided-primary" onClick={()=>setStage(3)}>{txt('Make payment','পেমেন্টের তথ্য দিন')} →</button>
+          <button type="button" className="taxpay-guided-primary" onClick={()=>setStage(3)}>{txt('Make payment','পেমেন্টের তথ্য দিন')} <span aria-hidden="true">→</span></button>
         </div>
       </div>}
       {stage===3&&<p className="taxpay-guided-context">{bn?CATEGORY_LABELS[parentCategory].bn:CATEGORY_LABELS[parentCategory].en} · {txt('Enter your allocations','বরাদ্দের তথ্য দিন')}</p>}
@@ -209,7 +209,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         </fieldset>)}
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" disabled={lines.length>=20||saving} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
-          <button type="submit" disabled={saving} className="taxpay-guided-primary">{txt('Review payment','পেমেন্ট পর্যালোচনা')} →</button>
+          <button type="submit" disabled={saving} className="taxpay-guided-primary">{txt('Review payment','পেমেন্ট পর্যালোচনা')} <span aria-hidden="true">→</span></button>
         </div>
         <div className="taxpay-guided-footer">
           <button type="button" className="taxpay-guided-secondary" onClick={()=>setStage(2)}>{txt('Back','পূর্ববর্তী')}</button>
@@ -231,7 +231,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         <p className="taxpay-guided-safety">{txt('Simulation only. No banking gateway, official challan, Treasury settlement or tax credit.','শুধু সিমুলেশন। ব্যাংকিং গেটওয়ে, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নয়।')}</p>
         <div className="taxpay-guided-footer">
           <button type="button" className="taxpay-guided-secondary" disabled={saving} onClick={()=>setStage(3)}>{txt('Back','পূর্ববর্তী')}</button>
-          <button type="button" className="taxpay-guided-primary" disabled={saving} onClick={()=>void submit()}>{saving?txt('Checking server…','সার্ভার যাচাই চলছে…'):txt('Run payment simulation','পেমেন্ট সিমুলেশন চালান')} →</button>
+          <button type="button" className="taxpay-guided-primary" disabled={saving} onClick={()=>void submit()}>{saving?txt('Checking server…','সার্ভার যাচাই চলছে…'):txt('Run payment simulation','পেমেন্ট সিমুলেশন চালান')} <span aria-hidden="true">→</span></button>
         </div>
       </div>}
       {stage===5&&confirmation&&<div className="taxpay-guided-body" role="status" aria-live="polite">
@@ -247,7 +247,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         </div>
         <div className="taxpay-guided-footer">
           <a className="taxpay-guided-secondary" href="#taxpay-guided-history">{txt('View transaction activity','লেনদেনের ইতিহাস দেখুন')}</a>
-          <button type="button" className="taxpay-guided-primary" onClick={restart}>{txt('Make another payment','আরেকটি পেমেন্ট করুন')} →</button>
+          <button type="button" className="taxpay-guided-primary" onClick={restart}>{txt('Make another payment','আরেকটি পেমেন্ট করুন')} <span aria-hidden="true">→</span></button>
         </div>
       </div>}
     </section>
