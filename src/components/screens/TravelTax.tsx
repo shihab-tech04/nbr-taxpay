@@ -264,7 +264,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
 
           {step === 2 && <section className="travel-flow__panel" aria-labelledby="travel-review-heading">
             <header className="travel-flow__section-header">
-              <h3 id="travel-review-heading">{createdReceipt ? workflow.ready : workflow.review}</h3>
+              <h3 id="travel-review-heading">{createdReceipt ? t.complete : workflow.review}</h3>
               <p>{createdReceipt ? t.noTravel : t.notice}</p>
             </header>
             {createdReceipt ? <div className="travel-flow__receipt">
