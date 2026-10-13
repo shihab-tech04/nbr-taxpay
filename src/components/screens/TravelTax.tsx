@@ -187,12 +187,16 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
       {workflow.newPreview}
     </button>
   ) : step === 2 ? (
-    <button type="submit" form="travel-tax-form" className="travel-flow__primary"
+    <button key="travel-generate" type="button" className="travel-flow__primary"
+      onClick={() => {
+        const form = document.getElementById('travel-tax-form');
+        if (form instanceof HTMLFormElement) form.requestSubmit();
+      }}
       disabled={isProcessing} aria-busy={isProcessing}>
       <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : t.run}
     </button>
   ) : (
-    <button type="button" className="travel-flow__primary" onClick={continueStep}>
+    <button key="travel-advance" type="button" className="travel-flow__primary" onClick={continueStep}>
       {step === 0 ? workflow.continue : workflow.reviewNext}<ArrowRight size={17} aria-hidden="true" />
     </button>
   );
