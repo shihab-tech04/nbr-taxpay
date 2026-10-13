@@ -77,6 +77,13 @@ jobs:
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
           echo "PASS: twelve migrations installed; original five safe owner-update grants retained; synthetic ledger tables present"
 
+      - name: Verify exact synthetic SQL seed totals and event graph (rollback only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/localSyntheticSeedGraph.sql
+
       - name: Verify atomic multi-beneficiary synthetic payment API, RLS and rollback
         shell: bash
         run: |
@@ -133,8 +140,11 @@ jobs:
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_SUPABASE_URL); if(!['127.0.0.1','localhost'].includes(u.hostname))process.exit(1)"
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          # The cross-app test must never run against an unexpected Office source revision.
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "14b1384b3825441fd4b518073a266993387d5140"
+          # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
+          OFFICE_SHA="34a952f4738adc584aaf0eeba1f7710dabbebd92"
+          git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
+          git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
           npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
@@ -151,6 +161,7 @@ jobs:
           done
           curl -fsS -o /dev/null http://127.0.0.1:4174/payments/transactions
           npx playwright test tests/e2e/taxpay-office-complete-local.spec.ts --project=mobile-375
+          npx playwright test tests/e2e/taxpay-office-private-review-local.spec.ts --project=mobile-375
 
       - name: Restart disposable database services without deleting volumes
         run: |
