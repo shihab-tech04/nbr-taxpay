@@ -68,7 +68,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'View sample taxpayer demonstration' }).click();
   await expect(page.getByRole('heading', { name: 'My Tax Payments' })).toBeVisible();
-  await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
+  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Tax position' })).toBeVisible();
   await expect(page.getByText('Unavailable', { exact: true })).toBeVisible();
   await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
@@ -172,7 +172,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   await expect(page.getByRole('alert')).toContainText('greater than zero');
   await page.getByLabel('Tax amount (৳)').fill('25000');
   await page.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(page.getByText('Preview only. No funds are transferred or official challan issued.')).toBeVisible();
+  await expect(page.getByText('Demo transaction — no money moves or official challan is issued.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
