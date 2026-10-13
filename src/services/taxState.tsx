@@ -61,7 +61,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return action || 'landing';
   });
   const [routeParams, setRouteParams] = useState<Record<string, any>>({});
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
   const [demoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
   
