@@ -54,7 +54,7 @@ const MainRouter: React.FC = () => {
   const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
   const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
   const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !verifiedApplicationUser && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
-  const transactionRoute = ['guest','guestwh','travel','wizard'].includes(currentRoute);
+  const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
   // Guest payment and Officer routes never inherit this reference palette.

@@ -193,7 +193,11 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   await expect(page.getByText('Demo transaction — no money moves or official challan is issued.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  if (info.project.name.startsWith('mobile')) {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  } else await page.getByRole('button', { name: 'বাংলা' }).first().click();
   await expect(page.getByRole('heading', { name: 'পেমেন্টের তথ্য পর্যালোচনা' })).toBeVisible();
   await expect(page.getByText(/ডেমো লেনদেন — অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
   await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
@@ -209,7 +213,11 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   if (info.project.name === 'desktop-1280') {
     await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/taxpayer-wizard-bn-desktop-1280.png' });
   }
-  await page.getByRole('button', { name: 'EN' }).click();
+  if (info.project.name.startsWith('mobile')) {
+    await page.getByRole('button', { name: 'মেনু খুলুন' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'English' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Close' }).click();
+  } else await page.getByRole('button', { name: 'EN' }).first().click();
   await expect(page.getByRole('heading', { name: 'TaxPay — Unofficial demonstration receipt' })).toBeVisible();
 });
 

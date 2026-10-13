@@ -27,7 +27,7 @@ const moreLinks: CitizenAction[] = [
   { route: 'guidance', en: 'Help', bn: 'সহায়তা' },
   { route: 'secure_workspace', en: 'Account access', bn: 'অ্যাকাউন্ট প্রবেশ' }
 ];
-const transactionRoutes = new Set(['guest', 'guestwh', 'travel', 'wizard']);
+const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
@@ -60,7 +60,7 @@ export function CitizenNavigation() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
-  const showPay = !inTransaction && !inputFocused;
+  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused;
   const go = (route: string) => {
     setMenuOpen(false);
     setPayOpen(false);
@@ -200,7 +200,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {!inTransaction && !compact && !overlayOpen && (
+      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
@@ -217,7 +217,7 @@ export function CitizenNavigation() {
           <span aria-hidden="true" className="citizen-bottom-nav__pay-space"/>
         </nav>
       )}
-      {!inTransaction && compact && !overlayOpen && (
+      {!inTransaction && currentRoute !== 'wizard' && compact && !overlayOpen && (
         <div className="citizen-corners" aria-label={bn ? 'সংক্ষিপ্ত নেভিগেশন' : 'Compact navigation'}>
           <button className="citizen-corner citizen-corner--top-left" onClick={() => setMenuOpen(true)}
             aria-label={bn ? 'মেনু খুলুন' : 'Open menu'}><Menu aria-hidden="true"/></button>
