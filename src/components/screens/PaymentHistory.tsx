@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
+import {useAccountIdentity} from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
@@ -30,6 +31,7 @@ const escapeCsv = (value: unknown) => {
 
 export const PaymentHistory: React.FC = () => {
   const { receipts, selectReceipt, language, taxpayerProfile, demoUser } = useTaxState();
+  const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('ALL');
   const [category, setCategory] = useState('ALL');
@@ -55,7 +57,7 @@ export const PaymentHistory: React.FC = () => {
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 
-  if (demoUser) return <DemoPaymentActivity />;
+  if (demoUser||authenticatedUser) return <DemoPaymentActivity />;
 
   return (
     <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>

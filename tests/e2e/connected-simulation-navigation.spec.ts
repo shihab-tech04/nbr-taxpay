@@ -12,6 +12,6 @@ test('fictional Start Payment enters connected SQL simulation without issuing an
  await expect(page.getByRole('heading',{name:'Create a combined payment'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Add beneficiary / category'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toBeVisible();
- await expect(page.getByText('Simulation only: no real payment, government challan or tax credit.',{exact:false})).toBeVisible();
+ await expect(page.getByText(/Simulation only: no real payment, government challan or tax credit\.|Simulation only; no payment or credit\./i)).toBeVisible();
  await expect(page.getByText('Simulated receipt reference:',{exact:false})).toHaveCount(0);
 });

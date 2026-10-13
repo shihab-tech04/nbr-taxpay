@@ -5,6 +5,7 @@ import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
 import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
+import {useAccountIdentity} from './services/accountIdentity';
 import { Footer } from './components/layout/Footer';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
@@ -49,9 +50,10 @@ import { HeadCatalogue } from './components/screens/HeadCatalogue';
 
 const MainRouter: React.FC = () => {
   const { currentRoute, navigate, userRole, setUserRole, language } = useTaxState();
+  const {user:verifiedApplicationUser}=useAccountIdentity();
   const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
   const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
-  const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
+  const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !verifiedApplicationUser && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const transactionRoute = ['guest','guestwh','travel','wizard'].includes(currentRoute);
   const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
@@ -111,8 +113,9 @@ const MainRouter: React.FC = () => {
       case 'corrections':
         return <CorrectionRequests />;
       case 'notifications':
-      case 'account_notifications':
         return <NotificationsView />;
+      case 'account_notifications':
+        return <AccountCenter page="notifications" />;
       case 'account_profile':
         return <AccountCenter page="profile" />;
       case 'account_settings':
