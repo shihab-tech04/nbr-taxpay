@@ -463,3 +463,9 @@
   .public-information-hero .citizen-public-hero__copy h1 {max-width:none;}
   .public-information-hero .public-home-login {width:100%;}
 }
+
+/* A selected demonstration ID cannot silently switch taxpayer identities. */
+.citizen-demo-account-switch {display:grid;gap:.65rem;padding:.8rem .1rem;border-top:1px solid var(--citizen-border);}
+.citizen-demo-account-switch p {font-size:.8rem;font-weight:700;color:var(--citizen-text);}
+.citizen-demo-account-switch button {min-height:44px;padding:.55rem .75rem;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);border:1px solid var(--citizen-border);border-radius:.6rem;text-align:center;font-size:.8rem;font-weight:750;}
+.citizen-demo-account-switch button:hover {border-color:var(--citizen-primary);}
