@@ -2,17 +2,17 @@ import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {loadSimulationNotices,getBoundSimulationUser,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
+import {getBoundSimulationUser,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
 export const NotificationsView:React.FC=()=>{
-  const {demoUser,language}=useTaxState();
+  const {language}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
   const [busyNotice,setBusyNotice]=useState<number|null>(null);
   const privateMode=Boolean(authenticatedUser);
-  const id=(privateMode?boundId:demoUser?.id) as SimulationUser|undefined;
+  const id=boundId as SimulationUser|undefined;
   const [notices,setNotices]=useState<SimulationNotice[]>([]);
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
@@ -29,7 +29,7 @@ export const NotificationsView:React.FC=()=>{
     if(!id)return;
     let active=true;setNotices([]);setLoading(true);setError('');
     const read=async()=>{
-      try{const data=privateMode?await getPrivateSimulationNotices():await loadSimulationNotices(id);if(active){setNotices(data);setLoading(false);setError('');}}
+      try{const data=await getPrivateSimulationNotices();if(active){setNotices(data);setLoading(false);setError('');}}
       catch(e){if(active){setError(e instanceof Error?e.message:'Notification API failed');setLoading(false);}}
     };
     void read();const timer=window.setInterval(()=>void read(),7000);
@@ -46,13 +46,13 @@ export const NotificationsView:React.FC=()=>{
     }catch(e){setError(e instanceof Error?e.message:'Notification update failed');}
     finally{setBusyNotice(null);}
   };
-  if(authLoading&&!demoUser)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
-  if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
-  if(!id)return <AccountCenter page="notifications"/>;
+  if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
+  if(!authenticatedUser)return <AccountCenter page="notifications"/>;
+  if(!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
       <h1 className="text-2xl font-bold text-taxpay-text">{label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}</h1>
-      <p className="mt-2 text-sm text-taxpay-muted">{privateMode?label('Private SQL notifications for your verified account. No official receipts or credits.','আপনার যাচাইকৃত অ্যাকাউন্টের SQL বিজ্ঞপ্তি; সরকারি রসিদ বা ক্রেডিট নয়।'):label('Public fictional simulation activity, not private government notices.','উন্মুক্ত কাল্পনিক সিমুলেশন, সরকারি নোটিশ নয়।')}</p>
+      <p className="mt-2 text-sm text-taxpay-muted">{label('Private SQL notifications for your verified account. No official receipts or credits.','আপনার যাচাইকৃত অ্যাকাউন্টের SQL বিজ্ঞপ্তি; সরকারি রসিদ বা ক্রেডিট নয়।')}</p>
     </header>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
