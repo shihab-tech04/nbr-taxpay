@@ -257,7 +257,7 @@
 .lifecycle-dashboard .life-metric__footer {
   margin: auto 0 0;
   padding-top: 11px;
-  color: #58716a;
+  color: #4f665c;
   font-size: 10px;
   line-height: 1.5;
 }
@@ -293,7 +293,7 @@
 }
 .lifecycle-dashboard .life-note {
   max-width: 140px;
-  color: #738178;
+  color: #52665c;
   font-size: 10px;
   line-height: 1.4;
   text-align: right;
@@ -335,7 +335,7 @@
   place-items: center;
   flex: none;
   width: 25px;
-  color: #8a9c90;
+  color: #52665c;
   font-size: 11px;
   font-weight: 800;
 }
@@ -364,11 +364,11 @@
   line-height: 1.4;
 }
 .lifecycle-dashboard .life-step__content small {
-  color: #728278;
+  color: #52665c;
   font-size: 11px;
   line-height: 1.45;
 }
-.lifecycle-dashboard .life-journey__steps li button > svg { color: #869d91; flex: none; }
+.lifecycle-dashboard .life-journey__steps li button > svg { color: #52665c; flex: none; }
 .lifecycle-dashboard .life-journey__foot {
   display: flex;
   align-items: flex-start;
@@ -460,7 +460,7 @@
   min-height: 39px;
   padding: 7px 12px;
   border-radius: 8px;
-  color: #64796e;
+  color: #52665c;
   font-size: 11px;
   font-weight: 800;
 }
@@ -520,7 +520,7 @@
 }
 .lifecycle-dashboard .life-record__details p {
   margin: 3px 0 0;
-  color: #728179;
+  color: #52665c;
   font-size: 10px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -560,7 +560,7 @@
   border-radius: 13px;
   background: #f7f9f5;
   text-align: center;
-  color: #829187;
+  color: #52665c;
 }
 .lifecycle-dashboard .life-activity__empty svg { margin: 0 auto 12px; }
 .lifecycle-dashboard .life-activity__empty h3 { font-size: 15px; color: var(--life-ink); font-weight: 800; margin-bottom: 8px; }
@@ -568,7 +568,7 @@
 .lifecycle-dashboard .life-activity__disclaimer,
 .lifecycle-dashboard .life-insights__sub {
   margin: 12px 0 0;
-  color: #78857c;
+  color: #52665c;
   font-size: 10px;
   line-height: 1.6;
 }
@@ -654,7 +654,7 @@
   min-width: 0;
 }
 .lifecycle-dashboard .life-services__copy strong { color: var(--life-ink); font-size: 12px; line-height: 1.4; }
-.lifecycle-dashboard .life-services__copy small { color: #728177; font-size: 10px; line-height: 1.4; }
+.lifecycle-dashboard .life-services__copy small { color: #52665c; font-size: 10px; line-height: 1.4; }
 .lifecycle-dashboard .life-services__grid button > svg { flex: none; color: var(--life-green); }
 /* Keep the existing tax-position information contract while using a compact
    disclosure that cannot be mistaken for a computed account balance. */
@@ -688,7 +688,7 @@
 }
 .lifecycle-dashboard .life-position__detail p {
   margin: 0;
-  color: #697f71;
+  color: #52665c;
   font-size: 11px;
 }
 .lifecycle-dashboard .life-position__detail strong {
@@ -698,7 +698,7 @@
 .lifecycle-dashboard .life-position__note {
   flex: 1 1 220px;
   margin: 0;
-  color: #71827a;
+  color: #52665c;
   font-size: 10px;
   line-height: 1.45;
 }
