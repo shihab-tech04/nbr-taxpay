@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
+import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { Footer } from './components/layout/Footer';
 import { CitizenFooter } from './components/layout/CitizenFooter';
@@ -152,7 +153,7 @@ const MainRouter: React.FC = () => {
 
   return (
     <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : `taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
-      {officerRoute ? <Header /> : <CitizenNavigation />}
+      {officerRoute ? <Header /> : currentRoute === 'landing' ? <PublicHomeHeader /> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
         {privateSampleGate ? (
