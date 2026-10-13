@@ -494,7 +494,7 @@
   border-bottom:1px solid var(--citizen-border);
   box-shadow:0 4px 16px color-mix(in srgb,var(--citizen-primary-dark) 7%,transparent);
 }
-.public-home-header__inner {max-width:1280px;min-height:78px;padding:.65rem clamp(1rem,3vw,2rem);gap:clamp(.8rem,2vw,1.75rem);}
+.public-home-header__inner {max-width:1504px;min-height:78px;padding:.65rem clamp(1rem,3vw,2rem);gap:clamp(.8rem,2vw,1.75rem);}
 .public-home-skip-link {
   position:absolute;top:.3rem;left:1rem;z-index:60;display:inline-flex;align-items:center;gap:.4rem;
   min-height:44px;padding:.55rem .8rem;border-radius:.55rem;background:var(--citizen-primary-dark);color:white;
@@ -512,7 +512,7 @@
 .public-home-nav a:hover {background:var(--citizen-primary-light);color:var(--citizen-primary-dark);text-decoration:none;}
 .public-home-language,.public-home-menu {background:white;color:var(--citizen-primary-dark);border-color:var(--citizen-border);}
 .public-home-language:hover,.public-home-menu:hover {background:var(--citizen-primary-light);border-color:var(--citizen-primary);}
-.public-information-hub {max-width:1200px;scroll-margin-top:96px;}
+.public-information-hub {max-width:1440px;scroll-margin-top:96px;}
 .public-information-hub [id] {scroll-margin-top:104px;}
 .public-information-hero {
   grid-template-columns:minmax(0,1.25fr) minmax(265px,.78fr);
@@ -529,7 +529,7 @@
 .public-information-hero .public-home-login {min-width:164px;min-height:52px;padding:.8rem 1.15rem;border-radius:.75rem;background:var(--citizen-primary);color:white;font-size:.88rem;box-shadow:0 5px 14px color-mix(in srgb,var(--citizen-primary-dark) 18%,transparent);}
 .public-information-hero .public-home-login:hover {background:var(--citizen-primary-dark);}
 .public-information-guide {align-self:center;padding:clamp(1.1rem,2.5vw,1.55rem);border-color:#d8e4f5;border-radius:1rem;background:var(--citizen-surface);box-shadow:0 8px 24px color-mix(in srgb,var(--citizen-primary-dark) 7%,transparent);}
-.public-information-guide .citizen-public-hero__panel-label {margin-bottom:.5rem;color:var(--citizen-primary-dark);font-size:.69rem;}
+.public-information-guide .citizen-public-hero__panel-label {text-transform:none;letter-spacing:.02em;margin-bottom:.5rem;color:var(--citizen-primary-dark);font-size:.69rem;}
 .public-information-guide h2 {margin:0 0 .8rem;color:var(--citizen-text);font-size:1.06rem;font-weight:800;line-height:1.4;}
 .public-information-guide ol {gap:.1rem;}
 .public-information-guide li {gap:.75rem;padding:.75rem 0;border-top:1px solid var(--citizen-border);}
@@ -539,7 +539,7 @@
 .public-information-hub .public-info-section {padding:clamp(1.15rem,3vw,1.7rem);border-radius:1rem;background:var(--citizen-surface);box-shadow:0 3px 12px color-mix(in srgb,var(--citizen-primary-dark) 3%,transparent);}
 .public-information-hub .citizen-hub-section__heading {margin-bottom:1.2rem;}
 .public-information-hub .citizen-hub-section__heading h2 {font-size:clamp(1.15rem,2vw,1.35rem);letter-spacing:-.02em;}
-.public-information-hub .citizen-hub-eyebrow {margin-bottom:.25rem;font-size:.67rem;letter-spacing:.07em;}
+.public-information-hub .citizen-hub-eyebrow {text-transform:none;margin-bottom:.25rem;font-size:.67rem;letter-spacing:.07em;}
 .public-information-hub .citizen-hub-section__heading p:not(.citizen-hub-eyebrow) {font-size:.82rem;line-height:1.65;}
 .public-info-topic-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;}
 .public-info-topic {display:flex;flex-direction:column;align-items:flex-start;min-height:100%;padding:1.15rem;border-color:var(--citizen-border);border-radius:.85rem;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%);}
@@ -566,7 +566,7 @@
 .public-info-faq details p {max-width:78ch;color:var(--citizen-muted);font-size:.79rem;line-height:1.7;}
 .public-information-hub :focus-visible {outline:3px solid var(--citizen-primary);outline-offset:3px;}
 .citizen-footer--public {background:var(--citizen-surface);}
-.citizen-footer--public .citizen-footer__inner {max-width:1200px;padding:2rem clamp(1rem,3vw,2rem);}
+.citizen-footer--public .citizen-footer__inner {max-width:1504px;padding:2rem clamp(1rem,3vw,2rem);}
 .citizen-footer--public .citizen-footer__intro {align-items:flex-start;}
 .citizen-footer--public .citizen-footer__intro > svg {flex:none;margin-top:.15rem;color:var(--citizen-primary);}
 .citizen-footer--public .citizen-footer__independence {max-width:78ch;color:var(--citizen-text);font-size:.78rem;font-weight:650;line-height:1.6;}
@@ -607,4 +607,36 @@
   .public-information-hub .citizen-hub-steps ol {grid-template-columns:minmax(0,1fr);}
   .public-information-hub .citizen-hub-steps li {min-height:0;}
   .public-info-topic {min-height:0;}
+}
+
+/* Public header extension: native link semantics, visible section state, same TaxPay tokens. */
+.public-home-header .public-home-nav a[aria-current="location"] {
+  color:var(--citizen-primary-dark);
+  background:var(--citizen-primary-light);
+  box-shadow:inset 0 -3px 0 var(--citizen-primary);
+}
+.public-home-header .public-home-login-link {
+  display:inline-flex;align-items:center;justify-content:center;gap:.55rem;
+  min-height:44px;padding:.62rem 1.1rem;
+  border-radius:.65rem;background:var(--citizen-primary);
+  color:white;text-decoration:none;font-size:.83rem;font-weight:750;
+  white-space:nowrap;
+}
+.public-home-header .public-home-login-link:hover {
+  background:var(--citizen-primary-dark);color:white;text-decoration:none;
+}
+.public-home-header .public-home-login-link:focus-visible {
+  outline:3px solid var(--citizen-primary);outline-offset:3px;
+}
+.public-home-nav .public-home-login-link--mobile {display:none;}
+@media(max-width:900px) {
+  .public-home-header__tools .public-home-login-link--desktop {display:none;}
+  .public-home-nav .public-home-login-link--mobile {
+    display:flex;width:100%;min-height:48px;margin-top:.45rem;
+    padding:.75rem 1rem;justify-content:center;background:var(--citizen-primary);color:white;
+  }
+  .public-home-nav .public-home-login-link--mobile:hover {background:var(--citizen-primary-dark);color:white;}
+  .public-home-header .public-home-nav a[aria-current="location"] {
+    box-shadow:inset 3px 0 0 var(--citizen-primary);
+  }
 }
