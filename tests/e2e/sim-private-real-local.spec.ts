@@ -8,6 +8,7 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
  if(!root||!key||!dsn)throw Error('Local Supabase required');
+ const anonKey=key;
  const u=new URL(root),db=new URL(dsn);
  if(u.protocol!=='http:'||!['localhost','127.0.0.1'].includes(u.hostname)||
     !['localhost','127.0.0.1'].includes(db.hostname))throw Error('Remote writes forbidden');
@@ -20,7 +21,7 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  }
  async function request(path:string,data:Record<string,unknown>,token?:string){
   const response=await fetch(u.origin+path,{method:'POST',
-   headers:{apikey:key,Authorization:'Bearer '+(token||key),'Content-Type':'application/json'},
+   headers:{apikey:anonKey,Authorization:'Bearer '+(token||anonKey),'Content-Type':'application/json'},
    body:JSON.stringify(data)});
   const raw=await response.text();
   let result:unknown;try{result=JSON.parse(raw)}catch{result=raw}
