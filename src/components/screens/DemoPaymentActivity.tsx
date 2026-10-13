@@ -5,12 +5,13 @@ import {formatCurrency} from '../../services/numberFormat';
 
 /** Read-only cross-app fictional fixture view. This is NOT Supabase or ACS data. */
 export const DemoPaymentActivity:React.FC=()=>{
-  const {demoUser,language}=useTaxState();
+  const {demoUser,language,receipts,taxpayerProfile}=useTaxState();
   const [perspective,setPerspective]=useState<'beneficiary'|'payer'>('beneficiary');
   const bn=language==='bn';
   const id=demoUser?.id as DemoUserId | undefined;
   const activities=useMemo(()=>id?getDemoUserTransactions(id,demoTransactions,perspective):[],[id,perspective]);
   const label=(en:string,bangla:string)=>bn?bangla:en;
+  const sessionReceipts=receipts.filter(r=>r.id.startsWith('rcpt-wiz-')&&r.isSimulatedDemo&&r.payerTin===taxpayerProfile.tin);
   if(!id)return null;
   return <main className="mx-auto max-w-5xl space-y-4 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
@@ -32,7 +33,7 @@ export const DemoPaymentActivity:React.FC=()=>{
       </button>
     </nav>
     <section aria-label={label('Transaction history','লেনদেনের ইতিহাস')} className="space-y-3">
-      {!activities.length?<div className="rounded-xl border border-taxpay-border bg-white p-6">
+      {!activities.length&&!sessionReceipts.length?<div className="rounded-xl border border-taxpay-border bg-white p-6">
         <h2 className="text-lg font-semibold text-taxpay-text">{label('No simulated transactions','কোনো অনুকরণমূলক লেনদেন নেই')}</h2>
         <p className="mt-2 text-sm text-taxpay-muted">{label('This profile starts empty. Future authenticated activity requires a shared, verified SQL integration.', 'এই প্রোফাইল শুরুতে খালি। ভবিষ্যতের কার্যক্রমের জন্য যাচাইকৃত যৌথ এসকিউএল সংযোগ প্রয়োজন।')}</p>
       </div>:activities.map(tx=>{
@@ -65,5 +66,13 @@ export const DemoPaymentActivity:React.FC=()=>{
         </article>;
       })}
     </section>
+    {sessionReceipts.length>0&&<section className="space-y-3" aria-label={label('New session simulations','এই সেশনের নতুন সিমুলেশন')}>
+      <h2 className="text-lg font-semibold text-taxpay-text">{label('This browser session (not shared with Office Management)','এই ব্রাউজার সেশন (অফিস ম্যানেজমেন্টে শেয়ার হয়নি)')}</h2>
+      {sessionReceipts.map(r=><article key={r.id} className="rounded-xl border border-taxpay-border bg-white p-4">
+        <h3 className="font-semibold text-taxpay-text">{r.challanNo} · {label('Simulation only','শুধু সিমুলেশন')}</h3>
+        <p className="mt-1 text-sm text-taxpay-muted">{r.paymentCategory} · {r.assessmentYear} · {formatCurrency(r.totalAmount,language)}</p>
+        <p className="mt-1 text-sm text-taxpay-muted">{label('No SQL sync, Treasury settlement or tax credit.','এসকিউএল সমন্বয়, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নেই।')}</p>
+      </article>)}
+    </section>}
   </main>;
 };
