@@ -10,6 +10,8 @@ export function PublicHelpChat(){
  const [open,setOpen]=useState(false);
  const [input,setInput]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
+ const [selectedTopic,setSelectedTopic]=useState<string|null>(null);
+ const selectedGuide=GUIDE_CONTENT.find(g=>g.id===selectedTopic);
  const last=useRef<HTMLDivElement>(null);
  useEffect(()=>last.current?.scrollIntoView({block:'nearest'}),[messages,open]);
  const respond=(text:string)=>{
@@ -32,10 +34,11 @@ export function PublicHelpChat(){
    <div className="public-help-messages" role="log" aria-live="polite">
     <p className="public-help-opening">{bn?'কী জানতে চান? নিচের কোনো বিষয় বেছে নিন।':'How can we help? Choose a topic or type a question.'}</p>
     {messages.map((m,i)=><p className={'public-help-message public-help-message--'+m.from} key={i}>{m.value}</p>)}
+    {selectedGuide&&<p className="public-help-message public-help-message--assistant" data-testid="guide-topic-answer">{selectedGuide.faqs[0]?.a[bn?1:0]||selectedGuide.description[bn?1:0]}</p>}
     <div ref={last}/>
    </div>
    <div className="public-help-topics">
-    {GUIDE_CONTENT.slice(0,3).map(g=><button type="button" key={g.id} onClick={()=>{setMessages(prev=>[...prev,{from:'user',value:bn?g.bn:g.en},{from:'assistant',value:g.faqs[0]?.a[bn?1:0]||g.description[bn?1:0]}]);setInput('');}}>{bn?g.bn:g.en}</button>)}
+    {GUIDE_CONTENT.slice(0,3).map(g=><button type="button" key={g.id} onClick={()=>{setSelectedTopic(g.id);setInput('');}}>{bn?g.bn:g.en}</button>)}
    </div>
    <form onSubmit={e=>{e.preventDefault();respond(input);}}><label className="sr-only" htmlFor="taxpay-help-message">{bn?'আপনার প্রশ্ন':'Your question'}</label>
     <input id="taxpay-help-message" value={input} onChange={e=>setInput(e.target.value)} placeholder={bn?'প্রশ্ন লিখুন':'Ask a question'} maxLength={250}/>
