@@ -1,9 +1,9 @@
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {CATEGORY_LABELS} from '../../data/paymentHeads';
 import {
-  simulationUsers,simulationCategories,loadSimulationHistory,submitSimulatedPayment,
+  simulationUsers,simulationCategories,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
@@ -26,7 +26,7 @@ const guidedSteps=[
   {en:'Payment simulation',bn:'পেমেন্ট সিমুলেশন'},
   {en:'Result',bn:'ফলাফল'}
 ];
-/** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
+/** Protected SQL simulation; public fictional profiles use isolated in-memory preview only. */
 export const DemoPaymentActivity:React.FC=()=>{
   const {demoUser,language,routeParams,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
@@ -38,6 +38,7 @@ export const DemoPaymentActivity:React.FC=()=>{
   const txt=(en:string,bengali:string)=>bn?bengali:en;
   const [view,setView]=useState<'beneficiary'|'payer'>('beneficiary');
   const [rows,setRows]=useState<SimulationTransaction[]>([]);
+  const demoTransactions=useRef<SimulationTransaction[]>([]);
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState('');
   const [revision,setRevision]=useState(0);
@@ -63,11 +64,18 @@ export const DemoPaymentActivity:React.FC=()=>{
   useEffect(()=>{if(!id)return;setLines([{...freshLine(id),category:parentCategory}]);setNonce(crypto.randomUUID());setSubmitMessage('');setConfirmation(null);setStage(1);},[id]);
   useEffect(()=>{
     if(!id)return;
+    if(!privateMode){
+      // The hosted simulation RPCs intentionally exclude anon. Never weaken SQL grants.
+      // These demo rows live only in this mounted component, not SQL or shared persistence.
+      const local=demoTransactions.current.filter(t=>view==='payer'?t.payer===id:t.allocations.some(a=>a.beneficiary===id));
+      setRows(local);setLoading(false);setLoadError('');
+      return;
+    }
     let active=true;
     setRows([]);setLoading(true);setLoadError('');
     const run=async()=>{
       try{
-        const next=privateMode?await getPrivateSimulationHistory(view):await loadSimulationHistory(id,view);
+        const next=await getPrivateSimulationHistory(view);
         if(active){setRows(next);setLoadError('');setLoading(false);}
       }catch(e){
         if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
@@ -92,15 +100,30 @@ export const DemoPaymentActivity:React.FC=()=>{
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
       }));
-      const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
-      const readback=privateMode?await getPrivateSimulationHistory('payer'):await loadSimulationHistory(id,'payer');
-      const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
-      if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
-      setView('payer');setRevision(v=>v+1);
-      setConfirmation({reference:result.reference,totalMinor:expected,count:checked.length});
-      setStage(5);
-      setSubmitMessage(txt('Simulation saved and reconciled with shared SQL. No funds moved or official tax credit was created.','সিমুলেশন সংরক্ষিত এবং SQL রিড-ব্যাকে মিলেছে। কোনো অর্থ স্থানান্তর বা সরকারি কর ক্রেডিট তৈরি হয়নি।'));
+      if(!Number.isSafeInteger(expected)||expected<=0)throw new Error('Invalid total amount.');
+      if(privateMode){
+        const result=await submitPrivateSimulationPayment(checked,nonce);
+        const readback=await getPrivateSimulationHistory('payer');
+        const confirmed=readback.find(t=>t.transactionId===result.transactionId);
+        if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
+        setConfirmation({reference:result.reference,totalMinor:expected,count:checked.length});
+        setSubmitMessage(txt('Simulation saved and reconciled with shared SQL. No funds moved or official tax credit was created.','সিমুলেশন সংরক্ষিত এবং SQL রিড-ব্যাকে মিলেছে। কোনো অর্থ স্থানান্তর বা সরকারি কর ক্রেডিট তৈরি হয়নি।'));
+      }else{
+        const localId=crypto.randomUUID();
+        const reference='DEMO-'+localId.slice(0,8).toUpperCase();
+        const time=new Date().toISOString();
+        const row:SimulationTransaction={
+          id:reference,transactionId:localId,payer:id,state:'SIMULATED',createdAt:time,
+          simulationOnly:true,totalMinor:expected,reviewStatus:'LOCAL_PREVIEW_ONLY',
+          allocations:checked.map((line,index)=>({...line,id:localId+'-'+(index+1),lineNo:index+1})),
+          events:[{id:1,action:'LOCAL_DEMO_PREVIEW',note:'In-memory only. No shared SQL or government payment.',occurredAt:time}]
+        };
+        demoTransactions.current=[row,...demoTransactions.current];
+        setConfirmation({reference,totalMinor:expected,count:checked.length});
+        setSubmitMessage(txt('Demo preview created in this browser session only. Nothing saved to shared SQL; no funds moved or tax credit was created.','ডেমো প্রিভিউ শুধু এই ব্রাউজারে তৈরি হয়েছে। SQL-এ কিছু সংরক্ষিত হয়নি; অর্থ স্থানান্তর বা কর ক্রেডিট তৈরি হয়নি।'));
+      }
+      setView('payer');setRevision(v=>v+1);setStage(5);
     }catch(err){setFlowError(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
   },[id,lines,nonce,saving,language,privateMode,stage]);
@@ -134,10 +157,10 @@ export const DemoPaymentActivity:React.FC=()=>{
   if(!id)return null;
   return <main className="taxpay-guided-payment mx-auto max-w-5xl space-y-5 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-      <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস')}</p>
+      <p className="text-sm font-semibold text-taxpay-dark">{id} · {privateMode?txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস'):txt('Local demo preview','স্থানীয় ডেমো প্রিভিউ')}</p>
       <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Make Payment','পেমেন্ট করুন')}</h1>
       <p className="mt-2 text-sm text-taxpay-muted">{privateMode?txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।'):txt('Simulation only: no real payment, government challan or tax credit.','শুধু সিমুলেশন: বাস্তব পেমেন্ট, সরকারি চালান বা কর ক্রেডিট নেই।')}</p>
-      {!privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Public fictional sandbox. All sample accounts are unverified examples; do not enter personal data.','উন্মুক্ত কাল্পনিক নমুনা। ব্যক্তিগত তথ্য প্রবেশ করাবেন না।')}</p>}
+      {!privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Local preview only — nothing is sent to SQL or Office Management. Sample accounts are fictional. Do not enter personal data. Sign in to access your authorized connected simulation.','শুধু স্থানীয় প্রিভিউ — SQL বা অফিস ম্যানেজমেন্টে কিছু পাঠানো হয় না। নমুনা অ্যাকাউন্ট কাল্পনিক। ব্যক্তিগত তথ্য লিখবেন না। সংযুক্ত সিমুলেশনের জন্য সাইন ইন করুন।')}</p>}
     </header>
 
     <nav className="taxpay-guided-steps" aria-label={txt('Payment progress','পেমেন্টের অগ্রগতি')}>
@@ -172,7 +195,7 @@ export const DemoPaymentActivity:React.FC=()=>{
             <li>{txt('Confirm who the payment is for, and the correct assessment year.','কার জন্য পেমেন্ট ও সঠিক করবর্ষ যাচাই করুন।')}</li>
             <li>{txt('Enter the amount from your own supporting records. Tax liability is not calculated here.','নিজের প্রমাণপত্র অনুযায়ী পরিমাণ লিখুন। এখানে কর দায় গণনা করা হয় না।')}</li>
             <li>{txt('You can add multiple beneficiaries and categories in one simulated transaction.','একটি সিমুলেটেড লেনদেনে একাধিক করদাতা ও খাত যোগ করতে পারবেন।')}</li>
-            <li>{txt('Only a successful server read-back will show the simulation result.','সার্ভার থেকে সফল রিড-ব্যাকের পরই সিমুলেশনের ফলাফল দেখানো হবে।')}</li>
+            <li>{privateMode?txt('Only a successful server read-back will show the simulation result.','সার্ভার থেকে সফল রিড-ব্যাকের পরই সিমুলেশনের ফলাফল দেখানো হবে।'):txt('Public demo previews run only in browser memory, without a server write.','পাবলিক ডেমো শুধু ব্রাউজারের মেমরিতে চলে, সার্ভারে সংরক্ষণ হয় না।')}</li>
           </ul>
         </div>
         <div className="taxpay-guided-footer">
@@ -231,19 +254,19 @@ export const DemoPaymentActivity:React.FC=()=>{
         <p className="taxpay-guided-safety">{txt('Simulation only. No banking gateway, official challan, Treasury settlement or tax credit.','শুধু সিমুলেশন। ব্যাংকিং গেটওয়ে, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নয়।')}</p>
         <div className="taxpay-guided-footer">
           <button type="button" className="taxpay-guided-secondary" disabled={saving} onClick={()=>setStage(3)}>{txt('Back','পূর্ববর্তী')}</button>
-          <button type="button" className="taxpay-guided-primary" disabled={saving} onClick={()=>void submit()}>{saving?txt('Checking server…','সার্ভার যাচাই চলছে…'):txt('Run payment simulation','পেমেন্ট সিমুলেশন চালান')} <span aria-hidden="true">→</span></button>
+          <button type="button" className="taxpay-guided-primary" disabled={saving} onClick={()=>void submit()} >{saving?privateMode?txt('Checking server…','সার্ভার যাচাই চলছে…'):txt('Creating preview…','প্রিভিউ তৈরি হচ্ছে…'):txt('Run payment simulation','পেমেন্ট সিমুলেশন চালান')} <span aria-hidden="true">→</span></button>
         </div>
       </div>}
       {stage===5&&confirmation&&<div className="taxpay-guided-body" role="status" aria-live="polite">
         <div className="taxpay-guided-result-icon" aria-hidden="true">✓</div>
-        <h3>{txt('Simulation saved successfully','সিমুলেশন সফলভাবে সংরক্ষিত')}</h3>
+        <h3>{privateMode?txt('Simulation saved successfully','সিমুলেশন সফলভাবে সংরক্ষিত'):txt('Demo preview created','ডেমো প্রিভিউ তৈরি হয়েছে')}</h3>
         <p>{submitMessage}</p>
         <div className="taxpay-guided-information">
           <h4>{txt('Simulation reference','সিমুলেশন রেফারেন্স')}</h4>
           <p className="taxpay-guided-reference">{confirmation.reference}</p>
           <p>{txt('Allocations','বরাদ্দ')}: {confirmation.count}</p>
           <p>{txt('Simulated amount','সিমুলেটেড অর্থ')}: {formatSimulatedAmount(confirmation.totalMinor)}</p>
-          <p>{txt('Office review may remain pending. This is not a government receipt.','অফিসের পর্যালোচনা অপেক্ষমাণ থাকতে পারে। এটি সরকারি রসিদ নয়।')}</p>
+          <p>{privateMode?txt('Office review may remain pending. This is not a government receipt.','অফিসের পর্যালোচনা অপেক্ষমাণ থাকতে পারে। এটি সরকারি রসিদ নয়।'):txt('Local preview only. Not an Office Management record or a government receipt.','শুধু স্থানীয় প্রিভিউ। অফিস ম্যানেজমেন্টের রেকর্ড বা সরকারি রসিদ নয়।')}</p>
         </div>
         <div className="taxpay-guided-footer">
           <a className="taxpay-guided-secondary" href="#taxpay-guided-history">{txt('View transaction activity','লেনদেনের ইতিহাস দেখুন')}</a>
@@ -258,17 +281,17 @@ export const DemoPaymentActivity:React.FC=()=>{
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
       </button>)}
     </nav>
-    <section className="space-y-3" aria-label={txt('Shared SQL transaction history','SQL লেনদেনের ইতিহাস')}>
+    <section className="space-y-3" aria-label={privateMode?txt('Shared SQL transaction history','SQL লেনদেনের ইতিহাস'):txt('Local preview activity','স্থানীয় প্রিভিউ ইতিহাস')}>
       {loading?<p role="status">{txt('Loading shared transactions…','সংযুক্ত লেনদেন লোড হচ্ছে…')}</p>:loadError?<p role="alert">{txt('Could not synchronize transaction history: ','লেনদেনের তথ্য সমন্বয় করা যায়নি: ')}{loadError}</p>:
-        rows.length===0?<section className="rounded-xl border border-taxpay-border bg-white p-5"><h2 className="font-bold">{txt('No transactions yet','এখনো কোনো লেনদেন নেই')}</h2><p className="mt-2 text-sm text-taxpay-muted">{txt('Create a simulated payment to populate this history and the admin ledger.','পেমেন্ট সিমুলেট করলে এই হিসাব এবং অ্যাডমিন লেজারে দেখা যাবে।')}</p></section>:
+        rows.length===0?<section className="rounded-xl border border-taxpay-border bg-white p-5"><h2 className="font-bold">{txt('No transactions yet','এখনো কোনো লেনদেন নেই')}</h2><p className="mt-2 text-sm text-taxpay-muted">{txt('Create a local demo preview to populate this activity. Shared SQL and Admin remain unchanged.','স্থানীয় ডেমো প্রিভিউ তৈরি করলে এখানে দেখা যাবে। SQL বা অ্যাডমিনে পরিবর্তন হবে না।')}</p></section>:
         rows.map(tx=><article key={tx.transactionId} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div><h2 className="font-semibold text-taxpay-text">{tx.id} · {tx.state}</h2>
               <p className="text-sm text-taxpay-muted">{txt('Payer','প্রদানকারী')}: {tx.payer} · <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p></div>
             <p className="font-bold tabular-nums text-taxpay-text">{formatSimulatedAmount(tx.allocations.reduce((n,a)=>n+a.amountMinor,0))}</p>
           </div>
-          <p className="mt-2 text-sm font-semibold text-taxpay-dark">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
-          <p className="mt-2 text-xs text-taxpay-muted">{txt('Shared SQL transaction · no Treasury settlement or tax credit','SQL লেনদেন · সরকারি পেমেন্ট বা কর ক্রেডিট নয়')}</p>
+          <p className="mt-2 text-sm font-semibold text-taxpay-dark">{privateMode?txt('Office review','অফিস পর্যালোচনা'):txt('Preview state','প্রিভিউ অবস্থা')}: {tx.reviewStatus}</p>
+          <p className="mt-2 text-xs text-taxpay-muted">{privateMode?txt('Shared SQL transaction · no Treasury settlement or tax credit','SQL লেনদেন · সরকারি পেমেন্ট বা কর ক্রেডিট নয়'):txt('Local browser preview only · not stored in SQL, no payment or tax credit','শুধু স্থানীয় প্রিভিউ · SQL-এ সংরক্ষিত নয়, পেমেন্ট বা কর ক্রেডিট নয়')}</p>
           <h3 className="mt-4 font-semibold text-taxpay-text">{txt('Allocation details','বরাদ্দের বিবরণ')}</h3>
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
             <div><p>{a.beneficiary} · {a.category.replace(/_/g,' ')}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
