@@ -133,8 +133,10 @@ jobs:
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_SUPABASE_URL); if(!['127.0.0.1','localhost'].includes(u.hostname))process.exit(1)"
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          # The cross-app test must never run against an unexpected Office source revision.
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "14b1384b3825441fd4b518073a266993387d5140"
+          # Use the exact verified Office source even if main changes during parallel work.
+          git -C "$OFFICE_DIR" fetch --depth 1 origin 34a952f4738adc584aaf0eeba1f7710dabbebd92
+          git -C "$OFFICE_DIR" checkout --detach 34a952f4738adc584aaf0eeba1f7710dabbebd92
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "34a952f4738adc584aaf0eeba1f7710dabbebd92"
           npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
