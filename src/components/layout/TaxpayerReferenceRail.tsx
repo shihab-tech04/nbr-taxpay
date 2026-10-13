@@ -46,7 +46,7 @@ export function TaxpayerReferenceRail() {
           <Landmark size={23} aria-hidden={true} />
           <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
-        <button className="taxpayer-reference-main-action" type="button" onClick={() => navigate(sampleProfile ? 'wizard' : 'landing')}>
+        <button className="taxpayer-reference-main-action" type="button" onClick={() => navigate('guest')}>
           <WalletCards size={18} aria-hidden={true} />
           {bn ? 'পেমেন্টের ধাপ দেখুন' : 'Explore payment flow'}
         </button>
