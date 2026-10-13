@@ -90,7 +90,7 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=page.locator('.taxpay-payment-wizard');
     await expect(payment).toBeVisible();
-    await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+    await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
     if(width<768) {
       await expect(payment.locator('> div').first()).toHaveCSS('border-top-width','0px');
     }
