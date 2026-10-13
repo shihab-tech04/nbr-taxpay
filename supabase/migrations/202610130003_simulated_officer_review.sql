@@ -48,7 +48,7 @@ begin
  where user_uid=v_actor and active for share;
  if v_role is null then raise exception 'Authorized officer role required'; end if;
  if p_transaction_id is null or p_idempotency_key is null
-   or pg_catalog.char_length(pg_catalog.btrim(pg_catalog.coalesce(p_reason,''))) not between 10 and 1000
+   or pg_catalog.char_length(pg_catalog.btrim(coalesce(p_reason,''))) not between 10 and 1000
  then raise exception 'Invalid transaction, key, or reason'; end if;
  if not ((p_action='MAKER_ACKNOWLEDGE' and v_role='MAKER')
        or (p_action='REVIEWER_VERIFY' and v_role='REVIEWER')
@@ -78,7 +78,7 @@ begin
  insert into public.sim_payment_officer_decisions
   (transaction_id,officer_uid,role,action,reason,idempotency_key,previous_status,next_status)
  values(p_transaction_id,v_actor,v_role,p_action,p_reason,p_idempotency_key,v_tx.review_status,v_next);
- select pg_catalog.coalesce(pg_catalog.max(seq),0)+1 into v_seq
+ select coalesce(pg_catalog.max(seq),0)+1 into v_seq
  from public.sim_payment_events where transaction_id=p_transaction_id;
  insert into public.sim_payment_events(transaction_id,seq,action,note)
  values(p_transaction_id,v_seq,v_event_type,'Synthetic review action recorded; no financial status or tax credit changed')
