@@ -1,5 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
+/**
+ * Original 9-transaction, 16-allocation, 10-profile domain assertions MUST execute
+ * against a disposable local PostgREST fixture, not a hosted account endpoint.
+ * Preserve every original assertion; never re-grant anonymous hosted access.
+ */
+const isolatedUrl = process.env.TAXPAY_LOCAL_SUPABASE_URL;
+const isolatedAnon = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+if (!isolatedUrl || !isolatedAnon) {
+  throw new Error('BLOCKED: run hosted-simulation assertions only with a disposable local Supabase URL and anon key');
+}
+const isolatedBase = new URL(isolatedUrl);
+if (isolatedBase.protocol !== 'http:' ||
+    !['localhost', '127.0.0.1', '[::1]'].includes(isolatedBase.hostname) ||
+    isolatedBase.pathname !== '/' || isolatedBase.search || isolatedBase.hash) {
+  throw new Error('BLOCKED: the domain fixture must use a local HTTP Supabase root');
+}
+const nativeFetch = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const requested = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
+  if (requested.hostname !== 'eyqhoavnitkrajvyqvxn.supabase.co' ||
+      !requested.pathname.startsWith('/rest/v1/rpc/sim_payment_')) {
+    throw new Error('BLOCKED: unexpected external request inside isolated simulation assertions');
+  }
+  const redirected = new URL(requested.pathname + requested.search, isolatedBase);
+  const headers = new Headers(init?.headers);
+  headers.set('apikey', isolatedAnon);
+  headers.set('Authorization', 'Bearer ' + isolatedAnon);
+  return nativeFetch(redirected, { ...init, headers });
+};
 import {
  simulationUsers,loadSimulationHistory,loadSimulationNotices,
  parseSimulatedAmount,formatSimulatedAmount
