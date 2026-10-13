@@ -38,15 +38,16 @@ export function TaxpayerReferenceRail() {
   };
   const bn = language === 'bn';
   const sampleProfile = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
+  const taxpayerWorkspace = Boolean(user) || sampleProfile;
 
   return (
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
       <div>
-        <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(sampleProfile ? 'taxpayer_home' : 'landing')}>
+        <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(taxpayerWorkspace ? 'taxpayer_home' : 'landing')}>
           <Landmark size={23} aria-hidden={true} />
           <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
-        <button className="taxpayer-reference-main-action" type="button" onClick={() => navigate(sampleProfile ? 'wizard' : 'landing')}>
+        <button className="taxpayer-reference-main-action" type="button" onClick={() => navigate(taxpayerWorkspace ? 'wizard' : 'landing')}>
           <WalletCards size={18} aria-hidden={true} />
           {bn ? 'পেমেন্টের ধাপ দেখুন' : 'Explore payment flow'}
         </button>
