@@ -14,7 +14,7 @@ export const TaxpayerDashboard: React.FC = () => {
   return (
     <div className={`mx-auto max-w-5xl space-y-5 pb-12 ${bn?'font-bengali':''}`}>
       <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-        <p className="text-xs font-semibold text-taxpay-dark">{label('Sample taxpayer · account overview','নমুনা করদাতা · হিসাবের সারসংক্ষেপ')}</p>
+        <p className="text-xs font-semibold text-taxpay-dark">{label('Account overview','হিসাবের সারসংক্ষেপ')}</p>
         <h1 className="mt-1 text-2xl font-bold text-taxpay-text sm:text-3xl">{label('Tax dashboard','কর সারসংক্ষেপ')}</h1>
         <p className="mt-2 text-sm text-taxpay-muted">{bn?taxpayerProfile.nameBn:taxpayerProfile.nameEn} · e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span></p>
       </header>

@@ -26,9 +26,9 @@ export function CitizenFooter(){
         </button>)}
       </nav>
       {currentRoute==='landing' && <p className="citizen-footer__independence">{bn?'স্বতন্ত্র তথ্যসেবা; এটি জাতীয় রাজস্ব বোর্ড পরিচালিত সরকারি পোর্টাল নয়।':'Independent information service; this is not an NBR-operated government portal.'}</p>}
-      <p className="citizen-footer__disclaimer"><ShieldAlert size={15} aria-hidden="true"/>
-        {currentRoute==='landing' ? (bn?'এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।':'This information service does not collect money or issue official challans.') : (bn?'শুধু প্রিভিউ · প্রকৃত পেমেন্ট বা সরকারি রসিদ ইস্যু হয় না।':'Preview only · No payments or government receipts issued.')}
-      </p>
+      {currentRoute==='landing' && <p className="citizen-footer__disclaimer"><ShieldAlert size={15} aria-hidden="true"/>
+        {bn?'এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।':'This information service does not collect money or issue official challans.'}
+      </p>}
     </div>
   </footer>;
 }

@@ -57,7 +57,7 @@ export const PaymentHistory: React.FC = () => {
   return (
     <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
       <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-        <p className="text-xs font-semibold text-taxpay-dark">{label('Sample records','নমুনা তথ্য')}</p>
+        <p className="text-xs font-semibold text-taxpay-dark">{label('Activity overview','লেনদেনের সারসংক্ষেপ')}</p>
         <h1 className="mt-1 text-2xl font-bold text-taxpay-text">{label('Payments & activity','পেমেন্ট ও লেনদেন')}</h1>
       </header>
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
@@ -92,14 +92,14 @@ export const PaymentHistory: React.FC = () => {
           <p aria-live="polite" className="text-sm text-taxpay-muted">{label('Records','রেকর্ড')}: {filtered.length}</p>
           <button type="button" onClick={exportDemo} disabled={!filtered.length}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
-            <Download aria-hidden="true" size={16}/>{label('Export sample CSV','নমুনা সিএসভি নিন')}
+            <Download aria-hidden="true" size={16}/>{label('Export records','রেকর্ড নিন')}
           </button>
         </div>
       </section>
       <section aria-label={label('Payment records','পেমেন্টের তথ্য')} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
         {filtered.length===0 ? (
           <div className="rounded-lg bg-taxpay-background p-5">
-            <h2 className="text-base font-semibold text-taxpay-text">{label('No matching sample records','মিল পাওয়া যায়নি')}</h2>
+            <h2 className="text-base font-semibold text-taxpay-text">{label('No matching records','মিল পাওয়া যায়নি')}</h2>
             <p className="mt-1 text-sm text-taxpay-muted">{label('Try another reference, year, or payment type.','অন্য রেফারেন্স, করবর্ষ বা পেমেন্টের ধরন নির্বাচন করুন।')}</p>
           </div>
         ) : <>
@@ -115,7 +115,7 @@ export const PaymentHistory: React.FC = () => {
                 <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
                 <button type="button" onClick={()=>selectReceipt(r.id)}
                   className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
-                  {label('View sample receipt','নমুনা রসিদ দেখুন')} <ArrowRight aria-hidden="true" size={16}/>
+                  {label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/>
                 </button>
               </article>
             ))}

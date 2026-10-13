@@ -12,7 +12,7 @@ const I18N = {
     profile: 'Profile', settings: 'Profile settings', notifications: 'Notifications',
     intro: 'Application account · e-TIN not linked',
     guest: 'Sign in to view your account.',
-    demo: 'Illustrative profile — not verified', demoNotice: 'Sample profile',
+    demo: 'Profile', demoNotice: 'Demo account',
     unavailable: 'Sign-in is currently unavailable.',
     email: 'Account email', name: 'Display name', joined: 'Account created', verified: 'Email confirmed', noName: 'Not set',
     unverified: 'Not confirmed', accountId: 'Application account ID', save: 'Save preferences', saving: 'Saving…',
@@ -25,7 +25,7 @@ const I18N = {
     draftCaption: 'No payment made.', settingsSaved: 'Preferences saved to your application account.',
     readSaved: 'Notification viewing status saved to your account.', saveFailed: 'Could not save. Please retry.',
     logout: 'Sign out', logoutFailed: 'Sign-out failed. Your account may still be signed in.',
-    loggedOut: 'Signed out of this browser session.', accountAccess: 'Account sign-in', exitDemo: 'Exit sample profile',
+    loggedOut: 'Signed out of this browser session.', accountAccess: 'Account sign-in', exitDemo: 'Exit demo',
     english: 'English', bangla: 'বাংলা', off: 'In-app notifications are turned off in this account. You can enable them under Profile settings.',
     consent: 'Changes apply to this account only.'
   },
@@ -33,7 +33,7 @@ const I18N = {
     profile: 'প্রোফাইল', settings: 'প্রোফাইল সেটিংস', notifications: 'বিজ্ঞপ্তি',
     intro: 'অ্যাপ অ্যাকাউন্ট · ই-টিআইএন সংযুক্ত নয়',
     guest: 'অ্যাকাউন্ট দেখতে সাইন ইন করুন।',
-    demo: 'নমুনা প্রোফাইল — যাচাইকৃত নয়', demoNotice: 'নমুনা প্রোফাইল',
+    demo: 'প্রোফাইল', demoNotice: 'ডেমো অ্যাকাউন্ট',
     unavailable: 'সাইন ইন আপাতত চালু নেই।',
     email: 'অ্যাকাউন্ট ইমেইল', name: 'প্রদর্শিত নাম', joined: 'অ্যাকাউন্ট তৈরির তারিখ', verified: 'ইমেইল নিশ্চিতকরণ', noName: 'দেওয়া হয়নি',
     unverified: 'নিশ্চিত হয়নি', accountId: 'অ্যাপ অ্যাকাউন্ট আইডি', save: 'পছন্দ সংরক্ষণ', saving: 'সংরক্ষণ হচ্ছে…',
@@ -46,7 +46,7 @@ const I18N = {
     draftCaption: 'কোনো পেমেন্ট হয়নি।', settingsSaved: 'অ্যাপ অ্যাকাউন্টে পছন্দ সংরক্ষিত হয়েছে।',
     readSaved: 'অ্যাকাউন্টে বিজ্ঞপ্তি দেখার অবস্থা সংরক্ষিত হয়েছে।', saveFailed: 'সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
     logout: 'সাইন আউট', logoutFailed: 'সাইন আউট ব্যর্থ। অ্যাকাউন্ট এখনো খোলা থাকতে পারে।',
-    loggedOut: 'এই ব্রাউজার থেকে সাইন আউট হয়েছে।', accountAccess: 'অ্যাকাউন্টে প্রবেশ', exitDemo: 'নমুনা প্রোফাইল থেকে বের হোন',
+    loggedOut: 'এই ব্রাউজার থেকে সাইন আউট হয়েছে।', accountAccess: 'অ্যাকাউন্টে প্রবেশ', exitDemo: 'ডেমো থেকে বের হোন',
     english: 'English', bangla: 'বাংলা', off: 'এই অ্যাকাউন্টে ইন-অ্যাপ বিজ্ঞপ্তি বন্ধ। প্রোফাইল সেটিংস থেকে চালু করতে পারবেন।',
     consent: 'পরিবর্তন শুধু এই অ্যাকাউন্টের জন্য।'
   }
@@ -180,7 +180,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             {sampleOnly && page === 'profile' && (
               <dl className="taxpayer-account-facts">
                 <div><dt>{t.name}</dt><dd>{language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</dd></div>
-                <div><dt>{language === 'bn' ? 'নমুনা ধরন' : 'Sample type'}</dt><dd>{taxpayerProfile.type}</dd></div>
+                <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{taxpayerProfile.type}</dd></div>
               </dl>
             )}
             {sampleOnly && page === 'settings' && (

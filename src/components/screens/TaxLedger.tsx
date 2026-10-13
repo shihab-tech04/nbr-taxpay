@@ -21,7 +21,7 @@ export const TaxLedger: React.FC = () => {
             </div>
             <div>
               <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-                {bn ? 'নমুনা কর লেজার' : 'Sample tax ledger'}
+                {bn ? 'কর লেজার' : 'Tax ledger'}
               </h1>
               <p className="text-xs text-slate-500">
                 {bn ? 'নমুনা তথ্য · অ্যাকাউন্ট বিবরণী নয়' : 'Example entries · Not an account statement'}
@@ -44,7 +44,7 @@ export const TaxLedger: React.FC = () => {
               className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>{bn ? 'নমুনা লেজার নিন' : 'Export sample data'}</span>
+              <span>{bn ? 'লেজার তথ্য নিন' : 'Export ledger data'}</span>
             </button>
 
           </div>
@@ -73,13 +73,10 @@ export const TaxLedger: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300">
-            <span className="text-emerald-800 font-medium block">{bn ? 'নমুনা পার্থক্য' : 'Sample difference'}</span>
+            <span className="text-emerald-800 font-medium block">{bn ? 'পার্থক্য' : 'Difference'}</span>
             <div className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1">
               {netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}`}
             </div>
-            <span className="text-[10px] text-emerald-700 block mt-0.5">
-              {bn ? 'শুধু নমুনা' : 'Sample only'}
-            </span>
           </div>
         </div>
 

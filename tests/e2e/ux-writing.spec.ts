@@ -3,13 +3,16 @@ import { expect, test } from '@playwright/test';
 test('taxpayer dashboard uses compact labels, no backend essays and no invented tax balance',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Run full copy journey on one mobile viewport');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
-  await expect(page.getByText('Demo only',{exact:true})).toBeVisible();
+  await expect(page.getByText('Demo',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
   await expect(page.getByText('Unavailable',{exact:true})).toBeVisible();
   await expect(page.getByText('Unverified',{exact:true})).toBeVisible();
   await expect(page.getByText('This demonstration has no verified account-specific ledger owner')).toHaveCount(0);
+  await expect(page.getByText('Sample profile · not a verified taxpayer')).toHaveCount(0);
+  await expect(page.getByText('Preview only · No payments or government receipts issued.')).toHaveCount(0);
+  await expect(page.getByText('Taxpayer workspace · sample profile')).toHaveCount(0);
   await expect(page.getByText('Why are balances unavailable?')).toHaveCount(0);
   await page.getByText('More taxpayer services').click();
   await page.getByRole('button',{name:'Dashboard',exact:true}).click();
@@ -24,7 +27,7 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
 test('tax journey has no fabricated completed legal obligations, dates or Treasury credit',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One navigation and content regression');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByText('More taxpayer services').click();
   await page.getByRole('button',{name:'Tax journey'}).click();
   await expect(page.getByRole('heading',{name:'My tax journey'})).toBeVisible();

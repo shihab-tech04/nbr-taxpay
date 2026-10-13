@@ -12,7 +12,7 @@ test('root is a public information hub with one Login call to action',async({pag
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
   await expect(page.getByText('Recognized credit')).toBeVisible();
   await expect(page.getByText('Unverified', {exact:true})).toBeVisible();
@@ -24,7 +24,7 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
 test('taxpayer mobile home and activity support Bangla without overflows',async({page})=>{
   await page.setViewportSize({width:320,height:740});
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'আমার কর পেমেন্ট'})).toBeVisible();
   await expect(page.getByText('স্বীকৃত কর ক্রেডিট',{exact:true})).toBeVisible();
@@ -39,14 +39,14 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
 });
 test('sample payment activity retains filtering and does not assert tax-credit owner',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Payments & activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByText('Sample records',{exact:true})).toBeVisible();
+  await expect(page.getByText('Activity overview',{exact:true})).toBeVisible();
   await expect(page.getByText('Personal tax credit recognized')).toHaveCount(0);
   await page.getByLabel('Search payments').fill('THIS-REFERENCE-DOES-NOT-EXIST');
-  await expect(page.getByText('No matching sample records')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Export sample CSV'})).toBeDisabled();
+  await expect(page.getByText('No matching records')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Export records'})).toBeDisabled();
 });
 
 
@@ -64,7 +64,7 @@ test('public mobile navigation offers information anchors but no payment initiat
 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByText('More taxpayer services', { exact: true }).click();
   await page.getByRole('button',{name:'Dashboard'}).click();
   await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
@@ -78,7 +78,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
 
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
 

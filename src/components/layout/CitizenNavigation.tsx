@@ -164,9 +164,9 @@ export function CitizenNavigation() {
   );
   const profileOptions: { value: UserRole; en: string; bn: string }[] = [
     { value: 'GUEST', en: 'Public guest', bn: 'সাধারণ দর্শক' },
-    { value: 'TAXPAYER_INDIVIDUAL', en: 'Sample individual', bn: 'নমুনা ব্যক্তি' },
-    { value: 'TAXPAYER_CORPORATE', en: 'Sample company', bn: 'নমুনা কোম্পানি' },
-    { value: 'WITHHOLDING_AGENT', en: 'Sample withholding agent', bn: 'নমুনা উৎসে কর কর্তনকারী' }
+    { value: 'TAXPAYER_INDIVIDUAL', en: 'Individual demo', bn: 'ব্যক্তি ডেমো' },
+    { value: 'TAXPAYER_CORPORATE', en: 'Company demo', bn: 'কোম্পানি ডেমো' },
+    { value: 'WITHHOLDING_AGENT', en: 'Withholding demo', bn: 'উৎসে কর ডেমো' }
   ];
   return (
     <>
@@ -253,7 +253,7 @@ export function CitizenNavigation() {
                 {applicationUser && <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>}
                 {signOutError && <p role="alert" className="citizen-dialog__notice">{signOutError}</p>}
                 {demoUser ? <div className="citizen-demo-account-switch"><p>{bn ? `অ্যাকাউন্ট: ${demoUser.id} · ${demoUser.nameBn}` : `Account: ${demoUser.id} · ${demoUser.nameEn}`}</p><button type="button" onClick={() => window.location.assign(import.meta.env.BASE_URL)}>{bn?'অ্যাকাউন্ট থেকে বের হন':'Exit demonstration account'}</button></div> : <>
-                <label className="citizen-select-label" htmlFor="citizen-sample-role">{bn ? 'নমুনা প্রোফাইল (প্রকৃত লগইন নয়)' : 'Sample profile (not sign-in)'}</label>
+                <label className="citizen-select-label" htmlFor="citizen-sample-role">{bn ? 'ডেমো ভূমিকা' : 'Demo role'}</label>
                 <select id="citizen-sample-role" value={userRole} onChange={(event) => {
                   const role = event.target.value as UserRole;
                   setUserRole(role);

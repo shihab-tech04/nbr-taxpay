@@ -48,7 +48,7 @@ export function TaxpayerReferenceRail() {
         </button>
         <button className="taxpayer-reference-main-action" type="button" onClick={() => navigate(sampleProfile ? 'wizard' : 'landing')}>
           <WalletCards size={18} aria-hidden={true} />
-          {bn ? 'পেমেন্ট শুরু করুন' : 'Start payment demo'}
+          {bn ? 'পেমেন্টের ধাপ দেখুন' : 'Explore payment flow'}
         </button>
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (
@@ -66,16 +66,13 @@ export function TaxpayerReferenceRail() {
       <div className="taxpayer-reference-rail-bottom">
         {(user || sampleProfile) && <button type="button" disabled={signingOut} onClick={logout}>
           <LogOut size={17} aria-hidden={true} />
-          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'নমুনা থেকে বের হন' : 'Exit sample')}</span>
+          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ডেমো থেকে বের হন' : 'Exit demo')}</span>
         </button>}
         {signOutError && <p role="alert">{signOutError}</p>}
         <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>
           <span>{bn ? 'ভাষা' : 'Language'}</span>
           <strong>{bn ? 'English' : 'বাংলা'}</strong>
         </button>
-        <p>{sampleProfile
-          ? (bn ? 'নমুনা প্রোফাইল · যাচাইকৃত করদাতা নয়' : 'Sample profile · not a verified taxpayer')
-          : (bn ? 'অ্যাকাউন্ট প্রবেশ · সরকারি পরিচয় নয়' : 'Account access · not official identity')}</p>
       </div>
     </aside>
   );

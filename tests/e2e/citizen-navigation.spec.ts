@@ -15,8 +15,8 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await page.goto('/?action=ledger');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
-  await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
-  await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
 });
 
@@ -26,7 +26,7 @@ test('public menu contains informational navigation with no sample profile selec
  await page.getByRole('button',{name:'Menu'}).click();
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
  await expect(nav.getByRole('link',{name:'FAQs'})).toBeVisible();
- await expect(page.getByRole('combobox',{name:'Sample profile (not sign-in)'})).toHaveCount(0);
+ await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await page.keyboard.press('Escape');
  await expect(nav).toBeHidden();
  await page.getByRole('button',{name:'বাংলা'}).click();
@@ -104,8 +104,8 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
   for (const width of [320,360,375,390,768,1280]) {
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=taxpayer_home');
-    await page.getByRole('button',{name:'View sample taxpayer demonstration'}).click();
-    await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
+    await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+    await expect(page.getByText('Taxpayer workspace')).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width+2);
