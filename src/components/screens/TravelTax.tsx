@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { 
   Plane, 
   ArrowRight, 
@@ -53,6 +55,7 @@ const DEPARTURE_PORTS = [
 
 export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const { language, navigate, addPaymentReceipt } = useTaxState();
+  const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const t = COPY[language];
 
@@ -177,6 +180,22 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
     setPassengerCount(1); setSelectedRouteIdx(0); setError('');
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
+  // One state-controlled action, rendered in the modal footer (or alongside
+  // the summary only on the standalone Travel Tax route).
+  const primaryAction = createdReceipt ? (
+    <button type="button" className="travel-flow__primary" onClick={reset}>
+      {workflow.newPreview}
+    </button>
+  ) : step === 2 ? (
+    <button type="submit" form="travel-tax-form" className="travel-flow__primary"
+      disabled={isProcessing} aria-busy={isProcessing}>
+      <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : t.run}
+    </button>
+  ) : (
+    <button type="button" className="travel-flow__primary" onClick={continueStep}>
+      {step === 0 ? workflow.continue : workflow.reviewNext}<ArrowRight size={17} aria-hidden="true" />
+    </button>
+  );
   return (
     <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
       <div className="travel-flow__main">
@@ -303,17 +322,9 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
           <div><dt>{workflow.status}</dt><dd>{createdReceipt ? workflow.noPayment : workflow.sample}</dd></div>
         </dl>
         <p className="travel-flow__caution" role="note"><Info size={16} aria-hidden="true" />{workflow.caution}</p>
-        {createdReceipt ? <button type="button" className="travel-flow__primary" onClick={reset}>
-          {workflow.newPreview}
-        </button> : step === 2 ? <button key="generate" type="button" className="travel-flow__primary"
-          onClick={() => document.getElementById('travel-tax-form') instanceof HTMLFormElement &&
-            (document.getElementById('travel-tax-form') as HTMLFormElement).requestSubmit()}
-          disabled={isProcessing} aria-busy={isProcessing}>
-          <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : t.run}
-        </button> : <button key="advance" type="button" className="travel-flow__primary" onClick={continueStep}>
-          {step === 0 ? workflow.continue : workflow.reviewNext}<ArrowRight size={17} aria-hidden="true" />
-        </button>}
+        {!embedded && primaryAction}
       </aside>
+      {embedded && modalFooterTarget && createPortal(primaryAction, modalFooterTarget)}
     </div>
   );
 };
