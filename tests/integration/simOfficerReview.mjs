@@ -42,16 +42,16 @@ for(const [who,role] of [[maker,'MAKER'],[reviewer,'REVIEWER'],[approver,'APPROV
  assert.ok(psql(`insert into public.taxpay_officer_roles(user_uid,role) values('${who.id}'::uuid,'${role}') returning role`).startsWith(role));
 }
 // Assign two distinct verified fictional profiles through controlled local DB fixtures.
-for(const [profile,identity] of [['user1',payer],['user2',otherBeneficiary]]){
+for(const [profile,identity] of [['user6',payer],['user7',otherBeneficiary]]){
  assert.ok(psql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by) values('${profile}','${identity.id}'::uuid,'${approver.id}'::uuid) returning user_id`).startsWith(profile));
 }
 const originalReviewRequests=psql('select count(*) from public.taxpay_payment_requests');
 const nonce=randomUUID();
 const lines=[
- {beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:11900},
- {beneficiary:'user2',category:'PENALTY',assessmentYear:'2026-27',amountMinor:1100}
+ {beneficiary:'user6',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:11900},
+ {beneficiary:'user7',category:'PENALTY',assessmentYear:'2026-27',amountMinor:1100}
 ];
-assert.ok((await req('/rest/v1/rpc/sim_submit_payment',{p_payer_id:'user1',p_lines:lines,p_idempotency_key:nonce})).status>=400,
+assert.ok((await req('/rest/v1/rpc/sim_submit_payment',{p_payer_id:'user6',p_lines:lines,p_idempotency_key:nonce})).status>=400,
  'Anonymous legacy payment submission MUST be disabled');
 assert.ok((await req('/rest/v1/rpc/sim_my_payment_history',{p_view:'beneficiary'},outsider.token)).status>=400,
  'Unbound outsider may not inspect private payment histories');
@@ -95,7 +95,7 @@ assert.deepEqual(final.events.slice(-3).map(e=>e.action),[
  'OFFICER_MAKER_ACKNOWLEDGED','OFFICER_REVIEWER_VERIFIED','OFFICER_APPROVER_CLOSED'
 ]);
 assert.equal(psql(`select count(*) from public.sim_payment_officer_decisions where transaction_id='${txid}'::uuid`),'3');
-for(const [beneficiary,owner] of [['user1',payer],['user2',otherBeneficiary]]){
+for(const [beneficiary,owner] of [['user6',payer],['user7',otherBeneficiary]]){
  const notices=(await req('/rest/v1/rpc/sim_my_payment_notices',{},owner.token)).data
   .filter(n=>n.transactionId===txid);
  assert.equal(notices.length,4,'one creation notice plus three officer decisions');
