@@ -16,11 +16,11 @@ export const TaxLedger: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-taxpay-light text-taxpay-dark flex items-center justify-center">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
+              <h1 className="font-sans text-2xl font-bold text-slate-900">
                 {bn ? 'কর লেজার' : 'Tax ledger'}
               </h1>
               <p className="text-xs text-slate-500">
@@ -65,15 +65,15 @@ export const TaxLedger: React.FC = () => {
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">{bn ? 'ক্রেডিট' : 'Credits'}</span>
             <div className="flex items-center gap-2 mt-1">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
+              <TrendingUp className="w-4 h-4 text-taxpay-primary" />
               <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
                 {formatCurrency(totalCredits, language)}
               </span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300">
-            <span className="text-emerald-800 font-medium block">{bn ? 'পার্থক্য' : 'Difference'}</span>
+          <div className="p-4 rounded-xl bg-taxpay-light border border-taxpay-border">
+            <span className="text-taxpay-dark font-medium block">{bn ? 'পার্থক্য' : 'Difference'}</span>
             <div className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1">
               {netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}`}
             </div>
@@ -104,7 +104,7 @@ export const TaxLedger: React.FC = () => {
                 <th className="px-3 py-2.5">Particulars & Economic Code</th>
                 <th className="px-3 py-2.5">Challan Ref</th>
                 <th className="px-3 py-2.5 text-right text-rose-700">Debit (Liability)</th>
-                <th className="px-3 py-2.5 text-right text-emerald-800">Credit (Payment)</th>
+                <th className="px-3 py-2.5 text-right text-taxpay-dark">Credit (Payment)</th>
                 <th className="px-3 py-2.5 text-center">Status</th>
               </tr>
             </thead>
@@ -127,11 +127,11 @@ export const TaxLedger: React.FC = () => {
                   <td className="px-3 py-2 text-right font-mono-plex font-bold text-rose-700">
                     {entry.debit > 0 ? formatCurrency(entry.debit, language) : '—'}
                   </td>
-                  <td className="px-3 py-2 text-right font-mono-plex font-bold text-emerald-800">
+                  <td className="px-3 py-2 text-right font-mono-plex font-bold text-taxpay-dark">
                     {entry.credit > 0 ? formatCurrency(entry.credit, language) : '—'}
                   </td>
                   <td className="px-3 py-2 text-center whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-taxpay-dark bg-taxpay-light px-2 py-0.5 rounded border border-taxpay-border">
                       <CheckCircle2 className="w-3 h-3" />
                       DEMO RECORD
                     </span>
