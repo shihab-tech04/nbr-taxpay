@@ -1,8 +1,20 @@
 -- Disposable Supabase only. Entire transaction rolls back, leaving users6-10 empty.
 \set ON_ERROR_STOP on
+-- New access contract: anonymous callers may not execute payment/ledger RPCs.
 begin;
 set local role anon;
-do $$
+do $security$
+begin
+ if has_function_privilege('anon','public.sim_submit_payment(text,jsonb,uuid)','EXECUTE')
+ or has_function_privilege('anon','public.sim_payment_history(text,text)','EXECUTE')
+ or has_function_privilege('anon','public.sim_payment_notices(text)','EXECUTE')
+ then raise exception 'Anonymous simulator RPC permissions must be denied'; end if;
+end $security$;
+rollback;
+-- Retain every original transactional money and graph assertion below, executed by
+-- a privileged disposable-test fixture runner. Auth ownership/RLS is tested separately.
+begin;
+do $
 declare
   payload jsonb;
   result_row jsonb;
