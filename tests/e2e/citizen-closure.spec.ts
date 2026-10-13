@@ -3,7 +3,7 @@ import {expect,test} from '@playwright/test';
 test('root is a public information hub with a header Login and no payment action',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
- await expect(page.locator('.public-home-header__tools').getByRole('link',{name:'Login'})).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.office-auth')).toHaveCount(0);
