@@ -79,6 +79,17 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  expect(item!.reviewStatus).toBe('PENDING_OFFICER');
  console.log('CROSS_APP E1 PASS: taxpayer UI SQL submission and exact payer/beneficiary allocations');
 
+ const strangerShell=await browser.newContext({viewport:{width:1280,height:900}});
+ await strangerShell.addInitScript(()=>{
+   localStorage.setItem('gov_ui_auth',JSON.stringify({isAuthenticated:true,userId:'forged-admin'}));
+ });
+ const forgeryPage=await strangerShell.newPage();
+ await forgeryPage.goto('http://127.0.0.1:4174/payments/transactions');
+ await expect(forgeryPage.getByLabel('Authorized officer email')).toBeVisible({timeout:20000});
+ await expect(forgeryPage.getByRole('heading',{name:'Officer review inbox'})).toHaveCount(0);
+ await strangerShell.close();
+ console.log('CROSS_APP E2 PASS: forged localStorage Office login does not authorize connected Admin shell');
+
  const stages=[
   {person:maker,role:'MAKER',button:'Maker: acknowledge',after:'MAKER_ACKNOWLEDGED',reason:'Maker confirms fictional taxpayer request'},
   {person:reviewer,role:'REVIEWER',button:'Reviewer: verify',after:'REVIEWER_VERIFIED',reason:'Independent Reviewer confirms beneficiary and totals'},
