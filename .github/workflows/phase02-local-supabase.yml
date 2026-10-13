@@ -3,6 +3,8 @@ name: TaxPay Phase 02 - disposable Auth, RLS and draft persistence
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -119,6 +121,36 @@ jobs:
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/sim-private-real-local.spec.ts --project=mobile-375
+
+      - name: Verify both React apps end-to-end with real disposable SQL and three officer roles
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const u=new URL(process.env.TAXPAY_LOCAL_SUPABASE_URL); if(!['127.0.0.1','localhost'].includes(u.hostname))process.exit(1)"
+          OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
+          git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          # The cross-app test must never run against an unexpected Office source revision.
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "2b523821f52f447fd47e4ac86ae8037a6ae35ea3"
+          npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
+          (
+            cd "$OFFICE_DIR"
+            VITE_TAXPAY_REVIEW_URL="$TAXPAY_LOCAL_SUPABASE_URL" \
+            VITE_TAXPAY_REVIEW_PUBLIC_KEY="$TAXPAY_LOCAL_SUPABASE_ANON_KEY" \
+            VITE_TAXPAY_REVIEW_DISABLED=false \
+            ./node_modules/.bin/vite --host 127.0.0.1 --port 4174 > "$RUNNER_TEMP/office-cross-app.log" 2>&1
+          ) &
+          OFFICE_PID=$!
+          trap 'kill "$OFFICE_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 35); do
+            if curl -fsS -o /dev/null http://127.0.0.1:4174/payments/transactions; then break; fi
+            sleep 2
+          done
+          curl -fsS -o /dev/null http://127.0.0.1:4174/payments/transactions
+          npx playwright test tests/e2e/taxpay-office-complete-local.spec.ts --project=mobile-375
 
       - name: Restart disposable database services without deleting volumes
         run: |
