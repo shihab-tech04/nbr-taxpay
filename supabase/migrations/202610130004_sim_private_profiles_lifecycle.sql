@@ -177,3 +177,39 @@ comment on function public.sim_my_payment_history(text) is
   'Authenticated profile-scoped simulation history; no tax-credit entitlement.';
 comment on function public.sim_payment_status_action(uuid,text,text,uuid) is
   'Restricted, audited, idempotent fictional status transition; no real financial settlement.';
+
+-- Officer uses confirmed account email, not privileged auth.users client access.
+create or replace function public.sim_bind_taxpayer_email(p_user_id text,p_email text)
+returns text language plpgsql volatile security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); target_uid uuid; v_role text;
+begin
+ if actor is null then raise exception 'Officer authentication required'; end if;
+ select role into v_role from public.taxpay_officer_roles
+ where user_uid=actor and active for share;
+ if v_role is distinct from 'APPROVER' then raise exception 'Authorized Approver required'; end if;
+ if p_email is null or pg_catalog.char_length(pg_catalog.btrim(p_email)) not between 6 and 254 then
+   raise exception 'Valid confirmed account email required'; end if;
+ select id into target_uid from auth.users
+ where pg_catalog.lower(email)=pg_catalog.lower(pg_catalog.btrim(p_email))
+   and email_confirmed_at is not null;
+ if target_uid is null then raise exception 'No confirmed account exists for supplied email'; end if;
+ return public.sim_bind_taxpayer_account(p_user_id,target_uid);
+end;$$;
+revoke all on function public.sim_bind_taxpayer_email(text,text) from public,anon;
+grant execute on function public.sim_bind_taxpayer_email(text,text) to authenticated;
+
+create or replace function public.sim_officer_profile_bindings()
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare actor uuid:=auth.uid(); active_role text; out_json jsonb;
+begin
+ if actor is null then raise exception 'Officer authentication required'; end if;
+ select role into active_role from public.taxpay_officer_roles
+ where user_uid=actor and active;
+ if active_role is null then raise exception 'Officer authorization required'; end if;
+ select coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+   'profile',b.user_id,'assignedAt',b.assigned_at) order by b.user_id),'[]'::jsonb)
+ into out_json from public.sim_payment_account_bindings b;
+ return out_json;
+end;$$;
+revoke all on function public.sim_officer_profile_bindings() from public,anon;
+grant execute on function public.sim_officer_profile_bindings() to authenticated;
