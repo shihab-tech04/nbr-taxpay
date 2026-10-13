@@ -39,7 +39,7 @@ export function PublicServiceModal({service,onClose}:{service:PublicService,onCl
         {bn?'শুধু নমুনা কার্যপ্রবাহ। সরকারি পেমেন্ট বা যাচাইকৃত রসিদ ইস্যু হয় না।':'Demonstration workflow only. No government payment or verified receipt is issued.'}
       </div>
       <div className="public-service-dialog__body" key={service}>
-        {service==='travel'?<TravelTax/>:<ReceiptLookup/>}
+        {service==='travel'?<TravelTax embedded/>:<ReceiptLookup/>}
       </div>
     </div>
   </div>;
