@@ -91,7 +91,6 @@ for(const beneficiary of ['user1','user2']){
   .filter(n=>n.transactionId===txid);
  assert.equal(notices.length,4,'one creation notice plus three officer decisions');
 }
-assert.equal(psql(`select state||','||review_status||','||simulation_only from public.sim_payment_transactions where id='${txid}'::uuid`),
- 'SIMULATED,APPROVER_CLOSED,t');
+assert.equal(psql(`select (state='SIMULATED' and review_status='APPROVER_CLOSED' and simulation_only) from public.sim_payment_transactions where id='${txid}'::uuid`),'t');
 assert.equal(psql('select count(*) from public.taxpay_payment_requests'),originalReviewRequests);
 console.log('RESULT SIM_OFFICER_REVIEW PASS: owner/beneficiary notices, no government credit, no Treasury mutation, audit read-back');
