@@ -640,3 +640,32 @@
     box-shadow:inset 3px 0 0 var(--citizen-primary);
   }
 }
+
+/* Mobile taxpayer navigation: stable left/center/right header and two-section edge-to-edge sheet. */
+.citizen-mobile-menu, .citizen-notifications { display:none; }
+.citizen-dialog__section-label { margin:0 0 .6rem; font-size:.76rem; font-weight:750; letter-spacing:.02em; color:var(--citizen-muted); }
+.citizen-dialog__navigation { min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-bottom:1rem; }
+.citizen-dialog__account-actions { border-top:1px solid var(--citizen-border); padding:1rem 0 max(.5rem, env(safe-area-inset-bottom)); background:var(--citizen-surface); }
+.citizen-dialog__account-actions .citizen-dialog-language { width:100%; margin:0 0 .5rem; justify-content:flex-start; padding:.7rem 1rem; }
+.citizen-dialog__account-actions .citizen-dialog-signout { width:100%; min-height:48px; margin:0; }
+@media (max-width:900px) {
+  .citizen-header__inner { display:grid; grid-template-columns:48px minmax(0,1fr) 48px; align-items:center; gap:.5rem; width:calc(100% - 2rem); }
+  .citizen-mobile-menu, .citizen-notifications { display:grid; place-items:center; min-width:44px; min-height:44px; color:inherit; border-radius:.65rem; }
+  .citizen-brand { justify-self:center; min-width:0; gap:.5rem; }
+  .citizen-brand > span { min-width:0; }
+  .citizen-brand strong { font-size:1.16rem; }
+  .citizen-brand small { display:none; }
+  .citizen-header__utilities { justify-self:end; margin:0; }
+  .citizen-header__utilities .citizen-language, .citizen-header__utilities .citizen-menu-open { display:none; }
+  .citizen-overlay { padding:0; align-items:flex-end; }
+  .citizen-dialog { box-sizing:border-box; display:flex; flex-direction:column; width:100%; max-width:none; height:min(88dvh, 850px); max-height:calc(100dvh - env(safe-area-inset-top)); margin:0; padding:1rem 1rem 0; border-radius:1.15rem 1.15rem 0 0; overflow:hidden; }
+  .citizen-dialog__title { flex-shrink:0; }
+  .citizen-dialog__links { gap:.45rem; }
+  .citizen-dialog__links button { min-height:48px; }
+  .citizen-dialog__account-actions { flex-shrink:0; }
+  .citizen-dialog > .citizen-dialog__links { overflow-y:auto; min-height:0; }
+}
+@media (max-width:380px) {
+  .citizen-header__inner { width:calc(100% - 1.25rem); grid-template-columns:44px minmax(0,1fr) 44px; }
+  .citizen-brand strong { font-size:1.05rem; }
+}
