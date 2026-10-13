@@ -256,3 +256,48 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  expect(width.scroll).toBeLessThanOrEqual(width.viewport+2);
  await expect(modal.locator('.travel-flow__summary')).toBeVisible();
 });
+
+
+test('Travel Tax primary action lives in fixed modal footer across all steps',async({page})=>{
+ await page.goto('/?action=landing');
+ await page.getByRole('button',{name:'Pay travel tax'}).click();
+ const modal=page.getByRole('dialog',{name:'Travel tax'});
+ const footer=modal.locator('.taxpay-modal__footer');
+ const actions=footer.locator('.taxpay-modal__footer-actions');
+ const summary=modal.locator('.travel-flow__summary');
+ const left=modal.locator('.travel-flow__main');
+ await expect(footer.getByRole('button',{name:'Close',exact:true})).toBeVisible();
+ await expect(actions.getByRole('button',{name:'Continue to passenger details'})).toBeVisible();
+ await expect(summary.locator('button')).toHaveCount(0);
+ const positions=async()=>modal.evaluate(el=>{
+   const rect=(selector:string)=>el.querySelector(selector)!.getBoundingClientRect();
+   const f=rect('.taxpay-modal__footer'),c=rect('.taxpay-modal__footer-close'),
+     a=rect('.taxpay-modal__footer-actions .travel-flow__primary'),
+     s=rect('.travel-flow__summary');
+   return {footerTop:f.top,footerBottom:f.bottom,closeLeft:c.left,actionLeft:a.left,
+      actionTop:a.top,actionBottom:a.bottom,summaryBottom:s.bottom,
+      actionRight:a.right,viewport:window.innerWidth};
+ });
+ let p=await positions();
+ expect(p.closeLeft).toBeLessThan(p.actionLeft);
+ expect(p.actionTop).toBeGreaterThanOrEqual(p.footerTop-1);
+ expect(p.actionBottom).toBeLessThanOrEqual(p.footerBottom+1);
+ expect(p.actionRight).toBeLessThanOrEqual(p.viewport+1);
+ await left.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+ await expect(actions.getByRole('button',{name:'Continue to passenger details'})).toBeVisible();
+ await actions.getByRole('button',{name:'Continue to passenger details'}).click();
+ await expect(actions.getByRole('button',{name:'Continue to review'})).toBeVisible();
+ await modal.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC PASSENGER');
+ await modal.getByLabel('Passport number (synthetic data only)').fill('DEMOFAKE01');
+ await actions.getByRole('button',{name:'Continue to review'}).click();
+ await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
+ await expect(actions.getByRole('button',{name:'Run payment simulation'})).toBeVisible();
+ await actions.getByRole('button',{name:'Run payment simulation'}).click();
+ await expect(modal.getByRole('heading',{name:'Travel tax preview ready.'})).toBeVisible();
+ await expect(actions.getByRole('button',{name:'Start a new preview'})).toBeVisible();
+ await expect(summary.locator('button')).toHaveCount(0);
+ p=await positions();
+ expect(p.actionBottom).toBeLessThanOrEqual(p.footerBottom+1);
+ await actions.getByRole('button',{name:'Start a new preview'}).click();
+ await expect(actions.getByRole('button',{name:'Continue to passenger details'})).toBeVisible();
+});
