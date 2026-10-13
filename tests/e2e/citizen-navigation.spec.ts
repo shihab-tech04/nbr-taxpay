@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test('public home does not open guest payment wizard via a primary action',async({page})=>{
  await page.goto('/?action=landing');
- await expect(page.getByRole('link',{name:'Login'})).toBeVisible();
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
@@ -41,7 +41,7 @@ test('public information header and sections fit all requested widths',async({pa
   await expect(page.locator('.public-home-header')).toBeVisible();
   await expect(page.getByRole('img',{name:'Government Seal of Bangladesh'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
+  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -76,7 +76,7 @@ test('public guidance links stay on-page without authorizing account access',asy
  if (page.viewportSize()!.width<=900) await page.getByRole('button',{name:'Menu'}).click();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Payment types'}).click();
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
- await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
@@ -123,4 +123,50 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
       await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
     }
   }
+});
+
+
+test('public header Login, active section state and expanded layout preserve the approved homepage', async ({page},info) => {
+ test.skip(info.project.name!=='desktop-1280','Desktop behavior and 1600px width audited once');
+ await page.setViewportSize({width:1600,height:900});
+ await page.goto('/?action=landing');
+ const nav=page.getByRole('navigation',{name:'Primary navigation'});
+ const home=nav.getByRole('link',{name:'Home'});
+ const category=nav.getByRole('link',{name:'Payment types'});
+ const faq=nav.getByRole('link',{name:'FAQs'});
+ const headerLogin=page.locator('.public-home-header__tools').getByRole('link',{name:'Login'});
+ const heroLogin=page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'});
+ await expect(headerLogin).toBeVisible();
+ await expect(heroLogin).toBeVisible();
+ await expect(headerLogin).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(home).toHaveAttribute('aria-current','location');
+ const container=await page.locator('.public-information-hub').boundingBox();
+ expect(container).not.toBeNull();
+ expect(container!.width).toBeGreaterThanOrEqual(1430);
+ expect(container!.width).toBeLessThanOrEqual(1442);
+ await category.click();
+ await expect(category).toHaveAttribute('aria-current','location');
+ await expect(home).not.toHaveAttribute('aria-current','location');
+ await faq.click();
+ await expect(faq).toHaveAttribute('aria-current','location');
+ await expect(page.locator('.citizen-public-hero__eyebrow')).toContainText('Income tax payment information');
+ await expect(page.locator('.citizen-hub-eyebrow').first()).toHaveText('Payment information');
+});
+
+test('mobile navigation exposes Login and reflects the selected section', async ({page},info) => {
+ test.skip(info.project.name!=='mobile-375','Mobile navigation checked at 375px');
+ await page.goto('/?action=landing');
+ const nav=page.getByRole('navigation',{name:'Primary navigation'});
+ await expect(nav).toBeHidden();
+ await page.getByRole('button',{name:'Menu'}).click();
+ await expect(nav.getByRole('link',{name:'Login'})).toBeVisible();
+ await expect(nav.getByRole('link',{name:'Home'})).toHaveAttribute('aria-current','location');
+ await nav.getByRole('link',{name:'Payment types'}).click();
+ await expect(nav).toBeHidden();
+ await page.getByRole('button',{name:'Menu'}).click();
+ await expect(nav.getByRole('link',{name:'Payment types'})).toHaveAttribute('aria-current','location');
+ await page.getByRole('button',{name:'বাংলা'}).click();
+ const bnNav = page.getByRole('navigation',{name:'প্রধান নেভিগেশন'});
+ await expect(bnNav.getByRole('link',{name:'লগইন'})).toBeVisible();
+ await expect(bnNav.getByRole('link',{name:'পেমেন্টের ধরন'})).toHaveAttribute('aria-current','location');
 });

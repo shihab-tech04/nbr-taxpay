@@ -25,7 +25,7 @@ test('explicit office-login route preserves recovered composition without fake s
   expect(root).not.toBeNull();
   expect(root!.x + root!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
   await page.getByRole('button',{name:'Explore TaxPay'}).click();
-  await expect(page.getByText('INCOME TAX PAYMENT INFORMATION', {exact:true})).toBeVisible();
+  await expect(page.locator('.citizen-public-hero__eyebrow').getByText('Income tax payment information', {exact:true})).toBeVisible();
   expect(hostedAuthRequests).toEqual([]);
 });
 
@@ -50,11 +50,11 @@ test('explicit Office login keeps source carousel controls and EN/BN navigation'
 });
 
 
-test('root shows information hub with a single explicit login and no forced Office session',async({page})=>{
+test('root shows information hub with navigational Login and no forced Office session',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
- await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
- await expect(page.getByRole('link',{name:'Login'})).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
  await expect(page.locator('.office-auth')).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });

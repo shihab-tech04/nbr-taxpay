@@ -49,9 +49,9 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=landing');
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Guidance that helps you prepare'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment guidance'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Frequently asked questions'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
+  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('public-hub-en');
