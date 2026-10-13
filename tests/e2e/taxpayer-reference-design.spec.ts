@@ -71,10 +71,18 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(horizontalOverflow,'Taxpayer home has overflow at '+width).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-home-en-'+width+'.png',fullPage:false});
-    await page.getByRole('button',{name:'বাংলা'}).first().click();
+    if(width<=900) {
+      await page.getByRole('button',{name:'Open menu'}).click();
+      await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
+      await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
+    } else await page.getByRole('button',{name:'বাংলা'}).first().click();
     await expect(page.getByRole('heading',{name:'আমার কর পেমেন্ট'})).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-home-bn-'+width+'.png',fullPage:false});
-    await page.getByRole('button',{name:'EN'}).first().click();
+    if(width<=900) {
+      await page.getByRole('button',{name:'মেনু খুলুন'}).click();
+      await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
+      await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
+    } else await page.getByRole('button',{name:'EN'}).first().click();
     await page.getByRole('button',{name:'Pay — select payment type'}).click();
     await expect(page.locator('.taxpay-taxpayer-flow')).toBeVisible();
     const payment=page.locator('.taxpay-payment-wizard');
