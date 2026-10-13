@@ -63,8 +63,7 @@ const repeat=await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:
 assert.equal(repeat.status,200);assert.equal(repeat.data.replayed,true);assert.equal(repeat.data.transactionId,id);
 assert.ok((await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:key},beneficiary.token)).status>=400);
 const publicHistory=await rpc('sim_payment_history',{p_user_id:null,p_view:'all'});
-assert.equal(publicHistory.status,200);
-assert.ok(!publicHistory.data.some(tx=>tx.transactionId===id),'Bound payment leaked to public all view');
+assert.ok(publicHistory.status>=400,'Anonymous access must never retrieve ANY shared SQL ledger rows');
 const officerHistory=await rpc('sim_payment_history',{p_user_id:null,p_view:'all'},approver.token);
 assert.equal(officerHistory.status,200);
 assert.ok(officerHistory.data.some(tx=>tx.transactionId===id),'Authorized officer missing full ledger');
