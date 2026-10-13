@@ -83,7 +83,10 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
-    await page.getByRole('button',{name:'Make Payment'}).click();
+    await page.locator('.citizen-taxpayer-hero__actions').getByRole('button',{name:'Make Payment'}).click();
+    await expect(page.locator('.taxpay-guided-payment')).toBeVisible();
+    await page.getByRole('button',{name:'Continue',exact:true}).click();
+    await page.getByRole('button',{name:/Make payment/i}).last().click();
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=page.locator('.taxpay-payment-wizard');
     await expect(payment).toBeVisible();
