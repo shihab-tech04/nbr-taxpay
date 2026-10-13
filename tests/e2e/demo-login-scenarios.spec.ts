@@ -7,8 +7,8 @@ test('all ten demo URLs show a synthetic taxpayer scenario, not authenticated go
  for(let n=1;n<=10;n++){
    await page.goto('/?action=taxpayer_home&demoUser=user'+n);
    await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
-   await expect(page.getByText('Demonstration account · user'+n)).toBeVisible();
-   await expect(page.getByText('This scenario uses reference records only. It does not authenticate a taxpayer or grant access to government payment data.')).toBeVisible();
+   await expect(page.getByText('Demo scenario · user'+n)).toBeVisible();
+   await expect(page.getByText('Example records; no taxpayer account is connected.')).toBeVisible();
    await expect(page.locator('#citizen-sample-role')).toHaveCount(0);
  }
  expect(backendCalls).toEqual([]);
