@@ -134,7 +134,7 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # The cross-app test must never run against an unexpected Office source revision.
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "2b523821f52f447fd47e4ac86ae8037a6ae35ea3"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "14b1384b3825441fd4b518073a266993387d5140"
           npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
