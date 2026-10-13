@@ -17,6 +17,7 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
     <TaxPayModal
       title={title}
       closeLabel={bn ? 'বন্ধ করুন' : 'Close'}
+      closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       service={service}
       onClose={onClose}
     >
