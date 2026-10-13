@@ -16,7 +16,7 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
   await page.getByRole('navigation',{name:'অ্যাকাউন্ট পৃষ্ঠা'}).getByRole('button',{name:'বিজ্ঞপ্তি'}).click();
   await expect(page.getByText('এখনো কোনো বিজ্ঞপ্তি নেই।')).toBeVisible();
   await expect(page.getByText(/Demand Notice|Statutory Alerts|Advance Tax 2nd Quarter/)).toHaveCount(0);
-  await page.getByRole('button',{name:'নমুনা প্রোফাইল থেকে বের হোন'}).click();
+  await page.getByRole('button',{name:'ডেমো থেকে বের হোন'}).click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
 });
