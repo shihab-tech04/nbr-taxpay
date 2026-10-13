@@ -66,7 +66,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
 
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'View sample taxpayer demonstration' }).click();
+  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await expect(page.getByRole('heading', { name: 'My Tax Payments' })).toBeVisible();
   await expect(page.getByText('Taxpayer workspace')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Tax position' })).toBeVisible();
@@ -158,7 +158,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
 test('authenticated taxpayer wizard preserves amounts while localizing the full simulation journey', async ({ page }, info) => {
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'View sample taxpayer demonstration' }).click();
+  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
   await expect(page.getByRole('heading', { name: 'Income tax payment' })).toBeVisible();
   await expect(page.getByLabel('Assessment year')).toBeVisible();
