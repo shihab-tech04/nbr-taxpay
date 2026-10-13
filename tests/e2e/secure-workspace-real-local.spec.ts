@@ -100,7 +100,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(otherTab.getByRole('status').filter({ hasText: 'Private draft changes saved' })).toBeVisible();
   await otherTab.reload();
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
-  await expect(otherTab.getByText(/124\.50/)).toBeVisible();
+  await expect(otherTab.getByText('BDT 124.50 · Private draft only')).toBeVisible();
 
   // Optimistic concurrency must fail closed when this first tab still holds old values.
   await pageA.getByLabel('Proposed amount (BDT)').fill('125.00');
