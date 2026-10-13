@@ -1,83 +1,70 @@
 /*
- * Taxpayer-only Sobaike Janao reference skin.
+ * Taxpayer-only reference layout, sharing Public's Government Blue theme.
  * SOURCE: Sobaike-janao-public/src/index.css (main b6a66b9).
- * These values deliberately do not alter global @theme, Guest or Officer.
+ * Layout remains scoped to the taxpayer workspace; colors and font settings inherit the same citizen tokens as Public. Officer routes are excluded.
  * A sample role remains a demo profile, not a verified taxpayer identity.
  */
 .taxpay-citizen-shell.taxpay-taxpayer-reference {
-  --color-taxpay-primary: #1B4D6B;
-  --color-taxpay-dark: #163B52;
-  --color-taxpay-light: #E4E6EB;
-  --color-taxpay-secondary: #3A7CA5;
-  --color-taxpay-accent: #3A7CA5;
-  --color-taxpay-background: #F0F2F5;
-  --color-taxpay-surface: #FFFFFF;
-  --color-taxpay-border: #E4E6EB;
-  --color-taxpay-text: #050505;
-  --color-taxpay-muted: #65676B;
-  --color-taxpay-success: #15803D;
-  --color-taxpay-warning: #B45309;
-  --color-taxpay-error: #B91C1C;
-  --reference-primary-active: #245F82;
-  --reference-focus: #3A7CA5;
+  --reference-primary-active: var(--color-taxpay-primary);
+  --reference-focus: var(--color-taxpay-secondary);
   --reference-overlay: rgba(5,5,5,.55);
   --reference-shadow: 0 1px 3px rgba(5,5,5,.075);
-  font-family: 'Noto Sans', 'Noto Sans Bengali', system-ui, sans-serif;
-  background: #F0F2F5;
-  color: #050505;
+  font-family: 'Manrope', 'Noto Sans Bengali', system-ui, sans-serif;
+  background: var(--color-taxpay-background);
+  color: var(--color-taxpay-text);
 }
 .taxpay-taxpayer-reference[lang="bn"] {
-  font-family: 'Noto Sans Bengali', 'Noto Sans', system-ui, sans-serif;
+  font-family: 'Noto Sans Bengali', 'Manrope', system-ui, sans-serif;
 }
 .taxpay-taxpayer-reference :is(button, input, select, textarea, a):focus-visible {
   outline: 2px solid var(--reference-focus);
   outline-offset: 2px;
 }
 .taxpay-taxpayer-reference .citizen-header {
-  color: #050505;
-  background: #FFFFFF;
-  border-color: #E4E6EB;
+  color: var(--color-taxpay-surface);
+  background: var(--color-taxpay-dark);
+  border-color: var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .citizen-brand,
 .taxpay-taxpayer-reference .citizen-language,
 .taxpay-taxpayer-reference .citizen-menu-open,
 .taxpay-taxpayer-reference .citizen-nav-link {
-  color: #1B4D6B;
+  color: var(--color-taxpay-surface);
 }
 .taxpay-taxpayer-reference .citizen-flow-label {
-  color: #65676B;
+  color: var(--color-taxpay-surface);
   opacity: 1;
 }
 .taxpay-taxpayer-reference .citizen-taxpayer-hero > div > p:not(.citizen-taxpayer-hero__eyebrow) {
-  color: #65676B;
+  color: var(--color-taxpay-muted);
   opacity: 1;
 }
 .taxpay-taxpayer-reference .citizen-nav-link:hover,
 .taxpay-taxpayer-reference .citizen-nav-link[aria-current="page"] {
-  background: #F0F2F5;
+  background: var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .citizen-bottom-nav {
-  background: #FFFFFF;
-  border-color: #E4E6EB;
+  background: var(--color-taxpay-surface);
+  border-color: var(--color-taxpay-border);
 }
 .taxpay-taxpayer-reference .citizen-bottom-nav__item[aria-current="page"] {
-  color: #1B4D6B;
+  color: var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .citizen-pay {
-  background: #1B4D6B;
-  border-color: #1B4D6B;
-  color: #FFFFFF;
+  background: var(--color-taxpay-primary);
+  border-color: var(--color-taxpay-primary);
+  color: var(--color-taxpay-surface);
 }
-.taxpay-taxpayer-reference .citizen-pay:hover { background: #163B52; }
+.taxpay-taxpayer-reference .citizen-pay:hover { background: var(--color-taxpay-dark); }
 .taxpay-taxpayer-reference .citizen-corner {
-  border: 1px solid #E4E6EB;
-  background: #FFFFFF;
-  color: #1B4D6B;
+  border: 1px solid var(--color-taxpay-border);
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .citizen-dialog {
-  background: #FFFFFF;
-  border-color: #E4E6EB;
-  color: #050505;
+  background: var(--color-taxpay-surface);
+  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-text);
 }
 .taxpay-taxpayer-reference .citizen-overlay { background: var(--reference-overlay); }
 
@@ -86,9 +73,9 @@
   display: none;
   width: 240px;
   padding: 20px 16px;
-  background: #FFFFFF;
-  border-right: 1px solid #E4E6EB;
-  color: #050505;
+  background: var(--color-taxpay-surface);
+  border-right: 1px solid var(--color-taxpay-border);
+  color: var(--color-taxpay-text);
 }
 .taxpayer-reference-brand {
   display: flex;
@@ -97,13 +84,13 @@
   width: 100%;
   min-height: 48px;
   text-align: left;
-  color: #1B4D6B;
+  color: var(--color-taxpay-primary);
   border-radius: 10px;
   padding: 6px;
 }
 .taxpayer-reference-brand span { display: grid; gap: 2px; min-width: 0; }
-.taxpayer-reference-brand strong { color: #050505; font-size: 15px; font-weight: 800; }
-.taxpayer-reference-brand small { color: #65676B; font-size: 11px; font-weight: 500; line-height: 1.5; }
+.taxpayer-reference-brand strong { color: var(--color-taxpay-text); font-size: 15px; font-weight: 800; }
+.taxpayer-reference-brand small { color: var(--color-taxpay-muted); font-size: 11px; font-weight: 500; line-height: 1.5; }
 .taxpayer-reference-main-action {
   display: flex;
   align-items: center;
@@ -114,12 +101,12 @@
   padding: 10px 12px;
   margin: 20px 0 14px;
   border-radius: 9px;
-  background: #1B4D6B;
+  background: var(--color-taxpay-primary);
   color: white;
   font-size: 14px;
   font-weight: 700;
 }
-.taxpayer-reference-main-action:hover { background: #163B52; }
+.taxpayer-reference-main-action:hover { background: var(--color-taxpay-dark); }
 .taxpayer-reference-links { display: grid; gap: 3px; }
 .taxpayer-reference-links button {
   display: flex;
@@ -131,19 +118,19 @@
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: #65676B;
+  color: var(--color-taxpay-muted);
   font-size: 13px;
   font-weight: 600;
   text-align: left;
 }
-.taxpayer-reference-links button:hover { background: #F0F2F5; color: #050505; }
+.taxpayer-reference-links button:hover { background: var(--color-taxpay-background); color: var(--color-taxpay-text); }
 .taxpayer-reference-links button[aria-current="page"] {
-  background: #FFFFFF;
-  border-color: #E4E6EB;
-  color: #050505;
+  background: var(--color-taxpay-surface);
+  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-text);
   box-shadow: var(--reference-shadow);
 }
-.taxpayer-reference-rail-bottom { border-top: 1px solid #E4E6EB; padding-top: 12px; }
+.taxpayer-reference-rail-bottom { border-top: 1px solid var(--color-taxpay-border); padding-top: 12px; }
 .taxpayer-reference-rail-bottom button {
   display: flex;
   align-items: center;
@@ -152,86 +139,86 @@
   width: 100%;
   min-height: 44px;
   padding: 8px 10px;
-  border: 1px solid #E4E6EB;
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 9px;
-  color: #65676B;
+  color: var(--color-taxpay-muted);
   font-size: 12px;
 }
 .taxpayer-reference-rail-bottom strong {
   padding: 5px 8px;
   border-radius: 6px;
-  background: #F0F2F5;
-  color: #050505;
+  background: var(--color-taxpay-background);
+  color: var(--color-taxpay-text);
 }
 .taxpayer-reference-rail-bottom p {
   padding: 12px 5px 0;
-  color: #65676B;
+  color: var(--color-taxpay-muted);
   font-size: 11px;
   line-height: 1.6;
 }
 
 /* Preserve financial and identity labels. Never recolor data status to imply paid. */
 .taxpay-taxpayer-reference .citizen-taxpayer-hero {
-  background: #FFFFFF;
-  border: 1px solid #E4E6EB;
+  background: var(--color-taxpay-surface);
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 14px;
-  color: #050505;
+  color: var(--color-taxpay-text);
   box-shadow: var(--reference-shadow);
   gap: 16px;
 }
 .taxpay-taxpayer-reference .citizen-taxpayer-hero :is(h1,p),
-.taxpay-taxpayer-reference .citizen-taxpayer-hero__eyebrow { color: #050505; opacity: 1; }
-.taxpay-taxpayer-reference .citizen-taxpayer-hero__eyebrow { color: #1B4D6B; }
+.taxpay-taxpayer-reference .citizen-taxpayer-hero__eyebrow { color: var(--color-taxpay-text); opacity: 1; }
+.taxpay-taxpayer-reference .citizen-taxpayer-hero__eyebrow { color: var(--color-taxpay-primary); }
 .taxpay-taxpayer-reference .citizen-taxpayer-primary {
-  background: #1B4D6B;
+  background: var(--color-taxpay-primary);
   color: white;
 }
-.taxpay-taxpayer-reference .citizen-taxpayer-primary:hover { background: #163B52; }
+.taxpay-taxpayer-reference .citizen-taxpayer-primary:hover { background: var(--color-taxpay-dark); }
 .taxpay-taxpayer-reference .citizen-taxpayer-secondary {
-  border-color: #E4E6EB !important;
-  color: #1B4D6B;
-  background: #F0F2F5;
+  border-color: var(--color-taxpay-border) !important;
+  color: var(--color-taxpay-primary);
+  background: var(--color-taxpay-background);
 }
-.taxpay-taxpayer-reference .citizen-taxpayer-secondary:hover { background: #E4E6EB; }
+.taxpay-taxpayer-reference .citizen-taxpayer-secondary:hover { background: var(--color-taxpay-border); }
 .taxpay-taxpayer-reference .citizen-taxpayer-hero__badge {
-  border-color: #E4E6EB;
-  color: #1B4D6B;
-  background: #F0F2F5;
+  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-primary);
+  background: var(--color-taxpay-background);
 }
 .taxpay-taxpayer-reference :is(.citizen-taxpayer-summary,.citizen-taxpayer-profile,.citizen-taxpayer-quick,.citizen-taxpayer-activity,.citizen-taxpayer-more) {
   border-radius: 13px;
-  background: #FFFFFF;
-  border-color: #E4E6EB;
+  background: var(--color-taxpay-surface);
+  border-color: var(--color-taxpay-border);
   box-shadow: var(--reference-shadow);
 }
 .taxpay-taxpayer-reference .citizen-taxpayer-quick__grid button {
-  border: 1px solid #E4E6EB;
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 12px;
-  background: #FFFFFF;
+  background: var(--color-taxpay-surface);
 }
 .taxpay-taxpayer-reference .citizen-taxpayer-quick__grid button:hover {
-  border-color: #3A7CA5;
-  background: #F0F2F5;
+  border-color: var(--color-taxpay-secondary);
+  background: var(--color-taxpay-background);
 }
 .taxpay-taxpayer-reference .citizen-taxpayer-summary__notice,
 .taxpay-taxpayer-reference .citizen-taxpayer-activity__notice {
-  border-left-color: #B45309;
-  background: #F0F2F5;
+  border-left-color: var(--color-taxpay-warning);
+  background: var(--color-taxpay-background);
 }
 
 /* The authenticated application-account UI uses the same reference components.
  * This is CSS presentation only; Supabase identity and RLS remain untouched. */
 .taxpay-taxpayer-reference .taxpayer-reference-secure {
   max-width: 900px;
-  color: #050505;
+  color: var(--color-taxpay-text);
 }
 .taxpayer-reference-secure > header,
 .taxpayer-reference-secure > form,
 .taxpayer-reference-secure > section,
 .taxpayer-reference-secure > div:not([role]),
 .taxpayer-reference-secure > article {
-  background: #FFFFFF;
-  border: 1px solid #E4E6EB;
+  background: var(--color-taxpay-surface);
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 14px;
   box-shadow: var(--reference-shadow);
 }
@@ -239,7 +226,7 @@
 .taxpayer-reference-secure > header h1,
 .taxpayer-reference-secure form h2,
 .taxpayer-reference-secure section h2 {
-  color: #050505;
+  color: var(--color-taxpay-text);
   font-family: inherit;
   font-weight: 750;
 }
@@ -247,71 +234,71 @@
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  border: 1px solid #E4E6EB;
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 9px;
-  background: #FFFFFF;
-  color: #050505;
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-text);
   padding: 10px 12px;
   font-family: inherit;
   font-size: 16px;
 }
 .taxpayer-reference-secure :is(input,select,textarea):focus-visible {
-  border-color: #3A7CA5;
-  outline: 2px solid #3A7CA5;
+  border-color: var(--color-taxpay-secondary);
+  outline: 2px solid var(--color-taxpay-secondary);
   outline-offset: 1px;
 }
-.taxpayer-reference-secure label { color: #050505; line-height: 1.6; }
+.taxpayer-reference-secure label { color: var(--color-taxpay-text); line-height: 1.6; }
 .taxpayer-reference-secure button { min-height: 44px; border-radius: 9px; }
 .taxpayer-reference-secure button[type="submit"] {
-  background: #1B4D6B;
-  border-color: #1B4D6B;
-  color: #FFFFFF;
+  background: var(--color-taxpay-primary);
+  border-color: var(--color-taxpay-primary);
+  color: var(--color-taxpay-surface);
 }
-.taxpayer-reference-secure button[type="submit"]:hover:not(:disabled) { background: #163B52; }
+.taxpayer-reference-secure button[type="submit"]:hover:not(:disabled) { background: var(--color-taxpay-dark); }
 .taxpayer-reference-secure > section > ul > li {
   padding: 14px 0;
-  border-color: #E4E6EB;
+  border-color: var(--color-taxpay-border);
 }
 .taxpayer-reference-secure > section > ul > li > div:last-child button {
-  border: 1px solid #E4E6EB;
-  background: #FFFFFF;
-  color: #1B4D6B;
+  border: 1px solid var(--color-taxpay-border);
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-primary);
 }
-.taxpayer-reference-secure > section > ul > li > div:last-child button:hover { background: #F0F2F5; }
+.taxpayer-reference-secure > section > ul > li > div:last-child button:hover { background: var(--color-taxpay-background); }
 
 /* Three-step taxpayer simulation uses the reference form language, not a new
  * calculation path or a false official challan. */
 .taxpay-taxpayer-reference .taxpay-payment-wizard {
-  color: #050505;
+  color: var(--color-taxpay-text);
   font-family: inherit;
 }
 .taxpay-taxpayer-reference .taxpay-payment-wizard > div {
-  background: #FFFFFF;
-  border: 1px solid #E4E6EB;
+  background: var(--color-taxpay-surface);
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 14px;
   box-shadow: var(--reference-shadow);
 }
 .taxpay-taxpayer-reference .taxpay-payment-wizard h1,
 .taxpay-taxpayer-reference .taxpay-payment-wizard h3 {
   font-family: inherit;
-  color: #050505;
+  color: var(--color-taxpay-text);
 }
 .taxpay-taxpayer-reference .taxpay-payment-wizard :is(input:not([type="radio"]),select,textarea) {
   min-height: 44px;
   max-width: 100%;
-  border: 1px solid #E4E6EB;
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 9px;
-  background: #FFFFFF;
-  color: #050505;
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-text);
   font-size: 16px;
 }
-.taxpay-taxpayer-reference .taxpay-payment-wizard input[type="radio"] { accent-color: #1B4D6B; }
+.taxpay-taxpayer-reference .taxpay-payment-wizard input[type="radio"] { accent-color: var(--color-taxpay-primary); }
 .taxpay-taxpayer-reference .taxpay-payment-wizard fieldset label:has(input:checked):not(:has(input:disabled)) {
-  background: #F0F2F5;
-  border-left-color: #3A7CA5;
+  background: var(--color-taxpay-background);
+  border-left-color: var(--color-taxpay-secondary);
 }
 .taxpay-taxpayer-reference .taxpay-payment-wizard button { min-height: 44px; border-radius: 9px; }
-.taxpay-taxpayer-reference .taxpay-payment-wizard [aria-current="step"] { background: #3A7CA5; border-color: #3A7CA5; color: white; }
+.taxpay-taxpayer-reference .taxpay-payment-wizard [aria-current="step"] { background: var(--color-taxpay-secondary); border-color: var(--color-taxpay-secondary); color: white; }
 
 /* No changes to Guest, public-payment widgets or Officer globally. */
 @media (min-width: 1440px) {
@@ -376,7 +363,7 @@
     top: 0;
     z-index: 20;
     padding: 8px 0 12px;
-    background: #FFFFFF;
+    background: var(--color-taxpay-surface);
   }
   .taxpay-taxpayer-reference .taxpay-payment-wizard > div > div:nth-child(2) > div {
     min-width: 0;
@@ -391,8 +378,8 @@
     bottom: 0;
     z-index: 19;
     padding: 10px 0 max(12px,env(safe-area-inset-bottom));
-    border-top: 1px solid #E4E6EB;
-    background: #FFFFFF;
+    border-top: 1px solid var(--color-taxpay-border);
+    background: var(--color-taxpay-surface);
   }
   .taxpay-taxpayer-reference .taxpayer-reference-secure > form,
   .taxpay-taxpayer-reference .taxpayer-reference-secure > section { padding: 16px; }
@@ -412,18 +399,18 @@
   width: min(100%, 900px);
   margin: 0 auto;
   padding-bottom: 64px;
-  color: #050505;
+  color: var(--color-taxpay-text);
 }
 .taxpay-taxpayer-reference .taxpayer-account-heading,
 .taxpay-taxpayer-reference .taxpayer-account-panel {
-  background: #FFFFFF;
-  border: 1px solid #E4E6EB;
+  background: var(--color-taxpay-surface);
+  border: 1px solid var(--color-taxpay-border);
   border-radius: 13px;
   padding: clamp(16px, 3vw, 24px);
   box-shadow: var(--reference-shadow);
 }
 .taxpay-taxpayer-reference .taxpayer-account-heading h1 {
-  color: #050505;
+  color: var(--color-taxpay-text);
   font-family: inherit;
   font-size: clamp(20px, 3vw, 27px);
   font-weight: 750;
@@ -432,14 +419,14 @@
 .taxpay-taxpayer-reference .taxpayer-account-panel > p,
 .taxpay-taxpayer-reference .taxpayer-account-fields > p {
   margin-top: 8px;
-  color: #65676B;
+  color: var(--color-taxpay-muted);
   font-size: 13px;
   line-height: 1.7;
 }
 .taxpay-taxpayer-reference .taxpayer-account-panel { margin-top: 12px; }
 .taxpay-taxpayer-reference .taxpayer-account-panel h2 {
   margin: 0 0 16px;
-  color: #050505;
+  color: var(--color-taxpay-text);
   font-family: inherit;
   font-size: 17px;
   font-weight: 750;
@@ -459,18 +446,18 @@
   min-height: 44px;
   padding: 9px 14px;
   border-radius: 9px;
-  border: 1px solid #E4E6EB;
-  background: #FFFFFF;
-  color: #65676B;
+  border: 1px solid var(--color-taxpay-border);
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-muted);
   font-weight: 650;
   font-size: 13px;
 }
 .taxpay-taxpayer-reference .taxpayer-account-tabs button[aria-current="page"] {
-  color: #FFFFFF;
-  background: #1B4D6B;
-  border-color: #1B4D6B;
+  color: var(--color-taxpay-surface);
+  background: var(--color-taxpay-primary);
+  border-color: var(--color-taxpay-primary);
 }
-.taxpay-taxpayer-reference .taxpayer-account-tabs button:hover:not([aria-current="page"]) {background:#F0F2F5;}
+.taxpay-taxpayer-reference .taxpayer-account-tabs button:hover:not([aria-current="page"]) {background:var(--color-taxpay-background);}
 .taxpay-taxpayer-reference .taxpayer-account-facts {
   display: grid;
   gap: 0;
@@ -481,12 +468,12 @@
   grid-template-columns: minmax(120px, .6fr) minmax(0, 1.4fr);
   gap: 10px;
   padding: 13px 0;
-  border-bottom: 1px solid #E4E6EB;
+  border-bottom: 1px solid var(--color-taxpay-border);
 }
-.taxpay-taxpayer-reference .taxpayer-account-facts dt {color:#65676B;font-size:13px;}
+.taxpay-taxpayer-reference .taxpayer-account-facts dt {color:var(--color-taxpay-muted);font-size:13px;}
 .taxpay-taxpayer-reference .taxpayer-account-facts dd {
   margin: 0;
-  color: #050505;
+  color: var(--color-taxpay-text);
   font-size: 14px;
   font-weight: 600;
   overflow-wrap: anywhere;
@@ -498,20 +485,20 @@
   align-items: flex-start;
   padding: 12px;
   border-radius: 9px;
-  background: #F0F2F5;
-  color: #65676B;
+  background: var(--color-taxpay-background);
+  color: var(--color-taxpay-muted);
   font-size: 12px;
   line-height: 1.6;
 }
 .taxpay-taxpayer-reference .taxpayer-account-notice svg {flex:none;}
 .taxpay-taxpayer-reference .taxpayer-account-fields {display:grid;gap:12px;}
-.taxpay-taxpayer-reference .taxpayer-account-fields label {font-size:14px;font-weight:650;color:#050505;}
+.taxpay-taxpayer-reference .taxpayer-account-fields label {font-size:14px;font-weight:650;color:var(--color-taxpay-text);}
 .taxpay-taxpayer-reference .taxpayer-account-fields :is(input:not([type=checkbox]),select) {
   width:100%;min-width:0;min-height:46px;
   padding:10px 12px;
-  border:1px solid #E4E6EB;
+  border:1px solid var(--color-taxpay-border);
   border-radius:9px;
-  background:#FFFFFF;color:#050505;
+  background:var(--color-taxpay-surface);color:var(--color-taxpay-text);
   font:inherit;font-size:16px;
 }
 .taxpay-taxpayer-reference .taxpayer-account-toggle {
@@ -519,14 +506,14 @@
   min-height:44px;
 }
 .taxpay-taxpayer-reference .taxpayer-account-toggle input {
-  flex:none;width:20px;height:20px;accent-color:#1B4D6B;
+  flex:none;width:20px;height:20px;accent-color:var(--color-taxpay-primary);
 }
 .taxpay-taxpayer-reference .taxpayer-account-panel button:not(.taxpayer-account-secondary) {
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   width:fit-content;max-width:100%;min-height:44px;
   padding:9px 16px;
-  border:1px solid #1B4D6B;
-  border-radius:9px;background:#1B4D6B;color:#FFFFFF;font-size:14px;font-weight:650;
+  border:1px solid var(--color-taxpay-primary);
+  border-radius:9px;background:var(--color-taxpay-primary);color:var(--color-taxpay-surface);font-size:14px;font-weight:650;
 }
 .taxpay-taxpayer-reference .taxpayer-account-actions {
   display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;
@@ -535,27 +522,27 @@
 .taxpay-taxpayer-reference .taxpayer-account-secondary {
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   min-height:44px;padding:9px 15px;
-  border:1px solid #E4E6EB;border-radius:9px;
-  color:#1B4D6B;background:#FFFFFF;font-size:14px;font-weight:650;
+  border:1px solid var(--color-taxpay-border);border-radius:9px;
+  color:var(--color-taxpay-primary);background:var(--color-taxpay-surface);font-size:14px;font-weight:650;
 }
 .taxpay-taxpayer-reference .taxpayer-account-actions button:hover,
-.taxpay-taxpayer-reference .taxpayer-account-secondary:hover {background:#F0F2F5;}
-.taxpay-taxpayer-reference .taxpayer-account-feedback {margin-top:12px;padding:12px;background:#FFFFFF;border:1px solid #E4E6EB;border-radius:9px;}
+.taxpay-taxpayer-reference .taxpayer-account-secondary:hover {background:var(--color-taxpay-background);}
+.taxpay-taxpayer-reference .taxpayer-account-feedback {margin-top:12px;padding:12px;background:var(--color-taxpay-surface);border:1px solid var(--color-taxpay-border);border-radius:9px;}
 .taxpay-taxpayer-reference .taxpayer-account-notices {margin:14px 0 0;padding:0;list-style:none;}
 .taxpay-taxpayer-reference .taxpayer-account-notices li {
-  padding:14px 0;border-bottom:1px solid #E4E6EB;
+  padding:14px 0;border-bottom:1px solid var(--color-taxpay-border);
 }
 .taxpay-taxpayer-reference .taxpayer-account-notices li > div {display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;}
 .taxpay-taxpayer-reference .taxpayer-account-notices strong {font-size:14px;}
 .taxpay-taxpayer-reference .taxpayer-account-notices span {
-  padding:4px 9px;border:1px solid #E4E6EB;border-radius:99px;
-  background:#F0F2F5;font-size:12px;color:#1B4D6B;
+  padding:4px 9px;border:1px solid var(--color-taxpay-border);border-radius:99px;
+  background:var(--color-taxpay-background);font-size:12px;color:var(--color-taxpay-primary);
 }
-.taxpay-taxpayer-reference .taxpayer-account-notices p {margin-top:7px;color:#65676B;font-size:12px;}
+.taxpay-taxpayer-reference .taxpayer-account-notices p {margin-top:7px;color:var(--color-taxpay-muted);font-size:12px;}
 .taxpay-taxpayer-reference .citizen-dialog-signout {
   width:100%;min-height:44px;margin:6px 0 12px;padding:9px 12px;
-  border:1px solid #E4E6EB;border-radius:9px;
-  background:#FFFFFF;color:#1B4D6B;text-align:left;font-weight:700;
+  border:1px solid var(--color-taxpay-border);border-radius:9px;
+  background:var(--color-taxpay-surface);color:var(--color-taxpay-primary);text-align:left;font-weight:700;
 }
 @media (max-width:520px) {
   .taxpay-taxpayer-reference .taxpayer-account-facts > div {grid-template-columns:1fr;gap:4px;}

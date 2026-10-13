@@ -2,22 +2,22 @@ import React from 'react';
 
 /** Shared TaxPay controls. Mobile-first, accessible, semantic palette; no hardcoded CSS colors. */
 const controlClass =
-  'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 ' +
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 ' +
+  'min-h-11 w-full rounded-lg border border-taxpay-border bg-taxpay-surface px-3 py-2.5 text-sm text-taxpay-text ' +
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 type ButtonVariant = 'primary' | 'outline' | 'quiet';
 type UiButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant };
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: 'bg-emerald-950 text-white hover:bg-emerald-900',
-  outline: 'border border-slate-300 bg-white text-emerald-950 hover:bg-slate-50',
-  quiet: 'bg-transparent text-emerald-950 hover:bg-emerald-50'
+  primary: 'bg-taxpay-primary text-white hover:bg-taxpay-dark',
+  outline: 'border border-taxpay-border bg-taxpay-surface text-taxpay-primary hover:bg-taxpay-light',
+  quiet: 'bg-transparent text-taxpay-primary hover:bg-taxpay-light'
 };
 export const UiButton = React.forwardRef<HTMLButtonElement, UiButtonProps>(
   ({ variant = 'primary', type = 'button', className = '', ...props }, ref) =>
     <button ref={ref} type={type}
       className={'inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold ' +
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 ' +
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ' +
         'disabled:cursor-not-allowed disabled:opacity-50 ' + buttonVariants[variant] + ' ' + className}
       {...props} />
 );
