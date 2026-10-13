@@ -10,7 +10,9 @@ import {
   Info, 
   Building2,
   Calendar,
-  CreditCard
+  CreditCard,
+  Search,
+  X
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -62,6 +64,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [furthestStep, setFurthestStep] = useState<0 | 1 | 2>(0);
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
+  const [routeSearch, setRouteSearch] = useState('');
   const [passengerCount, setPassengerCount] = useState(1);
   const [passengerName, setPassengerName] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
@@ -138,6 +141,17 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
     }, 1000);
   };
 
+
+  // Filter the existing rate options, never their underlying identities or prices.
+  // Both translations are searched regardless of the current UI language.
+  const normalizedRouteSearch = routeSearch.normalize('NFKC').toLocaleLowerCase().trim().replace(/\s+/g, ' ');
+  const matchingRoutes = TRAVEL_TAX_RATES
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => {
+      if (!normalizedRouteSearch) return true;
+      const haystack = `${item.route} ${item.routeBn}`.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ');
+      return haystack.includes(normalizedRouteSearch);
+    });
 
   const workflow = bn
     ? { steps: ['যাত্রাপথ', 'যাত্রীর তথ্য', 'পর্যালোচনা'], select: 'গন্তব্য ও যাতায়াতের ধরন নির্বাচন',
@@ -221,9 +235,24 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
               <h3 id="travel-route-heading">{workflow.select}</h3>
               <p>{t.intro}</p>
             </header>
-            <fieldset className="travel-flow__routes">
+            <div className="travel-flow__search">
+              <Search size={18} aria-hidden="true" className="travel-flow__search-icon" />
+              <label htmlFor="travel-tax-route-search" className="sr-only">
+                {bn ? 'গন্তব্য বা যাতায়াতের ধরন খুঁজুন' : 'Search destination or travel mode'}
+              </label>
+              <input id="travel-tax-route-search" type="search" autoComplete="off"
+                value={routeSearch} onChange={event => setRouteSearch(event.target.value)}
+                placeholder={bn ? 'গন্তব্য বা যাতায়াতের ধরন খুঁজুন' : 'Search destination or travel mode'}
+                aria-controls="travel-tax-route-results" />
+              {routeSearch && <button type="button" className="travel-flow__search-clear"
+                onClick={() => setRouteSearch('')}
+                aria-label={bn ? 'অনুসন্ধান মুছুন' : 'Clear route search'}>
+                <X size={17} aria-hidden="true" />
+              </button>}
+            </div>
+            <fieldset id="travel-tax-route-results" className="travel-flow__routes">
               <legend className="sr-only">{t.destination}</legend>
-              {TRAVEL_TAX_RATES.map((item, idx) => (
+              {matchingRoutes.map(({ item, index: idx }) => (
                 <label key={idx} htmlFor={'travel-tax-route-' + idx}
                   className={'travel-flow__route' + (idx === selectedRouteIdx ? ' travel-flow__route--selected' : '')}>
                   <span className="travel-flow__route-copy">
@@ -238,6 +267,14 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
                     checked={idx === selectedRouteIdx} onChange={() => setSelectedRouteIdx(idx)} />
                 </label>
               ))}
+              {matchingRoutes.length === 0 && (
+                <div className="travel-flow__search-empty" role="status">
+                  <p>{bn ? 'কোনো যাত্রাপথ পাওয়া যায়নি। অন্য শব্দ লিখুন।' : 'No matching routes. Try another destination or travel mode.'}</p>
+                  <button type="button" onClick={() => setRouteSearch('')}>
+                    {bn ? 'সব যাত্রাপথ দেখুন' : 'Show all routes'}
+                  </button>
+                </div>
+              )}
             </fieldset>
           </section>}
 

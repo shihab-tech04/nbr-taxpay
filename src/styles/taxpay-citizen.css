@@ -1614,3 +1614,88 @@
     padding:.55rem .6rem;
   }
 }
+
+
+/* Travel route picker search — reuse TaxPay form fields and design tokens. */
+.travel-flow__search {
+  display:flex;
+  align-items:center;
+  position:relative;
+  min-width:0;
+  margin:0 0 .85rem;
+}
+.travel-flow__search-icon {
+  position:absolute;
+  left:.95rem;
+  z-index:1;
+  pointer-events:none;
+  color:var(--citizen-muted);
+}
+.travel-flow__search input[type="search"] {
+  appearance:none;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:46px;
+  padding:.7rem 2.9rem .7rem 2.7rem;
+  border:1px solid var(--citizen-border);
+  border-radius:.65rem;
+  background:var(--citizen-surface);
+  color:var(--citizen-text);
+  font-size:.84rem;
+  font-family:inherit;
+  line-height:1.45;
+}
+.travel-flow__search input[type="search"]::-webkit-search-cancel-button {
+  display:none;
+}
+.travel-flow__search input[type="search"]:focus-visible {
+  outline:3px solid var(--citizen-primary);
+  outline-offset:2px;
+  border-color:var(--citizen-primary);
+}
+.travel-flow__search input[type="search"]::placeholder {
+  color:var(--citizen-muted);
+  opacity:1;
+}
+.travel-flow__search-clear {
+  position:absolute;
+  right:.25rem;
+  display:grid;
+  place-items:center;
+  min-width:40px;
+  min-height:40px;
+  padding:0;
+  color:var(--citizen-muted);
+  border-radius:.5rem;
+  background:transparent;
+}
+.travel-flow__search-clear:hover {
+  color:var(--citizen-primary-dark);
+  background:var(--citizen-primary-light);
+}
+.travel-flow__search-clear:focus-visible {
+  outline:3px solid var(--citizen-primary);
+  outline-offset:1px;
+}
+.travel-flow__search-empty {
+  padding:1.2rem;
+  border:1px dashed var(--citizen-border);
+  border-radius:.65rem;
+  background:var(--citizen-bg);
+  text-align:center;
+}
+.travel-flow__search-empty p {
+  margin:0 0 .7rem;
+  color:var(--citizen-muted);
+  font-size:.83rem;
+  line-height:1.55;
+}
+.travel-flow__search-empty button {
+  min-height:44px;
+  color:var(--citizen-primary-dark);
+  font-size:.83rem;
+  font-weight:750;
+  text-decoration:underline;
+  text-underline-offset:.18rem;
+}
