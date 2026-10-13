@@ -127,3 +127,15 @@ test('taxpayer home and ledger follow the shared Public theme without legacy eme
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
 });
+
+test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({page},info)=>{
+  test.skip(info.project.name !== 'desktop-1280','Test language parity with the desktop reference rail');
+  await page.setViewportSize({width:1600,height:900});
+  await openSampleTaxpayer(page);
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await rail.getByRole('button',{name:'Tax ledger'}).click();
+  await expect(page.getByRole('columnheader',{name:'Particulars & Economic Code'})).toBeVisible();
+  await rail.getByRole('button',{name:'বাংলা'}).click();
+  await expect(page.getByRole('columnheader',{name:'বিবরণ ও অর্থনৈতিক কোড'})).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:'ডেবিট (দায়)'})).toBeVisible();
+});
