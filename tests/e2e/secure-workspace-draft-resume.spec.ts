@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 const projectRef = 'nbr-taxpay-test';
 const syntheticSupabaseUrl = `https://${projectRef}.invalid`;
@@ -83,7 +84,7 @@ test('authenticated owner resumes and updates a private draft in Bengali without
 
   await page.goto('/?action=secure_workspace');
   await expect(page.getByRole('heading', { name: 'Signed-in application user' })).toBeVisible();
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page, 'bn');
   await expect(page.getByRole('heading', { name: 'সাইন-ইন করা অ্যাপ ব্যবহারকারী' })).toBeVisible();
   await page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)').fill('2030-31');
   await page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)').fill('400.00');
