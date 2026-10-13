@@ -51,7 +51,7 @@ const DEPARTURE_PORTS = [
   { value: 'Chattogram Sea Port', en: 'Chattogram Sea Port', bn: 'চট্টগ্রাম সমুদ্রবন্দর' }
 ];
 
-export const TravelTax: React.FC = () => {
+export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const { language, navigate, addPaymentReceipt } = useTaxState();
   const bn = language === 'bn';
   const t = COPY[language];
@@ -118,16 +118,16 @@ export const TravelTax: React.FC = () => {
         totalAmount,
         paymentMethod: 'BKASH',
         gatewayTransactionId: `BKSH-TRV-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
-        treasuryDate: now,
-        treasuryStatus: 'TREASURY_SCROLLED',
+        treasuryScrollNo: embedded ? undefined : `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
+        treasuryDate: embedded ? undefined : now,
+        treasuryStatus: embedded ? 'INITIATED' : 'TREASURY_SCROLLED',
         taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
         completedAt: now,
         isSimulatedDemo: true
       };
 
-      addPaymentReceipt(newReceipt);
+      if (!embedded) addPaymentReceipt(newReceipt);
       setCreatedReceipt(newReceipt);
       setIsProcessing(false);
     }, 1000);
