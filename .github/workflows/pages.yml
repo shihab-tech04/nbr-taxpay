@@ -123,7 +123,7 @@ jobs:
           echo "Read-back target: $PAGE_URL"
           for attempt in {1..12}; do
             if curl --fail --silent --show-error --location --max-time 20 "$PAGE_URL" -o /tmp/taxpay-live.html &&
-               grep -q 'TaxPay — Independent Development Preview' /tmp/taxpay-live.html &&
+               grep -q 'TaxPay | Income Tax Payment Information' /tmp/taxpay-live.html &&
                grep -q '/nbr-taxpay/assets/' /tmp/taxpay-live.html; then
               echo "PASS: public Pages HTML and asset prefix read back from $PAGE_URL"
               exit 0
