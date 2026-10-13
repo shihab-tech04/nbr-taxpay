@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertCircle, ArrowRight, ArrowUpRight, BookOpen, CalendarDays,
-  CheckCircle2, ChevronRight, CircleHelp, Clock3, CreditCard, FileCheck2,
+  ChevronRight, CircleHelp, Clock3, CreditCard, FileCheck2,
   FilePenLine, Landmark, Layers3, ListChecks, ReceiptText, RefreshCw,
   ShieldCheck, WalletCards
 } from 'lucide-react';
@@ -283,7 +283,7 @@ export const TaxpayerHome: React.FC = () => {
           <div className="life-status-bars">
             {distribution.map(item => <div className="life-status-bars__row" key={item.state}>
               <div><p>{stateName(item.state)}</p><strong>{hasEvidence ? item.count : '—'}</strong></div>
-              <div className="life-status-bars__track"><div className={`life-status-bars__fill life-status-bars__fill--${item.state.toLowerCase()}`} style={{width: distributionTotal && hasEvidence ? `${item.count/distributionTotal*100}%` : '0%'}}/></div>
+              <progress className={`life-status-bars__meter life-status-bars__meter--${item.state.toLowerCase()}`} value={hasEvidence ? item.count : 0} max={Math.max(distributionTotal, 1)} aria-label={stateName(item.state)}/>
             </div>)}
           </div>
           <p className="life-insights__sub">{label('Derived only from visible simulation records. Not an NBR settlement report.','শুধুমাত্র দৃশ্যমান নমুনা রেকর্ড থেকে গণনা। এনবিআরের জমার প্রতিবেদন নয়।')}</p>
