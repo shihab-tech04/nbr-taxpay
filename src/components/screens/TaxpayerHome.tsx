@@ -57,21 +57,15 @@ export const TaxpayerHome: React.FC = () => {
           <p>{label('Manage payment activity and access tax services.', 'পেমেন্টের তথ্য দেখুন এবং করসেবা ব্যবহার করুন।')}</p>
           <div className="citizen-taxpayer-hero__actions">
             <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate(demoUser ? 'history' : 'wizard')}>
-              <WalletCards size={18} aria-hidden="true" />{demoUser ? label('Start connected simulated payment', 'সংযুক্ত সিমুলেটেড পেমেন্ট শুরু করুন') : label('Explore payment flow', 'পেমেন্টের ধাপ দেখুন')}
+              <WalletCards size={18} aria-hidden="true" />{demoUser ? label('Payments & activity', 'পেমেন্ট ও লেনদেন') : label('Explore payment flow', 'পেমেন্টের ধাপ দেখুন')}
             </button>
             <button type="button" className="citizen-taxpayer-secondary" onClick={() => navigate('secure_workspace')}>
               {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')}<ArrowRight size={16} aria-hidden="true" />
             </button>
           </div>
         </div>
-        <span className="citizen-taxpayer-hero__badge">{label('Demo', 'ডেমো')}</span>
       </section>
 
-      {demoUser && <section className="citizen-hub-section" aria-label={label('Selected account scenario', 'নির্বাচিত অ্যাকাউন্টের ধরন')}>
-        <div className="citizen-hub-section__heading"><div><p className="citizen-hub-eyebrow">{label('Demo scenario', 'ডেমো পরিস্থিতি')} · {demoUser.id}</p><h2>{bn ? demoUser.nameBn : demoUser.nameEn}</h2>
-          <p>{bn ? demoUser.focusBn : demoUser.focusEn}</p></div></div>
-        <p className="citizen-hub-category-note">{label('Example records; no taxpayer account is connected.', 'উদাহরণস্বরূপ তথ্য; করদাতার প্রকৃত অ্যাকাউন্ট সংযুক্ত নয়।')}</p>
-      </section>}
       <section className="citizen-taxpayer-summary" aria-labelledby="taxpay-summary-title">
         <div className="citizen-hub-section__heading">
           <div><p className="citizen-hub-eyebrow">{label('Account overview', 'অ্যাকাউন্টের সারসংক্ষেপ')}</p><h2 id="taxpay-summary-title">{label('Tax position', 'করের অবস্থান')}</h2></div>
@@ -86,8 +80,10 @@ export const TaxpayerHome: React.FC = () => {
         <div className="citizen-taxpayer-profile__mark" aria-hidden="true"><Landmark size={20} /></div>
         <div className="min-w-0 flex-1">
           <p className="citizen-hub-eyebrow">{label('Profile', 'প্রোফাইল')}</p>
-          <h2>{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</h2>
-          <p>e-TIN: <span className="font-mono-plex">{taxpayerProfile.tin}</span> · {taxpayerProfile.type}</p>
+          <h2>{label('Account details', 'অ্যাকাউন্টের বিবরণ')}</h2>
+          <button type="button" className="citizen-text-action" onClick={() => navigate('secure_workspace')}>
+            {label('Account access', 'অ্যাকাউন্টে প্রবেশ')}<ArrowRight size={16} aria-hidden="true" />
+          </button>
         </div>
       </section>
 
