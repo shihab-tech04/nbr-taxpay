@@ -38,6 +38,20 @@ assert.equal((await rpc('sim_bind_taxpayer_account',{p_user_id:'user2',p_owner_u
 assert.ok((await rpc('sim_bind_taxpayer_account',{p_user_id:'user1',p_owner_uid:stranger.id},approver.token)).status>=400);
 assert.equal((await rpc('sim_my_taxpayer_profile',{},payer.token)).data,'user1');
 assert.equal((await rpc('sim_my_taxpayer_profile',{},beneficiary.token)).data,'user2');
+
+assert.ok((await rpc('sim_payment_history',{p_user_id:'user1',p_view:'beneficiary'})).status>=400,
+ 'Anonymous browser must not read an assigned identity');
+assert.ok((await rpc('sim_payment_notices',{p_user_id:'user2'})).status>=400,
+ 'Anonymous browser must not read protected notifications');
+assert.ok((await rpc('sim_submit_payment',{p_payer_id:'user1',
+  p_lines:[{beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:100}],
+  p_idempotency_key:randomUUID()})).status>=400,
+ 'Anonymous browser must not impersonate a bound payer');
+assert.ok((await rpc('sim_submit_payment',{p_payer_id:'user3',
+  p_lines:[{beneficiary:'user2',category:'PENALTY',assessmentYear:'2026-27',amountMinor:100}],
+  p_idempotency_key:randomUUID()})).status>=400,
+ 'Anonymous unbound payer must not target a bound beneficiary');
+
 assert.ok((await rpc('sim_my_payment_history',{p_view:'all'},payer.token)).status>=400);
 assert.ok((await rpc('sim_my_payment_history',{p_view:'payer'})).status>=400);
 const lines=[{beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:25125},{beneficiary:'user2',category:'PENALTY',assessmentYear:'2025-26',amountMinor:575}],key=randomUUID();
@@ -48,6 +62,13 @@ const id=creation.data.transactionId;
 const repeat=await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:key},payer.token);
 assert.equal(repeat.status,200);assert.equal(repeat.data.replayed,true);assert.equal(repeat.data.transactionId,id);
 assert.ok((await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:key},beneficiary.token)).status>=400);
+const publicHistory=await rpc('sim_payment_history',{p_user_id:null,p_view:'all'});
+assert.equal(publicHistory.status,200);
+assert.ok(!publicHistory.data.some(tx=>tx.transactionId===id),'Bound payment leaked to public all view');
+const officerHistory=await rpc('sim_payment_history',{p_user_id:null,p_view:'all'},approver.token);
+assert.equal(officerHistory.status,200);
+assert.ok(officerHistory.data.some(tx=>tx.transactionId===id),'Authorized officer missing full ledger');
+
 const h1=await rpc('sim_my_payment_history',{p_view:'payer'},payer.token);
 assert.equal(h1.status,200);
 const tx=h1.data.find(t=>t.transactionId===id);
