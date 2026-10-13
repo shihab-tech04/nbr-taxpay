@@ -63,7 +63,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   // They are not fabricated legal notices or mock network responses.
   const accountTab = await contextA.newPage();
   await accountTab.goto('/?action=account_notifications');
-  await expect(accountTab.getByRole('heading', { name: 'Private draft activity' })).toBeVisible();
+  await expect(accountTab.getByRole('heading', { name: 'Account notifications' })).toBeVisible();
   await expect(accountTab.getByText('Draft saved')).toBeVisible();
   await expect(accountTab.getByText('No payment made.')).toBeVisible();
   await expect(accountTab.getByText(/Demand Notice DN-|BDT 47,400/)).toHaveCount(0);
