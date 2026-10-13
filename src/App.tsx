@@ -3,6 +3,7 @@ import { TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
+import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { Footer } from './components/layout/Footer';
 import { CitizenFooter } from './components/layout/CitizenFooter';
@@ -11,6 +12,7 @@ import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
+import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { GuestPayment } from './components/screens/GuestPayment';
 import { TravelTax } from './components/screens/TravelTax';
 import { ReceiptLookup } from './components/screens/ReceiptLookup';
@@ -50,6 +52,7 @@ const MainRouter: React.FC = () => {
   const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
   const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const transactionRoute = ['guest','guestwh','travel','wizard'].includes(currentRoute);
+  const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
   // Guest payment and Officer routes never inherit this reference palette.
   const taxpayerReference = !officerRoute && ((privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace');
@@ -68,6 +71,8 @@ const MainRouter: React.FC = () => {
       // Public Screens
       case 'landing':
         return <PublicLanding />;
+      case 'user_guide':
+        return <PublicUserGuide />;
       case 'secure_workspace':
         return <SecureWorkspace />;
       case 'head_catalogue':
@@ -153,9 +158,9 @@ const MainRouter: React.FC = () => {
 
   return (
     <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : `taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
-      {officerRoute ? <Header /> : currentRoute === 'landing' ? <PublicHomeHeader /> : <CitizenNavigation />}
+      {officerRoute ? <Header /> : publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
-      <main id={currentRoute === 'landing' ? 'main-content' : undefined} className={`flex-1 ${currentRoute === 'landing' ? 'max-w-[1504px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
+      <main id={publicInformationRoute ? 'main-content' : undefined} className={`flex-1 ${publicInformationRoute ? 'max-w-[1504px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
         {privateSampleGate ? (
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
@@ -165,6 +170,7 @@ const MainRouter: React.FC = () => {
         ) : renderActiveScreen()}
       </main>
       {officerRoute ? <Footer /> : <CitizenFooter />}
+      {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
     </div>
   );
