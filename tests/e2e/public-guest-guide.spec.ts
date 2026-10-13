@@ -331,6 +331,8 @@ test('Travel Tax route search filters English and Bangla and preserves selected 
  await expect(routes.locator('input[type="radio"]')).toHaveCount(5);
  await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
  await search.fill('land');
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(2); // New Zealand and Land checkpoints both match.
+ await search.fill('Border Checkposts');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
  await modal.getByRole('button',{name:'Clear route search'}).click();
  await expect(routes.locator('input[type="radio"]')).toHaveCount(5);
