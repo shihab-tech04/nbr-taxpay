@@ -1151,7 +1151,7 @@
   border-bottom:1px solid var(--citizen-border);
   background:var(--citizen-surface);
 }
-.taxpay-citizen-shell .taxpay-modal .taxpay-modal__title {
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__header .taxpay-modal__title {
   flex:1 1 auto;
   min-width:0;
   margin:0;
@@ -1257,6 +1257,8 @@
 }
 @media print {
   .taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer {display:none!important;}
+  .taxpay-citizen-shell .taxpay-modal:has(.receipt-view--embedded) {max-height:none;height:auto;overflow:visible;border:0;box-shadow:none;}
+  .taxpay-citizen-shell .taxpay-modal:has(.receipt-view--embedded) .taxpay-modal__header {display:none;}
   .taxpay-citizen-shell .taxpay-modal .taxpay-modal__body {
     overflow:visible;max-height:none;padding:0;
   }
