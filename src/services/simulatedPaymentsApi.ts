@@ -3,16 +3,9 @@
  */
 const ROOT='https://eyqhoavnitkrajvyqvxn.supabase.co';
 const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWhvYXZuaXRrcmFqdnlxdnhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MDYxMTMsImV4cCI6MjEwNzE4MjExM30.cNoto22zmRNIykEM5oItwLL2ykw1LSwI4qqaycw0jI4';
-export const simulationUsers=['user1','user2','user3','user4','user5','user6','user7','user8','user9','user10'] as const;
-export type SimulationUser=typeof simulationUsers[number];
-export const simulationCategories=['TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY','SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT'] as const;
-export type SimulationCategory=typeof simulationCategories[number];
-export type SimulationLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amountMinor:number};
-export type SimulationAllocation=SimulationLine&{id:string;lineNo:number};
-export type SimulationEvent={id:number;action:string;note:string;occurredAt:string};
-export type SimulationTransaction={id:string;transactionId:string;payer:SimulationUser;state:'SIMULATED'|'PENDING'|'FAILED'|'REVERSED';createdAt:string;simulationOnly:true;totalMinor:number;reviewStatus:string;allocations:SimulationAllocation[];events:SimulationEvent[]};
-export type SimulationNotice={id:number;userId:SimulationUser;transactionId:string;messageCode:string;createdAt:string;isRead:boolean};
-export type SimSubmission={transactionId:string;reference:string;totalMinor:number;replayed:boolean};
+export {simulationUsers,simulationCategories,TAXPAY_SIMULATION_CONTRACT_VERSION,simulationCategoryLabels,paymentJourneyStages,paymentStageLabels} from '../contracts/paymentSimulationContract';
+export type {SimulationUser,SimulationCategory,SimulationLine,SimulationAllocation,SimulationEvent,SimulationTransaction,SimulationNotice,SimSubmission} from '../contracts/paymentSimulationContract';
+import type {SimulationUser,SimulationLine,SimulationTransaction,SimulationNotice,SimSubmission} from '../contracts/paymentSimulationContract';
 async function rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
  const response=await fetch(ROOT+'/rest/v1/rpc/'+name,{
    method:'POST',cache:'no-store',
