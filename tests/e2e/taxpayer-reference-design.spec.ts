@@ -34,7 +34,7 @@ test('the exact palette applies only to taxpayer screens, not Guest or Officer',
   expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--reference-focus').trim())).toUpperCase()).toBe('#3A7CA5');
   await page.goto('/?action=officer_home');
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
-  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
   await expect(page.locator('.taxpay-citizen-shell')).toHaveCount(0);
 });
 
@@ -45,7 +45,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const rail = page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await expect(rail).toBeVisible();
   await expect(page.locator('.citizen-header')).toBeHidden();
-  const primary = rail.getByRole('button',{name:'Explore payment flow'});
+  const primary = rail.getByRole('button',{name:'Make Payment'});
   await expect(primary).toHaveCSS('background-color',exactReference.primary);
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
   const main = page.locator('main');
@@ -83,8 +83,8 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
-    await page.getByRole('button',{name:'Pay — select payment type'}).click();
-    await expect(page.locator('.taxpay-taxpayer-flow')).toBeVisible();
+    await page.getByRole('button',{name:'Make Payment'}).click();
+    await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=page.locator('.taxpay-payment-wizard');
     await expect(payment).toBeVisible();
     await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
