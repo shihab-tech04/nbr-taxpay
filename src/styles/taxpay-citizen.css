@@ -684,7 +684,7 @@
   .citizen-header__notification {
     display:flex; align-items:center; justify-content:center;
     width:44px; height:44px; border-radius:.65rem;
-    color:var(--citizen-primary-dark);
+    color:inherit;
   }
   .citizen-header__inner--standard .citizen-brand {
     justify-self:center; justify-content:center; min-width:0; gap:.55rem; white-space:nowrap;
