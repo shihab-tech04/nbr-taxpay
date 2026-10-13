@@ -6,6 +6,7 @@ import { useTaxState } from '../../services/taxState';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
+type ReviewNotice = { id: string; request_id: string; message_code: string; is_read: boolean; created_at: string };
 
 const I18N = {
   en: {
@@ -18,7 +19,10 @@ const I18N = {
     unverified: 'Not confirmed', accountId: 'Application account ID', save: 'Save preferences', saving: 'Saving…',
     preferences: 'Preferences', language: 'Interface language', alertsEnabled: 'Show my in-app draft notifications',
     alertsHelp: 'In-app notifications only.',
-    notificationsTitle: 'Private draft activity', noticesInfo: 'Updates from your saved drafts.',
+    notificationsTitle: 'Account notifications', noticesInfo: 'Your private draft activity and officer review updates. Review actions do not confirm a payment.',
+    reviewTitle: 'Officer review updates', reviewLabel: 'Non-financial review',
+    reviewReceived: 'Review request submitted', reviewAcknowledged: 'Officer acknowledged your request',
+    reviewInfo: 'Officer requested additional information', reviewClosed: 'Officer completed the review',
     noNotices: 'No stored draft activity for this account.', noDemoNotices: 'No notifications yet.',
     load: 'Loading private activity…', loadError: 'Could not load notifications. Try again.',
     retry: 'Retry', markRead: 'Mark all as viewed', viewed: 'Viewed', new: 'New', draft: 'Draft saved',
@@ -39,7 +43,10 @@ const I18N = {
     unverified: 'নিশ্চিত হয়নি', accountId: 'অ্যাপ অ্যাকাউন্ট আইডি', save: 'পছন্দ সংরক্ষণ', saving: 'সংরক্ষণ হচ্ছে…',
     preferences: 'পছন্দসমূহ', language: 'ইন্টারফেসের ভাষা', alertsEnabled: 'আমার ড্রাফটের ইন-অ্যাপ বিজ্ঞপ্তি দেখান',
     alertsHelp: 'শুধু অ্যাপের বিজ্ঞপ্তি।',
-    notificationsTitle: 'ব্যক্তিগত ড্রাফটের কার্যক্রম', noticesInfo: 'সংরক্ষিত খসড়ার কার্যক্রম দেখুন।',
+    notificationsTitle: 'অ্যাকাউন্টের বিজ্ঞপ্তি', noticesInfo: 'আপনার ব্যক্তিগত খসড়া ও কর্মকর্তার পর্যালোচনার খবর। পর্যালোচনা মানে অর্থ পরিশোধ নিশ্চিত হওয়া নয়।',
+    reviewTitle: 'কর্মকর্তার পর্যালোচনার হালনাগাদ', reviewLabel: 'অ-আর্থিক পর্যালোচনা',
+    reviewReceived: 'রিভিউ অনুরোধ জমা হয়েছে', reviewAcknowledged: 'কর্মকর্তা অনুরোধ গ্রহণ করেছেন',
+    reviewInfo: 'কর্মকর্তা অতিরিক্ত তথ্য চেয়েছেন', reviewClosed: 'কর্মকর্তা পর্যালোচনা শেষ করেছেন',
     noNotices: 'এই অ্যাকাউন্টে সংরক্ষিত ড্রাফটের কার্যক্রম নেই।', noDemoNotices: 'এখনো কোনো বিজ্ঞপ্তি নেই।',
     load: 'ব্যক্তিগত কার্যক্রম লোড হচ্ছে…', loadError: 'বিজ্ঞপ্তি লোড করা যায়নি। আবার চেষ্টা করুন।',
     retry: 'আবার চেষ্টা', markRead: 'সবগুলো দেখা হয়েছে', viewed: 'দেখা', new: 'নতুন', draft: 'খসড়া সংরক্ষিত',
@@ -61,6 +68,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [showNotifications, setShowNotifications] = useState(true);
   const [preferredLanguage, setPreferredLanguage] = useState<'en'|'bn'>(language);
   const [notices, setNotices] = useState<DraftNotice[]>([]);
+  const [reviewNotices, setReviewNotices] = useState<ReviewNotice[]>([]);
   const [loadState, setLoadState] = useState<'idle'|'loading'|'error'|'ready'>('idle');
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -82,6 +90,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   useEffect(() => {
     if (page !== 'notifications' || !user || !allowed) {
       setNotices([]);
+      setReviewNotices([]);
       setLoadState('idle');
       return;
     }
@@ -93,14 +102,20 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || auth.user?.id !== uid) throw new Error('Account session expired');
-      const { data, error } = await client.from('taxpay_payment_drafts')
-        .select('id,owner_uid,created_at,category,assessment_year')
-        .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30);
-      if (error) throw error;
+      const [draftResult, reviewResult] = await Promise.all([
+        client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
+          .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
+        client.from('taxpay_in_app_notifications').select('id,request_id,message_code,is_read,created_at')
+          .order('created_at', { ascending: false }).limit(50)
+      ]);
+      if (draftResult.error || reviewResult.error) throw draftResult.error ?? reviewResult.error;
+      const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
+      if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
       if (!active) return;
-      setNotices((data ?? []).filter((item: DraftNotice) => item.owner_uid === uid));
+      setNotices((draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid));
+      setReviewNotices((reviewResult.data ?? []) as ReviewNotice[]);
       setLoadState('ready');
-    })().catch(() => { if (active) { setNotices([]); setLoadState('error'); } });
+    })().catch(() => { if (active) { setNotices([]); setReviewNotices([]); setLoadState('error'); } });
     return () => { active = false; };
   }, [page, user?.id, allowed, revision]);
 
@@ -135,6 +150,13 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         ...current.user.user_metadata, taxpay_notifications_read_at: new Date().toISOString()
       }});
       if (error) throw error;
+      const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
+      if (unread.length) {
+        const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
+          .update({is_read:true}).in('id',unread).select('id');
+        if (reviewError || updated?.length !== unread.length) throw new Error('Review notice read-back not confirmed');
+        setReviewNotices(prev=>prev.map(n=>unread.includes(n.id)?{...n,is_read:true}:n));
+      }
       setFeedback({error:false,content:t.readSaved});
     } catch { setFeedback({error:true,content:t.saveFailed}); }
     finally { setBusy(false); }
@@ -145,7 +167,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     try {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
-      setNotices([]); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
+      setNotices([]); setReviewNotices([]); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
       navigate('landing');
     } catch { setFeedback({error:true,content:t.logoutFailed}); }
     finally { setBusy(false); }
@@ -242,7 +264,25 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 {!allowed ? <p role="status">{t.off}</p> : loadState === 'loading' ? <p role="status">{t.load}</p>
                   : loadState === 'error' ? <div><p role="alert">{t.loadError}</p>
                       <button type="button" onClick={()=>setRevision(n=>n+1)}>{t.retry} <RefreshCcw size={16} aria-hidden /></button></div>
-                  : loadState === 'ready' && notices.length ? <>
+                  : loadState === 'ready' && (notices.length || reviewNotices.length) ? <>
+                     {reviewNotices.length > 0 && <section>
+                       <h3>{t.reviewTitle}</h3>
+                       <ul className="taxpayer-account-notices">
+                         {reviewNotices.map(item => {
+                           const codes:Record<string,string>={
+                             REQUEST_SUBMITTED:t.reviewReceived,
+                             REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
+                             REQUEST_INFO_REQUESTED:t.reviewInfo,
+                             REQUEST_REVIEW_CLOSED:t.reviewClosed
+                           };
+                           return <li key={item.id}>
+                             <div><strong>{codes[item.message_code] ?? t.reviewLabel}</strong><span>{item.is_read?t.viewed:t.new}</span></div>
+                             <p>{item.request_id} · {date(item.created_at)}</p>
+                             <p>{t.draftCaption}</p>
+                           </li>;
+                         })}
+                       </ul>
+                     </section>}
                     <button type="button" className="taxpayer-account-secondary" disabled={busy} onClick={markViewed}>
                       <CheckCheck size={17} aria-hidden />{t.markRead}
                     </button>
