@@ -20,6 +20,6 @@ test('demo user exit clears the non-authenticated account parameter',async({page
  await page.getByRole('button',{name:'Open menu'}).click();
  await page.getByRole('button',{name:'Exit demonstration account'}).click();
  await expect(page).not.toHaveURL(/demoUser=/);
- await expect(page.getByRole('link',{name:'Login'})).toBeVisible();
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toBeVisible();
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
