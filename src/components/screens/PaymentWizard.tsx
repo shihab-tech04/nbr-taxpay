@@ -14,6 +14,7 @@ import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/ta
 import { formatCurrency } from '../../services/numberFormat';
 import { ReceiptView } from '../common/ReceiptView';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
+import {useAccountIdentity} from '../../services/accountIdentity';
 
 const COPY = {
   en: {
@@ -50,6 +51,7 @@ const COPY = {
 
 export const PaymentWizard: React.FC = () => {
   const { taxpayerProfile, addPaymentReceipt, routeParams, language, navigate, demoUser } = useTaxState();
+  const {user:authenticatedUser}=useAccountIdentity();
   const bn = language === 'bn';
   const t = COPY[language];
 
@@ -177,7 +179,7 @@ export const PaymentWizard: React.FC = () => {
   };
 
   // Synthetic user1–user10 go through the real SQL transaction composer, not the old session receipt preview.
-  if(demoUser) return <DemoPaymentActivity/>;
+  if(demoUser||authenticatedUser) return <DemoPaymentActivity/>;
 
   if (step === 4 && createdReceipt) {
     return (
