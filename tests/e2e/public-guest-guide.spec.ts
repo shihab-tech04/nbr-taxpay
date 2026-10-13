@@ -58,7 +58,7 @@ test('floating help uses guide answers and report form never sends an official t
  await expect(page.getByRole('heading',{name:'TaxPay help'})).toBeVisible();
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
- await page.getByRole('button',{name:'Open user guide'}).click();
+ await page.getByRole('link',{name:'Open user guide'}).click();
  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
  await expect(page.getByRole('heading',{name:'Report a problem'})).toBeVisible();
