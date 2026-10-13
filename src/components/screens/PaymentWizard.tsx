@@ -117,7 +117,7 @@ export const PaymentWizard: React.FC = () => {
   };
 
   const handleStep2Next = () => {
-    if (![taxAmount,penaltyAmount,surchargeAmount,interestAmount].every(n=>Number.isFinite(n)&&n>=0&&Math.round(n*100)===n*100) || !Number.isFinite(totalAmount) || totalAmount <= 0) {
+    if (![taxAmount,penaltyAmount,surchargeAmount,interestAmount].every(n=>Number.isFinite(n)&&n>=0&&Math.abs(n*100-Math.round(n*100))<1e-7) || !Number.isFinite(totalAmount) || totalAmount <= 0) {
       setErrorMessage(t.positive);
       return;
     }
