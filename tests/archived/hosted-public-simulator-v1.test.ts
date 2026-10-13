@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
  simulationUsers,loadSimulationHistory,loadSimulationNotices,
  parseSimulatedAmount,formatSimulatedAmount
-} from '../src/services/simulatedPaymentsApi';
+} from '../../src/services/simulatedPaymentsApi';
 
 test('decimal taka conversion uses exact integer paisa',()=>{
  assert.equal(parseSimulatedAmount('100.25'),10025);
