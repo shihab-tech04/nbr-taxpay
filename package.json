@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit",
     "test:domain": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test --config playwright.config.ts",
-    "test:integration:local": "node tests/integration/localSupabaseHttp.mjs"
+    "test:integration:local": "node tests/integration/localSupabaseHttp.mjs",
+    "test:hosted": "node --import tsx --test tests/external/hosted-simulation.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
