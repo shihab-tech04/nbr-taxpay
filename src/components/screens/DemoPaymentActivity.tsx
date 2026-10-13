@@ -17,7 +17,7 @@ export const DemoPaymentActivity:React.FC=()=>{
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
   const privateMode=Boolean(authenticatedUser);
-  const id=(privateMode?boundId:demoUser?.id) as SimulationUser|undefined;
+  const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
   const bn=language==='bn';
   const txt=(en:string,bengali:string)=>bn?bengali:en;
   const [view,setView]=useState<'beneficiary'|'payer'>('beneficiary');
@@ -39,7 +39,7 @@ export const DemoPaymentActivity:React.FC=()=>{
   },[authenticatedUser?.id]);
   useEffect(()=>{if(!id)return;setLines([freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');},[id]);
   useEffect(()=>{
-    if(!id)return;
+    if(!id||!privateMode)return;
     let active=true;
     setRows([]);setLoading(true);setLoadError('');
     const run=async()=>{
