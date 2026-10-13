@@ -87,10 +87,10 @@ export const TaxLedger: React.FC = () => {
               <p className="text-xs text-slate-600">{entry.date} · AY {entry.assessmentYear}</p>
               <p className="text-xs font-mono-plex break-all">{entry.headCode} · {entry.challanNo}</p>
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div><p>Debit</p><strong>{formatCurrency(entry.debit,language)}</strong></div>
-                <div><p>Credit</p><strong>{formatCurrency(entry.credit,language)}</strong></div>
+                <div><p>{bn ? 'ডেবিট' : 'Debit'}</p><strong>{formatCurrency(entry.debit,language)}</strong></div>
+                <div><p>{bn ? 'ক্রেডিট' : 'Credit'}</p><strong>{formatCurrency(entry.credit,language)}</strong></div>
               </div>
-              <p className="text-xs font-semibold text-taxpay-dark">Status: {entry.status}</p>
+              <p className="text-xs font-semibold text-taxpay-dark">{bn ? 'অবস্থা' : 'Status'}: {entry.status}</p>
             </article>
           ))}
         </div>
@@ -99,13 +99,13 @@ export const TaxLedger: React.FC = () => {
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
-                <th className="px-3 py-2.5">Date</th>
-                <th className="px-3 py-2.5">AY</th>
-                <th className="px-3 py-2.5">Particulars & Economic Code</th>
-                <th className="px-3 py-2.5">Challan Ref</th>
-                <th className="px-3 py-2.5 text-right text-rose-700">Debit (Liability)</th>
-                <th className="px-3 py-2.5 text-right text-taxpay-dark">Credit (Payment)</th>
-                <th className="px-3 py-2.5 text-center">Status</th>
+                <th className="px-3 py-2.5">{bn ? 'তারিখ' : 'Date'}</th>
+                <th className="px-3 py-2.5">{bn ? 'করবর্ষ' : 'AY'}</th>
+                <th className="px-3 py-2.5">{bn ? 'বিবরণ ও অর্থনৈতিক কোড' : 'Particulars & Economic Code'}</th>
+                <th className="px-3 py-2.5">{bn ? 'চালান রেফারেন্স' : 'Challan Ref'}</th>
+                <th className="px-3 py-2.5 text-right text-rose-700">{bn ? 'ডেবিট (দায়)' : 'Debit (Liability)'}</th>
+                <th className="px-3 py-2.5 text-right text-taxpay-dark">{bn ? 'ক্রেডিট (পেমেন্ট)' : 'Credit (Payment)'}</th>
+                <th className="px-3 py-2.5 text-center">{bn ? 'অবস্থা' : 'Status'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -133,7 +133,7 @@ export const TaxLedger: React.FC = () => {
                   <td className="px-3 py-2 text-center whitespace-nowrap">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-taxpay-dark bg-taxpay-light px-2 py-0.5 rounded border border-taxpay-border">
                       <CheckCircle2 className="w-3 h-3" />
-                      DEMO RECORD
+                      {bn ? 'নমুনা রেকর্ড' : 'DEMO RECORD'}
                     </span>
                   </td>
                 </tr>
