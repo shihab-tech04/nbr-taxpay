@@ -48,7 +48,8 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   for(const label of ['Profile','Notifications','Profile settings'])await expect(rail.getByRole('button',{name:label,exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
-  await expect(page.getByText('No notifications yet.')).toBeVisible();
+  await expect(page.getByText('Sign-in is currently unavailable.')).toBeVisible();
+  await expect(page.getByText(/Demand Notice DN-|BDT 47,400|Inspecting Joint Commissioner/)).toHaveCount(0);
   await rail.getByRole('button',{name:'Sign in'}).click();
   await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
 });
