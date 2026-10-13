@@ -30,7 +30,7 @@ test('public hero offers two working guest modals and Login stays in the header'
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await travel.getByRole('button',{name:'Run payment simulation'}).click();
- await expect(travel.getByRole('heading',{name:'Preview ready'})).toBeVisible();
+ await expect(travel.getByRole('heading',{name:'Travel tax preview ready.'})).toBeVisible();
  await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toBeVisible();
  await page.keyboard.press('Escape');
  await expect(travel).toHaveCount(0);
@@ -226,10 +226,11 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await modal.getByLabel('Passport number (synthetic data only)').fill('FAKE0001');
  await modal.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
+ await expect(modal.getByText('Preview ready',{exact:true})).toHaveCount(0);
  await expect(side.getByText('Illustrative total')).toBeVisible();
  await expect(modal.getByRole('button',{name:'Run payment simulation'})).toBeVisible();
  await modal.getByRole('button',{name:'Run payment simulation'}).click();
- await expect(modal.getByRole('heading',{name:'Preview ready'})).toBeVisible();
+ await expect(modal.getByRole('heading',{name:'Travel tax preview ready.'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Print preview'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Download JSON'})).toBeVisible();
  await expect(side.getByText('No payment processed')).toBeVisible();
