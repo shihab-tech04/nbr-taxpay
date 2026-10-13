@@ -75,13 +75,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [gatewayHealth] = useState<GatewayHealth[]>(INITIAL_GATEWAY_HEALTH);
   const [isParityModalOpen, setIsParityModalOpen] = useState<boolean>(false);
 
-  // Sync role to taxpayer profile
-  const taxpayerProfile: TaxpayerProfile = 
-    userRole === 'TAXPAYER_CORPORATE'
+  // Never conflate multiple fictional demo users under one taxpayer identifier.
+  // URL demo slots are NOT authenticated persons or tax-credit owners.
+  const baseTaxpayerProfile: TaxpayerProfile = userRole === 'TAXPAYER_CORPORATE'
       ? DEMO_TAXPAYERS['CORPORATE_ENTITY']
       : userRole === 'WITHHOLDING_AGENT'
       ? DEMO_TAXPAYERS['WITHHOLDING_DEDUCTOR']
       : DEMO_TAXPAYERS['INDIVIDUAL_REGULAR'];
+  const taxpayerProfile: TaxpayerProfile = demoUser
+    ? {...baseTaxpayerProfile,tin:`DEMO-TIN-${demoUser.id.slice(4).padStart(3,'0')}`,
+        nameEn:demoUser.id,nameBn:`নমুনা ${demoUser.id}`,
+        email:'demo@example.invalid',phone:'Not provided (demo)',
+        representativeScope:{isAuthorized:false}}
+    : baseTaxpayerProfile;
 
   const navigate = (route: string, params: Record<string, any> = {}) => {
     setCurrentRoute(route);
