@@ -1,0 +1,708 @@
+/* Taxpayer lifecycle home only. The public, payment-flow and officer
+   designs keep their own established tokens, components and layout. */
+.taxpay-taxpayer-reference .lifecycle-dashboard {
+  --life-ink: #183c34;
+  --life-ink-soft: #56736b;
+  --life-green: #1e624c;
+  --life-border: #e2e9e5;
+  --life-sage: #e4efe5;
+  --life-cream: #f4f0e4;
+  --life-peach: #f0d9c9;
+  --life-blue: #e3edf2;
+  --life-white: #ffffff;
+  --life-canvas: #f8f9f4;
+  --life-clay: #bf7555;
+  --life-focus: #3a7ca5;
+  width: 100%;
+  max-width: 1220px;
+  min-width: 0;
+  margin: 0 auto;
+  padding-bottom: 64px;
+  color: var(--life-ink);
+  font-family: inherit;
+}
+.taxpay-taxpayer-reference .lifecycle-dashboard :is(button,select):focus-visible {
+  outline: 3px solid var(--life-focus);
+  outline-offset: 3px;
+}
+.lifecycle-dashboard button {
+  cursor: pointer;
+}
+.lifecycle-dashboard :is(h1,h2,h3,p) {
+  margin-top: 0;
+}
+.lifecycle-dashboard .life-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0,1.65fr) minmax(245px,.72fr);
+  align-items: stretch;
+  gap: 18px;
+  overflow: hidden;
+  border: 1px solid var(--life-border);
+  border-radius: 22px;
+  padding: 20px;
+  background: var(--life-cream);
+}
+.lifecycle-dashboard .life-hero__main {
+  position: relative;
+  min-width: 0;
+  padding: clamp(13px,2.8vw,32px) clamp(10px,2.3vw,26px);
+}
+.lifecycle-dashboard .life-hero__main::after {
+  content: "";
+  position: absolute;
+  width: 135px;
+  height: 135px;
+  border: 22px solid rgba(30,98,76,.045);
+  border-radius: 50%;
+  top: -84px;
+  right: -40px;
+  pointer-events: none;
+}
+.lifecycle-dashboard .life-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--life-green);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+.lifecycle-dashboard .life-hero h1 {
+  margin: 0;
+  max-width: 100%;
+  color: #172e29;
+  font-size: clamp(29px,3.3vw,44px);
+  letter-spacing: -.045em;
+  font-weight: 800;
+  line-height: 1.14;
+}
+.lifecycle-dashboard .life-hero__description {
+  max-width: 64ch;
+  margin: 15px 0 0;
+  color: #556a62;
+  font-size: clamp(13px,1.3vw,15px);
+  line-height: 1.65;
+}
+.lifecycle-dashboard .life-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.lifecycle-dashboard .life-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 11px 17px;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: center;
+}
+.lifecycle-dashboard .life-button--primary {
+  background: var(--life-green);
+  color: var(--life-white);
+}
+.lifecycle-dashboard .life-button--primary:hover { background: #154e3a; }
+.lifecycle-dashboard .life-button--light {
+  border-color: #d3dcd0;
+  background: #fffcf6;
+  color: var(--life-ink);
+}
+.lifecycle-dashboard .life-button--light:hover { background: #f9f7ec; }
+.lifecycle-dashboard .life-hero__context {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 21px;
+  border: 1px solid #d8e6d9;
+  border-radius: 17px;
+  background: #e5f0e6;
+}
+.lifecycle-dashboard .life-context__label {
+  margin: 0 0 18px;
+  color: #4d6b59;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .09em;
+}
+.lifecycle-dashboard .life-context__symbol {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  margin-bottom: 13px;
+  border-radius: 14px;
+  background: #cfe3d2;
+  color: var(--life-green);
+}
+.lifecycle-dashboard .life-hero__context h2 {
+  margin: 0;
+  color: var(--life-ink);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.lifecycle-dashboard .life-hero__context > p:not(.life-context__label) {
+  margin: 7px 0 12px;
+  color: #507166;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.lifecycle-dashboard .life-hero__context > button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 7px 0;
+  margin-top: auto;
+  color: var(--life-green);
+  font-size: 12px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-hero__context > button:hover { text-decoration: underline; }
+.lifecycle-dashboard .life-overview { margin-top: 24px; }
+.lifecycle-dashboard .life-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-width: 0;
+  margin-bottom: 17px;
+}
+.lifecycle-dashboard .life-section-heading > div:first-child { min-width: 0; }
+.lifecycle-dashboard .life-section-kicker {
+  margin: 0 0 5px;
+  color: var(--life-green);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .10em;
+}
+.lifecycle-dashboard .life-section-heading h2 {
+  margin: 0;
+  color: var(--life-ink);
+  font-size: clamp(17px,1.6vw,22px);
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.lifecycle-dashboard .life-inline-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--life-green);
+  font-size: 12px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-inline-link:hover { background: var(--life-sage); }
+.lifecycle-dashboard .life-metrics {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 12px;
+}
+.lifecycle-dashboard .life-metric {
+  min-width: 0;
+  min-height: 158px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid transparent;
+  border-radius: 17px;
+}
+.lifecycle-dashboard .life-metric--sage {background: var(--life-sage);border-color: #d6e6d8;}
+.lifecycle-dashboard .life-metric--cream {background: var(--life-cream);border-color: #e7e2d4;}
+.lifecycle-dashboard .life-metric--peach {background: var(--life-peach);border-color: #e9cbbb;}
+.lifecycle-dashboard .life-metric--blue {background: var(--life-blue);border-color: #d8e6ed;}
+.lifecycle-dashboard .life-metric__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+  color: #42665b;
+}
+.lifecycle-dashboard .life-metric--peach .life-metric__top { color: #88523e; }
+.lifecycle-dashboard .life-metric__top p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-metric__top svg { flex: none; }
+.lifecycle-dashboard .life-metric__value {
+  margin: 13px 0 0;
+  color: var(--life-ink);
+  font-size: clamp(29px,3vw,39px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.lifecycle-dashboard .life-metric__value--word {
+  font-size: clamp(17px,1.7vw,23px);
+  line-height: 1.3;
+  letter-spacing: -.025em;
+}
+.lifecycle-dashboard .life-metric__footer {
+  margin: auto 0 0;
+  padding-top: 11px;
+  color: #58716a;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.lifecycle-dashboard .life-data-notice {
+  margin: 11px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--life-border);
+  border-radius: 10px;
+  background: var(--life-white);
+  color: #566b63;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.lifecycle-dashboard .life-data-notice button {
+  margin-left: 9px;
+  color: var(--life-green);
+  font-weight: 800;
+  text-decoration: underline;
+}
+.lifecycle-dashboard .life-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.55fr) minmax(290px,1fr);
+  gap: 14px;
+  margin-top: 18px;
+  align-items: stretch;
+}
+.lifecycle-dashboard .life-panel {
+  min-width: 0;
+  padding: clamp(18px,2vw,24px);
+  border: 1px solid var(--life-border);
+  border-radius: 18px;
+  background: var(--life-white);
+}
+.lifecycle-dashboard .life-note {
+  max-width: 140px;
+  color: #738178;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: right;
+}
+.lifecycle-dashboard .life-journey__steps {
+  display: grid;
+  gap: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lifecycle-dashboard .life-journey__steps li {
+  position: relative;
+  min-width: 0;
+}
+.lifecycle-dashboard .life-journey__steps li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 44px;
+  top: 57px;
+  bottom: -16px;
+  border-left: 1px dashed #c4d7c9;
+  pointer-events: none;
+}
+.lifecycle-dashboard .life-journey__steps li button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+  padding: 7px 5px;
+  border-radius: 11px;
+  text-align: left;
+}
+.lifecycle-dashboard .life-journey__steps li button:hover { background: #f5f9f4; }
+.lifecycle-dashboard .life-step__index {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 25px;
+  color: #8a9c90;
+  font-size: 11px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-step__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #e2efe5;
+  color: var(--life-green);
+}
+.lifecycle-dashboard .life-journey__steps li:nth-child(2) .life-step__icon { background: #eaf0df; }
+.lifecycle-dashboard .life-journey__steps li:nth-child(3) .life-step__icon { background: #f4e6d8; color: #ad684a; }
+.lifecycle-dashboard .life-journey__steps li:nth-child(4) .life-step__icon { background: #e1ebf1; color: #326884; }
+.lifecycle-dashboard .life-step__content {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.lifecycle-dashboard .life-step__content strong {
+  color: var(--life-ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.lifecycle-dashboard .life-step__content small {
+  color: #728278;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.lifecycle-dashboard .life-journey__steps li button > svg { color: #869d91; flex: none; }
+.lifecycle-dashboard .life-journey__foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 13px;
+  border-radius: 11px;
+  background: #eef5ef;
+  color: #3c6552;
+}
+.lifecycle-dashboard .life-journey__foot svg { flex: none; }
+.lifecycle-dashboard .life-journey__foot p { margin: 0; font-size: 11px; line-height: 1.55; }
+.lifecycle-dashboard .life-attention {
+  display: flex;
+  flex-direction: column;
+  background: #f8f8f1;
+}
+.lifecycle-dashboard .life-attention .life-section-heading > svg { color: #bc8060; flex: none; }
+.lifecycle-dashboard .life-attention__items {
+  display: grid;
+  gap: 12px;
+}
+.lifecycle-dashboard .life-attention__items button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  width: 100%;
+  min-height: 76px;
+  padding: 11px;
+  border: 1px solid #e7ded0;
+  border-radius: 13px;
+  background: var(--life-white);
+  text-align: left;
+}
+.lifecycle-dashboard .life-attention__items button > span:nth-child(2) { display: grid; flex: 1; gap: 5px; min-width: 0; }
+.lifecycle-dashboard .life-attention__items strong { font-size: 12px; color: var(--life-ink); }
+.lifecycle-dashboard .life-attention__items small { font-size: 11px; color: #69776d; }
+.lifecycle-dashboard .life-attention__marker {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #f5e1d3;
+  color: #99523b;
+}
+.lifecycle-dashboard .life-attention__marker--pending { background: #f0eed6; color: #867036; }
+.lifecycle-dashboard .life-attention__empty {
+  margin: auto 0;
+  padding: 16px 6px 25px;
+  color: #547163;
+  text-align: center;
+}
+.lifecycle-dashboard .life-attention__empty svg { margin: 0 auto 10px; }
+.lifecycle-dashboard .life-attention__empty h3 { margin: 0 0 7px; font-size: 16px; font-weight: 800; }
+.lifecycle-dashboard .life-attention__empty p { max-width: 32ch; margin: 0 auto; font-size: 12px; line-height: 1.65; }
+.lifecycle-dashboard .life-attention__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: 1px solid #e3e6da;
+  color: var(--life-green);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-activity__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 11px;
+}
+.lifecycle-dashboard .life-segment {
+  display: flex;
+  min-width: 0;
+  padding: 4px;
+  border-radius: 10px;
+  background: #edf3ef;
+}
+.lifecycle-dashboard .life-segment button {
+  min-height: 39px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  color: #64796e;
+  font-size: 11px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-segment button[aria-pressed="true"] {
+  color: var(--life-green);
+  background: var(--life-white);
+  box-shadow: 0 2px 9px rgba(21,60,42,.07);
+}
+.lifecycle-dashboard .life-year-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 45px;
+  padding: 0 9px;
+  border: 1px solid var(--life-border);
+  border-radius: 10px;
+  color: #5c7566;
+}
+.lifecycle-dashboard .life-year-select select {
+  max-width: 110px;
+  min-width: 88px;
+  background: transparent;
+  color: var(--life-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+.lifecycle-dashboard .life-activity__records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lifecycle-dashboard .life-activity__records li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--life-border);
+}
+.lifecycle-dashboard .life-record__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 41px;
+  height: 41px;
+  border-radius: 12px;
+  background: #e7eee9;
+  color: var(--life-green);
+}
+.lifecycle-dashboard .life-record__details { flex: 1; min-width: 0; }
+.lifecycle-dashboard .life-record__details h3 {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+  color: var(--life-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+.lifecycle-dashboard .life-record__details p {
+  margin: 3px 0 0;
+  color: #728179;
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.lifecycle-dashboard .life-record__amount {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  min-width: 85px;
+  max-width: 42%;
+  flex: none;
+  text-align: right;
+}
+.lifecycle-dashboard .life-record__amount strong {
+  color: var(--life-ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.lifecycle-dashboard .life-state {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: #e5efe8;
+  color: #326a53;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.lifecycle-dashboard .life-state--pending {background: #f5efd9;color: #79632a;}
+.lifecycle-dashboard .life-state--failed,
+.lifecycle-dashboard .life-state--reversed {background: #f6e4da;color: #934b35;}
+.lifecycle-dashboard .life-activity__empty {
+  padding: 35px 16px;
+  border-radius: 13px;
+  background: #f7f9f5;
+  text-align: center;
+  color: #829187;
+}
+.lifecycle-dashboard .life-activity__empty svg { margin: 0 auto 12px; }
+.lifecycle-dashboard .life-activity__empty h3 { font-size: 15px; color: var(--life-ink); font-weight: 800; margin-bottom: 8px; }
+.lifecycle-dashboard .life-activity__empty p { max-width: 45ch; font-size: 12px; line-height: 1.6; margin: 0 auto; }
+.lifecycle-dashboard .life-activity__disclaimer,
+.lifecycle-dashboard .life-insights__sub {
+  margin: 12px 0 0;
+  color: #78857c;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.lifecycle-dashboard .life-insights .life-section-heading { margin-bottom: 0; }
+.lifecycle-dashboard .life-status-bars { display: grid; gap: 20px; margin-top: 24px; }
+.lifecycle-dashboard .life-status-bars__row > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.lifecycle-dashboard .life-status-bars__row p { margin: 0; color: #547365; font-size: 12px; font-weight: 700; }
+.lifecycle-dashboard .life-status-bars__row strong { color: var(--life-ink); font-size: 12px; }
+.lifecycle-dashboard .life-status-bars__track {
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #edf1ea;
+}
+.lifecycle-dashboard .life-status-bars__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2a7759;
+  transition: width .25s ease;
+}
+.lifecycle-dashboard .life-status-bars__fill--pending {background: #c39d49;}
+.lifecycle-dashboard .life-status-bars__fill--failed {background: #c57756;}
+.lifecycle-dashboard .life-status-bars__fill--reversed {background: #9a7a7d;}
+.lifecycle-dashboard .life-insights__link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 54px;
+  margin-top: 23px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: var(--life-sage);
+  color: var(--life-green);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+}
+.lifecycle-dashboard .life-insights__link > svg:last-child { margin-left: auto; }
+.lifecycle-dashboard .life-services { margin-top: 20px; }
+.lifecycle-dashboard .life-services__grid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 11px;
+}
+.lifecycle-dashboard .life-services__grid button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 86px;
+  padding: 14px;
+  border: 1px solid var(--life-border);
+  border-radius: 14px;
+  background: var(--life-white);
+  text-align: left;
+}
+.lifecycle-dashboard .life-services__grid button:hover { background: #f4f9f5; border-color: #c1d8c6; }
+.lifecycle-dashboard .life-services__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e8f0e8;
+  color: var(--life-green);
+}
+.lifecycle-dashboard .life-services__copy {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.lifecycle-dashboard .life-services__copy strong { color: var(--life-ink); font-size: 12px; line-height: 1.4; }
+.lifecycle-dashboard .life-services__copy small { color: #728177; font-size: 10px; line-height: 1.4; }
+.lifecycle-dashboard .life-services__grid button > svg { flex: none; color: var(--life-green); }
+@media (min-width: 1440px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > .lifecycle-dashboard {
+    max-width: 1220px;
+  }
+}
+@media (max-width: 1060px) {
+  .lifecycle-dashboard .life-main-grid { grid-template-columns: minmax(0,1fr) minmax(250px,.85fr); }
+  .lifecycle-dashboard .life-metric {padding: 14px; min-height: 150px;}
+  .lifecycle-dashboard .life-services__grid {grid-template-columns: repeat(2,minmax(0,1fr));}
+}
+@media (max-width: 790px) {
+  .lifecycle-dashboard .life-hero { grid-template-columns: minmax(0,1fr); }
+  .lifecycle-dashboard .life-hero__context {display:grid;grid-template-columns: auto minmax(0,1fr); column-gap: 13px; padding: 16px;}
+  .lifecycle-dashboard .life-context__label { grid-column: 1/-1; margin-bottom: 8px; }
+  .lifecycle-dashboard .life-context__symbol {grid-row: span 3; margin: 0;}
+  .lifecycle-dashboard .life-hero__context > button { grid-column: 2; justify-self: start; }
+  .lifecycle-dashboard .life-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .lifecycle-dashboard .life-main-grid { grid-template-columns: minmax(0,1fr); }
+  .lifecycle-dashboard .life-journey__steps { grid-template-columns: minmax(0,1fr); }
+  .lifecycle-dashboard .life-journey__steps li:not(:last-child)::before { bottom:-12px; }
+}
+@media (max-width: 440px) {
+  .taxpay-taxpayer-reference .lifecycle-dashboard {padding-bottom: 110px;}
+  .lifecycle-dashboard .life-hero {padding: 11px;border-radius: 17px;gap:10px;}
+  .lifecycle-dashboard .life-hero__main {padding: 15px 8px 18px;}
+  .lifecycle-dashboard .life-hero h1 {font-size: 30px;}
+  .lifecycle-dashboard .life-hero__description {font-size: 13px;}
+  .lifecycle-dashboard .life-hero__actions {display: grid;grid-template-columns:minmax(0,1fr);gap:8px;}
+  .lifecycle-dashboard .life-button {width:100%;}
+  .lifecycle-dashboard .life-metrics {gap: 8px;}
+  .lifecycle-dashboard .life-metric {padding: 12px;min-height: 147px;border-radius: 13px;}
+  .lifecycle-dashboard .life-metric__top {gap:4px;}
+  .lifecycle-dashboard .life-metric__top p {font-size: 10px;}
+  .lifecycle-dashboard .life-metric__top svg {width:16px;}
+  .lifecycle-dashboard .life-metric__value {font-size:31px;}
+  .lifecycle-dashboard .life-metric__value--word {font-size: 17px;letter-spacing:-.04em;overflow-wrap:anywhere;}
+  .lifecycle-dashboard .life-panel {padding: 15px;border-radius:14px;}
+  .lifecycle-dashboard .life-note {display:none;}
+  .lifecycle-dashboard .life-section-heading h2 {font-size:18px;}
+  .lifecycle-dashboard .life-activity__toolbar {display:grid;}
+  .lifecycle-dashboard .life-segment {width:100%;}
+  .lifecycle-dashboard .life-segment button {flex:1;padding:7px 5px;}
+  .lifecycle-dashboard .life-year-select {width:fit-content;}
+  .lifecycle-dashboard .life-services__grid {grid-template-columns:minmax(0,1fr);}
+  .lifecycle-dashboard .life-activity__records li {gap:7px;}
+  .lifecycle-dashboard .life-record__icon {width:34px;height:34px;}
+  .lifecycle-dashboard .life-record__amount {min-width:75px;}
+  .lifecycle-dashboard .life-record__amount strong {font-size:11px;}
+}
+@media (prefers-reduced-motion: reduce) {
+  .lifecycle-dashboard .life-status-bars__fill {transition: none;}
+}
