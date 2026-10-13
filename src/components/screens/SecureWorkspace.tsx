@@ -42,7 +42,7 @@ const initial: DraftInput = {
 };
 
 export const SecureWorkspace: React.FC = () => {
-  const { language, routeParams } = useTaxState();
+  const { language, routeParams, navigate } = useTaxState();
   const bn = language === 'bn';
   const copy = getSecureWorkspaceCopy(language);
   const sessionEpoch = useRef(0);
@@ -155,8 +155,12 @@ export const SecureWorkspace: React.FC = () => {
     if (!supabase) return;
     setBusy(true); setMessage(null);
     try {
-      const redirect = authRedirectUrl(window.location.origin, import.meta.env.BASE_URL,
-        selectedDraftCategory ?? undefined);
+      const callback = new URL(authRedirectUrl(window.location.origin, import.meta.env.BASE_URL,
+        selectedDraftCategory ?? undefined));
+      // Ordinary email sign-in opens the payment dashboard. Draft-scoped callbacks
+      // still return to their original secure editing workflow unchanged.
+      if (!selectedDraftCategory) callback.searchParams.set('action', 'taxpayer_home');
+      const redirect = callback.toString();
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { emailRedirectTo: redirect, shouldCreateUser: true }
@@ -355,6 +359,7 @@ export const SecureWorkspace: React.FC = () => {
         <>
           <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap justify-between gap-3 items-center">
             <div><h2 className="font-bold text-emerald-950">{copy.signedInTitle}</h2><p className="text-xs text-slate-600">{user.email}</p></div>
+            <button type="button" onClick={() => navigate('taxpayer_home')} className="min-h-11 border border-slate-300 rounded-lg px-4 py-2 font-semibold text-sm">{bn ? 'আমার কর পেমেন্ট' : 'My Tax Payments'}</button>
             <button type="button" onClick={signOut} disabled={busy} className="min-h-11 border border-slate-300 rounded-lg px-4 py-2 font-semibold text-sm">{copy.signOut}</button>
           </div>
           <form ref={draftFormRef} onSubmit={createDraft} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
