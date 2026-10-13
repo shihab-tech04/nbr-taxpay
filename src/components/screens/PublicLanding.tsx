@@ -26,7 +26,7 @@ export const PublicLanding: React.FC = () => {
     { q: t('How can I find authoritative tax guidance?', 'প্রামাণ্য আয়কর নির্দেশনা কোথায় পাব?'), a: t('Consult current official NBR publications, applicable Acts, Rules and circulars. Check the relevant dates and amendments for your situation.', 'জাতীয় রাজস্ব বোর্ডের বর্তমান প্রকাশনা, প্রযোজ্য আইন, বিধিমালা ও পরিপত্র দেখুন। নিজের ক্ষেত্রে তারিখ ও সংশোধন যাচাই করুন।') }
   ];
 
-  return <div className={`citizen-public-hub public-information-hub mx-auto max-w-5xl space-y-5 pb-12 ${bn ? 'font-bengali' : ''}`}>
+  return <div className={'citizen-public-hub public-information-hub mx-auto w-full max-w-[1200px] space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
     <section className="citizen-public-hero public-information-hero" aria-labelledby="public-home-title">
       <div className="citizen-public-hero__copy">
         <p className="citizen-public-hero__eyebrow"><Landmark size={16} aria-hidden="true" />{t('INCOME TAX PAYMENT INFORMATION', 'আয়কর পরিশোধের তথ্যসেবা')}</p>

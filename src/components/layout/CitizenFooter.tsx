@@ -14,7 +14,7 @@ export function CitizenFooter(){
     {route:'guidance',en:'Help',bn:'সহায়তা'},
     {route:'incident',en:'Report a security concern',bn:'নিরাপত্তা সমস্যা জানান'},
   ];
-  return <footer className="citizen-footer no-print" aria-label={bn?'TaxPay সহায়তা ও তথ্য':'TaxPay support and information'}>
+  return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'TaxPay সহায়তা ও তথ্য':'TaxPay support and information'}>
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
         <Landmark size={21} aria-hidden="true"/>

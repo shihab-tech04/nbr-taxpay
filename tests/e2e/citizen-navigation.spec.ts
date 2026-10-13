@@ -33,13 +33,15 @@ test('public menu contains informational navigation with no sample profile selec
  await expect(page.getByRole('button',{name:'মেনু'})).toBeVisible();
 });
 
-test('public information header and sections fit all six approved widths',async({page},info)=>{
- test.skip(info.project.name!=='mobile-320','One runner covers six widths');
- for(const width of [320,360,375,390,768,1280]){
+test('public information header and sections fit all requested widths',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-320','One runner covers the seven-width matrix');
+ for(const width of [320,360,375,390,768,1024,1440]){
   await page.setViewportSize({width,height:812});
   await page.goto('/?action=landing');
   await expect(page.locator('.public-home-header')).toBeVisible();
+  await expect(page.getByRole('img',{name:'Government Seal of Bangladesh'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -64,7 +66,7 @@ test('payment flow suppresses global pay and keeps account demo in both language
 test('citizen navigation has no automated serious accessibility violations',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile navigation audit evaluated in 320/375 variants');
   await page.goto('/?action=landing');
-  const results=await new AxeBuilder({page}).include('.public-home-header').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
+  const results=await new AxeBuilder({page}).include('.public-home-header').include('.public-information-hub').include('.citizen-footer--public').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
   expect(results.violations).toEqual([]);
 });
 
