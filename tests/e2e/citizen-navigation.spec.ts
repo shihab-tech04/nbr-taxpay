@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test('public home does not open guest payment wizard via a primary action',async({page})=>{
  await page.goto('/?action=landing');
- await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Check payment status & receipt'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
@@ -41,7 +41,7 @@ test('public information header and sections fit all requested widths',async({pa
   await expect(page.locator('.public-home-header')).toBeVisible();
   await expect(page.getByRole('img',{name:'Government Seal of Bangladesh'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
-  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
+  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -74,9 +74,9 @@ test('citizen navigation has no automated serious accessibility violations',asyn
 test('public guidance links stay on-page without authorizing account access',async({page})=>{
  await page.goto('/?action=landing');
  if (page.viewportSize()!.width<=900) await page.getByRole('button',{name:'Menu'}).click();
- await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Payment types'}).click();
- await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
- await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(1);
+ await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'}).click();
+ await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+ await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
