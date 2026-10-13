@@ -18,7 +18,7 @@ export function CitizenFooter(){
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
         <Landmark size={21} aria-hidden="true"/>
-        <div><strong>TaxPay</strong><p>{bn?'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস':'Independent tax payment workspace'}</p></div>
+        <div><strong>TaxPay</strong><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস':'Independent tax payment workspace')}</p></div>
       </div>
       <nav className="citizen-footer__links" aria-label={bn?'সহায়তা লিংক':'Support links'}>
         {links.map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}>
