@@ -29,7 +29,7 @@ export const TaxpayerHome: React.FC = () => {
   const examples = demoUser ? receipts.filter(r => r.payerTin === taxpayerProfile.tin).slice(0, 4) : [];
   const sample = !verifiedUser;
   const services = [
-    {route:'history', Icon:Activity, en:'All transactions', bn:'সব লেনদেন', sub:'Payments and statuses', subBn:'পেমেন্ট ও অবস্থা'},
+    {route:'history', Icon:Activity, en:'Payments & activity', bn:'পেমেন্ট ও লেনদেন', sub:'Payments and statuses', subBn:'পেমেন্ট ও অবস্থা'},
     {route:'ledger', Icon:BookOpen, en:'Tax ledger', bn:'কর লেজার', sub:'Credits and adjustments', subBn:'ক্রেডিট ও সমন্বয়'},
     {route:'certificates', Icon:FileCheck2, en:'Certificates', bn:'সনদপত্র', sub:'Receipts and documents', subBn:'রসিদ ও নথি'},
     {route:'corrections', Icon:FilePenLine, en:'Corrections', bn:'সংশোধন', sub:'Resolve an issue', subBn:'সমস্যা সমাধান'},
@@ -42,8 +42,8 @@ export const TaxpayerHome: React.FC = () => {
         <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border-[42px] border-white/5" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="mb-3 inline-flex items-center gap-2 text-xs font-bold tracking-wide text-[#c2e6d2]"><Landmark size={16} aria-hidden="true" />{t('TAXPAY · TAXPAYER WORKSPACE','ট্যাক্সপে · করদাতা ওয়ার্কস্পেস')}</p>
-            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t('Your payments, from start to finish.','আপনার পেমেন্ট, শুরু থেকে শেষ পর্যন্ত।')}</h1>
+            <p className="mb-3 inline-flex items-center gap-2 text-xs font-bold tracking-wide text-[#c2e6d2]"><Landmark size={16} aria-hidden="true" />{t('Taxpayer workspace','করদাতা ওয়ার্কস্পেস')}</p>
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t('My Tax Payments','আমার কর পেমেন্ট')}</h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#e1f2e8]">{t('Follow every payment from initiation to treasury confirmation, ledger reconciliation and its supporting documents.','পেমেন্ট শুরু থেকে ট্রেজারি নিশ্চিতকরণ, লেজার সমন্বয় ও প্রয়োজনীয় নথি পর্যন্ত প্রতিটি ধাপ অনুসরণ করুন।')}</p>
             <p className="mt-3 text-xs text-[#d0eadb]">{sample?t('Example workspace · not a verified taxpayer account','নমুনা ওয়ার্কস্পেস · যাচাইকৃত করদাতা অ্যাকাউন্ট নয়'):t('Signed-in application · tax credit still requires independent verification','সাইন ইন করা অ্যাপ · কর ক্রেডিটের পৃথক যাচাই প্রয়োজন')}</p>
           </div>
@@ -55,13 +55,13 @@ export const TaxpayerHome: React.FC = () => {
       </header>
 
       <section aria-labelledby="position-heading">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-wider text-[#57816c]">{t('Your account at a glance','আপনার হিসাব এক নজরে')}</p><h2 id="position-heading" className="mt-1 text-xl font-extrabold text-slate-900">{t('Tax payment position','কর পরিশোধের অবস্থান')}</h2></div><button type="button" onClick={()=>navigate('ledger')} className="inline-flex items-center gap-1 text-sm font-bold text-[#18553d] hover:underline">{t('Open ledger','লেজার খুলুন')}<ArrowRight size={16}/></button></div>
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-wider text-[#57816c]">{t('Your account at a glance','আপনার হিসাব এক নজরে')}</p><h2 id="position-heading" className="mt-1 text-xl font-extrabold text-slate-900">{t('Tax position','করের অবস্থান')}</h2></div><button type="button" onClick={()=>navigate('ledger')} className="inline-flex items-center gap-1 text-sm font-bold text-[#18553d] hover:underline">{t('Open ledger','লেজার খুলুন')}<ArrowRight size={16}/></button></div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             {Icon:WalletCards, title:t('Outstanding tax','বকেয়া কর'), value:t('Unavailable','পাওয়া যাচ্ছে না'), hint:t('No verified assessment source','যাচাইকৃত কর নির্ধারণ নেই'), tone:'bg-[#e7f0e9]'},
             {Icon:ShieldCheck, title:t('Recognized credit','স্বীকৃত কর ক্রেডিট'), value:t('Unverified','যাচাইকৃত নয়'), hint:t('Do not infer from payment receipt','রসিদ থেকে ক্রেডিট অনুমান নয়'), tone:'bg-[#f4ecdc]'},
             {Icon:Clock3, title:t('Pending reconciliation','সমন্বয়ের অপেক্ষায়'), value:t('Not established','নির্ধারিত নয়'), hint:t('Requires verified treasury and ownership records','ট্রেজারি ও মালিকানার প্রমাণ প্রয়োজন'), tone:'bg-[#e8ecf4]'},
-            {Icon:ReceiptText, title:t('Verified paid total','যাচাইকৃত মোট পরিশোধ'), value:t('Unavailable','পাওয়া যাচ্ছে না'), hint:t('No authoritative total connected','কর্তৃত্বপূর্ণ মোট তথ্য সংযুক্ত নয়'), tone:'bg-[#f0ece5]'}
+            {Icon:ReceiptText, title:t('Verified paid total','যাচাইকৃত মোট পরিশোধ'), value:t('Not connected','সংযুক্ত নয়'), hint:t('No authoritative total connected','কর্তৃত্বপূর্ণ মোট তথ্য সংযুক্ত নয়'), tone:'bg-[#f0ece5]'}
           ].map(({Icon,title,value,hint,tone})=>(
             <article key={title} className="rounded-2xl border border-[#e0e7e0] bg-white p-4 shadow-sm sm:p-5">
               <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#245540] ${tone}`}><Icon size={20} aria-hidden="true"/></div>
@@ -106,6 +106,7 @@ export const TaxpayerHome: React.FC = () => {
       </section>
 
       <section aria-labelledby="services-heading"><div className="mb-3"><p className="text-xs font-bold uppercase tracking-wider text-[#60806b]">{t('Explore services','সেবাসমূহ')}</p><h2 id="services-heading" className="mt-1 text-xl font-extrabold text-slate-900">{t('Everything in one place','সবকিছু এক জায়গায়')}</h2></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{services.map(({route,Icon,en,bn:be,sub,subBn})=><button key={route} type="button" onClick={()=>navigate(route)} className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#e0e9e0] bg-white p-4 text-left shadow-sm hover:border-[#9ac6a7] hover:bg-[#f7fbf7]"><span className="rounded-xl bg-[#e8f1e8] p-3 text-[#20583c]"><Icon size={20} aria-hidden="true"/></span><span className="flex-1"><span className="block text-sm font-extrabold text-slate-900">{bn?be:en}</span><span className="mt-1 block text-xs text-slate-500">{bn?subBn:sub}</span></span><ArrowRight size={17} className="text-[#57816a]" aria-hidden="true"/></button>)}</div></section>
+      <details className="rounded-2xl border border-[#dfe8e1] bg-white p-4"><summary className="cursor-pointer text-sm font-extrabold text-[#20563c]">{t('More taxpayer services','আরও করদাতা সেবা')}</summary><div className="mt-4 grid gap-2 sm:grid-cols-2">{[{route:'dashboard',en:'Dashboard',bn:'কর সারসংক্ষেপ'},{route:'journey',en:'Tax journey',bn:'কর যাত্রা'},{route:'notifications',en:'Notifications',bn:'বিজ্ঞপ্তি'},{route:'services',en:'Connected services',bn:'সংযুক্ত সেবা'}].map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)} className="flex min-h-12 items-center justify-between rounded-xl border border-[#dfe8e1] px-4 py-3 text-sm font-bold text-[#20563c] hover:bg-[#edf6ef]"><span>{bn?item.bn:item.en}</span><ArrowRight size={16}/></button>)}</div></details>
       <footer className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#dfe8e1] bg-[#f9fbf8] p-4"><div className="flex items-center gap-2 text-sm text-slate-600"><LockKeyhole size={17} className="text-[#286448]" aria-hidden="true"/><p>{t('Account access and profile settings','অ্যাকাউন্ট প্রবেশ ও প্রোফাইল সেটিংস')}</p></div><button type="button" onClick={()=>navigate('account_profile')} className="inline-flex items-center gap-1 text-sm font-bold text-[#20563c] hover:underline">{t('Manage profile','প্রোফাইল পরিচালনা')}<ArrowRight size={16}/></button></footer>
     </div>
   );
