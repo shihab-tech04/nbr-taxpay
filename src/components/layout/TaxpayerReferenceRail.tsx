@@ -64,10 +64,10 @@ export function TaxpayerReferenceRail() {
         </nav>
       </div>
       <div className="taxpayer-reference-rail-bottom">
-        {(user || sampleProfile) && <button type="button" disabled={signingOut} onClick={logout}>
+        <button type="button" disabled={signingOut} onClick={user ? logout : () => navigate('secure_workspace')}>
           <LogOut size={17} aria-hidden={true} />
-          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ডেমো থেকে বের হন' : 'Exit demo')}</span>
-        </button>}
+          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'সাইন ইন' : 'Sign in')}</span>
+        </button>
         {signOutError && <p role="alert">{signOutError}</p>}
         <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>
           <span>{bn ? 'ভাষা' : 'Language'}</span>
