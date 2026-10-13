@@ -143,9 +143,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // A separate authoritative reconciliation and entitlement event must control ledger posting.
 
     logAuditAction(
-      'CHALLAN_ISSUED',
+      'DEMO_PAYMENT_SIMULATED',
       receipt.challanNo,
-      `Challan generated for ${receipt.payerName} (TIN: ${receipt.payerTin}), Amount: BDT ${receipt.totalAmount}`
+      `Simulation only for ${receipt.payerName} (sample TIN: ${receipt.payerTin}), Amount: BDT ${receipt.totalAmount}; no government challan or credit`
     );
   };
 
