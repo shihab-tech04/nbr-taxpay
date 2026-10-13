@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { Search, AlertCircle } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
@@ -7,7 +7,7 @@ import { ReceiptView } from '../common/ReceiptView';
 type ReceiptLookupProps = { embedded?: boolean };
 
 export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }) => {
-  const { language, lookupReceipt, receipts, selectReceipt, navigate } = useTaxState();
+  const { language, lookupReceipt, receipts, navigate } = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -103,22 +103,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
         )}
         {searchResult && searchResult !== 'NOT_FOUND' && (
           <div className="receipt-lookup__found">
-            <div className="receipt-lookup__result receipt-lookup__result--found" role="status" aria-live="polite">
-              <CheckCircle2 size={20} aria-hidden="true" />
-              <div className="receipt-lookup__result-copy">
-                <h2>{t('Sample receipt found', 'নমুনা রসিদ পাওয়া গেছে')}</h2>
-                <p>{t('Sample scroll reference:', 'নমুনা স্ক্রল রেফারেন্স:')} <strong className="font-mono-plex">{searchResult.treasuryScrollNo}</strong> — {t('not verified', 'যাচাই করা হয়নি')}</p>
-              </div>
-              <button
-                type="button"
-                className="receipt-lookup__view"
-                onClick={() => selectReceipt(searchResult.id)}
-              >
-                <FileText size={16} aria-hidden="true" />
-                {t('View demo receipt', 'নমুনা রসিদ দেখুন')}
-              </button>
-            </div>
-            <ReceiptView receipt={searchResult} />
+            <p className="sr-only" role="status">
+              {t('Receipt details loaded.', 'রসিদের তথ্য দেখানো হয়েছে।')}
+            </p>
+            <ReceiptView receipt={searchResult} embedded={embedded} />
           </div>
         )}
       </div>
