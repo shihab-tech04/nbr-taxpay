@@ -29,9 +29,9 @@ security definer
 set search_path = ''
 as $$
 begin
-  if pg_catalog.lower(pg_catalog.coalesce(new.email,'')) = 'shihabshajib01@gmail.com'
+  if pg_catalog.lower(coalesce(new.email,'')) = 'shihabshajib01@gmail.com'
     and new.email_confirmed_at is not null
-    and pg_catalog.coalesce(new.email_change,'') = ''
+    and coalesce(new.email_change,'') = ''
     and new.deleted_at is null
     and (new.banned_until is null or new.banned_until <= pg_catalog.now())
   then
@@ -63,7 +63,7 @@ select u.id, 'admin', 'shihabshajib01@gmail.com', true, u.email_confirmed_at
 from auth.users u
 where pg_catalog.lower(u.email) = 'shihabshajib01@gmail.com'
   and u.email_confirmed_at is not null
-  and pg_catalog.coalesce(u.email_change,'') = ''
+  and coalesce(u.email_change,'') = ''
   and u.deleted_at is null
   and (u.banned_until is null or u.banned_until <= pg_catalog.now())
 on conflict (user_uid) do update set
