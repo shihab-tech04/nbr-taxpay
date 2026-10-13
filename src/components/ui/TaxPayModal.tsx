@@ -1,4 +1,7 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { createContext, useEffect, useId, useRef, useState } from 'react';
+
+/** Portal target for workflow-owned footer actions; the modal still owns its close control. */
+export const TaxPayModalFooterTarget = createContext<HTMLDivElement | null>(null);
 import { X } from 'lucide-react';
 
 export interface TaxPayModalProps {
@@ -28,6 +31,7 @@ export function TaxPayModal({
   service,
 }: TaxPayModalProps) {
   const titleId = useId();
+  const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -76,6 +80,7 @@ export function TaxPayModal({
   }, []);
 
   return (
+    <TaxPayModalFooterTarget.Provider value={footerTarget}>
     <div
       className="taxpay-modal__overlay public-service-overlay"
       onMouseDown={event => {
@@ -111,8 +116,10 @@ export function TaxPayModal({
               {closeLabel}
             </button>
           )}
+          <div className="taxpay-modal__footer-actions" ref={setFooterTarget} />
         </footer>
       </div>
     </div>
+    </TaxPayModalFooterTarget.Provider>
   );
 }
