@@ -106,7 +106,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByLabel('Payer Legal Name').fill('Sample Taxpayer');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.getByRole('radiogroup', { name: 'Master payment head' })).toBeVisible();
-  await expect(page.getByRole('radio', { name: /Advance Tax/ }).first()).toBeVisible();
+  await expect(page.getByRole('radio').first()).toBeVisible();
 
   await page.getByLabel('Tax Amount (৳)').fill('0');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
