@@ -48,7 +48,7 @@ export function CitizenNavigation() {
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
-  const isTaxpayer = taxpayerRoles.includes(userRole);
+  const isTaxpayer = taxpayerRoles.includes(userRole) || Boolean(applicationUser);
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
