@@ -135,3 +135,53 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
  await page.keyboard.press('Escape');
  await expect(dialog).toHaveCount(0);
 });
+
+test('shared modal uses left title, close icon, header divider, content and fixed footer',async({page})=>{
+  await page.goto('/?action=landing');
+  await page.getByRole('button',{name:'Check payment status & receipt'}).click();
+  const modal=page.getByRole('dialog',{name:'Payment status & receipt'});
+  const header=modal.locator('.taxpay-modal__header');
+  const body=modal.locator('.taxpay-modal__body');
+  const footer=modal.locator('.taxpay-modal__footer');
+  const title=header.getByRole('heading',{name:'Payment status & receipt',level:2});
+  const closeIcon=header.getByRole('button',{name:'Close modal'});
+  const footerClose=footer.getByRole('button',{name:'Close',exact:true});
+
+  await expect(title).toBeVisible();
+  await expect(closeIcon).toBeVisible();
+  await expect(header).toHaveCSS('border-bottom-style','solid');
+  await expect(footer).toHaveCSS('border-top-style','solid');
+  await expect(body.getByLabel('Challan, token or transaction reference')).toBeVisible();
+  await expect(footerClose).toBeVisible();
+  const positions=await modal.evaluate(el=>{
+    const h=el.querySelector('.taxpay-modal__header')!.getBoundingClientRect();
+    const f=el.querySelector('.taxpay-modal__footer')!.getBoundingClientRect();
+    const body=el.querySelector('.taxpay-modal__body')!.getBoundingClientRect();
+    const title=el.querySelector('.taxpay-modal__title')!.getBoundingClientRect();
+    const close=el.querySelector('.taxpay-modal__close')!.getBoundingClientRect();
+    return {titleLeft:title.left,closeLeft:close.left,headerBottom:h.bottom,bodyTop:body.top,bodyBottom:body.bottom,footerTop:f.top};
+  });
+  expect(positions.titleLeft).toBeLessThan(positions.closeLeft);
+  expect(positions.headerBottom).toBeLessThanOrEqual(positions.bodyTop+1);
+  expect(positions.bodyBottom).toBeLessThanOrEqual(positions.footerTop+1);
+  await modal.locator('.receipt-lookup__sample').first().click();
+  await body.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  await expect(header).toBeVisible();
+  await expect(footerClose).toBeVisible();
+  await footerClose.click();
+  await expect(modal).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Check payment status & receipt'})).toBeFocused();
+});
+
+test('travel tax uses same modal header/body/footer without changing its flow',async({page})=>{
+  await page.goto('/?action=landing');
+  await page.getByRole('button',{name:'Pay travel tax'}).click();
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  await expect(modal.getByRole('heading',{name:'Travel tax',level:2})).toBeVisible();
+  await expect(modal.locator('.taxpay-modal__header')).toHaveCSS('border-bottom-style','solid');
+  await expect(modal.locator('.taxpay-modal__footer')).toHaveCSS('border-top-style','solid');
+  await expect(modal.getByLabel('Passenger name (as in passport)')).toBeVisible();
+  await expect(modal.locator('.taxpay-modal__footer').getByRole('button',{name:'Close',exact:true})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(modal).toHaveCount(0);
+});
