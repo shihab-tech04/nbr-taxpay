@@ -4,7 +4,7 @@ const publicRoutes=['landing','guest','guestwh','travel','verify','incident','gu
 const privateRoutes={
   taxpayer_home: {kind:'home',button:''},
   dashboard: {kind:'button',button:'Home'},
-  wizard: {kind:'pay',button:'Pay — select payment type'},
+  wizard: {kind:'pay',button:'Make Payment'},
   history: {kind:'button',button:'Payments & activity'},
   ledger: {kind:'button',button:'Tax ledger'},
   journey: {kind:'menu',button:'Tax Journey'},
@@ -44,7 +44,7 @@ test.describe('read-only citizen screen matrix',()=>{
         await page.getByRole('button',{name:'Open menu'}).click();
         await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:choice.button,exact:true}).click();
       } else if(choice.kind==='pay'){
-        await page.getByRole('button',{name:'Pay — select payment type'}).click();
+        await page.locator('.citizen-taxpayer-hero__actions').getByRole('button',{name:'Make Payment'}).click();
       } else if(choice.kind==='button'){
         await page.getByRole('button',{name:new RegExp(choice.button)}).first().click();
       }
