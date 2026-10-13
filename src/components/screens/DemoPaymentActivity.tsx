@@ -11,7 +11,7 @@ export const DemoPaymentActivity:React.FC=()=>{
   const id=demoUser?.id as DemoUserId | undefined;
   const activities=useMemo(()=>id?getDemoUserTransactions(id,demoTransactions,perspective):[],[id,perspective]);
   const label=(en:string,bangla:string)=>bn?bangla:en;
-  const sessionReceipts=receipts.filter(r=>r.id.startsWith('rcpt-wiz-')&&r.isSimulatedDemo&&r.payerTin===taxpayerProfile.tin);
+  const sessionReceipts=receipts.filter(r=>r.isSimulatedDemo&&r.payerTin===taxpayerProfile.tin);
   if(!id)return null;
   return <main className="mx-auto max-w-5xl space-y-4 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
