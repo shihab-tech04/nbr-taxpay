@@ -13,7 +13,7 @@ async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'View sample taxpayer demonstration' }).click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
-  await expect(page.getByText('Taxpayer workspace · sample profile')).toBeVisible();
+  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
 }
 
 test('the exact palette applies only to taxpayer screens, not Guest or Officer', async ({page}) => {
@@ -45,7 +45,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const rail = page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await expect(rail).toBeVisible();
   await expect(page.locator('.citizen-header')).toBeHidden();
-  const primary = rail.getByRole('button',{name:'Start payment demo'});
+  const primary = rail.getByRole('button',{name:'Explore payment flow'});
   await expect(primary).toHaveCSS('background-color',exactReference.primary);
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
   const main = page.locator('main');
