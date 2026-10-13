@@ -8,7 +8,7 @@ test('fictional Start Payment enters connected SQL simulation without issuing an
  await page.goto('/?action=taxpayer_home&demoUser=user1');
  await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
  await expect(page.getByText('Demo scenario',{exact:false})).toHaveCount(0);
- await page.getByRole('button',{name:'Payments & activity'}).click();
+ await page.locator('.citizen-taxpayer-hero__actions .citizen-taxpayer-primary').click();
  await expect(page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Create a combined payment'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Add beneficiary / category'})).toBeVisible();
