@@ -166,6 +166,7 @@ test('mobile navigation exposes Login and reflects the selected section', async 
  await page.getByRole('button',{name:'Menu'}).click();
  await expect(nav.getByRole('link',{name:'Payment types'})).toHaveAttribute('aria-current','location');
  await page.getByRole('button',{name:'বাংলা'}).click();
- await expect(nav.getByRole('link',{name:'লগইন'})).toBeVisible();
- await expect(nav.getByRole('link',{name:'পেমেন্টের ধরন'})).toHaveAttribute('aria-current','location');
+ const bnNav = page.getByRole('navigation',{name:'প্রধান নেভিগেশন'});
+ await expect(bnNav.getByRole('link',{name:'লগইন'})).toBeVisible();
+ await expect(bnNav.getByRole('link',{name:'পেমেন্টের ধরন'})).toHaveAttribute('aria-current','location');
 });
