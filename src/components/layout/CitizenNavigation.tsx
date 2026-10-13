@@ -27,7 +27,7 @@ const moreLinks: CitizenAction[] = [
   { route: 'guidance', en: 'Help', bn: 'সহায়তা' },
   { route: 'secure_workspace', en: 'Account access', bn: 'অ্যাকাউন্ট প্রবেশ' }
 ];
-const transactionRoutes = new Set(['guest', 'guestwh', 'travel', 'wizard']);
+const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
