@@ -60,7 +60,7 @@ export function CitizenNavigation() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
-  const showPay = !inTransaction && !inputFocused;
+  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused;
   const go = (route: string) => {
     setMenuOpen(false);
     setPayOpen(false);
@@ -73,7 +73,7 @@ export function CitizenNavigation() {
     else setPayOpen(true);
   };
   const goHome = () => {
-    if (inTransaction && !window.confirm(bn
+    if ((inTransaction || currentRoute === 'wizard') && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
     go(home);
@@ -200,7 +200,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {!inTransaction && !compact && !overlayOpen && (
+      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
