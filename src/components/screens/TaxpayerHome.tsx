@@ -35,7 +35,7 @@ const creditLabels: Record<TaxCreditStatus, { en: string; bn: string }> = {
 };
 
 export const TaxpayerHome: React.FC = () => {
-  const { taxpayerProfile, receipts, navigate, selectReceipt, language } = useTaxState();
+  const { taxpayerProfile, receipts, navigate, selectReceipt, language, demoUser } = useTaxState();
   const bn = language === 'bn';
   // The fixture is keyed by payer TIN, not verified tax-credit ownership. It must not
   // be used to compute a personal ledger balance or imply that this is a real account.
@@ -56,8 +56,8 @@ export const TaxpayerHome: React.FC = () => {
           <h1 id="taxpay-home-title">{label('My Tax Payments', 'আমার কর পেমেন্ট')}</h1>
           <p>{label('Manage payment activity and access tax services.', 'পেমেন্টের তথ্য দেখুন এবং করসেবা ব্যবহার করুন।')}</p>
           <div className="citizen-taxpayer-hero__actions">
-            <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate('wizard')}>
-              <WalletCards size={18} aria-hidden="true" />{label('Explore payment flow', 'পেমেন্টের ধাপ দেখুন')}
+            <button type="button" className="citizen-taxpayer-primary" onClick={() => navigate(demoUser ? 'history' : 'wizard')}>
+              <WalletCards size={18} aria-hidden="true" />{demoUser ? label('Payments & activity', 'পেমেন্ট ও লেনদেন') : label('Explore payment flow', 'পেমেন্টের ধাপ দেখুন')}
             </button>
             <button type="button" className="citizen-taxpayer-secondary" onClick={() => navigate('secure_workspace')}>
               {label('Secure account access', 'নিরাপদ অ্যাকাউন্ট প্রবেশ')}<ArrowRight size={16} aria-hidden="true" />
