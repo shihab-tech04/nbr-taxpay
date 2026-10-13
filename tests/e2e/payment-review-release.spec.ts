@@ -21,9 +21,13 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   const takeEvidence = async (name: string) => {
     if (viewport === 'mobile-320' || viewport === 'desktop-1280') {
       await page.evaluate(() => window.scrollTo(0, 0));
-      await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
-      await expect(page.locator('.citizen-header')).toHaveCSS('transform', 'none');
-      await expect(page.locator('.citizen-corners')).toHaveCount(0);
+      if (await page.locator('.public-home-header').count()) {
+        await expect(page.locator('.public-home-header')).toBeVisible();
+      } else {
+        await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
+        await expect(page.locator('.citizen-header')).toHaveCSS('transform', 'none');
+        await expect(page.locator('.citizen-corners')).toHaveCount(0);
+      }
       await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/' + name + '-' + viewport + '.png', fullPage: false });
     }
   };
@@ -43,27 +47,20 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   };
 
   await page.goto('/?action=landing');
-  await expect(page.getByRole('heading', { name: 'Understand your next tax-payment step' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Quick access' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Choose a payment journey' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Find a sample receipt/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Secure account access/ })).toBeVisible();
-  await expect(page.locator('.citizen-pay svg.lucide-plus')).toBeVisible();
-  await page.getByText('More payment types', { exact: true }).click();
-  await expect(page.getByRole('button', { name: /Assessed Demand/ })).toBeVisible();
-  await page.getByText('More payment types', { exact: true }).click();
-  const unknown = 'DEMO-REFERENCE-NOT-FOUND';
-  await page.getByLabel('Challan, token or transaction reference').fill(unknown);
-  await page.getByRole('button', { name: 'Search sample records' }).click();
-  await expect(page.getByRole('status')).toContainText('No matching demonstration reference');
+  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Guidance that helps you prepare'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Frequently asked questions'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Login'})).toHaveCount(1);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('public-hub-en');
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
 
   await switchToBangla();
-  await expect(page.getByRole('heading', { name: 'আপনার পরবর্তী কর পরিশোধের ধাপ জানুন' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'দ্রুত প্রবেশ' })).toBeVisible();
-  await expect(page.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'কর পরিশোধের ধরন জানুন'})).toBeVisible();
+  await expect(page.locator('footer').getByText('এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('public-hub-bn');
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
@@ -96,9 +93,8 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 });
 
 test('guest payment remains a bilingual, accessible simulation at mobile and desktop widths', async ({ page }, info) => {
-  await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay — select payment type' }).click();
-  await page.getByRole('dialog', { name: 'Select payment type' }).getByRole('button', { name: 'Advance Tax', exact: true }).click();
+  await page.goto('/?action=guest');
+  await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
 
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
   await expect(page.getByLabel('Taxpayer Identification Number (e-TIN)')).toBeVisible();
