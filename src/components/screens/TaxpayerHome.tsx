@@ -144,7 +144,7 @@ export const TaxpayerHome: React.FC = () => {
     {Icon: FileCheck2, title: label('Return and evidence', 'রিটার্ন ও প্রমাণ'), detail: label('Check allowable credit separately', 'প্রযোজ্য ক্রেডিট আলাদাভাবে যাচাই'), route:'certificates'}
   ];
   const tools = [
-    {Icon: Activity, title:label('Payments & activity','পেমেন্ট ও লেনদেন'), sub:label('Transactions, attempts and status','লেনদেন, চেষ্টা ও অবস্থা'),route:'history'},
+    {Icon: Activity, title:label('Transaction history','লেনদেনের ইতিহাস'), sub:label('Transactions, attempts and status','লেনদেন, চেষ্টা ও অবস্থা'),route:'history'},
     {Icon: BookOpen, title:label('Tax ledger','কর লেজার'), sub:label('Entries and reconciliation','এন্ট্রি ও সমন্বয়'),route:'ledger'},
     {Icon: ReceiptText, title:label('Payment status','পেমেন্টের অবস্থা'),sub:label('Check a payment reference','পেমেন্ট রেফারেন্স যাচাই'),route:'verify'},
     {Icon: FileCheck2, title:label('Certificates','সনদপত্র'),sub:label('Available evidence and documents','প্রমাণ ও নথিপত্র'),route:'certificates'},
@@ -208,10 +208,15 @@ export const TaxpayerHome: React.FC = () => {
             <p className="life-metric__footer">{label('Among initiated simulations','শুরু করা নমুনা লেনদেনের মধ্যে')}</p>
           </article>
           <article className="life-metric life-metric--blue">
-            <div className="life-metric__top"><p>{label('Recognized tax credit','স্বীকৃত কর ক্রেডিট')}</p><ShieldCheck size={20} aria-hidden="true"/></div>
-            <p className="life-metric__value life-metric__value--word">{label('Unverified','যাচাইকৃত নয়')}</p>
+            <div className="life-metric__top"><p>{label('Recognized credit','স্বীকৃত কর ক্রেডিট')}</p><ShieldCheck size={20} aria-hidden="true"/></div>
+            <p className="life-metric__value life-metric__value--word">{label('Unverified','যাচাই হয়নি')}</p>
             <p className="life-metric__footer">{label('Not calculated from payments','পেমেন্ট থেকে গণনা করা হয়নি')}</p>
           </article>
+        </div>
+        <div className="life-position" aria-labelledby="life-position-title">
+          <div className="life-position__heading"><ShieldCheck size={19} aria-hidden="true"/><h2 id="life-position-title">{label('Tax position','করের অবস্থান')}</h2></div>
+          <div className="life-position__detail"><p>{label('Outstanding tax','বকেয়া কর')}</p><strong>{label('Unavailable','পাওয়া যাচ্ছে না')}</strong></div>
+          <p className="life-position__note">{label('A verified assessment and Treasury record are required before an outstanding balance can be shown.','বকেয়া দেখাতে যাচাইকৃত কর নির্ধারণ ও ট্রেজারির তথ্য প্রয়োজন।')}</p>
         </div>
         {data.kind === 'error' && <p className="life-data-notice" role="alert">{label('Protected transaction data could not be loaded. Counts remain unavailable.','সুরক্ষিত লেনদেনের তথ্য লোড হয়নি। সংখ্যা পাওয়া যাচ্ছে না।')} <button type="button" onClick={refresh}>{label('Try again','আবার চেষ্টা করুন')}</button></p>}
         {data.kind === 'loading' && <p className="life-data-notice" role="status">{label('Checking account records…','অ্যাকাউন্টের তথ্য যাচাই হচ্ছে…')}</p>}
@@ -295,6 +300,19 @@ export const TaxpayerHome: React.FC = () => {
         <div className="life-section-heading"><div><p className="life-section-kicker">{label('QUICK ACCESS','দ্রুত প্রবেশ')}</p><h2 id="life-tools-title">{label('Your services','আপনার সেবা')}</h2></div></div>
         <div className="life-services__grid">{tools.map(({Icon,title,sub,route}) => <button type="button" key={route} onClick={() => navigate(route)}><span className="life-services__icon"><Icon size={21} aria-hidden="true"/></span><span className="life-services__copy"><strong>{title}</strong><small>{sub}</small></span><ArrowUpRight size={17} aria-hidden="true"/></button>)}</div>
       </section>
+      <details className="citizen-taxpayer-more life-more">
+        <summary>{label('More taxpayer services','আরও করদাতা সেবা')}</summary>
+        <div>
+          {[
+            {route:'dashboard',en:'Dashboard',bn:'কর সারসংক্ষেপ',Icon:ListChecks},
+            {route:'journey',en:'Tax journey',bn:'করের যাত্রা',Icon:Clock3},
+            {route:'account_notifications',en:'Notifications',bn:'বিজ্ঞপ্তি',Icon:Activity},
+            {route:'services',en:'Connected services',bn:'সংযুক্ত সেবা',Icon:Layers3}
+          ].map(({route,en,bn:bnName,Icon}) => <button type="button" key={route} onClick={() => navigate(route)}>
+            <Icon size={18} aria-hidden="true"/><span>{bn ? bnName : en}</span><ArrowRight size={16} aria-hidden="true"/>
+          </button>)}
+        </div>
+      </details>
     </div>
   );
 };
