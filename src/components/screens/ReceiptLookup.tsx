@@ -28,7 +28,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
         {!embedded && (
           <header className="receipt-lookup__page-header">
             <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
-            <p>{t('Find a saved sample record by its reference.', 'রেফারেন্স দিয়ে সংরক্ষিত নমুনা রেকর্ড খুঁজুন।')}</p>
+            <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
           </header>
         )}
         <form className="receipt-lookup__form" onSubmit={handleSearch} role="search">
@@ -37,7 +37,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
               {t('Challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স')}
             </label>
             <p id="receipt-lookup-hint" className="receipt-lookup__hint">
-              {t('Enter the reference to look up a sample payment record.', 'নমুনা পেমেন্ট রেকর্ড খুঁজতে রেফারেন্স লিখুন।')}
+              {t('Enter a payment reference to check its details.', 'বিস্তারিত জানতে পেমেন্ট রেফারেন্স লিখুন।')}
             </p>
             <div className="receipt-lookup__search-row">
               <input
@@ -67,14 +67,14 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
           </div>
           {receipts.length > 0 && (
             <div className="receipt-lookup__examples">
-              <p className="receipt-lookup__examples-label">{t('Try a sample reference', 'নমুনা রেফারেন্স ব্যবহার করুন')}</p>
+              <p className="receipt-lookup__examples-label">{t('Try a reference', 'রেফারেন্স ব্যবহার করুন')}</p>
               <div className="receipt-lookup__example-list">
                 {receipts.slice(0, 3).map(receipt => (
                   <button
                     key={receipt.id}
                     type="button"
                     className="receipt-lookup__sample font-mono-plex"
-                    aria-label={t('Use sample reference', 'নমুনা রেফারেন্স ব্যবহার করুন') + ': ' + receipt.challanNo}
+                    aria-label={t('Use reference', 'রেফারেন্স ব্যবহার করুন') + ': ' + receipt.challanNo}
                     onClick={() => {
                       setQuery(receipt.challanNo);
                       setSearchedReference(receipt.challanNo);
@@ -93,7 +93,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
             <AlertCircle size={20} aria-hidden="true" />
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
-              <p>{t('No sample record found for:', 'এই রেফারেন্সে কোনো নমুনা রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
+              <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
               <p>{t('If money was debited, contact your bank or payment provider.', 'অর্থ কেটে নেওয়া হলে ব্যাংক বা পেমেন্ট সেবাদাতার সঙ্গে যোগাযোগ করুন।')}</p>
               <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate('incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
