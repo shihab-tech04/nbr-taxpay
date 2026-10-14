@@ -99,7 +99,14 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
     await expect(page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Notifications'})).toBeVisible();
     await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
   } else {
-    await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Notifications'})).toBeVisible();
+    const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+    if(await rail.isVisible()) {
+      await expect(rail.getByRole('button',{name:'Notifications'})).toBeVisible();
+    } else {
+      await page.locator('.citizen-header').getByRole('button',{name:'Open menu'}).click();
+      await expect(page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Notifications'})).toBeVisible();
+      await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
+    }
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-en');

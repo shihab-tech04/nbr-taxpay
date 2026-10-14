@@ -41,10 +41,10 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByText('স্বীকৃত টিডিএস / এআইটি',{exact:true})).toBeVisible();
-  await expect(page.getByText('যাচাই হয়নি',{exact:true})).toBeVisible();
+  await expect(page.getByText('যাচাই হয়নি',{exact:true}).first()).toBeVisible();
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(322);
-  await page.getByRole('button',{name:'পেমেন্ট ও লেনদেন'}).click();
+  await page.getByRole('button',{name:'লেনদেনের ইতিহাস খুলুন'}).click();
   await expect(page.getByRole('heading',{name:'পেমেন্ট ও লেনদেন'})).toBeVisible();
   await expect(page.getByLabel('পেমেন্ট খুঁজুন')).toBeVisible();
   await expect(page.getByLabel('করবর্ষ')).toBeVisible();
