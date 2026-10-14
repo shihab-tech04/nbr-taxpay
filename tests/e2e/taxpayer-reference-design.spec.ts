@@ -167,6 +167,6 @@ test('citizen numeric typography is IBM Plex Mono while regular text uses Poppin
     return result;
   });
   expect(families).toContain('IBM Plex Mono');
-  await page.goto('/?action=taxpayer_home');
+  await openSampleTaxpayer(page);
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Poppins/);
 });
