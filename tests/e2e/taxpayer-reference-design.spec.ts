@@ -80,7 +80,7 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
     } else await page.getByRole('button',{name:'বাংলা'}).first().click();
-    await expect(page.getByRole('heading',{name:'আমার কর পেমেন্ট'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-home-bn-'+width+'.png',fullPage:false});
     if(width<=900) {
       await page.getByRole('button',{name:'মেনু খুলুন'}).click();
@@ -121,8 +121,8 @@ test('taxpayer home and ledger follow the shared Public theme without legacy eme
   const shell=page.locator('.taxpay-taxpayer-reference');
   await expect(shell).toHaveCount(1);
   await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
-  const hero=page.getByRole('heading',{name:'My Tax Payments'}).locator('xpath=ancestor::header');
-  await expect(hero).toHaveCSS('background-color','rgb(30, 68, 132)');
+  const composition=page.getByRole('heading',{name:'Payment composition'}).locator('xpath=ancestor::section');
+  await expect(composition).toHaveCSS('background-color','rgb(255, 255, 255)');
   await page.getByRole('button',{name:'Tax ledger'}).first().click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');

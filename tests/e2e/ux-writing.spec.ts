@@ -4,10 +4,10 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   test.skip(info.project.name!=='mobile-375','Run full copy journey on one mobile viewport');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Demo',{exact:true})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
-  await expect(page.getByText('Unavailable',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
+  await expect(page.getByText('Not available',{exact:true}).first()).toBeVisible();
   await expect(page.getByText('Unverified',{exact:true})).toBeVisible();
   await expect(page.getByText('Demo scenario', { exact: false })).toHaveCount(0);
   await expect(page.getByText('Exit demonstration account', { exact: false })).toHaveCount(0);
@@ -17,15 +17,15 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await expect(page.getByText('Preview only · No payments or government receipts issued.')).toHaveCount(0);
   await expect(page.getByText('Taxpayer workspace · sample profile')).toHaveCount(0);
   await expect(page.getByText('Why are balances unavailable?')).toHaveCount(0);
-  await page.getByText('More taxpayer services').click();
-  await page.getByRole('button',{name:'Dashboard',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
+  await page.getByRole('button',{name:'Travel tax',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Live assessments, Treasury settlements, eTDS records')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Advance tax instalments'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByText('প্রকৃত কর নির্ধারণ, ট্রেজারি জমা, ই-টিডিএস')).toHaveCount(0);
 });
 
@@ -33,8 +33,7 @@ test('tax journey has no fabricated completed legal obligations, dates or Treasu
   test.skip(info.project.name!=='desktop-1280','One navigation and content regression');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByText('More taxpayer services').click();
-  await page.getByRole('button',{name:'Tax journey'}).click();
+  await page.getByRole('button',{name:'Full payment journey'}).click();
   await expect(page.getByRole('heading',{name:'My tax journey'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Saved payment drafts'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Payment activity'})).toBeVisible();
