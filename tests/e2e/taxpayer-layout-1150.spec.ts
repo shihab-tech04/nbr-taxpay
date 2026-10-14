@@ -5,7 +5,8 @@ const url = (route: string) => '/?action=' + route + '&demoUser=user1';
 test('User1 dashboard omits the redundant register and lengthy data notice but preserves Activity records', async ({page}) => {
   await page.goto(url('taxpayer_home'));
   await expect(page.getByRole('heading', {name:'Dashboard summary'})).toBeVisible();
-  await expect(page.getByText('Example figures only · Not an official tax account')).toBeVisible();
+  await expect(page.getByText('Sample',{exact:true})).toBeVisible();
+  await expect(page.locator('summary[aria-label="About Sample"]')).toBeVisible();
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
   await expect(page.getByText('Taxpayer workspace / Synthetic scenario user1')).toHaveCount(0);
   await expect(page.getByRole('heading', {name:'Transaction and evidence register'})).toHaveCount(0);
@@ -28,7 +29,7 @@ test('User1 charts use TaxPay blue tokens, and category filters work by keyboard
   await page.keyboard.press('Space');
   await expect(travel).toHaveAttribute('aria-pressed','true');
   await expect(travel).toHaveCSS('background-color','rgb(234, 242, 255)');
-  await expect(page.getByRole('heading',{name:'How the liability is covered'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
 });
 
 test('User1 overview fits narrow phones, tablets and large desktops, widening to 1150px', async ({page},info) => {
