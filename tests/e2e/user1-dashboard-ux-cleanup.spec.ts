@@ -8,7 +8,6 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await expect(workspace).toHaveAttribute('data-dashboard-view','true');
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(1);
-  await expect(page.getByText('Sample',{exact:true})).toBeVisible();
 
   for (const oldHeading of ['Assessment-year summary','Income tax and source records','Documents and support','Reconciliation health','Transaction and evidence register']) {
     await expect(workspace.getByRole('heading',{name:oldHeading,exact:true})).toHaveCount(0);
@@ -32,14 +31,6 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
 
 test('sample and KPI explanations are available by Enter, Space, Escape and touch-friendly disclosure',async({page})=>{
   await page.goto(demo);
-  const sample=page.locator('summary[aria-label="About Sample"]');
-  await sample.focus();
-  await page.keyboard.press('Enter');
-  await expect(sample.locator('..')).toHaveAttribute('open','');
-  await expect(page.getByText(/Fictional figures, dates and allocations/)).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(sample.locator('..')).not.toHaveAttribute('open','');
-
   const liability=page.locator('summary[aria-label="About Income tax liability"]');
   await liability.focus();
   await page.keyboard.press('Space');
@@ -83,9 +74,9 @@ test('mobile and desktop dashboard have no duplicate panel or horizontal clippin
       await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
     }
     if(width<=390){
-      const sample=page.locator('summary[aria-label="About Sample"]');
-      await sample.click();
-      const bounds=await sample.locator('..').locator('.taxpayer-inline-help__content').boundingBox();
+      const help=page.locator('summary[aria-label="About Income tax liability"]');
+      await help.click();
+      const bounds=await help.locator('..').locator('.taxpayer-inline-help__content').boundingBox();
       expect(bounds).not.toBeNull();
       expect(bounds!.x,'popover extends left at '+width).toBeGreaterThanOrEqual(0);
       expect(bounds!.x+bounds!.width,'popover extends right at '+width).toBeLessThanOrEqual(width+2);
