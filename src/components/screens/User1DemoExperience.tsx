@@ -80,7 +80,16 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const {navigate,language}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
-  const [year,setYear]=useState<string>('2025-2026');
+  const [year,setYear]=useState<string>(()=>{
+    const initial=new URLSearchParams(window.location.search).get('scenarioYear');
+    return taxYears.some(x=>x.year===initial) ? initial! : '2025-2026';
+  });
+  const changeYear=(nextYear:string)=>{
+    setYear(nextYear);
+    const url=new URL(window.location.href);
+    url.searchParams.set('scenarioYear',nextYear);
+    window.history.replaceState(window.history.state,'',url);
+  };
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [query,setQuery]=useState('');
@@ -104,7 +113,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     const a=document.createElement('a');a.href=url;a.download='TaxPay_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
-    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>setYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
+    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
   </label>;
   const transactionList=<div className={panel}>
     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
