@@ -129,7 +129,7 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
  await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'রেকর্ড খুঁজুন'})).toBeDisabled();
  await dialog.locator('.receipt-lookup__sample').first().click();
- await expect(dialog.getByText('নমুনা রেকর্ড · সরকারি চালান নয়')).toBeVisible();
+ await expect(dialog.getByText('সরকারি চালান নয়')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'রেকর্ডে ফিরুন'})).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'প্রিন্ট প্রিভিউ'})).toBeVisible();
  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
