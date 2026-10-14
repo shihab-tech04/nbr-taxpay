@@ -1,0 +1,14 @@
+{
+  "schema": "product-integrity/1",
+  "product": "NBR TaxPay Guest + Taxpayer",
+  "sourceOfApproval": "User-required guest login to TaxPay taxpayer experience; supplied v11 TaxPay prototype and approved UI; deep audit 2026-10-14",
+  "checks": [
+    {"id":"TAX-01-no-officer-site-login", "path":"src/components/layout/PublicHomeHeader.tsx", "op":"not_contains", "text":"NBR-Officemanagment-UI-V2/payments/transactions", "enforcement":"release", "reason":"Wrong cross-product Login URL cannot be approved by green tests", "approvalReference":"Guest vs taxpayer vs separate Office Management user instruction"}
+  ],
+  "requiredEvidence": [
+    {"id":"taxpay-approved-navigation", "description":"Every public and taxpayer route destination matched to approved signed-in/guest journey", "status":"NOT_VERIFIED", "reference":"TaxPay audit 2026-10-14 route defect register"},
+    {"id":"taxpay-financial-coherence", "description":"Same account/period/reference amounts across dashboard/history/ledger/receipt/export", "status":"NOT_VERIFIED", "reference":"TaxPay audit financial model contradictions"},
+    {"id":"taxpay-design-goldens", "description":"Approved responsive screenshot baseline comparison across taxpayer/guest pages", "status":"NOT_VERIFIED", "reference":"TaxPay v11 prototype and source audit"},
+    {"id":"taxpay-scoped-final-release", "description":"Current deployed SHA, active navigation shell and authoritatively accepted requirement scope", "status":"NOT_VERIFIED", "reference":"TaxPay 387-story vs 150-feature historical baselines not reconciled"}
+  ]
+}
