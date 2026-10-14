@@ -31,6 +31,8 @@ test('review tiles navigate to accurately filtered transaction sets without cred
     await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
     await expect(page.getByText('Records: '+count)).toBeVisible();
     await expect(page.getByRole('combobox',{name:'Transaction status'})).toHaveValue('all');
+    await page.getByRole('button',{name:'Clear review filter'}).click();
+    await expect(page.getByText('Records: 14')).toBeVisible();
   }
   await page.goto(dashboard);
   await expect(page.locator('.taxpayer-dashboard-kpi').last()).toContainText('৳ 25,000');
