@@ -162,7 +162,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
-  await expect(page.getByText('কাল্পনিক ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
+  await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('শুধু নমুনা অবস্থা; সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
@@ -210,7 +210,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
     await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   } else await page.getByRole('button', { name: 'বাংলা' }).first().click();
   await expect(page.getByRole('heading', { name: 'পেমেন্টের তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByText(/ডেমো লেনদেন — অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
+  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
   await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
@@ -251,7 +251,7 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await expect(page.getByText('ভ্রমণ করের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
-  await expect(page.getByText('এই নমুনা ব্যক্তিগত কর-ক্রেডিট তৈরি বা যাচাই করে না।')).toBeVisible();
+  await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
     expect(await pageWidth(page)).toBeLessThanOrEqual(322);
