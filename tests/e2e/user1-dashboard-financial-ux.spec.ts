@@ -11,7 +11,9 @@ test('financial overview retains correct balances and highlights the action-rele
   await expect(cards.nth(2)).toContainText('৳ 75,000');
   await expect(cards.nth(3)).toContainText('৳ 25,000');
   await expect(cards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
-  await expect(page.getByText('Travel tax (separate)')).toBeVisible();
+  await expect(page.getByText('Travel tax (separate)')).toHaveCount(0);
+  await page.getByRole('button',{name:'Travel tax',exact:true}).click();
+  await expect(page.getByRole('group',{name:/Travel tax: Apr 2026/})).toBeVisible();
   await expect(page.getByText('৳ 6,500').first()).toBeVisible();
 
   const tds=page.getByRole('button',{name:/TDS.*48,000/});
@@ -41,13 +43,13 @@ test('review tiles navigate to accurately filtered transaction sets without cred
 test('monthly chart renders only recorded bars, supports Tab focus and routes to filtered activity',async({page})=>{
   await page.goto(dashboard);
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
-  const group=page.getByRole('group',{name:/Income tax: Jan/});
-  await expect(group.getByRole('button',{name:/Income tax, Jan/})).toHaveCount(0);
-  const june=group.getByRole('button',{name:/Income tax, Jun/});
+  const group=page.getByRole('group',{name:/Income tax: Jun 2026/});
+  await expect(group.getByRole('button',{name:/Income tax, Jan 2026/})).toHaveCount(0);
+  const june=group.getByRole('button',{name:/Income tax, Jun 2026/});
   await expect(june).toBeVisible();
   await june.focus();
   await expect(june).toBeFocused();
-  await expect(june).toHaveAttribute('title',/Jun.*30,000/);
+  await expect(june).toHaveAttribute('title',/Jun 2026.*30,000/);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Transaction category'})).toHaveValue('income');
@@ -80,7 +82,7 @@ test('phone-to-wide-desktop layout keeps chart, KPIs and review actions usable',
     await page.setViewportSize({width,height:820});
     await page.goto(dashboard);
     await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
-    await expect(page.getByRole('group',{name:/Income tax: Jan/})).toBeVisible();
+    await expect(page.getByRole('group',{name:/Income tax: Jun 2026/})).toBeVisible();
     await expect(page.getByRole('button',{name:'View Pending: 1'})).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'Horizontal overflow at '+width).toBeLessThanOrEqual(2);
