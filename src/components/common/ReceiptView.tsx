@@ -26,44 +26,44 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const bn = language === 'bn';
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
-    back: 'রেকর্ডে ফিরুন', print: 'নমুনা রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
-    title: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ', subtitle: 'নমুনা এ-চালান বিন্যাস (এনবিআর ইস্যু করেনি)',
-    fictional: 'কাল্পনিক তথ্য — ট্রেজারি জমার নিশ্চয়তা বা সরকারি ফরম টিআর-৬ নয়', demo: 'শুধু নমুনা',
-    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'নমুনা সময়', copy: 'চালান নম্বর কপি করুন',
+    back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
+    title: 'ট্যাক্সপে — রসিদের বিবরণ', subtitle: 'এনবিআর কর্তৃক ইস্যুকৃত নয়',
+    fictional: 'যাচাইকৃত ট্রেজারি জমা বা সরকারি টিআর-৬ ইস্যু করা হয়নি।', demo: 'ইস্যু হয়নি',
+    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ',
-    zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নমুনা নিষ্পত্তির তথ্য',
-    paymentMethod: 'নমুনা পেমেন্ট পদ্ধতি', transaction: 'কাল্পনিক লেনদেন রেফারেন্স',
-    scroll: 'কাল্পনিক ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'নমুনা স্ক্রল রেফারেন্স নেই',
-    withholdingTitle: 'উৎসে কর জমার নোটিশ', deductedFor: 'কর কর্তনগ্রহীতার টিআইএন-এর পক্ষে নমুনা জমা:',
-    noAgentCredit: 'এই প্রদর্শনীতে কর কর্তনকারীর ব্যক্তিগত আয়কর ক্রেডিট তৈরি বা যাচাই হয় না।',
+    zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
+    paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স',
+    scroll: 'ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'স্ক্রল রেফারেন্স নেই',
+    withholdingTitle: 'উৎসে কর জমার নোটিশ', deductedFor: 'কর কর্তনগ্রহীতার টিআইএন-এর পক্ষে জমা:',
+    noAgentCredit: 'এই রেকর্ডে কর কর্তনকারীর ব্যক্তিগত কর ক্রেডিট প্রতিষ্ঠিত হয় না।',
     breakdown: 'পেমেন্টের বিবরণ ও খাত', headCode: 'অর্থনৈতিক খাত কোড', description: 'খাতের বিবরণ',
-    tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'নমুনা মোট অর্থ:',
-    treasuryStatus: 'নমুনা ট্রেজারি অবস্থা', simulated: 'সিমুলেটেড', noTransfer: 'শুধু নমুনা অবস্থা; সরকারি অর্থ স্থানান্তর হয়নি।',
+    tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'মোট অর্থ:',
+    treasuryStatus: 'ট্রেজারি অবস্থা', simulated: 'সিমুলেটেড', noTransfer: 'শুধু নমুনা অবস্থা; সরকারি অর্থ স্থানান্তর হয়নি।',
     credit: 'কর ক্রেডিট স্বীকৃতি', notApplicable: 'প্রযোজ্য নয়', pending: 'সমন্বয়ের অপেক্ষায়',
     credited: 'নমুনা ক্রেডিট অবস্থা (যাচাই হয়নি)', claimed: 'নমুনা দাবির অবস্থা (যাচাই হয়নি)', disputed: 'বিরোধপূর্ণ',
     noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।',
-    noNbrCredit: 'এই প্রদর্শনী সরকারি কর-ক্রেডিট প্রমাণ করে না।', noPersonalCredit: 'এই নমুনা ব্যক্তিগত কর-ক্রেডিট তৈরি বা যাচাই করে না।',
-    demoReference: 'নমুনা রেফারেন্স (ক্রিপ্টোগ্রাফিক যাচাই নয়):', noSignature: 'কোনো সরকারি ই-স্বাক্ষর নেই',
+    noNbrCredit: 'সরকারি কর ক্রেডিট যাচাই হয়নি।', noPersonalCredit: 'ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।',
+    demoReference: 'রেফারেন্স (ক্রিপ্টোগ্রাফিক যাচাই নয়):', noSignature: 'কোনো সরকারি ই-স্বাক্ষর নেই',
     noIssuance: 'শুধু সিমুলেশন — এনবিআর বা ব্যাংক ইস্যু/স্বাক্ষর করেনি'
   } : {
-    back: 'Back to records', print: 'Print demo receipt', export: 'Export sample record (JSON)',
-    title: 'TaxPay — Unofficial demonstration receipt', subtitle: 'Illustrative A-Challan layout (not issued by NBR)',
-    fictional: 'Fictional data — not a Treasury settlement confirmation or official Form TR-6', demo: 'DEMO ONLY',
-    challan: 'Sample challan number', token: 'Sample token number', timestamp: 'Sample timestamp', copy: 'Copy sample challan number',
+    back: 'Back to records', print: 'Print receipt', export: 'Export JSON',
+    title: 'TaxPay — Receipt details', subtitle: 'Not issued by NBR',
+    fictional: 'No verified Treasury settlement or official Form TR-6 is issued.', demo: 'NOT ISSUED',
+    challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year',
-    zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Sample settlement details',
-    paymentMethod: 'Sample payment method', transaction: 'Fictional transaction reference',
-    scroll: 'Fictional Treasury scroll reference', pendingScroll: 'No sample scroll reference',
-    withholdingTitle: 'Withholding deposit notice', deductedFor: 'Illustrative deposit for deductee TIN:',
-    noAgentCredit: 'This demonstration does not create or verify personal income tax credit for the withholding agent.',
+    zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',
+    paymentMethod: 'Payment method', transaction: 'Transaction reference',
+    scroll: 'Treasury scroll reference', pendingScroll: 'No scroll reference',
+    withholdingTitle: 'Withholding deposit notice', deductedFor: 'Deposit for deductee TIN:',
+    noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
     breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
-    tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Sample total amount:',
-    treasuryStatus: 'Sample Treasury status', simulated: 'SIMULATED', noTransfer: 'Sample status only; no government funds were transferred.',
+    tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Total amount:',
+    treasuryStatus: 'Treasury status', simulated: 'SIMULATED', noTransfer: 'Sample status only; no government funds were transferred.',
     credit: 'Tax credit recognition', notApplicable: 'NOT APPLICABLE', pending: 'PENDING RECONCILIATION',
-    credited: 'CREDITED TO LEDGER (SAMPLE / UNVERIFIED)', claimed: 'CLAIMED IN RETURN (SAMPLE / UNVERIFIED)', disputed: 'DISPUTED',
+    credited: 'LEDGER CREDIT UNVERIFIED', claimed: 'RETURN CLAIM UNVERIFIED', disputed: 'DISPUTED',
     noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.',
-    noNbrCredit: 'This demonstration does not establish a real NBR credit.', noPersonalCredit: 'This sample does not create or verify a personal tax credit.',
-    demoReference: 'Sample reference (not a cryptographic verification hash):', noSignature: 'No official electronic signature',
+    noNbrCredit: 'NBR credit has not been verified.', noPersonalCredit: 'Personal tax credit has not been verified.',
+    demoReference: 'Reference (not a cryptographic verification hash):', noSignature: 'No official electronic signature',
     noIssuance: 'Simulation only — not issued or signed by NBR or a bank'
   };
   const creditStatusLabel = {
@@ -138,7 +138,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         {/* Subtle Watermark Stamp */}
         {!embedded && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 select-none rotate-[-25deg]">
           <div className="text-center font-bold text-7xl font-mono border-8 border-slate-900 p-8 rounded-3xl">
-            {bn ? 'এনবিআর ট্যাক্সপে নমুনা সিমুলেশন' : 'NBR TAXPAY DEMO SIMULATION'}
+            {bn ? 'ইস্যু হয়নি' : 'NOT ISSUED'}
           </div>
         </div>}
 
@@ -148,7 +148,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div className="receipt-view__heading">
               <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
               <p className="receipt-view__status" role="note">
-                {bn ? 'নমুনা রেকর্ড · সরকারি চালান নয়' : 'Sample record · Not an official challan'}
+                {bn ? 'সরকারি চালান নয়' : 'Not an official challan'}
               </p>
             </div>
           </header>
