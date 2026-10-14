@@ -626,3 +626,113 @@
   .taxpay-taxpayer-reference .taxpayer-dashboard-attention > div:first-child { align-items: flex-start; }
   .taxpay-taxpayer-reference .taxpayer-dashboard-chart { padding: 16px; }
 }
+
+
+/* Taxpayer dashboard quality pass — scoped to the existing taxpayer visual system. */
+.taxpay-taxpayer-reference .taxpayer-dashboard-kpi--balance {
+  border-color: var(--color-taxpay-primary);
+  border-left: 3px solid var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpayer-dashboard-kpi--balance > p:last-child {
+  color: var(--color-taxpay-dark);
+}
+.taxpay-taxpayer-reference .taxpayer-coverage-row {
+  border-radius: 7px;
+  padding-inline: 5px;
+  transition: background-color 120ms ease;
+}
+.taxpay-taxpayer-reference .taxpayer-coverage-row:hover,
+.taxpay-taxpayer-reference .taxpayer-coverage-row--active,
+.taxpay-taxpayer-reference .taxpayer-coverage-row:focus-visible {
+  background: var(--color-taxpay-light);
+}
+.taxpay-taxpayer-reference .taxpayer-coverage-row:focus-visible,
+.taxpay-taxpayer-reference .taxpayer-review-tile:focus-visible,
+.taxpay-taxpayer-reference .taxpayer-monthly-bar:focus-visible {
+  outline: 2px solid var(--color-taxpay-primary);
+  outline-offset: 2px;
+}
+.taxpay-taxpayer-reference .taxpayer-review-tile {
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.taxpay-taxpayer-reference .taxpayer-review-tile:hover,
+.taxpay-taxpayer-reference .taxpayer-review-tile:focus-visible {
+  border-color: var(--color-taxpay-primary);
+  background: var(--color-taxpay-light);
+}
+.taxpay-taxpayer-reference .taxpayer-monthly-bar {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  min-height: 6px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.taxpay-taxpayer-reference .taxpayer-monthly-bar:hover,
+.taxpay-taxpayer-reference .taxpayer-monthly-bar:focus-visible {
+  background: var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpayer-monthly-bar__tooltip {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  width: max-content;
+  max-width: 145px;
+  padding: 6px 9px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  border-radius: 7px;
+  background: var(--color-taxpay-dark);
+  color: white;
+  box-shadow: 0 4px 10px rgb(20 40 80 / 16%);
+  font-size: 11px;
+  opacity: 0;
+  visibility: hidden;
+}
+.taxpay-taxpayer-reference .taxpayer-monthly-bar:hover .taxpayer-monthly-bar__tooltip,
+.taxpay-taxpayer-reference .taxpayer-monthly-bar:focus-visible .taxpayer-monthly-bar__tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+/* Account grouping in the fixed taxpayer desktop navigation. */
+.taxpayer-reference-links .taxpayer-reference-account {
+  min-width: 0;
+}
+.taxpayer-reference-links .taxpayer-reference-account > summary {
+  display: flex;
+  min-height: 41px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--color-taxpay-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.taxpayer-reference-links .taxpayer-reference-account > summary::-webkit-details-marker { display: none; }
+.taxpayer-reference-links .taxpayer-reference-account > summary > svg:last-child { margin-left: auto; }
+.taxpayer-reference-links .taxpayer-reference-account[open] > summary > svg:last-child { transform: rotate(180deg); }
+.taxpayer-reference-links .taxpayer-reference-account > summary:hover,
+.taxpayer-reference-links .taxpayer-reference-account > summary:focus-visible {
+  background: var(--color-taxpay-light);
+  color: var(--color-taxpay-dark);
+}
+.taxpayer-reference-links .taxpayer-reference-account > summary:focus-visible {
+  outline: 2px solid var(--color-taxpay-primary);
+  outline-offset: 2px;
+}
+.taxpayer-reference-links .taxpayer-reference-account__links {
+  display: grid;
+  gap: 2px;
+  padding: 3px 0 5px 17px;
+  border-left: 1px solid var(--color-taxpay-border);
+  margin-left: 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-taxpayer-reference .taxpayer-monthly-bar,
+  .taxpay-taxpayer-reference .taxpayer-review-tile,
+  .taxpay-taxpayer-reference .taxpayer-coverage-row { transition: none; }
+}
