@@ -185,7 +185,7 @@ const MainRouter: React.FC = () => {
         {privateSampleGate ? (
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
-            <p>{language === "bn" ? "করদাতার পেমেন্টের ধাপ দেখুন। এখানে প্রকৃত অ্যাকাউন্টের তথ্য ব্যবহার হয় না।" : "Explore the taxpayer payment screens with example data; no account is connected."}</p>
+            <p>{language === "bn" ? "করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।" : "Explore the taxpayer payment screens and activity."}</p>
             <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button>
           </section>
         ) : renderActiveScreen()}
