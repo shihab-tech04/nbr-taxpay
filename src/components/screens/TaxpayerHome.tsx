@@ -54,6 +54,18 @@ export const TaxpayerHome: React.FC = () => {
         </div>
       </header>
 
+      <section className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={t('Financial dashboard','আর্থিক ড্যাশবোর্ড')}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold text-taxpay-dark">{t('NEW FINANCIAL OVERVIEW','নতুন আর্থিক সারসংক্ষেপ')}</p>
+            <h2 className="mt-1 text-xl font-extrabold text-taxpay-text">{t('Your redesigned tax dashboard','আপনার নতুন কর ড্যাশবোর্ড')}</h2>
+            <p className="mt-1 max-w-xl text-sm text-taxpay-muted">{t('Explore tax liability, TDS, AIT, payment activity, reconciliation and transparent empty states in one place.','কর দায়, টিডিএস, অগ্রিম কর, পেমেন্ট, সমন্বয় ও তথ্য না থাকার অবস্থা একসঙ্গে দেখুন।')}</p>
+          </div>
+          <button type="button" onClick={()=>navigate('dashboard')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-taxpay-dark px-5 py-3 text-sm font-semibold text-white hover:bg-taxpay-primary">
+            {t('Open financial dashboard','আর্থিক ড্যাশবোর্ড খুলুন')}<ArrowRight size={17} aria-hidden="true"/>
+          </button>
+        </div>
+      </section>
       <section aria-labelledby="position-heading">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-wider text-taxpay-dark">{t('Your account at a glance','আপনার হিসাব এক নজরে')}</p><h2 id="position-heading" className="mt-1 text-xl font-extrabold text-slate-900">{t('Tax position','করের অবস্থান')}</h2></div><button type="button" onClick={()=>navigate('ledger')} className="inline-flex items-center gap-1 text-sm font-bold text-taxpay-dark hover:underline">{t('Open ledger','লেজার খুলুন')}<ArrowRight size={16}/></button></div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
