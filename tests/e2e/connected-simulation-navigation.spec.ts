@@ -10,7 +10,7 @@ test('Anonymous fictional payment entry requires authenticated profile before an
  await page.goto('/?action=taxpayer_home&demoUser=user1');
  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
  await page.getByRole('button',{name:'Open transaction history'}).click();
- await expect(page.getByRole('heading',{name:'Sign in to simulate a payment'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sign in to make a payment'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Open secure sign-in'})).toBeVisible();
  expect(paymentRpcCalls).toBe(0);

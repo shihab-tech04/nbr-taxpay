@@ -8,9 +8,10 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await expect(workspace).toHaveAttribute('data-dashboard-view','true');
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(1);
-  await expect(page.getByText('Sample',{exact:true})).toBeVisible();
+  await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
+  await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
 
-  for (const oldHeading of ['Assessment-year summary','Income tax and source records','Documents and support','Reconciliation health','Transaction and evidence register']) {
+  for (const oldHeading of ['Assessment-year summary','Income tax and source records','Documents and support','Reconciliation health','Transaction history']) {
     await expect(workspace.getByRole('heading',{name:oldHeading,exact:true})).toHaveCount(0);
   }
   await expect(workspace.locator('.taxpayer-dashboard-header').getByRole('button',{name:'Overview'})).toHaveCount(0);
@@ -30,21 +31,18 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
 });
 
-test('sample and KPI explanations are available by Enter, Space, Escape and touch-friendly disclosure',async({page})=>{
+test('KPI explanations are available by Enter, Space, Escape and touch-friendly disclosure',async({page})=>{
   await page.goto(demo);
-  const sample=page.locator('summary[aria-label="About Sample"]');
-  await sample.focus();
-  await page.keyboard.press('Enter');
-  await expect(sample.locator('..')).toHaveAttribute('open','');
-  await expect(page.getByText(/Fictional figures, dates and allocations/)).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(sample.locator('..')).not.toHaveAttribute('open','');
-
   const liability=page.locator('summary[aria-label="About Income tax liability"]');
+  await liability.focus();
+  await page.keyboard.press('Enter');
+  await expect(liability.locator('..')).toHaveAttribute('open','');
+  await expect(page.getByText('Starting liability used for this tax year.')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(liability.locator('..')).not.toHaveAttribute('open','');
   await liability.focus();
   await page.keyboard.press('Space');
   await expect(liability.locator('..')).toHaveAttribute('open','');
-  await expect(page.getByText(/not a statutory calculation/)).toBeVisible();
   await liability.click();
   await expect(liability.locator('..')).not.toHaveAttribute('open','');
   await expect(page.getByText('৳ 180,000').first()).toBeVisible();
@@ -64,7 +62,7 @@ test('monthly chart maintains type filtering, truthful empty months, and detaile
   await expect(page.getByRole('img',{name:/Travel tax: Jan/})).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Transaction and evidence register'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
 });
 
 test('mobile and desktop dashboard have no duplicate panel or horizontal clipping, including open help',async({page},info)=>{
@@ -83,9 +81,9 @@ test('mobile and desktop dashboard have no duplicate panel or horizontal clippin
       await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
     }
     if(width<=390){
-      const sample=page.locator('summary[aria-label="About Sample"]');
-      await sample.click();
-      const bounds=await sample.locator('..').locator('.taxpayer-inline-help__content').boundingBox();
+      const liability=page.locator('summary[aria-label="About Income tax liability"]');
+      await liability.click();
+      const bounds=await liability.locator('..').locator('.taxpayer-inline-help__content').boundingBox();
       expect(bounds).not.toBeNull();
       expect(bounds!.x,'popover extends left at '+width).toBeGreaterThanOrEqual(0);
       expect(bounds!.x+bounds!.width,'popover extends right at '+width).toBeLessThanOrEqual(width+2);

@@ -24,7 +24,7 @@ export const TaxLedger: React.FC = () => {
                 {bn ? 'কর লেজার' : 'Tax ledger'}
               </h1>
               <p className="text-xs text-slate-500">
-                {bn ? 'নমুনা তথ্য · অ্যাকাউন্ট বিবরণী নয়' : 'Example entries · Not an account statement'}
+                {bn ? 'লেজার তথ্য' : 'Ledger information'}
               </p>
             </div>
           </div>
@@ -133,7 +133,7 @@ export const TaxLedger: React.FC = () => {
                   <td className="px-3 py-2 text-center whitespace-nowrap">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-taxpay-dark bg-taxpay-light px-2 py-0.5 rounded border border-taxpay-border">
                       <CheckCircle2 className="w-3 h-3" />
-                      {bn ? 'নমুনা রেকর্ড' : 'DEMO RECORD'}
+                      {bn ? 'যাচাই হয়নি' : 'NOT VERIFIED'}
                     </span>
                   </td>
                 </tr>

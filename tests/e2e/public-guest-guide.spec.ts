@@ -97,7 +97,7 @@ test('guest receipt lookup keeps a compact accessible layout and honest demo res
  await expect(samples).toHaveCount(3);
  await samples.first().click();
  await expect(dialog.getByRole('heading',{name:'Receipt details'})).toBeVisible();
- await expect(dialog.getByText('Sample record · Not an official challan')).toBeVisible();
+ await expect(dialog.getByText('Not an official challan')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'Back to records'})).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'Print preview'})).toBeVisible();
  await expect(dialog.getByRole('button',{name:'Download JSON'})).toBeVisible();
@@ -107,7 +107,7 @@ test('guest receipt lookup keeps a compact accessible layout and honest demo res
  const cardWidth=await dialog.locator('.receipt-view__paper').evaluate(el=>el.getBoundingClientRect().width);
  expect(cardWidth).toBeLessThanOrEqual(dialogBox!.width);
  await expect(dialog.locator('.receipt-lookup__result--found')).toHaveCount(0);
- await expect(dialog.getByText('Sample record · Not an official challan')).toHaveCount(1);
+ await expect(dialog.getByText('Not an official challan')).toHaveCount(1);
  await dialog.getByPlaceholder('Enter a reference').fill('NO-SUCH-DEMO-REFERENCE-12345');
  await expect(dialog.locator('.receipt-view--embedded')).toHaveCount(0);
  await dialog.getByRole('button',{name:'Search records'}).click();
@@ -129,7 +129,7 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
  await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'রেকর্ড খুঁজুন'})).toBeDisabled();
  await dialog.locator('.receipt-lookup__sample').first().click();
- await expect(dialog.getByText('নমুনা রেকর্ড · সরকারি চালান নয়')).toBeVisible();
+ await expect(dialog.getByText('সরকারি চালান নয়')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'রেকর্ডে ফিরুন'})).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'প্রিন্ট প্রিভিউ'})).toBeVisible();
  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();

@@ -15,39 +15,39 @@ type RecordItem = {
   title:string; detail:string; channel:string; ref:string; challan?:string;
 };
 const taxYears = [
-  {year:'2025-2026',liability:180000,description:'Salary and professional income — illustrative liability'},
-  {year:'2024-2025',liability:125000,description:'Previous sample income-tax year'},
-  {year:'2023-2024',liability:90000,description:'Historical sample income-tax year'}
+  {year:'2025-2026',liability:180000,description:'Salary and professional income'},
+  {year:'2024-2025',liability:125000,description:'Previous income-tax year'},
+  {year:'2023-2024',liability:90000,description:'Earlier income-tax year'}
 ] as const;
 const events:readonly RecordItem[] = [
-  {id:'U1-001',year:'2025-2026',date:'2025-09-30',kind:'tds',amount:27000,state:'POSTED',title:'Salary withholding',detail:'Illustrative employer deduction',channel:'Employer sample',ref:'DEMO-ETDS-SAL-01'},
-  {id:'U1-002',year:'2025-2026',date:'2025-12-14',kind:'ait',amount:20000,state:'POSTED',title:'Advance income tax',detail:'Sample advance tax allocation',channel:'Demo bank',ref:'DEMO-AIT-01',challan:'DEMO-CH-AIT-01'},
-  {id:'U1-003',year:'2025-2026',date:'2026-01-18',kind:'tds',amount:9000,state:'POSTED',title:'Bank interest withholding',detail:'Illustrative bank certificate',channel:'Sample bank',ref:'DEMO-ETDS-BANK-02'},
-  {id:'U1-004',year:'2025-2026',date:'2026-03-15',kind:'ait',amount:12000,state:'POSTED',title:'Additional advance tax',detail:'Sample advance tax allocation',channel:'Demo bank',ref:'DEMO-AIT-02',challan:'DEMO-CH-AIT-02'},
-  {id:'U1-005',year:'2025-2026',date:'2026-03-29',kind:'tds',amount:12000,state:'POSTED',title:'Professional fee withholding',detail:'Illustrative deductor withholding',channel:'Sample deductor',ref:'DEMO-ETDS-PRO-03'},
-  {id:'U1-006',year:'2025-2026',date:'2026-04-08',kind:'travel',amount:6500,state:'POSTED',title:'Travel tax payment',detail:'Separate travel-tax category; not an income-tax credit',channel:'Demo card',ref:'DEMO-TRAVEL-01',challan:'DEMO-CH-TRAVEL-01'},
-  {id:'U1-007',year:'2025-2026',date:'2026-06-21',kind:'income',amount:30000,state:'POSTED',title:'Tax with return — part 1',detail:'Sample bank settlement and scenario ledger allocation',channel:'Demo bank transfer',ref:'DEMO-PAY-01',challan:'DEMO-CH-INC-01'},
-  {id:'U1-008',year:'2025-2026',date:'2026-09-14',kind:'income',amount:45000,state:'POSTED',title:'Tax with return — part 2',detail:'Sample settled payment with linked demo ledger entry',channel:'Demo mobile banking',ref:'DEMO-PAY-02',challan:'DEMO-CH-INC-02'},
-  {id:'U1-009',year:'2025-2026',date:'2026-10-12',kind:'income',amount:14000,state:'PENDING',title:'Pending bank reconciliation',detail:'No settlement or ledger credit assigned',channel:'Demo internet banking',ref:'DEMO-PAY-PEND-01'},
-  {id:'U1-010',year:'2025-2026',date:'2026-09-23',kind:'income',amount:9000,state:'FAILED',title:'Failed payment attempt',detail:'Gateway failure — no settlement',channel:'Demo card',ref:'DEMO-PAY-FAIL-01'},
-  {id:'U1-011',year:'2025-2026',date:'2026-05-04',kind:'income',amount:5000,state:'REVERSED',title:'Reversed attempted payment',detail:'Compensating reversal in demo activity; excluded from credits',channel:'Demo mobile banking',ref:'DEMO-PAY-REV-01'},
-  {id:'U1-012',year:'2025-2026',date:'2026-09-28',kind:'tds',amount:7000,state:'DISPUTED',title:'Unmatched withholding candidate',detail:'Ownership not established — excluded from recognized scenario credit',channel:'Unmatched deductor',ref:'DEMO-ETDS-DISPUTED'},
-  {id:'U1-013',year:'2025-2026',date:'2026-10-02',kind:'refund',amount:10000,state:'REQUESTED',title:'Refund inquiry',detail:'Not approved and not disbursed; not deducted from liability',channel:'Demo request',ref:'DEMO-REFUND-01'},
-  {id:'U1-014',year:'2025-2026',date:'2026-10-06',kind:'adjustment',amount:3000,state:'REQUESTED',title:'Credit reassignment inquiry',detail:'Under review; no posting or adjustment of balances',channel:'Demo review',ref:'DEMO-ADJ-01'},
-  {id:'U1-101',year:'2024-2025',date:'2024-09-10',kind:'tds',amount:25000,state:'POSTED',title:'Salary withholding',detail:'Historical example deduction',channel:'Employer sample',ref:'DEMO-ETDS-24-01'},
-  {id:'U1-102',year:'2024-2025',date:'2024-11-30',kind:'ait',amount:20000,state:'POSTED',title:'Advance income tax',detail:'Historical demo allocation',channel:'Demo bank',ref:'DEMO-AIT-24-01',challan:'DEMO-CH-24-AIT'},
-  {id:'U1-103',year:'2024-2025',date:'2025-06-25',kind:'income',amount:40000,state:'POSTED',title:'Tax payment part 1',detail:'Historical demo paid amount',channel:'Demo bank',ref:'DEMO-PAY-24-01',challan:'DEMO-CH-24-01'},
-  {id:'U1-104',year:'2024-2025',date:'2025-09-10',kind:'income',amount:30000,state:'POSTED',title:'Tax payment part 2',detail:'Historical demo paid amount',channel:'Demo bank',ref:'DEMO-PAY-24-02',challan:'DEMO-CH-24-02'},
-  {id:'U1-201',year:'2023-2024',date:'2023-09-12',kind:'tds',amount:30000,state:'POSTED',title:'Salary withholding',detail:'Historical demo withholding',channel:'Employer sample',ref:'DEMO-ETDS-23-01'},
-  {id:'U1-202',year:'2023-2024',date:'2024-01-20',kind:'ait',amount:15000,state:'POSTED',title:'Advance tax',detail:'Historical demo allocation',channel:'Demo bank',ref:'DEMO-AIT-23-01',challan:'DEMO-CH-23-AIT'},
-  {id:'U1-203',year:'2023-2024',date:'2024-08-20',kind:'income',amount:45000,state:'POSTED',title:'Tax with return',detail:'Historical demo settlement',channel:'Demo bank',ref:'DEMO-PAY-23-01',challan:'DEMO-CH-23-01'}
+  {id:'U1-001',year:'2025-2026',date:'2025-09-30',kind:'tds',amount:27000,state:'POSTED',title:'Salary withholding',detail:'Salary withholding entry',channel:'Employer channel (unverified)',ref:'DEMO-ETDS-SAL-01'},
+  {id:'U1-002',year:'2025-2026',date:'2025-12-14',kind:'ait',amount:20000,state:'POSTED',title:'Advance income tax',detail:'Advance-tax allocation entry',channel:'Bank channel (unverified)',ref:'DEMO-AIT-01',challan:'DEMO-CH-AIT-01'},
+  {id:'U1-003',year:'2025-2026',date:'2026-01-18',kind:'tds',amount:9000,state:'POSTED',title:'Bank interest withholding',detail:'Bank withholding entry',channel:'Bank channel (unverified)',ref:'DEMO-ETDS-BANK-02'},
+  {id:'U1-004',year:'2025-2026',date:'2026-03-15',kind:'ait',amount:12000,state:'POSTED',title:'Additional advance tax',detail:'Advance-tax allocation entry',channel:'Bank channel (unverified)',ref:'DEMO-AIT-02',challan:'DEMO-CH-AIT-02'},
+  {id:'U1-005',year:'2025-2026',date:'2026-03-29',kind:'tds',amount:12000,state:'POSTED',title:'Professional fee withholding',detail:'Professional fee withholding entry',channel:'Deductor channel (unverified)',ref:'DEMO-ETDS-PRO-03'},
+  {id:'U1-006',year:'2025-2026',date:'2026-04-08',kind:'travel',amount:6500,state:'POSTED',title:'Travel tax payment',detail:'Separate travel-tax category; not an income-tax credit',channel:'Card channel (unverified)',ref:'DEMO-TRAVEL-01',challan:'DEMO-CH-TRAVEL-01'},
+  {id:'U1-007',year:'2025-2026',date:'2026-06-21',kind:'income',amount:30000,state:'POSTED',title:'Tax with return — part 1',detail:'Payment status and ledger allocation',channel:'Bank transfer channel (unverified)',ref:'DEMO-PAY-01',challan:'DEMO-CH-INC-01'},
+  {id:'U1-008',year:'2025-2026',date:'2026-09-14',kind:'income',amount:45000,state:'POSTED',title:'Tax with return — part 2',detail:'Payment status and linked ledger entry',channel:'Mobile banking channel (unverified)',ref:'DEMO-PAY-02',challan:'DEMO-CH-INC-02'},
+  {id:'U1-009',year:'2025-2026',date:'2026-10-12',kind:'income',amount:14000,state:'PENDING',title:'Pending bank reconciliation',detail:'No settlement or ledger credit assigned',channel:'Internet banking channel (unverified)',ref:'DEMO-PAY-PEND-01'},
+  {id:'U1-010',year:'2025-2026',date:'2026-09-23',kind:'income',amount:9000,state:'FAILED',title:'Failed payment attempt',detail:'Gateway failure — no settlement',channel:'Card channel (unverified)',ref:'DEMO-PAY-FAIL-01'},
+  {id:'U1-011',year:'2025-2026',date:'2026-05-04',kind:'income',amount:5000,state:'REVERSED',title:'Reversed attempted payment',detail:'Reversed payment, excluded from credits',channel:'Mobile banking channel (unverified)',ref:'DEMO-PAY-REV-01'},
+  {id:'U1-012',year:'2025-2026',date:'2026-09-28',kind:'tds',amount:7000,state:'DISPUTED',title:'Unmatched withholding candidate',detail:'Ownership not established; excluded from recognized credits',channel:'Unmatched deductor',ref:'DEMO-ETDS-DISPUTED'},
+  {id:'U1-013',year:'2025-2026',date:'2026-10-02',kind:'refund',amount:10000,state:'REQUESTED',title:'Refund inquiry',detail:'Not approved and not disbursed; not deducted from liability',channel:'Request channel (unverified)',ref:'DEMO-REFUND-01'},
+  {id:'U1-014',year:'2025-2026',date:'2026-10-06',kind:'adjustment',amount:3000,state:'REQUESTED',title:'Credit reassignment inquiry',detail:'Under review; no posting or adjustment of balances',channel:'Review channel (unverified)',ref:'DEMO-ADJ-01'},
+  {id:'U1-101',year:'2024-2025',date:'2024-09-10',kind:'tds',amount:25000,state:'POSTED',title:'Salary withholding',detail:'Withholding record',channel:'Employer channel (unverified)',ref:'DEMO-ETDS-24-01'},
+  {id:'U1-102',year:'2024-2025',date:'2024-11-30',kind:'ait',amount:20000,state:'POSTED',title:'Advance income tax',detail:'Advance-tax allocation',channel:'Bank channel (unverified)',ref:'DEMO-AIT-24-01',challan:'DEMO-CH-24-AIT'},
+  {id:'U1-103',year:'2024-2025',date:'2025-06-25',kind:'income',amount:40000,state:'POSTED',title:'Tax payment part 1',detail:'Payment amount',channel:'Bank channel (unverified)',ref:'DEMO-PAY-24-01',challan:'DEMO-CH-24-01'},
+  {id:'U1-104',year:'2024-2025',date:'2025-09-10',kind:'income',amount:30000,state:'POSTED',title:'Tax payment part 2',detail:'Payment amount',channel:'Bank channel (unverified)',ref:'DEMO-PAY-24-02',challan:'DEMO-CH-24-02'},
+  {id:'U1-201',year:'2023-2024',date:'2023-09-12',kind:'tds',amount:30000,state:'POSTED',title:'Salary withholding',detail:'Withholding record',channel:'Employer channel (unverified)',ref:'DEMO-ETDS-23-01'},
+  {id:'U1-202',year:'2023-2024',date:'2024-01-20',kind:'ait',amount:15000,state:'POSTED',title:'Advance tax',detail:'Advance-tax allocation',channel:'Bank channel (unverified)',ref:'DEMO-AIT-23-01',challan:'DEMO-CH-23-AIT'},
+  {id:'U1-203',year:'2023-2024',date:'2024-08-20',kind:'income',amount:45000,state:'POSTED',title:'Tax with return',detail:'Historical demo settlement',channel:'Bank channel (unverified)',ref:'DEMO-PAY-23-01',challan:'DEMO-CH-23-01'}
 ];
 const labels:Record<Kind,[string,string]> = {
   income:['Income tax','আয়কর'],tds:['TDS / withholding','উৎসে কর'],ait:['Advance income tax','অগ্রিম আয়কর'],
   travel:['Travel tax','ভ্রমণ কর'],refund:['Refund inquiry','ফেরত অনুসন্ধান'],adjustment:['Adjustment inquiry','সমন্বয় অনুসন্ধান']
 };
 const stateLabels:Record<State,[string,string]> = {
-  POSTED:['Posted in scenario','নমুনা লেজারে পোস্ট হয়েছে'],
+  POSTED:['Recorded','রেকর্ড হয়েছে'],
   PENDING:['Awaiting reconciliation','সমন্বয়ের অপেক্ষায়'],
   FAILED:['Payment failed','পেমেন্ট ব্যর্থ'],REVERSED:['Reversed','ফেরত/রিভার্স হয়েছে'],
   DISPUTED:['Unmatched / disputed','অমিল/বিরোধপূর্ণ'],REQUESTED:['Requested only','শুধু আবেদন করা হয়েছে']
@@ -128,8 +128,8 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   </label>;
   const transactionList=<div className={panel}>
     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-      <div><h2 className="text-base font-semibold">{tr('Transaction and evidence register','লেনদেন ও প্রমাণের তালিকা')}</h2>{sub('Scenario records, including exclusions and exceptions','ব্যতিক্রমসহ সব নমুনা রেকর্ড')}</div>
-      <button type="button" onClick={csv} className={action}><Download size={16}/>{tr('Export sample CSV','নমুনা CSV নিন')}</button>
+      <div><h2 className="text-base font-semibold">{tr('Transaction history','লেনদেনের ইতিহাস')}</h2>{sub('Search and filter your payment activity','লেনদেন খুঁজুন ও ফিল্টার করুন')}</div>
+      <button type="button" onClick={csv} className={action}><Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>
     </div>
     <div className="mt-4 grid gap-2 sm:grid-cols-3">
       <label className="relative"><Search size={17} aria-hidden="true" className="absolute left-3 top-3 text-slate-400"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" className="min-h-11 w-full rounded-lg border border-slate-200 pl-10 pr-3 text-sm" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></label>
@@ -148,16 +148,13 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </article>)}</div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </div>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের নমুনা'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):route==='services'?tr('Connected services','সংযুক্ত সেবা'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের প্রিভিউ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):route==='services'?tr('Connected services','সংযুক্ত সেবা'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<header className={panel+' taxpayer-dashboard-header'}>
     <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight text-taxpay-text sm:text-3xl">{pageTitle}</h1>
-          {overviewRoute&&<div className="flex items-center gap-1"><span className="rounded-full bg-taxpay-light px-2.5 py-1 text-xs font-semibold text-taxpay-dark">{tr('Sample','নমুনা')}</span>
-            {info(tr('Sample','নমুনা'),'Fictional figures, dates and allocations. Not an official tax account, payment confirmation, or NBR/eLedger connection.','সংখ্যা, তারিখ ও সমন্বয় কাল্পনিক; এটি সরকারি কর হিসাব, পরিশোধ নিশ্চিতকরণ বা এনবিআর/ই-লেজার সংযোগ নয়।')}</div>}
         </div>
-        {!overviewRoute&&sub('Example figures only · Not an official tax account','শুধু নমুনা হিসাব · সরকারি কর হিসাব নয়')}
       </div>
       {years}
     </div>
@@ -183,23 +180,23 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const overview=<>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}>
       {summaryCard('Income tax liability','আয়কর দায়',money(totals.liability),
-        'Illustrative starting liability for the selected assessment year; this is not a statutory calculation.','নির্বাচিত করবর্ষের নমুনা প্রাথমিক করদায়; এটি আইনি হিসাব নয়।')}
+        'Starting liability used for this tax year.','এই করবর্ষের প্রাথমিক করদায়।')}
       {summaryCard('TDS & advance tax','উৎসে কর ও অগ্রিম কর',money(totals.tds+totals.ait),
-        'Only posted example withholding and advance-tax entries. Unmatched amounts are excluded.','শুধু পোস্টকৃত নমুনা উৎসে কর ও অগ্রিম কর; অমিল অর্থ বাদ।')}
+        'Posted TDS and advance-tax amounts only; unmatched entries are excluded.','শুধু পোস্টকৃত উৎসে কর ও অগ্রিম কর; অমিল লেনদেন বাদ।')}
       {summaryCard('Direct payments','সরাসরি পরিশোধ',money(totals.direct),
-        'Only posted example payments. Pending, failed and reversed attempts are excluded.','শুধু পোস্টকৃত নমুনা পরিশোধ; অপেক্ষমাণ, ব্যর্থ ও বাতিল লেনদেন বাদ।')}
+        'Posted payments only. Pending, failed and reversed attempts are excluded.','শুধু পোস্টকৃত পরিশোধ; অপেক্ষমাণ, ব্যর্থ ও বাতিল লেনদেন বাদ।')}
       {summaryCard('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),
-        'Example liability minus eligible posted example allocations; not an official demand or confirmed debt.','নমুনা করদায় থেকে যোগ্য নমুনা ক্রেডিট বাদ; এটি সরকারি দাবি বা নিশ্চিত ঋণ নয়।')}
+        'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।')}
     </section>
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(290px,1fr)_minmax(0,1.65fr)]">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
           <h2 id="taxpayer-coverage-title" className="text-base font-semibold">{tr('Tax coverage','করদায়ের বিভাজন')}</h2>
           {info(tr('Tax coverage','করদায়ের বিভাজন'),
-            'Shows the fictional liability allocated to TDS, advance tax and direct payments. Remaining amount is not official tax due.','নমুনা করদায় উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধে ভাগ করা হয়েছে; অবশিষ্ট অর্থ সরকারি পাওনা নয়।')}
+            'Distribution between TDS, advance tax, direct payments and remaining balance.','উৎসে কর, অগ্রিম কর, সরাসরি পরিশোধ ও অবশিষ্ট দায়ের বিভাজন।')}
         </div>
         <div className="relative mx-auto my-5 h-48 w-48 rounded-full sm:h-52 sm:w-52" role="img"
-          aria-label={tr('Example liability coverage: ','নমুনা করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
+          aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
           <div className="absolute inset-[43px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
             <p className="text-xs text-taxpay-muted">{tr('Applied','সমন্বিত')}</p>
@@ -218,7 +215,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
           <div className="flex items-center gap-2">
             {info(tr('Monthly activity','মাসভিত্তিক কার্যক্রম'),
-              'Posted example amounts by month, grouped by payment type. Empty months mean no matching sample event, not proof of no real activity.','ধরনভেদে মাসের পোস্টকৃত নমুনা পরিমাণ; ফাঁকা মাস মানে বাস্তবে কোনো লেনদেন হয়নি এমন নয়।')}
+              'Posted amounts by month for the selected payment category. Empty months have no matching records.','নির্বাচিত পরিশোধের ধরন অনুযায়ী মাসভিত্তিক পোস্টকৃত পরিমাণ। ফাঁকা মাসে সংশ্লিষ্ট রেকর্ড নেই।')}
             <button type="button" aria-label={tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')} onClick={()=>navigateTo('history')}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
               {tr('View all','সব দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
@@ -251,7 +248,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
         <div className="flex items-center gap-2">
           <h2 id="taxpayer-attention-title" className="text-base font-semibold">{tr('Needs review','পর্যালোচনা প্রয়োজন')}</h2>
           {info(tr('Needs review','পর্যালোচনা প্রয়োজন'),
-            'Example counts only: pending payments, failed or reversed attempts, disputed withholding and refund or adjustment requests do not establish a credit.','শুধু নমুনা সংখ্যা: অপেক্ষমাণ বা ব্যর্থ পরিশোধ, অমিল উৎসে কর ও ফেরত/সমন্বয়ের আবেদন কোনো কর ক্রেডিট নিশ্চিত করে না।')}
+            'Pending payments, failed or reversed attempts, unmatched withholding and unresolved requests do not count as credited payments.','অপেক্ষমাণ, ব্যর্থ, বাতিল, অমিল বা অনিষ্পন্ন আবেদন ক্রেডিট হিসেবে গণনা করা হয় না।')}
         </div>
         {view('corrections','Review exceptions','ব্যতিক্রম দেখুন')}
       </div>
@@ -268,51 +265,51 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </section>
   </>;
   const ledger=<>
-    <section className="grid gap-3 sm:grid-cols-3">{card('Illustrative debit','নমুনা ডেবিট',money(totals.liability),'Single opening liability per tax year','প্রতি করবর্ষে একটি প্রাথমিক দায়')}
-      {card('Illustrative allocated credits','নমুনা ক্রেডিট',money(totals.applied),'TDS + AIT + posted direct payments','উৎসে কর + অগ্রিম কর + পোস্টকৃত পেমেন্ট')}
-      {card('Remaining scenario balance','নমুনা বকেয়া',money(totals.outstanding),'Independent from travel-tax records','ভ্রমণ কর থেকে পৃথক')}</section>
-    <section className={panel}><h2 className="text-base font-semibold">{tr('Running-balance journal','চলতি ব্যালেন্সের জার্নাল')}</h2>{sub('Read-only demonstration; one liability and eligible posted entries, never other taxpayers.','শুধু প্রদর্শনী; অন্য করদাতার রেকর্ড নয়।')}
+    <section className="grid gap-3 sm:grid-cols-3">{card('Tax liability','করদায়',money(totals.liability),'Single opening liability per tax year','প্রতি করবর্ষে একটি প্রাথমিক দায়')}
+      {card('Applied credits','প্রয়োগকৃত ক্রেডিট',money(totals.applied),'TDS + AIT + posted direct payments','উৎসে কর + অগ্রিম কর + পোস্টকৃত পেমেন্ট')}
+      {card('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),'Independent from travel-tax records','ভ্রমণ কর থেকে পৃথক')}</section>
+    <section className={panel}><h2 className="text-base font-semibold">{tr('Running-balance journal','চলতি ব্যালেন্সের জার্নাল')}</h2>{sub('Journal shows the opening liability and eligible posted entries.','জার্নালে প্রাথমিক দায় ও যোগ্য পোস্টকৃত এন্ট্রি দেখানো হয়েছে।')}
       <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{['Date','Reference','Debit','Credit','Remaining'].map(x=><th key={x} className="px-3 py-3">{x}</th>)}</tr></thead>
       <tbody>{(()=>{let bal=totals.liability;const postings=scoped.filter(x=>x.state==='POSTED'&&['income','tds','ait'].includes(x.kind)).sort((a,b)=>a.date.localeCompare(b.date));return [{id:'OPEN',date:year.slice(0,4)+'-07-01',ref:'DEMO-LIABILITY-'+year,debit:totals.liability,credit:0,bal:totals.liability},...postings.map(x=>{bal-=x.amount;return {id:x.id,date:x.date,ref:x.ref,debit:0,credit:x.amount,bal};})].map(x=><tr className="border-b border-slate-100" key={x.id}><td className="whitespace-nowrap px-3 py-3">{x.date}</td><td className="px-3 py-3">{x.ref}</td><td className="px-3 py-3">{x.debit?money(x.debit):'—'}</td><td className="px-3 py-3">{x.credit?money(x.credit):'—'}</td><td className="px-3 py-3 font-semibold">{money(x.bal)}</td></tr>)})()}</tbody></table></div>
       <p className="mt-3 text-xs text-slate-600">{tr('Control check','যাচাই')}: {money(totals.liability)} − {money(totals.applied)} = {money(totals.outstanding)}. {tr('Pending, travel-tax, disputed, failed and reversal entries are excluded.','অপেক্ষমাণ, ভ্রমণ, বিরোধপূর্ণ, ব্যর্থ ও রিভার্স অন্তর্ভুক্ত নয়।')}</p>
     </section>
     {transactionList}
   </>;
-  const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Sample receipt and evidence register','নমুনা রসিদ ও প্রমাণের তালিকা')}</h2>{sub('Reference-linked previews, not government challans or certificates','রেফারেন্স-সংযুক্ত নমুনা; সরকারি চালান বা সনদ নয়')}
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View sample evidence','নমুনা প্রমাণ দেখুন')}</button></article>)}</div>
+  const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Receipts and supporting records','রসিদ ও সহায়ক নথি')}</h2>{sub('Open a record to see its details','বিস্তারিত দেখতে রেকর্ড খুলুন')}
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View details','বিস্তারিত দেখুন')}</button></article>)}</div>
   </section>{transactionList}</>;
   const correctionRecords=scoped.filter(x=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(x.state));
   const exceptions=<><div className="grid gap-3 sm:grid-cols-3">{card('Pending items','অপেক্ষমাণ',String(correctionRecords.filter(x=>x.state==='PENDING').length),'No credit until resolved','সমাধানের আগে ক্রেডিট নয়')}
     {card('Refund / adjustment requests','ফেরত / সমন্বয় আবেদন',String(correctionRecords.filter(x=>x.state==='REQUESTED').length),'No approval implied','অনুমোদন বোঝায় না')}
     {card('Unmatched / failed / reversed','অমিল / ব্যর্থ / রিভার্স',String(correctionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Not included as credits','ক্রেডিট হিসাবে গণনা নয়')}</div>
-    <section className={panel}><h2 className="text-base font-semibold">{tr('Exception and correction tracker','ব্যতিক্রম ও সংশোধন ট্র্যাকার')}</h2><div className="mt-3 space-y-3">{correctionRecords.length?correctionRecords.map(x=><article className="rounded-lg border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.ref} · {x.date}</p><p className="mt-2 text-sm">{x.detail}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('Review case','কেস দেখুন')}</button></article>):<p className="text-sm text-slate-500">{tr('No example exceptions this year','এই করবর্ষে নমুনা ব্যতিক্রম নেই')}</p>}</div></section></>;
-  const journey=<><section className={panel}><h2 className="text-base font-semibold">{tr('Transaction lifecycle examples','লেনদেন জীবনচক্রের উদাহরণ')}</h2>{sub('Each stage is shown from scenario evidence, not NBR services.','প্রতিটি ধাপ শুধু নমুনা প্রমাণ থেকে দেখানো হয়েছে।')}
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">{['Initiated','Gateway decision','Treasury / sample settlement','Scenario ledger allocation'].map((s,i)=><article key={s} className="rounded-xl border border-slate-200 p-4"><p className="text-xs font-semibold text-blue-800">{'0'+(i+1)}</p><h3 className="mt-1 font-semibold">{s}</h3><p className="mt-2 text-xs text-slate-500">{i===0?'All scenario records start as requests':i===1?'Examples include failed and reversed attempts':i===2?'Only POSTED example payments represent scenario settlement':'Only POSTED eligible income, TDS or AIT is applied; travel excluded'}</p></article>)}</div>
+    <section className={panel}><h2 className="text-base font-semibold">{tr('Exception and correction tracker','ব্যতিক্রম ও সংশোধন ট্র্যাকার')}</h2><div className="mt-3 space-y-3">{correctionRecords.length?correctionRecords.map(x=><article className="rounded-lg border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.ref} · {x.date}</p><p className="mt-2 text-sm">{x.detail}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('Review case','কেস দেখুন')}</button></article>):<p className="text-sm text-slate-500">{tr('No exceptions this year','এই করবর্ষে ব্যতিক্রম নেই')}</p>}</div></section></>;
+  const journey=<><section className={panel}><h2 className="text-base font-semibold">{tr('Payment lifecycle','পেমেন্টের জীবনচক্র')}</h2>{sub('Follow payment status from initiation to ledger allocation.','শুরু থেকে লেজারে সমন্বয় পর্যন্ত পেমেন্টের অবস্থা দেখুন।')}
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">{['Initiated','Gateway decision','Treasury settlement','Ledger allocation'].map((s,i)=><article key={s} className="rounded-xl border border-slate-200 p-4"><p className="text-xs font-semibold text-blue-800">{'0'+(i+1)}</p><h3 className="mt-1 font-semibold">{s}</h3><p className="mt-2 text-xs text-slate-500">{i===0?'Records begin as requests':i===1?'Failed and reversed attempts are tracked separately':i===2?'Only posted amounts are included in settlement':'Only eligible income tax, TDS and AIT is applied; travel excluded'}</p></article>)}</div>
     <div className="mt-4 flex flex-wrap gap-2">{view('history','Inspect transactions','লেনদেন দেখুন')}{view('ledger','Inspect allocations','ক্রেডিট দেখুন')}{view('certificates','Inspect evidence','প্রমাণ দেখুন')}</div>
   </section>{transactionList}</>;
-  const profile=<section className={panel}><h2 className="text-base font-semibold">{tr('Synthetic taxpayer identity','কৃত্রিম করদাতার পরিচয়')}</h2>
+  const profile=<section className={panel}><h2 className="text-base font-semibold">{tr('Taxpayer profile','করদাতার প্রোফাইল')}</h2>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{[
-      ['Scenario account','user1'],['Display name','Sample Individual Taxpayer 01'],['Identifier','DEMO-TIN-001'],['Taxpayer class','Individual (illustrative)'],
-      ['Income sources','Salary, bank interest and consultancy (example)'],['Address','Synthetic address, Dhaka (not a real location)'],
-      ['Assessment years',taxYears.map(x=>x.year).join(', ')],['Real TIN verified','No'],['Representative mandate','Not applicable to this sample'],['Government connection','Not connected']
+      ['Account','user1'],['Display name','Individual Taxpayer 01'],['Identifier','DEMO-TIN-001'],['Taxpayer class','Individual'],
+      ['Income sources','Salary, bank interest and consultancy'],['Address','Address unavailable'],
+      ['Assessment years',taxYears.map(x=>x.year).join(', ')],['Real TIN verified','No'],['Representative mandate','Not applicable'],['Government connection','Not connected']
     ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="text-xs text-slate-500">{x[0]}</p><p className="mt-1 text-sm font-semibold">{x[1]}</p></div>)}</div>
-    {sub('The scenario is local public sample data, not an authenticated taxpayer profile.','এই নমুনা তথ্য লগইন করা করদাতার বাস্তব প্রোফাইল নয়।')}
+    {sub('Account information is not linked to a verified taxpayer identity.','অ্যাকাউন্টের তথ্য যাচাইকৃত করদাতা পরিচয়ের সঙ্গে সংযুক্ত নয়।')}
   </section>;
-  const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Scenario notifications','নমুনা বিজ্ঞপ্তি')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
-  const settings=<section className={panel}><h2 className="text-base font-semibold">{tr('Example preferences','নমুনা পছন্দসমূহ')}</h2>{sub('Interface language follows the main app control. Nothing here updates a registered taxpayer or remote database.','ভাষা মূল অ্যাপ থেকে নিয়ন্ত্রিত। কোনো বাস্তব প্রোফাইল বা ডেটাবেস পরিবর্তন হয় না।')}<p className="mt-4 text-sm">{tr('Selected language','নির্বাচিত ভাষা')}: {bn?'বাংলা':'English'}</p><p className="mt-2 text-sm">{tr('Scenario scope','নমুনা ক্ষেত্র')}: user1</p></section>;
-  const services=<section className={panel}><h2 className="text-base font-semibold">{tr('Data source coverage','তথ্য উৎসের অবস্থা')}</h2>{sub('Scenario modules are populated from one client-side fixture; official integrations remain disconnected.','সব নমুনা মডিউল একটি স্থানীয় উৎস থেকে আসে; বাস্তব সংযোগ নেই।')}<div className="mt-4 grid gap-3 sm:grid-cols-2">{[
-    ['Income tax assessment','Scenario fixture / not official'],['eTDS','Scenario withholding candidates / not connected'],['Advance tax','Scenario AIT payments / not connected'],['eLedger','Scenario running ledger / not connected'],['A-Challan','Sample references only / not verified'],['Travel tax','Separate scenario payment / not an income tax credit'],['Bank settlement','Scenario state only / not connected'],['Refunds and corrections','Illustrative inquiries / no approval']
+  const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Recent updates','সাম্প্রতিক আপডেট')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
+  const settings=<section className={panel}><h2 className="text-base font-semibold">{tr('Preferences','পছন্দসমূহ')}</h2>{sub('Interface language follows the main app control. Nothing here updates a registered taxpayer or remote database.','ভাষা মূল অ্যাপ থেকে নিয়ন্ত্রিত। কোনো বাস্তব প্রোফাইল বা ডেটাবেস পরিবর্তন হয় না।')}<p className="mt-4 text-sm">{tr('Selected language','নির্বাচিত ভাষা')}: {bn?'বাংলা':'English'}</p><p className="mt-2 text-sm">{tr('Account','অ্যাকাউন্ট')}: user1</p></section>;
+  const services=<section className={panel}><h2 className="text-base font-semibold">{tr('Connected services','সংযুক্ত সেবাসমূহ')}</h2>{sub('Connections and record sources for the selected account.','নির্বাচিত অ্যাকাউন্টের তথ্য উৎস ও সংযোগের অবস্থা।')}<div className="mt-4 grid gap-3 sm:grid-cols-2">{[
+    ['Income tax assessment','Not connected'],['eTDS','Not connected'],['Advance tax','Not connected'],['eLedger','Not connected'],['A-Challan','Not verified'],['Travel tax','Separate category; not an income tax credit'],['Bank settlement','Not connected'],['Refunds and corrections','No approval recorded']
   ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="font-semibold">{x[0]}</p><p className="mt-1 text-xs text-slate-500">{x[1]}</p></div>)}</div></section>;
-  const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}<section className="rounded-xl border border-blue-100 bg-blue-50 p-4"><h2 className="text-sm font-semibold">{tr('Sign in to simulate a payment','পেমেন্ট সিমুলেট করতে সাইন ইন করুন')}</h2>{sub('This publicly accessible example is read-only. Protected payment SQL requires an authenticated account.','এই নমুনা শুধু দেখার জন্য। পেমেন্ট SQL ব্যবহারে অনুমোদিত লগইন প্রয়োজন।')}<button className={action+' mt-3'} onClick={()=>navigateTo('secure_workspace')} type="button">{tr('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button></section></>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:route==='services'?services:overview;
+  const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}<section className="rounded-xl border border-blue-100 bg-blue-50 p-4"><h2 className="text-sm font-semibold">{tr('Sign in to make a payment','পেমেন্ট করতে সাইন ইন করুন')}</h2>{sub('Payment actions require an authenticated account.','পেমেন্ট করতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন প্রয়োজন।')}<button className={action+' mt-3'} onClick={()=>navigateTo('secure_workspace')} type="button">{tr('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button></section></>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:route==='services'?services:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {header}{content}
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
       <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3"><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2><button type="button" className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
-        <p className="mt-2 text-xs font-semibold text-amber-800">{tr('SYNTHETIC REFERENCE — NOT A GOVERNMENT CHALLAN','কৃত্রিম রেফারেন্স — সরকারি চালান নয়')}</p>
+        <p className="mt-2 text-xs font-semibold text-amber-800">{tr('Not a government challan','সরকারি চালান নয়')}</p>
         <dl className="mt-4 space-y-3">{[
           ['Reference',selected.ref],['Assessment year',selected.year],['Date',selected.date],['Category',tr(...labels[selected.kind])],['Amount',money(selected.amount)],
-          ['Status',tr(...stateLabels[selected.state])],['Channel (example)',selected.channel],['Sample challan',selected.challan||'Not issued'],['Meaning',selected.detail]
+          ['Status',tr(...stateLabels[selected.state])],['Channel',selected.channel],['Challan reference',selected.challan||'Not issued'],['Meaning',selected.detail]
         ].map(x=><div className="border-b border-slate-100 pb-2" key={x[0]}><dt className="text-xs text-slate-500">{x[0]}</dt><dd className="mt-1 break-words text-sm font-semibold">{x[1]}</dd></div>)}</dl>
       </section>
     </div>}
