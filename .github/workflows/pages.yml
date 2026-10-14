@@ -48,7 +48,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts
+        run: npx playwright test tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/user1-dashboard-timeline.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts
 
       - name: Verify connected fictional Start Payment entry on a mobile viewport
         env:
