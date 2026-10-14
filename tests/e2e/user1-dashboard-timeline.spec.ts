@@ -11,7 +11,7 @@ test('income-tax chart derives a dated June–September 2026 window from actual 
   await expect(chart.getByRole('button',{name:/Income tax, Sep 2026:.*45,000/})).toBeVisible();
   await expect(chart.getByRole('button',{name:/Income tax, Jan/})).toHaveCount(0);
   await expect(chart.locator(':scope > div')).toHaveCount(4);
-  await expect(page.getByText('Travel tax (separate)')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-travel-summary').getByText('Travel tax (separate)')).toBeVisible();
   await expect(page.getByRole('button',{name:'Review exceptions'})).toHaveCount(0);
 });
 
@@ -39,6 +39,7 @@ test('travel tax remains independently visible through its category, not as an i
   await expect(chart.getByText('Apr ’26')).toBeVisible();
   await expect(page.locator('.taxpayer-dashboard-kpi').last()).toContainText('৳ 25,000');
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
+  await expect(page.locator('.taxpayer-travel-summary')).toContainText('৳ 6,500');
 });
 
 test('assessment year changes displayed transaction months without assuming a statutory calendar range',async({page})=>{
