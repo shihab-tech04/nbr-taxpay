@@ -1,95 +1,137 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, Activity, BookOpen, CalendarDays, CreditCard, FileText, Receipt, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, CalendarDays, Download, FileText, Receipt, Search, ShieldCheck, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 
-const panel = 'rounded-2xl border border-taxpay-border bg-white p-4 shadow-sm sm:p-6';
-type View = 'payments'|'tds'|'ait'|'travel';
+type Category = 'all'|'income'|'source'|'travel';
+const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
+const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
 export const TaxpayerDashboard: React.FC = () => {
-  const { taxpayerProfile, receipts, navigate, selectReceipt, language, demoUser } = useTaxState();
+  const { language, receipts, taxpayerProfile, demoUser, navigate, selectReceipt } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
-  const t = (en: string, bengali: string) => bn ? bengali : en;
+  const tr = (en:string, bangla:string) => bn ? bangla : en;
   const [year,setYear] = useState(ASSESSMENT_YEARS[0] || '2026-2027');
-  const [view,setView] = useState<View>('payments');
+  const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
-  // Sample receipts are never authoritative liability, verified payments, or credit.
-  // Real identities currently require a certified ownership + settlement data contract.
-  const examples = useMemo(() => demoUser && !user ? receipts.filter(r=>r.payerTin===taxpayerProfile.tin && r.assessmentYear===year) : [],[receipts,taxpayerProfile.tin,year,demoUser,user]);
-  const matching = examples.filter(r => [r.challanNo,r.tokenNumber,r.paymentCategory].join(' ').toLowerCase().includes(query.toLowerCase()));
-  const counts = [
-    {en:'Total income tax liability',bn:'মোট আয়কর দায়',sub:'Verified assessment required',bnSub:'যাচাইকৃত কর নির্ধারণ প্রয়োজন'},
-    {en:'TDS / withholding',bn:'উৎসে কর কর্তন',sub:'Ownership and credit not verified',bnSub:'মালিকানা ও ক্রেডিট যাচাই হয়নি'},
-    {en:'AIT / advance tax',bn:'অগ্রিম আয়কর',sub:'Authoritative records not connected',bnSub:'কর্তৃত্বপূর্ণ রেকর্ড সংযুক্ত নয়'},
-    {en:'Tax paid & credited',bn:'পরিশোধিত ও ক্রেডিটকৃত কর',sub:'Treasury and ledger confirmation required',bnSub:'ট্রেজারি ও লেজার নিশ্চিতকরণ প্রয়োজন'},
-    {en:'Remaining payable',bn:'অবশিষ্ট পরিশোধযোগ্য',sub:'Not calculable from sample receipts',bnSub:'নমুনা রসিদ থেকে গণনা সম্ভব নয়'},
-    {en:'Travel tax paid',bn:'পরিশোধিত ভ্রমণ কর',sub:'Separate category; not assumed as credit',bnSub:'পৃথক খাত; ক্রেডিট অনুমান নয়'}
-  ];
-  const options: {key:View;en:string;bn:string}[] = [
-    {key:'payments',en:'Payments',bn:'পেমেন্ট'},
-    {key:'tds',en:'TDS',bn:'টিডিএস'},
-    {key:'ait',en:'AIT',bn:'এআইটি'},
+  // Explicit demo activity ONLY. Payer-TIN fixtures do not establish credit ownership.
+  const exampleRecords = useMemo(()=> demoUser && !user
+    ? receipts.filter(r=>r.payerTin===taxpayerProfile.tin && r.assessmentYear===year) : [],
+    [demoUser,user,receipts,taxpayerProfile.tin,year]);
+  const classify = (kind:string):Category => {
+    const x=kind.toUpperCase();
+    if (x.includes('TRAVEL')) return 'travel';
+    if (x.includes('SOURCE') || x.includes('WITHHOLD')) return 'source';
+    return 'income';
+  };
+  const records = exampleRecords.filter(r=>(category==='all'||classify(String(r.paymentCategory))===category)
+    && [r.challanNo,r.tokenNumber,r.paymentCategory].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
+  const demoTotals = (['income','source','travel'] as Category[]).map(k=>exampleRecords.filter(r=>classify(String(r.paymentCategory))===k)
+    .reduce((n,r)=>n+r.totalAmount,0));
+  const sum = demoTotals.reduce((a,b)=>a+b,0);
+  const yearText = year.replace('-', '–');
+  const filterLabels:{key:Category;en:string;bn:string}[] = [
+    {key:'all',en:'All transactions',bn:'সব লেনদেন'},
+    {key:'income',en:'Income tax',bn:'আয়কর'},
+    {key:'source',en:'Source tax',bn:'উৎসে কর'},
     {key:'travel',en:'Travel tax',bn:'ভ্রমণ কর'}
   ];
-  return <div className={`mx-auto max-w-7xl space-y-5 pb-12 ${bn?'font-bengali':''}`}>
-    <header className={panel}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="text-xs font-semibold text-taxpay-dark">{t('Taxpayer / Financial overview','করদাতা / আর্থিক সারসংক্ষেপ')}</p>
-          <h1 className="mt-1 text-2xl font-bold text-taxpay-text sm:text-3xl">{t('Your tax dashboard','আপনার কর ড্যাশবোর্ড')}</h1>
-          <p className="mt-2 text-sm text-taxpay-muted">{t('One place for tax position, payment activity, records and reconciliation.','করের অবস্থান, পেমেন্ট, রেকর্ড ও সমন্বয়ের একক দৃশ্য।')}</p>
-        </div>
-        <div className="flex flex-col gap-1"><label htmlFor="dashboard-year" className="text-xs font-semibold text-taxpay-text">{t('Assessment year','করবর্ষ')}</label>
-          <select id="dashboard-year" value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
-            {ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
+  const metrics=[
+    {en:'Income tax liability',bn:'মোট আয়কর দায়',desc:'No certified assessment source',bd:'যাচাইকৃত কর নির্ধারণের উৎস নেই'},
+    {en:'Recognized TDS / AIT',bn:'স্বীকৃত টিডিএস / এআইটি',desc:'Credit ownership not verified',bd:'ক্রেডিটের মালিকানা যাচাই হয়নি'},
+    {en:'Verified tax payments',bn:'যাচাইকৃত কর পরিশোধ',desc:'Settlement and ledger proof required',bd:'সেটেলমেন্ট ও লেজার প্রমাণ প্রয়োজন'},
+    {en:'Remaining payable',bn:'অবশিষ্ট পরিশোধযোগ্য',desc:'Cannot calculate from sample receipts',bd:'নমুনা রসিদ দিয়ে গণনা সম্ভব নয়'}
+  ];
+  const button='min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:border-blue-400 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700';
+  const empty=(heading:string,detail:string)=><div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-7 text-center">
+    <Activity size={24} aria-hidden="true" className="mb-3 text-slate-400"/>
+    <h3 className="text-sm font-semibold text-slate-700">{heading}</h3>
+    <p className="mt-1 max-w-xs text-xs leading-5 text-slate-500">{detail}</p>
+  </div>;
+  const csv=()=>{
+    const esc=(x:string|number)=>'"'+String(x).replace(/"/g,'""')+'"';
+    const body=[['DEMONSTRATION ONLY','Reference','Category','Assessment year','Amount BDT','Treasury status'],...records.map(r=>['Not official payment evidence',r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.treasuryStatus])]
+      .map(r=>r.map(esc).join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='TaxPay_example_transactions.csv';a.click();URL.revokeObjectURL(url);
+  };
+  return <div className={`mx-auto max-w-[1480px] space-y-5 pb-14 ${bn?'font-bengali':''}`}>
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-xs text-slate-500">{tr('Taxpayer workspace / Dashboard','করদাতা ওয়ার্কস্পেস / ড্যাশবোর্ড')}</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-800 sm:text-[28px]">{tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
+        <p className="mt-1 text-sm text-slate-500">{tr('Income tax, payments and financial records in one view','আয়কর, পেমেন্ট ও আর্থিক রেকর্ড একসঙ্গে')}</p>
       </div>
-      <p className="mt-4 rounded-lg bg-taxpay-light px-3 py-2 text-xs leading-5 text-taxpay-dark" role="status">{t('No certified financial source is connected to this overview. Unavailable is not zero. Example receipts, where present, are not government payment evidence.','এই সারসংক্ষেপে যাচাইকৃত আর্থিক উৎস সংযুক্ত নয়। তথ্য নেই মানে শূন্য নয়। নমুনা রসিদ সরকারি পেমেন্টের প্রমাণ নয়।')}</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
+          <select value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800">{ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select>
+        </label>
+        <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export examples','নমুনা এক্সপোর্ট')}</button>
+      </div>
     </header>
-    <section aria-labelledby="dashboard-position"><div className="mb-3 flex items-center gap-2"><TrendingUp size={19} className="text-taxpay-dark"/><h2 id="dashboard-position" className="text-lg font-bold text-taxpay-text">{t('Financial position','আর্থিক অবস্থান')}</h2></div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {counts.map((c,i)=><article key={c.en} className={panel}>
-          <div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-taxpay-muted">{t(c.en,c.bn)}</p><span className="rounded-full bg-taxpay-light p-2 text-taxpay-dark">{i===1?<ShieldCheck size={16}/>:i===5?<Receipt size={16}/>:<CreditCard size={16}/>}</span></div>
-          <p className="mt-3 text-xl font-semibold text-taxpay-text">{t('Not available','পাওয়া যাচ্ছে না')}</p>
-          <p className="mt-2 text-xs text-taxpay-muted">{t(c.sub,c.bnSub)}</p>
-        </article>)}
+    <section className={card} aria-label={tr('Selected tax year summary','নির্বাচিত করবর্ষের সারসংক্ষেপ')}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div><p className="text-xs text-slate-500">{tr('Currently showing assessment year','বর্তমানে প্রদর্শিত করবর্ষ')}</p>
+          <h2 className="mt-1 text-2xl font-semibold text-slate-800">{yearText}</h2>
+          <p className="mt-1 text-xs text-slate-500">{tr('Taxpayer financial lifecycle overview','করদাতার আর্থিক জীবনচক্রের সারসংক্ষেপ')}</p></div>
+        <div className="flex flex-wrap gap-2">
+          <div className="min-w-36 rounded-xl border border-slate-200 px-4 py-3"><p className="text-xs text-slate-500">{tr('Tax position','করের অবস্থা')}</p><p className="mt-1 font-semibold text-slate-800">{tr('Unverified','যাচাই হয়নি')}</p></div>
+          <div className="min-w-36 rounded-xl border border-slate-200 px-4 py-3"><p className="text-xs text-slate-500">{tr('Ledger credit','লেজার ক্রেডিট')}</p><p className="mt-1 font-semibold text-slate-800">{tr('Not connected','সংযুক্ত নয়')}</p></div>
+          <div className="min-w-36 rounded-xl border border-slate-200 px-4 py-3"><p className="text-xs text-slate-500">{tr('Payment evidence','পেমেন্টের প্রমাণ')}</p><p className="mt-1 font-semibold text-slate-800">{tr('Not verified','যাচাই হয়নি')}</p></div>
+        </div>
       </div>
     </section>
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)]">
-      <section className={panel} aria-labelledby="dashboard-composition">
-        <h2 id="dashboard-composition" className="text-lg font-semibold">{t('Tax coverage','করের বিপরীতে পরিশোধ')}</h2>
-        <p className="mt-1 text-xs text-taxpay-muted">{t('Liability vs eligible credits and confirmed payments','দায়ের বিপরীতে যোগ্য ক্রেডিট ও নিশ্চিত পরিশোধ')}</p>
-        <div className="mx-auto my-7 flex h-48 w-48 items-center justify-center rounded-full border-[28px] border-slate-100 text-center sm:h-56 sm:w-56">
-          <p className="max-w-28 text-xs font-medium text-taxpay-muted">{t('No verified breakdown','যাচাইকৃত বিভাজন নেই')}</p>
-        </div>
-        {['TDS','AIT',t('Direct payments','সরাসরি পেমেন্ট'),t('Remaining balance','অবশিষ্ট ব্যালেন্স')].map(x=><div key={x} className="flex justify-between border-t border-taxpay-border py-3 text-sm"><p>{x}</p><p className="text-taxpay-muted">{t('Unavailable','পাওয়া যাচ্ছে না')}</p></div>)}
-      </section>
-      <section className={panel} aria-labelledby="dashboard-activity">
-        <div className="flex items-start justify-between gap-2"><div><h2 id="dashboard-activity" className="text-lg font-semibold">{t('Transaction activity','লেনদেন কার্যক্রম')}</h2><p className="mt-1 text-xs text-taxpay-muted">{t('Monthly verified financial movements','মাসভিত্তিক যাচাইকৃত আর্থিক লেনদেন')}</p></div><CalendarDays size={20} className="text-taxpay-dark"/></div>
-        <div role="group" aria-label={t('Activity categories','কার্যক্রমের ধরন')} className="mt-5 flex flex-wrap gap-2">
-          {options.map(o=><button type="button" key={o.key} aria-pressed={view===o.key} onClick={()=>setView(o.key)} className={`min-h-11 rounded-lg border px-3 text-sm font-semibold ${view===o.key?'border-taxpay-dark bg-taxpay-light text-taxpay-dark':'border-taxpay-border bg-white text-taxpay-text'}`}>{t(o.en,o.bn)}</button>)}
-        </div>
-        <div className="mt-5 flex min-h-64 items-center justify-center rounded-xl border border-dashed border-taxpay-border bg-taxpay-background p-6 text-center">
-          <div><Activity size={28} className="mx-auto mb-3 text-taxpay-dark"/><h3 className="font-semibold text-taxpay-text">{t('No verified activity to chart','চার্টে দেখানোর মতো যাচাইকৃত তথ্য নেই')}</h3><p className="mx-auto mt-2 max-w-sm text-sm text-taxpay-muted">{t('When eligible '+options.find(o=>o.key===view)?.en+' records are connected, this chart will show monthly movements without inventing values.','যাচাইকৃত লেনদেন সংযুক্ত হলে মাসভিত্তিক তথ্য এখানে দেখা যাবে।')}</p></div>
-        </div>
-      </section>
-    </div>
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className={panel}><h2 className="text-lg font-semibold">{t('Payment and reconciliation status','পেমেন্ট ও সমন্বয়ের অবস্থা')}</h2>
-        <p className="mt-3 rounded-xl bg-taxpay-background p-6 text-sm text-taxpay-muted">{t('Settlement, challan verification and ledger posting are separate checks. No authoritative reconciliation events are available yet.','সেটেলমেন্ট, চালান যাচাই ও লেজার পোস্টিং পৃথক ধাপ। বর্তমানে কর্তৃত্বপূর্ণ সমন্বয়ের তথ্য নেই।')}</p>
-        <button type="button" onClick={()=>navigate('ledger')} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-taxpay-dark">{t('Open tax ledger','কর লেজার খুলুন')} <ArrowRight size={16}/></button>
-      </section>
-      <section className={panel}><h2 className="text-lg font-semibold">{t('Documents and next steps','নথি ও পরবর্তী ধাপ')}</h2>
-        <div className="mt-4 grid gap-3">{[{icon:Receipt,en:'Payment records',bn:'পেমেন্ট রেকর্ড',route:'history'},{icon:FileText,en:'Receipts and certificates',bn:'রসিদ ও সনদপত্র',route:'certificates'},{icon:BookOpen,en:'Ledger statement',bn:'লেজার বিবরণী',route:'ledger'}].map(x=><button type="button" key={x.route} onClick={()=>navigate(x.route)} className="flex min-h-12 items-center gap-3 rounded-lg border border-taxpay-border px-3 text-left text-sm font-medium text-taxpay-dark hover:bg-taxpay-light"><x.icon size={19}/><span className="flex-1">{t(x.en,x.bn)}</span><ArrowRight size={16}/></button>)}</div>
-      </section>
-    </div>
-    <section className={panel} aria-labelledby="dashboard-records">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="dashboard-records" className="text-lg font-semibold">{t('Payment records','পেমেন্ট রেকর্ড')}</h2><p className="mt-1 text-xs text-taxpay-muted">{examples.length?t('Example records — not verified payments','নমুনা রেকর্ড — যাচাইকৃত পেমেন্ট নয়'):t('No verified financial records connected','যাচাইকৃত আর্থিক রেকর্ড সংযুক্ত নেই')}</p></div>
-      <label className="text-xs text-taxpay-text">{t('Search examples','নমুনা খুঁজুন')} <input type="search" value={query} onChange={e=>setQuery(e.target.value)} className="ml-2 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm" placeholder={t('Reference or category','রেফারেন্স বা খাত')}/></label></div>
-      {matching.length ? <div className="mt-4 space-y-2">{matching.slice(0,8).map(r=><button type="button" key={r.id} onClick={()=>selectReceipt(r.id)} className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border border-taxpay-border p-3 text-left hover:bg-taxpay-light"><span><span className="block text-sm font-semibold text-taxpay-text">{r.challanNo}</span><span className="text-xs text-taxpay-muted">{r.paymentCategory} · {t('Example only','শুধু নমুনা')}</span></span><span className="flex items-center gap-2 text-xs text-taxpay-dark">{r.treasuryStatus} <ArrowRight size={16}/></span></button>)}</div>:
-        <div className="mt-4 rounded-xl border border-dashed border-taxpay-border bg-taxpay-background p-8 text-center"><Receipt size={28} className="mx-auto mb-3 text-taxpay-dark"/><h3 className="font-semibold">{t('No matching payment records','মিল পাওয়া যায়নি')}</h3><p className="mt-2 text-sm text-taxpay-muted">{t('Connected and permitted records will appear here when available.','সংযুক্ত ও অনুমোদিত রেকর্ড পাওয়া গেলে এখানে দেখাবে।')}</p></div>}
-      <button type="button" onClick={()=>navigate('history')} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-taxpay-dark">{t('View payment activity','পেমেন্ট কার্যক্রম দেখুন')}<ArrowRight size={16}/></button>
+    <p role="status" className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
+      {tr('Review-mode financial dashboard. No authoritative liability, credit or settlement feed is connected. Example records are illustrations only; unavailable values must not be read as zero.','এটি পর্যালোচনার জন্য আর্থিক ড্যাশবোর্ড। কর দায়, ক্রেডিট বা সেটেলমেন্টের কর্তৃত্বপূর্ণ তথ্য সংযুক্ত নয়। নমুনা তথ্য বাস্তব লেনদেন নয়।')}
+    </p>
+    <section aria-label={tr('Tax position summary','কর অবস্থানের সারসংক্ষেপ')} className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map((m,i)=><article className={card} key={m.en}>
+        <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span className="rounded-lg bg-blue-50 p-2 text-blue-700">{i===1?<ShieldCheck size={19}/>:i===2?<Receipt size={19}/>:<WalletCards size={19}/>}</span></div>
+        <p className="mt-4 text-xl font-semibold text-slate-800">{tr('Not available','পাওয়া যাচ্ছে না')}</p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">{tr(m.desc,m.bd)}</p>
+      </article>)}
     </section>
+    <div className="grid gap-4 lg:grid-cols-[minmax(285px,1fr)_minmax(0,2.1fr)]">
+      <section className={card} aria-labelledby="composition-heading">
+        <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>
+        <p className="mt-1 text-xs text-slate-500">{tr('Illustrative activity by payment category','খাতভিত্তিক নমুনা লেনদেন')}</p>
+        {exampleRecords.length?<><div role="img" aria-label={tr('Example transaction category proportions, not tax credits','নমুনা লেনদেনের অনুপাত; কর ক্রেডিট নয়')} className="relative mx-auto my-6 h-52 w-52 rounded-full" style={{background:`conic-gradient(#5ea9e4 0% ${100*demoTotals[0]/(sum||1)}%, #a078c7 ${100*demoTotals[0]/(sum||1)}% ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}%, #ed977e ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}% 100%)`}}><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Example only','শুধু নমুনা')}</div></div>
+        {['Income tax','Source tax','Travel tax'].map((label,i)=><div className="flex items-center justify-between border-t border-slate-100 py-3 text-sm" key={label}><p><span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${['bg-sky-400','bg-purple-400','bg-orange-400'][i]}`}/>{label}</p><p className="font-semibold">৳ {fmt(demoTotals[i])}</p></div>)}</>:
+        empty(tr('No activity to summarize','সারসংক্ষেপের তথ্য নেই'),tr('No eligible example payment records exist for this year. Real credit composition requires verified sources.','এই করবর্ষে নমুনা পেমেন্ট নেই। বাস্তব ক্রেডিটের জন্য যাচাইকৃত উৎস প্রয়োজন।'))}
+      </section>
+      <section className={card} aria-labelledby="activity-heading">
+        <div className="flex items-start justify-between"><div><h2 id="activity-heading" className="text-base font-semibold text-slate-800">{tr('Transaction activity','লেনদেনের কার্যক্রম')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Monthly distribution by selected payment type','নির্বাচিত পেমেন্টের মাসভিত্তিক বণ্টন')}</p></div><CalendarDays size={20} className="text-blue-700"/></div>
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={tr('Category filter','খাতের ফিল্টার')}>
+          {filterLabels.map(f=><button key={f.key} type="button" aria-pressed={category===f.key} className={`min-h-11 rounded-lg border px-2 text-xs font-medium ${category===f.key?'border-teal-600 bg-teal-50 text-teal-900':'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`} onClick={()=>setCategory(f.key)}>{tr(f.en,f.bn)}</button>)}
+        </div>
+        {records.length?<div className="mt-8 flex h-64 items-end gap-2 border-b border-slate-200 pb-6" role="img" aria-label={tr('Example transaction amounts by record, not verified financial activity','নমুনা লেনদেনের পরিমাণ; যাচাইকৃত আর্থিক তথ্য নয়')}>
+          {records.slice(0,12).map((r,i)=>{const max=Math.max(...records.map(x=>x.totalAmount),1);return <div key={r.id} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2"><p className="text-[10px] text-slate-500">{fmt(r.totalAmount)}</p><div className="w-full max-w-12 rounded-t-md bg-teal-300" style={{height:Math.max(4,r.totalAmount/max*185)}}/><p className="text-[10px] text-slate-500">{i+1}</p></div>})}
+        </div>:<div className="mt-5">{empty(tr('No activity for this selection','এই বাছাইয়ে লেনদেন নেই'),tr('The chart remains empty until records are available. No values are fabricated.','রেকর্ড ছাড়া কোনো সংখ্যা তৈরি করে চার্ট দেখানো হয় না।'))}</div>}
+        <p className="mt-4 text-xs text-slate-500">{tr('This panel shows sample activity only when permitted example records exist.','শুধু অনুমোদিত নমুনা তথ্য থাকলেই এখানে কার্যক্রম দেখানো হয়।')}</p>
+      </section>
+    </div>
+    <div className="grid gap-4 lg:grid-cols-3">
+      <section className={card}><h2 className="text-base font-semibold">{tr('TDS & advance tax','টিডিএস ও অগ্রিম কর')}</h2><p className="mt-2 text-xs text-slate-500">{tr('Credits require verified taxpayer ownership, period and legal eligibility.','ক্রেডিটের জন্য মালিকানা, করবর্ষ ও আইনি যোগ্যতার যাচাই প্রয়োজন।')}</p>
+        {empty(tr('No verified credit records','যাচাইকৃত ক্রেডিট নেই'),tr('TDS and AIT cannot be derived from payer receipts.','শুধু পেমেন্ট রসিদ দিয়ে টিডিএস/এআইটি নির্ধারিত হয় না।'))}
+        <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('ledger')}>{tr('Review tax ledger','কর লেজার দেখুন')}<ArrowRight size={16}/></button>
+      </section>
+      <section className={card}><h2 className="text-base font-semibold">{tr('Challan & reconciliation','চালান ও সমন্বয়')}</h2><p className="mt-2 text-xs text-slate-500">{tr('Gateway, government receipt and ledger stages are independent.','গেটওয়ে, সরকারি রসিদ ও লেজার পৃথক ধাপ।')}</p>
+        {empty(tr('No verified challan data','যাচাইকৃত চালানের তথ্য নেই'),tr('A sample challan number is not an official government receipt.','নমুনা চালান সরকারি রসিদ নয়।'))}
+        <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('certificates')}>{tr('View documents','নথি দেখুন')}<ArrowRight size={16}/></button>
+      </section>
+      <section className={card}><h2 className="text-base font-semibold">{tr('Payment lifecycle','পেমেন্টের জীবনচক্র')}</h2>
+        {['Payment initiated','Gateway processing','Treasury confirmed','Ledger reconciled'].map((x,i)=><div key={x} className="flex items-start gap-3 border-b border-slate-100 py-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-semibold text-blue-800">{String(i+1).padStart(2,'0')}</div><div><p className="text-sm font-semibold text-slate-700">{x}</p><p className="text-xs text-slate-500">{tr('Status not established','অবস্থা নিশ্চিত নয়')}</p></div></div>)}
+        <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('journey')}>{tr('Full payment journey','সম্পূর্ণ পেমেন্ট যাত্রা')}<ArrowRight size={16}/></button>
+      </section>
+    </div>
+    <section className={card} aria-labelledby="transactions-heading">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 id="transactions-heading" className="text-base font-semibold">{tr('Payment & transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Click an example record to inspect its lifecycle','নমুনা রেকর্ড নির্বাচন করে তার ধাপগুলো দেখুন')}</p></div>
+        <label className="relative flex items-center"><Search className="absolute left-3 text-slate-400" size={17}/><input type="search" className="min-h-11 w-full rounded-lg border border-slate-200 py-2 pl-10 pr-3 text-sm sm:w-64" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference or type','রেফারেন্স বা খাত খুঁজুন')} aria-label={tr('Search transactions','লেনদেন খুঁজুন')}/></label></div>
+      {records.length?<div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">{tr('Reference','রেফারেন্স')}</th><th className="p-3">{tr('Category','খাত')}</th><th className="p-3">{tr('Amount (sample)','পরিমাণ (নমুনা)')}</th><th className="p-3">{tr('Status (sample)','অবস্থা (নমুনা)')}</th><th className="p-3">{tr('Action','বিস্তারিত')}</th></tr></thead><tbody>{records.slice(0,10).map(r=><tr key={r.id} className="border-b border-slate-100"><td className="p-3 font-medium">{r.challanNo}</td><td className="p-3">{String(r.paymentCategory)}</td><td className="p-3">৳ {fmt(r.totalAmount)}</td><td className="p-3 text-slate-600">{r.treasuryStatus}</td><td className="p-3"><button type="button" className="min-h-10 text-blue-800 underline" onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button></td></tr>)}</tbody></table></div>:
+      <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another year or filter. Verified records are not connected to this design preview.','অন্য করবর্ষ বা ফিল্টার দেখুন। প্রকৃত যাচাইকৃত তথ্য এখনো যুক্ত নয়।'))}</div>}
+      <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" onClick={()=>navigate('history')}>{tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')}<ArrowRight size={16}/></button>
+    </section>
+    <footer className="text-xs text-slate-500">{tr('Design preview on the existing taxpayer route. No official tax amount, credit, challan or payment can be inferred from these panels.','বিদ্যমান করদাতা রুটে ডিজাইন প্রিভিউ। এখানে বাস্তব কর, ক্রেডিট, চালান বা পরিশোধ অনুমান করা যায় না।')}</footer>
   </div>;
 };
