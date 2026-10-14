@@ -36,7 +36,7 @@ test('travel tax remains independently visible through its category, not as an i
   await expect(chart).toBeVisible();
   await expect(chart.getByRole('button',{name:/Travel tax, Apr 2026:.*6,500/})).toBeVisible();
   await expect(chart.locator(':scope > div')).toHaveCount(1);
-  await expect(page.getByText('Apr ’26')).toBeVisible();
+  await expect(chart.getByText('Apr ’26')).toBeVisible();
   await expect(page.locator('.taxpayer-dashboard-kpi').last()).toContainText('৳ 25,000');
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
 });
