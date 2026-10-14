@@ -19,15 +19,15 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Needs review'})).toBeVisible();
-  await expect(page.getByText('Travel tax (separate)')).toBeVisible();
+  await expect(page.locator('.taxpayer-travel-summary').getByText('Travel tax (separate)')).toBeVisible();
 
   await expect(workspace.locator('.taxpayer-dashboard-kpi').first().locator(':scope > p')).toHaveCount(1);
   await expect(page.getByText('৳ 180,000').first()).toBeVisible();
   await expect(page.getByText('৳ 80,000').first()).toBeVisible();
   await expect(page.getByText('৳ 75,000').first()).toBeVisible();
   await expect(page.getByText('৳ 25,000').first()).toBeVisible();
-  await page.getByRole('button',{name:'Review exceptions'}).click();
-  await expect(page.getByRole('heading',{name:'Corrections & exceptions'})).toBeVisible();
+  await page.getByRole('button',{name:'View Pending: 1'}).click();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
 });
 
@@ -50,17 +50,17 @@ test('KPI explanations are available by Enter, Space, Escape and touch-friendly 
 
 test('monthly chart maintains type filtering, truthful empty months, and detailed activity drill-down',async({page})=>{
   await page.goto(demo);
-  const monthly=page.getByRole('group',{name:/Income tax: Jan/});
+  const monthly=page.getByRole('group',{name:/Income tax: Jun 2026/});
   await expect(monthly).toBeVisible();
-  await expect(monthly.getByRole('button',{name:/Income tax, Jun/})).toBeVisible();
-  await expect(monthly.getByRole('button',{name:/Income tax, Sep/})).toBeVisible();
+  await expect(monthly.getByRole('button',{name:/Income tax, Jun 2026/})).toBeVisible();
+  await expect(monthly.getByRole('button',{name:/Income tax, Sep 2026/})).toBeVisible();
   // January has no recorded income-tax event, so no fake zero-height bar or Tab stop.
-  await expect(monthly.getByRole('button',{name:/Income tax, Jan/})).toHaveCount(0);
+  await expect(monthly.getByRole('button',{name:/Income tax, Jan 2026/})).toHaveCount(0);
   const travel=page.getByRole('button',{name:'Travel tax',exact:true});
   await travel.focus();
   await page.keyboard.press('Space');
   await expect(travel).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('group',{name:/Travel tax: Jan/})).toBeVisible();
+  await expect(page.getByRole('group',{name:/Travel tax: Apr 2026/})).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
