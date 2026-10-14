@@ -17,7 +17,7 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByText('Taxpayer workspace')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
 });
 
 test('public menu contains informational navigation with no sample profile selector',async({page})=>{

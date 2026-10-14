@@ -85,26 +85,30 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
-  await expect(page.getByRole('heading', { name: 'My Tax Payments' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByText('Taxpayer workspace')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Tax position' })).toBeVisible();
-  await expect(page.getByText('Unavailable', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
+  await expect(page.getByText('Not available', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Payments & activity' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Tax ledger', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Certificates' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Corrections' })).toBeVisible();
-  await page.getByText('More taxpayer services', { exact: true }).click();
-  await expect(page.locator('.citizen-taxpayer-more').getByRole('button', { name: 'Notifications' })).toBeVisible();
-  await page.getByText('More taxpayer services', { exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Open transaction history' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Review tax ledger', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View documents' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Full payment journey' })).toBeVisible();
+  if (await page.locator('.citizen-mobile-menu-trigger').isVisible()) {
+    await page.getByRole('button',{name:'Open menu'}).click();
+    await expect(page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Notifications'})).toBeVisible();
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
+  } else {
+    await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Notifications'})).toBeVisible();
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-en');
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
 
   await switchToBangla();
-  await expect(page.getByRole('heading', { name: 'আমার কর পেমেন্ট' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ড্যাশবোর্ড সারসংক্ষেপ' })).toBeVisible();
   await expect(page.getByText('করদাতা ওয়ার্কস্পেস')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'করের অবস্থান' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'পেমেন্টের বিভাজন' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-bn');
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();

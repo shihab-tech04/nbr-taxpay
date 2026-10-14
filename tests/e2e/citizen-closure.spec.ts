@@ -26,10 +26,10 @@ test('root is a public information hub with a header Login and no payment action
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
-  await expect(page.getByText('Recognized credit')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByText('Recognized TDS / AIT')).toBeVisible();
   await expect(page.getByText('Unverified', {exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Tax position'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
@@ -39,8 +39,8 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'আমার কর পেমেন্ট'})).toBeVisible();
-  await expect(page.getByText('স্বীকৃত কর ক্রেডিট',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByText('স্বীকৃত টিডিএস / এআইটি',{exact:true})).toBeVisible();
   await expect(page.getByText('যাচাই হয়নি',{exact:true})).toBeVisible();
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(322);
@@ -53,7 +53,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
 test('sample payment activity retains filtering and does not assert tax-credit owner',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Payments & activity'}).click();
+  await page.getByRole('button',{name:'Open transaction history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByText('Activity overview',{exact:true})).toBeVisible();
   await expect(page.getByText('Personal tax credit recognized')).toHaveCount(0);
@@ -78,15 +78,15 @@ test('public mobile navigation offers information anchors but no payment initiat
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByText('More taxpayer services', { exact: true }).click();
-  await page.getByRole('button',{name:'Dashboard'}).click();
-  await expect(page.getByRole('heading',{name:'Tax dashboard'})).toBeVisible();
-  await expect(page.getByText('No withholding records available.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
   await expect(page.getByText('BDT 47,400')).toHaveCount(0);
   await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'কর সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
 });
 
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{

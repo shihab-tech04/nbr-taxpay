@@ -6,7 +6,7 @@ test('legacy scenario URLs never reveal fictitious accounts or trigger hosted se
  page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co')) backendCalls.push(request.url());});
  for(let n=1;n<=10;n++){
    await page.goto('/?action=taxpayer_home&demoUser=user'+n);
-   await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
+   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
    await expect(page.getByText('Demo scenario',{exact:false})).toHaveCount(0);
    await expect(page.getByText('Example records; no taxpayer account is connected.')).toHaveCount(0);
    await expect(page.getByText('DEMO-TIN-00'+n,{exact:false})).toHaveCount(0);
