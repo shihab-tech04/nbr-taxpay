@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 
@@ -77,7 +77,7 @@ const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*1
 type Route = 'taxpayer_home'|'dashboard'|'history'|'ledger'|'journey'|'certificates'|'corrections'|'account_profile'|'account_notifications'|'account_settings'|'services';
 export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings','services'];
 export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
-  const {navigate,language}=useTaxState();
+  const {navigate,language,routeParams}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [year,setYear]=useState<string>(()=>{
@@ -92,11 +92,23 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   };
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
+  const [reviewFilter,setReviewFilter]=useState<State[]|null>(null);
+  useEffect(()=>{
+    if(route!=='history')return;
+    const category=routeParams.categoryFilter;
+    if(['income','tds','ait','travel'].includes(String(category)))setKind(category as Kind);
+    const statuses=routeParams.reviewStatuses;
+    if(Array.isArray(statuses) && statuses.length && statuses.every((x:unknown)=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(String(x)))){
+      setReviewFilter(statuses as State[]);
+      setStatus('all');
+    } else setReviewFilter(null);
+  },[route,routeParams]);
+  const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
   const [selected,setSelected]=useState<RecordItem|null>(null);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
-  const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,query]);
+  const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(!reviewFilter||reviewFilter.includes(x.state))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,query]);
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
   const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-[11px] font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
@@ -110,7 +122,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     <summary aria-label={tr('About ','বিস্তারিত: ')+label} title={tr('More information','বিস্তারিত তথ্য')}><Info size={16} aria-hidden="true"/></summary>
     <p className="taxpayer-inline-help__content">{tr(english,bengali)}</p>
   </details>;
-  const summaryCard=(en:string,bengali:string,value:string,description:string,descriptionBn:string)=><article className={panel+' taxpayer-dashboard-kpi'}>
+  const summaryCard=(en:string,bengali:string,value:string,description:string,descriptionBn:string,priority=false)=><article className={panel+' taxpayer-dashboard-kpi'+(priority?' taxpayer-dashboard-kpi--balance':'')}>
     <div className="flex min-w-0 items-start justify-between gap-2"><p className="text-sm font-medium text-taxpay-muted">{tr(en,bengali)}</p>
       {info(tr(en,bengali),description,descriptionBn)}</div>
     <p className="mt-3 break-words text-2xl font-semibold tabular-nums text-taxpay-text">{value}</p>
@@ -136,7 +148,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       <select aria-label={tr('Transaction category','লেনদেনের ধরন')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
       </select>
-      <select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={status} onChange={e=>setStatus(e.target.value as State|'all')}>
+      <select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={status} onChange={e=>{setReviewFilter(null);setStatus(e.target.value as State|'all');}}>
         <option value="all">{tr('All statuses','সব অবস্থা')}</option>{(Object.keys(stateLabels) as State[]).map(s=><option key={s} value={s}>{tr(...stateLabels[s])}</option>)}
       </select>
     </div>
@@ -174,9 +186,11 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const cats:Kind[]=['income','tds','ait','travel'];
   const [chartKind,setChartKind]=useState<Kind>('income');
+  const [selectedCoverage,setSelectedCoverage]=useState<number|null>(null);
   const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const monthValues=months.map((_,i)=>scoped.filter(x=>x.kind===chartKind&&x.state==='POSTED'&&Number(x.date.slice(5,7))===i+1).reduce((a,x)=>a+x.amount,0));
   const chartMax=Math.max(...monthValues,1);
+  const monthTotal=monthValues.reduce((total,entry)=>total+entry,0);
   const overview=<>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}>
       {summaryCard('Income tax liability','আয়কর দায়',money(totals.liability),
@@ -186,7 +200,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       {summaryCard('Direct payments','সরাসরি পরিশোধ',money(totals.direct),
         'Posted payments only. Pending, failed and reversed attempts are excluded.','শুধু পোস্টকৃত পরিশোধ; অপেক্ষমাণ, ব্যর্থ ও বাতিল লেনদেন বাদ।')}
       {summaryCard('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),
-        'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।')}
+        'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।',true)}
     </section>
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(290px,1fr)_minmax(0,1.65fr)]">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
@@ -199,20 +213,26 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
           <div className="absolute inset-[43px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
-            <p className="text-xs text-taxpay-muted">{tr('Applied','সমন্বিত')}</p>
-            <p className="text-2xl font-semibold tabular-nums">{Math.round(meter(totals.applied,totals.liability))}%</p>
+            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Applied','সমন্বিত'):coveredBreakdown[selectedCoverage].label}</p>
+            <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-2xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
           </div>
         </div>
-        <div className="divide-y divide-taxpay-border">{coveredBreakdown.map(x=>
-          <div key={x.label} className="flex min-w-0 items-center justify-between gap-2 py-2 text-sm">
-            <p className="flex min-w-0 items-center gap-2"><span aria-hidden="true" className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{backgroundColor:x.color}}/>{x.label}</p>
-            <p className="shrink-0 font-semibold tabular-nums">{money(x.value)}</p>
-          </div>)}
+        <div className="divide-y divide-taxpay-border" role="group" aria-label={tr('Coverage details','করদায়ের বিস্তারিত')}>{coveredBreakdown.map((x,i)=>
+          <button key={x.label} type="button" aria-pressed={selectedCoverage===i}
+            title={tr('Show ','দেখুন: ')+x.label+': '+money(x.value)}
+            onClick={()=>setSelectedCoverage(selectedCoverage===i?null:i)}
+            className={'taxpayer-coverage-row flex w-full min-w-0 items-center justify-between gap-2 py-2 text-left text-sm '+(selectedCoverage===i?'taxpayer-coverage-row--active':'')}>
+            <span className="flex min-w-0 items-center gap-2"><span aria-hidden="true" className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{backgroundColor:x.color}}/>{x.label}</span>
+            <span className="shrink-0 font-semibold tabular-nums">{money(x.value)}</span>
+          </button>)}
         </div>
       </section>
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-activity-title">
         <div className="flex items-center justify-between gap-2">
-          <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
+            <p className="text-sm font-semibold tabular-nums text-taxpay-primary" aria-live="polite">{money(monthTotal)}</p>
+          </div>
           <div className="flex items-center gap-2">
             {info(tr('Monthly activity','মাসভিত্তিক কার্যক্রম'),
               'Posted amounts by month for the selected payment category. Empty months have no matching records.','নির্বাচিত পরিশোধের ধরন অনুযায়ী মাসভিত্তিক পোস্টকৃত পরিমাণ। ফাঁকা মাসে সংশ্লিষ্ট রেকর্ড নেই।')}
@@ -226,11 +246,19 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           {cats.map(k=><button type="button" key={k} aria-pressed={chartKind===k} onClick={()=>setChartKind(k)}
             className={'min-h-11 rounded-lg border px-2 py-2 text-xs font-medium '+(chartKind===k?'border-taxpay-primary bg-taxpay-light text-taxpay-dark':'border-taxpay-border bg-white text-taxpay-text')}>{tr(...labels[k])}</button>)}
         </div>
-        <div className="mt-4 grid h-48 grid-cols-12 items-end gap-1 border-b border-taxpay-border pb-1 sm:gap-2" role="img"
-          aria-label={tr(...labels[chartKind])+': '+months.map((month,i)=>month+' '+money(monthValues[i])).join('; ')}>
+        <div className="taxpayer-monthly-chart mt-3 grid h-40 grid-cols-12 items-end gap-1 border-b border-taxpay-border pb-1 sm:gap-2"
+          role="group" aria-label={tr(...labels[chartKind])+': '+months.map((month,i)=>month+' '+money(monthValues[i])).join('; ')}>
           {monthValues.map((v,i)=><div key={months[i]} className="flex min-w-0 h-full flex-col items-center justify-end gap-1">
             <p className="min-h-4 text-[10px] text-taxpay-muted">{v?Math.round(v/1000)+'k':''}</p>
-            <div className="w-full max-w-10 rounded-t bg-taxpay-secondary" style={{height:(v?Math.max(6,v*130/chartMax):0)+'px'}}/>
+            {v>0?
+              <button type="button" className="taxpayer-monthly-bar w-full max-w-10 rounded-t bg-taxpay-secondary"
+                aria-label={tr(...labels[chartKind])+', '+months[i]+': '+money(v)}
+                title={months[i]+': '+money(v)}
+                style={{height:Math.max(6,v*94/chartMax)+'px'}}
+                onClick={()=>navigate('history',{categoryFilter:chartKind})}>
+                <span className="taxpayer-monthly-bar__tooltip" aria-hidden="true">{months[i]} · {money(v)}</span>
+              </button>:
+              <span aria-hidden="true" className="w-full max-w-10" style={{height:0}}/>}
             <p className="text-[9px] text-taxpay-muted">{bn?['জানু','ফেব','মার্চ','এপ্রি','মে','জুন','জুলা','আগ','সেপ','অক্টো','নভে','ডিসে'][i]:months[i]}</p>
           </div>)}
         </div>
@@ -253,14 +281,18 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
         {view('corrections','Review exceptions','ব্যতিক্রম দেখুন')}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          [tr('Pending','অপেক্ষমাণ'),scoped.filter(x=>x.state==='PENDING').length],
-          [tr('Failed / reversed','ব্যর্থ / বাতিল'),scoped.filter(x=>x.state==='FAILED'||x.state==='REVERSED').length],
-          [tr('Unmatched','অমিল'),totals.disputed],
-          [tr('Requests','আবেদন'),scoped.filter(x=>x.state==='REQUESTED').length]
-        ].map(row=><div className="rounded-xl border border-taxpay-border bg-taxpay-background px-3 py-3" key={String(row[0])}>
-          <p className="text-xs text-taxpay-muted">{row[0]}</p><p className="mt-1 text-xl font-semibold tabular-nums">{row[1]}</p>
-        </div>)}
+        {([
+          {label:tr('Pending','অপেক্ষমাণ'),count:scoped.filter(x=>x.state==='PENDING').length,states:['PENDING']},
+          {label:tr('Failed / reversed','ব্যর্থ / বাতিল'),count:scoped.filter(x=>x.state==='FAILED'||x.state==='REVERSED').length,states:['FAILED','REVERSED']},
+          {label:tr('Unmatched','অমিল'),count:totals.disputed,states:['DISPUTED']},
+          {label:tr('Requests','আবেদন'),count:scoped.filter(x=>x.state==='REQUESTED').length,states:['REQUESTED']}
+        ] as {label:string;count:number;states:State[]}[]).map(item=>
+          <button type="button" key={item.label} onClick={()=>openReview(item.states)}
+            aria-label={tr('View ','দেখুন: ')+item.label+': '+item.count}
+            className="taxpayer-review-tile group rounded-xl border border-taxpay-border bg-taxpay-background px-3 py-3 text-left">
+            <span className="flex items-center justify-between gap-2 text-xs text-taxpay-muted">{item.label}<ArrowRight size={15} aria-hidden="true" className="text-taxpay-primary opacity-60"/></span>
+            <span className="mt-1 block text-xl font-semibold tabular-nums">{item.count}</span>
+          </button>)}
       </div>
     </section>
   </>;
