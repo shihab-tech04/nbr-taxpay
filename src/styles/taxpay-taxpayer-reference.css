@@ -551,3 +551,78 @@
   .taxpay-taxpayer-reference .taxpayer-account-facts > div {grid-template-columns:1fr;gap:4px;}
   .taxpay-taxpayer-reference .taxpayer-account-tabs button {font-size:12px;padding:8px;}
 }
+
+
+/* User1 taxpayer dashboard: local, token-based simplification only. */
+.taxpay-taxpayer-reference .taxpayer-dashboard-header { padding: clamp(16px, 2vw, 24px); }
+.taxpay-taxpayer-reference .taxpayer-dashboard-kpi { min-height: 105px; }
+.taxpay-taxpayer-reference .taxpayer-dashboard-chart { min-width: 0; }
+.taxpay-taxpayer-reference .taxpayer-dashboard-attention { min-width: 0; }
+.taxpay-taxpayer-reference .taxpayer-inline-help {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  z-index: 1;
+}
+.taxpay-taxpayer-reference .taxpayer-inline-help[open] { z-index: 45; }
+.taxpay-taxpayer-reference .taxpayer-inline-help > summary {
+  display: inline-flex;
+  list-style: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-taxpay-border);
+  border-radius: 50%;
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-muted);
+  cursor: pointer;
+}
+.taxpay-taxpayer-reference .taxpayer-inline-help > summary::-webkit-details-marker { display: none; }
+.taxpay-taxpayer-reference .taxpayer-inline-help > summary::marker { content: ''; }
+.taxpay-taxpayer-reference .taxpayer-inline-help > summary:hover,
+.taxpay-taxpayer-reference .taxpayer-inline-help[open] > summary {
+  color: var(--color-taxpay-primary);
+  background: var(--color-taxpay-light);
+  border-color: var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpayer-dashboard-header .taxpayer-inline-help__content {
+  left: 0;
+  right: auto;
+  max-width: min(220px, calc(100vw - 48px));
+}
+.taxpay-taxpayer-reference .taxpayer-inline-help > summary:focus-visible {
+  outline: 2px solid var(--color-taxpay-primary);
+  outline-offset: 3px;
+}
+.taxpay-taxpayer-reference .taxpayer-inline-help__content {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 56px));
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-taxpay-border);
+  border-radius: 10px;
+  background: var(--color-taxpay-surface);
+  box-shadow: 0 9px 25px rgb(23 32 51 / 13%);
+  color: var(--color-taxpay-text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: left;
+}
+@media (min-width: 1440px) {
+  /* In this demonstration view the desktop left rail already provides navigation.
+     Hide only the duplicate footer; Guest and other taxpayer routes are unaffected. */
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):has([data-dashboard-view="true"]) > .citizen-footer { display: none; }
+}
+@media (max-width: 639px) {
+  .taxpay-taxpayer-reference .taxpayer-dashboard-kpi { min-height: 100px; }
+  .taxpay-taxpayer-reference .taxpayer-dashboard-attention > div:first-child { align-items: flex-start; }
+  .taxpay-taxpayer-reference .taxpayer-dashboard-chart { padding: 16px; }
+}
