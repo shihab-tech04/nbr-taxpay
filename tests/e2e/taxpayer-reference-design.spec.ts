@@ -170,3 +170,32 @@ test('citizen numeric typography is IBM Plex Mono while regular text uses Poppin
   await openSampleTaxpayer(page);
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Poppins/);
 });
+
+test('Public homepage uses heading and description without duplicate eyebrow labels',async({page})=>{
+  await page.goto('/?action=landing');
+  await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+  await expect(page.getByText('Choose a payment category.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'How it works'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment guidance'})).toBeVisible();
+});
+test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',async({page})=>{
+  await page.goto('/?action=landing');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link',{name:/Skip to main content/})).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main#main-content')).toBeFocused();
+  const faq=page.locator('#public-faq summary').first();
+  await faq.focus();
+  await page.keyboard.press('Enter');
+  await expect(faq.locator('xpath=..')).toHaveAttribute('open','');
+  await page.keyboard.press('Enter');
+  await expect(faq.locator('xpath=..')).not.toHaveAttribute('open','');
+});
+test('citizen SPA navigation moves focus to main without making static content tabbable',async({page})=>{
+  await page.goto('/?action=landing');
+  await page.getByRole('link',{name:'FAQs'}).click();
+  await expect(page.locator('main#main-content')).toBeFocused();
+  await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
+  await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
+});
