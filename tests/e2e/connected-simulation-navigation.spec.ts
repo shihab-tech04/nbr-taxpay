@@ -8,8 +8,8 @@ test('Anonymous fictional payment entry requires authenticated profile before an
    await route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({message:'Protected endpoint'})});
  });
  await page.goto('/?action=taxpayer_home&demoUser=user1');
- await expect(page.getByRole('heading',{name:'My Tax Payments'})).toBeVisible();
- await page.locator('.citizen-taxpayer-hero__actions').getByRole('button',{name:'Payments & activity'}).click();
+ await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+ await page.getByRole('button',{name:'Open transaction history'}).click();
  await expect(page.getByRole('heading',{name:'Sign in to simulate a payment'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Open secure sign-in'})).toBeVisible();
