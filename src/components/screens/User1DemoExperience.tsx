@@ -142,7 +142,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     {label:tr('Direct payment','সরাসরি পেমেন্ট'),value:totals.direct,color:'#5bbab9'},
     {label:tr('Remaining','অবশিষ্ট'),value:totals.outstanding,color:'#f0ab79'}
   ];
-  const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%'];}},{end:0,parts:[] as string[]});
+  const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const cats:Kind[]=['income','tds','ait','travel'];
   const [chartKind,setChartKind]=useState<Kind>('income');
   const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
