@@ -24,8 +24,8 @@ export const CertificatesView: React.FC = () => {
 
   const details = selectedPreview === 'ANNUAL_PAYMENT'
     ? [
-      { label: label('Example payment total', 'নমুনা পেমেন্টের মোট'), value: formatCurrency(sampleTotal, language) },
-      { label: label('Example records', 'নমুনা রেকর্ড'), value: new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(sampleReceipts.length) },
+      { label: label('Payment total', 'পেমেন্টের মোট'), value: formatCurrency(sampleTotal, language) },
+      { label: label('Records', 'রেকর্ড'), value: new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(sampleReceipts.length) },
       { label: label('Treasury settlement', 'ট্রেজারি জমা'), value: label('Not verified', 'যাচাই হয়নি') },
       { label: label('Tax credit', 'কর ক্রেডিট'), value: label('Not verified', 'যাচাই হয়নি') }
     ]
@@ -72,7 +72,7 @@ export const CertificatesView: React.FC = () => {
         </div>
 
         <div className="mt-5 border-t border-taxpay-border pt-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a sample preview', 'নমুনা প্রিভিউ বাছুন')}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a preview', 'প্রিভিউ বাছুন')}>
             {previewOptions.map(option => (
               <button
                 key={option.id}
