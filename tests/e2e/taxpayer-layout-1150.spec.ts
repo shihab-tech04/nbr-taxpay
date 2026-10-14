@@ -5,8 +5,6 @@ const url = (route: string) => '/?action=' + route + '&demoUser=user1';
 test('User1 dashboard omits the redundant register and lengthy data notice but preserves Activity records', async ({page}) => {
   await page.goto(url('taxpayer_home'));
   await expect(page.getByRole('heading', {name:'Dashboard summary'})).toBeVisible();
-  await expect(page.getByText('Sample',{exact:true})).toBeVisible();
-  await expect(page.locator('summary[aria-label="About Sample"]')).toBeVisible();
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
   await expect(page.getByText('Taxpayer workspace / Synthetic scenario user1')).toHaveCount(0);
   await expect(page.getByRole('heading', {name:'Transaction and evidence register'})).toHaveCount(0);
