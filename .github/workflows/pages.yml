@@ -135,7 +135,16 @@ jobs:
                grep -q 'TaxPay | Income Tax Payment Information' /tmp/taxpay-live.html &&
                grep -q '/nbr-taxpay/assets/' /tmp/taxpay-live.html; then
               echo "PASS: public Pages HTML and asset prefix read back from $PAGE_URL"
-              exit 0
+              PREVIEW_URL="${PAGE_URL%/}/taxpayer-dashboard-preview.html"
+              if curl --fail --silent --show-error --location --max-time 20 "$PREVIEW_URL" -o /tmp/taxpay-preview-live.html &&
+                 grep -q 'Taxpayer dashboard' /tmp/taxpay-preview-live.html &&
+                 grep -q 'View empty state' /tmp/taxpay-preview-live.html &&
+                 grep -q 'DESIGN PREVIEW' /tmp/taxpay-preview-live.html; then
+                echo "PASS: taxpayer preview public HTML read-back: $PREVIEW_URL"
+                exit 0
+              fi
+              echo "FAIL: taxpayer dashboard preview not published or content mismatch" >&2
+              exit 1
             fi
             echo "Pages content not yet ready (attempt $attempt of 12)"
             sleep 10
