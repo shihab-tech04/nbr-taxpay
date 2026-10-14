@@ -11,7 +11,7 @@ test('financial overview retains correct balances and highlights the action-rele
   await expect(cards.nth(2)).toContainText('৳ 75,000');
   await expect(cards.nth(3)).toContainText('৳ 25,000');
   await expect(cards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
-  await expect(page.getByText('Travel tax (separate)')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-travel-summary').getByText('Travel tax (separate)')).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page.getByRole('group',{name:/Travel tax: Apr 2026/})).toBeVisible();
   await expect(page.getByText('৳ 6,500').first()).toBeVisible();
