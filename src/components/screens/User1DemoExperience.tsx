@@ -272,7 +272,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           {cats.map(k=><button type="button" key={k} aria-pressed={chartKind===k} onClick={()=>setChartKind(k)}
             className={'min-h-11 rounded-lg border px-2 py-2 text-xs font-medium '+(chartKind===k?'border-taxpay-primary bg-taxpay-light text-taxpay-dark':'border-taxpay-border bg-white text-taxpay-text')}>{tr(...labels[k])}</button>)}
         </div>
-        <div className="taxpayer-monthly-scroll mt-3 overflow-x-auto" tabIndex={0} aria-label={tr('Scrollable monthly activity chart','স্ক্রলযোগ্য মাসভিত্তিক চার্ট')}>
+        <div className="taxpayer-monthly-scroll mt-3 overflow-x-auto" tabIndex={monthKeys.length>5?0:undefined} aria-label={tr('Monthly activity chart','মাসভিত্তিক কার্যক্রম চার্ট')}>
           {monthKeys.length?
             <div className="taxpayer-monthly-chart grid h-36 items-end gap-2 border-b border-taxpay-border pb-1"
               style={{gridTemplateColumns:'repeat('+monthKeys.length+',minmax(52px,1fr))',minWidth:monthKeys.length*52+'px'}}
