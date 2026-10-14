@@ -67,3 +67,13 @@ test('phone chart scroll is contained and keyboard available when months exceed 
   const documentOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(documentOverflow).toBeLessThanOrEqual(2);
 });
+
+test('capture 1600px desktop and 375px mobile dashboard renders for visual QA',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Visual QA target viewports');
+  const desktop=info.project.name==='desktop-1280';
+  await page.setViewportSize(desktop?{width:1600,height:900}:{width:375,height:812});
+  await page.goto(dashboard);
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
+  await page.screenshot({path:'test-results/screenshots/taxpayer-final-'+(desktop?'desktop-1600':'mobile-375')+'.png',fullPage:true,animations:'disabled'});
+});
