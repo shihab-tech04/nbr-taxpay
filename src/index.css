@@ -39,12 +39,12 @@
 }
 @layer base {
   body {
-    font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif;
+    font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
 
 .font-serif-fraunces {
-  font-family: 'Poppins', 'Noto Sans Bengali', sans-serif;
+  font-family: 'Fraunces', Georgia, serif;
 }
 
 .font-mono-plex {
@@ -52,7 +52,7 @@
 }
 
 .font-bengali {
-  font-family: 'Noto Sans Bengali', 'Poppins', sans-serif;
+  font-family: 'Noto Sans Bengali', 'Manrope', sans-serif;
 }
 
 /* Print Styles for A-Challan Official Receipts */
@@ -92,3 +92,6 @@
 .taxpay-citizen-shell :is(.numeric,.taxpay-type-financial,.font-mono,.font-mono-plex,.tabular-nums) { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell :is(input,select,textarea,button) { font-family: inherit; }
 .taxpay-citizen-shell[lang="bn"] { font-family: 'Poppins', 'Noto Sans Bengali', sans-serif; }
+
+.taxpay-citizen-shell .font-serif-fraunces {font-family:var(--font-text);}
+.taxpay-citizen-shell .font-bengali {font-family:var(--font-text);}
