@@ -72,3 +72,16 @@ test('Citizen route matrix never adds static text and containers to the Tab sequ
     expect(interactiveCount, 'No accessible native controls found for ' + route).toBeGreaterThan(0);
   }
 });
+
+test('Scrolled-away mobile header is inert rather than an invisible Tab trap', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  const header = page.locator('.citizen-header');
+  await page.evaluate(() => window.scrollTo(0, 650));
+  await expect(header).toHaveAttribute('inert', '');
+  await header.locator('button').first().evaluate((button) => (button as HTMLButtonElement).focus());
+  expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.citizen-header')))).toBe(false);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(header).not.toHaveAttribute('inert', '');
+});
