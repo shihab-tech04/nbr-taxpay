@@ -41,7 +41,13 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  for(const label of ['Profile','Notifications','Profile settings'])await expect(rail.getByRole('button',{name:label,exact:true})).toBeVisible();
+  const accountGroup=rail.locator('.taxpayer-reference-account');
+  await expect(accountGroup.locator('summary')).toBeVisible();
+  await accountGroup.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(accountGroup).toHaveAttribute('open','');
+  for(const label of ['Profile','Profile settings'])await expect(accountGroup.getByRole('button',{name:label,exact:true})).toBeVisible();
+  await expect(rail.getByRole('button',{name:'Notifications',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
