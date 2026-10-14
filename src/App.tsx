@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
@@ -51,6 +51,8 @@ import { HeadCatalogue } from './components/screens/HeadCatalogue';
 const MainRouter: React.FC = () => {
   const { currentRoute, navigate, userRole, setUserRole, language } = useTaxState();
   const {user:verifiedApplicationUser}=useAccountIdentity();
+  const mainContentRef = useRef<HTMLElement>(null);
+  const priorCitizenRouteRef = useRef<string | null>(null);
   const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
   const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
   const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !verifiedApplicationUser && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
@@ -68,6 +70,16 @@ const MainRouter: React.FC = () => {
       navigate(action);
     }
   }, []);
+
+  // SPA navigation should announce the new main region to keyboard users.
+  // Never intercept focus within locked Officer routes or on initial load.
+  useEffect(() => {
+    if (officerRoute) { priorCitizenRouteRef.current = null; return; }
+    if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute) {
+      mainContentRef.current?.focus({ preventScroll: true });
+    }
+    priorCitizenRouteRef.current = currentRoute;
+  }, [currentRoute, officerRoute]);
 
   const renderActiveScreen = () => {
     switch (currentRoute) {
@@ -164,7 +176,7 @@ const MainRouter: React.FC = () => {
     <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : `taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
       {officerRoute ? <Header /> : publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
-      <main id={publicInformationRoute ? 'main-content' : undefined} className={`flex-1 ${publicInformationRoute ? 'max-w-[1360px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
+      <main ref={officerRoute ? undefined : mainContentRef} id={officerRoute ? undefined : 'main-content'} tabIndex={officerRoute ? undefined : -1} className={`flex-1 ${publicInformationRoute ? 'max-w-[1360px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
         {privateSampleGate ? (
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
