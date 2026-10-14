@@ -4,6 +4,7 @@ const routes = ['taxpayer_home','dashboard','history','ledger','journey','certif
 const banned = /\b(sample|synthetic|fictional|illustrative)\b|নমুনা|কাল্পনিক/i;
 
 test('taxpayer dashboard contains no repeated demonstration badges, tooltips or captions', async ({page}) => {
+  await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   const main=page.getByTestId('user1-synthetic-workspace');
   await expect(main.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
