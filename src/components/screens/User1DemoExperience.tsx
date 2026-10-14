@@ -154,8 +154,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight text-taxpay-text sm:text-3xl">{pageTitle}</h1>
-          {overviewRoute&&<div className="flex items-center gap-1"><span className="rounded-full bg-taxpay-light px-2.5 py-1 text-xs font-semibold text-taxpay-dark">{tr('Sample','নমুনা')}</span>
-            {info(tr('Sample','নমুনা'),'Fictional figures, dates and allocations. Not an official tax account, payment confirmation, or NBR/eLedger connection.','সংখ্যা, তারিখ ও সমন্বয় কাল্পনিক; এটি সরকারি কর হিসাব, পরিশোধ নিশ্চিতকরণ বা এনবিআর/ই-লেজার সংযোগ নয়।')}</div>}
+
         </div>
         {!overviewRoute&&sub('Example figures only · Not an official tax account','শুধু নমুনা হিসাব · সরকারি কর হিসাব নয়')}
       </div>
@@ -183,7 +182,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const overview=<>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}>
       {summaryCard('Income tax liability','আয়কর দায়',money(totals.liability),
-        'Illustrative starting liability for the selected assessment year; this is not a statutory calculation.','নির্বাচিত করবর্ষের নমুনা প্রাথমিক করদায়; এটি আইনি হিসাব নয়।')}
+        'Starting amount for the selected assessment year; not calculated from verified tax records.','নির্বাচিত করবর্ষের নমুনা প্রাথমিক করদায়; এটি আইনি হিসাব নয়।')}
       {summaryCard('TDS & advance tax','উৎসে কর ও অগ্রিম কর',money(totals.tds+totals.ait),
         'Only posted example withholding and advance-tax entries. Unmatched amounts are excluded.','শুধু পোস্টকৃত নমুনা উৎসে কর ও অগ্রিম কর; অমিল অর্থ বাদ।')}
       {summaryCard('Direct payments','সরাসরি পরিশোধ',money(totals.direct),
@@ -196,7 +195,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
         <div className="flex items-center justify-between gap-2">
           <h2 id="taxpayer-coverage-title" className="text-base font-semibold">{tr('Tax coverage','করদায়ের বিভাজন')}</h2>
           {info(tr('Tax coverage','করদায়ের বিভাজন'),
-            'Shows the fictional liability allocated to TDS, advance tax and direct payments. Remaining amount is not official tax due.','নমুনা করদায় উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধে ভাগ করা হয়েছে; অবশিষ্ট অর্থ সরকারি পাওনা নয়।')}
+            'Breakdown of withholding, advance tax and direct payments; remaining balance excludes unverified credits.','নমুনা করদায় উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধে ভাগ করা হয়েছে; অবশিষ্ট অর্থ সরকারি পাওনা নয়।')}
         </div>
         <div className="relative mx-auto my-5 h-48 w-48 rounded-full sm:h-52 sm:w-52" role="img"
           aria-label={tr('Example liability coverage: ','নমুনা করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
@@ -218,7 +217,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
           <div className="flex items-center gap-2">
             {info(tr('Monthly activity','মাসভিত্তিক কার্যক্রম'),
-              'Posted example amounts by month, grouped by payment type. Empty months mean no matching sample event, not proof of no real activity.','ধরনভেদে মাসের পোস্টকৃত নমুনা পরিমাণ; ফাঁকা মাস মানে বাস্তবে কোনো লেনদেন হয়নি এমন নয়।')}
+              'Monthly posted entries by category. Blank months have no recorded entry in this view.','ধরনভেদে মাসের পোস্টকৃত নমুনা পরিমাণ; ফাঁকা মাস মানে বাস্তবে কোনো লেনদেন হয়নি এমন নয়।')}
             <button type="button" aria-label={tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')} onClick={()=>navigateTo('history')}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
               {tr('View all','সব দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
@@ -251,7 +250,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
         <div className="flex items-center gap-2">
           <h2 id="taxpayer-attention-title" className="text-base font-semibold">{tr('Needs review','পর্যালোচনা প্রয়োজন')}</h2>
           {info(tr('Needs review','পর্যালোচনা প্রয়োজন'),
-            'Example counts only: pending payments, failed or reversed attempts, disputed withholding and refund or adjustment requests do not establish a credit.','শুধু নমুনা সংখ্যা: অপেক্ষমাণ বা ব্যর্থ পরিশোধ, অমিল উৎসে কর ও ফেরত/সমন্বয়ের আবেদন কোনো কর ক্রেডিট নিশ্চিত করে না।')}
+            'Pending, failed, reversed, disputed and requested amounts are not counted as credited.','শুধু নমুনা সংখ্যা: অপেক্ষমাণ বা ব্যর্থ পরিশোধ, অমিল উৎসে কর ও ফেরত/সমন্বয়ের আবেদন কোনো কর ক্রেডিট নিশ্চিত করে না।')}
         </div>
         {view('corrections','Review exceptions','ব্যতিক্রম দেখুন')}
       </div>
