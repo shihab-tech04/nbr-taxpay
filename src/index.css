@@ -82,3 +82,7 @@
 .taxpay-citizen-shell .taxpay-type-financial { font-size: var(--taxpay-type-financial); line-height: 1.35; font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell[lang="bn"] { line-height: 1.65; }
 .taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button) { line-height: 1.55; }
+
+/* Enforce the same loaded font in both citizen experiences, never Officer. */
+.taxpay-citizen-shell { font-family: 'Manrope', 'Noto Sans Bengali', system-ui, sans-serif; }
+.taxpay-citizen-shell[lang="bn"] { font-family: 'Noto Sans Bengali', 'Manrope', system-ui, sans-serif; }
