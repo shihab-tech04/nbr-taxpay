@@ -19,6 +19,9 @@
 }
 .taxpay-citizen-shell button:focus-visible,
 .taxpay-citizen-shell select:focus-visible,
+.taxpay-citizen-shell input:focus-visible,
+.taxpay-citizen-shell textarea:focus-visible,
+.taxpay-citizen-shell summary:focus-visible,
 .taxpay-citizen-shell a:focus-visible {
   outline: 3px solid var(--citizen-primary);
   outline-offset: 3px;

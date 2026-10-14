@@ -13,7 +13,7 @@ async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
-  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
 }
 
 test('Public and Taxpayer share exact Government Blue tokens while Officer remains isolated', async ({page}) => {

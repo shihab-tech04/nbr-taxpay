@@ -16,7 +16,7 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
 });
 
@@ -107,7 +107,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=taxpayer_home');
     await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-    await expect(page.getByText('Taxpayer workspace')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width+2);

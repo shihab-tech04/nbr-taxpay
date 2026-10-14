@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import governmentSeal from '../../assets/bangladesh-government-seal.svg';
@@ -14,10 +14,21 @@ export function PublicHomeHeader() {
   const {language,setLanguage,currentRoute,navigate} = useTaxState();
   const [menuOpen,setMenuOpen] = useState(false);
   const [logoFailed,setLogoFailed] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuNavRef = useRef<HTMLElement>(null);
   const bn = language==='bn';
   useEffect(()=>{
     if(!menuOpen) return;
-    const dismiss=(event:KeyboardEvent)=>{if(event.key==='Escape')setMenuOpen(false)};
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      menuNavRef.current?.querySelector<HTMLAnchorElement>('a[href]')?.focus();
+    }
+    const dismiss=(event:KeyboardEvent)=>{
+      if(event.key==='Escape') {
+        event.preventDefault();
+        setMenuOpen(false);
+        mobileMenuButtonRef.current?.focus();
+      }
+    };
     document.addEventListener('keydown',dismiss);
     return ()=>document.removeEventListener('keydown',dismiss);
   },[menuOpen]);
@@ -37,7 +48,7 @@ export function PublicHomeHeader() {
         {logoFailed?<span className="public-home-seal-fallback" aria-hidden="true">TP</span>:<img src={governmentSeal} alt="Government Seal of Bangladesh" onError={()=>setLogoFailed(true)}/>}
         <span className="public-home-brand__copy"><strong>TaxPay</strong><small>{bn?'স্বতন্ত্র আয়কর তথ্যসেবা':'Independent tax information service'}</small></span>
       </a>
-      <nav className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
+      <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
         {LINKS.map(routeLink)}{login(true)}
       </nav>
       <div className="public-home-header__tools">
@@ -45,7 +56,7 @@ export function PublicHomeHeader() {
           <Globe2 size={17} aria-hidden="true"/>{bn?'EN':'বাংলা'}
         </button>
         {login(false)}
-        <button type="button" className="public-home-menu" aria-label={bn?'মেনু':'Menu'} aria-controls="public-home-nav" aria-expanded={menuOpen} onClick={()=>setMenuOpen(v=>!v)}>
+        <button ref={mobileMenuButtonRef} type="button" className="public-home-menu" aria-label={bn?'মেনু':'Menu'} aria-controls="public-home-nav" aria-expanded={menuOpen} onClick={()=>setMenuOpen(v=>!v)}>
           {menuOpen?<X size={21}/>:<Menu size={21}/>}
         </button>
       </div>

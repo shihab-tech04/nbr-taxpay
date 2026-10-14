@@ -86,7 +86,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
-  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
   await expect(page.getByText('Not available', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
@@ -114,7 +114,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await switchToBangla();
   await expect(page.getByRole('heading', { name: 'ড্যাশবোর্ড সারসংক্ষেপ' })).toBeVisible();
-  await expect(page.getByText('করদাতা ওয়ার্কস্পেস')).toBeVisible();
+  await expect(page.getByText('আয়কর, পেমেন্ট ও আর্থিক রেকর্ড একসঙ্গে')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'পেমেন্টের বিভাজন' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-bn');
