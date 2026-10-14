@@ -49,7 +49,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const rail = page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await expect(rail).toBeVisible();
   await expect(page.locator('.citizen-header')).toBeHidden();
-  const primary = rail.getByRole('button',{name:'Explore payment flow'});
+  const primary = rail.getByRole('button',{name:'Payment guide'});
   await expect(primary).toContainText('Payment guide');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account > summary')).toBeVisible();
