@@ -9,12 +9,12 @@
   --reference-focus: var(--color-taxpay-secondary);
   --reference-overlay: rgba(5,5,5,.55);
   --reference-shadow: 0 1px 3px rgba(5,5,5,.075);
-  font-family: 'Manrope', 'Noto Sans Bengali', system-ui, sans-serif;
+  font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif;
   background: var(--color-taxpay-background);
   color: var(--color-taxpay-text);
 }
 .taxpay-taxpayer-reference[lang="bn"] {
-  font-family: 'Noto Sans Bengali', 'Manrope', system-ui, sans-serif;
+  font-family: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif;
 }
 .taxpay-taxpayer-reference :is(button, input, select, textarea, a):focus-visible {
   outline: 2px solid var(--reference-focus);
@@ -478,7 +478,7 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
-.taxpay-taxpayer-reference .taxpayer-account-id {font-family:monospace;font-weight:400!important;}
+.taxpay-taxpayer-reference .taxpayer-account-id {font-family:var(--font-numeric);font-weight:400!important;}
 .taxpay-taxpayer-reference .taxpayer-account-notice {
   display: flex;
   gap: 10px;
