@@ -12,8 +12,8 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByText('৳ 75,000').first()).toBeVisible();
   await expect(page.getByText('৳ 25,000').first()).toBeVisible();
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
-  await expect(page.getByText('Sample',{exact:true})).toBeVisible();
-  await expect(page.locator('summary[aria-label="About Sample"]')).toBeVisible();
+  await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
+  await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Transaction and evidence register'})).toHaveCount(0);
   await expect(page.getByText('Travel tax (separate)')).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();
