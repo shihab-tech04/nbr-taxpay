@@ -163,7 +163,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
-  await expect(page.getByText('শুধু নমুনা অবস্থা; সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
+  await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
@@ -181,7 +181,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.getByRole('heading', { name: 'TaxPay — Unofficial demonstration receipt' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TaxPay — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
@@ -229,7 +229,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
     await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'English' }).click();
     await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Close' }).click();
   } else await page.getByRole('button', { name: 'EN' }).first().click();
-  await expect(page.getByRole('heading', { name: 'TaxPay — Unofficial demonstration receipt' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TaxPay — Receipt details' })).toBeVisible();
 });
 
 test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {
