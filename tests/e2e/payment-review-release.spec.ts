@@ -182,7 +182,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await page.getByRole('button', { name: 'EN' }).click();
   await expect(page.getByRole('heading', { name: 'TaxPay — Unofficial demonstration receipt' })).toBeVisible();
-  await expect(page.getByText('Fictional Treasury scroll reference:')).toBeVisible();
+  await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
 test('authenticated taxpayer wizard preserves amounts while localizing the full simulation journey', async ({ page }, info) => {
