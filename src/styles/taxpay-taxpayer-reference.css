@@ -587,6 +587,11 @@
   background: var(--color-taxpay-light);
   border-color: var(--color-taxpay-primary);
 }
+.taxpay-taxpayer-reference .taxpayer-dashboard-header .taxpayer-inline-help__content {
+  left: 0;
+  right: auto;
+  max-width: min(220px, calc(100vw - 48px));
+}
 .taxpay-taxpayer-reference .taxpayer-inline-help > summary:focus-visible {
   outline: 2px solid var(--color-taxpay-primary);
   outline-offset: 3px;
