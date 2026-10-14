@@ -41,7 +41,7 @@ export const TaxpayerDashboard: React.FC = () => {
     {en:'Income tax liability',bn:'মোট আয়কর দায়',desc:'No certified assessment source',bd:'যাচাইকৃত কর নির্ধারণের উৎস নেই'},
     {en:'Recognized TDS / AIT',bn:'স্বীকৃত টিডিএস / এআইটি',desc:'Credit ownership not verified',bd:'ক্রেডিটের মালিকানা যাচাই হয়নি'},
     {en:'Verified tax payments',bn:'যাচাইকৃত কর পরিশোধ',desc:'Settlement and ledger proof required',bd:'সেটেলমেন্ট ও লেজার প্রমাণ প্রয়োজন'},
-    {en:'Remaining payable',bn:'অবশিষ্ট পরিশোধযোগ্য',desc:'Cannot calculate from sample receipts',bd:'নমুনা রসিদ দিয়ে গণনা সম্ভব নয়'}
+    {en:'Remaining payable',bn:'অবশিষ্ট পরিশোধযোগ্য',desc:'Requires verified credit and liability records',bd:'করদায় ও ক্রেডিট যাচাই প্রয়োজন'}
   ];
   const button='min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:border-blue-400 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700';
   const empty=(heading:string,detail:string)=><div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-7 text-center">
@@ -66,7 +66,7 @@ export const TaxpayerDashboard: React.FC = () => {
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
           <select value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800">{ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select>
         </label>
-        <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export examples','নমুনা এক্সপোর্ট')}</button>
+        <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>
     </header>
     <section className={card} aria-label={tr('Selected tax year summary','নির্বাচিত করবর্ষের সারসংক্ষেপ')}>
@@ -81,7 +81,7 @@ export const TaxpayerDashboard: React.FC = () => {
       </div>
     </section>
     <p role="status" className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
-      {tr('Review-mode financial dashboard. No authoritative liability, credit or settlement feed is connected. Example records are illustrations only; unavailable values must not be read as zero.','এটি পর্যালোচনার জন্য আর্থিক ড্যাশবোর্ড। কর দায়, ক্রেডিট বা সেটেলমেন্টের কর্তৃত্বপূর্ণ তথ্য সংযুক্ত নয়। নমুনা তথ্য বাস্তব লেনদেন নয়।')}
+      {tr('Liability and credit values remain unavailable until verified records are connected.','যাচাইকৃত রেকর্ড সংযুক্ত না হওয়া পর্যন্ত করদায় ও ক্রেডিট দেখানো যাবে না।')}
     </p>
     <section aria-label={tr('Tax position summary','কর অবস্থানের সারসংক্ষেপ')} className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
@@ -92,10 +92,10 @@ export const TaxpayerDashboard: React.FC = () => {
     <div className="grid gap-4 lg:grid-cols-[minmax(285px,1fr)_minmax(0,2.1fr)]">
       <section className={card} aria-labelledby="composition-heading">
         <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>
-        <p className="mt-1 text-xs text-slate-500">{tr('Illustrative activity by payment category','খাতভিত্তিক নমুনা লেনদেন')}</p>
-        {exampleRecords.length?<><div role="img" aria-label={tr('Example transaction category proportions, not tax credits','নমুনা লেনদেনের অনুপাত; কর ক্রেডিট নয়')} className="relative mx-auto my-6 h-52 w-52 rounded-full" style={{background:`conic-gradient(#5ea9e4 0% ${100*demoTotals[0]/(sum||1)}%, #a078c7 ${100*demoTotals[0]/(sum||1)}% ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}%, #ed977e ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}% 100%)`}}><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Example only','শুধু নমুনা')}</div></div>
+        <p className="mt-1 text-xs text-slate-500">{tr('Activity by payment category','খাতভিত্তিক লেনদেন')}</p>
+        {exampleRecords.length?<><div role="img" aria-label={tr('Example transaction category proportions, not tax credits','নমুনা লেনদেনের অনুপাত; কর ক্রেডিট নয়')} className="relative mx-auto my-6 h-52 w-52 rounded-full" style={{background:`conic-gradient(#5ea9e4 0% ${100*demoTotals[0]/(sum||1)}%, #a078c7 ${100*demoTotals[0]/(sum||1)}% ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}%, #ed977e ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}% 100%)`}}><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Activity breakdown','লেনদেনের বিভাজন')}</div></div>
         {['Income tax','Source tax','Travel tax'].map((label,i)=><div className="flex items-center justify-between border-t border-slate-100 py-3 text-sm" key={label}><p><span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${['bg-sky-400','bg-purple-400','bg-orange-400'][i]}`}/>{label}</p><p className="font-semibold">৳ {fmt(demoTotals[i])}</p></div>)}</>:
-        empty(tr('No activity to summarize','সারসংক্ষেপের তথ্য নেই'),tr('No eligible example payment records exist for this year. Real credit composition requires verified sources.','এই করবর্ষে নমুনা পেমেন্ট নেই। বাস্তব ক্রেডিটের জন্য যাচাইকৃত উৎস প্রয়োজন।'))}
+        empty(tr('No activity to summarize','সারসংক্ষেপের তথ্য নেই'),tr('No eligible payment records are available for this year. Credits require verified sources.','এই করবর্ষে নমুনা পেমেন্ট নেই। বাস্তব ক্রেডিটের জন্য যাচাইকৃত উৎস প্রয়োজন।'))}
       </section>
       <section className={card} aria-labelledby="activity-heading">
         <div className="flex items-start justify-between"><div><h2 id="activity-heading" className="text-base font-semibold text-slate-800">{tr('Transaction activity','লেনদেনের কার্যক্রম')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Monthly distribution by selected payment type','নির্বাচিত পেমেন্টের মাসভিত্তিক বণ্টন')}</p></div><CalendarDays size={20} className="text-blue-700"/></div>
@@ -113,7 +113,7 @@ export const TaxpayerDashboard: React.FC = () => {
         <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('ledger')}>{tr('Review tax ledger','কর লেজার দেখুন')}<ArrowRight size={16}/></button>
       </section>
       <section className={card}><h2 className="text-base font-semibold">{tr('Challan & reconciliation','চালান ও সমন্বয়')}</h2><p className="mt-2 text-xs text-slate-500">{tr('Gateway, government receipt and ledger stages are independent.','গেটওয়ে, সরকারি রসিদ ও লেজার পৃথক ধাপ।')}</p>
-        {empty(tr('No verified challan data','যাচাইকৃত চালানের তথ্য নেই'),tr('A sample challan number is not an official government receipt.','নমুনা চালান সরকারি রসিদ নয়।'))}
+        {empty(tr('No verified challan data','যাচাইকৃত চালানের তথ্য নেই'),tr('Challan details require government verification.','চালান সরকারি যাচাই সাপেক্ষ।'))}
         <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('certificates')}>{tr('View documents','নথি দেখুন')}<ArrowRight size={16}/></button>
       </section>
       <section className={card}><h2 className="text-base font-semibold">{tr('Payment lifecycle','পেমেন্টের জীবনচক্র')}</h2>
@@ -122,7 +122,7 @@ export const TaxpayerDashboard: React.FC = () => {
       </section>
     </div>
     <section className={card} aria-labelledby="transactions-heading">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 id="transactions-heading" className="text-base font-semibold">{tr('Payment & transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Click an example record to inspect its lifecycle','নমুনা রেকর্ড নির্বাচন করে তার ধাপগুলো দেখুন')}</p></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 id="transactions-heading" className="text-base font-semibold">{tr('Payment & transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Select a record to view its status','অবস্থা দেখতে একটি রেকর্ড নির্বাচন করুন')}</p></div>
         <label className="relative flex items-center"><Search className="absolute left-3 text-slate-400" size={17}/><input type="search" className="min-h-11 w-full rounded-lg border border-slate-200 py-2 pl-10 pr-3 text-sm sm:w-64" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference or type','রেফারেন্স বা খাত খুঁজুন')} aria-label={tr('Search transactions','লেনদেন খুঁজুন')}/></label></div>
       {records.length?<div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">{tr('Reference','রেফারেন্স')}</th><th className="p-3">{tr('Category','খাত')}</th><th className="p-3">{tr('Amount (sample)','পরিমাণ (নমুনা)')}</th><th className="p-3">{tr('Status (sample)','অবস্থা (নমুনা)')}</th><th className="p-3">{tr('Action','বিস্তারিত')}</th></tr></thead><tbody>{records.slice(0,10).map(r=><tr key={r.id} className="border-b border-slate-100"><td className="p-3 font-medium">{r.challanNo}</td><td className="p-3">{String(r.paymentCategory)}</td><td className="p-3">৳ {fmt(r.totalAmount)}</td><td className="p-3 text-slate-600">{r.treasuryStatus}</td><td className="p-3"><button type="button" className="min-h-10 text-blue-800 underline" onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button></td></tr>)}</tbody></table></div>:
       <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another year or filter. Verified records are not connected to this design preview.','অন্য করবর্ষ বা ফিল্টার দেখুন। প্রকৃত যাচাইকৃত তথ্য এখনো যুক্ত নয়।'))}</div>}
