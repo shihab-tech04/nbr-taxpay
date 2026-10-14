@@ -152,7 +152,11 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
         <option value="all">{tr('All statuses','সব অবস্থা')}</option>{(Object.keys(stateLabels) as State[]).map(s=><option key={s} value={s}>{tr(...stateLabels[s])}</option>)}
       </select>
     </div>
-    <p className="mt-3 text-xs text-slate-500" aria-live="polite">{tr('Records','রেকর্ড')}: {filtered.length}</p>
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <p className="text-xs text-slate-500" aria-live="polite">{tr('Records','রেকর্ড')}: {filtered.length}</p>
+      {reviewFilter&&<button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+        onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>}
+    </div>
     {filtered.length ? <div className="mt-2 space-y-2">{filtered.map(item=><article key={item.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0"><p className="text-sm font-semibold text-slate-800">{item.title}</p><p className="mt-0.5 break-all text-xs text-slate-500">{item.ref} · {item.date}</p><p className="mt-1 text-xs text-slate-600">{tr(...labels[item.kind])}</p></div>
       <div className="flex flex-wrap items-center gap-3 sm:justify-end"><p className="text-sm font-semibold tabular-nums">{money(item.amount)}</p>{tag(item.state)}
