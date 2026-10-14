@@ -75,5 +75,5 @@ test('capture 1600px desktop and 375px mobile dashboard renders for visual QA',a
   await page.goto(dashboard);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
-  await page.screenshot({path:'test-results/screenshots/taxpayer-final-'+(desktop?'desktop-1600':'mobile-375')+'.png',fullPage:true,animations:'disabled'});
+  await page.screenshot({path:'visual-evidence/taxpayer-final-'+(desktop?'desktop-1600':'mobile-375')+'.png',fullPage:true,animations:'disabled'});
 });
