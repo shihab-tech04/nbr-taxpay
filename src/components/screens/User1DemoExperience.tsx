@@ -191,8 +191,29 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const cats:Kind[]=['income','tds','ait','travel'];
   const [chartKind,setChartKind]=useState<Kind>('income');
   const [selectedCoverage,setSelectedCoverage]=useState<number|null>(null);
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const monthValues=months.map((_,i)=>scoped.filter(x=>x.kind===chartKind&&x.state==='POSTED'&&Number(x.date.slice(5,7))===i+1).reduce((a,x)=>a+x.amount,0));
+  // The assessment year selects the ledger; event dates determine the plotted months.
+  // Group by YYYY-MM so January from separate calendar years can never be combined.
+  const postedInCategory=scoped.filter(x=>x.kind===chartKind&&x.state==='POSTED').sort((a,b)=>a.date.localeCompare(b.date));
+  const firstKey=postedInCategory[0]?.date.slice(0,7);
+  const lastKey=postedInCategory[postedInCategory.length-1]?.date.slice(0,7);
+  const monthKeys:string[]=[];
+  if(firstKey&&lastKey){
+    let [y,m]=firstKey.split('-').map(Number);
+    const [lastYear,lastMonth]=lastKey.split('-').map(Number);
+    while(y<lastYear||(y===lastYear&&m<=lastMonth)){
+      monthKeys.push(y+'-'+String(m).padStart(2,'0'));
+      m++;
+      if(m>12){m=1;y++;}
+    }
+  }
+  const enMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const bnMonths=['জানু','ফেব','মার্চ','এপ্রি','মে','জুন','জুলা','আগ','সেপ','অক্টো','নভে','ডিসে'];
+  const monthLabel=(key:string,long=false)=>{
+    const [y,m]=key.split('-');
+    return (bn?bnMonths[Number(m)-1]:enMonths[Number(m)-1])+' '+(long?y:'’'+y.slice(-2));
+  };
+  const periodLabel=monthKeys.length?(monthKeys.length===1?monthLabel(monthKeys[0]):monthLabel(monthKeys[0])+'–'+monthLabel(monthKeys[monthKeys.length-1])):'';
+  const monthValues=monthKeys.map(key=>postedInCategory.filter(x=>x.date.slice(0,7)===key).reduce((a,x)=>a+x.amount,0));
   const chartMax=Math.max(...monthValues,1);
   const monthTotal=monthValues.reduce((total,entry)=>total+entry,0);
   const overview=<>
@@ -213,10 +234,10 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           {info(tr('Tax coverage','করদায়ের বিভাজন'),
             'Distribution between TDS, advance tax, direct payments and remaining balance.','উৎসে কর, অগ্রিম কর, সরাসরি পরিশোধ ও অবশিষ্ট দায়ের বিভাজন।')}
         </div>
-        <div className="relative mx-auto my-5 h-48 w-48 rounded-full sm:h-52 sm:w-52" role="img"
+        <div className="relative mx-auto my-3 h-44 w-44 rounded-full sm:h-48 sm:w-48" role="img"
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
-          <div className="absolute inset-[43px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
+          <div className="absolute inset-[38px] sm:inset-[40px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
             <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Applied','সমন্বিত'):coveredBreakdown[selectedCoverage].label}</p>
             <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-2xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
           </div>
@@ -236,6 +257,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
             <p className="text-sm font-semibold tabular-nums text-taxpay-primary" aria-live="polite">{money(monthTotal)}</p>
+            {periodLabel&&<p className="text-xs text-taxpay-muted" aria-label={tr('Recorded activity period: ','রেকর্ডের সময়কাল: ')+periodLabel}>{periodLabel}</p>}
           </div>
           <div className="flex items-center gap-2">
             {info(tr('Monthly activity','মাসভিত্তিক কার্যক্রম'),
@@ -250,28 +272,26 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           {cats.map(k=><button type="button" key={k} aria-pressed={chartKind===k} onClick={()=>setChartKind(k)}
             className={'min-h-11 rounded-lg border px-2 py-2 text-xs font-medium '+(chartKind===k?'border-taxpay-primary bg-taxpay-light text-taxpay-dark':'border-taxpay-border bg-white text-taxpay-text')}>{tr(...labels[k])}</button>)}
         </div>
-        <div className="taxpayer-monthly-chart mt-3 grid h-40 grid-cols-12 items-end gap-1 border-b border-taxpay-border pb-1 sm:gap-2"
-          role="group" aria-label={tr(...labels[chartKind])+': '+months.map((month,i)=>month+' '+money(monthValues[i])).join('; ')}>
-          {monthValues.map((v,i)=><div key={months[i]} className="flex min-w-0 h-full flex-col items-center justify-end gap-1">
-            <p className="min-h-4 text-[10px] text-taxpay-muted">{v?Math.round(v/1000)+'k':''}</p>
-            {v>0?
-              <button type="button" className="taxpayer-monthly-bar w-full max-w-10 rounded-t bg-taxpay-secondary"
-                aria-label={tr(...labels[chartKind])+', '+months[i]+': '+money(v)}
-                title={months[i]+': '+money(v)}
-                style={{height:Math.max(6,v*94/chartMax)+'px'}}
-                onClick={()=>navigate('history',{categoryFilter:chartKind})}>
-                <span className="taxpayer-monthly-bar__tooltip" aria-hidden="true">{months[i]} · {money(v)}</span>
-              </button>:
-              <span aria-hidden="true" className="w-full max-w-10" style={{height:0}}/>}
-            <p className="text-[9px] text-taxpay-muted">{bn?['জানু','ফেব','মার্চ','এপ্রি','মে','জুন','জুলা','আগ','সেপ','অক্টো','নভে','ডিসে'][i]:months[i]}</p>
-          </div>)}
-        </div>
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-taxpay-background px-4 py-3">
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-taxpay-muted">{tr('Travel tax (separate)','ভ্রমণ কর (পৃথক)')}</p>
-            {info(tr('Travel tax','ভ্রমণ কর'),'Travel tax is reported separately and never included in income-tax credits.','ভ্রমণ কর আলাদা দেখানো হয় এবং আয়কর ক্রেডিটে যোগ হয় না।')}
-          </div>
-          <p className="font-semibold tabular-nums">{money(totals.travel)}</p>
+        <div className="taxpayer-monthly-scroll mt-3 overflow-x-auto" tabIndex={0} aria-label={tr('Scrollable monthly activity chart','স্ক্রলযোগ্য মাসভিত্তিক চার্ট')}>
+          {monthKeys.length?
+            <div className="taxpayer-monthly-chart grid h-36 items-end gap-2 border-b border-taxpay-border pb-1"
+              style={{gridTemplateColumns:'repeat('+monthKeys.length+',minmax(52px,1fr))',minWidth:monthKeys.length*52+'px'}}
+              role="group" aria-label={tr(...labels[chartKind])+': '+monthKeys.map((key,i)=>monthLabel(key,true)+' '+money(monthValues[i])).join('; ')}>
+              {monthValues.map((v,i)=><div key={monthKeys[i]} className="flex min-w-0 h-full flex-col items-center justify-end gap-1">
+                <p className="min-h-4 text-xs tabular-nums text-taxpay-muted">{v?Math.round(v/1000)+'k':''}</p>
+                {v>0?
+                  <button type="button" className="taxpayer-monthly-bar w-full max-w-10 rounded-t bg-taxpay-secondary"
+                    aria-label={tr(...labels[chartKind])+', '+monthLabel(monthKeys[i],true)+': '+money(v)}
+                    title={monthLabel(monthKeys[i],true)+': '+money(v)}
+                    style={{height:Math.max(8,v*84/chartMax)+'px'}}
+                    onClick={()=>navigate('history',{categoryFilter:chartKind})}>
+                    <span className="taxpayer-monthly-bar__tooltip" aria-hidden="true">{monthLabel(monthKeys[i],true)} · {money(v)}</span>
+                  </button>:
+                  <span aria-hidden="true" className="w-full max-w-10" style={{height:0}}/>}
+                <p className="text-xs whitespace-nowrap text-taxpay-muted">{monthLabel(monthKeys[i])}</p>
+              </div>)}
+            </div>:
+            <p className="flex min-h-24 items-center justify-center text-sm text-taxpay-muted">{tr('No posted activity','পোস্টকৃত কার্যক্রম নেই')}</p>}
         </div>
       </section>
     </div>
@@ -282,7 +302,6 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           {info(tr('Needs review','পর্যালোচনা প্রয়োজন'),
             'Pending payments, failed or reversed attempts, unmatched withholding and unresolved requests do not count as credited payments.','অপেক্ষমাণ, ব্যর্থ, বাতিল, অমিল বা অনিষ্পন্ন আবেদন ক্রেডিট হিসেবে গণনা করা হয় না।')}
         </div>
-        {view('corrections','Review exceptions','ব্যতিক্রম দেখুন')}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {([
