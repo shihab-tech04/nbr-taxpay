@@ -216,8 +216,14 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-activity-title">
         <div className="flex items-center justify-between gap-2">
           <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
-          {info(tr('Monthly activity','মাসভিত্তিক কার্যক্রম'),
-            'Posted example amounts by month, grouped by payment type. Empty months mean no matching sample event, not proof of no real activity.','ধরনভেদে মাসের পোস্টকৃত নমুনা পরিমাণ; ফাঁকা মাস মানে বাস্তবে কোনো লেনদেন হয়নি এমন নয়।')}
+          <div className="flex items-center gap-2">
+            {info(tr('Monthly activity','মাসভিত্তিক কার্যক্রম'),
+              'Posted example amounts by month, grouped by payment type. Empty months mean no matching sample event, not proof of no real activity.','ধরনভেদে মাসের পোস্টকৃত নমুনা পরিমাণ; ফাঁকা মাস মানে বাস্তবে কোনো লেনদেন হয়নি এমন নয়।')}
+            <button type="button" aria-label={tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')} onClick={()=>navigateTo('history')}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
+              {tr('View all','সব দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
+            </button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={tr('Activity category','কার্যক্রমের ধরন')}>
           {cats.map(k=><button type="button" key={k} aria-pressed={chartKind===k} onClick={()=>setChartKind(k)}
