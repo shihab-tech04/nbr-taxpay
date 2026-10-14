@@ -34,7 +34,7 @@ test('Public and Taxpayer share exact Government Blue tokens while Officer remai
   expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--reference-focus').trim())).toUpperCase()).toBe('#5CA8D8');
   const taxpayerTheme = await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim());
   expect(taxpayerTheme.toLowerCase()).toBe(guestTheme.toLowerCase());
-  expect(await taxpayer.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Manrope');
+  expect(await taxpayer.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Poppins');
   await page.goto('/?action=officer_home');
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
@@ -143,13 +143,30 @@ test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({
 test('Public and Taxpayer use one family and legible payment controls', async ({page}) => {
   await page.goto('/?action=landing');
   const publicFont = await page.locator('.taxpay-citizen-shell').evaluate(el => getComputedStyle(el).fontFamily);
-  expect(publicFont).toContain('Manrope');
+  expect(publicFont).toContain('Poppins');
   await page.goto('/?action=secure_workspace');
   const taxpayerFont = await page.locator('.taxpay-taxpayer-reference').evaluate(el => getComputedStyle(el).fontFamily);
-  expect(taxpayerFont).toContain('Manrope');
+  expect(taxpayerFont).toContain('Poppins');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const field=page.locator('.taxpay-payment-wizard input:visible').first();
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
+});
+
+test('citizen numeric typography is IBM Plex Mono while regular text uses Poppins',async({page})=>{
+  await page.goto('/?action=landing');
+  const shell=page.locator('.taxpay-citizen-shell');
+  await expect(shell).toHaveCSS('font-family',/Poppins/);
+  const families=await shell.evaluate(el=>{
+    const probe=document.createElement('span');
+    probe.className='numeric';probe.textContent='1234567.89';
+    el.appendChild(probe);
+    const result=getComputedStyle(probe).fontFamily;
+    probe.remove();
+    return result;
+  });
+  expect(families).toContain('IBM Plex Mono');
+  await openSampleTaxpayer(page);
+  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Poppins/);
 });

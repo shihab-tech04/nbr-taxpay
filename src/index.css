@@ -84,5 +84,14 @@
 .taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button) { line-height: 1.55; }
 
 /* Enforce the same loaded font in both citizen experiences, never Officer. */
-.taxpay-citizen-shell { font-family: 'Manrope', 'Noto Sans Bengali', system-ui, sans-serif; }
-.taxpay-citizen-shell[lang="bn"] { font-family: 'Noto Sans Bengali', 'Manrope', system-ui, sans-serif; }
+.taxpay-citizen-shell { font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif; }
+.taxpay-citizen-shell[lang="bn"] { font-family: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif; }
+
+/* TaxPay citizen font contract; Office routes are explicitly outside this selector. */
+:root { --font-text: 'Poppins', 'Noto Sans Bengali', sans-serif; --font-numeric: 'IBM Plex Mono', 'Noto Sans Bengali', monospace; }
+.taxpay-citizen-shell :is(.numeric,.taxpay-type-financial,.font-mono,.font-mono-plex,.tabular-nums) { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
+.taxpay-citizen-shell :is(input,select,textarea,button) { font-family: inherit; }
+.taxpay-citizen-shell[lang="bn"] { font-family: 'Poppins', 'Noto Sans Bengali', sans-serif; }
+
+.taxpay-citizen-shell .font-serif-fraunces {font-family:var(--font-text);}
+.taxpay-citizen-shell .font-bengali {font-family:var(--font-text);}
