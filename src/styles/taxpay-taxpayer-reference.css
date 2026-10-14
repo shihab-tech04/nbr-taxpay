@@ -209,7 +209,8 @@
 /* The authenticated application-account UI uses the same reference components.
  * This is CSS presentation only; Supabase identity and RLS remain untouched. */
 .taxpay-taxpayer-reference .taxpayer-reference-secure {
-  max-width: 900px;
+  max-width: 1150px;
+  width: 100%;
   color: var(--color-taxpay-text);
 }
 .taxpayer-reference-secure > header,
@@ -321,7 +322,9 @@
     padding: 24px 32px 40px;
   }
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > * {
-    max-width: 900px;
+    width: 100%;
+    max-width: 1150px;
+    min-width: 0;
     margin-inline: auto;
   }
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > .citizen-footer {
@@ -396,7 +399,7 @@
 
 /* Account center: same taxpayer-only Sobaike tokens, never Guest or Officer. */
 .taxpay-taxpayer-reference .taxpayer-account-center {
-  width: min(100%, 900px);
+  width: min(100%, 1150px);
   margin: 0 auto;
   padding-bottom: 64px;
   color: var(--color-taxpay-text);
