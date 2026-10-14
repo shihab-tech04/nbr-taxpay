@@ -50,7 +50,9 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await expect(rail).toBeVisible();
   await expect(page.locator('.citizen-header')).toBeHidden();
   const primary = rail.getByRole('button',{name:'Explore payment flow'});
-  await expect(primary).toHaveCSS('background-color',exactReference.primary);
+  await expect(primary).toContainText('Payment guide');
+  await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
+  await expect(rail.locator('.taxpayer-reference-account > summary')).toBeVisible();
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
   const main = page.locator('main');
   expect(await main.evaluate(el => Math.round(el.getBoundingClientRect().left))).toBe(250);
@@ -58,6 +60,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await rail.getByRole('button',{name:'Tax ledger'}).click();
   await expect(rail.getByRole('button',{name:'Tax ledger'})).toHaveAttribute('aria-current','page');
   await expect(page.getByText('Ledger information')).toBeVisible();
+  await rail.locator('.taxpayer-reference-account > summary').click();
   await rail.getByRole('button',{name:'Account access'}).click();
   await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
