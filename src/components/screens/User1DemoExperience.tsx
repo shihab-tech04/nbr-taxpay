@@ -227,6 +227,13 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       {summaryCard('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),
         'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।',true)}
     </section>
+    <div className="taxpayer-travel-summary flex flex-wrap items-center justify-end gap-2 px-1 text-sm" aria-label={tr('Separate travel tax','পৃথক ভ্রমণ কর')}>
+      <p className="text-taxpay-muted">{tr('Travel tax (separate)','ভ্রমণ কর (পৃথক)')}</p>
+      {info(tr('Travel tax','ভ্রমণ কর'),
+        'Travel tax is recorded separately and is not included in income-tax credits or the remaining liability.',
+        'ভ্রমণ কর আলাদা রেকর্ড করা হয়; এটি আয়কর ক্রেডিট বা অবশিষ্ট করদায়ের মধ্যে অন্তর্ভুক্ত নয়।')}
+      <p className="font-semibold tabular-nums text-taxpay-text">{money(totals.travel)}</p>
+    </div>
     <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(290px,1fr)_minmax(0,1.65fr)]">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
