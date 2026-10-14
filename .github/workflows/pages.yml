@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js 24.21.0
         uses: actions/setup-node@v7
@@ -35,6 +37,14 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: UX/UI v8 scope and source checks (diagnosis is not acceptance)
+        run: |
+          node scripts/product-integrity-gate.mjs --mode=self-test
+          if [ "${{ github.event_name }}" = "pull_request" ]; then node scripts/product-integrity-gate.mjs --mode=pr; fi
+          node scripts/product-integrity-gate.mjs --mode=audit
+      - name: UX/UI v8 final release blocker
+        if: github.event_name != 'pull_request'
+        run: node scripts/product-integrity-gate.mjs --mode=release
       - name: Verify TypeScript and domain constraints
         run: |
           npm run lint
