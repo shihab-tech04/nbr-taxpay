@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, Landmark, ReceiptText, ShieldCheck, WalletCards, Plane, Search } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, ReceiptText, ShieldCheck, WalletCards, Plane, Search } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import {PublicServiceModal, type PublicService} from './PublicServiceModal';
 
@@ -31,7 +31,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub mx-auto w-full max-w-[1296px] space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
     <section className="citizen-public-hero public-information-hero" aria-labelledby="public-home-title">
       <div className="citizen-public-hero__copy">
-        <p className="citizen-public-hero__eyebrow"><Landmark size={16} aria-hidden="true" />{t('Income tax payment information', 'আয়কর পরিশোধের তথ্যসেবা')}</p>
+
         <h1 id="public-home-title">{t('Understand tax payments. Stay in control.', 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।')}</h1>
         <p>{t('Explore payment guidance. Manage your transactions after login.', 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।')}</p>
         <div className="citizen-public-hero__actions public-guest-actions">
@@ -40,7 +40,7 @@ export const PublicLanding: React.FC = () => {
         </div>
       </div>
       <aside className="citizen-public-hero__panel public-information-guide" aria-labelledby="prepare-title">
-        <p className="citizen-public-hero__panel-label">{t('Before you pay', 'কর পরিশোধের আগে')}</p>
+
         <h2 id="prepare-title">{t('Check these details', 'যা যাচাই করবেন')}</h2>
         <ol>
           <li><span>01</span><p>{t('Taxpayer and payment ownership', 'করদাতা ও পেমেন্টের মালিকানা')}</p></li>
@@ -52,7 +52,7 @@ export const PublicLanding: React.FC = () => {
 
     <section id="public-payment-types" className="citizen-hub-section public-info-section" aria-labelledby="payment-types-title">
       <div className="citizen-hub-section__heading"><div>
-        <p className="citizen-hub-eyebrow">{t('Payment information', 'কর পরিশোধের তথ্য')}</p>
+
         <h2 id="payment-types-title">{t('Explore payment types', 'কর পরিশোধের ধরন জানুন')}</h2>
         <p>{t('Choose a payment category.', 'পেমেন্টের ধরন বেছে নিন।')}</p>
       </div><button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
@@ -66,7 +66,7 @@ export const PublicLanding: React.FC = () => {
 
     <section id="public-how-it-works" className="citizen-hub-section citizen-hub-steps public-info-section" aria-labelledby="steps-title">
       <div className="citizen-hub-section__heading"><div>
-        <p className="citizen-hub-eyebrow">{t('The process', 'পরিশোধের প্রক্রিয়া')}</p>
+
         <h2 id="steps-title">{t('How it works', 'যেভাবে কাজ করে')}</h2>
         <p>{t('Three simple steps.', 'তিনটি সহজ ধাপ।')}</p>
       </div><button type="button" className="public-more-link" onClick={()=>openGuide('status')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
@@ -79,7 +79,7 @@ export const PublicLanding: React.FC = () => {
 
     <section id="public-guides" className="citizen-hub-section public-info-section" aria-labelledby="knowledge-title">
       <div className="citizen-hub-section__heading"><div>
-        <p className="citizen-hub-eyebrow">{t('Guidance', 'তথ্য ও নির্দেশনা')}</p>
+
         <h2 id="knowledge-title">{t('Payment guidance', 'পেমেন্ট নির্দেশনা')}</h2>
         <p>{t('Prepare, check and keep records.', 'প্রস্তুতি, যাচাই ও রেকর্ড।')}</p>
       </div><button type="button" className="public-more-link" onClick={()=>openGuide('records')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
@@ -94,7 +94,7 @@ export const PublicLanding: React.FC = () => {
 
     <section id="public-faq" className="citizen-hub-section public-info-section" aria-labelledby="faq-title">
       <div className="citizen-hub-section__heading"><div>
-        <p className="citizen-hub-eyebrow">{t('Help', 'সহায়তা কেন্দ্র')}</p>
+
         <h2 id="faq-title"><CircleHelp size={22} aria-hidden="true" /> {t('Frequently asked questions', 'সাধারণ জিজ্ঞাসা')}</h2>
       </div><button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
       <div className="public-info-faq">
