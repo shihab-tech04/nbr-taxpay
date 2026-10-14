@@ -166,6 +166,7 @@ export function CitizenNavigation() {
   );
   return (
     <>
+      <a className="public-home-skip-link" href="#main-content">{bn ? 'মূল কনটেন্টে যান' : 'Skip to main content'}</a>
       <header className={compact && !inTransaction ? 'citizen-header citizen-header--hidden' : 'citizen-header'}>
         <div className={inTransaction ? "citizen-header__inner" : "citizen-header__inner citizen-header__inner--standard"}>
           {!inTransaction && <button type="button" className="citizen-mobile-menu-trigger" onClick={() => setMenuOpen(true)}
