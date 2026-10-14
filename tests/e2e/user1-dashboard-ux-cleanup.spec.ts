@@ -19,7 +19,7 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Needs review'})).toBeVisible();
-  await expect(page.getByText('Travel tax (separate)')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-travel-summary').getByText('Travel tax (separate)')).toBeVisible();
 
   await expect(workspace.locator('.taxpayer-dashboard-kpi').first().locator(':scope > p')).toHaveCount(1);
   await expect(page.getByText('৳ 180,000').first()).toBeVisible();
