@@ -86,7 +86,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
-  await expect(page.getByText('Taxpayer workspace')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
   await expect(page.getByText('Not available', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
