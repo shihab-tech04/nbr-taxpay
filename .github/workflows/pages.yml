@@ -70,6 +70,7 @@ jobs:
           path: |
             test-results/screenshots/
             playwright-report/
+            visual-evidence/
           if-no-files-found: ignore
 
       - name: Configure GitHub Pages
