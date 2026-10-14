@@ -21,6 +21,7 @@ import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { IncidentReporting } from './components/screens/IncidentReporting';
 import { ArchitectureView } from './components/screens/ArchitectureView';
 import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
+import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
 import { PaymentWizard } from './components/screens/PaymentWizard';
 import { PaymentHistory } from './components/screens/PaymentHistory';
 import { PaymentDetailView } from './components/screens/PaymentDetailView';
@@ -48,7 +49,7 @@ import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, navigate, userRole, setUserRole, language } = useTaxState();
+  const { currentRoute, navigate, userRole, setUserRole, language, demoUser } = useTaxState();
   const {user:verifiedApplicationUser}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -81,6 +82,11 @@ const MainRouter: React.FC = () => {
   }, [currentRoute, officerRoute]);
 
   const renderActiveScreen = () => {
+    // Fictional user1 has a unified read-only story across all taxpayer views.
+    // Only public demoUser=user1, never a signed-in account or financial backend.
+    if (demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
+      return <User1DemoExperience route={currentRoute} />;
+    }
     switch (currentRoute) {
       // Public Screens
       case 'landing':
