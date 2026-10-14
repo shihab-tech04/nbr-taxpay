@@ -199,3 +199,12 @@ test('citizen SPA navigation moves focus to main without making static content t
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
 });
+
+test('Taxpayer navigation offers keyboard skip to main content', async({page})=>{
+  await openSampleTaxpayer(page);
+  const skip=page.getByRole('link',{name:'Skip to main content'});
+  await expect(skip).toHaveAttribute('href','#main-content');
+  await skip.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main#main-content')).toBeFocused();
+});
