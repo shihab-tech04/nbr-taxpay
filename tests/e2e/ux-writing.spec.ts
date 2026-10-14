@@ -22,7 +22,9 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Live assessments, Treasury settlements, eTDS records')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
-  await page.getByRole('button',{name:'Open menu'}).click();
+  const compactMenu=page.locator('.citizen-corners').getByRole('button',{name:'Open menu'});
+  if(await compactMenu.isVisible()) await compactMenu.click();
+  else await page.locator('.citizen-header').getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
