@@ -20,7 +20,6 @@ import { TravelTax } from './components/screens/TravelTax';
 import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { IncidentReporting } from './components/screens/IncidentReporting';
 import { ArchitectureView } from './components/screens/ArchitectureView';
-import { TaxpayerHome } from './components/screens/TaxpayerHome';
 import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
 import { PaymentWizard } from './components/screens/PaymentWizard';
 import { PaymentHistory } from './components/screens/PaymentHistory';
@@ -107,7 +106,7 @@ const MainRouter: React.FC = () => {
 
       // Taxpayer Screens
       case 'taxpayer_home':
-        return <TaxpayerHome />;
+        return <TaxpayerDashboard />;
       case 'dashboard':
         return <TaxpayerDashboard />;
       case 'wizard':
