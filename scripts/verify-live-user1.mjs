@@ -25,7 +25,7 @@ try {
   await expect(desktop.getByText('৳ 80,000').first()).toBeVisible();
   await expect(desktop.getByText('৳ 75,000').first()).toBeVisible();
   await expect(desktop.getByText('৳ 25,000').first()).toBeVisible();
-  await expect(desktop.getByText('Sample',{exact:true})).toBeVisible();
+  await expect(workspace).toHaveAttribute('data-dashboard-view','true');
   await desktop.screenshot({path:'test-results/live-user1-desktop.png',fullPage:true});
   await desktop.getByRole('button',{name:'Open transaction history'}).click();
   await expect(desktop.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
