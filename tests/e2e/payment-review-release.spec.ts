@@ -5,7 +5,7 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string) => {
-  await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeInViewport();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeInViewport();
   if (projectName === 'desktop-1280') {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
     await expect(page.getByTestId('receipt-breakdown-mobile')).toBeHidden();
@@ -160,7 +160,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('কাল্পনিক ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('শুধু নমুনা অবস্থা; সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
@@ -201,7 +201,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   await expect(page.getByRole('alert')).toContainText('greater than zero');
   await page.getByLabel('Tax amount (৳)').fill('25000');
   await page.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(page.getByText('Demo transaction — no money moves or official challan is issued.')).toBeVisible();
+  await expect(page.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
 
   if (info.project.name.startsWith('mobile')) {
@@ -214,7 +214,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
   await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
 
   if (info.project.name === 'mobile-320') {
@@ -249,7 +249,7 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await expect(page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' })).toBeVisible();
   await page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' }).click();
   await expect(page.getByText('ভ্রমণ করের প্রিভিউ প্রস্তুত।')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'TaxPay — অনানুষ্ঠানিক নমুনা রসিদ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('এই নমুনা ব্যক্তিগত কর-ক্রেডিট তৈরি বা যাচাই করে না।')).toBeVisible();
 
