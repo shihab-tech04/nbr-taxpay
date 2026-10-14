@@ -67,7 +67,7 @@ export function TaxpayerReferenceRail() {
               </button>)}
             </div>
           </details>
-          <button type="button" onClick={() => navigate('guest')} aria-label={bn?'পেমেন্টের ধাপ দেখুন':'Explore payment flow'}>
+          <button type="button" onClick={() => navigate('guest')}>
             <WalletCards size={18} aria-hidden={true}/><span>{bn?'পেমেন্ট নির্দেশিকা':'Payment guide'}</span>
           </button>
         </nav>
