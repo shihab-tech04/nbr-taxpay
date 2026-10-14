@@ -12,7 +12,8 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByText('৳ 75,000').first()).toBeVisible();
   await expect(page.getByText('৳ 25,000').first()).toBeVisible();
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
-  await expect(page.getByText('Example figures only · Not an official tax account')).toBeVisible();
+  await expect(page.getByText('Sample',{exact:true})).toBeVisible();
+  await expect(page.locator('summary[aria-label="About Sample"]')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction and evidence register'})).toHaveCount(0);
   await expect(page.getByText('Travel tax (separate)')).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();
@@ -33,7 +34,8 @@ test('user1 year selection stays consistent across documents and correction scre
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
   await expect(page.getByText('৳ 125,000').first()).toBeVisible();
   await expect(page.getByText('৳ 10,000').first()).toBeVisible();
-  await page.getByRole('button',{name:'Documents',exact:true}).click();
+  await page.locator('.citizen-menu-open').click();
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
   await expect(page).toHaveURL(/scenarioYear=2024-2025/);
   await expect(page.getByRole('heading',{name:'Certificate previews'})).toBeVisible();
   await expect(page.getByText('DEMO-CH-24-01').first()).toBeVisible();
