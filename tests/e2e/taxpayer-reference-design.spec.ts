@@ -194,7 +194,7 @@ test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',a
 });
 test('citizen SPA navigation moves focus to main without making static content tabbable',async({page})=>{
   await page.goto('/?action=landing');
-  await page.getByRole('link',{name:'FAQs'}).click();
+  await page.locator('#public-faq .public-more-link').click();
   await expect(page.locator('main#main-content')).toBeFocused();
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
