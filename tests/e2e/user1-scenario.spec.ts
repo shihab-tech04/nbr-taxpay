@@ -20,7 +20,7 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Sign in to simulate a payment'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sign in to make a payment'})).toBeVisible();
   await page.getByRole('button',{name:'Ledger',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
