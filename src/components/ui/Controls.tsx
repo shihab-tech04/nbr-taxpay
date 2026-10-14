@@ -2,7 +2,7 @@ import React from 'react';
 
 /** Shared TaxPay controls. Mobile-first, accessible, semantic palette; no hardcoded CSS colors. */
 const controlClass =
-  'min-h-11 w-full rounded-lg border border-taxpay-border bg-taxpay-surface px-3 py-2.5 text-sm text-taxpay-text ' +
+  'min-h-11 w-full rounded-lg border border-taxpay-border bg-taxpay-surface px-3 py-2.5 text-base text-taxpay-text ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -16,7 +16,7 @@ const buttonVariants: Record<ButtonVariant, string> = {
 export const UiButton = React.forwardRef<HTMLButtonElement, UiButtonProps>(
   ({ variant = 'primary', type = 'button', className = '', ...props }, ref) =>
     <button ref={ref} type={type}
-      className={'inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold ' +
+      className={'inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2.5 text-base font-semibold ' +
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ' +
         'disabled:cursor-not-allowed disabled:opacity-50 ' + buttonVariants[variant] + ' ' + className}
       {...props} />

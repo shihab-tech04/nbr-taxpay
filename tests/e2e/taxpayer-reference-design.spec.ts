@@ -139,3 +139,17 @@ test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({
   await expect(page.getByRole('columnheader',{name:'বিবরণ ও অর্থনৈতিক কোড'})).toBeVisible();
   await expect(page.getByRole('columnheader',{name:'ডেবিট (দায়)'})).toBeVisible();
 });
+
+test('Public and Taxpayer use one family and legible payment controls', async ({page}) => {
+  await page.goto('/?action=landing');
+  const publicFont = await page.locator('.taxpay-citizen-shell').evaluate(el => getComputedStyle(el).fontFamily);
+  expect(publicFont).toContain('Manrope');
+  await page.goto('/?action=secure_workspace');
+  const taxpayerFont = await page.locator('.taxpay-taxpayer-reference').evaluate(el => getComputedStyle(el).fontFamily);
+  expect(taxpayerFont).toContain('Manrope');
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  const field=page.locator('.taxpay-payment-wizard input:visible').first();
+  if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
+});

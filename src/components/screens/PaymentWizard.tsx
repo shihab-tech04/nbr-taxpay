@@ -189,7 +189,7 @@ export const PaymentWizard: React.FC = () => {
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
               <span className="font-bold">{t.complete}</span>
-              <p className="text-xs text-emerald-800">
+              <p className="text-sm text-emerald-800">
                 {t.receipt} <strong className="font-mono">{createdReceipt.challanNo}</strong>
               </p>
             </div>
@@ -199,7 +199,7 @@ export const PaymentWizard: React.FC = () => {
               setStep(1);
               setCreatedReceipt(null);
             }}
-            className="min-h-11 px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
+            className="min-h-11 px-3 py-1.5 rounded bg-emerald-800 text-white text-sm font-semibold hover:bg-taxpay-primary cursor-pointer"
           >
             {t.newPayment}
           </button>
@@ -214,23 +214,23 @@ export const PaymentWizard: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+            <span className="text-sm font-bold uppercase tracking-wider text-emerald-800">
               {t.eyebrow}
             </span>
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
               {t.title}
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm text-slate-500">
               {t.taxpayer}: <strong className="text-slate-800">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</strong> ({t.tin}: {taxpayerProfile.tin})
             </p>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <span className="text-sm px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
             {t.step} {step} {t.of} 3
           </span>
         </div>
 
         {/* Stepper Header */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-center mb-6" aria-label={bn ? 'পেমেন্টের ধাপ' : 'Payment steps'}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm font-semibold text-center mb-6" aria-label={bn ? 'পেমেন্টের ধাপ' : 'Payment steps'}>
           <div aria-current={step === 1 ? 'step' : undefined} className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
             1. {t.stages[0]}
           </div>
@@ -243,7 +243,7 @@ export const PaymentWizard: React.FC = () => {
         </div>
 
         {errorMessage && (
-          <div id="wizard-error" role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <div id="wizard-error" role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -252,7 +252,7 @@ export const PaymentWizard: React.FC = () => {
         {/* STEP 1 */}
         {step === 1 && (
           <div className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <label htmlFor="wizard-assessment-year" className="block font-semibold text-slate-700 mb-1">
                   {t.year} *
@@ -294,7 +294,7 @@ export const PaymentWizard: React.FC = () => {
             {/* Master Heads List */}
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <label htmlFor="wizard-head-search" className="block text-xs font-semibold text-slate-700">
+                <label htmlFor="wizard-head-search" className="block text-sm font-semibold text-slate-700">
                   {t.head} ({availableHeads.length})
                 </label>
                 <input
@@ -302,7 +302,7 @@ export const PaymentWizard: React.FC = () => {
                   id="wizard-head-search" aria-label={t.search} placeholder={t.search}
                   value={headSearch}
                   onChange={(e) => setHeadSearch(e.target.value)}
-                  className="min-h-11 w-full sm:w-48 px-2.5 py-2 text-xs rounded border border-slate-300"
+                  className="min-h-11 w-full sm:w-48 px-2.5 py-2 text-sm rounded border border-slate-300"
                 />
               </div>
 
@@ -314,7 +314,7 @@ export const PaymentWizard: React.FC = () => {
                     <label
                       key={head.id}
                       htmlFor={`wizard-head-${head.id}`}
-                      className={`min-h-12 p-3 text-xs flex items-start justify-between gap-3 ${isBlocked ? 'cursor-not-allowed' : 'cursor-pointer'} transition-colors ${
+                      className={`min-h-12 p-3 text-sm flex items-start justify-between gap-3 ${isBlocked ? 'cursor-not-allowed' : 'cursor-pointer'} transition-colors ${
                         isSelected
                           ? 'bg-emerald-100/70 border-l-4 border-taxpay-primary'
                           : isBlocked
@@ -331,14 +331,14 @@ export const PaymentWizard: React.FC = () => {
                             {bn ? head.nameBn : head.nameEn}
                           </span>
                           {isBlocked && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
+                            <span className="inline-flex items-center gap-1 text-sm font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
                               <Lock className="w-3 h-3" />
                               {t.blocked}
                             </span>
                           )}
                         </div>
-                        {!bn && <div className="text-[11px] text-slate-500 font-bengali">{head.nameBn}</div>}
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-600">
+                        {!bn && <div className="text-sm text-slate-500 font-bengali">{head.nameBn}</div>}
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                           <span>{t.act}: <strong>{head.sectionAct2023}</strong></span>
                           <span>{t.legacy}: {head.sectionOrdinance1984}</span>
                           <span className="text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
@@ -346,7 +346,7 @@ export const PaymentWizard: React.FC = () => {
                           </span>
                         </div>
                         {head.rateNote && (
-                          <div className="text-[11px] text-emerald-800 font-medium">
+                          <div className="text-sm text-emerald-800 font-medium">
                             {t.note}: {head.rateNote}
                           </div>
                         )}
@@ -368,7 +368,7 @@ export const PaymentWizard: React.FC = () => {
             <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
-                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-sm sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>{t.continueAmounts}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -380,21 +380,21 @@ export const PaymentWizard: React.FC = () => {
         {/* STEP 2 */}
         {step === 2 && (
           <div className="space-y-5">
-            <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
+            <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-sm">
               <span className="text-slate-500 block">{t.selectedHead}:</span>
-              <div className="font-mono-plex font-bold text-sm text-taxpay-dark mt-0.5">
+              <div className="font-mono-plex font-bold text-sm tabular-nums text-taxpay-dark mt-0.5">
                 {selectedHead?.economicCode} — {bn ? selectedHead?.nameBn : selectedHead?.nameEn}
               </div>
-              <div className="text-[11px] text-emerald-800 mt-1">
+              <div className="text-sm text-emerald-800 mt-1">
                 {t.act}: {selectedHead?.sectionAct2023} | {t.year}: {assessmentYear}
               </div>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
+              <h3 className="font-bold text-sm uppercase tracking-wider text-taxpay-dark">
                 {t.amountBreakdown}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
                 <div>
                   <label htmlFor="wizard-tax-amount" className="block text-slate-600 font-medium mb-1">{t.tax} *</label>
                   <input
@@ -448,7 +448,7 @@ export const PaymentWizard: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="wizard-payment-reference" className="block text-slate-600 text-xs font-medium mb-1">
+                <label htmlFor="wizard-payment-reference" className="block text-slate-600 text-sm font-medium mb-1">
                   {t.reference}
                 </label>
                 <input
@@ -457,7 +457,7 @@ export const PaymentWizard: React.FC = () => {
                   placeholder={t.referencePlaceholder}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs rounded border border-slate-300"
+                  className="w-full px-3 py-1.5 text-sm rounded border border-slate-300"
                 />
               </div>
 
@@ -474,14 +474,14 @@ export const PaymentWizard: React.FC = () => {
             <div className="flex justify-between pt-3">
               <button
                 onClick={() => setStep(1)}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>{t.back}</span>
               </button>
               <button
                 onClick={handleStep2Next}
-                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-sm sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>{t.continueReview}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -493,7 +493,7 @@ export const PaymentWizard: React.FC = () => {
         {/* STEP 3 */}
         {step === 3 && (
           <div className="space-y-6">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3 text-xs">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3 text-sm">
               <h3 className="font-serif-fraunces font-bold text-base text-slate-900 border-b border-slate-200 pb-2">
                 {t.review}
               </h3>
@@ -526,7 +526,7 @@ export const PaymentWizard: React.FC = () => {
 
             {/* Gateway choices */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label className="block text-sm font-bold uppercase tracking-wider text-slate-700">
                 {t.channel}
               </label>
               <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2" role="group" aria-label={t.channel}>
@@ -543,7 +543,7 @@ export const PaymentWizard: React.FC = () => {
                     type="button"
                     onClick={() => setPaymentMethod(gw.id as any)}
                     aria-pressed={paymentMethod === gw.id}
-                    className={`min-h-11 p-2.5 rounded-lg border text-xs font-semibold cursor-pointer text-center ${
+                    className={`min-h-11 p-2.5 rounded-lg border text-sm font-semibold cursor-pointer text-center ${
                       paymentMethod === gw.id
                         ? 'bg-taxpay-primary text-white border-taxpay-primary'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
@@ -555,7 +555,7 @@ export const PaymentWizard: React.FC = () => {
               </div>
             </div>
 
-            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950" role="note">
+            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950" role="note">
               {t.simulationNotice}
             </p>
 
@@ -563,7 +563,7 @@ export const PaymentWizard: React.FC = () => {
               <button
                 disabled={isProcessing}
                 onClick={() => setStep(2)}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>{t.back}</span>
@@ -571,7 +571,7 @@ export const PaymentWizard: React.FC = () => {
               <button
                 disabled={isProcessing}
                 onClick={handleExecutePayment}
-                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-sm sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span>{t.running}</span>
