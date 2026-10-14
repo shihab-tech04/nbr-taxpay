@@ -71,8 +71,8 @@ function yearSummary(year:string) {
     disputed:scoped.filter(x=>x.state==='DISPUTED').length,
     posted:scoped.filter(x=>x.state==='POSTED').length};
 }
-const panel='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
-const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700';
+const panel='rounded-2xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-5';
+const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface px-3 text-sm font-medium text-taxpay-dark transition hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary';
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
 type Route = 'taxpayer_home'|'dashboard'|'history'|'ledger'|'journey'|'certificates'|'corrections'|'account_profile'|'account_notifications'|'account_settings'|'services';
 export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings','services'];
@@ -137,19 +137,15 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </article>)}</div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </div>;
   const header=<header className={panel}>
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs text-slate-500">{tr('Taxpayer workspace / Synthetic scenario user1','করদাতা ওয়ার্কস্পেস / কৃত্রিম পরিস্থিতি user1')}</p>
-      <h1 className="mt-1 text-2xl font-semibold text-slate-800 sm:text-3xl">{route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের নমুনা'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):route==='services'?tr('Connected services','সংযুক্ত সেবা'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
-      {sub('All figures are invented demonstration data, not NBR or bank records.','সব পরিমাণ কৃত্রিম নমুনা, এনবিআর বা ব্যাংক রেকর্ড নয়।')}</div>{years}</div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="mt-1 text-2xl font-semibold text-slate-800 sm:text-3xl">{route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের নমুনা'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):route==='services'?tr('Connected services','সংযুক্ত সেবা'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
+      {sub('Example figures only · Not an official tax account','শুধু নমুনা হিসাব · সরকারি কর হিসাব নয়')}</div>{years}</div>
     <div className="mt-4 flex flex-wrap gap-2">{view('taxpayer_home','Overview','সারসংক্ষেপ')}{view('history','Open transaction history','লেনদেনের ইতিহাস খুলুন')}{view('ledger','Ledger','লেজার')}{view('certificates','Documents','নথি')}</div>
   </header>;
-  const warning=<p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900" role="status">
-    {tr('SYNTHETIC USER1 DATA — Figures, settlements, credits, dates, challans and calculations are fictional scenario examples. No eReturn/eLedger/NBR/bank connection or government entitlement is represented.','USER1 কৃত্রিম তথ্য — সব সংখ্যা, সেটেলমেন্ট, ক্রেডিট, তারিখ ও চালান উদাহরণমাত্র। বাস্তব এনবিআর বা ব্যাংক সংযোগ বা অধিকার নয়।')}
-  </p>;
   const coveredBreakdown=[
-    {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'#5ba4de'},
-    {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'#b27fd0'},
-    {label:tr('Direct payment','সরাসরি পেমেন্ট'),value:totals.direct,color:'#5bbab9'},
-    {label:tr('Remaining','অবশিষ্ট'),value:totals.outstanding,color:'#f0ab79'}
+    {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
+    {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
+    {label:tr('Direct payment','সরাসরি পেমেন্ট'),value:totals.direct,color:'var(--color-taxpay-dark)'},
+    {label:tr('Remaining','অবশিষ্ট'),value:totals.outstanding,color:'var(--color-taxpay-accent)'}
   ];
   const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const cats:Kind[]=['income','tds','ait','travel'];
@@ -160,7 +156,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const overview=<>
     <section className={panel} aria-label={tr('Assessment-year summary','করবর্ষ সারসংক্ষেপ')}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div><p className="text-xs text-slate-500">{tr('Currently showing data for assessment year','বর্তমানে প্রদর্শিত করবর্ষ')}</p><h2 className="mt-1 text-2xl font-semibold">{year.replace('-', '–')}</h2></div>
+        <div><h2 className="text-2xl font-semibold text-taxpay-text">{year.replace('-', '–')}</h2>{sub('Assessment-year summary','করবর্ষের সারসংক্ষেপ')}</div>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
           <div className="rounded-xl border border-slate-200 px-3 py-2"><p className="text-xs text-slate-500">{tr('Scenario transactions','নমুনা লেনদেন')}</p><p className="text-lg font-semibold">{scoped.length}</p></div>
           <div className="rounded-xl border border-slate-200 px-3 py-2"><p className="text-xs text-slate-500">{tr('Posted examples','পোস্টকৃত নমুনা')}</p><p className="text-lg font-semibold">{totals.posted}</p></div>
@@ -182,9 +178,9 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
         {coveredBreakdown.map(x=><div key={x.label} className="flex items-center justify-between border-t border-slate-100 py-2"><p className="text-sm"><span aria-hidden="true" className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{backgroundColor:x.color}}/>{x.label}</p><p className="text-sm font-semibold">{money(x.value)}</p></div>)}
       </section>
       <section className={panel}><div className="flex items-center justify-between gap-2"><div><h2 className="text-base font-semibold">{tr('Transaction activity','লেনদেন কার্যক্রম')}</h2>{sub('Monthly posted amounts from the same scenario records','একই নমুনা রেকর্ড থেকে মাসভিত্তিক পোস্টকৃত পরিমাণ')}</div><CalendarDays size={19} className="text-blue-700"/></div>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">{cats.map(k=><button type="button" key={k} aria-pressed={chartKind===k} onClick={()=>setChartKind(k)} className={'min-h-11 rounded-lg border px-2 text-xs font-medium '+(chartKind===k?'border-teal-600 bg-teal-50 text-teal-800':'border-slate-200 bg-white text-slate-700')}>{tr(...labels[k])}</button>)}</div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">{cats.map(k=><button type="button" key={k} aria-pressed={chartKind===k} onClick={()=>setChartKind(k)} className={'min-h-11 rounded-lg border px-2 text-xs font-medium '+(chartKind===k?'border-taxpay-primary bg-taxpay-light text-taxpay-dark':'border-slate-200 bg-white text-slate-700')}>{tr(...labels[k])}</button>)}</div>
         <div className="mt-5 flex h-64 items-end gap-2 border-b border-slate-200 pb-1" role="img" aria-label={tr('Monthly scenario amount bars in BDT','মাসভিত্তিক নমুনা অর্থের বার চার্ট')}>
-          {monthValues.map((v,i)=><div key={months[i]} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"><p className="text-[9px] text-slate-500">{v?Math.round(v/1000)+'k':''}</p><div className="w-full max-w-10 rounded-t bg-teal-300" style={{height:Math.max(3,v*183/chartMax)+'px'}}/><p className="text-[9px] text-slate-500">{months[i]}</p></div>)}
+          {monthValues.map((v,i)=><div key={months[i]} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"><p className="text-[9px] text-slate-500">{v?Math.round(v/1000)+'k':''}</p><div className="w-full max-w-10 rounded-t bg-taxpay-secondary" style={{height:Math.max(3,v*183/chartMax)+'px'}}/><p className="text-[9px] text-slate-500">{months[i]}</p></div>)}
         </div>
         {sub('Zero-height bars indicate no posted scenario event, not confirmed absence of real activity.','শূন্য বার মানে নমুনায় তথ্য নেই; বাস্তব লেনদেন নেই এমন নয়।')}
         <div className="mt-4 grid grid-cols-2 gap-2">{card('Travel tax (separate)','ভ্রমণ কর (পৃথক)',money(totals.travel),'Not included as income-tax credit','আয়কর ক্রেডিটে ধরা হয়নি')}{card('Pending settlement','অপেক্ষমাণ সেটেলমেন্ট',money(totals.pending),'Excluded from paid or credited totals','পরিশোধিত বা ক্রেডিটে ধরা হয়নি')}</div>
@@ -192,7 +188,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </div>
     <div className="grid gap-4 lg:grid-cols-3">
       <section className={panel}><h2 className="font-semibold">{tr('Income tax and source records','আয়কর ও উৎসের রেকর্ড')}</h2>
-        {coveredBreakdown.slice(0,3).map(x=><div key={x.label} className="mt-4"><div className="flex items-center justify-between text-xs"><p>{x.label}</p><p className="font-semibold">{money(x.value)}</p></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-sky-300" style={{width:meter(x.value,totals.liability)+'%'}}/></div></div>)}
+        {coveredBreakdown.slice(0,3).map(x=><div key={x.label} className="mt-4"><div className="flex items-center justify-between text-xs"><p>{x.label}</p><p className="font-semibold">{money(x.value)}</p></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-taxpay-secondary" style={{width:meter(x.value,totals.liability)+'%'}}/></div></div>)}
         <div className="mt-4">{view('ledger','Open source-to-ledger trace','লেজারের বিবরণ দেখুন')}</div>
       </section>
       <section className={panel}><h2 className="font-semibold">{tr('Reconciliation health','সমন্বয়ের অবস্থা')}</h2>
@@ -201,7 +197,6 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       </section>
       <section className={panel}><h2 className="font-semibold">{tr('Documents and support','নথি ও সহায়তা')}</h2><div className="mt-3 grid gap-2">{view('certificates','Receipts / sample challans','রসিদ / নমুনা চালান')}{view('corrections','Corrections and refund','সংশোধন ও ফেরত')}{view('account_notifications','Alerts and updates','বিজ্ঞপ্তি')}{view('journey','Taxpayer lifecycle','করদাতা জীবনচক্র')}</div></section>
     </div>
-    {transactionList}
   </>;
   const ledger=<>
     <section className="grid gap-3 sm:grid-cols-3">{card('Illustrative debit','নমুনা ডেবিট',money(totals.liability),'Single opening liability per tax year','প্রতি করবর্ষে একটি প্রাথমিক দায়')}
@@ -241,7 +236,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="font-semibold">{x[0]}</p><p className="mt-1 text-xs text-slate-500">{x[1]}</p></div>)}</div></section>;
   const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}<section className="rounded-xl border border-blue-100 bg-blue-50 p-4"><h2 className="text-sm font-semibold">{tr('Sign in to simulate a payment','পেমেন্ট সিমুলেট করতে সাইন ইন করুন')}</h2>{sub('This publicly accessible example is read-only. Protected payment SQL requires an authenticated account.','এই নমুনা শুধু দেখার জন্য। পেমেন্ট SQL ব্যবহারে অনুমোদিত লগইন প্রয়োজন।')}<button className={action+' mt-3'} onClick={()=>navigateTo('secure_workspace')} type="button">{tr('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button></section></>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:route==='services'?services:overview;
   return <div data-testid="user1-synthetic-workspace" className={'mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
-    {header}{warning}{content}
+    {header}{content}
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
       <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3"><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2><button type="button" className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
