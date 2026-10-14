@@ -24,7 +24,7 @@ export const TaxLedger: React.FC = () => {
                 {bn ? 'কর লেজার' : 'Tax ledger'}
               </h1>
               <p className="text-xs text-slate-500">
-                {bn ? 'নমুনা তথ্য · অ্যাকাউন্ট বিবরণী নয়' : 'Example entries · Not an account statement'}
+                {bn ? 'লেজার তথ্য' : 'Ledger information'}
               </p>
             </div>
           </div>
