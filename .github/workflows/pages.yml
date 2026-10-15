@@ -39,6 +39,7 @@ jobs:
 
       - name: UX/UI v8 scope and source checks (diagnosis is not acceptance)
         run: |
+          node scripts/ui-regression-guard.mjs --self-test
           node scripts/product-integrity-gate.mjs --mode=self-test
           if [ "${{ github.event_name }}" = "pull_request" ]; then node scripts/product-integrity-gate.mjs --mode=pr; fi
           node scripts/product-integrity-gate.mjs --mode=audit
