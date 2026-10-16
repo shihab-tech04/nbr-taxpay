@@ -162,7 +162,8 @@ test('User guide has real platform-specific steps and searches across all topics
 test('Guide search covers steps and answers, while topic FAQs stay contextual', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide=page.locator('.public-guide-page');
-  await expect(guide.locator('.public-guide-questions details')).toHaveCount(2);
+  await expect(guide.locator('.public-guide-questions details')).toHaveCount(1);
+  await expect(guide.locator('.public-guide-questions')).toContainText('What should I check before payment?');
   await expect(guide.getByText('Are the rates final?')).toHaveCount(0);
   const field=guide.getByRole('searchbox',{name:'Search the guide'});
   await field.fill('passport');
