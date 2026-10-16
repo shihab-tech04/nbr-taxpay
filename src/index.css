@@ -30,10 +30,11 @@
   --taxpay-radius-card: 16px;
   --taxpay-radius-modal: 24px;
   --taxpay-radius-pill: 9999px;
-  --taxpay-shadow-control: 0 1px 2px rgb(23 32 51 / 6%);
-  --taxpay-shadow-card: 0 1px 3px rgb(23 32 51 / 8%);
-  --taxpay-shadow-raised: 0 8px 24px rgb(23 32 51 / 10%);
-  --taxpay-shadow-modal: 0 18px 48px rgb(23 32 51 / 20%);
+  /* Match Sobaike Janao's near-flat bordered surfaces (0 1px at 5%). */
+  --taxpay-shadow-control: 0 1px rgb(0 0 0 / 5%);
+  --taxpay-shadow-card: 0 1px rgb(0 0 0 / 5%);
+  --taxpay-shadow-raised: 0 2px 6px rgb(0 0 0 / 6%);
+  --taxpay-shadow-modal: 0 6px 20px rgb(0 0 0 / 12%);
 }
 
 /* Citizen typography contract: both Public and Taxpayer; officer selectors excluded. */

@@ -51,6 +51,15 @@
   box-shadow: var(--citizen-shadow-card);
 }
 
+/* Legacy Tailwind shadow utilities appear on public payment and taxpayer views.
+ * Normalize them within the citizen shell without affecting the separate Office UI. */
+.taxpay-citizen-shell :is(.shadow-xs, .shadow-sm, .shadow-md) {
+  box-shadow: var(--citizen-shadow-card);
+}
+.taxpay-citizen-shell :is(.shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: var(--citizen-shadow-modal);
+}
+
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service] {
   --service-primary: var(--citizen-primary);
   --service-bg: var(--citizen-primary-light);
@@ -115,7 +124,7 @@
 }
 
 @media print {
-  .taxpay-citizen-shell :is(.public-info-topic, .public-info-guides article, .citizen-taxpayer-summary) {
+  .taxpay-citizen-shell :is(.public-info-topic, .public-info-guides article, .citizen-taxpayer-summary, .shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
     box-shadow: none;
   }
 }
