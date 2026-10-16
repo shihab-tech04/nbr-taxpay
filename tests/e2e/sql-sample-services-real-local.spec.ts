@@ -9,12 +9,15 @@ const signIn = async (page: import('@playwright/test').Page, userId: string) => 
   await expect(page).toHaveURL(/action=taxpayer_home/);
 };
 
-test('isolated SQL profiles and service scenarios render for user6, user8 and user1 without payment credit', async ({ page }) => {
+const requireDisposableBackend = () => {
   const api = process.env.TAXPAY_LOCAL_SUPABASE_URL;
   if (!api || !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(api)) {
     throw Error('A disposable local Supabase project is required');
   }
+};
 
+test('user6 sees stored advance-tax installments and matching SQL profile', async ({ page }) => {
+  requireDisposableBackend();
   await signIn(page, 'user6');
   const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user6');
@@ -24,14 +27,15 @@ test('isolated SQL profiles and service scenarios render for user6, user8 and us
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await expect(page.getByText('Government challan: Not connected')).toBeVisible();
-
-  await page.locator('.taxpayer-reference-rail summary').click();
-  await page.locator('.taxpayer-reference-rail').getByRole('button', { name: 'Profile', exact: true }).click();
+  await page.goto('/?action=account_profile');
   await expect(page.getByText('DEMO-TIN-006', { exact: true })).toBeVisible();
   await expect(page.getByText('Advance-tax instalments')).toBeVisible();
-  await page.locator('.taxpayer-reference-rail').getByRole('button', { name: 'Sign out' }).click();
+});
 
+test('user8 sees failed, pending, and reversed SQL examples but no user6 entries', async ({ page }) => {
+  requireDisposableBackend();
   await signIn(page, 'user8');
+  const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user8');
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-023')).toBeVisible();
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-024')).toBeVisible();
@@ -39,9 +43,12 @@ test('isolated SQL profiles and service scenarios render for user6, user8 and us
   await expect(panel.getByText('SAMPLE-SRV-017')).toHaveCount(0);
   await expect(panel.getByText('Failed', { exact: true }).first()).toBeVisible();
   await expect(panel.getByText('Reversed', { exact: true }).first()).toBeVisible();
-  await page.locator('.taxpayer-reference-rail').getByRole('button', { name: 'Sign out' }).click();
+});
 
+test('user1 retains existing scenario plus its separate stored travel-tax example', async ({ page }) => {
+  requireDisposableBackend();
   await signIn(page, 'user1');
+  const panel = page.getByTestId('demo-sql-service-panel');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(panel).toHaveAttribute('data-scenario-user', 'user1');
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
