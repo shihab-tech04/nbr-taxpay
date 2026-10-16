@@ -855,7 +855,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="space-y-3">
               <h3 id="guest-channel-heading" className="block text-xs font-bold uppercase tracking-wider text-slate-700">{copy.channel}</h3>
 
-              <div role="group" aria-labelledby="guest-channel-heading" className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div role="group" aria-labelledby="guest-channel-heading" className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-5 gap-4">
                 {[
                   { id: 'BKASH', label: 'bKash MFS', fee: copy.noFee },
                   { id: 'NAGAD', label: 'Nagad MFS', fee: copy.noFee },
@@ -868,7 +868,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     type="button"
                     aria-pressed={paymentMethod === gw.id}
                     onClick={() => setPaymentMethod(gw.id as any)}
-                    className={`min-h-11 p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                    className={`min-h-14 p-3 rounded-lg border text-left cursor-pointer transition-all ${
                       paymentMethod === gw.id
                         ? 'bg-taxpay-primary text-white border-taxpay-primary shadow-sm'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'

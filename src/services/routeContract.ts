@@ -14,10 +14,14 @@ const registered = new Set<string>(ROUTES);
 export const validRoute = (value: string | null | undefined): string =>
   value && registered.has(value) ? value : 'landing';
 
-/** Only navigation context, never payment fields or taxpayer identity, belongs in the URL. */
-const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo'] as const;
+/** Only navigation context and public synthetic fixture selectors belong in the URL. */
+const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt'] as const;
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
 const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home', 'payment_search', 'taxpayer_360']);
+
+/** A public deep link can restore *only* a fixed synthetic receipt, never a real payment identifier. */
+export const publicDemoReceiptId = (value: unknown): string | null =>
+  typeof value === 'string' && /^rcpt-10[1-4]$/.test(value) ? value : null;
 
 /** A receipt may return only to its actual originating record list, never an arbitrary URL. */
 export const receiptReturnRoute = (value: unknown): string =>
@@ -28,7 +32,10 @@ export function routeContextFromUrl(route: string, search: URLSearchParams): Rec
   if ((route === 'guest' || route === 'wizard') && search.has('initialCategory'))
     return {initialCategory: search.get('initialCategory')};
   if (route === 'secure_workspace' && search.has('draftCategory')) return {draftCategory: search.get('draftCategory')};
-  if (route === 'payment_details') return {returnTo: receiptReturnRoute(search.get('returnTo'))};
+  if (route === 'payment_details') {
+    const demoReceipt = publicDemoReceiptId(search.get('demoReceipt'));
+    return {returnTo: receiptReturnRoute(search.get('returnTo')), ...(demoReceipt ? {demoReceipt} : {})};
+  }
   if (route !== 'history') return {};
   const result: Record<string, unknown> = {};
   if (search.has('categoryFilter')) result.categoryFilter = search.get('categoryFilter');
@@ -45,7 +52,11 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
   if (route === 'user_guide') put('category', params.category);
   if (route === 'guest' || route === 'wizard') put('initialCategory', params.initialCategory);
   if (route === 'secure_workspace') put('draftCategory', params.draftCategory);
-  if (route === 'payment_details') put('returnTo', receiptReturnRoute(params.returnTo));
+  if (route === 'payment_details') {
+    put('returnTo', receiptReturnRoute(params.returnTo));
+    const demoReceipt = publicDemoReceiptId(params.demoReceipt);
+    if (demoReceipt) put('demoReceipt', demoReceipt);
+  }
   if (route === 'history') {
     put('categoryFilter', params.categoryFilter);
     if (Array.isArray(params.reviewStatuses)) {

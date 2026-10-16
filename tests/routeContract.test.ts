@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {ROUTES, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {ROUTES, publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
 
 test('the route contract exactly matches the app router, including the Office login branch', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
@@ -83,4 +83,21 @@ test('receipt origin remains a safe, reloadable list route and cannot become an 
   assert.deepEqual(routeContextFromUrl('payment_details',search), {returnTo:'payment_search'});
   writeRouteContext('user_guide', {category:'travel'}, search);
   assert.equal(search.has('returnTo'), false);
+});
+
+test('public synthetic receipt deep links restore only known fixtures and never private record identifiers', () => {
+  assert.equal(publicDemoReceiptId('rcpt-101'), 'rcpt-101');
+  assert.equal(publicDemoReceiptId('rcpt-104'), 'rcpt-104');
+  assert.equal(publicDemoReceiptId('rcpt-105'), null);
+  assert.equal(publicDemoReceiptId('rcpt-private-123'), null);
+  const search = new URLSearchParams('action=payment_details&lang=bn');
+  writeRouteContext('payment_details', {
+    returnTo:'taxpayer_360',receiptId:'private-record-42',demoReceipt:'rcpt-101',payerTin:'123456789012'
+  },search);
+  assert.equal(search.toString(),'action=payment_details&lang=bn&returnTo=taxpayer_360&demoReceipt=rcpt-101');
+  assert.deepEqual(routeContextFromUrl('payment_details',search),{returnTo:'taxpayer_360',demoReceipt:'rcpt-101'});
+  search.set('demoReceipt','private-record-42');
+  assert.deepEqual(routeContextFromUrl('payment_details',search),{returnTo:'taxpayer_360'});
+  writeRouteContext('history',{},search);
+  assert.equal(search.has('demoReceipt'),false);
 });

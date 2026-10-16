@@ -12,7 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
-import { receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
+import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -55,6 +55,14 @@ export interface TaxStateContextType {
 
 const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined);
 
+// Browser history can restore a *visual-only* taxpayer sample after refresh.
+// This is never an identity, permission or tax-credit entitlement, and a newly
+// opened deep link without our own history state still starts as a guest.
+const sampleTaxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
+const historySampleRole = (route: string, state: any): UserRole | null =>
+  state?.taxpayRoute === route && sampleTaxpayerRoles.includes(state.taxpaySampleRole)
+    ? state.taxpaySampleRole as UserRole : null;
+
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     // Public payment discovery is the primary citizen entry. The existing office-login demo remains available by explicit deep link.
@@ -68,10 +76,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
   const [demoUser, setDemoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const demoUserRef = useRef(demoUser);
-  const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
+  const [userRole, setUserRoleState] = useState<UserRole>(() => {
+    const search = new URLSearchParams(window.location.search);
+    return getDemoUser(search.get('demoUser'))?.role
+      ?? historySampleRole(validRoute(search.get('action')), window.history.state)
+      ?? 'GUEST';
+  });
+  const userRoleRef = useRef(userRole);
+  const setUserRole = (role: UserRole) => {
+    userRoleRef.current = role;
+    setUserRoleState(role);
+  };
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
-  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const [ledgerEntries] = useState<TaxLedgerEntry[]>(INITIAL_LEDGER_ENTRIES);
   const [corrections, setCorrections] = useState<CorrectionRequest[]>(INITIAL_CORRECTIONS);
   const [cases] = useState<CaseRecord[]>(INITIAL_CASES);
@@ -118,9 +135,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUserRole('GUEST');
       }
     }
-    if (next.href !== window.location.href) {
-      window.history.pushState({ taxpayRoute: route, taxpayParams: params }, '', next);
-    }
+    const sampleRole = sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'secure_workspace'
+      ? {taxpaySampleRole: userRoleRef.current} : {};
+    const historyEntry = {taxpayRoute: route, taxpayParams: params, ...sampleRole};
+    if (next.href !== window.location.href) window.history.pushState(historyEntry, '', next);
+    else if (window.history.state?.taxpayRoute !== route || window.history.state?.taxpaySampleRole !== sampleRole.taxpaySampleRole)
+      window.history.replaceState(historyEntry, '', next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
@@ -137,8 +157,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const leavingDemo = Boolean(demoUserRef.current && !previousDemo);
       demoUserRef.current = previousDemo;
       setDemoUser(previousDemo);
+      const restoredSampleRole = historySampleRole(route, event.state);
       if (previousDemo) setUserRole(previousDemo.role);
-      else if (leavingDemo) setUserRole('GUEST');
+      else if (restoredSampleRole) setUserRole(restoredSampleRole);
+      else if (leavingDemo || sampleTaxpayerRoles.includes(userRoleRef.current)) setUserRole('GUEST');
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
     window.addEventListener('popstate', onPopState);
@@ -146,13 +168,21 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const selectReceipt = (id: string | null) => {
-    setSelectedReceiptId(id);
-    if (id) {
-      navigate('payment_details', {returnTo: receiptReturnRoute(currentRoute)});
-    }
+    if (!id || !receipts.some(receipt => receipt.id === id)) return;
+    const demoReceipt = INITIAL_RECEIPTS.some(receipt => receipt.id === id) ? publicDemoReceiptId(id) : null;
+    navigate('payment_details', {
+      returnTo: receiptReturnRoute(currentRoute), receiptId: id,
+      ...(demoReceipt ? {demoReceipt} : {})
+    });
   };
 
-  const selectedReceipt = selectedReceiptId ? receipts.find(r => r.id === selectedReceiptId) || null : null;
+  // Recover source-linked fixture details after reload and browser history traversal.
+  // Private/dynamically created records remain in memory and are never encoded in a URL.
+  const receiptId = currentRoute === 'payment_details'
+    ? (publicDemoReceiptId(routeParams.demoReceipt) || routeParams.receiptId)
+    : null;
+  const selectedReceipt = typeof receiptId === 'string'
+    ? receipts.find(receipt => receipt.id === receiptId) || null : null;
 
   const logAuditAction = (action: string, targetId: string, details: string) => {
     const newLog: AuditLog = {

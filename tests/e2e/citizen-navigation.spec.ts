@@ -106,7 +106,10 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
   for (const width of [320,360,375,390,768,1280]) {
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=taxpayer_home');
-    await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+    // Re-entering the same history entry can retain its visual sample role.
+    // A new entry remains gated; both paths must reach the same dashboard.
+    const enterSample = page.getByRole('button',{name:'Explore taxpayer workspace'});
+    if (await enterSample.isVisible()) await enterSample.click();
     await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
