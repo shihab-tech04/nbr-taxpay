@@ -31,7 +31,7 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -154,7 +154,7 @@ export function CitizenNavigation() {
 
   const action = (item: CitizenAction) => (
     <button key={item.route+':'+(item.category??'')} type="button" onClick={() => go(item.route, item.category ? {category:item.category} : {})}
-      aria-current={currentRoute === item.route ? 'page' : undefined}
+      aria-current={currentRoute === item.route && (!item.category || routeParams.category === item.category) ? 'page' : undefined}
       className="citizen-nav-link">{label(item)}</button>
   );
   return (

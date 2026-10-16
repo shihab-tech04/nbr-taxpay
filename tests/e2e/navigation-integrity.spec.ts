@@ -118,7 +118,7 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
-  await rail.getByRole('button',{name:'Payment services'}).click();
+  await rail.getByRole('button',{name:'Payment services',exact:true}).click();
   await expect(page).toHaveURL(/action=services/);
   await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
   await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(8);

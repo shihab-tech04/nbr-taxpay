@@ -71,7 +71,7 @@ test('desktop navigation consolidates duplicate Home/Tax summary and groups acco
   await expect(account.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
   await expect(account.getByRole('button',{name:'Profile settings'})).toBeVisible();
   await expect(account.getByRole('button',{name:'Account access'})).toHaveCount(0);
-  await expect(rail.getByRole('button',{name:'Payment services'})).toBeVisible();
+  await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toBeVisible();
 });
 
 test('phone-to-wide-desktop layout keeps chart, KPIs and review actions usable',async({page},info)=>{
