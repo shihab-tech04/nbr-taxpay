@@ -148,6 +148,18 @@ test('unknown destination falls back to Home without leaving an incorrect URL',a
   await expect(page).toHaveURL(/action=landing/);
 });
 
+test('a sample taxpayer preview restores only its own browser-history entry',async({page})=>{
+  await page.goto('/?action=taxpayer_home');
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  // The preview is not account authentication or a transferable URL credential.
+  await page.goto('/?action=ledger');
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+});
+
 test('Officer receipt inspection stays in Officer layout and returns to its exact source list',async({page})=>{
   await page.goto('/?action=payment_search');
   await expect(page.getByRole('heading',{name:'Universal Cross-Treasury Payment Search'})).toBeVisible();
@@ -165,7 +177,7 @@ test('Officer receipt inspection stays in Officer layout and returns to its exac
   await page.reload();
   await expect(page.locator('header.bg-emerald-950')).toBeVisible();
   await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
-  await expect(page.getByText('AC-2025-09-DEMO-REF-001')).toBeVisible();
+  await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'No Challan Selected'})).toHaveCount(0);
   await page.getByRole('button',{name:'Back to Payment Search'}).click();
   await expect(page).toHaveURL(/action=payment_search/);
@@ -198,7 +210,7 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
   await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
   await page.reload();
   await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
-  await expect(page.getByText('AC-2025-09-DEMO-REF-001')).toBeVisible();
+  await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toBeVisible();
   if(page.viewportSize()!.width >= 1440){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
   }
