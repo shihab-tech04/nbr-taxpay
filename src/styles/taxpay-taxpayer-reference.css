@@ -79,8 +79,9 @@
 }
 .taxpayer-reference-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   width: 100%;
   min-height: 48px;
   text-align: left;
@@ -88,6 +89,7 @@
   border-radius: 10px;
   padding: 6px;
 }
+.taxpayer-reference-wordmark {display:block;width:164px;max-width:100%;height:58px;object-fit:contain;}
 .taxpayer-reference-brand span { display: grid; gap: 2px; min-width: 0; }
 .taxpayer-reference-brand strong { color: var(--color-taxpay-text); font-size: 15px; font-weight: 800; }
 .taxpayer-reference-brand small { color: var(--color-taxpay-muted); font-size: 11px; font-weight: 500; line-height: 1.5; }

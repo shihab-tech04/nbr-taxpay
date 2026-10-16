@@ -3,12 +3,13 @@ import { expect, test } from '@playwright/test';
 test('approved Amar Kor branding stays consistent across public and taxpayer shells', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/আমার কর \| Amar Kor/);
-  await expect(page.locator('.public-home-brand__copy strong')).toHaveText('Amar Kor');
+  await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Amar Kor');
+  await expect.poll(() => page.locator('.public-home-wordmark').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator('.public-home-brand__copy small')).toHaveText('Your tax, your records');
   await expect(page.locator('.public-footer__identity strong')).toHaveText('Amar Kor');
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.locator('.public-home-brand__copy strong')).toHaveText('আমার কর');
+  await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'আমার কর');
   await expect(page.locator('.public-home-brand__copy small')).toHaveText('আপনার কর, আপনার হিসাব');
   await expect(page.locator('.public-footer__identity strong')).toHaveText('আমার কর');
 
@@ -17,7 +18,7 @@ test('approved Amar Kor branding stays consistent across public and taxpayer she
   await expect(bengaliDialog).toBeVisible();
   await bengaliDialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.locator('.public-home-brand__copy strong')).toHaveText('Amar Kor');
+  await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Amar Kor');
   await page.goto('/?action=office_login&lang=en');
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' })).toBeVisible();
 });
