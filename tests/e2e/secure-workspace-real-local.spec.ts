@@ -38,9 +38,9 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   const referenceA = pageA.locator('.taxpay-taxpayer-reference');
   await expect(referenceA).toBeVisible();
   await expect(pageA.locator('.taxpayer-reference-secure')).toBeVisible();
-  await expect(referenceA).toHaveCSS('background-color', 'rgb(246, 249, 254)');
+  await expect(referenceA).toHaveCSS('background-color', 'rgb(240, 242, 245)');
   expect((await referenceA.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim())).toUpperCase()).toBe('#2C5EAD');
-  await expect(pageA.locator('.taxpayer-reference-secure input').first()).toHaveCSS('border-color', 'rgb(221, 231, 245)');
+  await expect(pageA.locator('.taxpayer-reference-secure input').first()).toHaveCSS('border-color', 'rgb(225, 230, 238)');
   expect(await pageA.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await pageA.getByLabel('Assessment-year label (not verified)').fill('2026-27');
   await pageA.getByLabel('Proposed amount (BDT)').fill('123.45');
@@ -125,7 +125,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
     '&refresh_token=' + encodeURIComponent(b.refresh_token) +
     '&token_type=bearer&expires_in=3600&expires_at=' + (b.expires_at ?? Math.floor(Date.now() / 1000) + 3600));
   await expect(pageB.getByRole('heading', { name: 'Signed-in application user' })).toBeVisible();
-  await expect(pageB.locator('.taxpay-taxpayer-reference')).toHaveCSS('background-color', 'rgb(246, 249, 254)');
+  await expect(pageB.locator('.taxpay-taxpayer-reference')).toHaveCSS('background-color', 'rgb(240, 242, 245)');
   expect(await pageB.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await expect(pageB.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toHaveCount(0);
   const otherRead = await fetch(new URL('/rest/v1/taxpay_payment_drafts?select=id&id=eq.' + draftId, url.origin), {

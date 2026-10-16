@@ -76,15 +76,15 @@ export const HeadCatalogue: React.FC = () => {
   return (
     <section aria-labelledby="source-heads-title" className="space-y-5 pb-12">
       <button type="button" onClick={() => navigate('landing')}
-        className="min-h-11 inline-flex items-center gap-2 rounded-md px-3 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">
+        className="min-h-11 inline-flex items-center gap-2 rounded-md px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
         <ArrowLeft aria-hidden="true" className="w-4 h-4" />{t.back}
       </button>
 
       <header className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-3">
         <div className="flex items-start gap-3">
-          <BookOpen aria-hidden="true" className="w-7 h-7 shrink-0 text-emerald-900" />
+          <BookOpen aria-hidden="true" className="w-7 h-7 shrink-0 text-taxpay-dark" />
           <div className="space-y-2 min-w-0">
-            <h1 id="source-heads-title" className="font-serif-fraunces text-2xl sm:text-3xl font-bold text-emerald-950">{t.title}</h1>
+            <h1 id="source-heads-title" className="font-serif-fraunces text-2xl sm:text-3xl font-bold text-taxpay-text">{t.title}</h1>
             <p className="text-xs font-bold text-amber-800">{t.source}</p>
           </div>
         </div>
@@ -113,19 +113,19 @@ export const HeadCatalogue: React.FC = () => {
               <input id="v11-head-query" type="search" value={query}
                 onChange={e => {setQuery(e.target.value);setPage(1);}}
                 placeholder={t.searchPlaceholder}
-                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700"/>
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"/>
             </div>
           </div>
           <div className="space-y-2">
             <label htmlFor="v11-head-group" className="block text-sm font-semibold text-slate-800">{t.group}</label>
             <select id="v11-head-group" value={group} onChange={e => {setGroup(e.target.value);setPage(1);}}
-              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700">
+              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
               <option value="ALL">{t.all}</option>
               {V11_HEAD_GROUPS.map(name=><option key={name} value={name}>{name}</option>)}
             </select>
           </div>
         </div>
-        <p role="status" aria-live="polite" className="text-sm font-semibold text-emerald-950">
+        <p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-dark">
           {t.matching}: {visible.length} / {V11_HEAD_SOURCE.records}
         </p>
       </section>
@@ -144,7 +144,7 @@ export const HeadCatalogue: React.FC = () => {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs text-slate-600">ID {head.id} · {head.grpEn}</p>
-                    <h2 className="font-serif-fraunces text-lg font-bold text-emerald-950 break-words">{head.en}</h2>
+                    <h2 className="font-serif-fraunces text-lg font-bold text-taxpay-text break-words">{head.en}</h2>
                   </div>
                   <p className={blocked ? 'max-w-full rounded-md border border-amber-400 bg-amber-50 px-2 py-1.5 text-xs font-bold text-amber-900' : 'text-xs font-medium text-slate-500'}>
                     {blocked ? t.review : t.notCleared}
@@ -184,10 +184,10 @@ export const HeadCatalogue: React.FC = () => {
 
       <nav aria-label="Catalogue pagination" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
         <button type="button" disabled={safePage<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}
-          className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-emerald-900 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">{t.previous}</button>
+          className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">{t.previous}</button>
         <p className="text-sm font-medium text-slate-700" aria-live="polite">{t.page} {safePage} {t.of} {pages}</p>
         <button type="button" disabled={safePage>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}
-          className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-emerald-900 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">{t.next}</button>
+          className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">{t.next}</button>
       </nav>
     </section>
   );

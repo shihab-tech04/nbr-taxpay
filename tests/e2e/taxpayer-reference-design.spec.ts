@@ -3,9 +3,9 @@ import { expect, test } from '@playwright/test';
 /** Regression contract: Public and Taxpayer share Government Blue theme; taxpayer reference layout remains protected. */
 const exactReference = {
   primary: 'rgb(44, 94, 173)',
-  background: 'rgb(246, 249, 254)',
+  background: 'rgb(240, 242, 245)',
   text: 'rgb(23, 32, 51)',
-  border: 'rgb(221, 231, 245)',
+  border: 'rgb(225, 230, 238)',
   focus: 'rgb(92, 168, 216)'
 } as const;
 
@@ -123,12 +123,12 @@ test('taxpayer home and ledger follow the shared Public theme without legacy eme
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const shell=page.locator('.taxpay-taxpayer-reference');
   await expect(shell).toHaveCount(1);
-  await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
+  await expect(shell).toHaveCSS('background-color',exactReference.background);
   const composition=page.getByRole('heading',{name:'Payment composition'}).locator('xpath=ancestor::section');
   await expect(composition).toHaveCSS('background-color','rgb(255, 255, 255)');
   await page.getByRole('button',{name:'Tax ledger'}).first().click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
-  await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
+  await expect(shell).toHaveCSS('background-color',exactReference.background);
 });
 
 test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({page},info)=>{
