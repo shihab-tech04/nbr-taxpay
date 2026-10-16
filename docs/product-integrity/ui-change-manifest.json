@@ -1,4 +1,12 @@
 {
   "schema": "approved-ui-change/1",
-  "changes": []
+  "changes": [
+    {
+      "path": "src/services/taxState.tsx",
+      "requirement": "Preserve correct receipt-details navigation across reload and browser Back/Forward without exposing identifiers in public URLs.",
+      "approvalReference": "Owner's 2026-10-16 instruction to fix navigation and preserve already-working routes and UI.",
+      "approvedDesign": "Existing src/components/screens/PaymentDetailView.tsx and ReceiptView.tsx unchanged.",
+      "forbiddenAdditions": ["No new visible controls", "No new public URL parameters", "No taxpayer data persisted in browser storage", "No change to payment or credit logic"]
+    }
+  ]
 }

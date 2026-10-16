@@ -163,6 +163,12 @@ test('Officer receipt inspection stays in Officer layout and returns to its exac
   await page.getByRole('button',{name:'Inspect'}).first().click();
   await page.reload();
   await expect(page.locator('header.bg-emerald-950')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'No Challan Selected'})).toHaveCount(0);
+  await page.goBack();
+  await expect(page.getByRole('heading',{name:'Universal Cross-Treasury Payment Search'})).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
   await page.getByRole('button',{name:'Back to Payment Search'}).click();
   await expect(page).toHaveURL(/action=payment_search/);
 

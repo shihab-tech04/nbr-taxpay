@@ -12,7 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
-import { receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
+import { receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -71,7 +71,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
-  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
+  const receiptsRef = useRef(receipts);
+  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(() =>
+    receiptSelectionFromHistory(window.history.state,
+      validRoute(new URLSearchParams(window.location.search).get('action')),
+      new Set(INITIAL_RECEIPTS.map(receipt => receipt.id))));
+  useEffect(() => { receiptsRef.current = receipts; }, [receipts]);
   const [ledgerEntries] = useState<TaxLedgerEntry[]>(INITIAL_LEDGER_ENTRIES);
   const [corrections, setCorrections] = useState<CorrectionRequest[]>(INITIAL_CORRECTIONS);
   const [cases] = useState<CaseRecord[]>(INITIAL_CASES);
@@ -103,12 +108,13 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     const route = validRoute(requestedRoute);
+    const { receiptId: requestedReceiptId, ...safeParams } = params;
     setCurrentRoute(route);
-    setRouteParams(params);
+    setRouteParams(safeParams);
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
-    writeRouteContext(route, params, next.searchParams);
+    writeRouteContext(route, safeParams, next.searchParams);
     // Legacy sample deep-link state must not survive entry to real account access.
     if (route === 'secure_workspace' || route === 'landing') {
       next.searchParams.delete('demoUser');
@@ -119,7 +125,11 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }
     if (next.href !== window.location.href) {
-      window.history.pushState({ taxpayRoute: route, taxpayParams: params }, '', next);
+      const selectedId = route === 'payment_details' &&
+        typeof requestedReceiptId === 'string' && receipts.some(receipt => receipt.id === requestedReceiptId)
+          ? requestedReceiptId : null;
+      window.history.pushState({ taxpayRoute: route, taxpayParams: safeParams,
+        ...(selectedId ? { taxpayReceiptId: selectedId } : {}) }, '', next);
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -132,6 +142,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setRouteParams(event.state?.taxpayRoute === route
         ? event.state.taxpayParams ?? routeContextFromUrl(route, search)
         : routeContextFromUrl(route, search));
+      setSelectedReceiptId(receiptSelectionFromHistory(event.state, route,
+        new Set(receiptsRef.current.map(receipt => receipt.id))));
       setLanguage(search.get('lang') === 'bn' ? 'bn' : 'en');
       const previousDemo = getDemoUser(search.get('demoUser'));
       const leavingDemo = Boolean(demoUserRef.current && !previousDemo);
@@ -148,7 +160,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const selectReceipt = (id: string | null) => {
     setSelectedReceiptId(id);
     if (id) {
-      navigate('payment_details', {returnTo: receiptReturnRoute(currentRoute)});
+      navigate('payment_details', {returnTo: receiptReturnRoute(currentRoute), receiptId: id});
     }
   };
 

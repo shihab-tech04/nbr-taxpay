@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {ROUTES, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {ROUTES, receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
 
 test('the route contract exactly matches the app router, including the Office login branch', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
@@ -83,4 +83,17 @@ test('receipt origin remains a safe, reloadable list route and cannot become an 
   assert.deepEqual(routeContextFromUrl('payment_details',search), {returnTo:'payment_search'});
   writeRouteContext('user_guide', {category:'travel'}, search);
   assert.equal(search.has('returnTo'), false);
+});
+
+test('receipt details can restore a tab-local selected record without URL identifiers or forged history', () => {
+  const known = new Set(['synthetic-record-1']);
+  const state = {taxpayRoute:'payment_details',taxpayReceiptId:'synthetic-record-1'};
+  assert.equal(receiptSelectionFromHistory(state,'payment_details',known),'synthetic-record-1');
+  assert.equal(receiptSelectionFromHistory(state,'history',known),null);
+  assert.equal(receiptSelectionFromHistory({...state,taxpayReceiptId:'other-owner-record'},'payment_details',known),null);
+  assert.equal(receiptSelectionFromHistory({...state,taxpayRoute:'landing'},'payment_details',known),null);
+  assert.equal(receiptSelectionFromHistory(null,'payment_details',known),null);
+  const search = new URLSearchParams('action=payment_details&returnTo=payment_search');
+  assert.equal(search.has('receiptId'),false);
+  assert.equal(search.has('taxpayReceiptId'),false);
 });

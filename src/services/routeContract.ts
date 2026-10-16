@@ -23,6 +23,18 @@ const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home', 'p
 export const receiptReturnRoute = (value: unknown): string =>
   typeof value === 'string' && receiptReturnRoutes.has(value) ? value : 'history';
 
+/** Restore only a receipt selected in this tab's own navigation history.
+ * Never take a receipt identifier from the public URL or trust arbitrary
+ * history state; it must still belong to the available record collection.
+ */
+export function receiptSelectionFromHistory(state: unknown, route: string, availableIds: ReadonlySet<string>): string | null {
+  if (route !== 'payment_details' || !state || typeof state !== 'object') return null;
+  const record = state as Record<string, unknown>;
+  return record.taxpayRoute === 'payment_details' &&
+    typeof record.taxpayReceiptId === 'string' && availableIds.has(record.taxpayReceiptId)
+      ? record.taxpayReceiptId : null;
+}
+
 export function routeContextFromUrl(route: string, search: URLSearchParams): Record<string, unknown> {
   if (route === 'user_guide' && search.has('category')) return {category: search.get('category')};
   if ((route === 'guest' || route === 'wizard') && search.has('initialCategory'))
