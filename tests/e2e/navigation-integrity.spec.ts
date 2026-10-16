@@ -150,7 +150,9 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
   await expect(rail).toBeVisible();
-  // Keeping the taxpayer dashboard mounted preserves its rail beneath the dialog.
+  // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
 test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{
@@ -180,6 +182,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
+  // The payment workflow is modal-based and does not navigate away from Tax Journey.
   await expect(page).toHaveURL(/action=journey/);
   await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await page.goto('/?action=taxpayer_home');

@@ -31,6 +31,7 @@ export function PaymentServiceChoiceDialog() {
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
   const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
+  const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const advanceToDetails = () => { if (selected) setStage(2); };
   const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
 
@@ -69,6 +70,10 @@ export function PaymentServiceChoiceDialog() {
             ))}
           </ol>
         </>}
+        {stage > 1 && selected !== 'TRAVEL_TAX' && chosenService && <p className="tax-service-choice__selected-service">
+          <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
+          <strong>{tr(chosenService.en, chosenService.bn)}</strong>
+        </p>}
         {stage === 1 ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>

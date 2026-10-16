@@ -16,7 +16,7 @@ async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await expect(enter.or(dashboard).first()).toBeVisible();
   if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
-  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+  await expect(dashboard).toBeVisible();
 }
 
 test('Public and Taxpayer retain Government Blue tokens; legacy Office URL returns to Public', async ({page}) => {
