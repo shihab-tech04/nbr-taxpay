@@ -904,7 +904,7 @@
   .receipt-lookup__view {width:100%;}
 }
 
-.public-guide-page{width:100%;max-width:1200px;margin:0 auto;padding:1rem 0 3.5rem;color:var(--citizen-text);}
+.public-guide-page{width:100%;max-width:1296px;margin:0 auto;padding:0 0 3.5rem;color:var(--citizen-text);}
 .public-guide-intro{padding:1.8rem 2rem 2rem;background:linear-gradient(110deg,var(--citizen-primary-light),var(--citizen-surface) 85%);border:1px solid var(--citizen-border);border-radius:1.1rem;box-shadow:0 1px rgba(0,0,0,.05);}
 .public-guide-intro h1{font-size:clamp(1.8rem,2.8vw,2.2rem);line-height:1.2;font-weight:800;margin:.45rem 0 .6rem;color:var(--citizen-text);}
 .public-guide-intro>p:last-child{font-size:1rem;line-height:1.6;color:var(--citizen-muted);}
@@ -987,7 +987,7 @@
  .public-guide-topics button{width:auto;min-height:44px;border:1px solid var(--citizen-border);}
 }
 @media(max-width:650px){
- .public-guide-page{padding-top:.5rem;}
+ .public-guide-page{padding-top:0;}
  .public-guide-intro{padding:1.35rem 1.2rem 1.5rem;border-radius:.85rem;}
  .public-guide-intro h1{font-size:1.75rem;}
  .public-guide-layout{gap:1rem;padding-top:1rem;}
@@ -1019,7 +1019,7 @@
  .public-guide-topics button,.public-guide-questions summary svg{transition:none;}
 }
 
-.public-report-page{width:100%;max-width:960px;margin:0 auto;padding-bottom:3rem;}
+.public-report-page{width:100%;max-width:1296px;margin:0 auto;padding-bottom:3rem;}
 .public-report-card{margin:1.5rem 0;background:var(--citizen-surface);border:1px solid var(--citizen-border);border-radius:1rem;overflow:hidden;}
 .public-report-card .public-service-dialog__notice{display:flex;align-items:start;gap:.6rem;}
 .public-report-card .public-service-dialog__notice svg{flex:none;}

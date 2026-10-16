@@ -1,10 +1,10 @@
 import {expect, test} from '@playwright/test';
 
-test('public header, FAQ topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
+test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
   await page.goto('/?action=landing');
   const publicNav = page.getByRole('navigation',{name:'Primary navigation'});
   if (page.viewportSize()!.width <= 900) await page.getByRole('button',{name:'Menu'}).click();
-  await publicNav.getByRole('link',{name:'FAQs'}).click();
+  await publicNav.getByRole('link',{name:'User guide'}).click();
   await expect(page).toHaveURL(/action=user_guide/);
   await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();

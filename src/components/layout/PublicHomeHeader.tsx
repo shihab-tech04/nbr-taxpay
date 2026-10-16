@@ -7,7 +7,7 @@ import { taxpayerBrandName } from '../../config/brand';
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
 const LINKS = [
   {route:'landing',en:'Home',bn:'মূল পাতা',Icon:House},
-  {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর',Icon:CircleHelp},
+  {route:'user_guide',en:'User guide',bn:'ব্যবহার নির্দেশিকা',Icon:CircleHelp},
   {route:'incident',en:'Report',bn:'অভিযোগ',Icon:ShieldAlert}
 ] as const;
 

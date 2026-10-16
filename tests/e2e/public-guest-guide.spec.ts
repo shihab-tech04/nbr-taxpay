@@ -87,6 +87,28 @@ test('Help Center typography and interactions remain usable at each viewport', a
   expect(overflow).toBeLessThanOrEqual(2);
 });
 
+
+test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
+  const views = [
+    { path: '/?action=landing', selector: '.public-information-hub' },
+    { path: '/?action=user_guide', selector: '.public-guide-page' },
+    { path: '/?action=incident', selector: '.public-report-page' },
+  ];
+  const bounds: { x: number; width: number }[] = [];
+  for (const view of views) {
+    await page.goto(view.path);
+    const box = await page.locator(view.selector).boundingBox();
+    expect(box, `${view.path} should have a content container`).not.toBeNull();
+    bounds.push({ x: box!.x, width: box!.width });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `Horizontal overflow on ${view.path}`).toBeLessThanOrEqual(2);
+  }
+  for (const item of bounds.slice(1)) {
+    expect(Math.abs(item.x - bounds[0].x), 'Content left edges should align').toBeLessThanOrEqual(2);
+    expect(Math.abs(item.width - bounds[0].width), 'Content widths should match').toBeLessThanOrEqual(2);
+  }
+});
+
 test('floating help uses guide answers and report form never sends an official ticket',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
  await page.goto('/?action=landing');
