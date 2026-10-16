@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Activity, ArrowRight, BookOpen, CalendarDays, Download, FileText, Receipt, Search, ShieldCheck, WalletCards } from 'lucide-react';
+import { Activity, ArrowRight, CalendarDays, Download, Receipt, Search, ShieldCheck, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
@@ -30,18 +30,20 @@ export const TaxpayerDashboard: React.FC = () => {
   const demoTotals = (['income','source','travel'] as Category[]).map(k=>exampleRecords.filter(r=>classify(String(r.paymentCategory))===k)
     .reduce((n,r)=>n+r.totalAmount,0));
   const sum = demoTotals.reduce((a,b)=>a+b,0);
-  const yearText = year.replace('-', '–');
   const filterLabels:{key:Category;en:string;bn:string}[] = [
     {key:'all',en:'All transactions',bn:'সব লেনদেন'},
     {key:'income',en:'Income tax',bn:'আয়কর'},
     {key:'source',en:'Source tax',bn:'উৎসে কর'},
     {key:'travel',en:'Travel tax',bn:'ভ্রমণ কর'}
   ];
+  // These are payer-scoped preview transactions, never certified liabilities or credits.
+  // An empty account must not be shown a fabricated zero balance.
+  const amountOrDash = (value:number,hasRecords:boolean) => hasRecords ? '৳ '+fmt(value) : '—';
   const metrics=[
-    {en:'Income tax liability',bn:'মোট আয়কর দায়',desc:'No certified assessment source',bd:'যাচাইকৃত কর নির্ধারণের উৎস নেই'},
-    {en:'Recognized TDS / AIT',bn:'স্বীকৃত টিডিএস / এআইটি',desc:'Credit ownership not verified',bd:'ক্রেডিটের মালিকানা যাচাই হয়নি'},
-    {en:'Verified tax payments',bn:'যাচাইকৃত কর পরিশোধ',desc:'Settlement and ledger proof required',bd:'সেটেলমেন্ট ও লেজার প্রমাণ প্রয়োজন'},
-    {en:'Remaining payable',bn:'অবশিষ্ট পরিশোধযোগ্য',desc:'Requires verified credit and liability records',bd:'করদায় ও ক্রেডিট যাচাই প্রয়োজন'}
+    {en:'Recorded income tax',bn:'নথিভুক্ত আয়কর',value:amountOrDash(demoTotals[0],exampleRecords.length>0),note:'Income-tax activity across recorded statuses',noteBn:'নথিভুক্ত সকল অবস্থার আয়কর লেনদেন'},
+    {en:'Recorded source tax',bn:'নথিভুক্ত উৎসে কর',value:amountOrDash(demoTotals[1],exampleRecords.length>0),note:'Withholding activity across recorded statuses',noteBn:'নথিভুক্ত সকল অবস্থার উৎসে কর লেনদেন'},
+    {en:'Recorded travel tax',bn:'নথিভুক্ত ভ্রমণ কর',value:amountOrDash(demoTotals[2],exampleRecords.length>0),note:'Travel-tax activity across recorded statuses',noteBn:'নথিভুক্ত সকল অবস্থার ভ্রমণ কর লেনদেন'},
+    {en:'Payment records',bn:'পেমেন্ট রেকর্ড',value:exampleRecords.length?fmt(exampleRecords.length):'—',note:'Records in the selected year',noteBn:'নির্বাচিত করবর্ষের রেকর্ড'}
   ];
   const button='min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:border-blue-400 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700';
   const empty=(heading:string,detail:string)=><div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-7 text-center">
@@ -56,11 +58,10 @@ export const TaxpayerDashboard: React.FC = () => {
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='TaxPay_example_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
-  return <div className={`mx-auto max-w-[1480px] space-y-5 pb-14 ${bn?'font-bengali':''}`}>
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  return <div className={`mx-auto max-w-[1150px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
+    <header className={card+' taxpayer-dashboard-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
       <div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-800 sm:text-[28px]">{tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
-        <p className="mt-1 text-sm text-slate-500">{tr('Income tax, payments and financial records in one view','আয়কর, পেমেন্ট ও আর্থিক রেকর্ড একসঙ্গে')}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-800 sm:text-[28px]">{tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
@@ -69,26 +70,19 @@ export const TaxpayerDashboard: React.FC = () => {
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>
     </header>
-    <section className={card} aria-label={tr('Selected tax year summary','নির্বাচিত করবর্ষের সারসংক্ষেপ')}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div><h2 className="mt-1 text-2xl font-semibold text-slate-800">{yearText}</h2>
-          <p className="mt-1 text-xs text-slate-500">{tr('Taxpayer financial lifecycle overview','করদাতার আর্থিক জীবনচক্রের সারসংক্ষেপ')}</p></div>
-        <div className="flex flex-wrap gap-2">
-          <div className="min-w-36 rounded-xl border border-slate-200 px-4 py-3"><p className="text-xs text-slate-500">{tr('Tax position','করের অবস্থা')}</p><p className="mt-1 font-semibold text-slate-800">{tr('Unverified','যাচাই হয়নি')}</p></div>
-          <div className="min-w-36 rounded-xl border border-slate-200 px-4 py-3"><p className="text-xs text-slate-500">{tr('Ledger credit','লেজার ক্রেডিট')}</p><p className="mt-1 font-semibold text-slate-800">{tr('Not connected','সংযুক্ত নয়')}</p></div>
-          <div className="min-w-36 rounded-xl border border-slate-200 px-4 py-3"><p className="text-xs text-slate-500">{tr('Payment evidence','পেমেন্টের প্রমাণ')}</p><p className="mt-1 font-semibold text-slate-800">{tr('Not verified','যাচাই হয়নি')}</p></div>
-        </div>
-      </div>
-    </section>
-    <p role="status" className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
-      {tr('Liability and credit values remain unavailable until verified records are connected.','যাচাইকৃত রেকর্ড সংযুক্ত না হওয়া পর্যন্ত করদায় ও ক্রেডিট দেখানো যাবে না।')}
-    </p>
-    <section aria-label={tr('Tax position summary','কর অবস্থানের সারসংক্ষেপ')} className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
         <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span className="rounded-lg bg-blue-50 p-2 text-blue-700">{i===1?<ShieldCheck size={19} aria-hidden="true"/>:i===2?<Receipt size={19} aria-hidden="true"/>:<WalletCards size={19} aria-hidden="true"/>}</span></div>
-        <p className="mt-4 text-xl font-semibold text-slate-800">{tr('Not available','পাওয়া যাচ্ছে না')}</p>
+        <p className="mt-4 break-words text-xl font-semibold text-slate-800 sm:text-2xl">{m.value}</p>
+        <span className="sr-only">{tr(m.note,m.noteBn)}</span>
       </article>)}
     </section>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-950">
+      <p role="status">{tr('Recorded activity · verified liability and tax credit not connected','নথিভুক্ত লেনদেন · যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়')}</p>
+      <button className="inline-flex min-h-10 items-center gap-1 font-semibold text-blue-900 underline underline-offset-2" type="button" onClick={()=>navigate('ledger')}>
+        {tr('Tax Ledger','কর লেজার')}<ArrowRight size={14} aria-hidden="true"/>
+      </button>
+    </div>
     <div className="grid gap-4 lg:grid-cols-[minmax(285px,1fr)_minmax(0,2.1fr)]">
       <section className={card} aria-labelledby="composition-heading">
         <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>
@@ -108,12 +102,12 @@ export const TaxpayerDashboard: React.FC = () => {
       </section>
     </div>
     <div className="grid gap-4 lg:grid-cols-3">
-      <section className={card}><h2 className="text-base font-semibold">{tr('TDS & advance tax','টিডিএস ও অগ্রিম কর')}</h2><p className="mt-2 text-xs text-slate-500">{tr('Credits require verified taxpayer ownership, period and legal eligibility.','ক্রেডিটের জন্য মালিকানা, করবর্ষ ও আইনি যোগ্যতার যাচাই প্রয়োজন।')}</p>
-        {empty(tr('No verified credit records','যাচাইকৃত ক্রেডিট নেই'),tr('TDS and AIT cannot be derived from payer receipts.','শুধু পেমেন্ট রসিদ দিয়ে টিডিএস/এআইটি নির্ধারিত হয় না।'))}
+      <section className={card}><h2 className="text-base font-semibold">{tr('TDS & advance tax','টিডিএস ও অগ্রিম কর')}</h2>
+        <p className="mt-3 text-sm font-medium text-slate-700">{tr('Recognized TDS / AIT','স্বীকৃত টিডিএস / এআইটি')}: {tr('Not connected','সংযুক্ত নয়')}</p>
         <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('ledger')}>{tr('Review tax ledger','কর লেজার দেখুন')}<ArrowRight size={16}/></button>
       </section>
-      <section className={card}><h2 className="text-base font-semibold">{tr('Challan & reconciliation','চালান ও সমন্বয়')}</h2><p className="mt-2 text-xs text-slate-500">{tr('Gateway, government receipt and ledger stages are independent.','গেটওয়ে, সরকারি রসিদ ও লেজার পৃথক ধাপ।')}</p>
-        {empty(tr('No verified challan data','যাচাইকৃত চালানের তথ্য নেই'),tr('Challan details require government verification.','চালান সরকারি যাচাই সাপেক্ষ।'))}
+      <section className={card}><h2 className="text-base font-semibold">{tr('Challan & reconciliation','চালান ও সমন্বয়')}</h2>
+        <p className="mt-3 text-sm font-medium text-slate-700">{tr('Government challan','সরকারি চালান')}: {tr('Not connected','সংযুক্ত নয়')}</p>
         <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('certificates')}>{tr('View documents','নথি দেখুন')}<ArrowRight size={16}/></button>
       </section>
       <section className={card}><h2 className="text-base font-semibold">{tr('Payment lifecycle','পেমেন্টের জীবনচক্র')}</h2>

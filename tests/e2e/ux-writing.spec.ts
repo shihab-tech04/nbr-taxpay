@@ -7,8 +7,8 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Demo',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
-  await expect(page.getByText('Not available',{exact:true}).first()).toBeVisible();
-  await expect(page.getByText('Unverified',{exact:true})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Payment records summary'})).toContainText('Recorded income tax');
+  await expect(page.getByText('Recorded activity · verified liability and tax credit not connected')).toBeVisible();
   await expect(page.getByText('Demo scenario', { exact: false })).toHaveCount(0);
   await expect(page.getByText('Exit demonstration account', { exact: false })).toHaveCount(0);
   await expect(page.getByText('DEMO-TIN-001', { exact: false })).toHaveCount(0);
