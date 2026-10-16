@@ -26,11 +26,11 @@ test('hero provides five bilingual service slides with the original opening bann
     await expect(carousel.getByRole('heading', { name: heading })).toBeVisible();
     await expect(carousel.locator(`[data-banner-service="${service}"]`)).not.toHaveAttribute('inert', '');
     await expect(carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__image-placeholder`)).toBeVisible();
-    await expect(page.getByRole('button', { name: action, exact: true })).toBeVisible();
+    await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);
   }
 
-  await page.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pay Tax' })).toBeVisible();
 });
 
@@ -89,7 +89,7 @@ test('service labels remain specific and concise in Bangla', async ({ page }) =>
   for (const [heading, action] of translated) {
     await page.keyboard.press('ArrowRight');
     await expect(carousel.getByRole('heading', { name: heading, exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: action, exact: true })).toBeVisible();
+    await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
   }
 });
 
