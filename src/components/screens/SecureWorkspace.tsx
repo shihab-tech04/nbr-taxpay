@@ -42,7 +42,7 @@ const initial: DraftInput = {
 };
 
 export const SecureWorkspace: React.FC = () => {
-  const { language, routeParams } = useTaxState();
+  const { language, routeParams, navigate } = useTaxState();
   const bn = language === 'bn';
   const copy = getSecureWorkspaceCopy(language);
   const sessionEpoch = useRef(0);
@@ -341,6 +341,10 @@ export const SecureWorkspace: React.FC = () => {
         <article className="bg-amber-50 border border-amber-200 rounded-xl p-6">
           <h2 className="text-lg font-bold text-amber-900">{copy.databaseUnavailableTitle}</h2>
           <p className="text-sm mt-2 text-amber-900">{copy.databaseUnavailableBody}</p>
+          <button type="button" onClick={() => navigate('landing')}
+            className="mt-4 min-h-11 rounded-lg border border-amber-700 px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-100">
+            {bn ? 'জনসাধারণের সেবায় ফিরুন' : 'Back to public services'}
+          </button>
         </article>
       ) : authLoading ? <p role="status">{copy.checkingSession}</p> : !user ? (
         <form onSubmit={login} className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 space-y-4">
