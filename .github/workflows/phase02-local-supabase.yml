@@ -162,7 +162,7 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
-          OFFICE_SHA="34a952f4738adc584aaf0eeba1f7710dabbebd92"
+          OFFICE_SHA="453727784a93e93f2667a790b98a8519c949def9"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
