@@ -23,7 +23,7 @@ test('hero provides five bilingual service slides with the original opening bann
   for (const [index, [service, heading, action]] of destinations.entries()) {
     await page.keyboard.press('ArrowRight');
     await expect(carousel).toHaveAttribute('data-active-slide', String(index + 1));
-    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    await expect(carousel.getByRole('heading', { name: heading })).toBeVisible();
     await expect(carousel.locator(`[data-banner-service="${service}"]`)).not.toHaveAttribute('inert', '');
     await expect(carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__image-placeholder`)).toBeVisible();
     await expect(page.getByRole('button', { name: action, exact: true })).toBeVisible();
@@ -88,7 +88,7 @@ test('service labels remain specific and concise in Bangla', async ({ page }) =>
   ] as const;
   for (const [heading, action] of translated) {
     await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+    await expect(carousel.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: action, exact: true })).toBeVisible();
   }
 });
