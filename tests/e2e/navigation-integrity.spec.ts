@@ -150,6 +150,7 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
   await expect(rail).toBeVisible();
+  // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
   await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle, ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardList, FileText,
   Landmark, Layers3, MoreHorizontal, Plane
@@ -26,6 +26,7 @@ export function PaymentServiceChoiceDialog() {
   const { language, setPaymentServiceChoiceOpen } = useTaxState();
   const [selected, setSelected] = useState<ServiceId | null>(null);
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
+  const flowRef = useRef<HTMLElement>(null);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
@@ -33,6 +34,12 @@ export function PaymentServiceChoiceDialog() {
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const advanceToDetails = () => { if (selected) setStage(2); };
   const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
+
+  useEffect(() => {
+    // Each stage starts at its beginning, even when the previous form was scrolled.
+    const scroller = flowRef.current?.closest<HTMLElement>('.taxpay-modal__body');
+    if (scroller) scroller.scrollTop = 0;
+  }, [stage]);
 
   return (
     <TaxPayModal
@@ -51,7 +58,7 @@ export function PaymentServiceChoiceDialog() {
         </div>
       )}
     >
-      <section className={`tax-service-choice${stage > 1 && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+      <section ref={flowRef} className={`tax-service-choice${stage > 1 && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {!(selected === 'TRAVEL_TAX' && stage > 1) && <>
           <p className="tax-service-choice__eyebrow">{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)} · {stages[stage - 1]}</p>
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
