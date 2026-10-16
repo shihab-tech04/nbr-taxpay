@@ -872,7 +872,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <p className="payment-review__fee-note">{language === 'bn' ? 'বাস্তব প্রদানকারীর চার্জ থাকলে পরিশোধের আগে দেখাতে হবে (NBR-এর সিদ্ধান্ত সাপেক্ষে)।' : 'Any actual provider charge must be shown before payment (NBR to decide).'}</p>
               </div>
               <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ ঠিক আছে; eTDS-এ বরাদ্দ না হওয়া পর্যন্ত কর্তিত করদাতারা ক্রেডিট পাবেন না।' : 'I have checked the agent TIN, deduction head, year and amount. Deductees get credit only after allocation in eTDS.') : (language === 'bn' ? 'আমি টিআইএন, পরিশোধের উদ্দেশ্য ও খাত, আয়করের ধরন, করবর্ষ ও পরিমাণ যাচাই করেছি; ক্রেডিট করদাতার হিসাবে যাবে।' : 'I have checked the TIN, purpose and head, income tax type, assessment year and amount. Credit goes to the taxpayer, not the payer.')}</span></label>
-              <div className="payment-review__simulation-notice"><Info size={17} aria-hidden="true" /><p><strong>{copy.simulationTitle}. </strong>{copy.simulationNotice}</p></div>
+              <div className="payment-review__simulation-notice"><Info size={17} aria-hidden="true" /><p><strong>{copy.simulationTitle}. </strong><span>{copy.simulationNotice}</span></p></div>
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{copy.backToHead}</button>
