@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import governmentSeal from '../../assets/bangladesh-government-seal.svg';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
+import { taxpayerBrandName } from '../../config/brand';
 
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
 const LINKS = [
   {route:'landing',en:'Home',bn:'মূল পাতা',Icon:House},
-  {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর',Icon:CircleHelp},
+  {route:'user_guide',en:'User guide',bn:'ব্যবহার নির্দেশিকা',Icon:CircleHelp},
   {route:'incident',en:'Report',bn:'অভিযোগ',Icon:ShieldAlert}
 ] as const;
 
@@ -56,8 +57,9 @@ export function PublicHomeHeader() {
         if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
         event.preventDefault();navigate('landing');setMenuOpen(false);
       }}>
-        {logoFailed?<span className="public-home-seal-fallback" aria-hidden="true">TP</span>:<img src={governmentSeal} alt="Government Seal of Bangladesh" onError={()=>setLogoFailed(true)}/>}
-        <span className="public-home-brand__copy"><strong>TaxPay</strong><small>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</small></span>
+        <span className="public-home-brand__copy">
+          {logoFailed ? <strong>{taxpayerBrandName(language)}</strong> : <img className="public-home-wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)} onError={()=>setLogoFailed(true)}/>}
+        </span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
         {LINKS.map(routeLink)}{login(true)}

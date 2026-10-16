@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const routes = ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings','services'];
+const routes = ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
 const banned = /\b(sample|synthetic|fictional|illustrative)\b|নমুনা|কাল্পনিক/i;
 
 test('taxpayer dashboard contains no repeated demonstration badges, tooltips or captions', async ({page}) => {
@@ -20,15 +20,24 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await expect(page.getByRole('button',{name:'Exit workspace'})).toBeVisible();
 });
 
-test('eleven user1 routes avoid repetitive example labels without losing record and year controls', async ({page},info) => {
+test('ten user1 routes avoid repetitive example labels and keep relevant year controls', async ({page},info) => {
   test.skip(info.project.name!=='desktop-1280','One representative route matrix');
   for(const route of routes) {
     await page.goto('/?action='+route+'&demoUser=user1');
     const main=page.getByTestId('user1-synthetic-workspace');
     await expect(main).toBeVisible();
-    await expect(main.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
+    if (['account_profile','account_settings'].includes(route))
+      await expect(main.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
+    else await expect(main.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
     expect(await main.innerText(), route+' exposes repetitive jargon').not.toMatch(banned);
   }
+});
+
+test('retired connection-status page is replaced by eight real payment service types',async({page})=>{
+  await page.goto('/?action=services&demoUser=user1');
+  await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
+  await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(8);
+  await expect(page.getByText('Not connected',{exact:true})).toHaveCount(0);
 });
 
 test('read-only receipt remains clearly non-official even after copy reduction',async({page},info)=>{
@@ -38,6 +47,6 @@ test('read-only receipt remains clearly non-official even after copy reduction',
   await expect(main.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await main.getByRole('button',{name:'Details'}).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByText('Not a government challan')).toBeVisible();
+  await expect(page.getByText('Not a government challan')).toHaveCount(0);
   await expect(page.getByRole('dialog').getByText('DEMO-PAY-PEND-01')).toBeVisible();
 });

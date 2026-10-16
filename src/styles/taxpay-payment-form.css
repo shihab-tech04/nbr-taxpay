@@ -1,0 +1,116 @@
+.payment-form-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;align-items:start;gap:22px}
+.payment-form-layout__sections{display:grid;gap:14px;min-width:0}
+.payment-form-section{min-width:0;border:1px solid #e0e6ef;border-radius:11px;background:#fff;overflow:hidden}
+.payment-form-section__heading{display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px 18px;list-style:none;min-height:69px;color:#172b4d}
+.payment-form-section__heading::-webkit-details-marker{display:none}
+.payment-form-section__heading:focus-visible{outline:3px solid #8ab5ec;outline-offset:-3px}
+.payment-form-section[open]>.payment-form-section__heading{border-bottom:1px solid #e6ebf2}
+.payment-form-section__number{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:9px;background:#edf3ff;color:#2c5ead;font-size:13px;font-weight:800}
+.payment-form-section__heading-copy{flex:1;display:grid;gap:3px}
+.payment-form-section__heading-copy strong{font-size:14px;font-weight:750}
+.payment-form-section__heading-copy small{font-size:12px;color:#566982;font-weight:450}
+.payment-form-section__chevron{flex:none;color:#71839e;transition:transform .2s}
+.payment-form-section[open] .payment-form-section__chevron{transform:rotate(180deg)}
+.payment-form-section__body{padding:18px;display:grid;gap:16px;min-width:0}
+.payment-form-summary{position:sticky;top:90px;min-width:0;border:1px solid #d7e2f0;border-radius:12px;background:#f8fbff;overflow:hidden;color:#18355a}
+.payment-form-summary__heading{display:flex;align-items:center;gap:9px;padding:16px 17px;border-bottom:1px solid #e0e9f4;color:#2c5ead}
+.payment-form-summary__heading h2{font-size:15px;font-weight:750;margin:0;flex:1}
+.payment-form-summary__live{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#0b7655}
+.payment-form-summary__eyebrow{padding:20px 18px 0;margin:0;color:#516681;font-size:12px;font-weight:650}
+.payment-form-summary__total{display:block;padding:3px 18px 0;color:#1f56a1;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.payment-form-summary__help{margin:0;padding:1px 18px 17px;font-size:11px;color:#52667f}
+.payment-form-summary__rows{margin:0;padding:0 18px 17px;display:grid;gap:13px}
+.payment-form-summary__rows>div{display:grid;gap:3px}
+.payment-form-summary__rows dt{font-size:11px;color:#526880}
+.payment-form-summary__rows dd{margin:0;font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.payment-form-summary__mono{font-family:ui-monospace,monospace}
+.payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
+.payment-form-summary__breakdown h3{font-size:12px;font-weight:800;margin:0 0 2px}
+.payment-form-summary__breakdown>div{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#64748b}
+.payment-form-summary__breakdown strong{font-variant-numeric:tabular-nums;color:#263d5b}
+.payment-form-summary__notice{margin:0;border-top:1px solid #e0e9f4;padding:15px 18px;font-size:11px;line-height:1.65;color:#536883;background:#f0f6ff}
+.payment-form-layout input,.payment-form-layout select{max-width:100%}
+@media(max-width:900px){.payment-form-layout{grid-template-columns:minmax(0,1fr)}.payment-form-summary{position:static;grid-row:1}.payment-form-summary__rows{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-form-summary__notice{padding:11px 18px}}
+@media(max-width:480px){.payment-form-section__heading{padding:13px}.payment-form-section__body{padding:14px}.payment-form-summary__total{font-size:25px}.payment-form-summary__rows{grid-template-columns:1fr}}
+
+/* Step 3: the v11 review / channel choice, shown inside the same tax-payment modal. */
+.payment-review{display:grid;grid-template-columns:minmax(0,1fr) 315px;gap:18px;align-items:start;min-width:0;color:#1c3456}
+.payment-review__main{display:grid;gap:17px;min-width:0}
+.payment-review__panel,.payment-review__total-card{border:1px solid #dee7f2;border-radius:14px;background:#fff;overflow:hidden}
+.payment-review__panel{padding:19px}
+.payment-review__section-title{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
+.payment-review__section-title h2{font-size:17px;line-height:1.35;color:#142d53;font-weight:800;margin:0}
+.payment-review__section-title p{font-size:12px;color:#405a74;margin:5px 0 0;line-height:1.5}
+.payment-review__section-number{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eaf3ff;color:#265da7;font-size:12px;font-weight:800;flex:none}
+.payment-review__rows{display:grid;grid-template-columns:1fr 1fr;gap:0 19px;margin:0}
+.payment-review__rows>div{display:grid;align-content:start;gap:4px;border-bottom:1px solid #ebf0f5;padding:11px 0;min-width:0}
+.payment-review__rows dt{color:#405a74;font-size:11px;font-weight:600}
+.payment-review__rows dd{margin:0;overflow-wrap:anywhere;font-size:12px;font-weight:750;line-height:1.6;color:#183353}
+.payment-review__note{background:#f5f8fd;border-radius:9px;padding:12px;font-size:12px;color:#516884;margin:15px 0 0;overflow-wrap:anywhere}
+.payment-review__channels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.payment-review__channel{display:flex;text-align:left;align-items:flex-start;gap:10px;min-height:106px;border:1.5px solid #dfe8f3;border-radius:12px;padding:15px 12px;background:#fbfdff;color:#285a9c;cursor:pointer}
+.payment-review__channel>span:nth-child(2){display:grid;gap:7px;flex:1;min-width:0}
+.payment-review__channel strong{font-size:13px;color:#1b395d}
+.payment-review__channel small{font-size:11px;line-height:1.55;color:#405a74}
+.payment-review__channel--selected{border-color:#2b64af;background:#edf5ff;box-shadow:0 0 0 2px #d9e9ff}
+.payment-review__radio{width:17px;height:17px;border:1.5px solid #a9bad0;border-radius:100%;flex:none;margin-top:2px}
+.payment-review__channel--selected .payment-review__radio{border:5px solid #2d64a9;background:white}
+.payment-review__methods{border-top:1px solid #e5edf6;margin-top:18px;padding-top:17px;display:grid;gap:15px}
+.payment-review__methods fieldset{min-width:0}
+.payment-review__methods legend{font-size:11px;color:#405a74;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.payment-review__method-list{display:flex;flex-wrap:wrap;gap:9px}
+.payment-review__method{display:inline-flex;align-items:center;gap:8px;min-height:44px;border:1px solid #dce5ef;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;color:#385370;background:#fff;cursor:pointer}
+.payment-review__method--selected{border-color:#2e66ad;background:#eef5ff;color:#214e85}
+.payment-review__method input,.payment-review__ack input,.payment-review__fail-toggle input{accent-color:#2e66ad;width:17px;height:17px;flex:none}
+.payment-review__fail-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:12px;color:#58708a;padding:8px 10px;border-radius:9px;background:#f7f9fc}
+.payment-review__bank-note{display:flex;align-items:flex-start;gap:9px;margin-top:15px;padding:12px;border-radius:9px;background:#fffaec;color:#765d26;font-size:12px;line-height:1.6}
+.payment-review__bank-note svg{flex:none;margin-top:1px}
+.payment-review__aside{display:grid;gap:13px;position:sticky;top:0;min-width:0}
+.payment-review__total-card{background:#f6faff;padding:19px}
+.payment-review__total-label{font-size:12px;font-weight:700;color:#405a74;margin:0}
+.payment-review__total-figure{font-size:29px;font-weight:850;color:#245aa0;display:block;margin:4px 0 18px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.payment-review__breakdown{border-top:1px solid #dce7f6;margin:0;padding-top:11px;display:grid;gap:11px}
+.payment-review__breakdown>div{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#405a74}
+.payment-review__breakdown dd{margin:0;color:#274361;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.payment-review__breakdown-fee{border-top:1px dashed #c9d8ea;padding-top:10px}
+.payment-review__ack{display:flex;gap:11px;align-items:flex-start;padding:14px;border:1px solid #c9daef;border-radius:12px;background:#f9fbfe;font-size:12px;line-height:1.65;font-weight:600;color:#395777;cursor:pointer}
+.payment-review__ack input{margin-top:2px}
+.payment-review__standalone-actions{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px}
+.payment-review__standalone-actions button,.payment-lifecycle__actions button{min-height:44px;display:inline-flex;justify-content:center;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:750}
+.payment-review__back,.payment-lifecycle__secondary{border:1px solid #cedae9;color:#45627e;background:#fff}
+.payment-review__pay,.payment-lifecycle__primary{color:white;background:#285eaa}
+.payment-review__pay:disabled{opacity:.45;cursor:not-allowed}
+
+/* Step 4: observable ACS / Treasury / NBR stages, with distinct bank-pending and failed outcomes. */
+.payment-lifecycle{border:1px solid #d8e3f1;border-radius:14px;background:#fff;overflow:hidden;min-width:0;color:#193353}
+.payment-lifecycle__heading{display:flex;gap:12px;align-items:flex-start;background:#f0f6ff;padding:19px 21px;border-bottom:1px solid #dae7f7}
+.payment-lifecycle__heading--complete{background:#eefaf5}
+.payment-lifecycle__heading--pending{background:#fff9ec}
+.payment-lifecycle__heading--failed{background:#fff0f0}
+.payment-lifecycle__heading h2{font-size:18px;font-weight:850;margin:0;line-height:1.4}
+.payment-lifecycle__heading p{font-size:12px;color:#405a74;margin:6px 0 0;line-height:1.6}
+.payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
+.payment-lifecycle__heading--failed .payment-lifecycle__symbol{color:#b64242}
+.payment-lifecycle__heading--complete .payment-lifecycle__symbol{color:#147957}
+.payment-lifecycle__details{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:21px}
+.payment-lifecycle__references{display:grid;gap:14px;margin:0}
+.payment-lifecycle__references>div{display:grid;gap:4px;min-width:0}
+.payment-lifecycle__references dt{font-size:11px;color:#405a74;font-weight:650}
+.payment-lifecycle__references dd{font-size:13px;font-weight:800;font-family:ui-monospace,monospace;overflow-wrap:anywhere;margin:0;color:#204269}
+.payment-lifecycle__timeline{list-style:none;margin:0;padding:0;display:grid;gap:11px}
+.payment-lifecycle__timeline li{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:12px;font-weight:750;color:#285a82}
+.payment-lifecycle__timeline small{font-size:10px;color:#405a74;font-family:ui-monospace,monospace;margin-left:auto;overflow-wrap:anywhere}
+.payment-lifecycle__event-dot{display:grid;place-items:center;background:#e0f4eb;color:#167651;border-radius:50%;height:23px;width:23px;flex:none;font-size:12px;font-weight:800}
+.payment-lifecycle__event--failed .payment-lifecycle__event-dot{background:#fee4e4;color:#a92424}
+.payment-lifecycle__waiting{color:#405a74!important;font-weight:550!important}
+.payment-lifecycle__waiting .payment-lifecycle__event-dot{background:#edf1f6;color:#728ba7}
+.payment-lifecycle__result{display:flex;align-items:flex-start;gap:10px;margin:0 20px 16px;padding:15px;border-radius:10px;font-size:12px;line-height:1.65}
+.payment-lifecycle__result p{margin:0}
+.payment-lifecycle__result strong{display:block;margin-bottom:4px}
+.payment-lifecycle__result svg{flex:none;margin-top:2px}
+.payment-lifecycle__result--pending{color:#75551c;background:#fff6df;border:1px solid #f1e0b0}
+.payment-lifecycle__result--failed{color:#943d3d;background:#fff0f0;border:1px solid #f3d6d6}
+.payment-lifecycle__result--complete{color:#166746;background:#e9f7f0;border:1px solid #bee8d1}
+.payment-lifecycle__actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 21px 20px}
+@media(max-width:900px){.payment-review{grid-template-columns:minmax(0,1fr)}.payment-review__aside{position:static}.payment-review__rows{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:86px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__details{grid-template-columns:minmax(0,1fr);padding:16px;gap:20px}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{width:100%;margin-left:33px}}

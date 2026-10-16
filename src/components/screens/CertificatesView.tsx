@@ -41,8 +41,8 @@ export const CertificatesView: React.FC = () => {
       ]
       : [
         { label: label('Travel tax service', 'ভ্রমণ কর সেবা'), value: label('Not connected', 'সংযুক্ত নয়') },
-        { label: label('Government receipt', 'সরকারি রসিদ'), value: label('Not issued', 'ইস্যু হয়নি') },
-        { label: label('Travel clearance', 'ভ্রমণ ছাড়পত্র'), value: label('Not issued', 'ইস্যু হয়নি') }
+        { label: label('Government receipt', 'সরকারি রসিদ'), value: label('Unavailable', 'উপলব্ধ নয়') },
+        { label: label('Travel clearance', 'ভ্রমণ ছাড়পত্র'), value: label('Unavailable', 'উপলব্ধ নয়') }
       ];
 
   const selectedOption = previewOptions.find(option => option.id === selectedPreview)!;
@@ -56,13 +56,9 @@ export const CertificatesView: React.FC = () => {
               <FileText size={20} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-taxpay-dark">{label('PREVIEW', 'প্রিভিউ')}</p>
               <h1 id="certificate-preview-title" className="mt-1 text-xl font-bold leading-snug text-taxpay-text sm:text-2xl">
-                {label('Certificate previews', 'সনদের নমুনা')}
+                {label('Certificate summaries', 'সনদের সারসংক্ষেপ')}
               </h1>
-              <p className="mt-1 text-sm leading-relaxed text-taxpay-muted">
-                {label('No official certificate is issued from this demonstration.', 'এই প্রদর্শনী থেকে কোনো সরকারি সনদ ইস্যু করা হয় না।')}
-              </p>
             </div>
           </div>
           <button
@@ -71,12 +67,12 @@ export const CertificatesView: React.FC = () => {
             className="no-print inline-flex min-h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:bg-taxpay-dark"
           >
             <Printer size={17} aria-hidden="true" />
-            {label('Print preview', 'নমুনা প্রিভিউ প্রিন্ট')}
+            {label('Print summary', 'সারসংক্ষেপ প্রিন্ট')}
           </button>
         </div>
 
         <div className="mt-5 border-t border-taxpay-border pt-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a preview', 'প্রিভিউ বাছুন')}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a summary', 'সারসংক্ষেপ বাছুন')}>
             {previewOptions.map(option => (
               <button
                 key={option.id}

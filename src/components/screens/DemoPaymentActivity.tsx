@@ -9,9 +9,9 @@ import {
 } from '../../services/simulatedPaymentsApi';
 
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
-const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
+const freshLine=(user:SimulationUser,category:SimulationCategory='TAX_WITH_RETURN'):EditableLine=>({beneficiary:user,category,assessmentYear:'2026-27',amount:'100.00'});
 /** Authenticated, bound synthetic transaction workspace. NEVER official payment evidence. */
-export const DemoPaymentActivity:React.FC=()=>{
+export const DemoPaymentActivity:React.FC<{initialCategory?:SimulationCategory}>=({initialCategory})=>{
   const {demoUser,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
@@ -25,12 +25,12 @@ export const DemoPaymentActivity:React.FC=()=>{
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState('');
   const [revision,setRevision]=useState(0);
-  const [lines,setLines]=useState<EditableLine[]>([freshLine('user1')]);
+  const [lines,setLines]=useState<EditableLine[]>([freshLine('user1',initialCategory)]);
   const [nonce,setNonce]=useState(()=>crypto.randomUUID());
   const [saving,setSaving]=useState(false);
   const [submitMessage,setSubmitMessage]=useState('');
   const [paymentStage,setPaymentStage]=useState<0|1|2|3>(0);
-  const [parentCategory,setParentCategory]=useState<SimulationCategory>('TAX_WITH_RETURN');
+  const [parentCategory,setParentCategory]=useState<SimulationCategory>(initialCategory??'TAX_WITH_RETURN');
   const [completedReference,setCompletedReference]=useState('');
   const chooseCategory=(category:SimulationCategory)=>{setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
 
@@ -41,7 +41,11 @@ export const DemoPaymentActivity:React.FC=()=>{
       .catch(e=>{if(active)setBindingError(e instanceof Error?e.message:'Profile authorization unavailable');});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
-  useEffect(()=>{if(!id)return;setLines([freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');setPaymentStage(0);},[id]);
+  useEffect(()=>{
+    if(!id)return;
+    const category=initialCategory??'TAX_WITH_RETURN';
+    setLines([freshLine(id,category)]);setParentCategory(category);setNonce(crypto.randomUUID());setSubmitMessage('');setPaymentStage(initialCategory?1:0);
+  },[id,initialCategory]);
   useEffect(()=>{
     if(!id||!privateMode)return;
     let active=true;
@@ -63,7 +67,7 @@ export const DemoPaymentActivity:React.FC=()=>{
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
     setNonce(crypto.randomUUID());setSubmitMessage('');
   };
-  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
+  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,freshLine(id,parentCategory)]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const removeLine=(index:number)=>{if(lines.length>1){setLines(old=>old.filter((_,i)=>i!==index));setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const submit=useCallback(async(e:React.FormEvent)=>{
     e.preventDefault();if(!id||saving)return;
@@ -78,7 +82,7 @@ export const DemoPaymentActivity:React.FC=()=>{
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
-      setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
+      setView('payer');setRevision(v=>v+1);setLines([freshLine(id,parentCategory)]);setNonce(crypto.randomUUID());
       setCompletedReference(result.reference);setPaymentStage(3);
       setSubmitMessage(txt('Simulation saved and verified: ','সিমুলেশন সংরক্ষিত ও যাচাইকৃত: ')+result.reference+(result.replayed?' (idempotent replay)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}

@@ -7,6 +7,9 @@ import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { TaxpayerLoginPage } from './components/screens/TaxpayerLoginPage';
+import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
+import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
+import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
@@ -28,16 +31,14 @@ import { CertificatesView } from './components/screens/CertificatesView';
 import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
-import { ConnectedServices } from './components/screens/ConnectedServices';
 import { OntologyView } from './components/screens/OntologyView';
 import { GlossaryView } from './components/screens/GlossaryView';
-import { GuidanceAssistant } from './components/screens/GuidanceAssistant';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, isPaymentServiceChoiceOpen } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -124,7 +125,7 @@ const MainRouter: React.FC = () => {
       case 'account_settings':
         return <AccountCenter page="settings" />;
       case 'services':
-        return <ConnectedServices />;
+        return <PaymentServicesPage />;
 
       // Knowledge, Ontology & Guidance
       case 'ontology':
@@ -132,7 +133,7 @@ const MainRouter: React.FC = () => {
       case 'glossary':
         return <GlossaryView />;
       case 'guidance':
-        return <GuidanceAssistant />;
+        return <PublicUserGuide />;
 
       default:
         return <PublicLanding />;
@@ -162,6 +163,8 @@ const MainRouter: React.FC = () => {
       </main>
       <CitizenFooter />
       {publicInformationRoute && <PublicHelpChat />}
+      <ParityRegisterModal />
+      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
     </div>
   );
 };

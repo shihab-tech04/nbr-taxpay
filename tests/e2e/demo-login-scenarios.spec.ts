@@ -1,16 +1,19 @@
 import { expect, test } from '@playwright/test';
 
-test('all ten permitted User IDs open their own account views from Login without a password',async({page},info)=>{
+test('synthetic User IDs cannot authenticate through the TaxPay login form',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','One complete user-ID routing matrix');
  const backendCalls:string[]=[];
  page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co'))backendCalls.push(request.url());});
  for(let n=1;n<=10;n++){
    await page.goto('/?action=taxpayer_login');
-   await page.getByRole('textbox',{name:'User ID or email'}).fill('user'+n);
+   await page.getByRole('textbox',{name:'Account email address'}).fill('user'+n);
+   await page.getByLabel('Password',{exact:true}).fill('user'+n);
    await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeEnabled();
    await page.getByRole('button',{name:'Sign in',exact:true}).click();
-   await expect(page).toHaveURL(new RegExp('action=taxpayer_home&demoUser=user'+n+'(?:&|$)'));
-   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+   await expect(page.getByRole('alert')).toContainText('Enter your account email address');
+   await expect(page).toHaveURL(/action=taxpayer_login/);
+   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toHaveCount(0);
+   expect(new URL(page.url()).searchParams.get('demoUser')).toBeNull();
  }
  expect(backendCalls).toEqual([]);
 });

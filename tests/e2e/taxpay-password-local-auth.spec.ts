@@ -33,7 +33,7 @@ test('real disposable Supabase password login restores, signs out, and keeps pri
 
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID or email' }).fill(email);
+  await page.getByRole('textbox', { name: 'Account email address' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
@@ -66,7 +66,7 @@ test('real disposable Supabase rejects an incorrect password without opening tax
   expect(signup.status).toBe(200);
 
   await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID or email' }).fill(email);
+  await page.getByRole('textbox', { name: 'Account email address' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill('incorrect-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Check your email and password');
@@ -91,7 +91,7 @@ test('password reset email updates a disposable local account and the new passwo
   expect(signup.status).toBe(200);
 
   await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID or email' }).fill(email);
+  await page.getByRole('textbox', { name: 'Account email address' }).fill(email);
   await page.getByRole('button', { name: 'Forgot password?' }).click();
   await expect(page.getByRole('status')).toContainText('password reset instructions');
 
@@ -132,7 +132,7 @@ test('password reset email updates a disposable local account and the new passwo
   await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
 
   await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID or email' }).fill(email);
+  await page.getByRole('textbox', { name: 'Account email address' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(oldPassword);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Check your email and password');

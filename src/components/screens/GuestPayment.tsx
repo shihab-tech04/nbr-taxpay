@@ -1,31 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
-  CreditCard, 
+  CreditCard,
+  Building2,
+  FileText,
+  LoaderCircle,
   ArrowRight, 
   ArrowLeft, 
   CheckCircle, 
   AlertCircle, 
-  Building2, 
   Info, 
   Lock
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
-import { MASTER_PAYMENT_HEADS, BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
-import { ASSESSMENT_YEARS } from '../../data/mockData';
+import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
+import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
+import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
+import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 
 const GUEST_COPY = {
   en: {
     withholdingMode: 'Withholding Agent Mode', publicPortal: 'Public Guest Portal',
     sourceTaxTitle: 'Source Tax Deposit (TDS / TCS)', paymentTitle: 'Guest Income Tax Payment',
     intro: 'Enter the details to prepare your payment.',
-    selectedPurpose: 'Selected purpose', underReview: 'Under review', stepOf: (step: number) => `Step ${step} of 3`,
-    steps: ['Payer & TIN Info', 'Head & Calculation', 'Review & Payment Simulation'],
-    tinPlaceholder: 'e-TIN', tinHint: 'At least 10 characters are required; no government identity check is performed.',
+    selectedPurpose: 'Selected purpose', underReview: 'Under review', stepOf: (step: number) => `Step ${step} of 4`,
+    steps: ['Taxpayer', 'Payment details', 'Review', 'Status'],
+    tinPlaceholder: 'e-TIN', tinHint: 'Enter the 12-digit taxpayer identification number.',
     payerName: 'Payer Legal Name', payerNamePlaceholder: 'Full name as registered on TIN certificate',
     year: 'Assessment Year', zoneCircle: 'Taxes Zone & Circle', zone: 'Taxes Zone', circle: 'Taxes Circle',
     mobile: 'Mobile number (optional)', mobilePlaceholder: 'Contact number',
@@ -45,16 +50,10 @@ const GUEST_COPY = {
     draft: 'Plan as a private draft', continueReview: 'Continue to Review', back: 'Back', backToHead: 'Back to Payment Head',
     reviewTitle: 'Payment summary', payer: 'Payer Name', jurisdiction: 'Jurisdiction',
     headTitle: 'Payment Head', unspecified: 'Unspecified', grandTotal: 'Total Amount (BDT)',
-    channel: 'Payment method (preview)', noFee: 'No fee', directTreasury: 'Treasury route',
-    govSwitch: 'Government switch (simulated)',
-    simulationTitle: 'Payment simulation only',
-    simulationNotice: 'No money is transferred and no official challan is issued.',
-    runSimulation: (amount: string) => `Run payment simulation · ${amount}`,
-    processing: 'Running payment simulation…',
-    completionTitle: 'Payment preview ready.',
-    completionBody: 'Preview reference (not proof of payment):',
-    anotherPayment: 'Start another payment preview',
-    invalidTin: 'Enter an e-TIN at least 10 characters long.',
+    channel: 'Payment preview method', noFee: 'Not calculated', directTreasury: 'Bank branch preview',
+    govSwitch: 'Preview only; no gateway request',
+    anotherPayment: 'Start another payment',
+    invalidTin: 'Enter the taxpayer’s 12-digit TIN.',
     requiredPayer: 'Enter the payer’s full legal name.',
     requiredRepresentative: 'Enter the representative’s name and TIN to continue.',
     requiredDeductee: 'Enter the deductee (supplier or beneficiary) TIN for this source-tax payment.',
@@ -66,9 +65,9 @@ const GUEST_COPY = {
     withholdingMode: 'উৎসে কর কর্তনকারীর মোড', publicPortal: 'পাবলিক অতিথি পোর্টাল',
     sourceTaxTitle: 'উৎসে কর জমা (টিডিএস / টিসিএস)', paymentTitle: 'অতিথি আয়কর পরিশোধ',
     intro: 'পেমেন্ট প্রস্তুত করতে প্রয়োজনীয় তথ্য দিন।',
-    selectedPurpose: 'নির্বাচিত উদ্দেশ্য', underReview: 'পর্যালোচনাধীন', stepOf: (step: number) => `ধাপ ${step} / ৩`,
-    steps: ['করদাতা ও টিআইএন তথ্য', 'খাত ও হিসাব', 'পর্যালোচনা ও পেমেন্ট সিমুলেশন'],
-    tinPlaceholder: 'ই-টিআইএন', tinHint: 'কমপক্ষে ১০টি অক্ষর দিতে হবে; সরকারি পরিচয় যাচাই করা হয় না।',
+    selectedPurpose: 'নির্বাচিত উদ্দেশ্য', underReview: 'পর্যালোচনাধীন', stepOf: (step: number) => `ধাপ ${step} / ৪`,
+    steps: ['করদাতা', 'পরিশোধের বিবরণ', 'পর্যালোচনা', 'অবস্থা'],
+    tinPlaceholder: 'ই-টিআইএন', tinHint: '১২ সংখ্যার করদাতা শনাক্তকরণ নম্বর লিখুন।',
     payerName: 'করদাতার আইনগত নাম', payerNamePlaceholder: 'টিআইএন সনদে নিবন্ধিত পূর্ণ নাম',
     year: 'করবর্ষ', zoneCircle: 'কর অঞ্চল ও সার্কেল', zone: 'কর অঞ্চল', circle: 'কর সার্কেল',
     mobile: 'মোবাইল নম্বর (ঐচ্ছিক)', mobilePlaceholder: 'যোগাযোগ নম্বর',
@@ -88,34 +87,51 @@ const GUEST_COPY = {
     draft: 'ব্যক্তিগত খসড়া হিসেবে পরিকল্পনা করুন', continueReview: 'পর্যালোচনায় এগিয়ে যান', back: 'পূর্ববর্তী ধাপ', backToHead: 'পেমেন্ট খাতে ফিরুন',
     reviewTitle: 'পেমেন্টের সারসংক্ষেপ', payer: 'করদাতার নাম', jurisdiction: 'এখতিয়ার',
     headTitle: 'পেমেন্ট খাত', unspecified: 'উল্লেখ করা হয়নি', grandTotal: 'মোট অর্থ (টাকা)',
-    channel: 'পেমেন্ট মাধ্যম (প্রিভিউ)', noFee: 'কোনো ফি নেই (উদাহরণ)', directTreasury: 'ট্রেজারি রুট (সিমুলেশন)',
-    govSwitch: 'সরকারি সুইচ (সিমুলেটেড)',
-    simulationTitle: 'শুধু পেমেন্ট সিমুলেশন',
-    simulationNotice: 'অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না।',
-    runSimulation: (amount: string) => `পেমেন্ট সিমুলেশন চালান · ${amount}`,
-    processing: 'পেমেন্ট সিমুলেশন চলছে…',
-    completionTitle: 'পেমেন্টের প্রিভিউ প্রস্তুত।',
-    completionBody: 'প্রিভিউ রেফারেন্স (পেমেন্টের প্রমাণ নয়):',
-    anotherPayment: 'আরেকটি পেমেন্ট প্রিভিউ দেখুন',
-    invalidTin: 'কমপক্ষে ১০ অক্ষরের ই-টিআইএন দিন।',
+    channel: 'পেমেন্ট প্রিভিউ পদ্ধতি', noFee: 'হিসাব করা হয়নি', directTreasury: 'ব্যাংক শাখার প্রিভিউ',
+    govSwitch: 'শুধু প্রিভিউ; গেটওয়েতে অনুরোধ যায়নি',
+    anotherPayment: 'আরেকটি পেমেন্ট শুরু করুন',
+    invalidTin: 'করদাতার ১২ সংখ্যার টিআইএন লিখুন।',
     requiredPayer: 'করদাতার পূর্ণ আইনগত নাম দিন।',
     requiredRepresentative: 'এগোতে প্রতিনিধির নাম ও টিআইএন দিন।',
-    requiredDeductee: 'এই উৎসে করের প্রদর্শনীর জন্য কর কর্তনগ্রহীতা (সরবরাহকারী বা সুবিধাভোগী)-এর টিআইএন দিন।',
+    requiredDeductee: 'এই উৎসে কর জমার জন্য কর কর্তনগ্রহীতা (সরবরাহকারী বা সুবিধাভোগী)-এর টিআইএন দিন।',
     requiredHead: 'নির্বাচনযোগ্য একটি পেমেন্ট খাত নির্বাচন করুন।',
-    blockedHead: (id: number) => `পেমেন্ট খাত #${id} মালিকপক্ষের পর্যালোচনার জন্য অবরুদ্ধ; এই প্রদর্শনীতে এটি নির্বাচন করা যাবে না।`,
+    blockedHead: (id: number) => `পেমেন্ট খাত #${id} পর্যালোচনাধীন; এখন এটি নির্বাচন করা যাবে না।`,
     positiveAmount: 'শূন্যের বেশি মোট অর্থ দিন।',
   },
 } as const;
 
-type GuestErrorField = 'tin' | 'payerName' | 'representativeName' | 'deducteeTin' | 'headId' | 'taxAmount';
+type GuestErrorField = 'tin' | 'payerName' | 'phone' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
+
+type LifecycleStage = 'PREVIEW_CREATED' | 'SIMULATION_NOT_SENT' | 'MOCK_FAILURE';
+type PaymentPhase = 'review' | 'processing' | 'mock-failure' | 'preview-ready';
+const PREVIEW_LIFECYCLE: LifecycleStage[] = ['PREVIEW_CREATED', 'SIMULATION_NOT_SENT'];
+const ONLINE_METHODS: { id: ChallanReceipt['paymentMethod']; name: string; group: string }[] = [
+  { id: 'BKASH', name: 'bKash', group: 'mfs' },
+  { id: 'NAGAD', name: 'Nagad', group: 'mfs' },
+  { id: 'ROCKET', name: 'Rocket', group: 'mfs' },
+  { id: 'INTERNET_BANKING', name: 'Internet Banking', group: 'bank' },
+  { id: 'VISA', name: 'Visa', group: 'card' },
+  { id: 'MASTERCARD', name: 'Mastercard', group: 'card' }
+];
+
+const statusLabels: Record<LifecycleStage, { en: string; bn: string }> = {
+  PREVIEW_CREATED: { en: 'Preview created locally', bn: 'স্থানীয়ভাবে প্রিভিউ তৈরি হয়েছে' },
+  SIMULATION_NOT_SENT: { en: 'No payment request sent', bn: 'কোনো পেমেন্ট অনুরোধ পাঠানো হয়নি' },
+  MOCK_FAILURE: { en: 'Local mock failure shown', bn: 'স্থানীয় মক ব্যর্থতা দেখানো হয়েছে' }
+};
 
 interface GuestPaymentProps {
   isWithholdingMode?: boolean;
+  embedded?: boolean;
+  initialCategory?: PaymentCategory;
+  onBackToService?: () => void;
+  onStageChange?: (stage: 2 | 3 | 4) => void;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, initialCategory, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
+  const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
   const copy = GUEST_COPY[language];
 
@@ -126,41 +142,42 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [tin, setTin] = useState('');
   const [payerName, setPayerName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [taxZone, setTaxZone] = useState('Taxes Zone-08, Dhaka');
-  const [taxCircle, setTaxCircle] = useState('Circle-164 (Mohakhali)');
-  const [assessmentYear, setAssessmentYear] = useState('2025-2026');
+  const taxZone = '—';
+  const taxCircle = '—';
+  const [assessmentYear, setAssessmentYear] = useState('2026-27');
+  const [forSelf, setForSelf] = useState(true);
+  const [noticeReference, setNoticeReference] = useState('');
+  const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY'>('NON_COMPANY');
   
-  // Representative fields
-  const [isRepresentative, setIsRepresentative] = useState(false);
-  const [representativeName, setRepresentativeName] = useState('');
-  const [representativeTin, setRepresentativeTin] = useState('');
-
-  // Withholding Deductee fields (if withholding mode)
-  const [deducteeTin, setDeducteeTin] = useState('');
-  const [deducteeName, setDeducteeName] = useState('');
 
   // Category and Head selection
   const [category, setCategory] = useState<PaymentCategory>(
     isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' :
-      (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
-        ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN')
+      (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
+        ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
   const [selectedHeadId, setSelectedHeadId] = useState<number>(
-    isWithholdingMode ? 59 : (MASTER_PAYMENT_HEADS.find(h => h.category === routeParams?.initialCategory)?.id || 1)
+    V11_PAYMENT_OPTIONS.find(h => h.category === (isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : initialCategory || routeParams?.initialCategory) && h.status === 'ACTIVE')?.id || 1
   );
   const [headSearch, setHeadSearch] = useState('');
 
   // Amounts
-  const [taxAmount, setTaxAmount] = useState<number>(15000);
+  const [taxAmount, setTaxAmount] = useState<number>(0);
   const [penaltyAmount, setPenaltyAmount] = useState<number>(0);
   const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
   const [interestAmount, setInterestAmount] = useState<number>(0);
   const [note, setNote] = useState('');
 
   // Payment gateway choice
-  const [paymentMethod, setPaymentMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD'>('BKASH');
+  const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [simulateDecline, setSimulateDecline] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('review');
+  const [lifecycleStages, setLifecycleStages] = useState<LifecycleStage[]>([]);
+  const [attemptReceipt, setAttemptReceipt] = useState<ChallanReceipt | null>(null);
+  const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
@@ -180,23 +197,46 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   useEffect(() => {
+    if (embedded) onStageChange?.(step === 4 ? 4 : step === 3 ? 3 : 2);
+  }, [embedded, onStageChange, step]);
+
+  useEffect(() => () => {
+    lifecycleTimers.current.forEach(clearTimeout);
+    lifecycleTimers.current = [];
+  }, []);
+
+  // The status timeline can be long, especially in the modal. When settlement
+  // completes, bring the newly available receipt into view for the taxpayer.
+  useEffect(() => {
+    if (step !== 4 || !createdReceipt) return;
+    const frame = requestAnimationFrame(() => {
+      const target = embedded
+        ? document.querySelector<HTMLElement>('.payment-flow-embedded--receipt .receipt-view__header h3')
+        : document.querySelector<HTMLElement>('.receipt-view--page h1');
+      target?.scrollIntoView({ block: 'start', behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [step, createdReceipt, embedded]);
+
+  useEffect(() => {
     if (isWithholdingMode) {
       setCategory('SOURCE_TAX_DEPOSIT');
-      setSelectedHeadId(59); // Contract supply TDS
+      setSelectedHeadId(V11_PAYMENT_OPTIONS.find(h => h.category === 'SOURCE_TAX_DEPOSIT' && h.status === 'ACTIVE')?.id || 8);
     }
   }, [isWithholdingMode]);
 
   useEffect(() => {
-    if (!isWithholdingMode && routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
-      const next = routeParams.initialCategory as PaymentCategory;
+    const requestedCategory = initialCategory || routeParams?.initialCategory;
+    if (!isWithholdingMode && requestedCategory && CATEGORY_LABELS[requestedCategory]) {
+      const next = requestedCategory as PaymentCategory;
       setCategory(next);
-      const firstHead = MASTER_PAYMENT_HEADS.find(h => h.category === next && !BLOCKED_HEAD_IDS.includes(h.id));
+      const firstHead = V11_PAYMENT_OPTIONS.find(h => h.category === next && h.status === 'ACTIVE');
       if (firstHead) setSelectedHeadId(firstHead.id);
     }
-  }, [routeParams, isWithholdingMode]);
+  }, [routeParams, initialCategory, isWithholdingMode]);
 
   // Filter available heads
-  const availableHeads = MASTER_PAYMENT_HEADS.filter(head => {
+  const availableHeads = V11_PAYMENT_OPTIONS.filter(head => {
     const matchCat = head.category === category;
     const matchQuery = headSearch
       ? head.nameEn.toLowerCase().includes(headSearch.toLowerCase()) ||
@@ -211,24 +251,25 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
 
-  const handleStep1Next = () => {
-    if (!tin.trim() || tin.length < 10) {
+  const validateIdentity = () => {
+    if (!/^\d{12}$/.test(tin)) {
       setValidationError(copy.invalidTin, 'tin');
-      return;
+      return false;
     }
-    if (!payerName.trim()) {
+    if (!forSelf && !payerName.trim()) {
       setValidationError(copy.requiredPayer, 'payerName');
-      return;
+      return false;
     }
-    if (isRepresentative && (!representativeTin || !representativeName)) {
-      setValidationError(copy.requiredRepresentative, 'representativeName');
-      return;
-    }
-    if (isWithholdingMode && !deducteeTin.trim()) {
-      setValidationError(copy.requiredDeductee, 'deducteeTin');
-      return;
+    if (!/^01\d{9}$/.test(phone.replace(/\D/g, ''))) {
+      setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন (01XXXXXXXXX)।' : 'Enter an 11-digit receipt mobile number (01XXXXXXXXX).', 'phone');
+      return false;
     }
     clearValidationError();
+    return true;
+  };
+
+  const handleStep1Next = () => {
+    if (!validateIdentity()) return;
     setStep(2);
   };
 
@@ -237,7 +278,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.requiredHead, 'headId');
       return;
     }
-    if (BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
+    if (selectedHead.status !== 'ACTIVE' || BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
       setValidationError(copy.blockedHead(selectedHead.id), 'headId');
       return;
     }
@@ -249,11 +290,43 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setStep(3);
   };
 
+  const handleEmbeddedDetailsNext = () => {
+    if (!validateIdentity()) return;
+    handleStep2Next();
+  };
+
+  const runLifecycle = (sequence: LifecycleStage[], receipt: ChallanReceipt) => {
+    lifecycleTimers.current.forEach(clearTimeout);
+    lifecycleTimers.current = sequence.map((status, index) => setTimeout(() => {
+      setLifecycleStages(previous => [...previous, status]);
+      if (index !== sequence.length - 1) return;
+      setIsProcessing(false);
+      if (status === 'MOCK_FAILURE') {
+        setPaymentPhase('mock-failure');
+      } else if (status === 'SIMULATION_NOT_SENT') {
+        const previewReceipt: ChallanReceipt = {
+          ...receipt,
+          gatewayTransactionId: 'SIMULATION-NOT-SENT',
+          treasuryStatus: 'INITIATED',
+          treasuryScrollNo: undefined,
+          treasuryDate: undefined,
+          taxCreditStatus: 'NOT_APPLICABLE',
+          completedAt: undefined
+        };
+        addPaymentReceipt(previewReceipt);
+        setCreatedReceipt(previewReceipt);
+        setPaymentPhase('preview-ready');
+      }
+    }, (index + 1) * 550));
+  };
+
   const handleExecutePayment = () => {
+    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !selectedHead || !(totalAmount > 0)) return;
     setIsProcessing(true);
+    setPaymentPhase('processing');
+    setLifecycleStages([]);
     clearValidationError();
 
-    setTimeout(() => {
       const year = new Date().getFullYear();
       const randChallan = Math.floor(10000000 + Math.random() * 90000000);
       const randToken = Math.floor(100000 + Math.random() * 900000);
@@ -268,78 +341,103 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         surchargeAmount: Number(surchargeAmount),
         interestAmount: Number(interestAmount),
         totalAmount,
-        note: note || undefined
+        note: [noticeReference && `NBR reference: ${noticeReference}`, !isWithholdingMode && `Income tax type: ${incomeTaxType}`, note].filter(Boolean).join(' · ') || undefined
       };
 
       const newReceipt: ChallanReceipt = {
-        id: `rcpt-${Date.now()}`,
+        id: `preview-${Date.now()}`,
         challanNo: `PREVIEW-${year}-PAY-${randChallan}`,
         tokenNumber: `PREVIEW-${randToken}`,
         paymentCategory: category,
         assessmentYear,
-        payerName,
+        payerName: forSelf ? (payerName.trim() || 'Taxpayer / withholding agent') : payerName,
         payerTin: tin,
-        isRepresentativePayment: isRepresentative,
-        representativeTin: isRepresentative ? representativeTin : undefined,
+        isRepresentativePayment: !forSelf,
+        representativeTin: undefined,
         taxZone,
         taxCircle,
         isWithholding: isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT',
-        deducteeTin: isWithholdingMode ? deducteeTin : undefined,
-        deducteeName: isWithholdingMode ? deducteeName : undefined,
+        deducteeTin: undefined,
+        deducteeName: undefined,
         items: [lineItem],
         totalAmount,
         paymentMethod,
         gatewayTransactionId: 'SIMULATION-NOT-SENT',
-        treasuryScrollNo: undefined,
-        treasuryDate: now,
         treasuryStatus: 'INITIATED',
+        treasuryScrollNo: undefined,
         taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
-        completedAt: now,
         isSimulatedDemo: true
       };
-
-      addPaymentReceipt(newReceipt);
-      setCreatedReceipt(newReceipt);
-      setIsProcessing(false);
+      setAttemptReceipt(newReceipt);
       setStep(4);
-    }, 1200);
+      runLifecycle(import.meta.env.DEV && simulateDecline ? ['PREVIEW_CREATED', 'MOCK_FAILURE'] : PREVIEW_LIFECYCLE, newReceipt);
   };
 
-  if (step === 4 && createdReceipt) {
+  const retryPayment = () => {
+    lifecycleTimers.current.forEach(clearTimeout);
+    lifecycleTimers.current = [];
+    setPaymentPhase('review');
+    setLifecycleStages([]);
+    setAttemptReceipt(null);
+    setAcknowledged(false);
+    setSimulateDecline(false);
+    setPaymentChannel(null);
+    setPaymentMethod(null);
+    setStep(3);
+  };
+
+  if (step === 4) {
+    const completed = paymentPhase === 'preview-ready';
+    const declined = paymentPhase === 'mock-failure';
+    const referenceReady = lifecycleStages.includes('PREVIEW_CREATED');
     return (
-      <div lang={language === 'bn' ? 'bn' : 'en'} className={`space-y-6 ${language === 'bn' ? 'font-bengali' : ''}`}>
-        <div className="no-print p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
+      <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
+        <section className="payment-lifecycle" aria-labelledby="payment-lifecycle-title">
+          <div className={`payment-lifecycle__heading payment-lifecycle__heading--${declined ? 'failed' : completed ? 'complete' : 'running'}`}>
+            <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : <CheckCircle size={22} />}</span>
             <div>
-              <span className="font-bold">{copy.completionTitle}</span>
-              <p className="text-xs text-emerald-800">
-                {copy.completionBody} <strong className="font-mono">{createdReceipt.challanNo}</strong>
-              </p>
+              <h2 id="payment-lifecycle-title">{declined ? (language === 'bn' ? 'স্থানীয় মক ব্যর্থতা' : 'Local mock failure') : completed ? (language === 'bn' ? 'পেমেন্ট প্রিভিউ প্রস্তুত' : 'Payment preview prepared') : (language === 'bn' ? 'প্রিভিউ তৈরি হচ্ছে…' : 'Preparing payment preview…')}</h2>
+              <p>{language === 'bn' ? 'এটি কেবল স্থানীয় প্রিভিউ। কোনো পেমেন্ট অনুরোধ, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট তৈরি হয়নি।' : 'Local preview only. No payment request, official challan, Treasury settlement, or tax credit was created.'}</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setStep(1);
-              setCreatedReceipt(null);
-            }}
-            className="min-h-11 px-3 py-1.5 rounded bg-emerald-800 text-white text-xs font-semibold hover:bg-taxpay-primary cursor-pointer"
-          >
-            {copy.anotherPayment}
-          </button>
-        </div>
-        <div lang={language}>
-          <ReceiptView receipt={createdReceipt} onBack={() => navigate('landing')} />
-        </div>
+          <div className="payment-lifecycle__details">
+            <dl className="payment-lifecycle__references">
+              <div><dt>{language === 'bn' ? 'প্রিভিউ রেফারেন্স' : 'Preview reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Preparing…')}</dd></div>
+              <div><dt>{language === 'bn' ? 'প্রিভিউ টোকেন' : 'Preview token'}</dt><dd>{attemptReceipt?.tokenNumber || '—'}</dd></div>
+              <div><dt>{language === 'bn' ? 'মোট অর্থ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
+            </dl>
+            <ol className="payment-lifecycle__timeline" aria-label={language === 'bn' ? 'পরিশোধের অবস্থা' : 'Payment lifecycle'} aria-live="polite" data-testid="payment-lifecycle">
+              {lifecycleStages.map((status, index) => <li key={`${status}-${index}`} className={status === 'MOCK_FAILURE' ? 'payment-lifecycle__event--failed' : ''}>
+                <span className="payment-lifecycle__event-dot" aria-hidden="true">{status === 'MOCK_FAILURE' ? '!' : '✓'}</span>
+                <span>{statusLabels[status][language]}</span>
+                <small>{status}</small>
+              </li>)}
+              {isProcessing && <li className="payment-lifecycle__waiting"><span className="payment-lifecycle__event-dot" aria-hidden="true">·</span>{language === 'bn' ? 'পরবর্তী নিশ্চিতকরণের অপেক্ষায়…' : 'Waiting for the next confirmation…'}</li>}
+            </ol>
+          </div>
+          {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'স্থানীয় মক ব্যর্থতার ফল দেখানো হয়েছে। কোনো পেমেন্ট অনুরোধ পাঠানো হয়নি।' : 'A local mock failure is shown. No payment request was sent.'}</p></div>}
+          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'প্রিভিউ রেফারেন্স ও বিবরণ তৈরি হয়েছে; সরকারি পেমেন্ট বা চালান নয়।' : 'A preview reference and details are ready; no government payment or challan was created.'}</p></div>}
+          <div className="payment-lifecycle__actions no-print">
+            {declined && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment}>{language === 'bn' ? 'প্রিভিউ আবার চেষ্টা করুন' : 'Retry preview'}</button>}
+            {completed && <button type="button" className="payment-lifecycle__secondary" onClick={() => { setStep(1); setCreatedReceipt(null); setPaymentPhase('review'); setLifecycleStages([]); setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); }}>{copy.anotherPayment}</button>}
+          </div>
+        </section>
+        {createdReceipt && <div lang={language}><ReceiptView receipt={createdReceipt} embedded={embedded} onBack={embedded ? onBackToService : () => navigate('landing')} /></div>}
+        {embedded && modalFooterTarget && createPortal(
+          <div className="payment-flow-embedded__footer-actions">
+            {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment}>{language === 'bn' ? 'প্রিভিউ আবার চেষ্টা করুন' : 'Retry preview'} <ArrowRight size={17} /></button>}
+          </div>, modalFooterTarget
+        )}
       </div>
     );
   }
 
   return (
-    <div lang={language === 'bn' ? 'bn' : 'en'} className={`max-w-4xl mx-auto space-y-6 pb-12 ${language === 'bn' ? 'font-bengali' : ''}`}>
+    <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
       {/* Title & Mode Banner */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div className={embedded ? 'payment-flow-embedded__content' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
+        {!embedded && <>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
@@ -363,13 +461,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         </div>
 
         {/* Stepper Progress */}
-        <ol aria-label={language === 'bn' ? 'পেমেন্ট ধাপ' : 'Payment steps'} className="list-none grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-center mb-6">
+        <ol aria-label={language === 'bn' ? 'পেমেন্ট ধাপ' : 'Payment steps'} className="list-none grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold text-center mb-6">
           {copy.steps.map((stepLabel, index) => (
-            <li key={stepLabel} aria-current={step === index + 1 ? 'step' : undefined} className={`min-h-11 p-2 rounded border ${step >= index + 1 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+            <li key={stepLabel} aria-current={step === index + 1 ? 'step' : undefined} className={`min-h-11 p-2 rounded border ${step >= index + 1 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
               {index + 1}. {stepLabel}
             </li>
           ))}
         </ol>
+        </>}
 
         {errorMessage && (
           <div id={ERROR_ID} role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
@@ -380,7 +479,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
-          <div className="space-y-5">
+          <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__identity' : ''}`}>
+            <div className="payment-form-layout__sections">
+            <PaymentFormSection number={1} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="group" aria-label={language === 'bn' ? 'পরিশোধকারীর ধরন' : 'Payer relationship'}>
+                {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My own tax', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার নিজের কর' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : "Someone else's tax", bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য কারও কর' }].map(choice => <button type="button" key={String(choice.value)} aria-pressed={forSelf === choice.value} onClick={() => setForSelf(choice.value)} className={`min-h-14 rounded-lg border-2 p-3 text-left font-semibold text-sm ${forSelf === choice.value ? 'border-taxpay-primary bg-blue-50 text-taxpay-dark' : 'border-slate-200 text-slate-700'}`}>{language === 'bn' ? choice.bn : choice.en}</button>)}
+              </div>
+            </PaymentFormSection>
+            <PaymentFormSection number={2} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? '১২ সংখ্যার টিআইএন ও ঐচ্ছিক রেফারেন্স' : '12-digit TIN and optional NBR reference'}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
@@ -393,16 +499,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('tin', 'guest-tin-hint')}
                   placeholder={copy.tinPlaceholder}
                   value={tin}
-                  onChange={(e) => setTin(e.target.value.replace(/\s+/g, ''))}
+                  inputMode="numeric" maxLength={12} autoComplete="off"
+                  onChange={(e) => setTin(e.target.value.replace(/\D/g, '').slice(0, 12))}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
-                <span id="guest-tin-hint" className="text-[11px] text-slate-500 mt-1 block">
-                  {copy.tinHint}
-                </span>
+                <span id="guest-tin-hint" className="text-[11px] text-slate-500 mt-1 block">{language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন।' : 'Enter the 12-digit TIN.'}</span>
               </div>
 
               <div>
-                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{copy.payerName} *</label>
+                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{forSelf ? (language === 'bn' ? 'নাম (ঐচ্ছিক)' : 'Name (optional)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} {!forSelf && '*'}</label>
                 <input
                   id="guest-payer-name"
                   type="text"
@@ -423,148 +528,36 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   onChange={(e) => setAssessmentYear(e.target.value)}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 >
-                  {ASSESSMENT_YEARS.map(ay => (
+                  {['2027-28','2026-27','2025-26','2024-25'].map(ay => (
                     <option key={ay} value={ay}>{ay}</option>
                   ))}
                 </select>
               </div>
 
-              <fieldset>
-                <legend className="block text-xs font-semibold text-slate-700 mb-1">{copy.zoneCircle}</legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="guest-tax-zone" className="block text-xs text-slate-600 mb-1">{copy.zone}</label>
-                    <input
-                      id="guest-tax-zone"
-                      type="text"
-                      value={taxZone}
-                      onChange={(e) => setTaxZone(e.target.value)}
-                      className="min-h-11 w-full px-2.5 py-2 text-xs rounded border border-slate-300"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="guest-tax-circle" className="block text-xs text-slate-600 mb-1">{copy.circle}</label>
-                    <input
-                      id="guest-tax-circle"
-                      type="text"
-                      value={taxCircle}
-                      onChange={(e) => setTaxCircle(e.target.value)}
-                      className="min-h-11 w-full px-2.5 py-2 text-xs rounded border border-slate-300"
-                    />
-                  </div>
-                </div>
-              </fieldset>
-
               <div>
-                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{copy.mobile}</label>
+                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
                 <input
                   id="guest-phone"
                   type="text"
                   placeholder={copy.mobilePlaceholder}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  aria-invalid={isFieldInvalid('phone') || undefined}
+                  aria-describedby={errorDescription('phone')}
+                  inputMode="numeric" maxLength={11}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
               </div>
 
-              <div>
-                <label htmlFor="guest-email" className="block text-xs font-semibold text-slate-700 mb-1">{copy.email}</label>
-                <input
-                  id="guest-email"
-                  type="email"
-                  placeholder="taxpayer@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
-                />
-              </div>
+              {!isWithholdingMode && <div>
+                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স (ঐচ্ছিক)' : 'NBR notice or payment reference (optional)'}</label>
+                <input id="guest-notice-ref" value={noticeReference} onChange={event => setNoticeReference(event.target.value)} placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+              </div>}
             </div>
+            <p className="text-xs text-slate-500">{language === 'bn' ? 'অন্য করদাতার ব্যক্তিগত তথ্য এখানে দেখানো হয় না।' : 'Other taxpayers’ private account information is not shown here.'}</p>
+            </PaymentFormSection>
 
-            {/* WITHHOLDING AGENT MODE: Deductee TIN Fields */}
-            {isWithholdingMode && (
-              <div className="p-4 rounded-lg bg-teal-50 border border-teal-200 space-y-3">
-                <div className="flex items-center gap-2 text-teal-900 font-semibold text-xs">
-                  <Building2 className="w-4 h-4 text-teal-700" />
-                  <span>{copy.deducteeDetails}</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label htmlFor="guest-deductee-tin" className="block text-slate-700 font-medium mb-1">{copy.deducteeTin} *</label>
-                    <input
-                      id="guest-deductee-tin"
-                      type="text"
-                      aria-invalid={isFieldInvalid('deducteeTin') || undefined}
-                      aria-describedby={errorDescription('deducteeTin')}
-                      placeholder={copy.deducteeTinPlaceholder}
-                      value={deducteeTin}
-                      onChange={(e) => setDeducteeTin(e.target.value)}
-                      className="min-h-11 w-full px-3 py-1.5 rounded border border-teal-300 font-mono-plex"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="guest-deductee-name" className="block text-slate-700 font-medium mb-1">{copy.deducteeName}</label>
-                    <input
-                      id="guest-deductee-name"
-                      type="text"
-                      placeholder={copy.deducteeNamePlaceholder}
-                      value={deducteeName}
-                      onChange={(e) => setDeducteeName(e.target.value)}
-                      className="min-h-11 w-full px-3 py-1.5 rounded border border-teal-300"
-                    />
-                  </div>
-                </div>
-                <p className="text-[11px] text-teal-800 italic">
-                  {copy.legalNote}
-                </p>
-              </div>
-            )}
-
-            {/* Representative Checkbox */}
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-              <label className="min-h-11 flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="guest-is-representative"
-                  checked={isRepresentative}
-                  onChange={(e) => setIsRepresentative(e.target.checked)}
-                  className="rounded text-emerald-800 focus:ring-taxpay-primary"
-                />
-                <span>{copy.representativeCheck}</span>
-              </label>
-
-              {isRepresentative && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
-                  <div>
-                    <label htmlFor="guest-representative-name" className="block text-slate-600 mb-1">{copy.representativeName} *</label>
-                    <input
-                      id="guest-representative-name"
-                      type="text"
-                      aria-invalid={isFieldInvalid('representativeName') || undefined}
-                      aria-describedby={errorDescription('representativeName')}
-                      placeholder={copy.representativeNamePlaceholder}
-                      value={representativeName}
-                      onChange={(e) => setRepresentativeName(e.target.value)}
-                      className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="guest-representative-tin" className="block text-slate-600 mb-1">{copy.representativeTin} *</label>
-                    <input
-                      id="guest-representative-tin"
-                      type="text"
-                      aria-invalid={isFieldInvalid('representativeName') || undefined}
-                      aria-describedby={errorDescription('representativeName')}
-                      placeholder={copy.representativeTinPlaceholder}
-                      value={representativeTin}
-                      onChange={(e) => setRepresentativeTin(e.target.value)}
-                      className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end pt-3">
+            {!embedded && <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
                 className="min-h-11 w-full sm:w-auto justify-center px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
@@ -572,13 +565,23 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <span>{copy.continueHead}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+            </div>}
             </div>
+            {!embedded && <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} amount={totalAmount} note={language === 'bn' ? 'পরের ধাপে খাত ও পরিমাণ ঠিক করুন।' : 'Confirm the payment head and amount in the next section.'} />}
           </div>
         )}
 
         {/* STEP 2: Head Selection & Financial Amounts */}
-        {step === 2 && (
-          <div className="space-y-5">
+        {(step === 2 || (embedded && step === 1)) && (
+          <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
+            <div className="payment-form-layout__sections">
+            <PaymentFormSection number={3} title={language === 'bn' ? 'কর পরিশোধের খাত' : 'Payment purpose & head'} description={language === 'bn' ? 'নির্বাচিত সেবার জন্য প্রযোজ্য খাত' : 'Select the applicable head for your chosen service'}>
+            {!isWithholdingMode && <fieldset className="space-y-2">
+              <legend className="text-xs font-semibold text-slate-700">{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'} *</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[{ id: 'NON_COMPANY' as const, en: 'Person other than company', bn: 'কোম্পানি ব্যতীত ব্যক্তি' }, { id: 'COMPANY' as const, en: 'Company', bn: 'কোম্পানি' }].map(type => <label key={type.id} className={`flex gap-2 items-center border rounded-lg p-3 cursor-pointer text-xs font-semibold ${incomeTaxType === type.id ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200'}`}><input type="radio" name="guest-income-type" value={type.id} checked={incomeTaxType === type.id} onChange={() => setIncomeTaxType(type.id)} />{language === 'bn' ? type.bn : type.en}</label>)}
+              </div>
+            </fieldset>}
             {/* Category Selector */}
             <div>
               <label htmlFor="guest-category" className="block text-xs font-semibold text-slate-700 mb-1">
@@ -591,7 +594,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 onChange={(e) => {
                   const newCat = e.target.value as PaymentCategory;
                   setCategory(newCat);
-                  const firstInCat = MASTER_PAYMENT_HEADS.find(h => h.category === newCat);
+                  const firstInCat = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
                   if (firstInCat) setSelectedHeadId(firstInCat.id);
                 }}
                 className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
@@ -604,7 +607,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </select>
             </div>
 
-            {/* Payment Head Selector with 170 heads */}
+            {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
             <fieldset className="grid grid-cols-1 sm:grid-cols-[1fr_14rem] gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
               <legend className="block text-xs font-semibold text-slate-700 self-center">
                 {copy.selectHead(availableHeads.length)}
@@ -621,7 +624,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
                 {availableHeads.map(head => {
-                  const isBlocked = BLOCKED_HEAD_IDS.includes(head.id);
+                  const isBlocked = head.status !== 'ACTIVE';
                   const isSelected = selectedHead?.id === head.id;
                   return (
                     <label
@@ -654,11 +657,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                           {language === 'bn' ? head.nameEn : head.nameBn}
                         </div>
                         <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600">
-                          <span>{copy.act}: <strong lang="en">{head.sectionAct2023}</strong></span>
-                          <span>{copy.legacy}: <span lang="en">{head.sectionOrdinance1984}</span></span>
-                          <span lang="en" className="text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                            {head.verificationStatus}
-                          </span>
+                          <span>{language === 'bn' ? 'মূল নথির খাত-কোড' : 'Source head code'}: <strong lang="en">{head.economicCode}</strong></span>
                         </div>
                         {head.rateNote && (
                           <div className="text-[11px] text-emerald-800 font-medium">
@@ -688,8 +687,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 })}
               </div>
             </fieldset>
+            </PaymentFormSection>
 
             {/* Financial Amounts Breakdown */}
+            <PaymentFormSection number={4} title={language === 'bn' ? 'করবর্ষ ও পরিমাণ' : 'Assessment year & amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
               <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
                 {copy.amountBreakdown}
@@ -764,8 +765,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 </span>
               </div>
             </div>
+            </PaymentFormSection>
 
-            <div className="flex flex-wrap justify-between gap-2 pt-3">
+            {!embedded && <div className="flex flex-wrap justify-between gap-2 pt-3">
               <button
                 onClick={() => setStep(1)}
                 className="min-h-11 px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
@@ -786,136 +788,83 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <span>{copy.continueReview}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+            </div>}
             </div>
+            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} breakdown={[{label:copy.taxAmount,value:taxAmount},{label:copy.penalty,value:penaltyAmount},{label:copy.surcharge,value:surchargeAmount},{label:copy.interest,value:interestAmount}]} />
           </div>
         )}
 
         {/* STEP 3: Review Challan & Execute Simulated Gateway */}
         {step === 3 && (
-          <div className="space-y-6">
-            {/* Challan Preview Summary Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4 text-xs">
-              <h3 className="font-serif-fraunces font-bold text-base text-slate-900 border-b border-slate-200 pb-2">
-                {copy.reviewTitle}
-              </h3>
+          <div className="payment-review" data-testid="payment-review">
+            <div className="payment-review__main">
+              <section className="payment-review__panel" aria-labelledby="guest-payment-summary-title">
+                <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-summary-title">{copy.reviewTitle}</h2><p>{language === 'bn' ? 'এগোনোর আগে করদাতা, খাত ও পরিমাণ যাচাই করুন' : 'Check the taxpayer, payment head and amount before continuing'}</p></div></div>
+                <dl className="payment-review__rows">
+                  <div><dt>{language === 'bn' ? 'যাঁর কর পরিশোধ হচ্ছে' : 'Taxpayer TIN'}</dt><dd className="font-mono-plex">{tin}</dd></div>
+                  <div><dt>{language === 'bn' ? 'পরিশোধকারী' : 'Payer'}</dt><dd>{forSelf ? (language === 'bn' ? 'করদাতা নিজে' : 'Taxpayer (self)') : (payerName || copy.unspecified)}</dd></div>
+                  <div><dt>{language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'}</dt><dd>{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</dd></div>
+                  <div><dt>{language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}</dt><dd>{selectedHead?.economicCode} — {language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}</dd></div>
+                  {category !== 'SOURCE_TAX_DEPOSIT' && <div><dt>{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'}</dt><dd>{incomeTaxType === 'COMPANY' ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'কোম্পানি ব্যতীত ব্যক্তি' : 'Person other than company')}</dd></div>}
+                  <div><dt>{commonCopy.assessmentYear}</dt><dd>{assessmentYear}</dd></div>
+                  {noticeReference.trim() && <div><dt>{language === 'bn' ? 'NBR রেফারেন্স' : 'NBR reference'}</dt><dd>{noticeReference}</dd></div>}
+                  <div><dt>{language === 'bn' ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd className="font-mono-plex">{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
+                  <div><dt>{language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer account'}</dt><dd>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'eTDS-এ বরাদ্দের জন্য কর কর্তনগ্রহীতা' : 'Deductees after eTDS allocation') : (language === 'bn' ? 'উল্লেখিত টিআইএন; এই প্রিভিউ ক্রেডিট দেয় না' : 'Stated TIN; this preview posts no credit')}</dd></div>
+                </dl>
+                {note && <p className="payment-review__note">{language === 'bn' ? 'মন্তব্য:' : 'Remarks:'} {note}</p>}
+              </section>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <div>
-                    <span className="text-slate-500">{copy.payer}:</span>{' '}
-                    <strong className="text-slate-900">{payerName}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">{commonCopy.tin}:</span>{' '}
-                    <strong className="font-mono-plex text-taxpay-dark">{tin}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">{commonCopy.assessmentYear}:</span>{' '}
-                    <strong className="text-slate-900">{assessmentYear}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">{copy.jurisdiction}:</span>{' '}
-                    <span className="text-slate-800">{taxZone}, {taxCircle}</span>
-                  </div>
+              <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
+                <div className="payment-review__section-title"><span className="payment-review__section-number">02</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট প্রিভিউ পদ্ধতি বেছে নিন' : 'Choose payment preview method'}</h2><p>{language === 'bn' ? 'কোনো গেটওয়ে বা ব্যাংকে অনুরোধ পাঠানো হবে না' : 'No request will be sent to a gateway or bank'}</p></div></div>
+                <p className="payment-review__bank-note" role="note"><Info size={16} aria-hidden="true" />{language === 'bn' ? 'এটি শুধু প্রিভিউ। অর্থ স্থানান্তর, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট তৈরি হবে না।' : 'Preview only. No money is transferred, and no official challan, Treasury settlement, or tax credit is created.'}</p>
+                <div className="payment-review__channels" role="group" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেল' : 'Payment channel'}>
+                  <button type="button" aria-pressed={paymentChannel === 'NOW'} className={`payment-review__channel ${paymentChannel === 'NOW' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('NOW'); setPaymentMethod(null); setAcknowledged(false); }}><CreditCard size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'অনলাইন পদ্ধতির প্রিভিউ' : 'Online method preview'}</strong><small>{language === 'bn' ? 'মোবাইল ব্যাংকিং, ইন্টারনেট ব্যাংকিং বা কার্ড' : 'MFS, internet banking or card'}</small></span><span className="payment-review__radio" /></button>
+                  <button type="button" aria-pressed={paymentChannel === 'OTC'} className={`payment-review__channel ${paymentChannel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('OTC'); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }}><Building2 size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'ব্যাংক শাখার প্রিভিউ' : 'Bank branch preview'}</strong><small>{language === 'bn' ? 'কোনো ব্যাংক স্লিপ বা চালান ইস্যু হবে না' : 'No bank slip or challan is issued'}</small></span><span className="payment-review__radio" /></button>
                 </div>
-
-                <div className="space-y-1.5">
-                  <div>
-                    <span className="text-slate-500">{commonCopy.category}:</span>{' '}
-                    <strong className="text-slate-900">{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">{commonCopy.headCode}:</span>{' '}
-                    <strong className="font-mono-plex text-taxpay-dark">{selectedHead?.economicCode}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">{copy.headTitle}:</span>{' '}
-                    <span className="text-slate-800">{language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}</span>
-                  </div>
-                  {isWithholdingMode && (
-                    <div className="text-teal-900 font-semibold bg-teal-100/60 p-1.5 rounded">
-                      {copy.deducteeTin}: {deducteeTin} ({deducteeName || copy.unspecified})
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">{copy.grandTotal}:</span>
-                <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
-                  {formatCurrency(totalAmount, language)}
-                </span>
-              </div>
+                {paymentChannel === 'NOW' && <div className="payment-review__methods">
+                  {(['bank', 'mfs', 'card'] as const).map(group => <fieldset key={group}>
+                    <legend>{group === 'bank' ? (language === 'bn' ? 'ব্যাংক' : 'Bank') : group === 'mfs' ? (language === 'bn' ? 'মোবাইল আর্থিক সেবা' : 'Mobile financial services') : (language === 'bn' ? 'কার্ড' : 'Cards')}</legend>
+                    <div className="payment-review__method-list">{ONLINE_METHODS.filter(method => method.group === group).map(method => <label key={method.id} className={`payment-review__method ${paymentMethod === method.id ? 'payment-review__method--selected' : ''}`}><input type="radio" name="guest-gateway-method" checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} />{method.name}</label>)}</div>
+                  </fieldset>)}
+                  {import.meta.env.DEV && <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={e => setSimulateDecline(e.target.checked)} />{language === 'bn' ? 'স্থানীয় মক ব্যর্থতা দেখান' : 'Show local mock failure'}</label>}
+                </div>}
+                {paymentChannel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{language === 'bn' ? 'ব্যাংক শাখার জন্য কোনো চালান বা পেমেন্ট স্লিপ তৈরি হবে না।' : 'No challan or payment slip will be generated for a bank branch.'}</p>}
+              </section>
             </div>
-
-            {/* Gateway Provider Selection */}
-            <div className="space-y-3">
-              <h3 id="guest-channel-heading" className="block text-xs font-bold uppercase tracking-wider text-slate-700">{copy.channel}</h3>
-
-              <div role="group" aria-labelledby="guest-channel-heading" className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-5 gap-4">
-                {[
-                  { id: 'BKASH', label: 'bKash MFS', fee: copy.noFee },
-                  { id: 'NAGAD', label: 'Nagad MFS', fee: copy.noFee },
-                  { id: 'ROCKET', label: 'Rocket DBBL', fee: copy.noFee },
-                  { id: 'SONALI_E_SHEBA', label: 'Sonali e-Sheba', fee: copy.directTreasury },
-                  { id: 'A_CHALLAN_CARD', label: 'Cards (Visa/MC)', fee: copy.govSwitch }
-                ].map(gw => (
-                  <button
-                    key={gw.id}
-                    type="button"
-                    aria-pressed={paymentMethod === gw.id}
-                    onClick={() => setPaymentMethod(gw.id as any)}
-                    className={`min-h-14 p-3 rounded-lg border text-left cursor-pointer transition-all ${
-                      paymentMethod === gw.id
-                        ? 'bg-taxpay-primary text-white border-taxpay-primary shadow-sm'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  >
-                    <div className="font-bold text-xs">{gw.label}</div>
-                    <div className={`text-[10px] mt-0.5 ${paymentMethod === gw.id ? 'text-white' : 'text-slate-500'}`}>
-                      {gw.fee}
-                    </div>
-                  </button>
-                ))}
+            <aside className="payment-review__aside" aria-label={language === 'bn' ? 'মোট পেমেন্ট ও নিশ্চিতকরণ' : 'Payment total and confirmation'}>
+              <div className="payment-review__total-card">
+                <p className="payment-review__total-label">{language === 'bn' ? 'মোট পরিশোধের পরিমাণ' : 'Payment Amount'}</p>
+                <strong className="payment-review__total-figure">{formatCurrency(totalAmount, language)}</strong>
+                <dl className="payment-review__breakdown">
+                  {[[copy.taxAmount, taxAmount], [copy.penalty, penaltyAmount], [copy.surcharge, surchargeAmount], [copy.interest, interestAmount]].map(([label, amount]) => <div key={label}><dt>{label}</dt><dd>{formatCurrency(Number(amount), language)}</dd></div>)}
+                  <div className="payment-review__breakdown-fee"><dt>{language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge'}</dt><dd>—</dd></div>
+                </dl>
               </div>
-            </div>
-
-            {/* Simulation notice */}
-            <div className="p-3 rounded bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-              <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <div>
-                <strong>{copy.simulationTitle}: </strong>{copy.simulationNotice}
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-between">
-              <button
-                disabled={isProcessing}
-                onClick={() => setStep(2)}
-                className="min-h-11 w-full justify-center px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5 sm:w-auto"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>{copy.backToHead}</span>
-              </button>
-              <button
-                disabled={isProcessing}
-                onClick={handleExecutePayment}
-                aria-busy={isProcessing}
-                className="min-h-11 w-full justify-center px-6 py-3 bg-amber-400 hover:bg-amber-300 text-taxpay-dark font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 sm:w-auto"
-              >
-                {isProcessing ? (
-                  <span>{copy.processing}</span>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 text-taxpay-dark" />
-                    <span>{copy.runSimulation(formatCurrency(totalAmount, language))}</span>
-                  </>
-                )}
-              </button>
-            </div>
+              <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি; এই প্রিভিউ eTDS-এ জমা বা ক্রেডিট তৈরি করে না।' : 'I checked the agent TIN, deduction head, year and amount. This preview creates no eTDS deposit or credit.') : (language === 'bn' ? 'টিআইএন, করের ধরন, খাত, করবর্ষ ও পরিমাণ যাচাই করেছি; এই প্রিভিউ কোনো অর্থ বা কর ক্রেডিট তৈরি করে না।' : 'I checked the TIN, tax type, head, year and amount. This preview creates no payment or tax credit.')}</span></label>
+            </aside>
+            {!embedded && <div className="payment-review__standalone-actions">
+              <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{copy.backToHead}</button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing}>{language === 'bn' ? 'পেমেন্ট প্রিভিউ তৈরি করুন' : 'Prepare payment preview'}<ArrowRight size={17} /></button>
+            </div>}
           </div>
         )}
       </div>
+      {embedded && modalFooterTarget && createPortal(
+        <div className="payment-flow-embedded__footer-actions">
+          {step === 1 ? (
+            <button type="button" className="tax-service-choice__continue" onClick={handleEmbeddedDetailsNext}>
+              {language === 'bn' ? 'পর্যালোচনা ও পরিশোধ' : 'Continue to Review & Pay'} <ArrowRight size={18} aria-hidden="true" />
+            </button>
+          ) : step === 3 ? (<>
+            <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(1)} disabled={isProcessing}>
+              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            </button>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged} aria-busy={isProcessing}>
+              <FileText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্ট প্রিভিউ তৈরি করুন' : 'Prepare payment preview'}
+            </button>
+          </>) : null}
+        </div>, modalFooterTarget
+      )}
     </div>
   );
 };

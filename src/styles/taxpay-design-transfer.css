@@ -1,0 +1,130 @@
+/*
+ * Citizen-only transfer of Sobaike Janao's semantic surfaces, light elevation,
+ * category color families, and Noto Sans Bengali treatment.
+ * The primary remains #2C5EAD; service colors are decorative labels, not
+ * payment, legal applicability, treasury, or ledger-credit status indicators.
+ * Office Management and print receipts are outside this stylesheet's scope.
+ */
+.taxpay-citizen-shell {
+  --citizen-surface-subtle: var(--color-taxpay-surface-subtle);
+  --citizen-shadow-card: var(--taxpay-shadow-card);
+  --citizen-shadow-raised: var(--taxpay-shadow-raised);
+  --citizen-shadow-modal: var(--taxpay-shadow-modal);
+  --citizen-radius-control: var(--taxpay-radius-control);
+  --citizen-radius-card: var(--taxpay-radius-card);
+  --citizen-radius-modal: var(--taxpay-radius-modal);
+
+  /* Four distinct payment-service identities. No new services or actions. */
+  --service-return-primary: #315DAA;
+  --service-return-bg: #EEF4FF;
+  --service-return-border: #C9D8F5;
+  --service-return-text: #214887;
+  --service-advance-primary: #A65B19;
+  --service-advance-bg: #FFF6EC;
+  --service-advance-border: #F3D9B8;
+  --service-advance-text: #80420D;
+  --service-withholding-primary: #6D4BA8;
+  --service-withholding-bg: #F6F1FC;
+  --service-withholding-border: #DFD2F1;
+  --service-withholding-text: #4E327B;
+  --service-other-primary: #0C6D8D;
+  --service-other-bg: #ECF8FC;
+  --service-other-border: #BDE7F2;
+  --service-other-text: #07516B;
+}
+
+/* A common low-elevation language across existing public/taxpayer cards. */
+.taxpay-citizen-shell :is(
+  .public-information-hub .public-info-section,
+  .public-info-topic,
+  .public-info-guides article,
+  .citizen-financial-intro,
+  .citizen-hub-lookup,
+  .citizen-hub-support,
+  .citizen-taxpayer-summary,
+  .citizen-taxpayer-profile,
+  .citizen-taxpayer-quick,
+  .citizen-taxpayer-activity,
+  .taxpayer-reference-secure > section,
+  .taxpayer-reference-secure > article
+) {
+  box-shadow: var(--citizen-shadow-card);
+}
+
+/* Legacy Tailwind shadow utilities appear on public payment and taxpayer views.
+ * Normalize them within the citizen shell without affecting the separate Office UI. */
+.taxpay-citizen-shell :is(.shadow-xs, .shadow-sm, .shadow-md) {
+  box-shadow: var(--citizen-shadow-card);
+}
+.taxpay-citizen-shell :is(.shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: var(--citizen-shadow-modal);
+}
+
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service] {
+  --service-primary: var(--citizen-primary);
+  --service-bg: var(--citizen-primary-light);
+  --service-border: var(--citizen-border);
+  --service-text: var(--citizen-primary-dark);
+  border-color: var(--service-border);
+  background: var(--service-bg);
+  border-radius: var(--citizen-radius-card);
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service="return"] {
+  --service-primary: var(--service-return-primary);
+  --service-bg: var(--service-return-bg);
+  --service-border: var(--service-return-border);
+  --service-text: var(--service-return-text);
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service="advance"] {
+  --service-primary: var(--service-advance-primary);
+  --service-bg: var(--service-advance-bg);
+  --service-border: var(--service-advance-border);
+  --service-text: var(--service-advance-text);
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service="withholding"] {
+  --service-primary: var(--service-withholding-primary);
+  --service-bg: var(--service-withholding-bg);
+  --service-border: var(--service-withholding-border);
+  --service-text: var(--service-withholding-text);
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service="other"] {
+  --service-primary: var(--service-other-primary);
+  --service-bg: var(--service-other-bg);
+  --service-border: var(--service-other-border);
+  --service-text: var(--service-other-text);
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service] .citizen-hub-service-grid__icon {
+  background: var(--citizen-surface);
+  color: var(--service-primary);
+  border-color: var(--service-border);
+  border-radius: var(--citizen-radius-control);
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service] h3 {
+  color: var(--service-text);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.taxpay-citizen-shell .public-info-topic[data-taxpay-service] p {
+  color: var(--citizen-text);
+}
+
+/* Preserve the approved modal structure and mobile full-screen behavior. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal {
+    border-radius: var(--citizen-radius-modal);
+    box-shadow: var(--citizen-shadow-modal);
+  }
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__header .taxpay-modal__title {
+  font-family: inherit;
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__close,
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer-close {
+  border-radius: var(--citizen-radius-control);
+}
+
+@media print {
+  .taxpay-citizen-shell :is(.public-info-topic, .public-info-guides article, .citizen-taxpayer-summary, .shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+    box-shadow: none;
+  }
+}

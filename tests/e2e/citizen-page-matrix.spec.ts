@@ -11,7 +11,7 @@ const privateRoutes={
   certificates: {kind:'menu',button:'Certificates'},
   corrections: {kind:'menu',button:'Corrections'},
   notifications: {kind:'menu',button:'Notifications'},
-  services: {kind:'menu',button:'Connected Services'}
+  services: {kind:'menu',button:'Payment services'}
 } as const;
 
 const visualAudit=async(page:import('@playwright/test').Page,key:string,viewport:string) => {
@@ -45,6 +45,9 @@ test.describe('read-only citizen screen matrix',()=>{
         await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:choice.button,exact:true}).click();
       } else if(choice.kind==='pay'){
         await page.getByRole('button',{name:'Pay — select payment type'}).click();
+        const services=page.getByRole('dialog',{name:'Pay Tax'});
+        await services.getByRole('button',{name:/Tax with Return/}).click();
+        await services.getByRole('button',{name:'Continue'}).click();
       } else if(choice.kind==='button'){
         await page.getByRole('button',{name:new RegExp(choice.button)}).first().click();
       }

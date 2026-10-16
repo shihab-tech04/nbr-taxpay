@@ -90,6 +90,8 @@ export interface PaymentLineItem {
 
 export interface ChallanReceipt {
   id: string;
+  taxEventId?: string;
+  paymentTransactionId?: string;
   challanNo: string;
   tokenNumber: string;
   paymentCategory: PaymentCategory;
@@ -105,7 +107,7 @@ export interface ChallanReceipt {
   deducteeName?: string;
   items: PaymentLineItem[];
   totalAmount: number;
-  paymentMethod: 'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD' | 'BEFTN_RTGS';
+  paymentMethod: 'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD' | 'BEFTN_RTGS' | 'INTERNET_BANKING' | 'VISA' | 'MASTERCARD' | 'BANK_BRANCH';
   gatewayTransactionId: string;
   treasuryScrollNo?: string;
   treasuryDate?: string;

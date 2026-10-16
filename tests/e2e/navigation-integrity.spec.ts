@@ -1,19 +1,19 @@
 import {expect, test} from '@playwright/test';
 
-test('public header, FAQ topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
+test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
   await page.goto('/?action=landing');
   const publicNav = page.getByRole('navigation',{name:'Primary navigation'});
   if (page.viewportSize()!.width <= 900) await page.getByRole('button',{name:'Menu'}).click();
-  await publicNav.getByRole('link',{name:'FAQs'}).click();
+  await publicNav.getByRole('link',{name:'User guide'}).click();
   await expect(page).toHaveURL(/action=user_guide/);
-  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page).toHaveURL(/action=user_guide&category=travel/);
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   // This destination is the same route with a different tab; it must select the target tab.
-  await page.getByRole('contentinfo',{name:'TaxPay footer'}).getByRole('button',{name:'Security & support'}).click();
+  await page.getByRole('contentinfo',{name:'Amar Kor footer'}).getByRole('button',{name:'Security & support'}).click();
   await expect(page).toHaveURL(/action=user_guide&category=security/);
   await expect(page.getByRole('heading',{name:'Security & support'})).toBeVisible();
   await page.reload();
@@ -26,15 +26,37 @@ test('public header, FAQ topics, footer links, language and browser history reac
   await page.getByRole('button',{name:'বাংলা'}).first().click();
   await expect(page).toHaveURL(/lang=bn/);
   await page.reload();
-  await expect(page.getByRole('heading',{name:'TaxPay ব্যবহার নির্দেশিকা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'আমার কর ব্যবহার নির্দেশিকা'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'নিরাপত্তা ও সহায়তা'})).toBeVisible();
 });
 
-test('public service actions and receipt result return stay in their own public flows', async ({page}) => {
+test('public footer utility links open their actual destinations without copying the top navigation', async ({page}) => {
+  await page.goto('/?action=landing&lang=en');
+  const footer = page.getByRole('contentinfo',{name:'Amar Kor footer'});
+  await footer.getByRole('button',{name:'Receipts & corrections'}).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe('user_guide');
+  await expect.poll(() => new URL(page.url()).searchParams.get('category')).toBe('records');
+  await expect(page.getByRole('heading',{name:'Receipts & corrections'})).toBeVisible();
+  await footer.getByRole('button',{name:'Payment status & receipt'}).click();
+  await expect(page).toHaveURL(/action=verify/);
+  await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
+});
+
+test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
+  await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Check payment status & receipt'}).click();
+  await page.getByRole('button',{name:'Check payment & receipt'}).click();
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
+  await page.getByRole('button',{name:'Pay Tax'}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(services).toBeVisible();
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
+  await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay travel tax'}).click();
   await expect(page.getByRole('dialog',{name:/Travel tax/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
@@ -42,15 +64,15 @@ test('public service actions and receipt result return stay in their own public 
   await page.goto('/?action=verify');
   await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
   await page.getByRole('button',{name:/Use reference:/}).first().click();
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
   await page.getByRole('button',{name:'Back to records'}).click();
   await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toHaveCount(0);
 });
 
-test('guest menus and bell route to their named services; contextual payment choices survive reload', async ({page}) => {
+test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=verify');
   // The notifications bell is a mobile-only control; desktop visitors can open
   // the same safe account-notifications destination through its deep link.
@@ -62,12 +84,15 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page).toHaveURL(/action=account_notifications/);
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await page.getByRole('dialog',{name:'Select payment type'}).getByRole('button',{name:'Advance Tax',exact:true}).click();
-  await expect(page).toHaveURL(/action=guest&initialCategory=ADVANCE_TAX/);
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Advance Tax/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
+  await expect(page).toHaveURL(/action=account_notifications/);
+  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(services.getByText('Advance Tax',{exact:true}).last()).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
-  await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
 
 test('taxpayer desktop sidebar, account sub-menu and payment guide each open the labeled destination',async({page},info)=>{
@@ -76,6 +101,13 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  const pay=rail.getByRole('button',{name:'Pay — select payment type'});
+  await expect(pay).toBeVisible();
+  await expect(pay).toContainText('Pay Tax');
+  await expect(page.locator('.citizen-pay')).toBeHidden();
+  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
+  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
+  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
   const links=[
     ['Activity','history'],
     ['Tax ledger','ledger'],
@@ -88,15 +120,51 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
+  await rail.getByRole('button',{name:'Payment services',exact:true}).click();
+  await expect(page).toHaveURL(/action=services/);
+  await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
+  await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(8);
   await rail.locator('.taxpayer-reference-account > summary').click();
+  await expect(rail.getByRole('button',{name:'Account access'})).toHaveCount(0);
   await rail.getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page).toHaveURL(/action=account_profile/);
   await rail.getByRole('button',{name:'Profile settings'}).click();
   await expect(page).toHaveURL(/action=account_settings/);
   await rail.getByRole('button',{name:'Payment guide'}).click();
   await expect(page).toHaveURL(/action=user_guide&category=payments/);
-  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
+});
+
+test('desktop sidebar Pay Tax action opens service choice then the embedded payment form',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Wide desktop payment-entry check');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await rail.getByRole('button',{name:'Pay — select payment type'}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
+  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(rail).toBeVisible();
+  // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+});
+
+test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop rail starts at 1440px');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=secure_workspace');
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await expect(rail).toBeVisible();
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+  await expect(page).toHaveURL(/action=secure_workspace/);
 });
 
 test('taxpayer mobile menu and payment action link to the correct routes in both languages',async({page},info)=>{
@@ -105,14 +173,18 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const open=()=>page.getByRole('button',{name:'Open menu'}).first().click();
   await open();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Connected Services'}).click();
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Payment services'}).click();
   await expect(page).toHaveURL(/action=services/);
   await open();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Journey'}).click();
   await expect(page).toHaveURL(/action=journey/);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await expect(page).toHaveURL(/action=wizard/);
-  await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
+  // The payment workflow is modal-based and does not navigate away from Tax Journey.
+  await expect(page).toHaveURL(/action=journey/);
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await open();
@@ -129,9 +201,9 @@ test('every taxpayer mobile service-menu destination matches its visible label',
   const destinations=[
     ['Home','taxpayer_home'],['Activity','history'],['Tax Ledger','ledger'],
     ['Certificates','certificates'],['Corrections','corrections'],
-    ['Tax Journey','journey'],['Connected Services','services'],
+    ['Tax Journey','journey'],['Payment services','services'],
     ['Notifications','account_notifications'],['Profile','account_profile'],
-    ['Profile settings','account_settings'],['Help','guidance']
+    ['Profile settings','account_settings'],['Help','user_guide'],['Payment guide','user_guide']
   ] as const;
   for(const [label,route] of destinations){
     await page.getByRole('button',{name:'Open menu'}).first().click();
@@ -187,10 +259,10 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
     await page.getByRole('button',{name:'View details'}).first().click();
   }
   await expect(page).toHaveURL(/action=payment_details&returnTo=history/);
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
   await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
   await page.reload();
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
   await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toBeVisible();
   if(page.viewportSize()!.width >= 1440){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();

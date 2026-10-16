@@ -3,17 +3,20 @@ import { expect, test } from '@playwright/test';
 /** Regression contract: Public and Taxpayer share Government Blue theme; taxpayer reference layout remains protected. */
 const exactReference = {
   primary: 'rgb(44, 94, 173)',
-  background: 'rgb(246, 249, 254)',
+  background: 'rgb(240, 242, 245)',
   text: 'rgb(23, 32, 51)',
-  border: 'rgb(221, 231, 245)',
+  border: 'rgb(225, 230, 238)',
   focus: 'rgb(92, 168, 216)'
 } as const;
 
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  const enter = page.getByRole('button', { name: 'Explore taxpayer workspace' });
+  const dashboard = page.getByRole('heading', { name: 'Dashboard summary' });
+  await expect(enter.or(dashboard).first()).toBeVisible();
+  if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
-  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+  await expect(dashboard).toBeVisible();
 }
 
 test('Public and Taxpayer share exact Government Blue tokens and Office routes stay outside TaxPay', async ({page}) => {
@@ -61,9 +64,28 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await expect(rail.getByRole('button',{name:'Tax ledger'})).toHaveAttribute('aria-current','page');
   await expect(page.getByText('Ledger information')).toBeVisible();
   await rail.locator('.taxpayer-reference-account > summary').click();
-  await rail.getByRole('button',{name:'Account access'}).click();
-  await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
+  await expect(rail.getByRole('button',{name:'Account access'})).toHaveCount(0);
+  await rail.getByRole('button',{name:'Profile',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Profile',exact:true}).first()).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
+});
+
+test('Sobaike-style desktop rail remains aligned at three breakpoints without a duplicate Pay action',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One responsive desktop rail matrix');
+  await page.setViewportSize({width:1600,height:900});
+  await openSampleTaxpayer(page);
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  for(const [width,expectedRailWidth] of [[1440,240],[1600,250],[2048,260]]){
+    await page.setViewportSize({width,height:900});
+    await expect(rail).toHaveCSS('width',`${expectedRailWidth}px`);
+    await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
+    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
+    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
+    await expect(page.locator('.citizen-pay')).toBeHidden();
+    const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
+    expect(overflow,`sidebar overflow at ${width}px`).toBeLessThanOrEqual(1);
+    await page.screenshot({path:`test-results/screenshots/taxpayer-sobaike-rail-${width}.png`,fullPage:false});
+  }
 });
 
 test('mobile reference is full-width, bilingual and avoids scroll/keyboard overlap',async({page},info)=>{
@@ -91,12 +113,15 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
     await page.getByRole('button',{name:'Pay — select payment type'}).click();
+    const services=page.getByRole('dialog',{name:'Pay Tax'});
+    await services.getByRole('button',{name:/Tax with Return/}).click();
+    await services.getByRole('button',{name:'Continue'}).click();
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
-    const payment=page.locator('.taxpay-payment-wizard');
+    const payment=services.locator('.payment-flow-embedded');
     await expect(payment).toBeVisible();
     await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(1);
-    await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
-    await expect(page.locator('.citizen-pay')).toHaveCount(0);
+    // The dashboard navigation remains in the background while the modal is open.
+    await expect(services).toBeVisible();
     await expect(page.locator('.citizen-header')).toBeVisible();
     const after=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(after,'Taxpayer payment form has overflow at '+width).toBeLessThanOrEqual(2);
@@ -123,12 +148,12 @@ test('taxpayer home and ledger follow the shared Public theme without legacy eme
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const shell=page.locator('.taxpay-taxpayer-reference');
   await expect(shell).toHaveCount(1);
-  await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
+  await expect(shell).toHaveCSS('background-color',exactReference.background);
   const composition=page.getByRole('heading',{name:'Payment composition'}).locator('xpath=ancestor::section');
   await expect(composition).toHaveCSS('background-color','rgb(255, 255, 255)');
   await page.getByRole('button',{name:'Tax ledger'}).first().click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
-  await expect(shell).toHaveCSS('background-color','rgb(246, 249, 254)');
+  await expect(shell).toHaveCSS('background-color',exactReference.background);
 });
 
 test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({page},info)=>{
@@ -153,7 +178,10 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  const field=page.locator('.taxpay-payment-wizard input:visible').first();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
+  const field=services.locator('.payment-flow-embedded input:visible').first();
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });
 
