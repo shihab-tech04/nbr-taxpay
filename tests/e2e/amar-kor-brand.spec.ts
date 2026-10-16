@@ -30,7 +30,7 @@ test('flat wordmark footer stays readable without horizontal overflow', async ({
     await page.goto('/?action=landing&lang=bn');
     const footer = page.getByRole('contentinfo', { name: 'আমার কর ফুটার' });
     await expect(footer.locator('.public-footer__wordmark')).toBeVisible();
-    await expect(footer.getByRole('button', { name: 'ব্যবহার নির্দেশিকা' })).toBeVisible();
+    await expect(footer.getByRole('button', { name: 'পেমেন্টের অবস্থা ও রসিদ' })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   }
@@ -46,5 +46,12 @@ test('public footer is a single compact row on desktop', async ({ page }) => {
   expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(20);
   const height = await footer.evaluate(element => element.getBoundingClientRect().height);
   expect(height).toBeLessThan(95);
-  await expect(footer.getByRole('navigation', { name: 'Footer navigation' }).getByRole('link', { name: 'NBR publications' })).toBeVisible();
+  const links = footer.getByRole('navigation', { name: 'Footer navigation' });
+  for (const duplicatedLabel of ['Home', 'User guide', 'Report']) {
+    await expect(links.getByRole('button', { name: duplicatedLabel, exact: true })).toHaveCount(0);
+  }
+  for (const utilityLabel of ['Payment status & receipt', 'Receipts & corrections', 'Security & support']) {
+    await expect(links.getByRole('button', { name: utilityLabel, exact: true })).toBeVisible();
+  }
+  await expect(links.getByRole('link', { name: 'NBR publications' })).toBeVisible();
 });

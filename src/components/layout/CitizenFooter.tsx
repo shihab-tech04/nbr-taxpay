@@ -20,11 +20,10 @@ export function CitizenFooter(){
         <p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p>
       </div>
       <nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>
-        <button onClick={()=>navigate('landing')} type="button">{bn?'হোম':'Home'}</button>
-        <button onClick={()=>navigate('user_guide')} type="button">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</button>
-        <button onClick={()=>navigate('incident')} type="button">{bn?'অভিযোগ':'Report'}</button>
-        <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
+        <button onClick={()=>navigate('verify')} type="button">{bn?'পেমেন্টের অবস্থা ও রসিদ':'Payment status & receipt'}</button>
+        <button onClick={()=>navigate('user_guide',{category:'records'})} type="button">{bn?'রসিদ ও সংশোধন':'Receipts & corrections'}</button>
         <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>
+        <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
       </nav>
       <div className="public-footer__bottom">
         <p>{bn?'© ২০২৬ আমার কর':'© 2026 Amar Kor'}</p>

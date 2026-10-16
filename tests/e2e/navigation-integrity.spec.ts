@@ -30,6 +30,17 @@ test('public header, FAQ topics, footer links, language and browser history reac
   await expect(page.getByRole('heading',{name:'নিরাপত্তা ও সহায়তা'})).toBeVisible();
 });
 
+test('public footer utility links open their actual destinations without copying the top navigation', async ({page}) => {
+  await page.goto('/?action=landing&lang=en');
+  const footer = page.getByRole('contentinfo',{name:'Amar Kor footer'});
+  await footer.getByRole('button',{name:'Receipts & corrections'}).click();
+  await expect(page).toHaveURL(/action=user_guide&category=records/);
+  await expect(page.getByRole('heading',{name:'Receipts & corrections'})).toBeVisible();
+  await footer.getByRole('button',{name:'Payment status & receipt'}).click();
+  await expect(page).toHaveURL(/action=verify/);
+  await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
+});
+
 test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Check payment & receipt'}).click();
