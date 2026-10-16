@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
+import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 
 /**
  * Public synthetic storybook dataset for fictional "user1" only.
@@ -339,6 +340,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}<section className="rounded-xl border border-blue-100 bg-blue-50 p-4"><h2 className="text-sm font-semibold">{tr('Sign in to make a payment','পেমেন্ট করতে সাইন ইন করুন')}</h2>{sub('Payment actions require an authenticated account.','পেমেন্ট করতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন প্রয়োজন।')}<button className={action+' mt-3'} onClick={()=>navigateTo('taxpayer_login')} type="button">{tr('Open sign-in','সাইন ইন খুলুন')}</button></section></>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:route==='services'?services:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {header}{content}
+    {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
       <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3"><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2><button type="button" className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
