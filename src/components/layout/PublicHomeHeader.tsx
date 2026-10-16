@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
-import { TAXPAYER_BRAND, taxpayerBrandName } from '../../config/brand';
+import { taxpayerBrandName } from '../../config/brand';
 
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
 const LINKS = [
@@ -59,7 +59,6 @@ export function PublicHomeHeader() {
       }}>
         <span className="public-home-brand__copy">
           {logoFailed ? <strong>{taxpayerBrandName(language)}</strong> : <img className="public-home-wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)} onError={()=>setLogoFailed(true)}/>}
-          <small>{TAXPAYER_BRAND.tagline[language]}</small>
         </span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
