@@ -8,6 +8,12 @@ const accountRoutes = new Set([
 const reviewOnlySampleRoles = new Set<UserRole>([
   'TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'
 ]);
+// Development's existing account-center screens already render an explicitly
+// signed-out empty state. Retain that tested state for visual regression runs.
+// In a published build every one of these URLs needs a real account session.
+const developmentGuestAccountRoutes = new Set([
+  'notifications', 'account_notifications', 'account_profile', 'account_settings'
+]);
 
 export function isPrivateTaxpayerRoute(route: string, officerRoute: boolean): boolean {
   return (!officerRoute && route === 'payment_details') || accountRoutes.has(route);
@@ -24,6 +30,7 @@ export function requiresTaxpayerSignIn(
   localReviewMode: boolean,
   selectedRole: UserRole
 ): boolean {
+  if (localReviewMode && developmentGuestAccountRoutes.has(route)) return false;
   return !officerRoute && isPrivateTaxpayerRoute(route, false) &&
     !verifiedApplicationUser && !(localReviewMode && reviewOnlySampleRoles.has(selectedRole));
 }

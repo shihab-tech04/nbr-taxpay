@@ -18,6 +18,10 @@ test('local sample review remains testable, while authorized accounts may enter 
   assert.equal(requiresTaxpayerSignIn('taxpayer_home', false, false, true, 'TAXPAYER_INDIVIDUAL'), false);
   assert.equal(requiresTaxpayerSignIn('taxpayer_home', false, false, true, 'GUEST'), true);
   assert.equal(requiresTaxpayerSignIn('taxpayer_home', false, true, false, 'GUEST'), false);
+  for (const route of ['notifications', 'account_notifications', 'account_profile', 'account_settings']) {
+    assert.equal(requiresTaxpayerSignIn(route, false, false, true, 'GUEST'), false,
+      `${route} retains the local signed-out empty state`);
+  }
   assert.equal(requiresTaxpayerSignIn('landing', false, false, false, 'GUEST'), false);
   assert.equal(requiresTaxpayerSignIn('secure_workspace', false, false, false, 'GUEST'), false);
   assert.equal(requiresTaxpayerSignIn('payment_details', true, false, false, 'GUEST'), false);
