@@ -166,6 +166,7 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   const field=guide.getByRole('searchbox',{name:'Search the guide'});
   await field.fill('passport');
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
+  await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Enter passenger details');
   await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
   await field.fill('tap Pay Tax');
