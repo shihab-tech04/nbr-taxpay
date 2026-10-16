@@ -195,9 +195,10 @@ test('User guide official reference belongs to the reading card, not a separate 
 test('Selecting a topic takes mobile readers directly to its instructions', async ({ page }, info) => {
   test.skip(info.project.name!=='mobile-375','Mobile reading flow');
   await page.goto('/?action=user_guide');
-  await page.getByRole('button',{name:'Receipts & corrections'}).click();
+  const topic=page.locator('.public-guide-topics').getByRole('button',{name:'Receipts & corrections'});
+  await topic.click();
   await expect(page.locator('.public-guide-content-head').getByRole('heading',{name:'Receipts & corrections'})).toBeInViewport();
-  await expect(page.getByRole('button',{name:'Receipts & corrections'})).toHaveAttribute('aria-current','true');
+  await expect(topic).toHaveAttribute('aria-current','true');
 });
 
 test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
