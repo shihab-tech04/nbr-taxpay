@@ -54,8 +54,17 @@ test('root shows information hub with navigational Login and no forced Office se
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
- await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=secure_workspace');
  await expect(page.locator('.office-auth')).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ if(page.viewportSize()!.width<=900){
+   await page.getByRole('button',{name:'Menu'}).click();
+   await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Login'}).click();
+ }else{
+   await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
+ }
+ await expect(page).toHaveURL(/action=secure_workspace/);
+ await expect(page.getByRole('heading',{name:'Secure TaxPay workspace'})).toBeVisible();
+ await expect(page.locator('.office-auth')).toHaveCount(0);
 });
 
