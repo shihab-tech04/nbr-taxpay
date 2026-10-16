@@ -189,6 +189,11 @@ const MainRouter: React.FC = () => {
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
             <p>{language === "bn" ? "করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।" : "Explore the taxpayer payment screens and activity."}</p>
+            <a className="citizen-account-gate__preview" href={language === 'bn'
+              ? '?action=taxpayer_home&demoUser=user1&lang=bn'
+              : '?action=taxpayer_home&demoUser=user1'}>
+              {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
+            </a>
             <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button>
           </section>
         ) : renderActiveScreen()}

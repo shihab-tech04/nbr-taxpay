@@ -353,7 +353,13 @@ export const SecureWorkspace: React.FC = () => {
           <label htmlFor="taxpay-auth-email" className="block text-sm font-semibold">{copy.emailAddress}</label>
           <UiInput id="taxpay-auth-email" required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
             className="min-h-11 w-full px-3 py-3 border border-slate-300 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700" placeholder={copy.emailPlaceholder}/>
-          <UiButton type="submit" disabled={busy}>{copy.sendSignInLink}</UiButton>
+          <div className="flex flex-wrap items-center gap-4">
+            <UiButton type="submit" disabled={busy}>{copy.sendSignInLink}</UiButton>
+            <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+              href={bn ? '?action=taxpayer_home&demoUser=user1&lang=bn' : '?action=taxpayer_home&demoUser=user1'}>
+              {bn ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
+            </a>
+          </div>
         </form>
       ) : (
         <>

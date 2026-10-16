@@ -83,7 +83,11 @@
 .citizen-account-gate { background:white; border:1px solid var(--citizen-border); border-radius:1rem; padding:2rem 1.25rem; max-width:40rem; margin:2rem auto; }
 .citizen-account-gate h1 { font-size:1.35rem; font-weight:750; margin-bottom:.75rem; }
 .citizen-account-gate p { margin-bottom:1rem; color:var(--citizen-muted); }
-.citizen-account-gate button { min-height:44px; padding:.75rem 1rem; background:var(--citizen-primary); color:white; border-radius:.5rem; }
+.citizen-account-gate__preview { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:.75rem 1rem; margin-right:.5rem; margin-bottom:.5rem; background:var(--citizen-primary); color:white; border-radius:.5rem; font-weight:650; text-decoration:none; }
+.citizen-account-gate__preview:hover { background:var(--citizen-primary-dark); }
+.citizen-account-gate button { min-height:44px; padding:.75rem 1rem; border:1px solid var(--citizen-primary); color:var(--citizen-primary); border-radius:.5rem; font-weight:650; }
+.citizen-account-gate button:hover { background:var(--citizen-primary-light); }
+.citizen-account-gate__preview:focus-visible,.citizen-account-gate button:focus-visible { outline:3px solid var(--citizen-primary); outline-offset:3px; }
 @media(max-width:900px) {
   .citizen-header__inner { min-height:60px; }
   .citizen-header__links { display:none; }
