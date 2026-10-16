@@ -1,12 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
-import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
 import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
-import { Footer } from './components/layout/Footer';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
@@ -32,22 +30,11 @@ import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
 import { ConnectedServices } from './components/screens/ConnectedServices';
-import { OfficerHome } from './components/screens/OfficerHome';
-import { Taxpayer360 } from './components/screens/Taxpayer360';
-import { PaymentSearch } from './components/screens/PaymentSearch';
-import { CorrectionQueue } from './components/screens/CorrectionQueue';
-import { CaseManagement } from './components/screens/CaseManagement';
-import { IncidentInvestigation } from './components/screens/IncidentInvestigation';
-import { OfflineEvidence } from './components/screens/OfflineEvidence';
-import { AuditTrail } from './components/screens/AuditTrail';
-import { IntelligenceScreen } from './components/screens/IntelligenceScreen';
-import { MonitoringScreen } from './components/screens/MonitoringScreen';
 import { OntologyView } from './components/screens/OntologyView';
 import { GlossaryView } from './components/screens/GlossaryView';
 import { GuidanceAssistant } from './components/screens/GuidanceAssistant';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
-import { receiptReturnRoute } from './services/routeContract';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 
 const MainRouter: React.FC = () => {
@@ -55,16 +42,13 @@ const MainRouter: React.FC = () => {
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
-  const receiptOrigin = receiptReturnRoute(routeParams.returnTo);
-  const officerReceiptDetails = currentRoute === 'payment_details' && ['payment_search','taxpayer_360'].includes(receiptOrigin);
-  const officerRoute = officerReceiptDetails || ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
-  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, officerRoute);
-  const privateSampleGate = requiresTaxpayerSignIn(currentRoute, officerRoute, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
+  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
+  const privateSampleGate = requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
-  // Guest payment and Officer routes never inherit this reference palette.
-  const taxpayerReference = !officerRoute && ((privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace');
+  // Guest payment routes never inherit this reference palette.
+  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace';
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -76,14 +60,12 @@ const MainRouter: React.FC = () => {
   }, []);
 
   // SPA navigation should announce the new main region to keyboard users.
-  // Never intercept focus within locked Officer routes or on initial load.
   useEffect(() => {
-    if (officerRoute) { priorCitizenRouteRef.current = null; return; }
     if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute) {
       mainContentRef.current?.focus({ preventScroll: true });
     }
     priorCitizenRouteRef.current = currentRoute;
-  }, [currentRoute, officerRoute]);
+  }, [currentRoute]);
 
   const renderActiveScreen = () => {
     // Fictional user1 has a unified read-only story across all taxpayer views.
@@ -144,28 +126,6 @@ const MainRouter: React.FC = () => {
       case 'services':
         return <ConnectedServices />;
 
-      // Officer Screens
-      case 'officer_home':
-        return <OfficerHome />;
-      case 'taxpayer_360':
-        return <Taxpayer360 />;
-      case 'payment_search':
-        return <PaymentSearch />;
-      case 'correction_queue':
-        return <CorrectionQueue />;
-      case 'case_management':
-        return <CaseManagement />;
-      case 'incident_investigation':
-        return <IncidentInvestigation />;
-      case 'offline_evidence':
-        return <OfflineEvidence />;
-      case 'audit_trail':
-        return <AuditTrail />;
-      case 'intelligence':
-        return <IntelligenceScreen />;
-      case 'monitoring':
-        return <MonitoringScreen />;
-
       // Knowledge, Ontology & Guidance
       case 'ontology':
         return <OntologyView />;
@@ -182,10 +142,10 @@ const MainRouter: React.FC = () => {
   if (currentRoute === 'office_login') return <OfficeLoginPage />;
 
   return (
-    <div lang={officerRoute ? undefined : language} className={officerRoute ? "min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800" : `taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
-      {officerRoute ? <Header /> : publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
+    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
+      {publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
-      <main ref={officerRoute ? undefined : mainContentRef} id={officerRoute ? undefined : 'main-content'} tabIndex={officerRoute ? undefined : -1} className={`flex-1 ${publicInformationRoute ? 'max-w-[1360px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
+      <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'max-w-[1360px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
@@ -200,7 +160,7 @@ const MainRouter: React.FC = () => {
           </section>
         ) : renderActiveScreen()}
       </main>
-      {officerRoute ? <Footer /> : <CitizenFooter />}
+      <CitizenFooter />
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
     </div>

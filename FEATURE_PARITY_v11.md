@@ -1,6 +1,8 @@
-# Prototype route-to-source map
+# TaxPay active route-to-source map
 
 > This is a source-file index only. It does not certify that a screen is complete, equivalent to the v11 prototype, legally correct, integrated, or safe for production. Feature parity and statutory acceptance remain unverified.
+
+> Office Management screens are not mounted in TaxPay. Legacy Officer route URLs resolve to the public TaxPay entry; Officer workflows belong to the separate Office Management product.
 
 | Action key | Source component |
 |---|---|
@@ -29,16 +31,6 @@
 | account_settings | src/components/screens/AccountCenter.tsx |
 | services | src/components/screens/ConnectedServices.tsx |
 | office_login | src/components/screens/OfficeLoginPage.tsx |
-| officer_home | src/components/screens/OfficerHome.tsx |
-| taxpayer_360 | src/components/screens/Taxpayer360.tsx |
-| payment_search | src/components/screens/PaymentSearch.tsx |
-| correction_queue | src/components/screens/CorrectionQueue.tsx |
-| case_management | src/components/screens/CaseManagement.tsx |
-| incident_investigation | src/components/screens/IncidentInvestigation.tsx |
-| offline_evidence | src/components/screens/OfflineEvidence.tsx |
-| audit_trail | src/components/screens/AuditTrail.tsx |
-| intelligence | src/components/screens/IntelligenceScreen.tsx |
-| monitoring | src/components/screens/MonitoringScreen.tsx |
 | ontology | src/components/screens/OntologyView.tsx |
 | glossary | src/components/screens/GlossaryView.tsx |
 | guidance | src/components/screens/GuidanceAssistant.tsx |

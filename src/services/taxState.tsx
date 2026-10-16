@@ -70,7 +70,7 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
-    // Public payment discovery is the primary citizen entry. The existing office-login demo remains available by explicit deep link.
+    // Public payment discovery is the primary citizen entry. TaxPay account access remains available by explicit deep link.
     const action = new URLSearchParams(window.location.search).get('action');
     return validRoute(action);
   });

@@ -51,11 +51,11 @@ test.describe('read-only citizen screen matrix',()=>{
       await visualAudit(page,'taxpayer-'+route,info.project.name);
     });
   }
-  test('officer React chrome is preserved',async({page})=>{
+  test('legacy Office deep link resolves to the public TaxPay entry at this viewport',async({page})=>{
     await page.goto('/?action=officer_home');
-    await expect(page.locator('.taxpay-citizen-shell')).toHaveCount(0);
-    await expect(page.locator('header').first()).toBeVisible();
-    await expect(page.locator('.citizen-pay')).toHaveCount(0);
-    await expect(page.locator('.citizen-corners')).toHaveCount(0);
+    await expect(page).toHaveURL(/action=landing/);
+    await expect(page.locator('.taxpay-citizen-shell')).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+    await expect(page.locator('header.bg-emerald-950')).toHaveCount(0);
   });
 });
