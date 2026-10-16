@@ -1,23 +1,39 @@
 @import './styles/office-design.css';
 @import './styles/office-auth-source.css';
+@import './styles/taxpayer-login-dialog.css';
 @import "tailwindcss";
 @import "./styles/taxpay-citizen.css";
 @import "./styles/taxpay-taxpayer-reference.css";
+@import "./styles/taxpay-design-transfer.css";
 
 @theme {
+  /* Locked Amar Kor primary: never replace this with a service/status color. */
   --color-taxpay-primary: #2C5EAD;
   --color-taxpay-dark: #1E4484;
   --color-taxpay-light: #EAF2FF;
+  --color-taxpay-primary-hover: #24549D;
+  --color-taxpay-primary-active: #1B427D;
   --color-taxpay-secondary: #5CA8D8;
   --color-taxpay-accent: #F4C95D;
-  --color-taxpay-background: #F6F9FE;
+  --color-taxpay-background: #F0F2F5;
+  --color-taxpay-surface-subtle: #F7F9FC;
   --color-taxpay-surface: #FFFFFF;
-  --color-taxpay-border: #DDE7F5;
+  --color-taxpay-border: #E1E6EE;
   --color-taxpay-text: #172033;
   --color-taxpay-muted: #5F6B7A;
   --color-taxpay-success: #238636;
   --color-taxpay-warning: #D97706;
   --color-taxpay-error: #C62828;
+
+  /* Sobaike-inspired central shapes and low-elevation surface treatment. */
+  --taxpay-radius-control: 12px;
+  --taxpay-radius-card: 16px;
+  --taxpay-radius-modal: 24px;
+  --taxpay-radius-pill: 9999px;
+  --taxpay-shadow-control: 0 1px 2px rgb(23 32 51 / 6%);
+  --taxpay-shadow-card: 0 1px 3px rgb(23 32 51 / 8%);
+  --taxpay-shadow-raised: 0 8px 24px rgb(23 32 51 / 10%);
+  --taxpay-shadow-modal: 0 18px 48px rgb(23 32 51 / 20%);
 }
 
 /* Citizen typography contract: both Public and Taxpayer; officer selectors excluded. */
@@ -27,6 +43,10 @@
   --taxpay-type-h1: 1.75rem;
   --taxpay-type-h2: 1.375rem;
   --taxpay-type-h3: 1.125rem;
+  --taxpay-type-h4: 1rem;
+  --taxpay-type-label: 1rem;
+  --taxpay-type-action: .875rem;
+  --taxpay-type-meta: .875rem;
   --taxpay-type-financial: 1.5rem;
 }
 @media (min-width: 768px) {
@@ -34,6 +54,7 @@
     --taxpay-type-h1: 2rem;
     --taxpay-type-h2: 1.5rem;
     --taxpay-type-h3: 1.25rem;
+    --taxpay-type-h4: 1.125rem;
     --taxpay-type-financial: 1.75rem;
   }
 }
@@ -79,6 +100,11 @@
 .taxpay-citizen-shell .taxpay-type-helper { font-size: var(--taxpay-type-helper); line-height: 1.5; }
 .taxpay-citizen-shell .taxpay-type-h1 { font-size: var(--taxpay-type-h1); line-height: 1.25; }
 .taxpay-citizen-shell .taxpay-type-h2 { font-size: var(--taxpay-type-h2); line-height: 1.35; }
+.taxpay-citizen-shell .taxpay-type-h3 { font-size: var(--taxpay-type-h3); line-height: 1.4; }
+.taxpay-citizen-shell .taxpay-type-h4 { font-size: var(--taxpay-type-h4); line-height: 1.45; }
+.taxpay-citizen-shell .taxpay-type-label { font-size: var(--taxpay-type-label); line-height: 1.5; }
+.taxpay-citizen-shell .taxpay-type-action { font-size: var(--taxpay-type-action); line-height: 1.5; }
+.taxpay-citizen-shell .taxpay-type-meta { font-size: var(--taxpay-type-meta); line-height: 1.5; }
 .taxpay-citizen-shell .taxpay-type-financial { font-size: var(--taxpay-type-financial); line-height: 1.35; font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell[lang="bn"] { line-height: 1.65; }
 .taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button) { line-height: 1.55; }
@@ -91,7 +117,7 @@
 :root { --font-text: 'Poppins', 'Noto Sans Bengali', sans-serif; --font-numeric: 'IBM Plex Mono', 'Noto Sans Bengali', monospace; }
 .taxpay-citizen-shell :is(.numeric,.taxpay-type-financial,.font-mono,.font-mono-plex,.tabular-nums) { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell :is(input,select,textarea,button) { font-family: inherit; }
-.taxpay-citizen-shell[lang="bn"] { font-family: 'Poppins', 'Noto Sans Bengali', sans-serif; }
+.taxpay-citizen-shell[lang="bn"] { font-family: 'Noto Sans Bengali', 'Poppins', sans-serif; }
 
 .taxpay-citizen-shell .font-serif-fraunces {font-family:var(--font-text);}
-.taxpay-citizen-shell .font-bengali {font-family:var(--font-text);}
+.taxpay-citizen-shell .font-bengali {font-family:'Noto Sans Bengali','Poppins',sans-serif;}

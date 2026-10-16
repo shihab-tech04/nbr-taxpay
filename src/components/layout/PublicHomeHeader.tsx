@@ -4,7 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-approved.png';
 import { TAXPAYER_BRAND, taxpayerBrandName } from '../../config/brand';
 
-const ACCOUNT_ACCESS_ROUTE = 'office_login';
+const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
 const LINKS = [
   {route:'landing',en:'Home',bn:'মূল পাতা',Icon:House},
   {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর',Icon:CircleHelp},

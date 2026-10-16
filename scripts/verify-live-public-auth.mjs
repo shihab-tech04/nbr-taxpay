@@ -27,13 +27,19 @@ try {
     if (overflow > 2) throw new Error(`Live ${name} private-entry overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-auth-${name}.png`, fullPage: true });
     await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/action=office_login/);
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Account email address' })).toBeVisible();
-    await expect(page.getByText(/Example account access: user1/)).toHaveCount(0);
+    await expect(page).toHaveURL(/action=taxpayer_login/);
+    const dialog = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('textbox', { name: 'User ID' })).toBeVisible();
+    await expect(dialog.locator('input[type=password]')).toHaveCount(0);
+    await dialog.getByRole('textbox', { name: 'User ID' }).fill('user1');
+    await dialog.getByRole('button', { name: 'Login' }).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+    await expect(page).not.toHaveURL(/demoUser=/);
     await page.close();
   }
-  console.log('PASS: live desktop/mobile auth gating, sign-in destination and no synthetic dashboard exposure');
+  console.log('PASS: fresh private URLs gated; desktop/mobile TaxPay popup enters the isolated user1 profile');
 } finally {
   await browser.close();
 }
