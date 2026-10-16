@@ -43,15 +43,17 @@ test('public footer utility links open their actual destinations without copying
 });
 
 test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
+  await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Check payment & receipt'}).click();
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
   await page.getByRole('button',{name:'Pay Tax'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(services).toBeVisible();
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
-  await expect(page).toHaveURL(/action=guest/);
+  await expect(page).toHaveURL(/action=guest.*initialCategory=TAX_WITH_RETURN/);
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay travel tax'}).click();

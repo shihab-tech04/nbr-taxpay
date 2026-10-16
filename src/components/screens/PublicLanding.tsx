@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, ReceiptText, ShieldCheck, WalletCards, Plane, Search } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, ReceiptText, ShieldCheck, WalletCards, Plane } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import {PublicServiceModal, type PublicService} from './PublicServiceModal';
-import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
+import { PublicHeroCarousel } from './PublicHeroCarousel';
 
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, setPaymentServiceChoiceOpen, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService,setOpenService] = useState<PublicService|null>(null);
   const openGuide=(category:string)=>navigate('user_guide',{category});
   const bn = language === 'bn';
@@ -30,20 +30,12 @@ export const PublicLanding: React.FC = () => {
   ];
 
   return <div className={'citizen-public-hub public-information-hub mx-auto w-full max-w-[1296px] space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
-    <section className="citizen-public-hero public-information-hero" aria-labelledby="public-home-title">
-      <div className="citizen-public-hero__copy">
-
-        <h1 id="public-home-title">{t('Understand tax payments. Stay in control.', 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।')}</h1>
-        <p>{t('Explore payment guidance. Manage your transactions after login.', 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।')}</p>
-        <div className="citizen-public-hero__actions public-guest-actions">
-          <button type="button" className="citizen-public-primary public-guest-action" onClick={()=>setPaymentServiceChoiceOpen(true)}><WalletCards size={18} aria-hidden="true"/>{t('Pay Tax','কর পরিশোধ')}</button>
-          <button type="button" className="citizen-public-secondary public-guest-action" onClick={()=>setOpenService('status')}><Search size={18} aria-hidden="true"/>{t('Check payment & receipt','পেমেন্ট ও রসিদ যাচাই')}</button>
-        </div>
-      </div>
-      <div className="public-information-hero__media" aria-hidden="true">
-        <img className="public-information-hero__image" src={heroPaymentIllustration} alt="" decoding="async" />
-      </div>
-    </section>
+    <PublicHeroCarousel
+      language={language}
+      onPayTax={() => setPaymentServiceChoiceOpen(true)}
+      onCheckReceipt={() => setOpenService('status')}
+      paused={isPaymentServiceChoiceOpen || openService !== null}
+    />
 
     <section id="public-payment-types" className="citizen-hub-section public-info-section" aria-labelledby="payment-types-title">
       <div className="citizen-hub-section__heading"><div>
