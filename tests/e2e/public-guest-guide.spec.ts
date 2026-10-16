@@ -7,7 +7,7 @@ test('public hero offers two working guest modals and Login stays in the header'
  page.on('request',r=>{if(new URL(r.url()).hostname.endsWith('.supabase.co'))hosted.push(r.url());});
  await page.goto('/?action=landing');
  const header=page.locator('.public-home-header');
- await expect(header.getByRole('link',{name:'Login'})).toHaveAttribute('href','?action=office_login');
+ await expect(header.getByRole('link',{name:'Login'})).toHaveAttribute('href','?action=taxpayer_login');
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await page.getByRole('button',{name:'Check payment status & receipt'}).click();
  const status=page.getByRole('dialog',{name:'Payment status & receipt'});

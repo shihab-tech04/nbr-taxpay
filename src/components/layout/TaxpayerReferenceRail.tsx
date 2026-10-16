@@ -17,13 +17,17 @@ const links: RailLink[] = [
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [signingOut, setSigningOut] = React.useState(false);
   const logout = async () => {
     setSignOutError('');
-    if (!user) { setUserRole('GUEST'); navigate('landing'); return; }
+    if (!user) {
+      if (previewAccount) logoutPreviewAccount();
+      else { setUserRole('GUEST'); navigate('landing'); }
+      return;
+    }
     setSigningOut(true);
     try {
       const result = await signOutApplicationAccount();
@@ -77,7 +81,7 @@ export function TaxpayerReferenceRail() {
       <div className="taxpayer-reference-rail-bottom">
         {(user || sampleProfile) && <button type="button" disabled={signingOut} onClick={logout}>
           <LogOut size={17} aria-hidden={true} />
-          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}</span>
+          <span>{previewAccount || user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}</span>
         </button>}
         {signOutError && <p role="alert">{signOutError}</p>}
         <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>

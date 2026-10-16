@@ -60,7 +60,7 @@ const I18N = {
 } as const;
 
 export function AccountCenter({ page }: { page: AccountPage }) {
-  const { language, setLanguage, navigate, userRole, setUserRole, taxpayerProfile } = useTaxState();
+  const { language, setLanguage, navigate, userRole, setUserRole, taxpayerProfile, previewAccount, logoutPreviewAccount } = useTaxState();
   const { user, loading } = useAccountIdentity();
   const t = I18N[language];
   const sample = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
@@ -201,6 +201,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             <p>{sampleOnly ? t.demoNotice : !backendConfigured ? t.unavailable : t.guest}</p>
             {sampleOnly && page === 'profile' && (
               <dl className="taxpayer-account-facts">
+                {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
                 <div><dt>{t.name}</dt><dd>{language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</dd></div>
                 <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{taxpayerProfile.type}</dd></div>
               </dl>
@@ -216,10 +217,11 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             )}
             {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
             <div className="taxpayer-account-actions">
-              <button type="button" onClick={() => navigate('office_login')}>{t.accountAccess}</button>
+              {!previewAccount && <button type="button" onClick={() => navigate('taxpayer_login')}>{t.accountAccess}</button>}
               {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
-                setUserRole('GUEST'); navigate('landing');
-              }}>{t.exitDemo}</button>}
+                if (previewAccount) logoutPreviewAccount();
+                else { setUserRole('GUEST'); navigate('landing'); }
+              }}>{previewAccount ? t.logout : t.exitDemo}</button>}
             </div>
           </section>
         ) : (

@@ -26,6 +26,10 @@ import {
 export interface TaxStateContextType {
   currentRoute: string;
   demoUser: DemoUser | null;
+  previewAccount: DemoUser | null;
+  loginPreviewAccount: (userId: string) => boolean;
+  clearPreviewAccount: () => void;
+  logoutPreviewAccount: () => void;
   routeParams: Record<string, any>;
   navigate: (route: string, params?: Record<string, any>) => void;
   language: Language;
@@ -59,6 +63,8 @@ const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined
 // restored browser-history state, even when someone knows an old preview URL.
 export const sampleJourneysEnabled = import.meta.env.DEV;
 const permittedDemoUser = (value: unknown) => sampleJourneysEnabled ? getDemoUser(value) : null;
+const previewStorageKey = 'taxpay-taxpayer-preview-user';
+const storedPreviewAccount = () => getDemoUser(window.sessionStorage.getItem(previewStorageKey));
 
 // Browser history can restore a *visual-only* taxpayer sample after refresh.
 // This is never an identity, permission or tax-credit entitlement, and a newly
@@ -79,11 +85,14 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return routeContextFromUrl(validRoute(search.get('action')), search);
   });
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
-  const [demoUser, setDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
-  const demoUserRef = useRef(demoUser);
+  const [previewAccount, setPreviewAccount] = useState<DemoUser | null>(storedPreviewAccount);
+  const [legacyDemoUser, setLegacyDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
+  const demoUser = previewAccount ?? legacyDemoUser;
+  const demoUserRef = useRef(legacyDemoUser);
   const [userRole, setUserRoleState] = useState<UserRole>(() => {
     const search = new URLSearchParams(window.location.search);
-    return permittedDemoUser(search.get('demoUser'))?.role
+    return storedPreviewAccount()?.role
+      ?? permittedDemoUser(search.get('demoUser'))?.role
       ?? (sampleJourneysEnabled ? historySampleRole(validRoute(search.get('action')), window.history.state) : null)
       ?? 'GUEST';
   });
@@ -134,15 +143,20 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     next.searchParams.set('action', route);
     writeRouteContext(route, params, next.searchParams);
     // Legacy sample deep-link state must not survive entry to real account access.
-    if (route === 'secure_workspace' || route === 'office_login' || route === 'landing') {
+    if (route === 'secure_workspace' || route === 'office_login' || route === 'taxpayer_login' || route === 'landing') {
       next.searchParams.delete('demoUser');
-      if (demoUser) {
-        setDemoUser(null);
+      if (legacyDemoUser) {
+        setLegacyDemoUser(null);
         demoUserRef.current = null;
+        if (!previewAccount) setUserRole('GUEST');
+      }
+      if (route === 'secure_workspace' && previewAccount) {
+        window.sessionStorage.removeItem(previewStorageKey);
+        setPreviewAccount(null);
         setUserRole('GUEST');
       }
     }
-    const sampleRole = sampleJourneysEnabled && sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'office_login' && route !== 'secure_workspace'
+    const sampleRole = sampleJourneysEnabled && !previewAccount && sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'office_login' && route !== 'taxpayer_login' && route !== 'secure_workspace'
       ? {taxpaySampleRole: userRoleRef.current} : {};
     const historyEntry = {taxpayRoute: route, taxpayParams: params, ...sampleRole};
     if (next.href !== window.location.href) window.history.pushState(historyEntry, '', next);
@@ -163,16 +177,45 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const previousDemo = permittedDemoUser(search.get('demoUser'));
       const leavingDemo = Boolean(demoUserRef.current && !previousDemo);
       demoUserRef.current = previousDemo;
-      setDemoUser(previousDemo);
+      setLegacyDemoUser(previousDemo);
       const restoredSampleRole = sampleJourneysEnabled ? historySampleRole(route, event.state) : null;
-      if (previousDemo) setUserRole(previousDemo.role);
+      if (previewAccount) setUserRole(previewAccount.role);
+      else if (previousDemo) setUserRole(previousDemo.role);
       else if (restoredSampleRole) setUserRole(restoredSampleRole);
       else if (leavingDemo || sampleTaxpayerRoles.includes(userRoleRef.current)) setUserRole('GUEST');
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  }, [previewAccount]);
+
+  // A password-free ID selects only a browser-local, fictional UI profile.
+  // This deliberately creates no Supabase Auth session or API entitlement.
+  const loginPreviewAccount = (userId: string): boolean => {
+    const selected = getDemoUser(userId.trim().toLowerCase());
+    if (!selected) return false;
+    window.sessionStorage.setItem(previewStorageKey, selected.id);
+    setPreviewAccount(selected);
+    setLegacyDemoUser(null);
+    demoUserRef.current = null;
+    setUserRole(selected.role);
+    const next = new URL(window.location.href);
+    next.searchParams.delete('demoUser');
+    window.history.replaceState(window.history.state, '', next);
+    navigate('taxpayer_home');
+    return true;
+  };
+  const clearPreviewAccount = (): void => {
+    window.sessionStorage.removeItem(previewStorageKey);
+    setPreviewAccount(null);
+    setLegacyDemoUser(null);
+    demoUserRef.current = null;
+    setUserRole('GUEST');
+  };
+  const logoutPreviewAccount = (): void => {
+    clearPreviewAccount();
+    navigate('landing');
+  };
 
   const selectReceipt = (id: string | null) => {
     if (!id || !receipts.some(receipt => receipt.id === id)) return;
@@ -280,6 +323,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         currentRoute,
         demoUser,
+        previewAccount,
+        loginPreviewAccount,
+        clearPreviewAccount,
+        logoutPreviewAccount,
         routeParams,
         navigate,
         language,

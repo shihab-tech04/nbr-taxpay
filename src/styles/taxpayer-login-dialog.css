@@ -1,0 +1,106 @@
+.taxpayer-login-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(13 25 46 / 60%);
+  padding: 20px;
+}
+
+.taxpayer-login-dialog {
+  width: min(100%, 620px);
+  max-height: min(90vh, 640px);
+  overflow-y: auto;
+  border: 1px solid var(--color-taxpay-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 72px rgb(16 38 78 / 24%);
+  padding: 24px;
+  color: var(--color-taxpay-text);
+}
+
+.taxpayer-login-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 48px;
+  padding: 0 50px 22px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--color-taxpay-border);
+}
+
+.taxpayer-login-heading h2 {
+  text-align: center;
+  font-size: clamp(19px, 2.3vw, 23px);
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.taxpayer-login-heading button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-taxpay-border);
+  border-radius: 10px;
+  background: white;
+}
+
+.taxpayer-login-dialog form { display: flex; flex-direction: column; }
+.taxpayer-login-dialog label { font-size: 14px; margin-bottom: 8px; }
+.taxpayer-login-input-wrap { position: relative; }
+.taxpayer-login-input-wrap > svg {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  color: #8492a9;
+  pointer-events: none;
+}
+.taxpayer-login-input-wrap input {
+  width: 100%;
+  min-height: 55px;
+  border: 1px solid #b6c5dc;
+  border-radius: 11px;
+  background: white;
+  padding: 12px 16px 12px 47px;
+  font-size: 15px;
+  color: var(--color-taxpay-text);
+}
+.taxpayer-login-input-wrap input:focus-visible,
+.taxpayer-login-heading button:focus-visible,
+.taxpayer-login-submit:focus-visible {
+  outline: 3px solid #97baf0;
+  outline-offset: 2px;
+}
+.taxpayer-login-input-wrap input[aria-invalid="true"] { border-color: var(--color-taxpay-error); }
+.taxpayer-login-hint { margin-top: 8px; font-size: 12px; color: var(--color-taxpay-muted); }
+.taxpayer-login-error { margin-top: 10px; font-size: 13px; color: var(--color-taxpay-error); }
+.taxpayer-login-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+  margin-top: 30px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--color-taxpay-primary);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+.taxpayer-login-submit:hover { background: var(--color-taxpay-dark); }
+@media (max-width: 560px) {
+  .taxpayer-login-backdrop { padding: 14px; }
+  .taxpayer-login-dialog { padding: 18px; border-radius: 14px; }
+  .taxpayer-login-heading { padding-left: 32px; padding-right: 32px; margin-bottom: 20px; }
+  .taxpayer-login-heading h2 { font-size: 18px; }
+}

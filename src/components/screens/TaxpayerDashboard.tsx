@@ -9,7 +9,7 @@ type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
 const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
 export const TaxpayerDashboard: React.FC = () => {
-  const { language, receipts, taxpayerProfile, demoUser, userRole, navigate, selectReceipt } = useTaxState();
+  const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
@@ -62,6 +62,7 @@ export const TaxpayerDashboard: React.FC = () => {
     <header className={card+' taxpayer-dashboard-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-800 sm:text-[28px]">{tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
+        {previewAccount && <p className="mt-1 text-sm text-slate-500">{tr('User ID','ইউজার আইডি')}: {previewAccount.id}</p>}
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}

@@ -14,8 +14,8 @@ test('Anonymous fictional payment entry requires authenticated profile before an
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Open secure sign-in'})).toBeVisible();
  expect(paymentRpcCalls).toBe(0);
- await page.getByRole('button',{name:'Open secure sign-in'}).click();
- await expect(page).toHaveURL(/action=office_login/);
+ await page.getByRole('button',{name:'Open sign-in'}).click();
+ await expect(page).toHaveURL(/action=taxpayer_login/);
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);
  await expect(page.getByText('Simulated receipt reference:',{exact:false})).toHaveCount(0);
 });
@@ -31,6 +31,6 @@ test('Anonymous notifications never call protected SQL and offer secure sign-in'
  await expect(page.getByRole('heading',{name:'Sign in to view payment notifications'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Open secure sign-in'})).toBeVisible();
  expect(requests).toBe(0);
- await page.getByRole('button',{name:'Open secure sign-in'}).click();
- await expect(page).toHaveURL(/action=office_login/);
+ await page.getByRole('button',{name:'Open sign-in'}).click();
+ await expect(page).toHaveURL(/action=taxpayer_login/);
 });
