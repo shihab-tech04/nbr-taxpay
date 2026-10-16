@@ -128,7 +128,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     next.searchParams.set('action', route);
     writeRouteContext(route, params, next.searchParams);
     // Legacy sample deep-link state must not survive entry to real account access.
-    if (route === 'secure_workspace' || route === 'landing') {
+    if (route === 'secure_workspace' || route === 'office_login' || route === 'landing') {
       next.searchParams.delete('demoUser');
       if (demoUser) {
         setDemoUser(null);
@@ -136,7 +136,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUserRole('GUEST');
       }
     }
-    const sampleRole = sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'secure_workspace'
+    const sampleRole = sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'office_login' && route !== 'secure_workspace'
       ? {taxpaySampleRole: userRoleRef.current} : {};
     const historyEntry = {taxpayRoute: route, taxpayParams: params, ...sampleRole};
     if (next.href !== window.location.href) window.history.pushState(historyEntry, '', next);

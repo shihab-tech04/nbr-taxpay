@@ -17,7 +17,7 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
     await expect(main.getByText(number).first()).toBeVisible();
   }
   // This boundary remains visible: records are fictional and must not be mistaken for an authenticated account.
-  await expect(page.getByRole('button',{name:'Exit demo'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Exit workspace'})).toBeVisible();
 });
 
 test('eleven user1 routes avoid repetitive example labels without losing record and year controls', async ({page},info) => {

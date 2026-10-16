@@ -60,7 +60,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts
+        run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts
 
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()

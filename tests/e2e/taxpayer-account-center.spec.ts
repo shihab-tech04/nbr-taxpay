@@ -16,7 +16,7 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
   await page.getByRole('navigation',{name:'অ্যাকাউন্ট পৃষ্ঠা'}).getByRole('button',{name:'বিজ্ঞপ্তি'}).click();
   await expect(page.getByText('এখনো কোনো বিজ্ঞপ্তি নেই।')).toBeVisible();
   await expect(page.getByText(/Demand Notice|Statutory Alerts|Advance Tax 2nd Quarter/)).toHaveCount(0);
-  await page.getByRole('button',{name:'ডেমো থেকে বের হোন'}).click();
+  await page.getByRole('button',{name:'ওয়ার্কস্পেস থেকে বের হন'}).click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
 });
@@ -51,7 +51,7 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
-  await rail.getByRole('button',{name:'Exit demo'}).click();
+  await rail.getByRole('button',{name:'Exit workspace'}).click();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
 });
 

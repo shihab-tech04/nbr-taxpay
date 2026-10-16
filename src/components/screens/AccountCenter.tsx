@@ -29,7 +29,7 @@ const I18N = {
     draftCaption: 'No payment made.', settingsSaved: 'Preferences saved to your application account.',
     readSaved: 'Notification viewing status saved to your account.', saveFailed: 'Could not save. Please retry.',
     logout: 'Sign out', logoutFailed: 'Sign-out failed. Your account may still be signed in.',
-    loggedOut: 'Signed out of this browser session.', accountAccess: 'Account sign-in', exitDemo: 'Exit demo',
+    loggedOut: 'Signed out of this browser session.', accountAccess: 'Account sign-in', exitDemo: 'Exit workspace',
     english: 'English', bangla: 'বাংলা', off: 'In-app notifications are turned off in this account. You can enable them under Profile settings.',
     consent: 'Changes apply to this account only.'
   },
@@ -53,7 +53,7 @@ const I18N = {
     draftCaption: 'কোনো পেমেন্ট হয়নি।', settingsSaved: 'অ্যাপ অ্যাকাউন্টে পছন্দ সংরক্ষিত হয়েছে।',
     readSaved: 'অ্যাকাউন্টে বিজ্ঞপ্তি দেখার অবস্থা সংরক্ষিত হয়েছে।', saveFailed: 'সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
     logout: 'সাইন আউট', logoutFailed: 'সাইন আউট ব্যর্থ। অ্যাকাউন্ট এখনো খোলা থাকতে পারে।',
-    loggedOut: 'এই ব্রাউজার থেকে সাইন আউট হয়েছে।', accountAccess: 'অ্যাকাউন্টে প্রবেশ', exitDemo: 'ডেমো থেকে বের হোন',
+    loggedOut: 'এই ব্রাউজার থেকে সাইন আউট হয়েছে।', accountAccess: 'অ্যাকাউন্টে প্রবেশ', exitDemo: 'ওয়ার্কস্পেস থেকে বের হন',
     english: 'English', bangla: 'বাংলা', off: 'এই অ্যাকাউন্টে ইন-অ্যাপ বিজ্ঞপ্তি বন্ধ। প্রোফাইল সেটিংস থেকে চালু করতে পারবেন।',
     consent: 'পরিবর্তন শুধু এই অ্যাকাউন্টের জন্য।'
   }
@@ -216,7 +216,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             )}
             {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
             <div className="taxpayer-account-actions">
-              <button type="button" onClick={() => navigate('secure_workspace')}>{t.accountAccess}</button>
+              <button type="button" onClick={() => navigate('office_login')}>{t.accountAccess}</button>
               {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
                 setUserRole('GUEST'); navigate('landing');
               }}>{t.exitDemo}</button>}

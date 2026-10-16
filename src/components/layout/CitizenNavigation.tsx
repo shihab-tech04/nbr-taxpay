@@ -266,7 +266,7 @@ export function CitizenNavigation() {
                   {applicationUser ? (
                     <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>
                   ) : (
-                    <button type="button" className="citizen-dialog-signout" onClick={() => go('secure_workspace')}>{bn ? 'সাইন ইন' : 'Sign in'}</button>
+                    <button type="button" className="citizen-dialog-signout" onClick={() => go('office_login')}>{bn ? 'সাইন ইন' : 'Sign in'}</button>
                   )}
                   {signOutError && <p role="alert" className="citizen-dialog__notice">{signOutError}</p>}
                 </section>

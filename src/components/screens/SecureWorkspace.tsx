@@ -335,7 +335,6 @@ export const SecureWorkspace: React.FC = () => {
       <header className="bg-white border border-slate-200 rounded-xl p-6">
         <h1 className="font-serif-fraunces text-2xl font-bold text-emerald-950">{copy.workspaceTitle}</h1>
         <p className="text-sm text-slate-600 mt-2">{copy.workspaceDescription}</p>
-        <p className="text-xs font-semibold text-amber-800 mt-3">{copy.paymentLock}</p>
       </header>
       {!backendConfigured ? (
         <article className="bg-amber-50 border border-amber-200 rounded-xl p-6">
@@ -356,8 +355,8 @@ export const SecureWorkspace: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4">
             <UiButton type="submit" disabled={busy}>{copy.sendSignInLink}</UiButton>
             <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
-              href={bn ? '?action=taxpayer_home&demoUser=user1&lang=bn' : '?action=taxpayer_home&demoUser=user1'}>
-              {bn ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
+              href={bn ? '?action=office_login&lang=bn' : '?action=office_login'}>
+              {bn ? 'ইউজার আইডি ও পাসওয়ার্ড' : 'Sign in with User ID or password'}
             </a>
           </div>
         </form>
@@ -365,7 +364,8 @@ export const SecureWorkspace: React.FC = () => {
         <>
           <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap justify-between gap-3 items-center">
             <div><h2 className="font-bold text-emerald-950">{copy.signedInTitle}</h2><p className="text-xs text-slate-600">{user.email}</p></div>
-            <button type="button" onClick={signOut} disabled={busy} className="min-h-11 border border-slate-300 rounded-lg px-4 py-2 font-semibold text-sm">{copy.signOut}</button>
+            <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>navigate('taxpayer_home')} className="min-h-11 border border-blue-700 bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold text-sm">{bn?'আমার ড্যাশবোর্ড':'My dashboard'}</button>
+            <button type="button" onClick={signOut} disabled={busy} className="min-h-11 border border-slate-300 rounded-lg px-4 py-2 font-semibold text-sm">{copy.signOut}</button></div>
           </div>
           <form ref={draftFormRef} onSubmit={createDraft} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
             <h2 className="font-serif-fraunces text-xl font-bold text-emerald-950">{copy.draftHeading}</h2>

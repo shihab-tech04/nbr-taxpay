@@ -16,7 +16,7 @@ async function switchTaxpayerToBangla(page: Page) {
 test('root is a public information hub with a header Login and no payment action',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
- await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=secure_workspace');
+ await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=office_login');
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.office-auth')).toHaveCount(0);
