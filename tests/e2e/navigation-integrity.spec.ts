@@ -104,7 +104,15 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await expect(page).toHaveURL(/action=user_guide&category=payments/);
   await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
-  await pay.click();
+});
+
+test('desktop sidebar Pay Tax action opens the existing payment wizard',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Wide desktop payment-entry check');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await rail.getByRole('button',{name:'Pay — select payment type'}).click();
   await expect(page).toHaveURL(/action=wizard/);
   await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
   await expect(rail).toBeHidden();
