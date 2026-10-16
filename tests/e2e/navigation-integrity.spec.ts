@@ -181,7 +181,8 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
-  await expect(page).toHaveURL(/action=taxpayer_home/);
+  // The payment workflow is modal-based and does not navigate away from Tax Journey.
+  await expect(page).toHaveURL(/action=journey/);
   await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();

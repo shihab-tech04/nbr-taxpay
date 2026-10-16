@@ -72,6 +72,23 @@
   background: var(--citizen-primary);
   color: white;
 }
+.tax-service-choice__selected-service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .7rem;
+  margin: 0 0 1rem;
+  color: var(--citizen-muted);
+  font-size: .84rem;
+  line-height: 1.45;
+}
+.tax-service-choice__selected-service strong {
+  border-radius: 999px;
+  background: var(--citizen-primary-light);
+  color: var(--citizen-primary-dark);
+  padding: .25rem .7rem;
+  font-weight: 750;
+}
 .tax-service-choice h3 {
   margin: 0 0 1rem;
   color: var(--citizen-text);
