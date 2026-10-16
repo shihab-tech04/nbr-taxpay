@@ -88,8 +88,8 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
-  await expect(page.getByText('Not available', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region',{name:'Payment records summary'})).toContainText('Recorded income tax');
+  await expect(page.getByText('Recorded activity · verified liability and tax credit not connected')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open transaction history' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Review tax ledger', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'View documents' })).toBeVisible();

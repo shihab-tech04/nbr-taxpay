@@ -28,7 +28,7 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Recognized TDS / AIT')).toBeVisible();
-  await expect(page.getByText('Unverified', {exact:true})).toBeVisible();
+  await expect(page.getByText('Recorded activity · verified liability and tax credit not connected')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
