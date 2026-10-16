@@ -28,7 +28,9 @@ export function TaxpayerReferenceRail() {
     try {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
-      setUserRole('GUEST'); navigate('landing');
+      setUserRole('GUEST');
+      // Clear in-memory account-scoped content, just as the mobile sign-out does.
+      window.location.assign(import.meta.env.BASE_URL);
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
@@ -38,7 +40,7 @@ export function TaxpayerReferenceRail() {
   return (
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
       <div>
-        <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(sampleProfile ? 'taxpayer_home' : 'landing')}>
+        <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(user || sampleProfile ? 'taxpayer_home' : 'landing')}>
           <Landmark size={23} aria-hidden={true} />
           <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
@@ -67,7 +69,7 @@ export function TaxpayerReferenceRail() {
               </button>)}
             </div>
           </details>
-          <button type="button" onClick={() => navigate('guest')}>
+          <button type="button" onClick={() => navigate('user_guide', {category:'payments'})}>
             <WalletCards size={18} aria-hidden={true}/><span>{bn?'পেমেন্ট নির্দেশিকা':'Payment guide'}</span>
           </button>
         </nav>

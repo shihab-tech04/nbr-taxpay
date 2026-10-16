@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen, Monitor, Smartphone, Search, ChevronDown, ExternalLink } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 
@@ -53,6 +53,10 @@ export const PublicUserGuide:React.FC=()=>{
  const t=(pair:[string,string])=>pair[bn?1:0];
  const initial=GUIDE_CONTENT.some(x=>x.id===routeParams.category)?routeParams.category:'payments';
  const [selected,setSelected]=useState<Category>(initial);
+ useEffect(()=>{
+   setSelected(GUIDE_CONTENT.some(x=>x.id===routeParams.category) ? routeParams.category as Category : 'payments');
+   setSearch('');
+ },[routeParams]);
  const [search,setSearch]=useState('');
  const [device,setDevice]=useState<'web'|'mobile'>('web');
  const current=GUIDE_CONTENT.find(x=>x.id===selected)!;
