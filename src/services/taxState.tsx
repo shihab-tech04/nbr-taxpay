@@ -54,6 +54,12 @@ export interface TaxStateContextType {
 
 const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined);
 
+// The synthetic full-workflow review is available to local developers only.
+// A published build must never infer a taxpayer role from a query string or
+// restored browser-history state, even when someone knows an old preview URL.
+export const sampleJourneysEnabled = import.meta.env.DEV;
+const permittedDemoUser = (value: unknown) => sampleJourneysEnabled ? getDemoUser(value) : null;
+
 // Browser history can restore a *visual-only* taxpayer sample after refresh.
 // This is never an identity, permission or tax-credit entitlement, and a newly
 // opened deep link without our own history state still starts as a guest.
@@ -73,12 +79,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return routeContextFromUrl(validRoute(search.get('action')), search);
   });
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
-  const [demoUser, setDemoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
+  const [demoUser, setDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const demoUserRef = useRef(demoUser);
   const [userRole, setUserRoleState] = useState<UserRole>(() => {
     const search = new URLSearchParams(window.location.search);
-    return getDemoUser(search.get('demoUser'))?.role
-      ?? historySampleRole(validRoute(search.get('action')), window.history.state)
+    return permittedDemoUser(search.get('demoUser'))?.role
+      ?? (sampleJourneysEnabled ? historySampleRole(validRoute(search.get('action')), window.history.state) : null)
       ?? 'GUEST';
   });
   const userRoleRef = useRef(userRole);
@@ -136,7 +142,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUserRole('GUEST');
       }
     }
-    const sampleRole = sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'secure_workspace'
+    const sampleRole = sampleJourneysEnabled && sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'secure_workspace'
       ? {taxpaySampleRole: userRoleRef.current} : {};
     const historyEntry = {taxpayRoute: route, taxpayParams: params, ...sampleRole};
     if (next.href !== window.location.href) window.history.pushState(historyEntry, '', next);
@@ -154,11 +160,11 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ? event.state.taxpayParams ?? routeContextFromUrl(route, search)
         : routeContextFromUrl(route, search));
       setLanguage(search.get('lang') === 'bn' ? 'bn' : 'en');
-      const previousDemo = getDemoUser(search.get('demoUser'));
+      const previousDemo = permittedDemoUser(search.get('demoUser'));
       const leavingDemo = Boolean(demoUserRef.current && !previousDemo);
       demoUserRef.current = previousDemo;
       setDemoUser(previousDemo);
-      const restoredSampleRole = historySampleRole(route, event.state);
+      const restoredSampleRole = sampleJourneysEnabled ? historySampleRole(route, event.state) : null;
       if (previousDemo) setUserRole(previousDemo.role);
       else if (restoredSampleRole) setUserRole(restoredSampleRole);
       else if (leavingDemo || sampleTaxpayerRoles.includes(userRoleRef.current)) setUserRole('GUEST');

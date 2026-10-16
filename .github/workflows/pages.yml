@@ -100,6 +100,9 @@ jobs:
           find dist/assets -type f -name '*.js' -size +0c | grep -q .
           echo 'PASS: public Pages build has approved publishable-only review endpoint; no privileged key shipped'
 
+      - name: Verify actual production bundle blocks unauthenticated taxpayer/sample routes
+        run: npx playwright test --config playwright.production.config.ts
+
       - name: Upload Pages artifact (main only)
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
@@ -152,7 +155,7 @@ jobs:
           echo "FAIL: public Pages HTML could not be verified" >&2
           exit 1
 
-      - name: Check out source for deployed user1 browser verification
+      - name: Check out source for deployed signed-out browser verification
         uses: actions/checkout@v7
 
       - name: Set up Node.js for deployed browser verification
@@ -166,15 +169,15 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
 
-      - name: Verify live user1 dashboard and transaction lifecycle in Chromium
+      - name: Verify deployed private-route authentication boundary in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: node scripts/verify-live-user1.mjs
+        run: node scripts/verify-live-public-auth.mjs
 
-      - name: Upload live user1 browser evidence
+      - name: Upload live signed-out browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: taxpay-live-user1-browser-evidence
-          path: test-results/live-user1-*.png
+          name: taxpay-live-auth-browser-evidence
+          path: test-results/live-auth-*.png
           if-no-files-found: ignore
