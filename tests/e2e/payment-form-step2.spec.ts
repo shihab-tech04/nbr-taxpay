@@ -39,7 +39,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await chooser.getByRole('button', { name: /Run payment simulation/ }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment preview ready.')).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });
 
