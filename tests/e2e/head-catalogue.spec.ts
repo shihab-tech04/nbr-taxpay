@@ -132,6 +132,6 @@ test('public header exposes information only and no role impersonation control',
 test('catalogue explicitly blocks payability without period/event/taxpayer evidence',async ({page})=>{
  await page.goto('/?action=head_catalogue');
  await expect(page.getByText(/No verified taxpayer-class, payment-event, effective-date/)).toBeVisible();
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await switchToBangla(page);
  await expect(page.getByText(/করদাতার ধরন, পরিশোধের ঘটনা, কার্যকারিতার তারিখ/)).toBeVisible();
 });
