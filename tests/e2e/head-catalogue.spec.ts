@@ -1,6 +1,17 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+async function switchToBangla(page: import('@playwright/test').Page) {
+ const desktopSwitch=page.getByRole('button',{name:'বাংলা'});
+ if(await desktopSwitch.isVisible()){
+  await desktopSwitch.click();
+  return;
+ }
+ await page.getByRole('button',{name:'Open menu'}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'বাংলা'}).click();
+ await page.keyboard.press('Escape');
+}
+
 test('original 170-head source reference remains available read-only on its dedicated route',async({page})=>{
  await page.goto('/?action=head_catalogue');
  await expect(page.getByRole('heading',{name:'Original v11 payment-head reference'})).toBeVisible();
@@ -30,7 +41,7 @@ test('seven source group filter and Bengali translation are available by keyboar
   const selector = page.getByLabel('Original source group');
   await selector.selectOption('Source Tax');
   await expect(page.getByText('Matching source records: 127 / 170')).toBeVisible();
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await switchToBangla(page);
   await expect(page.getByRole('heading', { name: 'মূল v11 কর পরিশোধের খাতের তালিকা' })).toBeVisible();
   await expect(page.getByText('অনুসন্ধানে পাওয়া খাত: 127 / 170')).toBeVisible();
 });
@@ -70,7 +81,7 @@ test('legacy source codes and legal provisions remain visibly separate', async (
 
 test('public information home has bilingual safety copy and no prototype status',async({page})=>{
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await switchToBangla(page);
  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'কর পরিশোধের ধরন জানুন'})).toBeVisible();
  await expect(page.locator('footer').getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);

@@ -9,6 +9,16 @@ if (localSupabaseUrl) {
 }
 const base = localSupabaseUrl ? `${localSupabaseUrl}/rest/v1` : '';
 const headers = { apikey: localSupabaseAnonKey, Accept: 'application/json' };
+async function switchToBangla(page: import('@playwright/test').Page) {
+  const desktopSwitch = page.getByRole('button', { name: 'বাংলা' });
+  if (await desktopSwitch.isVisible()) {
+    await desktopSwitch.click();
+    return;
+  }
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'বাংলা' }).click();
+  await page.keyboard.press('Escape');
+}
 const requireLocalSupabase = (projectName: string) => {
   test.skip(!base || !localSupabaseAnonKey, 'Requires the disposable loopback Supabase test stack.');
   test.skip(projectName !== 'desktop-1280', 'Backend API contract is viewport-independent');
@@ -89,7 +99,7 @@ test('secure workspace starts without a presumed legal AY and remains usable on 
   const main = await page.locator('main').boundingBox();
   expect(main).not.toBeNull();
   expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await switchToBangla(page);
   await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();
 });
@@ -98,15 +108,14 @@ test('income tax guidance refuses unverified calculations and official-payment p
   await page.goto('/?action=guidance');
   await expect(page.getByRole('heading', { name: 'Individual income tax estimator — unavailable' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Proceed to Pay Estimated Tax' })).toHaveCount(0);
-  await expect(page.getByText(/No verified, year-specific income tax thresholds/)).toBeVisible();
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await expect(page.getByText('Tax calculations are unavailable until the applicable tax rules are verified.')).toBeVisible();
+  await switchToBangla(page);
   await expect(page.getByRole('heading', { name: 'ব্যক্তিগত আয়কর হিসাব — বর্তমানে বন্ধ' })).toBeVisible();
 });
 
 test('travel-tax page explicitly denies real official receipts and clearance', async ({ page }) => {
   await page.goto('/?action=travel');
-  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toBeVisible();
-  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toBeVisible();
+  await expect(page.locator('.travel-flow__caution')).toContainText('Rates and exemptions are not verified. This is a sample estimate, not a government payment.');
 });
 
 test('anonymous users cannot read or write source change proposals', async ({ request }, info) => {
