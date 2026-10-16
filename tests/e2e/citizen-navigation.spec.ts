@@ -136,7 +136,7 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  const report=nav.getByRole('link',{name:'Report'});
  const login=page.locator('.public-home-header__tools').getByRole('link',{name:'Login'});
  await expect(login).toBeVisible();
- await expect(login).toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+ await expect(login).toHaveAttribute('href','?action=secure_workspace');
  await expect(home).toHaveAttribute('aria-current','page');
  await expect(report).toBeVisible();
  for(const link of [home,faq,report]) await expect(link.locator('svg')).toHaveCount(1);
@@ -173,6 +173,7 @@ test('mobile navigation opens FAQs and Report in English and Bengali',async({pag
  await page.getByRole('button',{name:'বাংলা'}).click();
  const bnNav=page.getByRole('navigation',{name:'প্রধান নেভিগেশন'});
  await expect(bnNav.getByRole('link',{name:'লগইন'})).toBeVisible();
+ await expect(bnNav.getByRole('link',{name:'লগইন'})).toHaveAttribute('href','?action=secure_workspace&lang=bn');
  await expect(bnNav.getByRole('link',{name:'প্রশ্নোত্তর'})).toHaveAttribute('aria-current','page');
  await bnNav.getByRole('link',{name:'অভিযোগ'}).click();
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();

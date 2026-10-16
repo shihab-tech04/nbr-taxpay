@@ -3,7 +3,7 @@ import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'luc
 import { useTaxState } from '../../services/taxState';
 import governmentSeal from '../../assets/bangladesh-government-seal.svg';
 
-const LOGIN_URL = 'https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions';
+const ACCOUNT_ACCESS_ROUTE = 'secure_workspace';
 const LINKS = [
   {route:'landing',en:'Home',bn:'মূল পাতা',Icon:House},
   {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর',Icon:CircleHelp},
@@ -39,8 +39,13 @@ export function PublicHomeHeader() {
       <item.Icon size={16} aria-hidden="true"/>{bn?item.bn:item.en}
     </a>;
   const login=(mobile:boolean)=>
-    <a href={LOGIN_URL} className={mobile?'public-home-login-link public-home-login-link--mobile':'public-home-login-link public-home-login-link--desktop'}
-      onClick={()=>setMenuOpen(false)}>{bn?'লগইন':'Login'} <ArrowRight size={17} aria-hidden="true"/></a>;
+    <a href={`?action=${ACCOUNT_ACCESS_ROUTE}${bn?'&lang=bn':''}`} className={mobile?'public-home-login-link public-home-login-link--mobile':'public-home-login-link public-home-login-link--desktop'}
+      onClick={event=>{
+        setMenuOpen(false);
+        if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
+        event.preventDefault();
+        navigate(ACCOUNT_ACCESS_ROUTE);
+      }}>{bn?'লগইন':'Login'} <ArrowRight size={17} aria-hidden="true"/></a>;
   return <header className="public-home-header">
     <a className="public-home-skip-link" href="#main-content">{bn?'মূল কনটেন্টে যান':'Skip to main content'} <ArrowRight size={16} aria-hidden="true"/></a>
     <div className="public-home-header__inner">
