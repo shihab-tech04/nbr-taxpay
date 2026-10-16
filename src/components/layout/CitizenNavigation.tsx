@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, Bell, BookOpen, CircleHelp, Globe2, Home, Landmark, Menu, Plus, Receipt, X } from 'lucide-react';
+import { Activity, ArrowRight, Bell, BookOpen, CircleHelp, Globe2, Home, Menu, Plus, Receipt, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { PaymentCategory, UserRole } from '../../types/tax';
-import { taxpayerBrandName } from '../../config/brand';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-approved.png';
 
 type CitizenAction = { route: string; en: string; bn: string };
 const guestLinks: CitizenAction[] = [
@@ -177,8 +177,8 @@ export function CitizenNavigation() {
           </button>}
           <button type="button" className="citizen-brand" onClick={goHome}
             aria-label={bn ? 'আমার কর মূল পাতা' : 'Amar Kor home'}>
-            <Landmark aria-hidden="true" size={24} />
-            <span><strong>{taxpayerBrandName(language)}</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
+            <img className="citizen-brand__wordmark" src={amarKorWordmark} alt="" aria-hidden="true" />
+            <span><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
           </button>
           {inTransaction ? (
             <div className="citizen-flow-actions">

@@ -45,6 +45,7 @@
   text-align: left; color: white;
 }
 .citizen-brand > span { display: flex; flex-direction: column; }
+.citizen-brand__wordmark {display:block;width:130px;max-width:35vw;height:46px;object-fit:contain;background:white;border-radius:.45rem;padding:3px 5px;}
 .citizen-brand strong { font-weight: 750; font-size: 1.2rem; line-height: 1.4; }
 .citizen-brand small { font-size: .65rem; line-height: 1.4; opacity: .88; }
 .citizen-header__links { display:flex; align-items: center; gap: .3rem; }
@@ -510,8 +511,8 @@
 }
 .public-home-skip-link:focus {transform:translateY(0);}
 .public-home-brand {gap:.7rem;color:var(--citizen-text);}
-.public-home-brand img {width:48px;height:48px;max-width:48px;object-fit:contain;background:transparent;border-radius:50%;padding:0;}
-.public-home-brand__copy {min-width:0;}
+.public-home-brand img.public-home-wordmark {display:block;width:154px;height:52px;max-width:154px;object-fit:contain;background:transparent;border-radius:0;padding:0;}
+.public-home-brand__copy {display:flex;flex-direction:column;align-items:flex-start;min-width:0;}
 .public-home-brand strong {color:var(--citizen-primary-dark);font-size:1.15rem;letter-spacing:-.02em;}
 .public-home-brand small {color:var(--citizen-muted);font-size:.65rem;line-height:1.35;opacity:1;}
 .public-home-seal-fallback {display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);font-size:.8rem;font-weight:850;}
@@ -599,7 +600,8 @@
 @media(max-width:600px){
   .public-home-header__inner {width:100%;max-width:100%;box-sizing:border-box;min-height:66px;gap:.45rem;padding:.5rem .7rem;}
   .public-home-brand {flex:1 1 0;min-width:0;gap:.45rem;}
-  .public-home-brand img,.public-home-seal-fallback {width:38px;height:38px;max-width:38px;max-height:38px;}
+  .public-home-brand img.public-home-wordmark {width:122px;height:42px;max-width:122px;max-height:42px;}
+  .public-home-seal-fallback {width:38px;height:38px;max-width:38px;max-height:38px;}
   .public-home-brand__copy {flex:1 1 0;}
   .public-home-brand strong {font-size:1rem;}
   .public-home-brand small {font-size:.57rem;line-height:1.25;overflow-wrap:anywhere;}

@@ -39,7 +39,7 @@ test('public information header and sections fit all requested widths',async({pa
   await page.setViewportSize({width,height:812});
   await page.goto('/?action=landing');
   await expect(page.locator('.public-home-header')).toBeVisible();
-  await expect(page.locator('.public-home-header').getByRole('img',{name:'Government Seal of Bangladesh'})).toBeVisible();
+  await expect(page.locator('.public-home-header').getByRole('img',{name:'Amar Kor'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
