@@ -148,10 +148,10 @@ export const PublicUserGuide:React.FC=()=>{
           <summary><span>{t(item.q)}</span><ChevronDown size={18} aria-hidden="true"/></summary><p>{t(item.a)}</p>
         </details>)}
       </section>
-      <div className="public-guide-source"><p>{bn?'আইনি হার বা শর্ত জানতে বর্তমান সরকারি তথ্য দেখুন।':'Check current official sources for legal rates and requirements.'}</p>
-        <a href="https://nbr.gov.bd/" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ExternalLink size={14}/></a>
-      </div>
     </article>
   </div>}
+  <div className="public-guide-source"><p>{bn?'আইনি হার বা শর্ত জানতে বর্তমান সরকারি তথ্য দেখুন।':'Check current official sources for legal rates and requirements.'}</p>
+    <a href="https://nbr.gov.bd/" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ExternalLink size={14}/></a>
+  </div>
  </div>;
 };
