@@ -12,7 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
-import { receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
+import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -71,7 +71,6 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
-  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const [ledgerEntries] = useState<TaxLedgerEntry[]>(INITIAL_LEDGER_ENTRIES);
   const [corrections, setCorrections] = useState<CorrectionRequest[]>(INITIAL_CORRECTIONS);
   const [cases] = useState<CaseRecord[]>(INITIAL_CASES);
@@ -146,13 +145,21 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const selectReceipt = (id: string | null) => {
-    setSelectedReceiptId(id);
-    if (id) {
-      navigate('payment_details', {returnTo: receiptReturnRoute(currentRoute)});
-    }
+    if (!id || !receipts.some(receipt => receipt.id === id)) return;
+    const demoReceipt = INITIAL_RECEIPTS.some(receipt => receipt.id === id) ? publicDemoReceiptId(id) : null;
+    navigate('payment_details', {
+      returnTo: receiptReturnRoute(currentRoute), receiptId: id,
+      ...(demoReceipt ? {demoReceipt} : {})
+    });
   };
 
-  const selectedReceipt = selectedReceiptId ? receipts.find(r => r.id === selectedReceiptId) || null : null;
+  // Recover source-linked fixture details after reload and browser history traversal.
+  // Private/dynamically created records remain in memory and are never encoded in a URL.
+  const receiptId = currentRoute === 'payment_details'
+    ? (publicDemoReceiptId(routeParams.demoReceipt) || routeParams.receiptId)
+    : null;
+  const selectedReceipt = typeof receiptId === 'string'
+    ? receipts.find(receipt => receipt.id === receiptId) || null : null;
 
   const logAuditAction = (action: string, targetId: string, details: string) => {
     const newLog: AuditLog = {

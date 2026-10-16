@@ -87,23 +87,25 @@ export const OntologyView: React.FC = () => {
             </span>
             <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
               {filteredNodes.map(node => (
-                <div
+                <button
                   key={node.id}
+                  type="button"
+                  aria-pressed={selectedNodeId === node.id}
                   onClick={() => setSelectedNodeId(node.id)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`block w-full text-left p-3 rounded-lg border cursor-pointer transition-all ${
                     selectedNodeId === node.id
                       ? 'bg-emerald-950 text-white border-emerald-950 shadow-sm'
                       : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
                   }`}
                 >
-                  <div className="font-bold text-xs">{node.nameEn}</div>
-                  <div className={`text-[11px] font-bengali ${selectedNodeId === node.id ? 'text-amber-300' : 'text-slate-500'}`}>
+                  <span className="block font-bold text-xs">{node.nameEn}</span>
+                  <span className={`block text-[11px] font-bengali ${selectedNodeId === node.id ? 'text-amber-300' : 'text-slate-500'}`}>
                     {node.nameBn}
-                  </div>
-                  <div className="text-[10px] mt-1 font-mono uppercase opacity-75">
+                  </span>
+                  <span className="block text-[10px] mt-1 font-mono uppercase opacity-75">
                     {node.category.replace(/_/g, ' ')}
-                  </div>
-                </div>
+                  </span>
+                </button>
               ))}
             </div>
           </div>

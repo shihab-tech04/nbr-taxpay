@@ -161,15 +161,20 @@ test('Officer receipt inspection stays in Officer layout and returns to its exac
   await expect(page.getByRole('heading',{name:'Universal Cross-Treasury Payment Search'})).toBeVisible();
 
   await page.getByRole('button',{name:'Inspect'}).first().click();
+  await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
   await page.reload();
   await expect(page.locator('header.bg-emerald-950')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByText('AC-2025-09-DEMO-REF-001')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'No Challan Selected'})).toHaveCount(0);
   await page.getByRole('button',{name:'Back to Payment Search'}).click();
   await expect(page).toHaveURL(/action=payment_search/);
 
   await page.goto('/?action=taxpayer_360');
   const challans=page.getByRole('heading',{name:/Treasury A-Challans Linked to TIN/}).locator('..');
-  await challans.locator('div.cursor-pointer').first().click();
+  await challans.getByRole('button',{name:/AC-2025-09-DEMO-REF-001/}).click();
   await expect(page).toHaveURL(/action=payment_details&returnTo=taxpayer_360/);
+  await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
   await expect(page.locator('header.bg-emerald-950')).toBeVisible();
   await page.getByRole('button',{name:'Back to records'}).click();
   await expect(page).toHaveURL(/action=taxpayer_360/);
@@ -190,10 +195,38 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
   }
   await expect(page).toHaveURL(/action=payment_details&returnTo=history/);
   await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByText('AC-2025-09-DEMO-REF-001')).toBeVisible();
   if(page.viewportSize()!.width >= 1440){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
   }
   await page.getByRole('button',{name:'Back to records'}).click();
   await expect(page).toHaveURL(/action=history/);
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+});
+
+test('Officer modules, receipt rows and ontology choices are keyboard-operable',async({page})=>{
+  await page.goto('/?action=officer_home');
+  const searchLink=page.getByRole('link',{name:/Universal Payment Search/});
+  await expect(searchLink).toHaveAttribute('href','?action=payment_search');
+  await searchLink.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/action=payment_search/);
+  await expect(page.getByRole('heading',{name:'Universal Cross-Treasury Payment Search'})).toBeVisible();
+
+  await page.goto('/?action=taxpayer_360');
+  const receipt=page.getByRole('button',{name:/AC-2025-09-DEMO-REF-001/});
+  await receipt.focus();
+  await page.keyboard.press('Space');
+  await expect(page).toHaveURL(/action=payment_details&returnTo=taxpayer_360&demoReceipt=rcpt-101/);
+  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+
+  await page.goto('/?action=ontology');
+  const payer=page.getByRole('button',{name:/Payer \(Ortho-prodan-kari\)/});
+  await expect(payer).toHaveAttribute('aria-pressed','false');
+  await payer.focus();
+  await page.keyboard.press('Space');
+  await expect(payer).toHaveAttribute('aria-pressed','true');
 });

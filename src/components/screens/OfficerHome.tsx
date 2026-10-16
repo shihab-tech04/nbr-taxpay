@@ -182,9 +182,14 @@ export const OfficerHome: React.FC = () => {
           ].map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div
+              <a
                 key={idx}
-                onClick={() => navigate(item.route)}
+                href={'?action=' + item.route}
+                onClick={event => {
+                  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  navigate(item.route);
+                }}
                 className="bg-white border border-slate-200 hover:border-emerald-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div>
@@ -204,7 +209,7 @@ export const OfficerHome: React.FC = () => {
                   <span>Enter Module</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </a>
             );
           })}
         </div>

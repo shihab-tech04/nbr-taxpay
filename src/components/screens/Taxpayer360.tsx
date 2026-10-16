@@ -151,20 +151,21 @@ export const Taxpayer360: React.FC = () => {
           </h3>
           <div className="space-y-2 text-xs max-h-72 overflow-y-auto">
             {userReceipts.map(rcpt => (
-              <div 
+              <button
                 key={rcpt.id} 
+                type="button"
                 onClick={() => selectReceipt(rcpt.id)}
-                className="p-3 rounded-lg border border-slate-200 hover:border-emerald-700 bg-slate-50 cursor-pointer space-y-1"
+                className="block w-full text-left p-3 rounded-lg border border-slate-200 hover:border-emerald-700 bg-slate-50 cursor-pointer space-y-1"
               >
-                <div className="flex items-center justify-between">
+                <span className="flex items-center justify-between">
                   <span className="font-mono-plex font-bold text-emerald-950">{rcpt.challanNo}</span>
                   <span className="font-mono-plex font-bold text-slate-900">{formatCurrency(rcpt.totalAmount, language)}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                </span>
+                <span className="flex items-center justify-between text-[11px] text-slate-500">
                   <span>{rcpt.paymentCategory} (AY {rcpt.assessmentYear})</span>
                   <span className="text-emerald-700 font-semibold">{rcpt.treasuryStatus}</span>
-                </div>
-              </div>
+                </span>
+              </button>
             ))}
           </div>
         </div>
