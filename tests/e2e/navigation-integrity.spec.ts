@@ -115,7 +115,9 @@ test('desktop sidebar Pay Tax action opens the existing payment wizard',async({p
   await rail.getByRole('button',{name:'Pay — select payment type'}).click();
   await expect(page).toHaveURL(/action=wizard/);
   await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
-  await expect(rail).toBeHidden();
+  await expect(rail).toBeVisible();
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
 test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{

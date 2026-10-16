@@ -49,7 +49,7 @@ export function TaxpayerReferenceRail() {
           <img className="taxpayer-reference-wordmark" src={amarKorWordmark} alt={bn ? 'আমার কর' : 'Amar Kor'} />
           <span><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
-        {(user || sampleProfile) && <button type="button" className="taxpayer-reference-main-action" onClick={() => navigate('wizard')}
+        {(user || sampleProfile) && currentRoute !== 'wizard' && <button type="button" className="taxpayer-reference-main-action" onClick={() => navigate('wizard')}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
           <CirclePlus size={20} aria-hidden={true} />
           <span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
