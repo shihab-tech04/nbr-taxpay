@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { TaxStateProvider, useTaxState } from './services/taxState';
+import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { Header } from './components/layout/Header';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
@@ -48,17 +48,18 @@ import { GuidanceAssistant } from './components/screens/GuidanceAssistant';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { receiptReturnRoute } from './services/routeContract';
+import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser } = useTaxState();
-  const {user:verifiedApplicationUser}=useAccountIdentity();
+  const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
   const receiptOrigin = receiptReturnRoute(routeParams.returnTo);
   const officerReceiptDetails = currentRoute === 'payment_details' && ['payment_search','taxpayer_360'].includes(receiptOrigin);
   const officerRoute = officerReceiptDetails || ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
-  const privateTaxpayerRoute = (currentRoute === 'payment_details' && !officerRoute) || ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
-  const privateSampleGate = !officerRoute && (currentRoute === 'payment_details' || ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute)) && !verifiedApplicationUser && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
+  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, officerRoute);
+  const privateSampleGate = requiresTaxpayerSignIn(currentRoute, officerRoute, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
@@ -87,7 +88,7 @@ const MainRouter: React.FC = () => {
   const renderActiveScreen = () => {
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
-    if (demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
+    if (sampleJourneysEnabled && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
       return <User1DemoExperience route={currentRoute} />;
     }
     switch (currentRoute) {
@@ -185,16 +186,17 @@ const MainRouter: React.FC = () => {
       {officerRoute ? <Header /> : publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={officerRoute ? undefined : mainContentRef} id={officerRoute ? undefined : 'main-content'} tabIndex={officerRoute ? undefined : -1} className={`flex-1 ${publicInformationRoute ? 'max-w-[1360px]' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}`}>
-        {privateSampleGate ? (
+        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
           <section className="citizen-account-gate">
             <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
-            <p>{language === "bn" ? "করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।" : "Explore the taxpayer payment screens and activity."}</p>
-            <a className="citizen-account-gate__preview" href={language === 'bn'
+            <p>{sampleJourneysEnabled ? (language === "bn" ? "করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।" : "Explore the taxpayer payment screens and activity.") : (language === 'bn' ? 'আপনার অ্যাকাউন্টে প্রবেশ করতে সাইন ইন করুন।' : 'Sign in to access your taxpayer account.')}</p>
+            {sampleJourneysEnabled && <a className="citizen-account-gate__preview" href={language === 'bn'
               ? '?action=taxpayer_home&demoUser=user1&lang=bn'
               : '?action=taxpayer_home&demoUser=user1'}>
               {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
-            </a>
-            <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button>
+            </a>}
+            {sampleJourneysEnabled ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
+              <button type="button" onClick={() => navigate('office_login')}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</button>}
           </section>
         ) : renderActiveScreen()}
       </main>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
-import { useTaxState } from '../../services/taxState';
+import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { authRedirectUrl, verifiedDraftCategory, draftSeedForCategory, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
 import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
@@ -358,6 +358,10 @@ export const SecureWorkspace: React.FC = () => {
               href={bn ? '?action=office_login&lang=bn' : '?action=office_login'}>
               {bn ? 'ইউজার আইডি ও পাসওয়ার্ড' : 'Sign in with User ID or password'}
             </a>
+            {sampleJourneysEnabled && <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+              href={bn ? '?action=taxpayer_home&demoUser=user1&lang=bn' : '?action=taxpayer_home&demoUser=user1'}>
+              {bn ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
+            </a>}
           </div>
         </form>
       ) : (

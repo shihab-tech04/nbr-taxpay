@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {BookOpen, Globe2, Landmark} from 'lucide-react';
-import {useTaxState} from '../../services/taxState';
+import {sampleJourneysEnabled,useTaxState} from '../../services/taxState';
 import {getDemoUser} from '../../data/demoUsers';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {supabase} from '../../services/supabaseClient';
@@ -30,7 +30,12 @@ function OfficeSourceLogin(){
  const [message,setMessage]=useState<{error:boolean;text:string}|null>(null);
  const [recoveryMode,setRecoveryMode]=useState(()=>new URLSearchParams(window.location.search).get('reset')==='1');
  const {user,loading}=useAccountIdentity();
- const previewUser=getDemoUser(loginId.trim().toLowerCase());
+ // Fictional, password-free sample identities are for local UX review only.
+ // Published sign-in must never present them as real account access.
+ const previewUser=sampleJourneysEnabled?getDemoUser(loginId.trim().toLowerCase()):null;
+ const loginLabel=sampleJourneysEnabled?t.id:(language==='bn'?'অ্যাকাউন্ট ইমেইল':'Account email address');
+ const loginHint=sampleJourneysEnabled?t.idHint:(language==='bn'?'অ্যাকাউন্ট ইমেইল':'Account email');
+ const guideCopy=sampleJourneysEnabled?t.guideCopy:(language==='bn'?'আপনার অ্যাকাউন্ট ইমেইল ও পাসওয়ার্ড লিখুন। পাসওয়ার্ড ভুলে গেলে রিসেট লিংক ব্যবহার করুন।':'Enter your account email and password. Use the password reset link if you cannot sign in.');
  const slides=t.slides.map((item,i)=>({headline:item[0],text:item[1],image:`${import.meta.env.BASE_URL}${IMAGES[i]}`}));
  useEffect(()=>{
   const {data}=supabase?.auth.onAuthStateChange(event=>{
@@ -105,9 +110,9 @@ function OfficeSourceLogin(){
      <div className="office-auth-form-content">
       <div className="office-auth-title-row"><div><h1 className="office-auth-title">{t.heading}</h1><p className="office-auth-subtitle">{t.intro}</p></div><button type="button" className="login-form-manual-btn" onClick={()=>setHelpOpen(true)}><BookOpen size={16} aria-hidden="true"/><span>{t.help}</span></button></div>
       <form className="office-auth-fields" onSubmit={recoveryMode?updatePassword:signIn} noValidate>
-       {(!user&&!recoveryMode)&&<div><label className="login-form-label" htmlFor="office-login-user-id">{t.id}</label><input className="login-form-input" id="office-login-user-id" placeholder={t.idHint} autoComplete="username" autoCapitalize="none" spellCheck={false} value={loginId} onChange={event=>setLoginId(event.target.value)} disabled={busy||loading}/></div>}
+       {(!user&&!recoveryMode)&&<div><label className="login-form-label" htmlFor="office-login-user-id">{loginLabel}</label><input className="login-form-input" id="office-login-user-id" placeholder={loginHint} autoComplete="username" autoCapitalize="none" spellCheck={false} value={loginId} onChange={event=>setLoginId(event.target.value)} disabled={busy||loading}/></div>}
        {(!user||recoveryMode)&&<div><label className="login-form-label" htmlFor="office-login-password">{recoveryMode?t.reset:t.pw}</label><input className="login-form-input" id="office-login-password" type="password" minLength={recoveryMode?8:undefined} placeholder={t.pwHint} autoComplete={recoveryMode?'new-password':'current-password'} value={password} onChange={event=>setPassword(event.target.value)} disabled={busy||loading||(!recoveryMode&&Boolean(previewUser))}/></div>}
-       {!user&&!recoveryMode&&<><div className="office-auth-form-meta"><label className="office-auth-remember"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} disabled={busy||loading}/> <span>{t.remember}</span></label><button type="button" className="login-form-link" onClick={requestReset} disabled={busy||loading}>{t.forgot}</button></div><p className="text-xs text-slate-600" id="taxpay-id-help">{t.preview}</p></>}
+       {!user&&!recoveryMode&&<><div className="office-auth-form-meta"><label className="office-auth-remember"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} disabled={busy||loading}/> <span>{t.remember}</span></label><button type="button" className="login-form-link" onClick={requestReset} disabled={busy||loading}>{t.forgot}</button></div>{sampleJourneysEnabled&&<p className="text-xs text-slate-600" id="taxpay-id-help">{t.preview}</p>}</>}
        <button type="submit" className="login-form-submit" disabled={busy||loading}>{user&&!recoveryMode?t.continue:recoveryMode?t.resetConfirm:t.submit}</button>
        {user&&!recoveryMode&&<p role="status" className="text-sm text-slate-600">{t.signedIn}</p>}
        {message&&<p role={message.error?'alert':'status'} className={`office-login-feedback ${message.error?'text-red-700':'text-blue-800'}`}>{message.text}</p>}
@@ -118,7 +123,7 @@ function OfficeSourceLogin(){
     <div className="office-auth-language" role="group" aria-label="Language"><button type="button" onClick={()=>setLanguage('en')} aria-pressed={language==='en'}>EN</button><button type="button" onClick={()=>setLanguage('bn')} aria-pressed={language==='bn'}>বাংলা</button></div>
    </section>
   </div>
-  <OfficeModal open={helpOpen} title={t.guideTitle} onClose={()=>setHelpOpen(false)} footer={<OfficeButton onClick={()=>setHelpOpen(false)}>{t.guideClose}</OfficeButton>}><p>{t.guideCopy}</p></OfficeModal>
+  <OfficeModal open={helpOpen} title={t.guideTitle} onClose={()=>setHelpOpen(false)} footer={<OfficeButton onClick={()=>setHelpOpen(false)}>{t.guideClose}</OfficeButton>}><p>{guideCopy}</p></OfficeModal>
  </main>;
 }
 export function OfficeLoginPage(){return <OfficeThemeProvider><OfficeSourceLogin/></OfficeThemeProvider>}
