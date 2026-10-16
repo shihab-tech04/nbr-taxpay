@@ -1027,9 +1027,9 @@
  .public-guide-find-copy p{max-width:none;}
  .public-guide-search{min-height:52px;}
  .public-guide-layout{gap:1rem;margin-top:1rem;}
- .public-guide-topics{flex-wrap:nowrap;align-items:center;overflow-x:auto;overscroll-behavior-x:contain;padding:.7rem;scrollbar-width:thin;}
- .public-guide-topics h2{flex:none;margin:0 .4rem 0 .2rem;white-space:nowrap;}
- .public-guide-topics button{flex:none;white-space:nowrap;}
+ .public-guide-topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem;padding:.8rem;}
+ .public-guide-topics h2{grid-column:1/-1;margin:.1rem .3rem .3rem;}
+ .public-guide-topics button{width:100%;min-width:0;min-height:48px;white-space:normal;padding:.6rem;gap:.45rem;}
  .public-guide-content{padding:1.25rem;border-radius:.85rem;}
  .public-guide-steps-head{align-items:flex-start;}
  .public-guide-device{width:100%;}
