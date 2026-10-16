@@ -1,5 +1,5 @@
-/* Sobaike-inspired hero slider: flat surfaces, 50:50 desktop columns, and
- * service-specific tints. The global TaxPay action color stays #2C5EAD. */
+/* Flat Sobaike-inspired hero slider with service-matched image blending.
+ * The global TaxPay primary remains locked to #2C5EAD. */
 .public-hero-carousel-shell {
   position: relative;
   min-width: 0;
@@ -30,37 +30,54 @@
   flex: 0 0 100%;
   width: 100%;
   min-width: 100%;
-  min-height: 320px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 270px;
+  min-height: 270px;
+  grid-template-columns: minmax(0, 55fr) minmax(0, 65fr);
   gap: 0;
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  --banner-bg: var(--citizen-primary-light);
+  background: var(--banner-bg);
+}
+
+.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+  padding: 1.2rem clamp(1.25rem, 2.5vw, 2.2rem);
+}
+
+.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+  margin-top: .65rem;
+  font-size: .95rem;
+  line-height: 1.5;
+}
+
+.public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
+  margin-top: 1.1rem;
 }
 
 .public-hero-carousel__slide[data-banner-service="return"] {
   --banner-service-color: var(--service-return-primary);
   --banner-service-text: var(--service-return-text);
   --banner-service-border: var(--service-return-border);
-  background: var(--service-return-bg);
+  --banner-bg: var(--service-return-bg);
 }
 .public-hero-carousel__slide[data-banner-service="advance"] {
   --banner-service-color: var(--service-advance-primary);
   --banner-service-text: var(--service-advance-text);
   --banner-service-border: var(--service-advance-border);
-  background: var(--service-advance-bg);
+  --banner-bg: var(--service-advance-bg);
 }
 .public-hero-carousel__slide[data-banner-service="withholding"] {
   --banner-service-color: var(--service-withholding-primary);
   --banner-service-text: var(--service-withholding-text);
   --banner-service-border: var(--service-withholding-border);
-  background: var(--service-withholding-bg);
+  --banner-bg: var(--service-withholding-bg);
 }
 .public-hero-carousel__slide[data-banner-service="travel"] {
   --banner-service-color: var(--service-other-primary);
   --banner-service-text: var(--service-other-text);
   --banner-service-border: var(--service-other-border);
-  background: var(--service-other-bg);
+  --banner-bg: var(--service-other-bg);
 }
 
 /* Match Sobaike's service-colored outlined hero CTAs without changing the
@@ -90,6 +107,25 @@
   align-items: center;
 }
 
+.public-hero-carousel__media--illustrated {
+  position: relative;
+  --banner-fade-direction: to right;
+}
+
+.public-hero-carousel__media--illustrated::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(
+    var(--banner-fade-direction),
+    var(--banner-bg) 0%,
+    color-mix(in srgb, var(--banner-bg) 68%, transparent) 22%,
+    transparent 47%
+  );
+}
+
 .public-hero-carousel__slide[data-banner-service="intro"] .public-information-hero__media {
   align-items: flex-end;
 }
@@ -104,7 +140,7 @@
   display: grid;
   place-items: center;
   width: min(80%, 410px);
-  height: 250px;
+  height: 198px;
   border: 1px dashed var(--citizen-border);
   border-radius: 1rem;
   background: rgb(255 255 255 / 48%);
@@ -151,26 +187,47 @@
   .public-hero-carousel__arrow { display: flex; }
 }
 
-@media (max-width: 900px) {
-  .public-hero-carousel__slide.public-information-hero { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 901px) and (max-width: 1100px) {
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
-    padding: 1.5rem 1.4rem .75rem;
+    padding: 1rem 1.15rem;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+    font-size: 1.65rem;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+    font-size: .9rem;
+    line-height: 1.4;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
+    margin-top: .8rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 0;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    padding: 1.25rem 1.4rem .6rem;
     text-align: center;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
     max-width: none;
     font-size: 1.75rem;
   }
-  .public-hero-carousel__slide .public-information-hero__media { height: 220px; }
-  .public-hero-carousel__image-placeholder { height: 190px; width: min(78%, 330px); }
+  .public-hero-carousel__slide .public-information-hero__media { height: 175px; }
+  .public-hero-carousel__media--illustrated { --banner-fade-direction: to bottom; }
+  .public-hero-carousel__image-placeholder { height: 160px; width: min(78%, 330px); }
 }
 
 @media (max-width: 600px) {
   .public-hero-carousel { border-radius: 1rem; }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy { padding: 1.3rem 1rem .55rem; }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.75rem; }
-  .public-hero-carousel__slide .public-information-hero__media { height: 190px; }
-  .public-hero-carousel__image-placeholder { height: 155px; }
+  .public-hero-carousel__slide .public-information-hero__media { height: 150px; }
+  .public-hero-carousel__image-placeholder { height: 135px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

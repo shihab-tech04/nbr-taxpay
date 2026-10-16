@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ImageIcon, Search, WalletCards } from 'lucide-react';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
-import travelTaxIllustration from '../../assets/taxpay-hero-travel.webp';
+import travelTaxIllustration from '../../assets/taxpay-hero-travel-v2.webp';
 
 const AUTOPLAY_INTERVAL_MS = 4_500;
 const SWIPE_THRESHOLD_PX = 45;
@@ -12,8 +12,8 @@ const slides = [
     id: 'intro',
     headingEn: 'Understand tax payments. Stay in control.',
     headingBn: 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।',
-    descriptionEn: 'Explore payment guidance. Manage your transactions after login.',
-    descriptionBn: 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।',
+    descriptionEn: 'Choose the right tax service, check payment status and find receipts in one place.',
+    descriptionBn: 'সঠিক করসেবা বেছে নিন, পেমেন্টের অবস্থা দেখুন ও রসিদ খুঁজুন এক জায়গায়।',
     actionEn: 'Pay Tax',
     actionBn: 'কর পরিশোধ',
   },
@@ -21,8 +21,8 @@ const slides = [
     id: 'return',
     headingEn: 'Tax with Return',
     headingBn: 'রিটার্নের সঙ্গে কর',
-    descriptionEn: 'Pay income tax associated with an income tax return.',
-    descriptionBn: 'আয়কর রিটার্নের সঙ্গে সংশ্লিষ্ট কর পরিশোধ করুন।',
+    descriptionEn: 'Settle the income tax linked to your return through clear, guided steps.',
+    descriptionBn: 'রিটার্নের সঙ্গে সংশ্লিষ্ট আয়কর সহজ ও স্পষ্ট ধাপে পরিশোধ করুন।',
     actionEn: 'Pay Tax with Return',
     actionBn: 'রিটার্নের সঙ্গে কর পরিশোধ',
   },
@@ -30,8 +30,8 @@ const slides = [
     id: 'advance',
     headingEn: 'Advance Income Tax',
     headingBn: 'অগ্রিম আয়কর',
-    descriptionEn: 'Pay advance tax for the selected assessment year.',
-    descriptionBn: 'নির্বাচিত করবর্ষের জন্য অগ্রিম আয়কর পরিশোধ করুন।',
+    descriptionEn: 'Plan ahead by paying income tax early for your chosen assessment year.',
+    descriptionBn: 'নির্বাচিত করবর্ষে আগাম আয়কর দিয়ে আপনার কর পরিকল্পনা এগিয়ে নিন।',
     actionEn: 'Pay Advance Income Tax',
     actionBn: 'অগ্রিম আয়কর পরিশোধ',
   },
@@ -39,8 +39,8 @@ const slides = [
     id: 'withholding',
     headingEn: 'Source Tax Deposit (TDS/TCS)',
     headingBn: 'উৎসে কর জমা (টিডিএস/টিসিএস)',
-    descriptionEn: 'Deposit tax deducted or collected at source.',
-    descriptionBn: 'উৎসে কর্তিত বা সংগৃহীত কর জমা দিন।',
+    descriptionEn: 'Deposit tax already deducted or collected at source using the right payment head.',
+    descriptionBn: 'উৎসে কাটা বা সংগৃহীত কর সঠিক খাতে সহজে জমা দিন।',
     actionEn: 'Deposit Source Tax',
     actionBn: 'উৎসে কর জমা দিন',
   },
@@ -48,8 +48,8 @@ const slides = [
     id: 'travel',
     headingEn: 'Travel Tax',
     headingBn: 'ভ্রমণ কর',
-    descriptionEn: 'Pay travel tax using journey and passenger details.',
-    descriptionBn: 'ভ্রমণের ধরন, গন্তব্য ও যাত্রীর তথ্য দিয়ে ভ্রমণ কর পরিশোধ করুন।',
+    descriptionEn: 'Choose your journey, add passenger details and move through travel tax with confidence.',
+    descriptionBn: 'ভ্রমণের ধরন ও যাত্রীর তথ্য দিয়ে ভ্রমণ করের ধাপগুলো সহজে এগিয়ে নিন।',
     actionEn: 'Pay Travel Tax',
     actionBn: 'ভ্রমণ কর পরিশোধ',
   },
@@ -198,7 +198,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="public-information-hero__media" aria-hidden="true">
+                <div className={`public-information-hero__media${index === 0 || slide.id === 'travel' ? ' public-hero-carousel__media--illustrated' : ''}`} aria-hidden="true">
                   {index === 0 ? (
                     <img className="public-information-hero__image" src={heroPaymentIllustration} alt="" decoding="async" />
                   ) : slide.id === 'travel' ? (
