@@ -175,12 +175,14 @@ test('Officer receipt inspection stays in Officer layout and returns to its exac
   await expect(page).toHaveURL(/action=taxpayer_360/);
 });
 
-test('Taxpayer receipt inspection retains its private navigation and returns to activity',async({page})=>{
+test('Taxpayer receipt inspection retains its private navigation and returns to activity',async({page},info)=>{
+  // The approved desktop reference rail appears at >=1440px, not at 1280px.
+  if(info.project.name==='desktop-1280') await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=history');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Activity',exact:true}).first().click();
   await expect(page).toHaveURL(/action=history/);
-  if(page.viewportSize()!.width >= 901){
+  if(page.viewportSize()!.width >= 1440){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
     await page.getByRole('button',{name:'View',exact:true}).first().click();
   } else {
@@ -188,7 +190,7 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
   }
   await expect(page).toHaveURL(/action=payment_details&returnTo=history/);
   await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
-  if(page.viewportSize()!.width >= 901){
+  if(page.viewportSize()!.width >= 1440){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
   }
   await page.getByRole('button',{name:'Back to records'}).click();
