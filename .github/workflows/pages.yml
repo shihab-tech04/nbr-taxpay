@@ -184,15 +184,17 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
 
-      - name: Verify deployed private-route authentication boundary in Chromium
+      - name: Verify deployed public and taxpayer journeys in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-public-auth.mjs
 
-      - name: Upload live signed-out browser evidence
+      - name: Upload live desktop/mobile browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: taxpay-live-auth-browser-evidence
-          path: test-results/live-auth-*.png
+          path: |
+            test-results/live-auth-*.png
+            test-results/live-guest-*.png
           if-no-files-found: ignore

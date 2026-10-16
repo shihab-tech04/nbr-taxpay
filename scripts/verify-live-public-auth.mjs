@@ -31,9 +31,34 @@ try {
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Account email address' })).toBeVisible();
     await expect(page.getByText(/Example account access: user1/)).toHaveCount(0);
+
+    // Replay the public guest journey on the actual deployment. This action
+    // only prepares a local unsent preview; no gateway or Treasury API is called.
+    await page.goto(base.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+    const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+    await payment.getByRole('button', { name: /Advance Tax/ }).click();
+    await payment.getByRole('button', { name: /Continue/ }).click();
+    await payment.locator('#guest-tin').fill('123456789012');
+    await payment.locator('#guest-phone').fill('01712345678');
+    await payment.locator('#guest-tax-amount').fill('12500');
+    await payment.getByRole('button', { name: 'Continue to Review & Pay' }).click();
+    await expect(payment.getByTestId('payment-review')).toBeVisible();
+    await payment.getByRole('button', { name: 'Online method preview' }).click();
+    await payment.getByRole('radio', { name: 'bKash' }).check();
+    await payment.getByRole('checkbox', { name: /I checked the TIN/ }).check();
+    await payment.getByRole('button', { name: 'Prepare payment preview' }).click();
+    await expect(payment.getByRole('heading', { name: 'Payment preview prepared' })).toBeVisible({ timeout: 12_000 });
+    await expect(payment.getByTestId('payment-lifecycle').getByText('SIMULATION_NOT_SENT', { exact: true })).toBeVisible();
+    await expect(payment.getByText(/PREVIEW-\d{4}-PAY-/)).toBeVisible();
+    for (const forbidden of ['AUTHORIZED', 'ACS_REFERENCE_CREATED', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED']) {
+      await expect(payment.getByTestId('payment-lifecycle').getByText(forbidden, { exact: true })).toHaveCount(0);
+    }
+    await page.screenshot({ path: `test-results/live-guest-${name}.png`, fullPage: true });
     await page.close();
   }
-  console.log('PASS: live desktop/mobile auth gating, sign-in destination and no synthetic dashboard exposure');
+  console.log('PASS: live desktop/mobile auth gate and guest preview; no synthetic account access or payment sent');
 } finally {
   await browser.close();
 }
