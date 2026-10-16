@@ -1,6 +1,6 @@
 import React from 'react';
-import {Landmark, ArrowUpRight} from 'lucide-react';
-import governmentSeal from '../../assets/bangladesh-government-seal.svg';
+import {ArrowUpRight} from 'lucide-react';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
@@ -16,8 +16,8 @@ export function CitizenFooter(){
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'আমার কর ফুটার':'Amar Kor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
-        <img src={governmentSeal} alt="Government Seal of Bangladesh"/>
-        <div><strong>{taxpayerBrandName(language)}</strong><p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p></div>
+        <img className="public-footer__wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)}/>
+        <p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p>
       </div>
       <div className="public-footer__navs">
         <section><h2>{bn?'দ্রুত লিংক':'Explore'}</h2>
@@ -44,8 +44,7 @@ export function CitizenFooter(){
   return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'আমার কর সহায়তা ও তথ্য':'Amar Kor support and information'}>
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
-        <Landmark size={21} aria-hidden="true"/>
-        <div><strong>{taxpayerBrandName(language)}</strong><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
+        <div><img className="citizen-footer__wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)}/><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
       </div>
       <nav className="citizen-footer__links" aria-label={bn?'সহায়তা লিংক':'Support links'}>
         {links.map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}>

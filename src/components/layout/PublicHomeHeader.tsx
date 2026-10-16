@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-approved.png';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
 import { TAXPAYER_BRAND, taxpayerBrandName } from '../../config/brand';
 
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
