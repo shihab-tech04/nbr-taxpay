@@ -8,17 +8,18 @@ type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentTy
 
 const links: RailLink[] = [
   { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা', Icon: Home },
+  { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা', Icon: WalletCards },
   { route: 'history', en: 'Activity', bn: 'লেনদেন', Icon: Activity },
   { route: 'ledger', en: 'Tax ledger', bn: 'কর লেজার', Icon: BookOpen },
   { route: 'certificates', en: 'Certificates', bn: 'সনদপত্র', Icon: FileCheck2 },
   { route: 'corrections', en: 'Corrections', bn: 'সংশোধন', Icon: FilePenLine },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell },
-  { route: 'guidance', en: 'Help', bn: 'সহায়তা', Icon: CircleHelp }
+  { route: 'user_guide', en: 'Help', bn: 'সহায়তা', Icon: CircleHelp }
 ];
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [signingOut, setSigningOut] = React.useState(false);
@@ -56,8 +57,8 @@ export function TaxpayerReferenceRail() {
         </button>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (
-            <button key={route} type="button" aria-current={(currentRoute === route||(route==='taxpayer_home'&&currentRoute==='dashboard')) ? 'page' : undefined}
-              onClick={() => navigate(route)}>
+            <button key={route} type="button" aria-current={((currentRoute === route && (route !== 'user_guide' || routeParams.category !== 'payments')) || (route==='taxpayer_home'&&currentRoute==='dashboard')) ? 'page' : undefined}
+              onClick={() => navigate(route, route === 'user_guide' ? {category:'security'} : {})}>
               <Icon size={20} aria-hidden={true} />
               <span>{bn ? bnLabel : en}</span>
             </button>
@@ -65,21 +66,21 @@ export function TaxpayerReferenceRail() {
           <button type="button" onClick={() => navigate('verify')} aria-current={currentRoute==='verify'?'page':undefined}>
             <ReceiptText size={20} aria-hidden={true} /><span>{bn ? 'পেমেন্টের অবস্থা' : 'Payment status'}</span>
           </button>
-          <details className="taxpayer-reference-account" key={['secure_workspace','account_profile','account_settings'].includes(currentRoute)?'account-'+currentRoute:'account-closed'}
-            open={['secure_workspace','account_profile','account_settings'].includes(currentRoute)||undefined}>
+          <details className="taxpayer-reference-account" key={['account_profile','account_settings'].includes(currentRoute)?'account-'+currentRoute:'account-closed'}
+            open={['account_profile','account_settings'].includes(currentRoute)||undefined}>
             <summary><CircleUserRound size={20} aria-hidden={true}/><span>{bn?'অ্যাকাউন্ট':'Account'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
             <div className="taxpayer-reference-account__links">
               {[
                 {route:'account_profile',en:'Profile',bn:'প্রোফাইল',Icon:CircleUserRound},
-                {route:'account_settings',en:'Profile settings',bn:'প্রোফাইল সেটিংস',Icon:Settings2},
-                {route:'secure_workspace',en:'Account access',bn:'অ্যাকাউন্ট প্রবেশ',Icon:CircleUserRound}
+                {route:'account_settings',en:'Profile settings',bn:'প্রোফাইল সেটিংস',Icon:Settings2}
               ].map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}
                 aria-current={currentRoute===item.route?'page':undefined}>
                 <item.Icon size={17} aria-hidden={true}/><span>{bn?item.bn:item.en}</span>
               </button>)}
             </div>
           </details>
-          <button type="button" onClick={() => navigate('user_guide', {category:'payments'})}>
+          <button type="button" onClick={() => navigate('user_guide', {category:'payments'})}
+            aria-current={currentRoute==='user_guide'&&routeParams.category==='payments'?'page':undefined}>
             <WalletCards size={20} aria-hidden={true}/><span>{bn?'পেমেন্ট নির্দেশিকা':'Payment guide'}</span>
           </button>
         </nav>

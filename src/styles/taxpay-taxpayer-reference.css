@@ -751,3 +751,82 @@
   .taxpay-taxpayer-reference .taxpayer-review-tile,
   .taxpay-taxpayer-reference .taxpayer-coverage-row { transition: none; }
 }
+
+/* The same quiet, readable hierarchy across the fictional profile and real account screens. */
+.taxpay-taxpayer-reference .taxpayer-workspace .shadow-sm { box-shadow: var(--taxpay-shadow-card); }
+.taxpay-taxpayer-reference .taxpayer-workspace h2 { font-size: 1.125rem; line-height: 1.4; font-weight: 600; }
+.taxpay-taxpayer-reference .taxpayer-workspace h3 { font-size: 1rem; line-height: 1.45; }
+.taxpay-taxpayer-reference .taxpayer-workspace .text-xs { font-size: .8125rem; line-height: 1.5; }
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-dashboard-header h1 { font-size: clamp(1.5rem,2vw,1.75rem); line-height: 1.3; }
+.taxpay-taxpayer-reference .taxpayer-workspace .text-\[9px\],
+.taxpay-taxpayer-reference .taxpayer-workspace .text-\[10px\] { font-size: .6875rem; }
+.taxpay-taxpayer-reference .taxpayer-services-shortcut { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; }
+.taxpay-taxpayer-reference .taxpayer-services-shortcut > div { flex:1 1 300px; min-width:0; }
+
+/* Canonical payment-type directory replaces the retired connection-status screen. */
+.taxpay-taxpayer-reference .taxpayer-service-directory__header {
+  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1.25rem;
+  padding:clamp(1.1rem,2vw,1.5rem); background:var(--color-taxpay-surface);
+  border:1px solid var(--color-taxpay-border); border-radius:16px;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__header > div { flex:1 1 330px; min-width:0; }
+.taxpay-taxpayer-reference .taxpayer-service-directory__eyebrow {
+  margin-bottom:.35rem; font-size:.8125rem; font-weight:650; color:var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__header h1 {
+  font-size:clamp(1.5rem,2vw,1.75rem); line-height:1.3; font-weight:650; letter-spacing:-.025em;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__header p:not(.taxpayer-service-directory__eyebrow) {
+  margin-top:.55rem; font-size:.9375rem; line-height:1.65; color:var(--color-taxpay-muted); max-width:70ch;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__primary {
+  display:inline-flex; align-items:center; justify-content:center; gap:.6rem;
+  min-height:46px; padding:.75rem 1rem; border-radius:10px;
+  background:var(--color-taxpay-primary); color:white; font-size:.9375rem; font-weight:600;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__primary:hover { background:var(--color-taxpay-dark); }
+.taxpay-taxpayer-reference .taxpayer-service-directory__notice {
+  display:flex; align-items:flex-start; gap:.7rem; padding:.9rem 1rem;
+  background:var(--color-taxpay-light); color:var(--color-taxpay-dark);
+  border:1px solid color-mix(in srgb,var(--color-taxpay-primary) 20%,white);
+  border-radius:10px; font-size:.875rem; line-height:1.55;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__notice svg { flex:none; }
+.taxpay-taxpayer-reference .taxpayer-service-directory__grid {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__card {
+  min-width:0; padding:1.25rem; border:1px solid var(--color-taxpay-border);
+  background:var(--color-taxpay-surface); border-radius:14px;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__card-top {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:.9rem;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__icon {
+  display:grid; place-items:center; width:42px; height:42px; border-radius:10px;
+  background:var(--color-taxpay-light); color:var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__number { font-size:.8125rem; font-weight:600; color:var(--color-taxpay-muted); }
+.taxpay-taxpayer-reference .taxpayer-service-directory__card h2 { font-size:1.1rem; font-weight:650; line-height:1.4; }
+.taxpay-taxpayer-reference .taxpayer-service-directory__card p {
+  margin-top:.45rem; color:var(--color-taxpay-muted); font-size:.875rem; line-height:1.6;
+}
+.taxpay-taxpayer-reference .taxpayer-service-directory__card .taxpayer-service-directory__separate { color:var(--color-taxpay-dark); font-weight:600; }
+
+/* Public informational content keeps its functionality inside the signed-in navigation shell. */
+.taxpay-taxpayer-reference .public-guide-intro,
+.taxpay-taxpayer-reference .public-guide-topics,
+.taxpay-taxpayer-reference .public-guide-content { box-shadow:var(--taxpay-shadow-card); }
+.taxpay-taxpayer-reference .receipt-lookup--page { width:100%; max-width:1150px; }
+.taxpay-taxpayer-reference .receipt-lookup--page .receipt-lookup__content {
+  border:1px solid var(--color-taxpay-border); border-radius:16px; box-shadow:var(--taxpay-shadow-card);
+}
+.taxpay-taxpayer-reference .receipt-lookup--page .receipt-lookup__page-header h1 {
+  font-family:inherit; font-size:clamp(1.5rem,2vw,1.75rem); font-weight:650;
+}
+.taxpay-taxpayer-reference .receipt-lookup--page :is(input,button,label,p) { font-family:inherit; }
+
+@media(max-width:640px) {
+  .taxpay-taxpayer-reference .taxpayer-service-directory__grid { grid-template-columns:minmax(0,1fr); }
+  .taxpay-taxpayer-reference .taxpayer-service-directory__primary { width:100%; }
+}

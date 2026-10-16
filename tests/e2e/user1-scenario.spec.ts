@@ -20,8 +20,8 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Sign in to make a payment'})).toBeVisible();
-  await page.getByRole('button',{name:'Ledger',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Sign in to make a payment'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Tax Ledger',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
   await expect(page.getByText('৳ 25,000').first()).toBeVisible();
@@ -39,7 +39,7 @@ test('user1 year selection stays consistent across documents and correction scre
   await expect(page).toHaveURL(/scenarioYear=2024-2025/);
   await expect(page.getByRole('heading',{name:'Certificate previews'})).toBeVisible();
   await expect(page.getByText('DEMO-CH-24-01').first()).toBeVisible();
-  await page.getByRole('button',{name:'Ledger',exact:true}).click();
+  await page.getByRole('button',{name:'Tax Ledger',exact:true}).click();
   await expect(page.getByText('DEMO-PAY-24-01').first()).toBeVisible();
   await expect(page.getByText('৳ 10,000').first()).toBeVisible();
 });

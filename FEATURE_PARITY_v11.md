@@ -29,11 +29,11 @@
 | account_notifications | src/components/screens/AccountCenter.tsx |
 | account_profile | src/components/screens/AccountCenter.tsx |
 | account_settings | src/components/screens/AccountCenter.tsx |
-| services | src/components/screens/ConnectedServices.tsx |
+| services | src/components/screens/PaymentServicesPage.tsx |
 | office_login | src/components/screens/TaxpayerLoginDialog.tsx |
 | taxpayer_login | src/components/screens/TaxpayerLoginDialog.tsx |
 | ontology | src/components/screens/OntologyView.tsx |
 | glossary | src/components/screens/GlossaryView.tsx |
-| guidance | src/components/screens/GuidanceAssistant.tsx |
+| guidance | src/components/screens/PublicUserGuide.tsx |
 
 Current executable checks and limitations are in TEST_REPORT.md. The frontend build is a demonstration; financial and backend functions remain disabled or unverified.

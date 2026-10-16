@@ -63,10 +63,12 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
   test.setTimeout(120000);
   for (const width of [375,768,1280,1600]) {
     await page.setViewportSize({width,height:850});
-    for (const route of ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings','services']) {
+    for (const route of ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings']) {
       await page.goto(url(route));
       await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-      await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
+      if(['account_profile','account_settings'].includes(route))
+        await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
+      else await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
       const dims=await page.evaluate(() => ({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
         content:(document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement).getBoundingClientRect().width}));
       expect(dims.overflow,route+' overflow at '+width).toBeLessThanOrEqual(2);

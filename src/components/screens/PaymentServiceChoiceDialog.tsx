@@ -9,7 +9,7 @@ import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
-const SERVICE_CHOICES = [
+export const PAYMENT_SERVICE_CHOICES = [
   { id: 'TAX_WITH_RETURN', Icon: FileText, en: 'Tax with Return', bn: 'রিটার্নসহ কর', detailEn: 'Tax paid with the annual income tax return.', detailBn: 'বার্ষিক আয়কর রিটার্নের সাথে পরিশোধ করা কর।' },
   { id: 'ADVANCE_TAX', Icon: CalendarClock, en: 'Advance Tax', bn: 'অগ্রিম কর', detailEn: 'Instalments paid during the income year.', detailBn: 'আয়বর্ষে কিস্তিতে অগ্রিম কর পরিশোধ।' },
   { id: 'ASSESSED_DEMAND', Icon: ClipboardList, en: 'Assessed Demand', bn: 'নির্ধারিত দাবি', detailEn: 'Payment against an assessed demand.', detailBn: 'নির্ধারিত কর দাবির বিপরীতে পরিশোধ।' },
@@ -20,7 +20,7 @@ const SERVICE_CHOICES = [
   { id: 'TRAVEL_TAX', Icon: Plane, en: 'Travel Tax', bn: 'ভ্রমণ কর', detailEn: 'Tax based on journey and passenger details.', detailBn: 'যাত্রা ও যাত্রীর তথ্য অনুযায়ী ভ্রমণ কর।' }
 ] as const;
 
-type ServiceId = typeof SERVICE_CHOICES[number]['id'];
+type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
 
 export function PaymentServiceChoiceDialog() {
   const { language, setPaymentServiceChoiceOpen } = useTaxState();
@@ -65,7 +65,7 @@ export function PaymentServiceChoiceDialog() {
         {stage === 1 ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
-          {SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
+          {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
             <button type="button" key={id} aria-pressed={selected === id}
               className="tax-service-choice__card" onClick={() => setSelected(id)}>
               <span className="tax-service-choice__icon"><Icon size={22} aria-hidden="true" /></span>

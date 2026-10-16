@@ -75,10 +75,9 @@ function yearSummary(year:string) {
 const panel='rounded-2xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-5';
 const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface px-3 text-sm font-medium text-taxpay-dark transition hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary';
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
-type Route = 'taxpayer_home'|'dashboard'|'history'|'ledger'|'journey'|'certificates'|'corrections'|'account_profile'|'account_notifications'|'account_settings'|'services';
-export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings','services'];
+export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
 export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
-  const {navigate,language,routeParams}=useTaxState();
+  const {navigate,language,setLanguage,routeParams}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [year,setYear]=useState<string>(()=>{
@@ -113,7 +112,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
   const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-[11px] font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
-  const sub=(desc:string,bengali:string)=><p className="mt-1 text-xs leading-5 text-slate-500">{tr(desc,bengali)}</p>;
+  const sub=(desc:string,bengali:string)=><p className="mt-1 text-sm leading-6 text-slate-500">{tr(desc,bengali)}</p>;
   const card=(title:string,titleBn:string,value:string,subtitle:string,subtitleBn:string)=><article className={panel}>
     <p className="text-xs font-medium text-slate-500">{tr(title,titleBn)}</p><p className="mt-2 text-xl font-semibold text-slate-800">{value}</p>{sub(subtitle,subtitleBn)}
   </article>;
@@ -165,7 +164,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </article>)}</div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </div>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের প্রিভিউ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):route==='services'?tr('Connected services','সংযুক্ত সেবা'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের প্রিভিউ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<header className={panel+' taxpayer-dashboard-header'}>
     <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-5">
       <div className="min-w-0">
@@ -173,14 +172,8 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           <h1 className="text-2xl font-semibold tracking-tight text-taxpay-text sm:text-3xl">{pageTitle}</h1>
         </div>
       </div>
-      {years}
+      {!['account_profile','account_settings'].includes(route) && years}
     </div>
-    {!overviewRoute&&<div className="mt-4 flex flex-wrap gap-2">
-      {view('taxpayer_home','Overview','সারসংক্ষেপ')}
-      {view('history','Open transaction history','লেনদেনের ইতিহাস খুলুন')}
-      {view('ledger','Ledger','লেজার')}
-      {view('certificates','Documents','নথি')}
-    </div>}
   </header>;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
@@ -300,6 +293,13 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
           </button>)}
       </div>
     </section>
+    <section className={panel+' taxpayer-services-shortcut'} aria-labelledby="taxpayer-services-title">
+      <div>
+        <h2 id="taxpayer-services-title" className="text-lg font-semibold">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
+        {sub('Explore all eight payment types, including source tax deposits and separate travel tax.','উৎসে কর জমা ও পৃথক ভ্রমণ করসহ আট ধরনের পরিশোধ সেবা দেখুন।')}
+      </div>
+      {view('services','View payment services','পরিশোধ সেবাসমূহ দেখুন')}
+    </section>
   </>;
   const ledger=<>
     <section className="grid gap-3 sm:grid-cols-3">{card('Tax liability','করদায়',money(totals.liability),'Single opening liability per tax year','প্রতি করবর্ষে একটি প্রাথমিক দায়')}
@@ -310,11 +310,10 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
       <tbody>{(()=>{let bal=totals.liability;const postings=scoped.filter(x=>x.state==='POSTED'&&['income','tds','ait'].includes(x.kind)).sort((a,b)=>a.date.localeCompare(b.date));return [{id:'OPEN',date:year.slice(0,4)+'-07-01',ref:'DEMO-LIABILITY-'+year,debit:totals.liability,credit:0,bal:totals.liability},...postings.map(x=>{bal-=x.amount;return {id:x.id,date:x.date,ref:x.ref,debit:0,credit:x.amount,bal};})].map(x=><tr className="border-b border-slate-100" key={x.id}><td className="whitespace-nowrap px-3 py-3">{x.date}</td><td className="px-3 py-3">{x.ref}</td><td className="px-3 py-3">{x.debit?money(x.debit):'—'}</td><td className="px-3 py-3">{x.credit?money(x.credit):'—'}</td><td className="px-3 py-3 font-semibold">{money(x.bal)}</td></tr>)})()}</tbody></table></div>
       <p className="mt-3 text-xs text-slate-600">{tr('Control check','যাচাই')}: {money(totals.liability)} − {money(totals.applied)} = {money(totals.outstanding)}. {tr('Pending, travel-tax, disputed, failed and reversal entries are excluded.','অপেক্ষমাণ, ভ্রমণ, বিরোধপূর্ণ, ব্যর্থ ও রিভার্স অন্তর্ভুক্ত নয়।')}</p>
     </section>
-    {transactionList}
   </>;
   const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Receipts and supporting records','রসিদ ও সহায়ক নথি')}</h2>{sub('Open a record to see its details','বিস্তারিত দেখতে রেকর্ড খুলুন')}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View details','বিস্তারিত দেখুন')}</button></article>)}</div>
-  </section>{transactionList}</>;
+  </section></>;
   const correctionRecords=scoped.filter(x=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(x.state));
   const exceptions=<><div className="grid gap-3 sm:grid-cols-3">{card('Pending items','অপেক্ষমাণ',String(correctionRecords.filter(x=>x.state==='PENDING').length),'No credit until resolved','সমাধানের আগে ক্রেডিট নয়')}
     {card('Refund / adjustment requests','ফেরত / সমন্বয় আবেদন',String(correctionRecords.filter(x=>x.state==='REQUESTED').length),'No approval implied','অনুমোদন বোঝায় না')}
@@ -323,7 +322,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const journey=<><section className={panel}><h2 className="text-base font-semibold">{tr('Payment lifecycle','পেমেন্টের জীবনচক্র')}</h2>{sub('Follow payment status from initiation to ledger allocation.','শুরু থেকে লেজারে সমন্বয় পর্যন্ত পেমেন্টের অবস্থা দেখুন।')}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{['Initiated','Gateway decision','Treasury settlement','Ledger allocation'].map((s,i)=><article key={s} className="rounded-xl border border-slate-200 p-4"><p className="text-xs font-semibold text-blue-800">{'0'+(i+1)}</p><h3 className="mt-1 font-semibold">{s}</h3><p className="mt-2 text-xs text-slate-500">{i===0?'Records begin as requests':i===1?'Failed and reversed attempts are tracked separately':i===2?'Only posted amounts are included in settlement':'Only eligible income tax, TDS and AIT is applied; travel excluded'}</p></article>)}</div>
     <div className="mt-4 flex flex-wrap gap-2">{view('history','Inspect transactions','লেনদেন দেখুন')}{view('ledger','Inspect allocations','ক্রেডিট দেখুন')}{view('certificates','Inspect evidence','প্রমাণ দেখুন')}</div>
-  </section>{transactionList}</>;
+  </section></>;
   const profile=<section className={panel}><h2 className="text-base font-semibold">{tr('Taxpayer profile','করদাতার প্রোফাইল')}</h2>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{[
       ['Account','user1'],['Display name','Individual Taxpayer 01'],['Identifier','DEMO-TIN-001'],['Taxpayer class','Individual'],
@@ -333,12 +332,23 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     {sub('Account information is not linked to a verified taxpayer identity.','অ্যাকাউন্টের তথ্য যাচাইকৃত করদাতা পরিচয়ের সঙ্গে সংযুক্ত নয়।')}
   </section>;
   const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Recent updates','সাম্প্রতিক আপডেট')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
-  const settings=<section className={panel}><h2 className="text-base font-semibold">{tr('Preferences','পছন্দসমূহ')}</h2>{sub('Interface language follows the main app control. Nothing here updates a registered taxpayer or remote database.','ভাষা মূল অ্যাপ থেকে নিয়ন্ত্রিত। কোনো বাস্তব প্রোফাইল বা ডেটাবেস পরিবর্তন হয় না।')}<p className="mt-4 text-sm">{tr('Selected language','নির্বাচিত ভাষা')}: {bn?'বাংলা':'English'}</p><p className="mt-2 text-sm">{tr('Account','অ্যাকাউন্ট')}: user1</p></section>;
-  const services=<section className={panel}><h2 className="text-base font-semibold">{tr('Connected services','সংযুক্ত সেবাসমূহ')}</h2>{sub('Connections and record sources for the selected account.','নির্বাচিত অ্যাকাউন্টের তথ্য উৎস ও সংযোগের অবস্থা।')}<div className="mt-4 grid gap-3 sm:grid-cols-2">{[
-    ['Income tax assessment','Not connected'],['eTDS','Not connected'],['Advance tax','Not connected'],['eLedger','Not connected'],['A-Challan','Not verified'],['Travel tax','Separate category; not an income tax credit'],['Bank settlement','Not connected'],['Refunds and corrections','No approval recorded']
-  ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="font-semibold">{x[0]}</p><p className="mt-1 text-xs text-slate-500">{x[1]}</p></div>)}</div></section>;
-  const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}<section className="rounded-xl border border-blue-100 bg-blue-50 p-4"><h2 className="text-sm font-semibold">{tr('Sign in to make a payment','পেমেন্ট করতে সাইন ইন করুন')}</h2>{sub('Payment actions require an authenticated account.','পেমেন্ট করতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন প্রয়োজন।')}<button className={action+' mt-3'} onClick={()=>navigateTo('taxpayer_login')} type="button">{tr('Open sign-in','সাইন ইন খুলুন')}</button></section></>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:route==='services'?services:overview;
-  return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
+  const settings=<section className={panel+' taxpayer-preferences'}>
+    <h2 className="text-lg font-semibold">{tr('Display preferences','প্রদর্শনের পছন্দ')}</h2>
+    {sub('Choose the language used throughout your taxpayer workspace.','করদাতা ওয়ার্কস্পেসের ভাষা নির্বাচন করুন।')}
+    <label className="mt-5 flex max-w-sm flex-col gap-2 text-sm font-medium" htmlFor="taxpayer-preview-language">
+      {tr('Interface language','ইন্টারফেসের ভাষা')}
+      <select id="taxpayer-preview-language" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm" value={language} onChange={e=>setLanguage(e.target.value as 'en'|'bn')}>
+        <option value="en">English</option><option value="bn">বাংলা</option>
+      </select>
+    </label>
+    <div className="mt-6 border-t border-taxpay-border pt-4">
+      <h3 className="text-base font-semibold">{tr('Account information','অ্যাকাউন্টের তথ্য')}</h3>
+    {sub('You are viewing the user1 preview profile. Profile changes and government connections are not enabled for this account.','আপনি user1 প্রিভিউ প্রোফাইল দেখছেন। এই অ্যাকাউন্টে প্রোফাইল পরিবর্তন বা সরকারি সংযোগ চালু নেই।')}
+      <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
+    </div>
+  </section>;
+  const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}</>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {header}{content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>

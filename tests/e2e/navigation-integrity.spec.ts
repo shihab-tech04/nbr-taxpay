@@ -120,7 +120,12 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
+  await rail.getByRole('button',{name:'Payment services',exact:true}).click();
+  await expect(page).toHaveURL(/action=services/);
+  await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
+  await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(8);
   await rail.locator('.taxpayer-reference-account > summary').click();
+  await expect(rail.getByRole('button',{name:'Account access'})).toHaveCount(0);
   await rail.getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page).toHaveURL(/action=account_profile/);
   await rail.getByRole('button',{name:'Profile settings'}).click();
@@ -167,7 +172,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const open=()=>page.getByRole('button',{name:'Open menu'}).first().click();
   await open();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Connected Services'}).click();
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Payment services'}).click();
   await expect(page).toHaveURL(/action=services/);
   await open();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Journey'}).click();
@@ -194,9 +199,9 @@ test('every taxpayer mobile service-menu destination matches its visible label',
   const destinations=[
     ['Home','taxpayer_home'],['Activity','history'],['Tax Ledger','ledger'],
     ['Certificates','certificates'],['Corrections','corrections'],
-    ['Tax Journey','journey'],['Connected Services','services'],
+    ['Tax Journey','journey'],['Payment services','services'],
     ['Notifications','account_notifications'],['Profile','account_profile'],
-    ['Profile settings','account_settings'],['Help','guidance']
+    ['Profile settings','account_settings'],['Help','user_guide'],['Payment guide','user_guide']
   ] as const;
   for(const [label,route] of destinations){
     await page.getByRole('button',{name:'Open menu'}).first().click();

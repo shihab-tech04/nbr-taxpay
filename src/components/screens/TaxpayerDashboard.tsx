@@ -94,6 +94,13 @@ export const TaxpayerDashboard: React.FC = () => {
         {tr('Tax Ledger','কর লেজার')}<ArrowRight size={14} aria-hidden="true"/>
       </button>
     </div>
+    <section className="taxpayer-services-shortcut rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5" aria-labelledby="taxpayer-dashboard-services-title">
+      <div>
+        <h2 id="taxpayer-dashboard-services-title" className="text-lg font-semibold text-taxpay-text">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
+        <p className="mt-1 text-sm text-taxpay-muted">{tr('Explore all eight payment types, including source tax deposits and separate travel tax.','উৎসে কর জমা ও পৃথক ভ্রমণ করসহ আট ধরনের কর পরিশোধ দেখুন।')}</p>
+      </div>
+      <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
+    </section>
     <div className="grid gap-4 lg:grid-cols-[minmax(285px,1fr)_minmax(0,2.1fr)]">
       <section className={card} aria-labelledby="composition-heading">
         <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>

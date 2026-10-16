@@ -5,11 +5,11 @@ import { useAccountIdentity, signOutApplicationAccount } from '../../services/ac
 import { UserRole } from '../../types/tax';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
 
-type CitizenAction = { route: string; en: string; bn: string };
+type CitizenAction = { route: string; en: string; bn: string; category?: string };
 const guestLinks: CitizenAction[] = [
   { route: 'landing', en: 'Home', bn: 'মূল পাতা' },
   { route: 'verify', en: 'Payment Status', bn: 'পেমেন্টের অবস্থা' },
-  { route: 'guidance', en: 'Help', bn: 'সহায়তা' }
+  { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' }
 ];
 const taxpayerLinks: CitizenAction[] = [
   { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা' },
@@ -20,18 +20,18 @@ const moreLinks: CitizenAction[] = [
   { route: 'certificates', en: 'Certificates', bn: 'সনদ' },
   { route: 'corrections', en: 'Corrections', bn: 'সংশোধন' },
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' },
-  { route: 'services', en: 'Connected Services', bn: 'সংযুক্ত সেবা' },
+  { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' },
   { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল' },
   { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' },
-  { route: 'guidance', en: 'Help', bn: 'সহায়তা' },
-  { route: 'secure_workspace', en: 'Account access', bn: 'অ্যাকাউন্ট প্রবেশ' }
+  { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' },
+  { route: 'user_guide', category:'payments', en: 'Payment guide', bn: 'পেমেন্ট নির্দেশিকা' }
 ];
 const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -66,10 +66,10 @@ export function CitizenNavigation() {
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
   const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused;
-  const go = (route: string) => {
+  const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
     setCompact(false);
-    navigate(route);
+    navigate(route, params);
   };
   const openPay = () => {
     setMenuOpen(false);
@@ -153,8 +153,8 @@ export function CitizenNavigation() {
   }, [overlayOpen]);
 
   const action = (item: CitizenAction) => (
-    <button key={item.route} type="button" onClick={() => go(item.route)}
-      aria-current={currentRoute === item.route ? 'page' : undefined}
+    <button key={item.route+':'+(item.category??'')} type="button" onClick={() => go(item.route, item.category ? {category:item.category} : {})}
+      aria-current={currentRoute === item.route && (!item.category || routeParams.category === item.category) ? 'page' : undefined}
       className="citizen-nav-link">{label(item)}</button>
   );
   return (
@@ -200,7 +200,7 @@ export function CitizenNavigation() {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
               item.route === 'verify' ? Receipt : item.route === 'history' ? Activity : CircleHelp;
             return (
-              <button type="button" key={item.route} onClick={()=>go(item.route)}
+              <button type="button" key={item.route} onClick={()=>go(item.route, item.category ? {category:item.category} : {})}
                 aria-current={currentRoute === item.route ? 'page' : undefined}
                 className="citizen-bottom-nav__item">
                 <Icon size={20} aria-hidden="true"/>
@@ -241,7 +241,7 @@ export function CitizenNavigation() {
                   <div className="citizen-dialog__links">{links.map(action)}</div>
                   <p className="citizen-dialog__section-label">{bn ? 'অন্যান্য সেবা' : 'More services'}</p>
                   <div className="citizen-dialog__links">
-                    {(isTaxpayer ? moreLinks.filter(item => item.route !== 'secure_workspace') : [
+                    {(isTaxpayer ? moreLinks : [
                       {route:'incident',en:'Security reporting',bn:'নিরাপত্তা অভিযোগ'},
                       {route:'head_catalogue',en:'Payment head catalogue',bn:'কর খাতের তালিকা'}
                     ]).map(action)}
