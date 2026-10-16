@@ -108,9 +108,9 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(page.getByText('Not verified',{exact:true}).first()).toBeVisible();
 
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'সনদের নমুনা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'উৎসে কর জমার সারসংক্ষেপ'})).toBeVisible();
-  await expect(page.getByText('এই প্রদর্শনী থেকে কোনো সরকারি সনদ ইস্যু করা হয় না।')).toBeVisible();
+  await expect(page.getByText('এই প্রদর্শনী থেকে কোনো সরকারি সনদ ইস্যু করা হয় না।')).toHaveCount(0);
 
   if (testInfo.project.name === 'mobile-320' || testInfo.project.name === 'desktop-1280') {
     await page.screenshot({path:`test-results/screenshots/certificate-preview-bn-${testInfo.project.name}.png`,fullPage:false});
