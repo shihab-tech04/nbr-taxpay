@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 
@@ -6,7 +6,7 @@ import { supabase } from './supabaseClient';
  * Application Auth identity ONLY. Never infer eTIN ownership, NBR taxpayer
  * privileges, payment/ledger rights or financial entitlements from this user.
  */
-export function useAccountIdentity() {
+function useResolvedAccountIdentity() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
 
@@ -35,6 +35,24 @@ export function useAccountIdentity() {
   }, []);
 
   return { user, loading };
+}
+
+/** One authoritative Auth subscription for the entire TaxPay app.
+ * Independent per-screen subscriptions could briefly disagree after sign-in,
+ * showing account navigation without a working Sign out control.
+ */
+type ApplicationIdentity = ReturnType<typeof useResolvedAccountIdentity>;
+const IdentityContext = createContext<ApplicationIdentity | null>(null);
+
+export function AccountIdentityProvider({children}:{children:ReactNode}) {
+  const identity = useResolvedAccountIdentity();
+  return createElement(IdentityContext.Provider,{value:identity},children);
+}
+
+export function useAccountIdentity():ApplicationIdentity {
+  const identity = useContext(IdentityContext);
+  if (!identity) throw new Error('Account identity must be read within AccountIdentityProvider');
+  return identity;
 }
 
 /** Logout is a local-session Auth operation, not a demo role-switch. */

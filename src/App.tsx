@@ -5,7 +5,7 @@ import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
 import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
-import {useAccountIdentity} from './services/accountIdentity';
+import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { Footer } from './components/layout/Footer';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
@@ -207,8 +207,10 @@ const MainRouter: React.FC = () => {
 
 export default function App() {
   return (
-    <TaxStateProvider>
-      <MainRouter />
-    </TaxStateProvider>
+    <AccountIdentityProvider>
+      <TaxStateProvider>
+        <MainRouter />
+      </TaxStateProvider>
+    </AccountIdentityProvider>
   );
 }
