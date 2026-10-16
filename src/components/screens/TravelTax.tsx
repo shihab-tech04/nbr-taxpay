@@ -19,6 +19,7 @@ import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import { formatCurrency } from '../../services/numberFormat';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
+import { PaymentFormSection } from '../ui/PaymentFormLayout';
 
 const COPY = {
   en: {
@@ -45,16 +46,6 @@ const COPY = {
   }
 } as const;
 
-const DEPARTURE_PORTS = [
-  { value: 'Hazrat Shahjalal International Airport (DAC)', en: "Hazrat Shahjalal Int'l Airport, Dhaka (DAC)", bn: 'হযরত শাহজালাল আন্তর্জাতিক বিমানবন্দর, ঢাকা (ডিএসি)' },
-  { value: 'Shah Amanat International Airport (CGP)', en: "Shah Amanat Int'l Airport, Chattogram (CGP)", bn: 'শাহ আমানত আন্তর্জাতিক বিমানবন্দর, চট্টগ্রাম (সিজিপি)' },
-  { value: 'Osmani International Airport (ZYL)', en: "Osmani Int'l Airport, Sylhet (ZYL)", bn: 'ওসমানী আন্তর্জাতিক বিমানবন্দর, সিলেট (জেডওয়াইএল)' },
-  { value: 'Benapole Land Port (Jashore)', en: 'Benapole Land Port Checkpost (Jashore)', bn: 'বেনাপোল স্থলবন্দর, যশোর' },
-  { value: 'Burimari Land Port (Lalmonirhat)', en: 'Burimari Land Port Checkpost', bn: 'বুড়িমারী স্থলবন্দর, লালমনিরহাট' },
-  { value: 'Akhaura Land Port (Brahmanbaria)', en: 'Akhaura Land Port Checkpost', bn: 'আখাউড়া স্থলবন্দর, ব্রাহ্মণবাড়িয়া' },
-  { value: 'Chattogram Sea Port', en: 'Chattogram Sea Port', bn: 'চট্টগ্রাম সমুদ্রবন্দর' }
-];
-
 export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const { language, navigate, addPaymentReceipt } = useTaxState();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
@@ -65,11 +56,10 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const [furthestStep, setFurthestStep] = useState<0 | 1 | 2>(0);
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
   const [routeSearch, setRouteSearch] = useState('');
-  const [passengerCount, setPassengerCount] = useState(1);
+  const [ageBand, setAgeBand] = useState<'ADULT' | 'CHILD' | 'UNDER5'>('ADULT');
   const [passengerName, setPassengerName] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
   const [phone, setPhone] = useState('');
-  const [departurePort, setDeparturePort] = useState('Hazrat Shahjalal International Airport (DAC)');
   const [travelDate, setTravelDate] = useState('2026-10-25');
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,7 +67,8 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
 
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route.amount;
-  const totalAmount = unitRate * passengerCount;
+  const totalAmount = ageBand === 'UNDER5' ? 0 : ageBand === 'CHILD' ? unitRate / 2 : unitRate;
+  const isDomestic = selectedRouteIdx === 3;
 
   const handlePayTravelTax = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,8 +76,12 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
       setError(t.requiredName);
       return;
     }
-    if (!passportNumber.trim()) {
+    if (!isDomestic && passportNumber.trim().length < 6) {
       setError(t.requiredPassport);
+      return;
+    }
+    if (ageBand === 'UNDER5') {
+      setError(bn ? '৫ বছর বা তার কম বয়সী যাত্রী করমুক্ত—পেমেন্টের প্রয়োজন নেই।' : 'Passengers aged 5 or under are exempt. No payment is required.');
       return;
     }
     setError('');
@@ -103,7 +98,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         challanNo: `AC-${year}-TRV-${randChallan}`,
         tokenNumber: `TRV-${randToken}`,
         paymentCategory: 'OTHER_TAX_PAYMENT',
-        assessmentYear: '2025-2026',
+        assessmentYear: '2026-27',
         payerName: `${passengerName} (Passport: ${passportNumber})`,
         payerTin: 'NON-TIN-PASSENGER',
         isRepresentativePayment: false,
@@ -120,7 +115,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
             surchargeAmount: 0,
             interestAmount: 0,
             totalAmount,
-            note: `Port: ${departurePort} | Date: ${travelDate} | Pass: ${passportNumber}`
+            note: `Date: ${travelDate} | Age band: ${ageBand} | Passport: ${isDomestic ? 'Not required' : passportNumber}`
           }
         ],
         totalAmount,
@@ -182,8 +177,8 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const continueStep = () => {
     if (step === 0) { goStep(1); return; }
     if (!passengerName.trim()) { setError(t.requiredName); return; }
-    if (!passportNumber.trim()) { setError(t.requiredPassport); return; }
-    if (passengerCount < 1 || passengerCount > 10 || !travelDate) {
+    if (!isDomestic && passportNumber.trim().length < 6) { setError(t.requiredPassport); return; }
+    if (!travelDate || !/^01\d{9}$/.test(phone)) {
       setError(workflow.missing); return;
     }
     goStep(2);
@@ -191,12 +186,16 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const reset = () => {
     setCreatedReceipt(null); setStep(0); setFurthestStep(0);
     setPassengerName(''); setPassportNumber(''); setPhone('');
-    setPassengerCount(1); setSelectedRouteIdx(0); setError('');
+    setAgeBand('ADULT'); setSelectedRouteIdx(0); setError('');
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   // One state-controlled action, rendered in the modal footer (or alongside
   // the summary only on the standalone Travel Tax route).
-  const primaryAction = createdReceipt ? (
+  const primaryAction = !createdReceipt && step === 2 && ageBand === 'UNDER5' ? (
+    <button type="button" className="travel-flow__primary" onClick={reset}>
+      {bn ? 'অন্য যাত্রীর জন্য শুরু করুন' : 'Start for another passenger'}
+    </button>
+  ) : createdReceipt ? (
     <button type="button" className="travel-flow__primary" onClick={reset}>
       {workflow.newPreview}
     </button>
@@ -231,6 +230,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         <form id="travel-tax-form" onSubmit={handlePayTravelTax} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
           {step === 0 && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
+            <PaymentFormSection number={1} title={workflow.select} description={t.intro}>
             <header className="travel-flow__section-header">
               <h3 id="travel-route-heading">{workflow.select}</h3>
               <p>{t.intro}</p>
@@ -276,43 +276,41 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
                 </div>
               )}
             </fieldset>
+            </PaymentFormSection>
           </section>}
 
           {step === 1 && <section className="travel-flow__panel" aria-labelledby="travel-passenger-heading">
+            <PaymentFormSection number={2} title={workflow.passenger} description={workflow.hint}>
             <header className="travel-flow__section-header">
               <h3 id="travel-passenger-heading">{workflow.passenger}</h3>
               <p>{workflow.hint}</p>
             </header>
             <div className="travel-flow__fields">
               <div className="travel-flow__field">
+                <label htmlFor="travel-passenger-age">{bn ? 'যাত্রীর বয়স' : 'Passenger age'} *</label>
+                <select id="travel-passenger-age" value={ageBand} onChange={event => setAgeBand(event.target.value as typeof ageBand)}>
+                  <option value="ADULT">{bn ? '১২ বছরের বেশি — পূর্ণ হার' : 'Over 12 years — full rate'}</option>
+                  <option value="CHILD">{bn ? '৫ বছরের বেশি, ১২ বছর পর্যন্ত — অর্ধেক হার' : 'Over 5 through 12 years — half rate'}</option>
+                  <option value="UNDER5">{bn ? '৫ বছর বা কম — করমুক্ত' : '5 years or under — exempt'}</option>
+                </select>
+                {ageBand === 'UNDER5' && <p className="travel-flow__field-hint" role="status">{bn ? 'এই যাত্রীর জন্য ভ্রমণ কর প্রযোজ্য নয়।' : 'Travel tax is not payable for this passenger.'}</p>}
+              </div>
+              <div className="travel-flow__field">
                 <label htmlFor="travel-passenger-name">{t.passenger} *</label>
                 <input id="travel-passenger-name" type="text" autoComplete="off" value={passengerName}
                   placeholder={t.passengerPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
                   onChange={e => setPassengerName(e.target.value.toUpperCase())} />
               </div>
-              <div className="travel-flow__field">
+              {!isDomestic && <div className="travel-flow__field">
                 <label htmlFor="travel-passport">{t.passport} *</label>
                 <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
                   placeholder={t.passportPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
                   onChange={e => setPassportNumber(e.target.value.toUpperCase().replace(/\s+/g, ''))} />
-              </div>
+              </div>}
               <div className="travel-flow__field">
-                <label htmlFor="travel-passenger-count">{t.count}</label>
-                <input id="travel-passenger-count" type="number" min="1" max="10" value={passengerCount}
-                  onChange={e => setPassengerCount(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))} />
-                <p className="travel-flow__field-hint">{t.countHint}</p>
-              </div>
-              <div className="travel-flow__field">
-                <label htmlFor="travel-mobile">{t.mobile}</label>
-                <input id="travel-mobile" type="text" autoComplete="off" value={phone}
-                  placeholder={t.phonePlaceholder} onChange={e => setPhone(e.target.value)} />
-              </div>
-              <div className="travel-flow__field">
-                <label htmlFor="travel-departure-port">{t.port}</label>
-                <select id="travel-departure-port" value={departurePort}
-                  onChange={e => setDeparturePort(e.target.value)}>
-                  {DEPARTURE_PORTS.map(port => <option key={port.value} value={port.value}>{bn ? port.bn : port.en}</option>)}
-                </select>
+                <label htmlFor="travel-mobile">{bn ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
+                <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11} autoComplete="off" value={phone}
+                  placeholder="01XXXXXXXXX" onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} />
               </div>
               <div className="travel-flow__field">
                 <label htmlFor="travel-departure-date">{t.date}</label>
@@ -320,12 +318,13 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
                   onChange={e => setTravelDate(e.target.value)} />
               </div>
             </div>
+            </PaymentFormSection>
           </section>}
 
           {step === 2 && <section className="travel-flow__panel" aria-labelledby="travel-review-heading">
             <header className="travel-flow__section-header">
               <h3 id="travel-review-heading">{createdReceipt ? t.complete : workflow.review}</h3>
-              <p>{createdReceipt ? t.noTravel : t.notice}</p>
+              <p>{createdReceipt ? t.noTravel : ageBand === 'UNDER5' ? (bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট বা চালান প্রয়োজন নেই।' : 'This passenger is exempt — no payment or challan is required.') : t.notice}</p>
             </header>
             {createdReceipt ? <div className="travel-flow__receipt">
               <p className="travel-flow__receipt-label" role="status">
@@ -336,9 +335,8 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
             </div> : <dl className="travel-flow__review">
               <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
               <div><dt>{t.passenger}</dt><dd>{passengerName}</dd></div>
-              <div><dt>{t.passport}</dt><dd>{passportNumber}</dd></div>
-              <div><dt>{t.count}</dt><dd>{passengerCount}</dd></div>
-              <div><dt>{t.port}</dt><dd>{DEPARTURE_PORTS.find(p => p.value === departurePort)?.[language]}</dd></div>
+              {!isDomestic && <div><dt>{t.passport}</dt><dd>{passportNumber}</dd></div>}
+              <div><dt>{bn ? 'বয়সের ধরন' : 'Age band'}</dt><dd>{ageBand === 'ADULT' ? (bn ? 'পূর্ণ হার' : 'Full rate') : ageBand === 'CHILD' ? (bn ? 'অর্ধেক হার' : 'Half rate') : (bn ? 'করমুক্ত' : 'Exempt')}</dd></div>
               <div><dt>{t.date}</dt><dd>{travelDate}</dd></div>
             </dl>}
           </section>}
@@ -357,7 +355,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         <strong className="travel-flow__total">{formatCurrency(totalAmount, language)}</strong>
         <dl className="travel-flow__summary-list">
           <div><dt>{workflow.rate}</dt><dd>{formatCurrency(unitRate, language)}</dd></div>
-          <div><dt>{workflow.people}</dt><dd>{passengerCount}</dd></div>
+          <div><dt>{bn ? 'বয়স অনুযায়ী হার' : 'Age rate'}</dt><dd>{ageBand === 'CHILD' ? '50%' : ageBand === 'UNDER5' ? (bn ? 'করমুক্ত' : 'Exempt') : '100%'}</dd></div>
           <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
           {createdReceipt && <div><dt>{t.ref}</dt><dd>{createdReceipt.tokenNumber}</dd></div>}
           <div><dt>{workflow.status}</dt><dd>{createdReceipt ? workflow.noPayment : workflow.sample}</dd></div>

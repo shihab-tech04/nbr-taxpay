@@ -496,37 +496,44 @@ export const INITIAL_GATEWAY_HEALTH: GatewayHealth[] = [
 
 export const TRAVEL_TAX_RATES = [
   {
-    route: 'Air - North America, South America, Europe, Australia, New Zealand, Japan',
-    routeBn: 'আকাশপথ - উত্তর ও দক্ষিণ আমেরিকা, ইউরোপ, অস্ট্রেলিয়া, নিউজিল্যান্ড, জাপান',
+    route: 'By air to the Americas, Europe, Africa, Australia, New Zealand, China, Japan, Hong Kong, North Korea, Vietnam, Laos, Cambodia or Taiwan',
+    routeBn: 'আকাশ পথে আমেরিকা, ইউরোপ, আফ্রিকা, অস্ট্রেলিয়া, নিউজিল্যান্ড, চীন, জাপান, হংকং, উত্তর কোরিয়া, ভিয়েতনাম, লাওস, কম্বোডিয়া বা তাইওয়ান',
     amount: 6000,
     statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
     statusNote: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED (ILLUSTRATIVE DEMO)'
   },
   {
-    route: 'Air - SAARC Member Countries (India, Nepal, Bhutan, Sri Lanka, Maldives, Pak, Afg)',
-    routeBn: 'আকাশপথ - সার্কভুক্ত দেশসমূহ (ভারত, নেপাল, ভুটান, শ্রীলঙ্কা, মালদ্বীপ ইত্যাদি)',
+    route: 'By air to a SAARC country',
+    routeBn: 'আকাশ পথে সার্কভুক্ত কোনো দেশে',
     amount: 2000,
     statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
     statusNote: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED (ILLUSTRATIVE DEMO)'
   },
   {
-    route: 'Air - Other Asian & Middle Eastern Countries (UAE, KSA, Singapore, Malaysia, etc.)',
-    routeBn: 'আকাশপথ - মধ্যপ্রাচ্য ও অন্যান্য এশীয় দেশ (সংযুক্ত আরব আমিরাত, সৌদি আরব, সিঙ্গাপুর ইত্যাদি)',
+    route: 'By air to any other country',
+    routeBn: 'আকাশ পথে অন্য কোনো দেশে',
     amount: 4000,
     statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
     statusNote: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED (ILLUSTRATIVE DEMO)'
   },
   {
-    route: 'Land - Border Checkposts (Benapole, Burimari, Akhaura, Tamabil, Banglabandha)',
-    routeBn: 'স্থলপথ - স্থলবন্দর চেকপোস্ট (বেনাপোল, বুড়িমারী, আখাউড়া, তামাবিল, বাংলাবান্ধা)',
+    route: 'By air within Bangladesh',
+    routeBn: 'আকাশ পথে দেশের অভ্যন্তরে',
+    amount: 200,
+    statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
+    statusNote: 'Simulation rate from the supplied NBR v11 HTML'
+  },
+  {
+    route: 'By land to any country',
+    routeBn: 'স্থল পথে যেকোনো দেশে',
     amount: 1000,
     statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
     statusNote: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED (ILLUSTRATIVE DEMO)'
   },
   {
-    route: 'Sea - Maritime Sea Ports (Chattogram, Mongla, Payra)',
-    routeBn: 'জলপথ - সমুদ্র বন্দর (চট্টগ্রাম, মোংলা, পায়রা)',
-    amount: 2000,
+    route: 'By water to any country',
+    routeBn: 'জল পথে যেকোনো দেশে',
+    amount: 1000,
     statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
     statusNote: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED (ILLUSTRATIVE DEMO)'
   }

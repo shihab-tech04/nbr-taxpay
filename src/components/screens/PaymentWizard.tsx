@@ -8,12 +8,13 @@ import {
   Lock
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import { MASTER_PAYMENT_HEADS, BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
-import { ASSESSMENT_YEARS } from '../../data/mockData';
+import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
+import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { ReceiptView } from '../common/ReceiptView';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
+import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
 import {useAccountIdentity} from '../../services/accountIdentity';
 
 const COPY = {
@@ -63,7 +64,7 @@ export const PaymentWizard: React.FC = () => {
       ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN')
   );
 
-  const [assessmentYear, setAssessmentYear] = useState('2025-2026');
+  const [assessmentYear, setAssessmentYear] = useState('2026-27');
   const [selectedHeadId, setSelectedHeadId] = useState<number>(1);
   const [headSearch, setHeadSearch] = useState('');
 
@@ -83,12 +84,12 @@ export const PaymentWizard: React.FC = () => {
   useEffect(() => {
     if (routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
       setCategory(routeParams.initialCategory as PaymentCategory);
-      const first = MASTER_PAYMENT_HEADS.find(h => h.category === routeParams.initialCategory);
+      const first = V11_PAYMENT_OPTIONS.find(h => h.category === routeParams.initialCategory && h.status === 'ACTIVE');
       if (first) setSelectedHeadId(first.id);
     }
   }, [routeParams]);
 
-  const availableHeads = MASTER_PAYMENT_HEADS.filter(head => {
+  const availableHeads = V11_PAYMENT_OPTIONS.filter(head => {
     const matchCat = head.category === category;
     const matchQuery = headSearch
       ? head.nameEn.toLowerCase().includes(headSearch.toLowerCase()) ||
@@ -99,7 +100,7 @@ export const PaymentWizard: React.FC = () => {
     return matchCat && matchQuery;
   });
 
-  const selectedHead = MASTER_PAYMENT_HEADS.find(h => h.id === selectedHeadId) || availableHeads[0];
+  const selectedHead = V11_PAYMENT_OPTIONS.find(h => h.id === selectedHeadId && h.category === category) || availableHeads[0];
 
   const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
 
@@ -108,7 +109,7 @@ export const PaymentWizard: React.FC = () => {
       setErrorMessage(t.selectActive);
       return;
     }
-    if (BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
+    if (selectedHead.status !== 'ACTIVE' || BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
       setErrorMessage(t.blockedError(selectedHead.id));
       return;
     }
@@ -211,7 +212,7 @@ export const PaymentWizard: React.FC = () => {
   }
 
   return (
-    <div className="taxpay-payment-wizard max-w-4xl mx-auto space-y-6 pb-4" lang={language}>
+    <div className="taxpay-payment-wizard max-w-7xl mx-auto space-y-6 pb-4" lang={language}>
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4">
           <div>
@@ -252,7 +253,9 @@ export const PaymentWizard: React.FC = () => {
 
         {/* STEP 1 */}
         {step === 1 && (
-          <div className="space-y-5">
+          <div className="payment-form-layout">
+            <div className="payment-form-layout__sections">
+            <PaymentFormSection number={1} title={bn ? 'কর পরিশোধের ধরন ও করবর্ষ' : 'Payment category & assessment year'}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <label htmlFor="wizard-assessment-year" className="block font-semibold text-slate-700 mb-1">
@@ -263,7 +266,7 @@ export const PaymentWizard: React.FC = () => {
                   onChange={(e) => setAssessmentYear(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
                 >
-                  {ASSESSMENT_YEARS.map(ay => (
+                  {['2027-28','2026-27','2025-26','2024-25'].map(ay => (
                     <option key={ay} value={ay}>{ay}</option>
                   ))}
                 </select>
@@ -278,7 +281,7 @@ export const PaymentWizard: React.FC = () => {
                   onChange={(e) => {
                     const newCat = e.target.value as PaymentCategory;
                     setCategory(newCat);
-                    const first = MASTER_PAYMENT_HEADS.find(h => h.category === newCat);
+                    const first = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
                     if (first) setSelectedHeadId(first.id);
                   }}
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
@@ -291,8 +294,10 @@ export const PaymentWizard: React.FC = () => {
                 </select>
               </div>
             </div>
+            </PaymentFormSection>
 
             {/* Master Heads List */}
+            <PaymentFormSection number={2} title={bn ? 'পরিশোধের খাত নির্বাচন' : 'Choose payment head'} description={bn ? 'প্রযোজ্য খাত খুঁজে নির্বাচন করুন' : 'Search and select the applicable payment head'}>
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <label htmlFor="wizard-head-search" className="block text-sm font-semibold text-slate-700">
@@ -309,7 +314,7 @@ export const PaymentWizard: React.FC = () => {
 
               <fieldset aria-label={t.head} aria-describedby={errorMessage ? 'wizard-error' : undefined} className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50 min-w-0">
                 {availableHeads.map(head => {
-                  const isBlocked = BLOCKED_HEAD_IDS.includes(head.id);
+                  const isBlocked = head.status !== 'ACTIVE';
                   const isSelected = selectedHead?.id === head.id;
                   return (
                     <label
@@ -340,11 +345,7 @@ export const PaymentWizard: React.FC = () => {
                         </div>
                         {!bn && <div className="text-sm text-slate-500 font-bengali">{head.nameBn}</div>}
                         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                          <span>{t.act}: <strong>{head.sectionAct2023}</strong></span>
-                          <span>{t.legacy}: {head.sectionOrdinance1984}</span>
-                          <span className="text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                            {t.unverified}
-                          </span>
+                          <span>{bn ? 'মূল নথির খাত-কোড' : 'Source head code'}: <strong>{head.economicCode}</strong></span>
                         </div>
                         {head.rateNote && (
                           <div className="text-sm text-emerald-800 font-medium">
@@ -365,6 +366,7 @@ export const PaymentWizard: React.FC = () => {
                 })}
               </fieldset>
             </div>
+            </PaymentFormSection>
 
             <div className="flex justify-end pt-3">
               <button
@@ -375,12 +377,16 @@ export const PaymentWizard: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+            </div>
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} />
           </div>
         )}
 
         {/* STEP 2 */}
         {step === 2 && (
-          <div className="space-y-5">
+          <div className="payment-form-layout">
+            <div className="payment-form-layout__sections">
+            <PaymentFormSection number={3} title={bn ? 'বাছাই করা খাত' : 'Selected payment head'}>
             <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-sm">
               <span className="text-slate-500 block">{t.selectedHead}:</span>
               <div className="font-mono-plex font-bold text-sm tabular-nums text-taxpay-dark mt-0.5">
@@ -390,7 +396,9 @@ export const PaymentWizard: React.FC = () => {
                 {t.act}: {selectedHead?.sectionAct2023} | {t.year}: {assessmentYear}
               </div>
             </div>
+            </PaymentFormSection>
 
+            <PaymentFormSection number={4} title={bn ? 'পরিশোধের পরিমাণ' : 'Tax amount & reference'}>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
               <h3 className="font-bold text-sm uppercase tracking-wider text-taxpay-dark">
                 {t.amountBreakdown}
@@ -471,6 +479,7 @@ export const PaymentWizard: React.FC = () => {
                 </span>
               </div>
             </div>
+            </PaymentFormSection>
 
             <div className="flex justify-between pt-3">
               <button
@@ -488,6 +497,8 @@ export const PaymentWizard: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+            </div>
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
           </div>
         )}
 

@@ -27,6 +27,7 @@ test('public hero opens receipt lookup while travel tax remains available below 
  await travel.getByRole('button',{name:'Continue to passenger details'}).click();
  await travel.getByLabel('Passenger name (as in passport)').fill('TEST PASSENGER');
  await travel.getByLabel('Passport number (synthetic data only)').fill('DEMO1234');
+ await travel.getByLabel('Mobile number for receipt').fill('01712345678');
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await travel.getByRole('button',{name:'Run payment simulation'}).click();
@@ -87,6 +88,7 @@ test('Help Center typography and interactions remain usable at each viewport', a
   expect(overflow).toBeLessThanOrEqual(2);
 });
 
+
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
@@ -110,7 +112,6 @@ test('User guide has real platform-specific steps and searches across all topics
   await expect(guide.getByText('মোবাইলের জন্য ধাপগুলো দেখানো হচ্ছে।')).toBeVisible();
   await expect(guide.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
-
 
 test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
   const views = [
@@ -301,6 +302,7 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await expect(modal.getByRole('alert')).toContainText('Enter the passenger name shown on the passport.');
  await modal.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC USER');
  await modal.getByLabel('Passport number (synthetic data only)').fill('FAKE0001');
+ await modal.getByLabel('Mobile number for receipt').fill('01712345678');
  await modal.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await expect(modal.getByText('Preview ready',{exact:true})).toHaveCount(0);
@@ -326,6 +328,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await expect(modal.getByLabel('পাসপোর্ট অনুযায়ী যাত্রীর নাম')).toBeVisible();
  await modal.getByLabel('পাসপোর্ট অনুযায়ী যাত্রীর নাম').fill('DEMO NAME');
  await modal.getByLabel('পাসপোর্ট নম্বর (শুধু কৃত্রিম তথ্য)').fill('FAKE001');
+ await modal.getByLabel('রসিদের জন্য মোবাইল নম্বর').fill('01712345678');
  await modal.getByRole('button',{name:'পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'তথ্য পর্যালোচনা'})).toBeVisible();
  const width=await modal.evaluate(el=>({viewport:innerWidth,paper:el.getBoundingClientRect().width,scroll:document.documentElement.scrollWidth}));
@@ -366,6 +369,7 @@ test('Travel Tax primary action lives in fixed modal footer across all steps',as
  await expect(actions.getByRole('button',{name:'Continue to review'})).toBeVisible();
  await modal.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC PASSENGER');
  await modal.getByLabel('Passport number (synthetic data only)').fill('DEMOFAKE01');
+ await modal.getByLabel('Mobile number for receipt').fill('01712345678');
  await actions.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await expect(actions.getByRole('button',{name:'Run payment simulation'})).toBeVisible();
@@ -388,15 +392,15 @@ test('Travel Tax route search filters English and Bangla and preserves selected 
  const routes=modal.locator('#travel-tax-route-results');
  const summary=modal.locator('.travel-flow__summary');
  await expect(search).toBeVisible();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(5);
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
  await search.fill('saARc');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('Air - SAARC Member Countries',{exact:false})).toBeVisible();
+ await expect(routes.getByText('By air to a SAARC country',{exact:false})).toBeVisible();
  await routes.locator('input[type="radio"]').check();
  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
  await search.fill('জাপান');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('Air - North America',{exact:false})).toBeVisible();
+ await expect(routes.getByText('By air to the Americas',{exact:false})).toBeVisible();
  // Filtering does not silently replace the selected rate.
  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
  await search.fill('somewhere-invalid-999');
@@ -405,14 +409,14 @@ test('Travel Tax route search filters English and Bangla and preserves selected 
  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
  await routes.getByRole('button',{name:'Show all routes'}).click();
  await expect(search).toHaveValue('');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(5);
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
  await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
  await search.fill('land');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(2); // New Zealand and Land checkpoints both match.
- await search.fill('Border Checkposts');
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(2); // New Zealand and land both match.
+ await search.fill('By land');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
  await modal.getByRole('button',{name:'Clear route search'}).click();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(5);
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
  await expect(search).toHaveValue('');
  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
  await expect(modal.getByRole('heading',{name:'Passenger information'})).toBeVisible();
@@ -426,9 +430,9 @@ test('Travel Tax Bangla route search is accessible and fits mobile viewport',asy
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
  const search=modal.getByRole('searchbox',{name:'গন্তব্য বা যাতায়াতের ধরন খুঁজুন'});
  const routes=modal.locator('#travel-tax-route-results');
- await search.fill('বেনাপোল');
+ await search.fill('স্থল');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('স্থলপথ',{exact:false})).toBeVisible();
+ await expect(routes.getByText('স্থল পথে',{exact:false})).toBeVisible();
  const sizes=await search.evaluate(el=>{
   const box=el.getBoundingClientRect();
   return {left:box.left,right:box.right,width:window.innerWidth,scroll:document.documentElement.scrollWidth};
@@ -437,5 +441,5 @@ test('Travel Tax Bangla route search is accessible and fits mobile viewport',asy
  expect(sizes.right).toBeLessThanOrEqual(sizes.width+1);
  expect(sizes.scroll).toBeLessThanOrEqual(sizes.width+2);
  await modal.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(5);
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
 });

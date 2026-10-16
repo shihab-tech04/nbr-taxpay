@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {formatCurrency} from '../../services/numberFormat';
+import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {
   simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
@@ -12,7 +13,7 @@ type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assess
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
 export const DemoPaymentActivity:React.FC=()=>{
-  const {demoUser,language,navigate}=useTaxState();
+  const {demoUser,language,navigate,routeParams}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
@@ -35,13 +36,23 @@ export const DemoPaymentActivity:React.FC=()=>{
   const chooseCategory=(category:SimulationCategory)=>{setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
 
   useEffect(()=>{
+    const incoming=routeParams?.initialCategory;
+    if(typeof incoming==='string'&&(simulationCategories as readonly string[]).includes(incoming)){
+      const category=incoming as SimulationCategory;
+      setParentCategory(category);
+      setLines(old=>old.map(line=>({...line,category})));
+      setPaymentStage(2);
+    }
+  },[routeParams?.initialCategory]);
+
+  useEffect(()=>{
     if(!authenticatedUser){setBoundId(null);setBindingError('');return;}
     let active=true;setBoundId(null);setBindingError('');
     getBoundSimulationUser().then(profile=>{if(active)setBoundId(profile);})
       .catch(e=>{if(active)setBindingError(e instanceof Error?e.message:'Profile authorization unavailable');});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
-  useEffect(()=>{if(!id)return;setLines([freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');setPaymentStage(0);},[id]);
+  useEffect(()=>{if(!id)return;const incoming=routeParams?.initialCategory;const initialCategory=typeof incoming==='string'&&(simulationCategories as readonly string[]).includes(incoming)?incoming as SimulationCategory:'TAX_WITH_RETURN';setLines([{...freshLine(id),category:initialCategory}]);setNonce(crypto.randomUUID());setSubmitMessage('');setPaymentStage(incoming?2:0);},[id,routeParams?.initialCategory]);
   useEffect(()=>{
     if(!id||!privateMode)return;
     let active=true;
@@ -99,7 +110,7 @@ export const DemoPaymentActivity:React.FC=()=>{
     <p className="text-sm text-taxpay-muted">An authorized Approver must assign one fictional user1–user10 profile to this authenticated account. No other profile can be selected by URL.</p>
   </main>;
   if(!id)return null;
-  return <main className="mx-auto max-w-5xl space-y-5 pb-12" lang={language}>
+  return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
       <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস')}</p>
       <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
@@ -144,6 +155,9 @@ export const DemoPaymentActivity:React.FC=()=>{
       <p className="mt-1 text-sm text-taxpay-muted">{txt('Combine your own and other beneficiaries, categories and years in one atomic transaction.','একটি লেনদেনে নিজের ও অন্যের, একাধিক খাত ও একাধিক করবর্ষের বরাদ্দ রাখুন।')}</p>
       <form onSubmit={e=>void submit(e)} className="mt-4 space-y-4">
         <button type="button" onClick={()=>setPaymentStage(1)} className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold">{txt('← Category information','← শ্রেণির তথ্য')}</button>
+        <div className="payment-form-layout">
+          <div className="payment-form-layout__sections">
+          <PaymentFormSection number={1} title={txt('Taxpayer & allocation details','করদাতা ও বরাদ্দের তথ্য')} description={txt('Beneficiary, payment head and assessment year','সুবিধাভোগী, করের খাত ও করবর্ষ')}>
         {lines.map((line,index)=><fieldset key={index} className="rounded-lg border border-taxpay-border p-3 sm:p-4">
           <legend className="px-2 text-sm font-semibold text-taxpay-text">{txt('Allocation','বরাদ্দ')} {index+1}</legend>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -168,9 +182,15 @@ export const DemoPaymentActivity:React.FC=()=>{
           </div>
           {lines.length>1&&<button type="button" onClick={()=>removeLine(index)} className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold">{txt('Remove allocation','বরাদ্দ বাদ দিন')}</button>}
         </fieldset>)}
+          </PaymentFormSection>
+          <PaymentFormSection number={2} title={txt('Review the calculated amount','হিসাবকৃত পরিমাণ যাচাই করুন')} description={txt('Additional allocations can be added to this simulation','এই সিমুলেশনে অতিরিক্ত বরাদ্দ যোগ করা যায়')}>
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" disabled={lines.length>=20||saving} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
           <button type="submit" disabled={saving} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white disabled:opacity-50">{saving?txt('Saving…','সংরক্ষণ হচ্ছে…'):txt('Simulate and save payment','পেমেন্ট সিমুলেট করে সংরক্ষণ করুন')}</button>
+        </div>
+          </PaymentFormSection>
+          </div>
+          <PaymentLiveSummary language={language} category={simulationCategoryLabels[parentCategory][bn?'bn':'en']} year={lines.length===1?lines[0].assessmentYear:undefined} amount={lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0)} breakdown={lines.map((line,index)=>({label:`${txt('Allocation','বরাদ্দ')} ${index+1} · ${line.beneficiary}`,value:Number(line.amount)||0}))} note={txt('Simulation only. The transaction is not paid to the Treasury.','শুধু সিমুলেশন। সরকারি কোষাগারে অর্থ জমা হয় না।')} />
         </div>
         {submitMessage&&<p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-text">{submitMessage}</p>}
       </form></>}

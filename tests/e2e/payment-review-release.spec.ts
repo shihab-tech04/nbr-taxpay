@@ -133,7 +133,8 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(pageWidth(page)).resolves.toBeLessThanOrEqual(info.project.name === 'mobile-320' ? 322 : info.project.name === 'mobile-375' ? 377 : 1282);
 
   await page.getByLabel('Taxpayer Identification Number (e-TIN)').fill('123456789012');
-  await page.getByLabel('Payer Legal Name').fill('Sample Taxpayer');
+  await page.getByLabel('Name (optional)').fill('Sample Taxpayer');
+  await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.getByRole('radiogroup', { name: 'Master payment head' })).toBeVisible();
   await expect(page.getByRole('radio').first()).toBeVisible();
@@ -240,14 +241,15 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
   await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
-  await expect(page.getByRole('radio', { name: /Air - North America/ }).first()).toBeVisible();
+  await expect(page.getByRole('radio', { name: /By air to the Americas/ }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
   await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
   await page.getByLabel('Passport number (synthetic data only)').fill('SAMPLE123');
+  await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
   await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toBeVisible();
-  await expect(page.getByText('অব্যাহতি হিসাব করা হয় না।')).toBeVisible();
+  await expect(page.getByLabel('যাত্রীর বয়স')).toBeVisible();
   await page.getByRole('button', { name: 'পর্যালোচনায় যান' }).click();
   await expect(page.getByRole('heading', { name: 'তথ্য পর্যালোচনা' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' })).toBeVisible();
