@@ -66,6 +66,24 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
 });
 
+test('Sobaike-style desktop rail remains aligned at three breakpoints without a duplicate Pay action',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One responsive desktop rail matrix');
+  await page.setViewportSize({width:1600,height:900});
+  await openSampleTaxpayer(page);
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  for(const [width,expectedRailWidth] of [[1440,240],[1600,250],[2048,260]]){
+    await page.setViewportSize({width,height:900});
+    await expect(rail).toHaveCSS('width',`${expectedRailWidth}px`);
+    await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
+    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
+    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
+    await expect(page.locator('.citizen-pay')).toBeHidden();
+    const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
+    expect(overflow,`sidebar overflow at ${width}px`).toBeLessThanOrEqual(1);
+    await page.screenshot({path:`test-results/screenshots/taxpayer-sobaike-rail-${width}.png`,fullPage:false});
+  }
+});
+
 test('mobile reference is full-width, bilingual and avoids scroll/keyboard overlap',async({page},info)=>{
   test.skip(info.project.name!=='mobile-320','Use one Playwright worker for the full responsive matrix');
   for (const width of [320,360,375,390,768,1280]) {
