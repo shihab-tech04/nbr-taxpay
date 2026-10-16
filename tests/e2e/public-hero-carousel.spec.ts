@@ -9,6 +9,8 @@ test('hero provides five bilingual service slides with the original opening bann
   await expect(slides).toHaveCount(5);
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
+  await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p'))
+    .toHaveText('Choose the right tax service, check payment status and find receipts in one place.');
   await expect(page.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(3);
@@ -29,6 +31,8 @@ test('hero provides five bilingual service slides with the original opening bann
       const travelImage = carousel.locator('[data-banner-service="travel"] .public-hero-carousel__service-image');
       await expect(travelImage).toBeVisible();
       await expect.poll(() => travelImage.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+      await expect(carousel.locator('[data-banner-service="travel"] .citizen-public-hero__copy > p'))
+        .toContainText('move through travel tax with confidence');
     } else {
       await expect(carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__image-placeholder`)).toBeVisible();
     }
@@ -40,7 +44,7 @@ test('hero provides five bilingual service slides with the original opening bann
   await expect(page.getByRole('dialog', { name: 'Pay Tax' })).toBeVisible();
 });
 
-test('desktop banner uses equal columns, flat elevation and distinct service colors and CTAs', async ({ page }, testInfo) => {
+test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Desktop columns are evaluated once');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
@@ -49,11 +53,19 @@ test('desktop banner uses equal columns, flat elevation and distinct service col
   const first = carousel.locator('[data-banner-service="intro"]');
   const dimensions = await first.evaluate(slide => {
     const columns = getComputedStyle(slide).gridTemplateColumns.split(' ').map(Number.parseFloat);
-    return { columns, shadow: getComputedStyle(slide).boxShadow };
+    const media = slide.querySelector<HTMLElement>('.public-hero-carousel__media--illustrated');
+    return {
+      columns,
+      shadow: getComputedStyle(slide).boxShadow,
+      height: slide.getBoundingClientRect().height,
+      fadeDirection: media && getComputedStyle(media).getPropertyValue('--banner-fade-direction').trim(),
+    };
   });
   expect(dimensions.columns).toHaveLength(2);
-  expect(Math.abs(dimensions.columns[0] - dimensions.columns[1])).toBeLessThan(1);
+  expect(dimensions.columns[1] / dimensions.columns[0]).toBeCloseTo(65 / 55, 1);
+  expect(dimensions.height).toBe(270);
   expect(dimensions.shadow).toBe('none');
+  expect(dimensions.fadeDirection).toBe('to right');
 
   const backgrounds = await carousel.locator('[data-banner-service]').evaluateAll(slides =>
     slides.map(slide => getComputedStyle(slide).backgroundColor),
@@ -80,6 +92,20 @@ test('desktop banner uses equal columns, flat elevation and distinct service col
   const travelImageFit = await carousel.locator('[data-banner-service="travel"] .public-hero-carousel__service-image')
     .evaluate(image => getComputedStyle(image).objectFit);
   expect(travelImageFit).toBe('cover');
+});
+
+test('mobile illustrated banners blend downward into the image', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop-1280', 'Mobile fade is evaluated in each mobile project');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const intro = carousel.locator('[data-banner-service="intro"]');
+  const fadeDirection = await intro.locator('.public-hero-carousel__media--illustrated')
+    .evaluate(media => getComputedStyle(media).getPropertyValue('--banner-fade-direction').trim());
+  expect(fadeDirection).toBe('to bottom');
+  const columns = await intro.evaluate(slide => getComputedStyle(slide).gridTemplateColumns.split(' '));
+  expect(columns).toHaveLength(1);
+  await expect(intro.locator('.public-information-hero__image')).toBeVisible();
 });
 
 test('service labels remain specific and concise in Bangla', async ({ page }) => {
