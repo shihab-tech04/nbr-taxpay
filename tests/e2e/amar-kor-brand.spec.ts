@@ -5,13 +5,13 @@ test('approved Amar Kor branding stays consistent across public and taxpayer she
   await expect(page).toHaveTitle(/আমার কর \| Amar Kor/);
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Amar Kor');
   await expect.poll(() => page.locator('.public-home-wordmark').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-  await expect(page.locator('.public-home-brand__copy small')).toHaveText('Your tax, your records');
+  await expect(page.locator('.public-home-brand__copy small')).toHaveCount(0);
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'Amar Kor');
   await expect.poll(() => page.locator('.public-footer__wordmark').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'আমার কর');
-  await expect(page.locator('.public-home-brand__copy small')).toHaveText('আপনার কর, আপনার হিসাব');
+  await expect(page.locator('.public-home-brand__copy small')).toHaveCount(0);
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'আমার কর');
 
   await page.goto('/?action=office_login&lang=bn');
@@ -34,4 +34,17 @@ test('flat wordmark footer stays readable without horizontal overflow', async ({
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   }
+});
+
+test('public footer is a single compact row on desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?action=landing&lang=en');
+  const footer = page.getByRole('contentinfo', { name: 'Amar Kor footer' });
+  const positions = await footer.locator('.public-footer__identity, .public-footer__navs, .public-footer__bottom').evaluateAll(
+    elements => elements.map(element => element.getBoundingClientRect().top)
+  );
+  expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(20);
+  const height = await footer.evaluate(element => element.getBoundingClientRect().height);
+  expect(height).toBeLessThan(95);
+  await expect(footer.getByRole('navigation', { name: 'Footer navigation' }).getByRole('link', { name: 'NBR publications' })).toBeVisible();
 });

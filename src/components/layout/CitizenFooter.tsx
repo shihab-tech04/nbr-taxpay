@@ -19,19 +19,15 @@ export function CitizenFooter(){
         <img className="public-footer__wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)}/>
         <p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p>
       </div>
-      <div className="public-footer__navs">
-        <section><h2>{bn?'দ্রুত লিংক':'Explore'}</h2>
-          <button onClick={()=>navigate('landing')} type="button">{bn?'হোম':'Home'}</button>
-          <button onClick={()=>navigate('user_guide')} type="button">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</button>
-          <button onClick={()=>navigate('incident')} type="button">{bn?'অভিযোগ':'Report'}</button>
-        </section>
-        <section><h2>{bn?'তথ্যসূত্র':'Resources'}</h2>
-          <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
-          <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>
-        </section>
-      </div>
+      <nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>
+        <button onClick={()=>navigate('landing')} type="button">{bn?'হোম':'Home'}</button>
+        <button onClick={()=>navigate('user_guide')} type="button">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</button>
+        <button onClick={()=>navigate('incident')} type="button">{bn?'অভিযোগ':'Report'}</button>
+        <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
+        <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>
+      </nav>
       <div className="public-footer__bottom">
-        <p>{bn?'© ২০২৬ আমার কর · কর পরিশোধের নির্দেশনা ও অ্যাকাউন্ট সেবা':'© 2026 Amar Kor · Payment guidance and account services'}</p>
+        <p>{bn?'© ২০২৬ আমার কর':'© 2026 Amar Kor'}</p>
       </div>
     </div>
   </footer>;
