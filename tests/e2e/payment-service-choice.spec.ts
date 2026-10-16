@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('Pay Tax opens the eight HTML-defined services and carries the chosen category to the form', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -16,6 +17,7 @@ test('Pay Tax opens the eight HTML-defined services and carries the chosen categ
 });
 
 test('Source tax and travel tax lead to their separate original flows', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   let chooser = page.getByRole('dialog', { name: 'Pay Tax' });
