@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ImageIcon, Search, WalletCards } from 'lucide-react';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
+import travelTaxIllustration from '../../assets/taxpay-hero-travel.webp';
 
 const AUTOPLAY_INTERVAL_MS = 4_500;
 const SWIPE_THRESHOLD_PX = 45;
@@ -200,6 +201,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 <div className="public-information-hero__media" aria-hidden="true">
                   {index === 0 ? (
                     <img className="public-information-hero__image" src={heroPaymentIllustration} alt="" decoding="async" />
+                  ) : slide.id === 'travel' ? (
+                    <img className="public-information-hero__image public-hero-carousel__service-image" src={travelTaxIllustration} alt="" decoding="async" />
                   ) : (
                     <div className="public-hero-carousel__image-placeholder"><ImageIcon size={54} strokeWidth={1.25} /></div>
                   )}

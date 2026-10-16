@@ -9,7 +9,7 @@ const expectResponsiveReceipt = async (page: import('@playwright/test').Page, pr
     ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
     : language === 'bn' ? 'আমার কর — রসিদের বিবরণ' : 'Amar Kor — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
-  if (projectName === 'desktop-1280') {
+  if (projectName === 'desktop-1280' && !embedded) {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
     await expect(page.getByTestId('receipt-breakdown-mobile')).toBeHidden();
   } else {
