@@ -57,7 +57,7 @@ test('anonymous browser key cannot select or insert personal drafts', async ({ r
 
 test('secure workspace shows actual sign-in, never a fake signed-in state', async ({ page }) => {
   await page.goto('/?action=secure_workspace');
-  await expect(page.getByRole('heading', { name:'Secure TaxPay workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name:'Secure Amar Kor workspace' })).toBeVisible();
   await expect(page.getByRole('heading', { name:'Sign in with email' })).toBeVisible();
   await expect(page.getByRole('heading',{name:'Dedicated database is not configured yet'})).toHaveCount(0);
   await expect(page.getByRole('textbox',{name:'Email address'})).toBeVisible();
@@ -91,7 +91,7 @@ test('secure workspace fails closed when email sign-in network request fails', a
 
 test('secure workspace starts without a presumed legal AY and remains usable on narrow screens', async ({ page }) => {
   await page.goto('/?action=secure_workspace');
-  await expect(page.getByRole('heading', { name: 'Secure TaxPay workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Secure Amar Kor workspace' })).toBeVisible();
   const email = page.getByRole('textbox', { name: 'Email address' });
   const bounds = await email.boundingBox();
   expect(bounds).not.toBeNull();
@@ -100,22 +100,37 @@ test('secure workspace starts without a presumed legal AY and remains usable on 
   expect(main).not.toBeNull();
   expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
   await switchToBangla(page);
-  await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'নিরাপদ আমার কর ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();
 });
 
-test('income tax guidance refuses unverified calculations and official-payment promises', async ({ page }) => {
+test('legacy guidance route resolves to the maintained guide without an unverified calculator', async ({ page }) => {
   await page.goto('/?action=guidance');
-  await expect(page.getByRole('heading', { name: 'Individual income tax estimator — unavailable' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Proceed to Pay Estimated Tax' })).toHaveCount(0);
-  await expect(page.getByText('Tax calculations are unavailable until the applicable tax rules are verified.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'NBR publications' })).toHaveAttribute('href', 'https://nbr.gov.bd/');
   await switchToBangla(page);
-  await expect(page.getByRole('heading', { name: 'ব্যক্তিগত আয়কর হিসাব — বর্তমানে বন্ধ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
-test('travel-tax page explicitly denies real official receipts and clearance', async ({ page }) => {
+test('travel-tax sample journey returns only an unissued preview', async ({ page }) => {
   await page.goto('/?action=travel');
-  await expect(page.locator('.travel-flow__caution')).toContainText('Rates and exemptions are not verified. This is a sample estimate, not a government payment.');
+  await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await page.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC PASSENGER');
+  await page.getByLabel('Passport reference').fill('SYNTHETIC-0001');
+  await page.getByLabel('Mobile number for receipt').fill('01712345678');
+  await page.getByRole('button', { name: 'Continue to review' }).click();
+  await page.getByRole('button', { name: 'Continue payment' }).click();
+  await expect(page.getByRole('heading', { name: 'Travel tax details ready' })).toBeVisible();
+  await expect(page.getByText('Not issued by NBR')).toBeVisible();
+  await expect(page.getByText('No verified Treasury settlement or official Form TR-6 is issued.')).toBeVisible();
+  await expect(page.getByText(/^PREVIEW-\d{4}-TRV-\d+$/)).toBeVisible();
+  await expect(page.getByText('SIMULATION-NOT-SENT')).toHaveCount(0);
+  await expect(page.getByText('Not sent')).toBeVisible();
+  await expect(page.getByText('No scroll reference')).toBeVisible();
+  await expect(page.getByText('NOT ISSUED', { exact: true }).first()).toBeVisible();
 });
 
 test('anonymous users cannot read or write source change proposals', async ({ request }, info) => {
