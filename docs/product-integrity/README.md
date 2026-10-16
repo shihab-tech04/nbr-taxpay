@@ -20,4 +20,8 @@ The checked-in contract deliberately records unresolved issues as `NOT_VERIFIED`
 
 Repository owner must protect `main`, require this status check and separately review any contract, golden screenshot or business-rule modification. Without branch protection the gate can be bypassed by someone with sufficient permissions.
 
+## Current-commit hosted verification
+
+Before merging or publishing, verify that the exact PR head SHA has completed the required GitHub Actions browser, TypeScript, domain and integrity checks. A successful run for an earlier commit, or local-only tests when hosted browser evidence is unavailable, is not sufficient. If an API-originated ref update has produced no Actions run, the release remains blocked until the actual current commit is tested; never mark a missing check as passing.
+
 **Anti-fabrication check:** HRIS release requires 1,047 distinct accepted `stories[]` entries with nonempty `id`, `sourceLocator`, `acceptanceCriteria`, `acceptanceEvidence[]` and `status=PASS`, not merely counts set to 1,047. A `VERIFIED` evidence entry also requires a named independent `reviewer`, evidence locator and `verifiedSourceSha`. These validations do not independently establish truth; reviewer approval and referenced file integrity remain mandatory.
