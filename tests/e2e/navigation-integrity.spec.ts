@@ -179,7 +179,7 @@ test('Officer receipt inspection stays in Officer layout and returns to its exac
   await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
   await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'No Challan Selected'})).toHaveCount(0);
-  await page.getByRole('button',{name:'Back to Payment Search'}).click();
+  await page.getByRole('button',{name:'Back to records'}).click();
   await expect(page).toHaveURL(/action=payment_search/);
 
   await page.goto('/?action=taxpayer_360');
