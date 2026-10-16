@@ -37,6 +37,7 @@ test('Bangla text uses Noto Sans Bengali while keeping the same four tax-service
 });
 
 test('Sobaike-level flat elevation is consistent across the public hero, section cards and mobile layout', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
 
   const checkElevation = async () => page.evaluate(() => {

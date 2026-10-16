@@ -1,0 +1,155 @@
+/* Sobaike-inspired hero slider: flat surfaces, 50:50 desktop columns, and
+ * service-specific tints. The global TaxPay action color stays #2C5EAD. */
+.public-hero-carousel-shell {
+  position: relative;
+  min-width: 0;
+}
+
+.public-hero-carousel {
+  overflow: hidden;
+  border: 1px solid var(--citizen-border);
+  border-radius: 1.2rem;
+  background: var(--citizen-primary-light);
+  box-shadow: none;
+  touch-action: pan-y;
+}
+
+.public-hero-carousel__track {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  transition: transform 500ms cubic-bezier(0, 0, .2, 1);
+}
+
+.public-hero-carousel[data-active-slide="1"] .public-hero-carousel__track { transform: translateX(-100%); }
+.public-hero-carousel[data-active-slide="2"] .public-hero-carousel__track { transform: translateX(-200%); }
+.public-hero-carousel[data-active-slide="3"] .public-hero-carousel__track { transform: translateX(-300%); }
+.public-hero-carousel[data-active-slide="4"] .public-hero-carousel__track { transform: translateX(-400%); }
+
+.public-hero-carousel__slide.public-information-hero {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  min-height: 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.public-hero-carousel__slide[data-banner-service="return"] { background: var(--service-return-bg); }
+.public-hero-carousel__slide[data-banner-service="advance"] { background: var(--service-advance-bg); }
+.public-hero-carousel__slide[data-banner-service="withholding"] { background: var(--service-withholding-bg); }
+.public-hero-carousel__slide[data-banner-service="travel"] { background: var(--service-other-bg); }
+
+.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+  max-width: 24ch;
+  margin: 0;
+  color: var(--citizen-text);
+  font-size: clamp(1.8rem, 2.5vw, 2rem);
+  font-weight: 750;
+  line-height: 1.22;
+  letter-spacing: -.025em;
+}
+
+.public-hero-carousel__slide .public-information-hero__media {
+  align-items: center;
+}
+
+.public-hero-carousel__slide[data-banner-service="intro"] .public-information-hero__media {
+  align-items: flex-end;
+}
+
+.public-hero-carousel__image-placeholder {
+  display: grid;
+  place-items: center;
+  width: min(80%, 410px);
+  height: 250px;
+  border: 1px dashed var(--citizen-border);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 48%);
+  color: var(--citizen-muted);
+}
+
+.public-hero-carousel__slide[data-banner-service="return"] .public-hero-carousel__image-placeholder {
+  border-color: var(--service-return-border);
+  color: var(--service-return-primary);
+}
+
+.public-hero-carousel__slide[data-banner-service="advance"] .public-hero-carousel__image-placeholder {
+  border-color: var(--service-advance-border);
+  color: var(--service-advance-primary);
+}
+
+.public-hero-carousel__slide[data-banner-service="withholding"] .public-hero-carousel__image-placeholder {
+  border-color: var(--service-withholding-border);
+  color: var(--service-withholding-primary);
+}
+
+.public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__image-placeholder {
+  border-color: var(--service-other-border);
+  color: var(--service-other-primary);
+}
+
+.public-hero-carousel__arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 1px solid var(--citizen-border);
+  border-radius: 50%;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  opacity: 0;
+  box-shadow: var(--taxpay-shadow-control);
+  transition: opacity 200ms ease;
+}
+
+.public-hero-carousel__arrow--previous { left: -56px; }
+.public-hero-carousel__arrow--next { right: -56px; }
+.public-hero-carousel__arrow:hover { background: var(--citizen-primary-light); }
+.public-hero-carousel-shell:hover .public-hero-carousel__arrow,
+.public-hero-carousel__arrow:focus-visible { opacity: 1; }
+
+.public-hero-carousel:focus-visible,
+.public-hero-carousel__arrow:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 3px;
+}
+
+@media (min-width: 1440px) and (hover: hover) and (pointer: fine) {
+  .public-hero-carousel__arrow { display: flex; }
+}
+
+@media (max-width: 900px) {
+  .public-hero-carousel__slide.public-information-hero { grid-template-columns: minmax(0, 1fr); }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    padding: 1.5rem 1.4rem .75rem;
+    text-align: center;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+    max-width: none;
+    font-size: 1.75rem;
+  }
+  .public-hero-carousel__slide .public-information-hero__media { height: 220px; }
+  .public-hero-carousel__image-placeholder { height: 190px; width: min(78%, 330px); }
+}
+
+@media (max-width: 600px) {
+  .public-hero-carousel { border-radius: 1rem; }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy { padding: 1.3rem 1rem .55rem; }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.75rem; }
+  .public-hero-carousel__slide .public-information-hero__media { height: 190px; }
+  .public-hero-carousel__image-placeholder { height: 155px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-hero-carousel__track { transition: none; }
+  .public-hero-carousel__arrow { transition: none; }
+}

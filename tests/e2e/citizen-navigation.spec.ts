@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test('public hero opens service choice before the guest payment form while the receipt action stays available',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
  await expect(page.getByRole('button',{name:'Check payment & receipt'})).toBeVisible();
  await expect(page.locator('.public-information-hero__image')).toBeVisible();
@@ -11,10 +12,11 @@ test('public hero opens service choice before the guest payment form while the r
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
  await page.getByRole('button',{name:'Pay Tax'}).click();
  const services=page.getByRole('dialog',{name:'Pay Tax'});
+ await expect(services).toBeVisible();
  await expect(services.locator('.tax-service-choice__card')).toHaveCount(8);
  await services.getByRole('button',{name:/Tax with Return/}).click();
  await services.getByRole('button',{name:'Continue'}).click();
- await expect(page).toHaveURL(/action=guest/);
+ await expect(page).toHaveURL(/action=guest.*initialCategory=TAX_WITH_RETURN/);
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
 
@@ -42,6 +44,7 @@ test('public menu contains informational navigation with no sample profile selec
 
 test('public information header and sections fit all requested widths',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','One runner covers the seven-width matrix');
+ await page.emulateMedia({reducedMotion:'reduce'});
  for(const width of [320,360,375,390,768,1024,1440]){
   await page.setViewportSize({width,height:812});
   await page.goto('/?action=landing');

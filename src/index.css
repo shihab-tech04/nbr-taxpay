@@ -6,6 +6,7 @@
 @import "./styles/taxpay-taxpayer-reference.css";
 @import "./styles/taxpay-design-transfer.css";
 @import "./styles/taxpay-service-choice.css";
+@import "./styles/taxpay-hero-carousel.css";
 
 @theme {
   /* Locked Amar Kor primary: never replace this with a service/status color. */
