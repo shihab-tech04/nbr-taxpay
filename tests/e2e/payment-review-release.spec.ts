@@ -4,8 +4,8 @@ import AxeBuilder from '@axe-core/playwright';
 const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
-const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string) => {
-  await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeInViewport();
+const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn') => {
+  await expect(page.getByRole('heading', { name: language === 'bn' ? 'আমার কর — রসিদের বিবরণ' : 'Amar Kor — Receipt details' })).toBeInViewport();
   if (projectName === 'desktop-1280') {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
     await expect(page.getByTestId('receipt-breakdown-mobile')).toBeHidden();
@@ -187,40 +187,31 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
-test('authenticated taxpayer wizard preserves amounts while localizing the full simulation journey', async ({ page }, info) => {
+test('taxpayer Pay Tax modal preserves amounts through review and simulated receipt', async ({ page }, info) => {
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await services.getByRole('button', { name: /Tax with Return/ }).click();
   await services.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByRole('heading', { name: 'Income tax payment' })).toBeVisible();
-  await expect(page.getByLabel('Assessment year')).toBeVisible();
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
+  await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Continue to amounts' }).click();
-
-  await expect(page.getByLabel('Tax amount (৳)')).toHaveValue('25000');
-  await page.getByLabel('Tax amount (৳)').fill('0');
-  await page.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(page.getByRole('alert')).toContainText('greater than zero');
-  await page.getByLabel('Tax amount (৳)').fill('25000');
-  await page.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(page.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
-
-  if (info.project.name.startsWith('mobile')) {
-    await page.getByRole('button', { name: 'Open menu' }).click();
-    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
-    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
-  } else await page.getByRole('button', { name: 'বাংলা' }).first().click();
-  await expect(page.getByRole('heading', { name: 'পেমেন্টের তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
-  await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
-  await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
-  await expectResponsiveReceipt(page, info.project.name);
+  await services.locator('#guest-tin').fill('123456789012');
+  await services.locator('#guest-phone').fill('01712345678');
+  await services.locator('#guest-tax-amount').fill('0');
+  await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
+  await expect(services.getByRole('alert')).toContainText('greater than zero');
+  await services.locator('#guest-tax-amount').fill('25000');
+  await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
+  await expect(services.getByText('Step 3 of 4')).toBeVisible();
+  await expect(services.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
+  await services.getByRole('button', { name: /Run payment simulation/ }).click();
+  await expect(services.getByText('Payment preview ready.')).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await expectResponsiveReceipt(page, info.project.name, 'en');
 
   if (info.project.name === 'mobile-320') {
     expect(await pageWidth(page)).toBeLessThanOrEqual(322);
@@ -229,12 +220,7 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   if (info.project.name === 'desktop-1280') {
     await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/taxpayer-wizard-bn-desktop-1280.png' });
   }
-  if (info.project.name.startsWith('mobile')) {
-    await page.getByRole('button', { name: 'মেনু খুলুন' }).click();
-    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'English' }).click();
-    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Close' }).click();
-  } else await page.getByRole('button', { name: 'EN' }).first().click();
-  await expect(page.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
 });
 
 test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {

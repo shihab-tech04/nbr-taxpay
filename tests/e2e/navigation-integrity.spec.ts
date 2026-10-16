@@ -53,8 +53,9 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(services).toBeVisible();
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
-  await expect(page).toHaveURL(/action=guest.*initialCategory=TAX_WITH_RETURN/);
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay travel tax'}).click();
   await expect(page.getByRole('dialog',{name:/Travel tax/})).toBeVisible();
@@ -71,7 +72,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toHaveCount(0);
 });
 
-test('guest menus and bell route to their named services; contextual payment choices survive reload', async ({page}) => {
+test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=verify');
   // The notifications bell is a mobile-only control; desktop visitors can open
   // the same safe account-notifications destination through its deep link.
@@ -86,11 +87,12 @@ test('guest menus and bell route to their named services; contextual payment cho
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Advance Tax/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
-  await expect(page).toHaveURL(/action=guest&initialCategory=ADVANCE_TAX/);
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+  await expect(page).toHaveURL(/action=account_notifications/);
+  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(services.getByText('Advance Tax',{exact:true}).last()).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
-  await expect(page.getByText('Selected purpose: Advance Tax')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
 
 test('taxpayer desktop sidebar, account sub-menu and payment guide each open the labeled destination',async({page},info)=>{
@@ -129,7 +131,7 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
 });
 
-test('desktop sidebar Pay Tax action opens service choice then the payment wizard',async({page},info)=>{
+test('desktop sidebar Pay Tax action opens service choice then the embedded payment form',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Wide desktop payment-entry check');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
@@ -139,8 +141,9 @@ test('desktop sidebar Pay Tax action opens service choice then the payment wizar
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
-  await expect(page).toHaveURL(/action=wizard/);
-  await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
+  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
   await expect(rail).toBeVisible();
   await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -173,8 +176,8 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
-  await expect(page).toHaveURL(/action=wizard/);
-  await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(services.locator('.payment-form-section')).toHaveCount(4);
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await open();

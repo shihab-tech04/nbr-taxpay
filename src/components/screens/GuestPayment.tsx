@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   CreditCard, 
   ArrowRight, 
@@ -17,6 +18,7 @@ import { formatCurrency } from '../../services/numberFormat';
 import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
+import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 
 const GUEST_COPY = {
   en: {
@@ -112,10 +114,15 @@ const ERROR_ID = 'guest-payment-error';
 
 interface GuestPaymentProps {
   isWithholdingMode?: boolean;
+  embedded?: boolean;
+  initialCategory?: PaymentCategory;
+  onBackToService?: () => void;
+  onStageChange?: (stage: 2 | 3 | 4) => void;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, initialCategory, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
+  const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
   const copy = GUEST_COPY[language];
 
@@ -137,11 +144,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Category and Head selection
   const [category, setCategory] = useState<PaymentCategory>(
     isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' :
-      (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
-        ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN')
+      (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
+        ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
   const [selectedHeadId, setSelectedHeadId] = useState<number>(
-    V11_PAYMENT_OPTIONS.find(h => h.category === (isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : routeParams?.initialCategory) && h.status === 'ACTIVE')?.id || 1
+    V11_PAYMENT_OPTIONS.find(h => h.category === (isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : initialCategory || routeParams?.initialCategory) && h.status === 'ACTIVE')?.id || 1
   );
   const [headSearch, setHeadSearch] = useState('');
 
@@ -174,6 +181,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   useEffect(() => {
+    if (embedded) onStageChange?.(step === 4 ? 4 : step === 3 ? 3 : 2);
+  }, [embedded, onStageChange, step]);
+
+  useEffect(() => {
     if (isWithholdingMode) {
       setCategory('SOURCE_TAX_DEPOSIT');
       setSelectedHeadId(V11_PAYMENT_OPTIONS.find(h => h.category === 'SOURCE_TAX_DEPOSIT' && h.status === 'ACTIVE')?.id || 8);
@@ -181,13 +192,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   }, [isWithholdingMode]);
 
   useEffect(() => {
-    if (!isWithholdingMode && routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
-      const next = routeParams.initialCategory as PaymentCategory;
+    const requestedCategory = initialCategory || routeParams?.initialCategory;
+    if (!isWithholdingMode && requestedCategory && CATEGORY_LABELS[requestedCategory]) {
+      const next = requestedCategory as PaymentCategory;
       setCategory(next);
       const firstHead = V11_PAYMENT_OPTIONS.find(h => h.category === next && h.status === 'ACTIVE');
       if (firstHead) setSelectedHeadId(firstHead.id);
     }
-  }, [routeParams, isWithholdingMode]);
+  }, [routeParams, initialCategory, isWithholdingMode]);
 
   // Filter available heads
   const availableHeads = V11_PAYMENT_OPTIONS.filter(head => {
@@ -205,20 +217,25 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
 
-  const handleStep1Next = () => {
+  const validateIdentity = () => {
     if (!/^\d{12}$/.test(tin)) {
       setValidationError(copy.invalidTin, 'tin');
-      return;
+      return false;
     }
     if (!forSelf && !payerName.trim()) {
       setValidationError(copy.requiredPayer, 'payerName');
-      return;
+      return false;
     }
     if (!/^01\d{9}$/.test(phone.replace(/\D/g, ''))) {
       setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন (01XXXXXXXXX)।' : 'Enter an 11-digit receipt mobile number (01XXXXXXXXX).', 'phone');
-      return;
+      return false;
     }
     clearValidationError();
+    return true;
+  };
+
+  const handleStep1Next = () => {
+    if (!validateIdentity()) return;
     setStep(2);
   };
 
@@ -237,6 +254,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     clearValidationError();
     setStep(3);
+  };
+
+  const handleEmbeddedDetailsNext = () => {
+    if (!validateIdentity()) return;
+    handleStep2Next();
   };
 
   const handleExecutePayment = () => {
@@ -301,7 +323,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   if (step === 4 && createdReceipt) {
     return (
-      <div lang={language === 'bn' ? 'bn' : 'en'} className={`space-y-6 ${language === 'bn' ? 'font-bengali' : ''}`}>
+      <div lang={language === 'bn' ? 'bn' : 'en'} className={`space-y-6 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
         <div className="no-print p-4 rounded-lg bg-emerald-100 border border-emerald-300 text-taxpay-dark flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-700 shrink-0" />
@@ -323,16 +345,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           </button>
         </div>
         <div lang={language}>
-          <ReceiptView receipt={createdReceipt} onBack={() => navigate('landing')} />
+          <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={embedded ? onBackToService : () => navigate('landing')} />
         </div>
       </div>
     );
   }
 
   return (
-    <div lang={language === 'bn' ? 'bn' : 'en'} className={`max-w-7xl mx-auto space-y-6 pb-12 ${language === 'bn' ? 'font-bengali' : ''}`}>
+    <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
       {/* Title & Mode Banner */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div className={embedded ? 'payment-flow-embedded__content' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
+        {!embedded && <>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
@@ -363,6 +386,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </li>
           ))}
         </ol>
+        </>}
 
         {errorMessage && (
           <div id={ERROR_ID} role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
@@ -373,7 +397,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
-          <div className="payment-form-layout">
+          <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__identity' : ''}`}>
             <div className="payment-form-layout__sections">
             <PaymentFormSection number={1} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="group" aria-label={language === 'bn' ? 'পরিশোধকারীর ধরন' : 'Payer relationship'}>
@@ -451,7 +475,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <p className="text-xs text-slate-500">{language === 'bn' ? 'এই সিমুলেশনে টিআইএন যাচাই করা হয় না এবং অন্য করদাতার ব্যক্তিগত তথ্য দেখানো হয় না।' : 'TIN is not checked against NBR in this simulation. No other taxpayer’s private account information is shown.'}</p>
             </PaymentFormSection>
 
-            <div className="flex justify-end pt-3">
+            {!embedded && <div className="flex justify-end pt-3">
               <button
                 onClick={handleStep1Next}
                 className="min-h-11 w-full sm:w-auto justify-center px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
@@ -459,15 +483,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <span>{copy.continueHead}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+            </div>}
             </div>
-            </div>
-            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} amount={totalAmount} note={language === 'bn' ? 'পরের ধাপে খাত ও পরিমাণ ঠিক করুন। এটি সিমুলেশন মাত্র।' : 'Confirm the payment head and amount in the next section. Simulation only.'} />
+            {!embedded && <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} amount={totalAmount} note={language === 'bn' ? 'পরের ধাপে খাত ও পরিমাণ ঠিক করুন। এটি সিমুলেশন মাত্র।' : 'Confirm the payment head and amount in the next section. Simulation only.'} />}
           </div>
         )}
 
         {/* STEP 2: Head Selection & Financial Amounts */}
-        {step === 2 && (
-          <div className="payment-form-layout">
+        {(step === 2 || (embedded && step === 1)) && (
+          <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
             <PaymentFormSection number={3} title={language === 'bn' ? 'কর পরিশোধের খাত' : 'Payment purpose & head'} description={language === 'bn' ? 'নির্বাচিত সেবার জন্য প্রযোজ্য খাত' : 'Select the applicable head for your chosen service'}>
             {!isWithholdingMode && <fieldset className="space-y-2">
@@ -661,7 +685,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </div>
             </PaymentFormSection>
 
-            <div className="flex flex-wrap justify-between gap-2 pt-3">
+            {!embedded && <div className="flex flex-wrap justify-between gap-2 pt-3">
               <button
                 onClick={() => setStep(1)}
                 className="min-h-11 px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
@@ -682,7 +706,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <span>{copy.continueReview}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-            </div>
+            </div>}
             </div>
             <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} breakdown={[{label:copy.taxAmount,value:taxAmount},{label:copy.penalty,value:penaltyAmount},{label:copy.surcharge,value:surchargeAmount},{label:copy.interest,value:interestAmount}]} />
           </div>
@@ -786,7 +810,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-between">
+            {!embedded && <div className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-between">
               <button
                 disabled={isProcessing}
                 onClick={() => setStep(2)}
@@ -810,10 +834,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   </>
                 )}
               </button>
-            </div>
+            </div>}
           </div>
         )}
       </div>
+      {embedded && modalFooterTarget && createPortal(
+        <div className="payment-flow-embedded__footer-actions">
+          {step === 1 ? (
+            <button type="button" className="tax-service-choice__continue" onClick={handleEmbeddedDetailsNext}>
+              {language === 'bn' ? 'পর্যালোচনা ও পরিশোধ' : 'Continue to Review & Pay'} <ArrowRight size={18} aria-hidden="true" />
+            </button>
+          ) : step === 3 ? (<>
+            <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(1)} disabled={isProcessing}>
+              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            </button>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing} aria-busy={isProcessing}>
+              <CreditCard size={18} aria-hidden="true" />{isProcessing ? copy.processing : copy.runSimulation(formatCurrency(totalAmount, language))}
+            </button>
+          </>) : null}
+        </div>, modalFooterTarget
+      )}
     </div>
   );
 };

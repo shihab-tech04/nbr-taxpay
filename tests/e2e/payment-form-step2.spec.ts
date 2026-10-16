@@ -4,17 +4,19 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   test.skip(info.project.name !== 'desktop-1280', 'Two-column geometry on desktop');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
+  const originalUrl = page.url();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   await chooser.getByRole('button', { name: /Advance Tax/ }).click();
   await chooser.getByRole('button', { name: /Continue/ }).click();
 
-  const sections = page.locator('.payment-form-section');
-  const summary = page.locator('.payment-form-summary');
-  await expect(sections).toHaveCount(2);
+  const sections = chooser.locator('.payment-form-section');
+  const summary = chooser.locator('.payment-form-summary');
+  await expect(sections).toHaveCount(4);
+  await expect(summary).toHaveCount(1);
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('Advance');
-  const columns = await page.locator('.payment-form-layout').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  const columns = await chooser.locator('.payment-flow-embedded__content').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
   expect(columns).toBe(2);
 
   const relationship = sections.first();
@@ -25,13 +27,20 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
 
   await page.locator('#guest-tin').fill('123456789012');
   await page.locator('#guest-phone').fill('01712345678');
-  await page.getByRole('button', { name: /Continue to Payment Head/ }).click();
-  await expect(page.locator('.payment-form-section')).toHaveCount(2);
   await page.locator('#guest-tax-amount').fill('21875');
   await expect(page.locator('.payment-form-summary__total')).toContainText('21,875');
   await page.locator('#guest-tax-amount').fill('12000');
   await page.locator('#guest-penalty-amount').fill('450');
   await expect(page.locator('.payment-form-summary__total')).toContainText('12,450');
+  await chooser.getByRole('button', { name: /Continue to Review & Pay/ }).click();
+  await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
+  await expect(chooser.getByText('Payment summary', { exact: true })).toBeVisible();
+  await expect(chooser.getByText('12,450')).toBeVisible();
+  await chooser.getByRole('button', { name: /Run payment simulation/ }).click();
+  await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
+  await expect(chooser.getByText('Payment preview ready.')).toBeVisible();
+  await expect(chooser.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  expect(page.url()).toBe(originalUrl);
 });
 
 test('Travel tax form applies exact v11 journey rates and age bands', async ({ page }) => {

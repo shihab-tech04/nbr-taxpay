@@ -16,8 +16,9 @@ test('public hero opens service choice before the guest payment form while the r
  await expect(services.locator('.tax-service-choice__card')).toHaveCount(8);
  await services.getByRole('button',{name:/Tax with Return/}).click();
  await services.getByRole('button',{name:'Continue'}).click();
- await expect(page).toHaveURL(/action=guest.*initialCategory=TAX_WITH_RETURN/);
- await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+ await expect(page).toHaveURL(/action=landing/);
+ await expect(services.locator('.payment-form-section')).toHaveCount(4);
+ await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {

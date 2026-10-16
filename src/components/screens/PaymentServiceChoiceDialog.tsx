@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  AlertTriangle, ArrowRight, CalendarClock, Check, ClipboardList, FileText,
+  AlertTriangle, ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardList, FileText,
   Landmark, Layers3, MoreHorizontal, Plane
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxPayModal } from '../ui/TaxPayModal';
+import { GuestPayment } from './GuestPayment';
+import { TravelTax } from './TravelTax';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
 const SERVICE_CHOICES = [
@@ -22,52 +23,46 @@ const SERVICE_CHOICES = [
 type ServiceId = typeof SERVICE_CHOICES[number]['id'];
 
 export function PaymentServiceChoiceDialog() {
-  const { language, userRole, navigate, setPaymentServiceChoiceOpen } = useTaxState();
-  const { user: applicationUser } = useAccountIdentity();
+  const { language, setPaymentServiceChoiceOpen } = useTaxState();
   const [selected, setSelected] = useState<ServiceId | null>(null);
+  const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
-  const signedIn = Boolean(applicationUser) || ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
   const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
-
-  const continueToService = () => {
-    if (!selected) return;
-    close();
-    if (selected === 'TRAVEL_TAX') {
-      navigate('travel');
-    } else if (selected === 'SOURCE_TAX_DEPOSIT' && !signedIn) {
-      navigate('guestwh', { initialCategory: selected });
-    } else {
-      navigate(signedIn ? 'wizard' : 'guest', { initialCategory: selected });
-    }
-  };
+  const advanceToDetails = () => { if (selected) setStage(2); };
+  const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
 
   return (
     <TaxPayModal
       title={tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
-      service="payment-choice"
+      service={stage > 1 && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
-          <button type="button" className="tax-service-choice__cancel" onClick={close}>{tr('Cancel', 'বাতিল')}</button>
-          <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={continueToService}>
-            {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
+          <button type="button" className="tax-service-choice__cancel" onClick={stage === 1 ? close : () => setStage(1)}>
+            {stage === 1 ? tr('Cancel', 'বাতিল') : <><ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}</>}
           </button>
+          {stage === 1 && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToDetails}>
+            {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
+          </button>}
         </div>
       )}
     >
-      <section className="tax-service-choice" aria-labelledby="tax-service-choice-question">
-        <p className="tax-service-choice__eyebrow">{tr('Step 1 of 4 · Service', 'ধাপ ১ / ৪ · সেবা')}</p>
-        <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
-          {stages.map((stage, index) => (
-            <li key={stage} className={index === 0 ? 'tax-service-choice__stage--current' : ''}
-              aria-current={index === 0 ? 'step' : undefined}>
-              <span>{index + 1}</span>{stage}
-            </li>
-          ))}
-        </ol>
+      <section className={`tax-service-choice${stage > 1 && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+        {!(selected === 'TRAVEL_TAX' && stage > 1) && <>
+          <p className="tax-service-choice__eyebrow">{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)} · {stages[stage - 1]}</p>
+          <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
+            {stages.map((name, index) => (
+              <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : ''}
+                aria-current={index + 1 === stage ? 'step' : undefined}>
+                <span>{index + 1 < stage ? <Check size={14} aria-hidden="true" /> : index + 1}</span>{name}
+              </li>
+            ))}
+          </ol>
+        </>}
+        {stage === 1 ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
           {SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
@@ -80,6 +75,13 @@ export function PaymentServiceChoiceDialog() {
             </button>
           ))}
         </div>
+        </> : selected === 'TRAVEL_TAX' ? (
+          <TravelTax key="travel-tax-modal" embedded />
+        ) : selected ? (
+          <GuestPayment key={selected} embedded initialCategory={selected}
+            isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
+            onBackToService={() => setStage(1)} onStageChange={reportStage} />
+        ) : null}
       </section>
     </TaxPayModal>
   );
