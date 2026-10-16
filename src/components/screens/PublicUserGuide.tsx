@@ -12,7 +12,7 @@ export const GUIDE_CONTENT:GuideEntry[] = [
   ['Keep the transaction reference.','লেনদেনের রেফারেন্স রাখুন।']
  ],faqs:[
   {q:['What should I check before payment?','পেমেন্টের আগে কী যাচাই করব?'],a:['Taxpayer identity, purpose, year and amount against official guidance.','সরকারি নির্দেশনা অনুযায়ী পরিচয়, উদ্দেশ্য, করবর্ষ ও পরিমাণ।']},
-  {q:['Can I make an official payment here?','এখানে কি সরকারি পেমেন্ট করা যায়?'],a:['No. TaxPay payment processing is not connected to an official gateway.','না। TaxPay সরকারি পেমেন্ট গেটওয়ের সঙ্গে সংযুক্ত নয়।']}
+  {q:['Can I make an official payment here?','এখানে কি সরকারি পেমেন্ট করা যায়?'],a:['No. Amar Kor payment processing is not connected to an official gateway.','না। আমার কর সরকারি পেমেন্ট গেটওয়ের সঙ্গে সংযুক্ত নয়।']}
  ]},
  {id:'status',en:'Payment status',bn:'পেমেন্টের অবস্থা',description:['Understand references, receipts and settlement.','রেফারেন্স, রসিদ ও জমার অবস্থা জানুন।'],steps:[
   ['Have your saved transaction reference ready.','সংরক্ষিত লেনদেনের রেফারেন্স প্রস্তুত রাখুন।'],
@@ -66,7 +66,7 @@ export const PublicUserGuide:React.FC=()=>{
   <button className="public-guide-back" type="button" onClick={()=>navigate('landing')}><ArrowLeft size={17}/>{bn?'হোমে ফিরুন':'Back to home'}</button>
   <header className="public-guide-intro">
     <p className="citizen-hub-eyebrow">{bn?'সহায়তা কেন্দ্র':'Help center'}</p>
-    <h1>{bn?'TaxPay ব্যবহার নির্দেশিকা':'TaxPay user guide'}</h1>
+    <h1>{bn?'আমার কর ব্যবহার নির্দেশিকা':'Amar Kor user guide'}</h1>
     <p>{bn?'পেমেন্টের ধাপ, রসিদ ও সাধারণ প্রশ্ন।':'Clear steps, payment references and common questions.'}</p>
   </header>
   <div className="public-guide-layout">

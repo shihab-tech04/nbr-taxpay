@@ -6,14 +6,14 @@ test('public header, FAQ topics, footer links, language and browser history reac
   if (page.viewportSize()!.width <= 900) await page.getByRole('button',{name:'Menu'}).click();
   await publicNav.getByRole('link',{name:'FAQs'}).click();
   await expect(page).toHaveURL(/action=user_guide/);
-  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page).toHaveURL(/action=user_guide&category=travel/);
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   // This destination is the same route with a different tab; it must select the target tab.
-  await page.getByRole('contentinfo',{name:'TaxPay footer'}).getByRole('button',{name:'Security & support'}).click();
+  await page.getByRole('contentinfo',{name:'Amar Kor footer'}).getByRole('button',{name:'Security & support'}).click();
   await expect(page).toHaveURL(/action=user_guide&category=security/);
   await expect(page.getByRole('heading',{name:'Security & support'})).toBeVisible();
   await page.reload();
@@ -26,7 +26,7 @@ test('public header, FAQ topics, footer links, language and browser history reac
   await page.getByRole('button',{name:'বাংলা'}).first().click();
   await expect(page).toHaveURL(/lang=bn/);
   await page.reload();
-  await expect(page.getByRole('heading',{name:'TaxPay ব্যবহার নির্দেশিকা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'আমার কর ব্যবহার নির্দেশিকা'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'নিরাপত্তা ও সহায়তা'})).toBeVisible();
 });
 
@@ -42,12 +42,12 @@ test('public service actions and receipt result return stay in their own public 
   await page.goto('/?action=verify');
   await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
   await page.getByRole('button',{name:/Use reference:/}).first().click();
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
   await page.getByRole('button',{name:'Back to records'}).click();
   await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toHaveCount(0);
 });
 
 test('guest menus and bell route to their named services; contextual payment choices survive reload', async ({page}) => {
@@ -95,7 +95,7 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await expect(page).toHaveURL(/action=account_settings/);
   await rail.getByRole('button',{name:'Payment guide'}).click();
   await expect(page).toHaveURL(/action=user_guide&category=payments/);
-  await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
 });
 
@@ -186,10 +186,10 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
     await page.getByRole('button',{name:'View details'}).first().click();
   }
   await expect(page).toHaveURL(/action=payment_details&returnTo=history/);
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
   await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
   await page.reload();
-  await expect(page.getByRole('heading',{name:'TaxPay — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
   await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toBeVisible();
   if(page.viewportSize()!.width >= 1440){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
