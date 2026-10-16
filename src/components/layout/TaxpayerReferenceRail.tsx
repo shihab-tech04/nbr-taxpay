@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CircleUserRound, FileCheck2, FilePenLine, Home, LogOut, ReceiptText, Settings2, WalletCards } from 'lucide-react';
+import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, FileCheck2, FilePenLine, Home, LogOut, ReceiptText, Settings2, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
@@ -49,20 +49,25 @@ export function TaxpayerReferenceRail() {
           <img className="taxpayer-reference-wordmark" src={amarKorWordmark} alt={bn ? 'আমার কর' : 'Amar Kor'} />
           <span><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
+        {(user || sampleProfile) && currentRoute !== 'wizard' && <button type="button" className="taxpayer-reference-main-action" onClick={() => navigate('wizard')}
+          aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
+          <CirclePlus size={20} aria-hidden={true} />
+          <span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
+        </button>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (
             <button key={route} type="button" aria-current={(currentRoute === route||(route==='taxpayer_home'&&currentRoute==='dashboard')) ? 'page' : undefined}
               onClick={() => navigate(route)}>
-              <Icon size={18} aria-hidden={true} />
+              <Icon size={20} aria-hidden={true} />
               <span>{bn ? bnLabel : en}</span>
             </button>
           ))}
           <button type="button" onClick={() => navigate('verify')} aria-current={currentRoute==='verify'?'page':undefined}>
-            <ReceiptText size={18} aria-hidden={true} /><span>{bn ? 'পেমেন্টের অবস্থা' : 'Payment status'}</span>
+            <ReceiptText size={20} aria-hidden={true} /><span>{bn ? 'পেমেন্টের অবস্থা' : 'Payment status'}</span>
           </button>
           <details className="taxpayer-reference-account" key={['secure_workspace','account_profile','account_settings'].includes(currentRoute)?'account-'+currentRoute:'account-closed'}
             open={['secure_workspace','account_profile','account_settings'].includes(currentRoute)||undefined}>
-            <summary><CircleUserRound size={18} aria-hidden={true}/><span>{bn?'অ্যাকাউন্ট':'Account'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
+            <summary><CircleUserRound size={20} aria-hidden={true}/><span>{bn?'অ্যাকাউন্ট':'Account'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
             <div className="taxpayer-reference-account__links">
               {[
                 {route:'account_profile',en:'Profile',bn:'প্রোফাইল',Icon:CircleUserRound},
@@ -75,7 +80,7 @@ export function TaxpayerReferenceRail() {
             </div>
           </details>
           <button type="button" onClick={() => navigate('user_guide', {category:'payments'})}>
-            <WalletCards size={18} aria-hidden={true}/><span>{bn?'পেমেন্ট নির্দেশিকা':'Payment guide'}</span>
+            <WalletCards size={20} aria-hidden={true}/><span>{bn?'পেমেন্ট নির্দেশিকা':'Payment guide'}</span>
           </button>
         </nav>
       </div>

@@ -80,6 +80,13 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  const pay=rail.getByRole('button',{name:'Pay — select payment type'});
+  await expect(pay).toBeVisible();
+  await expect(pay).toContainText('Pay Tax');
+  await expect(page.locator('.citizen-pay')).toBeHidden();
+  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
+  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
+  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
   const links=[
     ['Activity','history'],
     ['Tax ledger','ledger'],
@@ -101,6 +108,32 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await expect(page).toHaveURL(/action=user_guide&category=payments/);
   await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
+});
+
+test('desktop sidebar Pay Tax action opens the existing payment wizard',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Wide desktop payment-entry check');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await rail.getByRole('button',{name:'Pay — select payment type'}).click();
+  await expect(page).toHaveURL(/action=wizard/);
+  await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
+  await expect(rail).toBeVisible();
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+});
+
+test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop rail starts at 1440px');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=secure_workspace');
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await expect(rail).toBeVisible();
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await expect(page.getByRole('dialog',{name:'Select payment type'})).toBeVisible();
+  await expect(page).toHaveURL(/action=secure_workspace/);
 });
 
 test('taxpayer mobile menu and payment action link to the correct routes in both languages',async({page},info)=>{
