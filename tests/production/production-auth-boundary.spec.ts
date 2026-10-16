@@ -42,6 +42,6 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await page.locator('.citizen-account-gate').getByRole('button', { name: 'সাইন ইন' }).click();
   await expect(page).toHaveURL(/action=taxpayer_login/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('dialog', { name: 'আপনার TaxPay অ্যাকাউন্টে সাইন ইন করুন' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'আপনার আমার কর অ্যাকাউন্টে সাইন ইন করুন' })).toBeVisible();
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });
