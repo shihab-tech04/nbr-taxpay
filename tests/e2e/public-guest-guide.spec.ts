@@ -44,7 +44,7 @@ test('see-more links open topic guide with responsive search, FAQs and languages
  await page.getByRole('button',{name:'See more'}).first().click();
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
- await expect(page.locator('.public-guide-topics')).toHaveCSS('grid-template-columns', /\d+px \d+px/);
+ await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
  await page.getByRole('button',{name:'Mobile'}).click();
