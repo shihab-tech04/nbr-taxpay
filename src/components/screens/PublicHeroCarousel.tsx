@@ -13,34 +13,44 @@ const slides = [
     headingBn: 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।',
     descriptionEn: 'Explore payment guidance. Manage your transactions after login.',
     descriptionBn: 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।',
+    actionEn: 'Pay Tax',
+    actionBn: 'কর পরিশোধ',
   },
   {
     id: 'return',
-    headingEn: 'Pay tax with your return.',
-    headingBn: 'রিটার্নের সঙ্গে কর পরিশোধ করুন।',
-    descriptionEn: 'Pay income tax associated with your income tax return.',
+    headingEn: 'Tax with Return',
+    headingBn: 'রিটার্নের সঙ্গে কর',
+    descriptionEn: 'Pay income tax associated with an income tax return.',
     descriptionBn: 'আয়কর রিটার্নের সঙ্গে সংশ্লিষ্ট কর পরিশোধ করুন।',
+    actionEn: 'Pay Tax with Return',
+    actionBn: 'রিটার্নের সঙ্গে কর পরিশোধ',
   },
   {
     id: 'advance',
-    headingEn: 'Plan ahead with advance tax.',
-    headingBn: 'অগ্রিম আয়কর পরিশোধ করুন।',
-    descriptionEn: 'Make an advance income tax payment for your assessment year.',
-    descriptionBn: 'আপনার করবর্ষ অনুযায়ী অগ্রিম আয়কর পরিশোধ করুন।',
+    headingEn: 'Advance Income Tax',
+    headingBn: 'অগ্রিম আয়কর',
+    descriptionEn: 'Pay advance tax for the selected assessment year.',
+    descriptionBn: 'নির্বাচিত করবর্ষের জন্য অগ্রিম আয়কর পরিশোধ করুন।',
+    actionEn: 'Pay Advance Income Tax',
+    actionBn: 'অগ্রিম আয়কর পরিশোধ',
   },
   {
     id: 'withholding',
-    headingEn: 'Deposit tax at source.',
-    headingBn: 'উৎসে কর্তিত কর জমা দিন।',
-    descriptionEn: 'Deposit tax deducted or collected at source (TDS/TCS).',
-    descriptionBn: 'উৎসে কর্তন বা সংগ্রহ করা কর (টিডিএস/টিসিএস) জমা দিন।',
+    headingEn: 'Source Tax Deposit (TDS/TCS)',
+    headingBn: 'উৎসে কর জমা (টিডিএস/টিসিএস)',
+    descriptionEn: 'Deposit tax deducted or collected at source.',
+    descriptionBn: 'উৎসে কর্তিত বা সংগৃহীত কর জমা দিন।',
+    actionEn: 'Deposit Source Tax',
+    actionBn: 'উৎসে কর জমা দিন',
   },
   {
     id: 'travel',
-    headingEn: 'Pay travel tax with ease.',
-    headingBn: 'সহজে ভ্রমণ কর পরিশোধ করুন।',
-    descriptionEn: 'Prepare a travel tax payment for your journey.',
-    descriptionBn: 'আপনার ভ্রমণের জন্য ভ্রমণ কর পরিশোধের প্রস্তুতি নিন।',
+    headingEn: 'Travel Tax',
+    headingBn: 'ভ্রমণ কর',
+    descriptionEn: 'Pay travel tax using journey and passenger details.',
+    descriptionBn: 'ভ্রমণের ধরন, গন্তব্য ও যাত্রীর তথ্য দিয়ে ভ্রমণ কর পরিশোধ করুন।',
+    actionEn: 'Pay Travel Tax',
+    actionBn: 'ভ্রমণ কর পরিশোধ',
   },
 ] as const;
 
@@ -178,7 +188,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                   <p>{bn ? slide.descriptionBn : slide.descriptionEn}</p>
                   <div className="citizen-public-hero__actions public-guest-actions">
                     <button className="citizen-public-primary public-guest-action" type="button" onClick={onPayTax}>
-                      <WalletCards size={18} aria-hidden="true" />{bn ? 'কর পরিশোধ' : 'Pay Tax'}
+                      <WalletCards size={18} aria-hidden="true" />{bn ? slide.actionBn : slide.actionEn}
                     </button>
                     {index === 0 && (
                       <button className="citizen-public-secondary public-guest-action" type="button" onClick={onCheckReceipt}>

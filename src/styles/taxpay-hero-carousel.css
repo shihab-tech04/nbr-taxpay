@@ -38,10 +38,43 @@
   box-shadow: none;
 }
 
-.public-hero-carousel__slide[data-banner-service="return"] { background: var(--service-return-bg); }
-.public-hero-carousel__slide[data-banner-service="advance"] { background: var(--service-advance-bg); }
-.public-hero-carousel__slide[data-banner-service="withholding"] { background: var(--service-withholding-bg); }
-.public-hero-carousel__slide[data-banner-service="travel"] { background: var(--service-other-bg); }
+.public-hero-carousel__slide[data-banner-service="return"] {
+  --banner-service-color: var(--service-return-primary);
+  --banner-service-text: var(--service-return-text);
+  --banner-service-border: var(--service-return-border);
+  background: var(--service-return-bg);
+}
+.public-hero-carousel__slide[data-banner-service="advance"] {
+  --banner-service-color: var(--service-advance-primary);
+  --banner-service-text: var(--service-advance-text);
+  --banner-service-border: var(--service-advance-border);
+  background: var(--service-advance-bg);
+}
+.public-hero-carousel__slide[data-banner-service="withholding"] {
+  --banner-service-color: var(--service-withholding-primary);
+  --banner-service-text: var(--service-withholding-text);
+  --banner-service-border: var(--service-withholding-border);
+  background: var(--service-withholding-bg);
+}
+.public-hero-carousel__slide[data-banner-service="travel"] {
+  --banner-service-color: var(--service-other-primary);
+  --banner-service-text: var(--service-other-text);
+  --banner-service-border: var(--service-other-border);
+  background: var(--service-other-bg);
+}
+
+/* Match Sobaike's service-colored outlined hero CTAs without changing the
+ * locked #2C5EAD brand primary or the original introduction CTA. */
+.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-guest-actions .citizen-public-primary {
+  background: var(--citizen-surface);
+  color: var(--banner-service-text);
+  border: 1px solid var(--banner-service-color);
+}
+.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-guest-actions .citizen-public-primary:hover {
+  background: var(--banner-service-color);
+  color: white;
+  border-color: var(--banner-service-color);
+}
 
 .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
   max-width: 24ch;
@@ -72,24 +105,9 @@
   color: var(--citizen-muted);
 }
 
-.public-hero-carousel__slide[data-banner-service="return"] .public-hero-carousel__image-placeholder {
-  border-color: var(--service-return-border);
-  color: var(--service-return-primary);
-}
-
-.public-hero-carousel__slide[data-banner-service="advance"] .public-hero-carousel__image-placeholder {
-  border-color: var(--service-advance-border);
-  color: var(--service-advance-primary);
-}
-
-.public-hero-carousel__slide[data-banner-service="withholding"] .public-hero-carousel__image-placeholder {
-  border-color: var(--service-withholding-border);
-  color: var(--service-withholding-primary);
-}
-
-.public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__image-placeholder {
-  border-color: var(--service-other-border);
-  color: var(--service-other-primary);
+.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__image-placeholder {
+  border-color: var(--banner-service-border);
+  color: var(--banner-service-color);
 }
 
 .public-hero-carousel__arrow {

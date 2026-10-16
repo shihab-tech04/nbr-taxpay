@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('Step 2 guest form groups inputs and recalculates the right-hand summary', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Two-column geometry on desktop');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
