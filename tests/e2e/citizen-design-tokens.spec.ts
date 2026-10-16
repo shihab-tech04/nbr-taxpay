@@ -41,8 +41,6 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
 
   const checkElevation = async () => page.evaluate(() => {
     const selectors = [
-      '.public-information-hero',
-      '.public-information-guide',
       '.public-information-hub .public-info-section',
       '.public-info-topic[data-taxpay-service="return"]',
     ];
@@ -53,15 +51,20 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
     });
     const header = document.querySelector<HTMLElement>('.public-home-header');
     if (!header) throw new Error('Missing public header');
-    return { shadows, headerShadow: getComputedStyle(header).boxShadow };
+    const hero = document.querySelector<HTMLElement>('.public-information-hero');
+    if (!hero) throw new Error('Missing public hero');
+    return { shadows, headerShadow: getComputedStyle(header).boxShadow, heroShadow: getComputedStyle(hero).boxShadow };
   });
 
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     const elevation = await checkElevation();
+    expect(elevation.heroShadow).toBe('none');
     expect(elevation.shadows[0]).toContain('0px 1px 0px');
     expect(elevation.shadows[0]).toContain('0.05');
     expect(new Set(elevation.shadows).size).toBe(1);
     expect(elevation.headerShadow).toBe('none');
   }
+  await expect(page.locator('.public-information-hero__image')).toBeVisible();
+  await expect(page.locator('.public-information-hero .public-information-guide')).toHaveCount(0);
 });

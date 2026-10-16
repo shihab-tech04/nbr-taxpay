@@ -33,7 +33,7 @@ test('Public mobile menu enters a real keyboard sequence and restores trigger fo
 
 test('Public service dialog has an accessible entry, close and focus return', async ({ page }) => {
   await page.goto('/?action=landing');
-  const open = page.getByRole('button', { name: 'Check payment status & receipt' });
+  const open = page.getByRole('button', { name: 'Check payment & receipt' });
   await open.focus();
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog', { name: 'Payment status & receipt' });
