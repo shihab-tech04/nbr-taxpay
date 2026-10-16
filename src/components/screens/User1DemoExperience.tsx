@@ -196,6 +196,11 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   const chartMax=Math.max(...monthValues,1);
   const monthTotal=monthValues.reduce((total,entry)=>total+entry,0);
   const overview=<>
+    <div className="flex flex-wrap justify-end gap-2">
+      <button type="button" className={action} onClick={()=>navigateTo('guest')}>
+        {tr('Explore payment flow','পেমেন্টের ধাপ দেখুন')} <ArrowRight size={15} aria-hidden="true" />
+      </button>
+    </div>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}>
       {summaryCard('Income tax liability','আয়কর দায়',money(totals.liability),
         'Starting liability used for this tax year.','এই করবর্ষের প্রাথমিক করদায়।')}

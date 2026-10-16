@@ -5,11 +5,11 @@ test('generic taxpayer preview shows the same payer receipts in dashboard and ac
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'No activity to summarize'})).toHaveCount(0);
-  await expect(page.getByText('AC-2025-06-DEMO-REF-003')).toBeVisible();
+  await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('region',{name:'Search and filters'})).toContainText(/Records\s*:\s*3/);
-  await expect(page.getByText('AC-2025-06-DEMO-REF-003')).toBeVisible();
+  await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
   await page.getByRole('button',{name:'Tax Ledger',exact:true}).filter({visible:true}).first().click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(page.getByText('No verified, account-bound tax ledger is connected.')).toBeVisible();

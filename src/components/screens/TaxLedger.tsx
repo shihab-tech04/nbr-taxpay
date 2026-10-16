@@ -100,11 +100,12 @@ export const TaxLedger: React.FC = () => {
           ))}
         </div>
         {/* Ledger Entries Table */}
-        {!hasEntries ? (
+        {!hasEntries && (
           <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
             {bn ? 'এই অ্যাকাউন্টের যাচাইকৃত কর লেজার এখনো সংযুক্ত হয়নি।' : 'No verified, account-bound tax ledger is connected.'}
           </p>
-        ) : <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
+        )}
+        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
@@ -149,7 +150,7 @@ export const TaxLedger: React.FC = () => {
               ))}
             </tbody>
           </table>
-        </div>}
+        </div>
       </div>
     </div>
   );
