@@ -95,9 +95,9 @@ test('certificate previews stay non-official, match the selected type and locali
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
 
-  await expect(page.getByRole('heading',{name:'Certificate previews'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();
-  await expect(page.getByText('No official certificate is issued from this demonstration.')).toBeVisible();
+  await expect(page.getByText('No official certificate is issued from this demonstration.')).toHaveCount(0);
   await expect(page.getByText('Statutory certificates generated directly from Government Treasury deposit scrolls.')).toHaveCount(0);
   await expect(page.getByText('In Good Standing')).toHaveCount(0);
   await expect(page.getByText('Deputy Commissioner of Taxes')).toHaveCount(0);

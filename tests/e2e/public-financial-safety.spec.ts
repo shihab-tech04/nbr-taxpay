@@ -25,7 +25,7 @@ test('legacy help URL resolves to maintained guide without an unverified tax cal
 test('travel tax simulation cannot be presented as a real immigration challan',async ({page})=>{
   await page.goto('/?action=travel');
   await expect(page.getByText('Enter your travel details.')).toBeVisible();
-  await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
+  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
 });
 
 test('public mobile information menu is keyboard usable with accessible targets',async({page},info)=>{

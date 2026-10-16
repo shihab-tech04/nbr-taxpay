@@ -7,7 +7,6 @@ import {
   CheckCircle, 
   AlertCircle, 
   FileText, 
-  Info, 
   Building2,
   Calendar,
   CreditCard,
@@ -24,25 +23,23 @@ import { PaymentFormSection } from '../ui/PaymentFormLayout';
 const COPY = {
   en: {
     title: 'Travel tax', intro: 'Enter your travel details.',
-    legalTitle: 'Legal status not verified', legalBody: 'Rates and exemptions are not verified. Check the applicable rules before use.',
-    destination: 'Destination and travel mode', passenger: 'Passenger name (as in passport)', passengerPlaceholder: 'Example: MOHAMMED RAHMAN', passport: 'Passport number (synthetic data only)', passportPlaceholder: 'Demo reference only',
+    destination: 'Destination and travel mode', passenger: 'Passenger name (as in passport)', passengerPlaceholder: 'Example: MOHAMMED RAHMAN', passport: 'Passport reference', passportPlaceholder: 'Enter a test reference',
     count: 'Outbound passenger count', countHint: 'Exemptions are not calculated.',
-    mobile: 'Mobile number (optional; no SMS is sent)', phonePlaceholder: 'Contact number (demo only)',
-    port: 'Departure port', date: 'Departure date', total: 'Illustrative total', perPassenger: 'per passenger',
-    notice: 'Preview only. No payment or travel clearance is issued.', run: 'Run payment simulation', running: 'Running local simulation…',
-    complete: 'Travel tax preview ready.', ref: 'Sample reference', noTravel: 'Not valid for travel or proof of payment.', again: 'Start another demonstration',
-    requiredName: 'Enter the passenger name shown on the passport.', requiredPassport: 'Use sample passport details. Passport verification is unavailable.'
+    mobile: 'Mobile number (optional)', phonePlaceholder: 'Contact number',
+    port: 'Departure port', date: 'Departure date', total: 'Total', perPassenger: 'per passenger',
+    run: 'Continue payment', running: 'Processing…',
+    complete: 'Travel tax details ready', ref: 'Payment reference', again: 'Start another payment',
+    requiredName: 'Enter the passenger name shown on the passport.', requiredPassport: 'Enter a test passport reference of at least 6 characters.'
   },
   bn: {
     title: 'ভ্রমণ কর', intro: 'যাত্রার তথ্য দিন।',
-    legalTitle: 'আইনি বৈধতা যাচাই হয়নি', legalBody: 'হার ও অব্যাহতি যাচাইকৃত নয়। ব্যবহারের আগে প্রযোজ্য নিয়ম যাচাই করুন।',
-    destination: 'গন্তব্য ও ভ্রমণের ধরন', passenger: 'পাসপোর্ট অনুযায়ী যাত্রীর নাম', passengerPlaceholder: 'উদাহরণ: MOHAMMED RAHMAN', passport: 'পাসপোর্ট নম্বর (শুধু কৃত্রিম তথ্য)', passportPlaceholder: 'শুধু নমুনা রেফারেন্স',
+    destination: 'গন্তব্য ও ভ্রমণের ধরন', passenger: 'পাসপোর্ট অনুযায়ী যাত্রীর নাম', passengerPlaceholder: 'উদাহরণ: MOHAMMED RAHMAN', passport: 'পাসপোর্ট রেফারেন্স', passportPlaceholder: 'পরীক্ষামূলক রেফারেন্স লিখুন',
     count: 'বহির্গামী যাত্রীর সংখ্যা', countHint: 'অব্যাহতি হিসাব করা হয় না।',
-    mobile: 'মোবাইল নম্বর (ঐচ্ছিক; এসএমএস পাঠানো হয় না)', phonePlaceholder: 'যোগাযোগ নম্বর (শুধু নমুনা)',
-    port: 'যাত্রা শুরুর বন্দর', date: 'যাত্রার তারিখ', total: 'উদাহরণমূলক মোট অর্থ', perPassenger: 'প্রতি যাত্রী',
-    notice: 'শুধু প্রিভিউ। কোনো পেমেন্ট বা ভ্রমণ ছাড়পত্র ইস্যু হয় না।', run: 'পেমেন্ট সিমুলেশন চালান', running: 'স্থানীয় সিমুলেশন চলছে…',
-    complete: 'ভ্রমণ করের প্রিভিউ প্রস্তুত।', ref: 'নমুনা রেফারেন্স', noTravel: 'ভ্রমণের অনুমতি বা পেমেন্টের প্রমাণ নয়।', again: 'আরেকটি নমুনা শুরু করুন',
-    requiredName: 'পাসপোর্টে থাকা যাত্রীর নাম লিখুন।', requiredPassport: 'নমুনা পাসপোর্ট তথ্য দিন। যাচাই ব্যবস্থা চালু নেই।'
+    mobile: 'মোবাইল নম্বর (ঐচ্ছিক)', phonePlaceholder: 'যোগাযোগ নম্বর',
+    port: 'যাত্রা শুরুর বন্দর', date: 'যাত্রার তারিখ', total: 'মোট অর্থ', perPassenger: 'প্রতি যাত্রী',
+    run: 'পেমেন্টে এগিয়ে যান', running: 'প্রক্রিয়াধীন…',
+    complete: 'ভ্রমণ করের তথ্য প্রস্তুত', ref: 'পেমেন্ট রেফারেন্স', again: 'আরেকটি পেমেন্ট শুরু করুন',
+    requiredName: 'পাসপোর্টে থাকা যাত্রীর নাম লিখুন।', requiredPassport: 'কমপক্ষে ৬ অক্ষরের পরীক্ষামূলক পাসপোর্ট রেফারেন্স দিন।'
   }
 } as const;
 
@@ -151,22 +148,20 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const workflow = bn
     ? { steps: ['যাত্রাপথ', 'যাত্রীর তথ্য', 'পর্যালোচনা'], select: 'গন্তব্য ও যাতায়াতের ধরন নির্বাচন',
         passenger: 'যাত্রীর তথ্য', review: 'তথ্য পর্যালোচনা', summary: 'পেমেন্ট সারাংশ',
-        rate: 'নমুনা হার', people: 'যাত্রী', route: 'যাত্রাপথ', status: 'অবস্থা',
+        rate: 'প্রতি যাত্রীর হার', people: 'যাত্রী', route: 'যাত্রাপথ', status: 'অবস্থা',
         continue: 'যাত্রীর তথ্য দিন', reviewNext: 'পর্যালোচনায় যান', back: 'পূর্ববর্তী',
-        estimate: 'উদাহরণমূলক মোট অর্থ', sample: 'শুধু প্রিভিউ',
-        caution: 'হার ও অব্যাহতি যাচাইকৃত নয়। এটি নমুনা হিসাব, সরকারি পেমেন্ট নয়।',
-        ready: 'প্রিভিউ প্রস্তুত', newPreview: 'নতুন প্রিভিউ', noPayment: 'কোনো পেমেন্ট হয়নি',
-        missing: 'যাত্রীর নমুনা নাম ও পাসপোর্ট রেফারেন্স দিন।',
-        hint: 'প্রকৃত পাসপোর্ট তথ্য দেবেন না। নমুনা তথ্য ব্যবহার করুন।' }
+        estimate: 'মোট অর্থ', waiting: 'পর্যালোচনার অপেক্ষায়',
+        ready: 'রেকর্ড প্রস্তুত', newPreview: 'নতুন পেমেন্ট',
+        missing: 'যাত্রীর নাম, মোবাইল নম্বর ও পাসপোর্ট রেফারেন্স দিন।',
+        hint: 'পাসপোর্ট রেফারেন্স হিসেবে পরীক্ষামূলক তথ্য ব্যবহার করুন।' }
     : { steps: ['Travel route', 'Passenger details', 'Review'], select: 'Choose destination & travel mode',
         passenger: 'Passenger information', review: 'Review travel details', summary: 'Payment summary',
-        rate: 'Sample rate', people: 'Passengers', route: 'Travel route', status: 'Status',
+        rate: 'Rate per passenger', people: 'Passengers', route: 'Travel route', status: 'Status',
         continue: 'Continue to passenger details', reviewNext: 'Continue to review', back: 'Back',
-        estimate: 'Illustrative total', sample: 'Preview only',
-        caution: 'Rates and exemptions are not verified. This is a sample estimate, not a government payment.',
-        ready: 'Preview ready', newPreview: 'Start a new preview', noPayment: 'No payment processed',
-        missing: 'Enter a sample passenger name and passport reference.',
-        hint: 'Use fictional information, not real passport details.' };
+        estimate: 'Total amount', waiting: 'Awaiting review',
+        ready: 'Record ready', newPreview: 'Start a new payment',
+        missing: 'Enter a passenger name, mobile number and passport reference.',
+        hint: 'Use a test passport reference.' };
 
   const goStep = (target: 0 | 1 | 2) => {
     setError('');
@@ -324,7 +319,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
           {step === 2 && <section className="travel-flow__panel" aria-labelledby="travel-review-heading">
             <header className="travel-flow__section-header">
               <h3 id="travel-review-heading">{createdReceipt ? t.complete : workflow.review}</h3>
-              <p>{createdReceipt ? t.noTravel : ageBand === 'UNDER5' ? (bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট বা চালান প্রয়োজন নেই।' : 'This passenger is exempt — no payment or challan is required.') : t.notice}</p>
+              {ageBand === 'UNDER5' && !createdReceipt && <p>{bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট প্রয়োজন নেই।' : 'This passenger is exempt — no payment is required.'}</p>}
             </header>
             {createdReceipt ? <div className="travel-flow__receipt">
               <p className="travel-flow__receipt-label" role="status">
@@ -358,9 +353,8 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
           <div><dt>{bn ? 'বয়স অনুযায়ী হার' : 'Age rate'}</dt><dd>{ageBand === 'CHILD' ? '50%' : ageBand === 'UNDER5' ? (bn ? 'করমুক্ত' : 'Exempt') : '100%'}</dd></div>
           <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
           {createdReceipt && <div><dt>{t.ref}</dt><dd>{createdReceipt.tokenNumber}</dd></div>}
-          <div><dt>{workflow.status}</dt><dd>{createdReceipt ? workflow.noPayment : workflow.sample}</dd></div>
+          <div><dt>{workflow.status}</dt><dd>{createdReceipt ? workflow.ready : workflow.waiting}</dd></div>
         </dl>
-        <p className="travel-flow__caution" role="note"><Info size={16} aria-hidden="true" />{workflow.caution}</p>
         {!embedded && primaryAction}
       </aside>
       {embedded && modalFooterTarget && createPortal(primaryAction, modalFooterTarget)}

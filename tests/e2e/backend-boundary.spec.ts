@@ -102,10 +102,11 @@ test('legacy help URL uses the current guide and cannot offer unverified calcula
   await expect(page.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
-test('travel-tax page explicitly denies real official receipts and clearance', async ({ page }) => {
+test('travel-tax page presents the service without repeated prototype disclaimers', async ({ page }) => {
   await page.goto('/?action=travel');
-  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toBeVisible();
-  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
+  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toHaveCount(0);
+  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toHaveCount(0);
 });
 
 test('anonymous users cannot read or write source change proposals', async ({ request }, info) => {

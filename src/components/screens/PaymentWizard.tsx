@@ -26,10 +26,9 @@ const COPY = {
     continueAmounts: 'Continue to amounts', continueReview: 'Continue to review', back: 'Back',
     selectedHead: 'Selected head', amountBreakdown: 'Payment amount breakdown (BDT)', tax: 'Tax amount (৳)', penalty: 'Penalty (৳)', surcharge: 'Surcharge (৳)', interest: 'Interest (৳)',
     reference: 'Payment reference or assessment note (optional)', referencePlaceholder: 'e.g. Self-assessment return deposit', total: 'Total payable amount',
-    payer: 'Payer', tin: 'e-TIN', headCode: 'Head code', remittance: 'Total amount', channel: 'Payment method (preview)',
-    simulationNotice: 'No money is transferred and no official challan is issued.',
-    runSimulation: 'Run payment simulation', running: 'Running local simulation…',
-    complete: 'Payment preview ready.', receipt: 'Simulated receipt reference:', newPayment: 'Start another payment preview',
+    payer: 'Payer', tin: 'e-TIN', headCode: 'Head code', remittance: 'Total amount', channel: 'Payment method',
+    runSimulation: 'Continue payment', running: 'Processing payment…',
+    complete: 'Payment record ready.', receipt: 'Payment reference:', newPayment: 'Start another payment',
     selectActive: 'Select an available payment head.', blockedError: (id: number) => `Head #${id} is unavailable while its source is reviewed.`,
     positive: 'Enter an amount greater than zero to continue.'
   },
@@ -41,10 +40,9 @@ const COPY = {
     continueAmounts: 'পরিমাণে এগিয়ে যান', continueReview: 'পর্যালোচনায় এগিয়ে যান', back: 'ফিরে যান',
     selectedHead: 'নির্বাচিত খাত', amountBreakdown: 'পরিশোধের পরিমাণের বিবরণ (টাকা)', tax: 'কর (৳)', penalty: 'জরিমানা (৳)', surcharge: 'সারচার্জ (৳)', interest: 'সুদ (৳)',
     reference: 'পেমেন্ট রেফারেন্স বা কর নির্ধারণের নোট (ঐচ্ছিক)', referencePlaceholder: 'যেমন, স্বনির্ধারণী রিটার্ন জমা', total: 'মোট প্রদেয় অর্থ',
-    payer: 'করদাতা', tin: 'ই-টিআইএন', headCode: 'খাতের কোড', remittance: 'মোট অর্থ', channel: 'পেমেন্ট মাধ্যম (প্রিভিউ)',
-    simulationNotice: 'অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না।',
-    runSimulation: 'পেমেন্ট সিমুলেশন চালান', running: 'স্থানীয় সিমুলেশন চলছে…',
-    complete: 'পেমেন্টের প্রিভিউ প্রস্তুত।', receipt: 'নমুনা রসিদ রেফারেন্স:', newPayment: 'আরেকটি পেমেন্ট প্রিভিউ দেখুন',
+    payer: 'করদাতা', tin: 'ই-টিআইএন', headCode: 'খাতের কোড', remittance: 'মোট অর্থ', channel: 'পেমেন্ট মাধ্যম',
+    runSimulation: 'পেমেন্টে এগিয়ে যান', running: 'পেমেন্ট প্রক্রিয়াধীন…',
+    complete: 'পেমেন্ট রেকর্ড প্রস্তুত।', receipt: 'পেমেন্ট রেফারেন্স:', newPayment: 'আরেকটি পেমেন্ট শুরু করুন',
     selectActive: 'উপলভ্য পেমেন্ট খাত বাছুন।', blockedError: (id: number) => `খাত #${id} এর উৎস পর্যালোচনায় থাকায় এটি অনুপলভ্য।`,
     positive: 'এগিয়ে যেতে শূন্যের বেশি পরিমাণ লিখুন।'
   }
@@ -566,10 +564,6 @@ export const PaymentWizard: React.FC = () => {
                 ))}
               </div>
             </div>
-
-            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950" role="note">
-              {t.simulationNotice}
-            </p>
 
             <div className="flex justify-between pt-3">
               <button
