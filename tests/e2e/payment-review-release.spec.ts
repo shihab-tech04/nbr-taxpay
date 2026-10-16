@@ -4,8 +4,11 @@ import AxeBuilder from '@axe-core/playwright';
 const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
-const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn') => {
-  await expect(page.getByRole('heading', { name: language === 'bn' ? 'আমার কর — রসিদের বিবরণ' : 'Amar Kor — Receipt details' })).toBeInViewport();
+const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
+  const receiptTitle = embedded
+    ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
+    : language === 'bn' ? 'আমার কর — রসিদের বিবরণ' : 'Amar Kor — Receipt details';
+  await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280') {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
     await expect(page.getByTestId('receipt-breakdown-mobile')).toBeHidden();
@@ -210,8 +213,8 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
   await services.getByRole('button', { name: /Run payment simulation/ }).click();
   await expect(services.getByText('Payment preview ready.')).toBeVisible();
-  await expect(services.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
-  await expectResponsiveReceipt(page, info.project.name, 'en');
+  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expectResponsiveReceipt(page, info.project.name, 'en', true);
 
   if (info.project.name === 'mobile-320') {
     expect(await pageWidth(page)).toBeLessThanOrEqual(322);
@@ -220,7 +223,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   if (info.project.name === 'desktop-1280') {
     await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/taxpayer-wizard-bn-desktop-1280.png' });
   }
-  await expect(services.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });
 
 test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {
