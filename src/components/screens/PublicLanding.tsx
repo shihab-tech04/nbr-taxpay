@@ -11,10 +11,10 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
   const topics = [
-    { Icon: FileCheck2, title: t('Tax with return', 'রিটার্নের সঙ্গে কর'), copy: t('Payments submitted with a tax return.', 'রিটার্নের সঙ্গে কর পরিশোধের তথ্য।') },
-    { Icon: CalendarDays, title: t('Advance income tax', 'অগ্রিম আয়কর'), copy: t('Advance payments by assessment year.', 'করবর্ষ অনুযায়ী অগ্রিম কর পরিশোধ।') },
-    { Icon: Building2, title: t('Withholding tax', 'উৎসে কর'), copy: t('Tax deducted or collected at source.', 'উৎসে কর কর্তন, সংগ্রহ ও জমা।') },
-    { Icon: WalletCards, title: t('Other tax payments', 'অন্যান্য কর পরিশোধ'), copy: t('Other income tax payment purposes.', 'অন্যান্য আয়কর পরিশোধের তথ্য।') }
+    { tone: 'return', Icon: FileCheck2, title: t('Tax with return', 'রিটার্নের সঙ্গে কর'), copy: t('Payments submitted with a tax return.', 'রিটার্নের সঙ্গে কর পরিশোধের তথ্য।') },
+    { tone: 'advance', Icon: CalendarDays, title: t('Advance income tax', 'অগ্রিম আয়কর'), copy: t('Advance payments by assessment year.', 'করবর্ষ অনুযায়ী অগ্রিম কর পরিশোধ।') },
+    { tone: 'withholding', Icon: Building2, title: t('Withholding tax', 'উৎসে কর'), copy: t('Tax deducted or collected at source.', 'উৎসে কর কর্তন, সংগ্রহ ও জমা।') },
+    { tone: 'other', Icon: WalletCards, title: t('Other tax payments', 'অন্যান্য কর পরিশোধ'), copy: t('Other income tax payment purposes.', 'অন্যান্য আয়কর পরিশোধের তথ্য।') }
   ];
   const guides = [
     { title: t('Prepare your payment details', 'পরিশোধের তথ্য প্রস্তুত করুন'), description: t('Check identity, tax year and payment purpose.', 'পরিচয়, করবর্ষ ও পরিশোধের উদ্দেশ্য যাচাই করুন।') },
@@ -57,7 +57,7 @@ export const PublicLanding: React.FC = () => {
         <p>{t('Choose a payment category.', 'পেমেন্টের ধরন বেছে নিন।')}</p>
       </div><button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
       <div className="public-info-topic-grid">
-        {topics.map(({Icon,title,copy})=><article className="public-info-topic" key={title}>
+        {topics.map(({tone,Icon,title,copy})=><article className="public-info-topic" data-taxpay-service={tone} key={tone}>
           <span className="citizen-hub-service-grid__icon"><Icon size={20} aria-hidden="true" /></span>
           <h3>{title}</h3><p>{copy}</p>
         </article>)}
