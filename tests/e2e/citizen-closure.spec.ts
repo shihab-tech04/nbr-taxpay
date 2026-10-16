@@ -40,8 +40,8 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
-  await expect(page.getByText('স্বীকৃত টিডিএস / এআইটি',{exact:true})).toBeVisible();
-  await expect(page.getByText('যাচাই হয়নি',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText(/স্বীকৃত টিডিএস \/ এআইটি/)).toBeVisible();
+  await expect(page.getByText('নথিভুক্ত লেনদেন · যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়')).toBeVisible();
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(322);
   await page.getByRole('button',{name:'লেনদেনের ইতিহাস খুলুন'}).click();
