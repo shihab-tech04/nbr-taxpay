@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, Bell, BookOpen, CircleHelp, Globe2, Home, Menu, Plus, Receipt, X } from 'lucide-react';
+import { Activity, Bell, BookOpen, CircleHelp, Globe2, Home, Menu, Plus, Receipt, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
-import { CATEGORY_LABELS } from '../../data/paymentHeads';
-import { PaymentCategory, UserRole } from '../../types/tax';
+import { UserRole } from '../../types/tax';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
 
 type CitizenAction = { route: string; en: string; bn: string };
@@ -32,13 +31,13 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
   const logOut = async () => {
     if (previewAccount && !applicationUser) {
-      setMenuOpen(false); setPayOpen(false);
+      setMenuOpen(false);
       logoutPreviewAccount();
       return;
     }
@@ -47,7 +46,7 @@ export function CitizenNavigation() {
     try {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
-      setMenuOpen(false); setPayOpen(false);
+      setMenuOpen(false);
       setUserRole('GUEST');
       // A full public reload discards any account-scoped in-memory state and closed-dialog remnants.
       window.location.assign(import.meta.env.BASE_URL);
@@ -61,7 +60,6 @@ export function CitizenNavigation() {
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
   const [compact, setCompact] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [payOpen, setPayOpen] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const inputFocusedRef = useRef(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -70,14 +68,12 @@ export function CitizenNavigation() {
   const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused;
   const go = (route: string) => {
     setMenuOpen(false);
-    setPayOpen(false);
     setCompact(false);
     navigate(route);
   };
   const openPay = () => {
     setMenuOpen(false);
-    if (isTaxpayer) go('wizard');
-    else setPayOpen(true);
+    setPaymentServiceChoiceOpen(true);
   };
   const goHome = () => {
     if (inTransaction && !window.confirm(bn
@@ -85,19 +81,9 @@ export function CitizenNavigation() {
       : 'Leave this payment step? The information entered so far will be lost.')) return;
     go(home);
   };
-  const chooseGuest = (key: string) => {
-    if (key === 'TRAVEL_TAX') { go('travel'); return; }
-    if (key === 'SOURCE_TAX_DEPOSIT') { go('guestwh'); return; }
-    setMenuOpen(false);
-    setPayOpen(false);
-    setCompact(false);
-    navigate('guest', { initialCategory: key as PaymentCategory });
-  };
-
   useEffect(() => {
     setCompact(false);
     setMenuOpen(false);
-    setPayOpen(false);
   }, [currentRoute, userRole]);
 
   useEffect(() => {
@@ -143,7 +129,7 @@ export function CitizenNavigation() {
     };
   }, [inTransaction]);
 
-  const overlayOpen = menuOpen || payOpen;
+  const overlayOpen = menuOpen;
   useEffect(() => {
     if (!overlayOpen) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -152,7 +138,7 @@ export function CitizenNavigation() {
     const dialog = dialogRef.current;
     dialog?.querySelector<HTMLButtonElement>('button')?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setMenuOpen(false); setPayOpen(false); return; }
+      if (event.key === 'Escape') { setMenuOpen(false); return; }
       if (event.key !== 'Tab' || !dialog) return;
       const buttons = [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled])')];
       if (!buttons.length) return;
@@ -242,15 +228,14 @@ export function CitizenNavigation() {
         </button>
       )}
       {overlayOpen && (
-        <div className="citizen-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) {setMenuOpen(false); setPayOpen(false);} }}>
+        <div className="citizen-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setMenuOpen(false); }}>
           <div ref={dialogRef} id="citizen-menu-dialog" className="citizen-dialog" role="dialog" aria-modal="true" aria-labelledby="citizen-dialog-title">
             <div className="citizen-dialog__title">
-              <h2 id="citizen-dialog-title">{menuOpen ? (bn ? 'সেবা ও মেনু' : 'Services & menu') : (bn ? 'পেমেন্টের ধরন বাছুন' : 'Select payment type')}</h2>
-              <button type="button" onClick={() => {setMenuOpen(false);setPayOpen(false);}}
+              <h2 id="citizen-dialog-title">{bn ? 'সেবা ও মেনু' : 'Services & menu'}</h2>
+              <button type="button" onClick={() => setMenuOpen(false)}
                 aria-label={bn ? 'বন্ধ করুন' : 'Close'}><X aria-hidden="true"/></button>
             </div>
-            {menuOpen ? (
-              <>
+            <>
                 <nav className="citizen-dialog__navigation" aria-label={bn ? 'সেবার নেভিগেশন' : 'Services navigation'}>
                   <p className="citizen-dialog__section-label">{bn ? 'প্রধান নেভিগেশন' : 'Navigation'}</p>
                   <div className="citizen-dialog__links">{links.map(action)}</div>
@@ -276,23 +261,7 @@ export function CitizenNavigation() {
                   )}
                   {signOutError && <p role="alert" className="citizen-dialog__notice">{signOutError}</p>}
                 </section>
-              </>
-            ) : (
-              <>
-                <p className="citizen-dialog__intro">{bn ? 'পেমেন্টের ধরন দেখুন। প্রকৃত অর্থ জমা হয় না।' : 'Preview payment options. No funds are transferred.'}</p>
-                <div className="citizen-dialog__links">
-                  {Object.entries(CATEGORY_LABELS).map(([key,item]) => (
-                    <button key={key} type="button" className="citizen-payment-choice" onClick={() => chooseGuest(key)}>
-                      <span>{key === 'OTHER_TAX_PAYMENT' ? (bn ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment') : (bn ? item.bn : item.en)}</span><ArrowRight size={16} aria-hidden="true"/>
-                    </button>
-                  ))}
-                  <button type="button" className="citizen-payment-choice" onClick={() => chooseGuest('TRAVEL_TAX')}>
-                    <span>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span><ArrowRight size={16} aria-hidden="true"/>
-                  </button>
-                </div>
-                <p className="citizen-dialog__notice"><BookOpen size={16} aria-hidden="true"/> {bn ? 'পেমেন্টের খাত পর্যালোচনাধীন।' : 'Payment heads under review.'}</p>
-              </>
-            )}
+            </>
           </div>
         </div>
       )}

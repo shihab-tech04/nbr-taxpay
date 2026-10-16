@@ -25,6 +25,8 @@ import {
 
 export interface TaxStateContextType {
   currentRoute: string;
+  isPaymentServiceChoiceOpen: boolean;
+  setPaymentServiceChoiceOpen: (open: boolean) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
   loginPreviewAccount: (userId: string, password: string) => boolean;
@@ -75,6 +77,7 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
     ? state.taxpaySampleRole as UserRole : null;
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen] = useState(false);
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     // Public payment discovery is the primary citizen entry. TaxPay account access remains available by explicit deep link.
     const action = new URLSearchParams(window.location.search).get('action');
@@ -135,6 +138,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     window.history.replaceState(window.history.state, '', next);
   };
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
+    setPaymentServiceChoiceOpen(false);
     const route = validRoute(requestedRoute);
     setCurrentRoute(route);
     setRouteParams(params);
@@ -322,6 +326,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <TaxStateContext.Provider
       value={{
         currentRoute,
+        isPaymentServiceChoiceOpen,
+        setPaymentServiceChoiceOpen,
         demoUser,
         previewAccount,
         loginPreviewAccount,

@@ -6,7 +6,7 @@ import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
 
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate } = useTaxState();
+  const { language, navigate, setPaymentServiceChoiceOpen } = useTaxState();
   const [openService,setOpenService] = useState<PublicService|null>(null);
   const openGuide=(category:string)=>navigate('user_guide',{category});
   const bn = language === 'bn';
@@ -36,7 +36,7 @@ export const PublicLanding: React.FC = () => {
         <h1 id="public-home-title">{t('Understand tax payments. Stay in control.', 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।')}</h1>
         <p>{t('Explore payment guidance. Manage your transactions after login.', 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।')}</p>
         <div className="citizen-public-hero__actions public-guest-actions">
-          <button type="button" className="citizen-public-primary public-guest-action" onClick={()=>navigate('guest')}><WalletCards size={18} aria-hidden="true"/>{t('Pay Tax','কর পরিশোধ')}</button>
+          <button type="button" className="citizen-public-primary public-guest-action" onClick={()=>setPaymentServiceChoiceOpen(true)}><WalletCards size={18} aria-hidden="true"/>{t('Pay Tax','কর পরিশোধ')}</button>
           <button type="button" className="citizen-public-secondary public-guest-action" onClick={()=>setOpenService('status')}><Search size={18} aria-hidden="true"/>{t('Check payment & receipt','পেমেন্ট ও রসিদ যাচাই')}</button>
         </div>
       </div>

@@ -1,0 +1,184 @@
+/* Step 1 — tax-service choice. Scoped to the shared citizen modal. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] {
+  width: min(100%, 1040px);
+  border-radius: var(--taxpay-radius-modal);
+  box-shadow: var(--taxpay-shadow-modal);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] .taxpay-modal__title {
+  font-family: inherit;
+}
+.tax-service-choice { font-family: inherit; }
+.tax-service-choice__eyebrow {
+  margin: 0 0 .8rem;
+  color: var(--citizen-muted);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+.tax-service-choice__progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .65rem;
+  padding: 0 0 1.15rem;
+  margin: 0 0 1.3rem;
+  list-style: none;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.tax-service-choice__progress li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-height: 44px;
+  padding: .55rem .5rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  background: var(--color-taxpay-surface-subtle);
+  color: var(--citizen-muted);
+  font-size: .8rem;
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.25;
+}
+.tax-service-choice__progress li span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 21px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: white;
+  color: var(--citizen-muted);
+  font-size: .72rem;
+}
+.tax-service-choice__progress li.tax-service-choice__stage--current {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary);
+  color: white;
+}
+.tax-service-choice__progress li.tax-service-choice__stage--current span {
+  background: rgb(255 255 255 / 20%);
+  color: white;
+}
+.tax-service-choice h3 {
+  margin: 0 0 1rem;
+  color: var(--citizen-text);
+  font-size: 1.1rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.tax-service-choice__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .9rem;
+}
+.tax-service-choice__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .35rem;
+  min-width: 0;
+  min-height: 146px;
+  padding: 1rem 1.15rem;
+  border: 1.5px solid var(--citizen-border);
+  border-radius: var(--taxpay-radius-card);
+  background: white;
+  color: var(--citizen-text);
+  text-align: left;
+  box-shadow: var(--taxpay-shadow-card);
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.tax-service-choice__card:hover {
+  border-color: var(--citizen-primary);
+}
+.tax-service-choice__card[aria-pressed="true"] {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary-light);
+  box-shadow: inset 0 0 0 1px var(--citizen-primary);
+}
+.tax-service-choice__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: .3rem;
+  border: 1px solid #cbdcf7;
+  border-radius: 10px;
+  background: var(--citizen-primary-light);
+  color: var(--citizen-primary);
+}
+.tax-service-choice__radio {
+  position: absolute;
+  top: 1.55rem;
+  right: 1.15rem;
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 50%;
+  color: white;
+  background: white;
+}
+.tax-service-choice__card[aria-pressed="true"] .tax-service-choice__radio {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary);
+}
+.tax-service-choice__card strong {
+  display: block;
+  padding-right: 1rem;
+  font-size: .98rem;
+  line-height: 1.45;
+  font-weight: 750;
+}
+.tax-service-choice__description {
+  display: block;
+  color: var(--citizen-muted);
+  font-size: .84rem;
+  line-height: 1.55;
+}
+.tax-service-choice__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+.tax-service-choice__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 44px;
+  padding: .65rem 1.25rem;
+  border-radius: 10px;
+  font-size: .88rem;
+  font-weight: 700;
+}
+.tax-service-choice__cancel {
+  border: 1px solid var(--citizen-border);
+  color: var(--citizen-text);
+  background: white;
+}
+.tax-service-choice__cancel:hover { background: var(--color-taxpay-surface-subtle); }
+.tax-service-choice__continue {
+  color: white;
+  background: var(--citizen-primary);
+}
+.tax-service-choice__continue:hover:not(:disabled) { background: var(--citizen-primary-dark); }
+.tax-service-choice__continue:disabled { opacity: .48; cursor: not-allowed; }
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] {
+    width: 100%;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .tax-service-choice__progress { gap: .35rem; }
+  .tax-service-choice__progress li { flex-direction: column; gap: .2rem; font-size: .67rem; }
+  .tax-service-choice__grid { grid-template-columns: minmax(0, 1fr); gap: .65rem; }
+  .tax-service-choice__card { min-height: 123px; }
+  .tax-service-choice__actions button { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tax-service-choice__card { transition: none; }
+}

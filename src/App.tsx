@@ -8,6 +8,7 @@ import {AccountIdentityProvider,useAccountIdentity} from './services/accountIden
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { TaxpayerLoginDialog } from './components/screens/TaxpayerLoginDialog';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
+import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
@@ -43,7 +44,7 @@ const previewReadOnlyRoutes = new Set([
 ]);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -177,6 +178,7 @@ const MainRouter: React.FC = () => {
       <CitizenFooter />
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
+      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
       {loginOverlay && <TaxpayerLoginDialog />}
     </div>
   );
