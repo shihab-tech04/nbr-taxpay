@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, FileCheck2, FilePenLine, Home, LogOut, ReceiptText, Settings2, WalletCards } from 'lucide-react';
-import { useTaxState } from '../../services/taxState';
+import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
 
@@ -19,15 +19,15 @@ const links: RailLink[] = [
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [signingOut, setSigningOut] = React.useState(false);
   const logout = async () => {
     setSignOutError('');
     if (!user) {
-      if (previewAccount) logoutPreviewAccount();
-      else { setUserRole('GUEST'); navigate('landing'); }
+      if (sampleJourneysEnabled) setUserRole('GUEST');
+      navigate('landing');
       return;
     }
     setSigningOut(true);
@@ -41,7 +41,7 @@ export function TaxpayerReferenceRail() {
     finally { setSigningOut(false); }
   };
   const bn = language === 'bn';
-  const sampleProfile = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
+  const sampleProfile = sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
 
   return (
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
@@ -88,7 +88,7 @@ export function TaxpayerReferenceRail() {
       <div className="taxpayer-reference-rail-bottom">
         {(user || sampleProfile) && <button type="button" disabled={signingOut} onClick={logout}>
           <LogOut size={17} aria-hidden={true} />
-          <span>{previewAccount || user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}</span>
+          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}</span>
         </button>}
         {signOutError && <p role="alert">{signOutError}</p>}
         <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>

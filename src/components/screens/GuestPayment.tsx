@@ -50,8 +50,8 @@ const GUEST_COPY = {
     draft: 'Plan as a private draft', continueReview: 'Continue to Review', back: 'Back', backToHead: 'Back to Payment Head',
     reviewTitle: 'Payment summary', payer: 'Payer Name', jurisdiction: 'Jurisdiction',
     headTitle: 'Payment Head', unspecified: 'Unspecified', grandTotal: 'Total Amount (BDT)',
-    channel: 'Payment method', noFee: 'No fee', directTreasury: 'Treasury route',
-    govSwitch: 'Payment gateway',
+    channel: 'Payment preview method', noFee: 'Not calculated', directTreasury: 'Bank branch preview',
+    govSwitch: 'Preview only; no gateway request',
     anotherPayment: 'Start another payment',
     invalidTin: 'Enter the taxpayer’s 12-digit TIN.',
     requiredPayer: 'Enter the payer’s full legal name.',
@@ -87,8 +87,8 @@ const GUEST_COPY = {
     draft: 'ব্যক্তিগত খসড়া হিসেবে পরিকল্পনা করুন', continueReview: 'পর্যালোচনায় এগিয়ে যান', back: 'পূর্ববর্তী ধাপ', backToHead: 'পেমেন্ট খাতে ফিরুন',
     reviewTitle: 'পেমেন্টের সারসংক্ষেপ', payer: 'করদাতার নাম', jurisdiction: 'এখতিয়ার',
     headTitle: 'পেমেন্ট খাত', unspecified: 'উল্লেখ করা হয়নি', grandTotal: 'মোট অর্থ (টাকা)',
-    channel: 'পেমেন্ট মাধ্যম', noFee: 'কোনো ফি নেই', directTreasury: 'ট্রেজারি রুট',
-    govSwitch: 'পেমেন্ট গেটওয়ে',
+    channel: 'পেমেন্ট প্রিভিউ পদ্ধতি', noFee: 'হিসাব করা হয়নি', directTreasury: 'ব্যাংক শাখার প্রিভিউ',
+    govSwitch: 'শুধু প্রিভিউ; গেটওয়েতে অনুরোধ যায়নি',
     anotherPayment: 'আরেকটি পেমেন্ট শুরু করুন',
     invalidTin: 'করদাতার ১২ সংখ্যার টিআইএন লিখুন।',
     requiredPayer: 'করদাতার পূর্ণ আইনগত নাম দিন।',
@@ -103,11 +103,9 @@ const GUEST_COPY = {
 type GuestErrorField = 'tin' | 'payerName' | 'phone' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
 
-type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
-type PaymentPhase = 'review' | 'processing' | 'pending-bank' | 'failed' | 'settled';
-const ONLINE_LIFECYCLE: LifecycleStage[] = ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED', 'PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED'];
-const BANK_LIFECYCLE: LifecycleStage[] = ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED'];
-const BANK_SETTLEMENT: LifecycleStage[] = ['PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED'];
+type LifecycleStage = 'PREVIEW_CREATED' | 'SIMULATION_NOT_SENT' | 'MOCK_FAILURE';
+type PaymentPhase = 'review' | 'processing' | 'mock-failure' | 'preview-ready';
+const PREVIEW_LIFECYCLE: LifecycleStage[] = ['PREVIEW_CREATED', 'SIMULATION_NOT_SENT'];
 const ONLINE_METHODS: { id: ChallanReceipt['paymentMethod']; name: string; group: string }[] = [
   { id: 'BKASH', name: 'bKash', group: 'mfs' },
   { id: 'NAGAD', name: 'Nagad', group: 'mfs' },
@@ -118,14 +116,9 @@ const ONLINE_METHODS: { id: ChallanReceipt['paymentMethod']; name: string; group
 ];
 
 const statusLabels: Record<LifecycleStage, { en: string; bn: string }> = {
-  INITIATED: { en: 'Payment initiated', bn: 'পরিশোধ শুরু হয়েছে' },
-  AUTHORIZED: { en: 'Payment authorized', bn: 'পরিশোধ অনুমোদিত' },
-  ACS_REFERENCE_CREATED: { en: 'Challan reference generated', bn: 'চালান রেফারেন্স তৈরি হয়েছে' },
-  PROCESSING: { en: 'Payment processing', bn: 'পরিশোধ প্রক্রিয়াধীন' },
-  TREASURY_SETTLED: { en: 'Treasury settlement received', bn: 'ট্রেজারি নিষ্পত্তি নিশ্চিত' },
-  NBR_LEDGER_POSTED: { en: 'NBR ledger updated', bn: 'এনবিআর লেজার হালনাগাদ' },
-  CREDITED: { en: 'Tax credit recorded', bn: 'কর ক্রেডিট লিপিবদ্ধ' },
-  FAILED: { en: 'Payment declined', bn: 'পরিশোধ প্রত্যাখ্যাত' }
+  PREVIEW_CREATED: { en: 'Preview created locally', bn: 'স্থানীয়ভাবে প্রিভিউ তৈরি হয়েছে' },
+  SIMULATION_NOT_SENT: { en: 'No payment request sent', bn: 'কোনো পেমেন্ট অনুরোধ পাঠানো হয়নি' },
+  MOCK_FAILURE: { en: 'Local mock failure shown', bn: 'স্থানীয় মক ব্যর্থতা দেখানো হয়েছে' }
 };
 
 interface GuestPaymentProps {
@@ -308,21 +301,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setLifecycleStages(previous => [...previous, status]);
       if (index !== sequence.length - 1) return;
       setIsProcessing(false);
-      if (status === 'FAILED') {
-        setPaymentPhase('failed');
-      } else if (status === 'ACS_REFERENCE_CREATED') {
-        setPaymentPhase('pending-bank');
-      } else if (status === 'CREDITED') {
-        const settledReceipt: ChallanReceipt = {
+      if (status === 'MOCK_FAILURE') {
+        setPaymentPhase('mock-failure');
+      } else if (status === 'SIMULATION_NOT_SENT') {
+        const previewReceipt: ChallanReceipt = {
           ...receipt,
-          treasuryStatus: 'TREASURY_SCROLLED',
-          treasuryScrollNo: `DEMO-SCRL-${Date.now()}`,
-          treasuryDate: new Date().toISOString(),
-          completedAt: new Date().toISOString()
+          gatewayTransactionId: 'SIMULATION-NOT-SENT',
+          treasuryStatus: 'INITIATED',
+          treasuryScrollNo: undefined,
+          treasuryDate: undefined,
+          taxCreditStatus: 'NOT_APPLICABLE',
+          completedAt: undefined
         };
-        addPaymentReceipt(settledReceipt);
-        setCreatedReceipt(settledReceipt);
-        setPaymentPhase('settled');
+        addPaymentReceipt(previewReceipt);
+        setCreatedReceipt(previewReceipt);
+        setPaymentPhase('preview-ready');
       }
     }, (index + 1) * 550));
   };
@@ -352,11 +345,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       };
 
       const newReceipt: ChallanReceipt = {
-        id: `rcpt-${Date.now()}`,
-        taxEventId: `TE-${year}-${Math.floor(100000 + Math.random() * 900000)}`,
-        paymentTransactionId: `PT-${year}-${Math.floor(100000 + Math.random() * 900000)}`,
-        challanNo: `ACS-${year}-${randChallan}`,
-        tokenNumber: `TKN-${randToken}`,
+        id: `preview-${Date.now()}`,
+        challanNo: `PREVIEW-${year}-PAY-${randChallan}`,
+        tokenNumber: `PREVIEW-${randToken}`,
         paymentCategory: category,
         assessmentYear,
         payerName: forSelf ? (payerName.trim() || 'Taxpayer / withholding agent') : payerName,
@@ -371,25 +362,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         items: [lineItem],
         totalAmount,
         paymentMethod,
-        gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
+        gatewayTransactionId: 'SIMULATION-NOT-SENT',
         treasuryStatus: 'INITIATED',
-        // CRITICAL DOMAIN SEPARATION:
-        taxCreditStatus: (isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT') 
-          ? 'NOT_APPLICABLE' 
-          : 'PENDING_RECONCILIATION',
+        treasuryScrollNo: undefined,
+        taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
         isSimulatedDemo: true
       };
       setAttemptReceipt(newReceipt);
       setStep(4);
-      runLifecycle(paymentChannel === 'OTC' ? BANK_LIFECYCLE : simulateDecline ? [...ONLINE_LIFECYCLE.slice(0, 4), 'FAILED'] : ONLINE_LIFECYCLE, newReceipt);
-  };
-
-  const simulateBankSettlement = () => {
-    if (paymentPhase !== 'pending-bank' || !attemptReceipt || isProcessing) return;
-    setIsProcessing(true);
-    setPaymentPhase('processing');
-    runLifecycle(BANK_SETTLEMENT, attemptReceipt);
+      runLifecycle(import.meta.env.DEV && simulateDecline ? ['PREVIEW_CREATED', 'MOCK_FAILURE'] : PREVIEW_LIFECYCLE, newReceipt);
   };
 
   const retryPayment = () => {
@@ -406,58 +388,45 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   if (step === 4) {
-    const completed = paymentPhase === 'settled';
-    const bankPending = paymentPhase === 'pending-bank';
-    const declined = paymentPhase === 'failed';
-    const referenceReady = lifecycleStages.includes('ACS_REFERENCE_CREATED');
+    const completed = paymentPhase === 'preview-ready';
+    const declined = paymentPhase === 'mock-failure';
+    const referenceReady = lifecycleStages.includes('PREVIEW_CREATED');
     return (
       <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
         <section className="payment-lifecycle" aria-labelledby="payment-lifecycle-title">
-          <div className={`payment-lifecycle__heading payment-lifecycle__heading--${declined ? 'failed' : bankPending ? 'pending' : completed ? 'complete' : 'running'}`}>
-            <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
+          <div className={`payment-lifecycle__heading payment-lifecycle__heading--${declined ? 'failed' : completed ? 'complete' : 'running'}`}>
+            <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : <CheckCircle size={22} />}</span>
             <div>
-              <h2 id="payment-lifecycle-title">{declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? (language === 'bn' ? 'পেমেন্ট প্রক্রিয়া সম্পন্ন' : 'Payment process complete') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}</h2>
-              <p>{language === 'bn' ? 'ট্যাক্স ইভেন্ট → পেমেন্ট → ACS চালান → ট্রেজারি → NBR লেজার → ক্রেডিট' : 'Tax event → payment → ACS challan → Treasury → NBR ledger → tax credit'}</p>
+              <h2 id="payment-lifecycle-title">{declined ? (language === 'bn' ? 'স্থানীয় মক ব্যর্থতা' : 'Local mock failure') : completed ? (language === 'bn' ? 'পেমেন্ট প্রিভিউ প্রস্তুত' : 'Payment preview prepared') : (language === 'bn' ? 'প্রিভিউ তৈরি হচ্ছে…' : 'Preparing payment preview…')}</h2>
+              <p>{language === 'bn' ? 'এটি কেবল স্থানীয় প্রিভিউ। কোনো পেমেন্ট অনুরোধ, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট তৈরি হয়নি।' : 'Local preview only. No payment request, official challan, Treasury settlement, or tax credit was created.'}</p>
             </div>
           </div>
           <div className="payment-lifecycle__details">
             <dl className="payment-lifecycle__references">
-              <div><dt>{language === 'bn' ? 'কর ইভেন্ট আইডি' : 'Tax event ID'}</dt><dd>{attemptReceipt?.taxEventId || '—'}</dd></div>
-              <div><dt>{language === 'bn' ? 'পেমেন্ট ট্রানজেকশন আইডি' : 'Payment transaction ID'}</dt><dd>{attemptReceipt?.paymentTransactionId || '—'}</dd></div>
-              <div><dt>{language === 'bn' ? 'ACS চালান রেফারেন্স' : 'ACS challan reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</dd></div>
+              <div><dt>{language === 'bn' ? 'প্রিভিউ রেফারেন্স' : 'Preview reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Preparing…')}</dd></div>
+              <div><dt>{language === 'bn' ? 'প্রিভিউ টোকেন' : 'Preview token'}</dt><dd>{attemptReceipt?.tokenNumber || '—'}</dd></div>
               <div><dt>{language === 'bn' ? 'মোট অর্থ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
             </dl>
             <ol className="payment-lifecycle__timeline" aria-label={language === 'bn' ? 'পরিশোধের অবস্থা' : 'Payment lifecycle'} aria-live="polite" data-testid="payment-lifecycle">
-              {lifecycleStages.map((status, index) => <li key={`${status}-${index}`} className={status === 'FAILED' ? 'payment-lifecycle__event--failed' : ''}>
-                <span className="payment-lifecycle__event-dot" aria-hidden="true">{status === 'FAILED' ? '!' : '✓'}</span>
-                <span>{status === 'CREDITED' && category === 'SOURCE_TAX_DEPOSIT'
-                  ? (language === 'bn' ? 'উৎসে কর জমা নথিভুক্ত — eTDS-এ বরাদ্দ বাকি' : 'Withholding deposit recorded — eTDS allocation pending')
-                  : statusLabels[status][language]}</span>
+              {lifecycleStages.map((status, index) => <li key={`${status}-${index}`} className={status === 'MOCK_FAILURE' ? 'payment-lifecycle__event--failed' : ''}>
+                <span className="payment-lifecycle__event-dot" aria-hidden="true">{status === 'MOCK_FAILURE' ? '!' : '✓'}</span>
+                <span>{statusLabels[status][language]}</span>
                 <small>{status}</small>
               </li>)}
               {isProcessing && <li className="payment-lifecycle__waiting"><span className="payment-lifecycle__event-dot" aria-hidden="true">·</span>{language === 'bn' ? 'পরবর্তী নিশ্চিতকরণের অপেক্ষায়…' : 'Waiting for the next confirmation…'}</li>}
             </ol>
           </div>
-          {bankPending && <div className="payment-lifecycle__result payment-lifecycle__result--pending">
-            <FileText size={21} aria-hidden="true" />
-            <div>
-              <strong>{language === 'bn' ? 'এটি এখনো পরিশোধিত কর নয়' : 'This is not tax paid yet'}</strong>
-              <p>{language === 'bn' ? 'স্লিপটি ১৫ দিন বৈধ। তফসিলি ব্যাংকের শাখায় রেফারেন্সটি নিয়ে যান। ব্যাংকে পরিশোধ ও ট্রেজারি নিষ্পত্তির পর কর ক্রেডিটের ধাপ আসে।' : 'The slip is valid for 15 days. Take its reference to a scheduled bank branch. Tax credit follows bank payment and Treasury settlement.'}</p>
-            </div>
-          </div>}
-          {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.'}</p></div>}
-          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট রেফারেন্স ও রসিদের বিবরণ নিচে দেওয়া হলো।' : 'Your payment reference and receipt details are ready below.'}</p></div>}
+          {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'স্থানীয় মক ব্যর্থতার ফল দেখানো হয়েছে। কোনো পেমেন্ট অনুরোধ পাঠানো হয়নি।' : 'A local mock failure is shown. No payment request was sent.'}</p></div>}
+          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'প্রিভিউ রেফারেন্স ও বিবরণ তৈরি হয়েছে; সরকারি পেমেন্ট বা চালান নয়।' : 'A preview reference and details are ready; no government payment or challan was created.'}</p></div>}
           <div className="payment-lifecycle__actions no-print">
-            {bankPending && <><button type="button" className="payment-lifecycle__secondary" onClick={() => window.print()}><FileText size={16} />{language === 'bn' ? 'স্লিপ প্রিন্ট করুন' : 'Print payment slip'}</button>{!embedded && <button type="button" className="payment-lifecycle__primary" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'}</button>}</>}
-            {declined && !embedded && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment}>{language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা করুন' : 'Try another payment method'}</button>}
+            {declined && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment}>{language === 'bn' ? 'প্রিভিউ আবার চেষ্টা করুন' : 'Retry preview'}</button>}
             {completed && <button type="button" className="payment-lifecycle__secondary" onClick={() => { setStep(1); setCreatedReceipt(null); setPaymentPhase('review'); setLifecycleStages([]); setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); }}>{copy.anotherPayment}</button>}
           </div>
         </section>
         {createdReceipt && <div lang={language}><ReceiptView receipt={createdReceipt} embedded={embedded} onBack={embedded ? onBackToService : () => navigate('landing')} /></div>}
         {embedded && modalFooterTarget && createPortal(
           <div className="payment-flow-embedded__footer-actions">
-            {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
-            {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment}>{language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা' : 'Try another method'} <ArrowRight size={17} /></button>}
+            {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment}>{language === 'bn' ? 'প্রিভিউ আবার চেষ্টা করুন' : 'Retry preview'} <ArrowRight size={17} /></button>}
           </div>, modalFooterTarget
         )}
       </div>
@@ -830,7 +799,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           <div className="payment-review" data-testid="payment-review">
             <div className="payment-review__main">
               <section className="payment-review__panel" aria-labelledby="guest-payment-summary-title">
-                <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-summary-title">{copy.reviewTitle}</h2><p>{language === 'bn' ? 'চূড়ান্ত করার আগে করদাতা, খাত ও পরিমাণ যাচাই করুন' : 'Check the taxpayer, payment head and amount before submitting'}</p></div></div>
+                <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-summary-title">{copy.reviewTitle}</h2><p>{language === 'bn' ? 'এগোনোর আগে করদাতা, খাত ও পরিমাণ যাচাই করুন' : 'Check the taxpayer, payment head and amount before continuing'}</p></div></div>
                 <dl className="payment-review__rows">
                   <div><dt>{language === 'bn' ? 'যাঁর কর পরিশোধ হচ্ছে' : 'Taxpayer TIN'}</dt><dd className="font-mono-plex">{tin}</dd></div>
                   <div><dt>{language === 'bn' ? 'পরিশোধকারী' : 'Payer'}</dt><dd>{forSelf ? (language === 'bn' ? 'করদাতা নিজে' : 'Taxpayer (self)') : (payerName || copy.unspecified)}</dd></div>
@@ -840,25 +809,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   <div><dt>{commonCopy.assessmentYear}</dt><dd>{assessmentYear}</dd></div>
                   {noticeReference.trim() && <div><dt>{language === 'bn' ? 'NBR রেফারেন্স' : 'NBR reference'}</dt><dd>{noticeReference}</dd></div>}
                   <div><dt>{language === 'bn' ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd className="font-mono-plex">{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
-                  <div><dt>{language === 'bn' ? 'ক্রেডিট হবে' : 'Credited to'}</dt><dd>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'eTDS-এ বরাদ্দের পর কর্তিত ব্যক্তিদের, এজেন্টের নয়' : 'Deductees after allocation in eTDS, never the agent') : (language === 'bn' ? 'উল্লেখিত টিআইএন-এর করদাতার হিসাবে' : 'The taxpayer with the stated TIN, not the payer')}</dd></div>
+                  <div><dt>{language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer account'}</dt><dd>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'eTDS-এ বরাদ্দের জন্য কর কর্তনগ্রহীতা' : 'Deductees after eTDS allocation') : (language === 'bn' ? 'উল্লেখিত টিআইএন; এই প্রিভিউ ক্রেডিট দেয় না' : 'Stated TIN; this preview posts no credit')}</dd></div>
                 </dl>
                 {note && <p className="payment-review__note">{language === 'bn' ? 'মন্তব্য:' : 'Remarks:'} {note}</p>}
               </section>
 
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
-                <div className="payment-review__section-title"><span className="payment-review__section-number">02</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
+                <div className="payment-review__section-title"><span className="payment-review__section-number">02</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট প্রিভিউ পদ্ধতি বেছে নিন' : 'Choose payment preview method'}</h2><p>{language === 'bn' ? 'কোনো গেটওয়ে বা ব্যাংকে অনুরোধ পাঠানো হবে না' : 'No request will be sent to a gateway or bank'}</p></div></div>
+                <p className="payment-review__bank-note" role="note"><Info size={16} aria-hidden="true" />{language === 'bn' ? 'এটি শুধু প্রিভিউ। অর্থ স্থানান্তর, সরকারি চালান, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট তৈরি হবে না।' : 'Preview only. No money is transferred, and no official challan, Treasury settlement, or tax credit is created.'}</p>
                 <div className="payment-review__channels" role="group" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেল' : 'Payment channel'}>
-                  <button type="button" aria-pressed={paymentChannel === 'NOW'} className={`payment-review__channel ${paymentChannel === 'NOW' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('NOW'); setPaymentMethod(null); setAcknowledged(false); }}><CreditCard size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'অনলাইনে পরিশোধ' : 'Pay online'}</strong><small>{language === 'bn' ? 'মোবাইল ব্যাংকিং, ইন্টারনেট ব্যাংকিং বা কার্ড' : 'MFS, internet banking or card'}</small></span><span className="payment-review__radio" /></button>
-                  <button type="button" aria-pressed={paymentChannel === 'OTC'} className={`payment-review__channel ${paymentChannel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('OTC'); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }}><Building2 size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'}</strong><small>{language === 'bn' ? 'আগে চালান স্লিপ, পরে ব্যাংকে পরিশোধ' : 'Generate a challan slip, then pay at the bank'}</small></span><span className="payment-review__radio" /></button>
+                  <button type="button" aria-pressed={paymentChannel === 'NOW'} className={`payment-review__channel ${paymentChannel === 'NOW' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('NOW'); setPaymentMethod(null); setAcknowledged(false); }}><CreditCard size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'অনলাইন পদ্ধতির প্রিভিউ' : 'Online method preview'}</strong><small>{language === 'bn' ? 'মোবাইল ব্যাংকিং, ইন্টারনেট ব্যাংকিং বা কার্ড' : 'MFS, internet banking or card'}</small></span><span className="payment-review__radio" /></button>
+                  <button type="button" aria-pressed={paymentChannel === 'OTC'} className={`payment-review__channel ${paymentChannel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('OTC'); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }}><Building2 size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'ব্যাংক শাখার প্রিভিউ' : 'Bank branch preview'}</strong><small>{language === 'bn' ? 'কোনো ব্যাংক স্লিপ বা চালান ইস্যু হবে না' : 'No bank slip or challan is issued'}</small></span><span className="payment-review__radio" /></button>
                 </div>
                 {paymentChannel === 'NOW' && <div className="payment-review__methods">
                   {(['bank', 'mfs', 'card'] as const).map(group => <fieldset key={group}>
                     <legend>{group === 'bank' ? (language === 'bn' ? 'ব্যাংক' : 'Bank') : group === 'mfs' ? (language === 'bn' ? 'মোবাইল আর্থিক সেবা' : 'Mobile financial services') : (language === 'bn' ? 'কার্ড' : 'Cards')}</legend>
                     <div className="payment-review__method-list">{ONLINE_METHODS.filter(method => method.group === group).map(method => <label key={method.id} className={`payment-review__method ${paymentMethod === method.id ? 'payment-review__method--selected' : ''}`}><input type="radio" name="guest-gateway-method" checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} />{method.name}</label>)}</div>
                   </fieldset>)}
-                  <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={e => setSimulateDecline(e.target.checked)} />{language === 'bn' ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>
+                  {import.meta.env.DEV && <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={e => setSimulateDecline(e.target.checked)} />{language === 'bn' ? 'স্থানীয় মক ব্যর্থতা দেখান' : 'Show local mock failure'}</label>}
                 </div>}
-                {paymentChannel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{language === 'bn' ? 'চালান তৈরি হওয়া মানেই কর পরিশোধ নয়। ব্যাংকের অর্থ ট্রেজারিতে নিষ্পন্ন হলে তবেই কর ক্রেডিট।' : 'Generating a challan does not mean tax is paid. Tax credit follows bank payment and Treasury settlement.'}</p>}
+                {paymentChannel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{language === 'bn' ? 'ব্যাংক শাখার জন্য কোনো চালান বা পেমেন্ট স্লিপ তৈরি হবে না।' : 'No challan or payment slip will be generated for a bank branch.'}</p>}
               </section>
             </div>
             <aside className="payment-review__aside" aria-label={language === 'bn' ? 'মোট পেমেন্ট ও নিশ্চিতকরণ' : 'Payment total and confirmation'}>
@@ -867,14 +837,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <strong className="payment-review__total-figure">{formatCurrency(totalAmount, language)}</strong>
                 <dl className="payment-review__breakdown">
                   {[[copy.taxAmount, taxAmount], [copy.penalty, penaltyAmount], [copy.surcharge, surchargeAmount], [copy.interest, interestAmount]].map(([label, amount]) => <div key={label}><dt>{label}</dt><dd>{formatCurrency(Number(amount), language)}</dd></div>)}
-                  <div className="payment-review__breakdown-fee"><dt>{language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge'}</dt><dd>{formatCurrency(0, language)}</dd></div>
+                  <div className="payment-review__breakdown-fee"><dt>{language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge'}</dt><dd>—</dd></div>
                 </dl>
               </div>
-              <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ ঠিক আছে; eTDS-এ বরাদ্দ না হওয়া পর্যন্ত কর্তিত করদাতারা ক্রেডিট পাবেন না।' : 'I have checked the agent TIN, deduction head, year and amount. Deductees get credit only after allocation in eTDS.') : (language === 'bn' ? 'আমি টিআইএন, পরিশোধের উদ্দেশ্য ও খাত, আয়করের ধরন, করবর্ষ ও পরিমাণ যাচাই করেছি; ক্রেডিট করদাতার হিসাবে যাবে।' : 'I have checked the TIN, purpose and head, income tax type, assessment year and amount. Credit goes to the taxpayer, not the payer.')}</span></label>
+              <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি; এই প্রিভিউ eTDS-এ জমা বা ক্রেডিট তৈরি করে না।' : 'I checked the agent TIN, deduction head, year and amount. This preview creates no eTDS deposit or credit.') : (language === 'bn' ? 'টিআইএন, করের ধরন, খাত, করবর্ষ ও পরিমাণ যাচাই করেছি; এই প্রিভিউ কোনো অর্থ বা কর ক্রেডিট তৈরি করে না।' : 'I checked the TIN, tax type, head, year and amount. This preview creates no payment or tax credit.')}</span></label>
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{copy.backToHead}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing}>{language === 'bn' ? 'পেমেন্ট প্রিভিউ তৈরি করুন' : 'Prepare payment preview'}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -890,7 +860,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
             <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged} aria-busy={isProcessing}>
-              {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
+              <FileText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্ট প্রিভিউ তৈরি করুন' : 'Prepare payment preview'}
             </button>
           </>) : null}
         </div>, modalFooterTarget

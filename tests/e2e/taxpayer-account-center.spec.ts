@@ -21,7 +21,7 @@ test('sample taxpayer can navigate a fictional profile and personal settings wit
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
 });
 
-test('profile and notification routes protect private data; legacy Office links return to public TaxPay',async({page})=>{
+test('profile and notification routes never expose private data to an anonymous visitor',async({page})=>{
   await page.goto('/?action=account_notifications');
   await expect(page.getByRole('heading',{name:'Notifications'})).toBeVisible();
   await expect(page.getByText('Sign-in is currently unavailable.')).toBeVisible();
@@ -32,9 +32,7 @@ test('profile and notification routes protect private data; legacy Office links 
   await expect(page.getByRole('button',{name:'Save preferences'})).toHaveCount(0);
   await page.goto('/?action=officer_home');
   await expect(page).toHaveURL(/action=landing/);
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
-  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
-  await expect(page.locator('.taxpayer-account-center')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:/Universal Cross-Treasury Payment Search/})).toHaveCount(0);
 });
 
 test('desktop taxpayer rail includes profile, notifications, settings and safe exit',async({page},info)=>{

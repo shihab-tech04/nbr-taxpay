@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, Bell, BookOpen, CircleHelp, Globe2, Home, Menu, Plus, Receipt, X } from 'lucide-react';
-import { useTaxState } from '../../services/taxState';
+import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
@@ -31,16 +31,18 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
   const logOut = async () => {
-    if (previewAccount && !applicationUser) {
+    if (!applicationUser && sampleJourneysEnabled && taxpayerRoles.includes(userRole)) {
       setMenuOpen(false);
-      logoutPreviewAccount();
+      setUserRole('GUEST');
+      navigate('landing');
       return;
     }
+    if (!applicationUser) return;
     setSignOutError('');
     setSigningOut(true);
     try {
@@ -54,7 +56,7 @@ export function CitizenNavigation() {
     finally { setSigningOut(false); }
   };
   // An application session is sufficient for account navigation, not for tax-credit entitlement.
-  const isTaxpayer = Boolean(applicationUser) || taxpayerRoles.includes(userRole);
+  const isTaxpayer = Boolean(applicationUser) || (sampleJourneysEnabled && taxpayerRoles.includes(userRole));
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
@@ -254,7 +256,7 @@ export function CitizenNavigation() {
                       <Globe2 size={18} aria-hidden="true"/>{bn ? 'English' : 'বাংলা'}
                     </button>
                   </div>
-                  {applicationUser || previewAccount ? (
+                  {applicationUser || (sampleJourneysEnabled && taxpayerRoles.includes(userRole)) ? (
                     <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>
                   ) : (
                     <button type="button" className="citizen-dialog-signout" onClick={() => go('taxpayer_login')}>{bn ? 'সাইন ইন' : 'Sign in'}</button>

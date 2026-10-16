@@ -4,6 +4,7 @@ import {
   Download,
   CheckCircle,
   ShieldCheck,
+  QrCode,
   ArrowLeft,
   Building2,
   Copy,
@@ -26,36 +27,44 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
-    title: 'আমার কর — রসিদের বিবরণ',
-    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
+    title: 'ট্যাক্সপে — রসিদের বিবরণ', subtitle: 'এনবিআর কর্তৃক ইস্যুকৃত নয়',
+    fictional: 'যাচাইকৃত ট্রেজারি জমা বা সরকারি টিআর-৬ ইস্যু করা হয়নি।', demo: 'ইস্যু হয়নি',
+    challan: 'প্রিভিউ রেফারেন্স', token: 'প্রিভিউ টোকেন', timestamp: 'তারিখ ও সময়', copy: 'প্রিভিউ রেফারেন্স কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ',
     zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
-    paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স',
+    paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স', notSent: 'পাঠানো হয়নি',
     scroll: 'ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'স্ক্রল রেফারেন্স নেই',
     withholdingTitle: 'উৎসে কর জমার নোটিশ', deductedFor: 'কর কর্তনগ্রহীতার টিআইএন-এর পক্ষে জমা:',
     noAgentCredit: 'এই রেকর্ডে কর কর্তনকারীর ব্যক্তিগত কর ক্রেডিট প্রতিষ্ঠিত হয় না।',
     breakdown: 'পেমেন্টের বিবরণ ও খাত', headCode: 'অর্থনৈতিক খাত কোড', description: 'খাতের বিবরণ',
     tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'মোট অর্থ:',
-    treasuryStatus: 'ট্রেজারি অবস্থা',
+    treasuryStatus: 'ট্রেজারি অবস্থা', simulated: 'ইস্যু হয়নি', noTransfer: 'সরকারি অর্থ স্থানান্তর হয়নি।',
     credit: 'কর ক্রেডিট স্বীকৃতি', notApplicable: 'প্রযোজ্য নয়', pending: 'সমন্বয়ের অপেক্ষায়',
-    credited: 'লেজার ক্রেডিট যাচাইয়ের অপেক্ষায়', claimed: 'রিটার্নের দাবি যাচাইয়ের অপেক্ষায়', disputed: 'বিরোধপূর্ণ',
-    noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।'
+    credited: 'নমুনা ক্রেডিট অবস্থা (যাচাই হয়নি)', claimed: 'নমুনা দাবির অবস্থা (যাচাই হয়নি)', disputed: 'বিরোধপূর্ণ',
+    noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।',
+    noNbrCredit: 'সরকারি কর ক্রেডিট যাচাই হয়নি।', noPersonalCredit: 'ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।',
+    demoReference: 'রেফারেন্স (ক্রিপ্টোগ্রাফিক যাচাই নয়):', noSignature: 'কোনো সরকারি ই-স্বাক্ষর নেই',
+    noIssuance: 'শুধু সিমুলেশন — এনবিআর বা ব্যাংক ইস্যু/স্বাক্ষর করেনি'
   } : {
     back: 'Back to records', print: 'Print receipt', export: 'Export JSON',
-    title: 'Amar Kor — Receipt details',
-    challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
+    title: 'TaxPay — Receipt details', subtitle: 'Not issued by NBR',
+    fictional: 'No verified Treasury settlement or official Form TR-6 is issued.', demo: 'NOT ISSUED',
+    challan: 'Preview reference', token: 'Preview token', timestamp: 'Date and time', copy: 'Copy preview reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year',
     zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',
-    paymentMethod: 'Payment method', transaction: 'Transaction reference',
+    paymentMethod: 'Payment method', transaction: 'Transaction reference', notSent: 'Not sent',
     scroll: 'Treasury scroll reference', pendingScroll: 'No scroll reference',
     withholdingTitle: 'Withholding deposit notice', deductedFor: 'Deposit for deductee TIN:',
     noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
     breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
     tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Total amount:',
-    treasuryStatus: 'Treasury status',
+    treasuryStatus: 'Treasury status', simulated: 'NOT ISSUED', noTransfer: 'No government funds were transferred.',
     credit: 'Tax credit recognition', notApplicable: 'NOT APPLICABLE', pending: 'PENDING RECONCILIATION',
     credited: 'LEDGER CREDIT UNVERIFIED', claimed: 'RETURN CLAIM UNVERIFIED', disputed: 'DISPUTED',
-    noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.'
+    noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.',
+    noNbrCredit: 'NBR credit has not been verified.', noPersonalCredit: 'Personal tax credit has not been verified.',
+    demoReference: 'Reference (not a cryptographic verification hash):', noSignature: 'No official electronic signature',
+    noIssuance: 'Simulation only — not issued or signed by NBR or a bank'
   };
   const creditStatusLabel = {
     NOT_APPLICABLE: labels.notApplicable,
@@ -64,7 +73,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     CLAIMED_IN_RETURN: labels.claimed,
     DISPUTED: labels.disputed
   }[receipt.taxCreditStatus];
-  const treasuryStatusLabels = {
+  const treasuryStatusLabels = receipt.isSimulatedDemo ? labels.demo : {
     INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
     GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
     GATEWAY_SUCCESS: bn ? 'গেটওয়েতে সফল' : 'GATEWAY_SUCCESS',
@@ -105,7 +114,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold bg-emerald-800 hover:bg-emerald-900 text-white px-3.5 py-1.5 rounded cursor-pointer shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>{labels.print}</span>
+            <span>{embedded ? (bn ? 'প্রিন্ট প্রিভিউ' : 'Print preview') : labels.print}</span>
           </button>
           <button
             onClick={() => {
@@ -125,12 +134,23 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         </div>
       </div>
 
-      {/* Payment record generated from the app's local transaction state. */}
+      {/* Unofficial printable demonstration receipt; never proof of payment or credit. */}
       <div className="receipt-view__paper print-card bg-white border border-slate-300 rounded-xl shadow-md p-4 sm:p-8 relative overflow-hidden text-slate-800 font-sans" lang={language}>
+        {/* Subtle Watermark Stamp */}
+        {!embedded && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 select-none rotate-[-25deg]">
+          <div className="text-center font-bold text-7xl font-mono border-8 border-slate-900 p-8 rounded-3xl">
+            {bn ? 'ইস্যু হয়নি' : 'NOT ISSUED'}
+          </div>
+        </div>}
+
+        {/* A single concise, accurate disclosure replaces the repeated demo copy in this modal. */}
         {embedded ? (
           <header className="receipt-view__header">
             <div className="receipt-view__heading">
               <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
+              <p className="receipt-view__status" role="note">
+                {bn ? 'সরকারি চালান নয়' : 'Not an official challan'}
+              </p>
             </div>
           </header>
         ) : (
@@ -141,13 +161,19 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                 {labels.title}
               </h1>
             </div>
+            <h2 className="text-sm sm:text-base font-semibold text-emerald-900">{labels.subtitle}</h2>
+            <p className="text-xs text-slate-500 font-medium">{labels.fictional}</p>
+            <div className="absolute right-0 top-0 hidden sm:flex flex-col items-end">
+              <div className="border border-slate-300 rounded p-1 bg-slate-50"><QrCode className="w-14 h-14 text-slate-800" /></div>
+              <span className="text-[10px] text-slate-500 font-mono mt-0.5">{labels.demo}</span>
+            </div>
           </div>
         )}
 
-        {/* Challan Identifiers Ribbon */}
+        {/* Preview identifiers are labeled as such whenever this is synthetic data. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 my-5 text-xs">
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'প্রিভিউ রেফারেন্স' : 'Preview reference') : labels.challan}:</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono-plex font-bold text-sm text-emerald-950">
                 {receipt.challanNo}
@@ -165,9 +191,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
 
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'প্রিভিউ টোকেন' : 'Preview token') : labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
-              {receipt.tokenNumber}
+              {receipt.isSimulatedDemo ? labels.demo : receipt.tokenNumber}
             </span>
           </div>
 
@@ -217,20 +243,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </div>
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.transaction}:</span>
-              <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
+              <span className="col-span-2 font-mono-plex text-slate-700">{receipt.isSimulatedDemo ? labels.notSent : receipt.gatewayTransactionId}</span>
             </div>
-            {receipt.taxEventId && <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
-              <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</span>
-            </div>}
-            {receipt.paymentTransactionId && <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
-              <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</span>
-            </div>}
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
-                {receipt.treasuryScrollNo || labels.pendingScroll}
+                {receipt.isSimulatedDemo ? labels.pendingScroll : receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
             </div>
 
@@ -341,8 +359,11 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div>
               <span className="font-semibold text-slate-700 block">{labels.treasuryStatus}:</span>
               <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {treasuryStatusLabels}
+                {receipt.isSimulatedDemo ? labels.demo : `${labels.simulated}: ${treasuryStatusLabels}`}
               </span>
+              {!embedded && <p className="text-[11px] text-slate-500 mt-0.5">
+                {labels.noTransfer}
+              </p>}
             </div>
           </div>
 
@@ -362,10 +383,31 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               }`}>
                 {creditStatusLabel}
               </span>
+              {!embedded && <p className="text-[11px] text-slate-500 mt-0.5">
+                {receipt.isWithholding ? labels.noAgentEntitlement :
+                  receipt.taxCreditStatus === 'NOT_APPLICABLE' ? labels.noPersonalCredit : labels.noNbrCredit}
+              </p>}
             </div>
           </div>
         </div>
 
+        {/* Signatures & Certification Block */}
+        {!embedded && <div className="mt-8 pt-6 border-t border-slate-200 flex flex-wrap justify-between items-end gap-4 text-xs text-slate-500">
+          <div>
+            <p className="font-mono text-[11px]">{labels.demoReference}</p>
+            <p className="font-mono text-[10px] text-slate-400">
+              DEMO:{receipt.id}-{receipt.challanNo}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="font-serif-fraunces font-bold text-slate-700 text-sm">
+              {labels.noSignature}
+            </div>
+            <p className="text-[10px] text-slate-400">
+              {labels.noIssuance}
+            </p>
+          </div>
+        </div>}
       </div>
     </div>
   );

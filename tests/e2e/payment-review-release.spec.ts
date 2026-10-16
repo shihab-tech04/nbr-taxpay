@@ -4,12 +4,9 @@ import AxeBuilder from '@axe-core/playwright';
 const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
-const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
-  const receiptTitle = embedded
-    ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
-    : language === 'bn' ? 'আমার কর — রসিদের বিবরণ' : 'Amar Kor — Receipt details';
-  await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
-  if (projectName === 'desktop-1280' && !embedded) {
+const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string) => {
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeInViewport();
+  if (projectName === 'desktop-1280') {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
     await expect(page.getByTestId('receipt-breakdown-mobile')).toBeHidden();
   } else {
@@ -136,8 +133,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(pageWidth(page)).resolves.toBeLessThanOrEqual(info.project.name === 'mobile-320' ? 322 : info.project.name === 'mobile-375' ? 377 : 1282);
 
   await page.getByLabel('Taxpayer Identification Number (e-TIN)').fill('123456789012');
-  await page.getByLabel('Name (optional)').fill('Sample Taxpayer');
-  await page.getByLabel('Mobile number for receipt').fill('01712345678');
+  await page.getByLabel('Payer Legal Name').fill('Sample Taxpayer');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.getByRole('radiogroup', { name: 'Master payment head' })).toBeVisible();
   await expect(page.getByRole('radio').first()).toBeVisible();
@@ -148,35 +144,32 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByLabel('Tax Amount (৳)')).toHaveAttribute('aria-invalid', 'true');
   await page.getByLabel('Tax Amount (৳)').fill('15000');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
-  await expect(page.getByText('Payment simulation only')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Pay online' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Pay at a bank branch' })).toBeVisible();
+  await expect(page.getByText('Payment simulation only')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
-    const controls = await page.locator('main input:not([type="radio"]):not([type="checkbox"]), main select, main button').evaluateAll(elements =>
+    const controls = await page.locator('main input:not([type="radio"]), main select, main button').evaluateAll(elements =>
       elements.map(element => ({ name: element.getAttribute('aria-label') || element.textContent?.trim() || element.id, height: (element as HTMLElement).getBoundingClientRect().height }))
     );
     expect(controls.filter(control => control.height < 43).map(control => control.name)).toEqual([]);
-    const checkboxes = await page.locator('main .payment-review__ack, main .payment-review__fail-toggle').evaluateAll(elements =>
-      elements.map(element => ({ label: element.textContent?.trim(), height: element.getBoundingClientRect().height }))
-    );
-    expect(checkboxes.filter(control => control.height < 44).map(control => control.label)).toEqual([]);
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
     expect(axe.violations.map(({ id, impact, nodes }) => ({ id, impact, count: nodes.length, targets: nodes.flatMap(node => node.target) }))).toEqual([]);
   }
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('button', { name: 'অনলাইনে পরিশোধ' })).toBeVisible();
-  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toHaveCount(0);
-  await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
-  await page.getByRole('radio', { name: 'bKash' }).check();
-  await page.getByRole('checkbox', { name: /আমি টিআইএন, পরিশোধের উদ্দেশ্য/ }).check();
-  await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
-  await expect(page.getByRole('heading', { name: 'পেমেন্ট প্রক্রিয়া সম্পন্ন' })).toBeVisible({ timeout: 12000 });
-  await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
+  await expect(page.getByText(/পেমেন্ট সিমুলেশন চালান/)).toBeVisible();
+  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
+  await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
+  await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
+  await expect(page.getByText('প্রিভিউ রেফারেন্স:')).toBeVisible();
+  await expect(page.getByText('প্রিভিউ টোকেন:')).toBeVisible();
+  await expect(page.getByText('পাঠানো হয়নি')).toBeVisible();
+  await expect(page.getByText('স্ক্রল রেফারেন্স নেই')).toBeVisible();
+  await expect(page.getByText(/BB-SCRL-/)).toHaveCount(0);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
-  await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
+  await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
@@ -194,38 +187,47 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TaxPay — Receipt details' })).toBeVisible();
+  await expect(page.getByText('Preview reference:')).toBeVisible();
+  await expect(page.getByText('Preview token:')).toBeVisible();
+  await expect(page.getByText('Not sent')).toBeVisible();
+  await expect(page.getByText('No scroll reference')).toBeVisible();
+  await expect(page.getByText(/PREVIEW-\d{4}-PAY-/).filter({visible:true}).first()).toBeVisible();
+  await expect(page.getByText(/BB-SCRL-/)).toHaveCount(0);
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
-test('taxpayer Pay Tax modal preserves amounts through review and simulated receipt', async ({ page }, info) => {
+test('authenticated taxpayer wizard preserves amounts while localizing the full simulation journey', async ({ page }, info) => {
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
-  const services = page.getByRole('dialog', { name: 'Pay Tax' });
-  await services.getByRole('button', { name: /Tax with Return/ }).click();
-  await services.getByRole('button', { name: 'Continue' }).click();
-  await expect(services.locator('.payment-form-section')).toHaveCount(4);
-  await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
-  await expect(page).toHaveURL(/action=taxpayer_home/);
-  // The original taxpayer dashboard remains mounted behind the modal.
-  await expect(services).toBeVisible();
-  await services.locator('#guest-tin').fill('123456789012');
-  await services.locator('#guest-phone').fill('01712345678');
-  await services.locator('#guest-tax-amount').fill('0');
-  await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
-  await expect(services.getByRole('alert')).toContainText('greater than zero');
-  await services.locator('#guest-tax-amount').fill('25000');
-  await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
-  await expect(services.getByText('Step 3 of 4')).toBeVisible();
-  await expect(services.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
-  await services.getByRole('button', { name: 'Pay online' }).click();
-  await services.getByRole('radio', { name: 'Nagad' }).check();
-  await services.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
-  await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
-  await expect(services.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
-  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
-  await expectResponsiveReceipt(page, info.project.name, 'en', true);
+  await expect(page.getByRole('heading', { name: 'Income tax payment' })).toBeVisible();
+  await expect(page.getByLabel('Assessment year')).toBeVisible();
+  await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
+  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Continue to amounts' }).click();
+
+  await expect(page.getByLabel('Tax amount (৳)')).toHaveValue('25000');
+  await page.getByLabel('Tax amount (৳)').fill('0');
+  await page.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(page.getByRole('alert')).toContainText('greater than zero');
+  await page.getByLabel('Tax amount (৳)').fill('25000');
+  await page.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(page.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
+
+  if (info.project.name.startsWith('mobile')) {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  } else await page.getByRole('button', { name: 'বাংলা' }).first().click();
+  await expect(page.getByRole('heading', { name: 'পেমেন্টের তথ্য পর্যালোচনা' })).toBeVisible();
+  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ })).toBeVisible();
+  await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
+  await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
+  await expectResponsiveReceipt(page, info.project.name);
 
   if (info.project.name === 'mobile-320') {
     expect(await pageWidth(page)).toBeLessThanOrEqual(322);
@@ -234,30 +236,34 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   if (info.project.name === 'desktop-1280') {
     await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/taxpayer-wizard-bn-desktop-1280.png' });
   }
-  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  if (info.project.name.startsWith('mobile')) {
+    await page.getByRole('button', { name: 'মেনু খুলুন' }).click();
+    await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'English' }).click();
+    await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'Close' }).click();
+  } else await page.getByRole('button', { name: 'EN' }).first().click();
+  await expect(page.getByRole('heading', { name: 'TaxPay — Receipt details' })).toBeVisible();
 });
 
 test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
-  await expect(page.getByRole('radio', { name: /By air to the Americas/ }).first()).toBeVisible();
+  await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Air - North America/ }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
   await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
-  await page.getByLabel('Passport reference').fill('SAMPLE123');
-  await page.getByLabel('Mobile number for receipt').fill('01712345678');
+  await page.getByLabel('Passport number (synthetic data only)').fill('SAMPLE123');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
-  await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toHaveCount(0);
-  await expect(page.getByLabel('যাত্রীর বয়স')).toBeVisible();
+  await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toBeVisible();
+  await expect(page.getByText('অব্যাহতি হিসাব করা হয় না।')).toBeVisible();
   await page.getByRole('button', { name: 'পর্যালোচনায় যান' }).click();
   await expect(page.getByRole('heading', { name: 'তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' })).toBeVisible();
-  await page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' }).click();
-  await expect(page.getByText('ভ্রমণ করের তথ্য প্রস্তুত')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' })).toBeVisible();
+  await page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' }).click();
+  await expect(page.getByText('ভ্রমণ করের প্রিভিউ প্রস্তুত।')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
-  await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toHaveCount(0);
+  await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
     expect(await pageWidth(page)).toBeLessThanOrEqual(322);

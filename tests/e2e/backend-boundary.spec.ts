@@ -9,6 +9,16 @@ if (localSupabaseUrl) {
 }
 const base = localSupabaseUrl ? `${localSupabaseUrl}/rest/v1` : '';
 const headers = { apikey: localSupabaseAnonKey, Accept: 'application/json' };
+async function switchToBangla(page: import('@playwright/test').Page) {
+  const desktopSwitch = page.getByRole('button', { name: 'বাংলা' });
+  if (await desktopSwitch.isVisible()) {
+    await desktopSwitch.click();
+    return;
+  }
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'বাংলা' }).click();
+  await page.keyboard.press('Escape');
+}
 const requireLocalSupabase = (projectName: string) => {
   test.skip(!base || !localSupabaseAnonKey, 'Requires the disposable loopback Supabase test stack.');
   test.skip(projectName !== 'desktop-1280', 'Backend API contract is viewport-independent');
@@ -89,24 +99,38 @@ test('secure workspace starts without a presumed legal AY and remains usable on 
   const main = await page.locator('main').boundingBox();
   expect(main).not.toBeNull();
   expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await switchToBangla(page);
   await expect(page.getByRole('heading', { name: 'নিরাপদ আমার কর ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();
 });
 
-test('legacy help URL uses the current guide and cannot offer unverified calculated payments', async ({ page }) => {
+test('legacy guidance route resolves to the maintained guide without an unverified calculator', async ({ page }) => {
   await page.goto('/?action=guidance');
   await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Proceed to Pay Estimated Tax' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await expect(page.getByRole('link', { name: 'NBR publications' })).toHaveAttribute('href', 'https://nbr.gov.bd/');
+  await switchToBangla(page);
   await expect(page.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
-test('travel-tax page presents the service without repeated prototype disclaimers', async ({ page }) => {
+test('travel-tax sample journey returns only an unissued preview', async ({ page }) => {
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await expect(page.getByText(/No passenger identity check, government fee collection, live gateway or immigration clearance/)).toHaveCount(0);
-  await expect(page.getByText(/Rates in this prototype come from the supplied reference concept and are not certified against current law/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await page.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC PASSENGER');
+  await page.getByLabel('Passport reference').fill('SYNTHETIC-0001');
+  await page.getByLabel('Mobile number for receipt').fill('01712345678');
+  await page.getByRole('button', { name: 'Continue to review' }).click();
+  await page.getByRole('button', { name: 'Continue payment' }).click();
+  await expect(page.getByRole('heading', { name: 'Travel tax details ready' })).toBeVisible();
+  await expect(page.getByText('Not issued by NBR')).toBeVisible();
+  await expect(page.getByText('No verified Treasury settlement or official Form TR-6 is issued.')).toBeVisible();
+  await expect(page.getByText(/^PREVIEW-\d{4}-TRV-\d+$/)).toBeVisible();
+  await expect(page.getByText('SIMULATION-NOT-SENT')).toHaveCount(0);
+  await expect(page.getByText('Not sent')).toBeVisible();
+  await expect(page.getByText('No scroll reference')).toBeVisible();
+  await expect(page.getByText('NOT ISSUED', { exact: true }).first()).toBeVisible();
 });
 
 test('anonymous users cannot read or write source change proposals', async ({ request }, info) => {

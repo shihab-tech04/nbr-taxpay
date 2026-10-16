@@ -6,9 +6,10 @@ import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
-import { TaxpayerLoginDialog } from './components/screens/TaxpayerLoginDialog';
-import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
+import { TaxpayerLoginPage } from './components/screens/TaxpayerLoginPage';
 import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
+import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
+import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
@@ -30,36 +31,24 @@ import { CertificatesView } from './components/screens/CertificatesView';
 import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
-import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
 import { OntologyView } from './components/screens/OntologyView';
 import { GlossaryView } from './components/screens/GlossaryView';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 
-const previewReadOnlyRoutes = new Set([
-  'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
-  'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services'
-]);
-
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, isPaymentServiceChoiceOpen } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
-  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
-  const previewAccess = Boolean(previewAccount && previewReadOnlyRoutes.has(currentRoute));
-  const privateSampleGate = !previewAccess && requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
+  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute);
+  const privateSampleGate = requiresTaxpayerSignIn(currentRoute, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
-  const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login';
-  const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||
-    (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
-  const taxpayerSupportRoute = taxpayerSession && ['verify','user_guide','guidance'].includes(currentRoute);
-  const publicInformationRoute = ['landing','incident'].includes(currentRoute) ||
-    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
+  const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
-  // Guest payment routes never inherit this reference palette.
-  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace';
+  // Guest payment and Officer routes never inherit this reference palette.
+  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace';
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -70,16 +59,10 @@ const MainRouter: React.FC = () => {
     }
   }, []);
 
-  // A browser-only preview identity and a real Supabase account cannot coexist.
-  useEffect(() => {
-    if (verifiedApplicationUser && previewAccount) clearPreviewAccount();
-  }, [verifiedApplicationUser?.id, previewAccount?.id]);
-
   // SPA navigation should announce the new main region to keyboard users.
+  // Never intercept focus on initial load.
   useEffect(() => {
-    const leavingLogin = priorCitizenRouteRef.current === 'taxpayer_login' || priorCitizenRouteRef.current === 'office_login';
-    if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute &&
-        currentRoute !== 'taxpayer_login' && currentRoute !== 'office_login' && !leavingLogin) {
+    if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute) {
       mainContentRef.current?.focus({ preventScroll: true });
     }
     priorCitizenRouteRef.current = currentRoute;
@@ -88,17 +71,14 @@ const MainRouter: React.FC = () => {
   const renderActiveScreen = () => {
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
-    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
+    if (sampleJourneysEnabled && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
       return <User1DemoExperience route={currentRoute} />;
     }
     switch (currentRoute) {
       // Public Screens
       case 'landing':
-      case 'taxpayer_login':
-      case 'office_login':
         return <PublicLanding />;
       case 'user_guide':
-      case 'guidance': // Legacy help bookmarks use the maintained user guide.
         return <PublicUserGuide />;
       case 'secure_workspace':
         return <SecureWorkspace />;
@@ -152,11 +132,15 @@ const MainRouter: React.FC = () => {
         return <OntologyView />;
       case 'glossary':
         return <GlossaryView />;
+      case 'guidance':
+        return <PublicUserGuide />;
 
       default:
         return <PublicLanding />;
     }
   };
+
+  if (currentRoute === 'taxpayer_login') return <TaxpayerLoginPage />;
 
   return (
     <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
@@ -177,11 +161,10 @@ const MainRouter: React.FC = () => {
           </section>
         ) : renderActiveScreen()}
       </main>
-      {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
+      <CitizenFooter />
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
-      {loginOverlay && <TaxpayerLoginDialog />}
     </div>
   );
 };

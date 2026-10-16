@@ -3,7 +3,6 @@ import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, Shiel
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
-import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -61,9 +60,8 @@ const I18N = {
 } as const;
 
 export function AccountCenter({ page }: { page: AccountPage }) {
-  const { language, setLanguage, navigate, userRole, setUserRole, taxpayerProfile, previewAccount, logoutPreviewAccount } = useTaxState();
+  const { language, setLanguage, navigate, userRole, setUserRole, taxpayerProfile } = useTaxState();
   const { user, loading } = useAccountIdentity();
-  const demoSql = useDemoSqlProfileAndServiceRecords(previewAccount?.id ?? null);
   const t = I18N[language];
   const sample = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
   const [name, setName] = useState('');
@@ -202,23 +200,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             <h2>{sampleOnly ? t.demo : t.accountAccess}</h2>
             <p>{sampleOnly ? t.demoNotice : !backendConfigured ? t.unavailable : t.guest}</p>
             {sampleOnly && page === 'profile' && (
-              <>
-                {previewAccount && demoSql.status === 'loading' && <p role="status">{language === 'bn' ? 'SQL প্রোফাইল লোড হচ্ছে…' : 'Loading SQL profile…'}</p>}
-                {previewAccount && demoSql.status === 'error' && <p role="alert">{language === 'bn' ? 'SQL প্রোফাইল পাওয়া যাচ্ছে না।' : 'SQL profile unavailable.'} {demoSql.error}</p>}
-                {previewAccount && demoSql.status === 'ready' && !demoSql.profile && <p role="status">{language === 'bn' ? 'এই অ্যাকাউন্টের SQL প্রোফাইল নেই।' : 'No SQL profile for this account.'}</p>}
-                <dl className="taxpayer-account-facts">
-                  {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
-                  {(!previewAccount || (demoSql.status === 'ready' && demoSql.profile)) && <>
-                    <div><dt>{t.name}</dt><dd>{demoSql.profile ? (language === 'bn' ? demoSql.profile.nameBn : demoSql.profile.nameEn) : (language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn)}</dd></div>
-                    <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
-                    {demoSql.profile && <>
-                      <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{language === 'bn' ? demoSql.profile.focusBn : demoSql.profile.focusEn}</dd></div>
-                      <div><dt>{language === 'bn' ? 'নমুনা টিআইএন' : 'Sample TIN stub'}</dt><dd>{demoSql.profile.tinStub ?? '—'}</dd></div>
-                      <div><dt>{language === 'bn' ? 'নমুনা কর সার্কেল' : 'Sample tax circle'}</dt><dd>{demoSql.profile.jurisdictionLabel ?? '—'}</dd></div>
-                    </>}
-                  </>}
-                </dl>
-              </>
+              <dl className="taxpayer-account-facts">
+                <div><dt>{t.name}</dt><dd>{language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</dd></div>
+                <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{taxpayerProfile.type}</dd></div>
+              </dl>
             )}
             {sampleOnly && page === 'settings' && (
               <div className="taxpayer-account-fields">
@@ -231,11 +216,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             )}
             {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
             <div className="taxpayer-account-actions">
-              {!previewAccount && <button type="button" onClick={() => navigate('taxpayer_login')}>{t.accountAccess}</button>}
+              <button type="button" onClick={() => navigate('taxpayer_login')}>{t.accountAccess}</button>
               {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
-                if (previewAccount) logoutPreviewAccount();
-                else { setUserRole('GUEST'); navigate('landing'); }
-              }}>{previewAccount ? t.logout : t.exitDemo}</button>}
+                setUserRole('GUEST'); navigate('landing');
+              }}>{t.exitDemo}</button>}
             </div>
           </section>
         ) : (

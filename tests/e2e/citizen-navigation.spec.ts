@@ -1,24 +1,14 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('public hero opens service choice before the guest payment form while the receipt action stays available',async({page})=>{
- await page.emulateMedia({reducedMotion:'reduce'});
+test('public home does not open guest payment wizard via a primary action',async({page})=>{
  await page.goto('/?action=landing');
- await expect(page.getByRole('button',{name:'Check payment & receipt'})).toBeVisible();
- await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
- await expect(page.locator('.public-information-guide')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Check payment status & receipt'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
- await page.getByRole('button',{name:'Pay Tax'}).click();
- const services=page.getByRole('dialog',{name:'Pay Tax'});
- await expect(services).toBeVisible();
- await expect(services.locator('.tax-service-choice__card')).toHaveCount(8);
- await services.getByRole('button',{name:/Tax with Return/}).click();
- await services.getByRole('button',{name:'Continue'}).click();
- await expect(page).toHaveURL(/action=landing/);
- await expect(services.locator('.payment-form-section')).toHaveCount(4);
- await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+ await page.goto('/?action=guest');
+ await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
@@ -35,7 +25,7 @@ test('public menu contains informational navigation with no sample profile selec
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Menu'}).click();
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
- await expect(nav.getByRole('link',{name:'User guide'})).toBeVisible();
+ await expect(nav.getByRole('link',{name:'FAQs'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await page.keyboard.press('Escape');
  await expect(nav).toBeHidden();
@@ -45,20 +35,13 @@ test('public menu contains informational navigation with no sample profile selec
 
 test('public information header and sections fit all requested widths',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','One runner covers the seven-width matrix');
- await page.emulateMedia({reducedMotion:'reduce'});
  for(const width of [320,360,375,390,768,1024,1440]){
   await page.setViewportSize({width,height:812});
   await page.goto('/?action=landing');
   await expect(page.locator('.public-home-header')).toBeVisible();
-  await expect(page.locator('.public-home-header').getByRole('img',{name:'Amar Kor'})).toBeVisible();
+  await expect(page.locator('.public-home-header').getByRole('img',{name:'Government Seal of Bangladesh'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
-  const heroActions=page.locator('.public-information-hero .public-guest-actions');
-  const pay=await heroActions.getByRole('button',{name:'Pay Tax'}).boundingBox();
-  const receipt=await heroActions.getByRole('button',{name:'Check payment & receipt'}).boundingBox();
-  expect(pay).not.toBeNull();
-  expect(receipt).not.toBeNull();
-  expect(Math.abs(pay!.y-receipt!.y),'hero actions should share a row at '+width).toBeLessThan(2);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -91,8 +74,8 @@ test('citizen navigation has no automated serious accessibility violations',asyn
 test('public guidance links stay on-page without authorizing account access',async({page})=>{
  await page.goto('/?action=landing');
  if (page.viewportSize()!.width<=900) await page.getByRole('button',{name:'Menu'}).click();
- await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
- await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+ await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'}).click();
+ await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
@@ -101,7 +84,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   await page.goto('/?action=guest');
   await page.getByLabel('Taxpayer Identification Number (e-TIN)').fill('123456789012');
   const prompt = page.waitForEvent('dialog');
-  const clickHome = page.getByRole('button', { name: 'Amar Kor home' }).click();
+  const clickHome = page.getByRole('button', { name: 'TaxPay home' }).click();
   const dialog = await prompt;
   expect(dialog.type()).toBe('confirm');
   expect(dialog.message()).toContain('information entered so far will be lost');
@@ -111,7 +94,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   await expect(page.getByLabel('Taxpayer Identification Number (e-TIN)')).toHaveValue('123456789012');
 
   const confirmExit = page.waitForEvent('dialog');
-  const clickHomeAgain = page.getByRole('button', { name: 'Amar Kor home' }).click();
+  const clickHomeAgain = page.getByRole('button', { name: 'TaxPay home' }).click();
   await (await confirmExit).accept();
   await clickHomeAgain;
   await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
@@ -152,7 +135,7 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  await page.goto('/?action=landing');
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
  const home=nav.getByRole('link',{name:'Home'});
- const faq=nav.getByRole('link',{name:'User guide'});
+ const faq=nav.getByRole('link',{name:'FAQs'});
  const report=nav.getByRole('link',{name:'Report'});
  const login=page.locator('.public-home-header__tools').getByRole('link',{name:'Login'});
  await expect(login).toBeVisible();
@@ -171,7 +154,7 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  expect(bounds!.width).toBeGreaterThanOrEqual(1285);
  expect(bounds!.width).toBeLessThanOrEqual(1298);
  await faq.click();
- await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
  await expect(faq).toHaveAttribute('aria-current','page');
  await expect(home).not.toHaveAttribute('aria-current','page');
  await report.click();
@@ -179,22 +162,22 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  await expect(report).toHaveAttribute('aria-current','page');
 });
 
-test('mobile navigation opens User guide and Report in English and Bengali',async({page},info)=>{
+test('mobile navigation opens FAQs and Report in English and Bengali',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','Mobile controls at 375px');
  await page.goto('/?action=landing');
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
  await expect(nav).toBeHidden();
  await page.getByRole('button',{name:'Menu'}).click();
  await expect(nav.getByRole('link',{name:'Login'})).toBeVisible();
- await nav.getByRole('link',{name:'User guide'}).click();
- await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+ await nav.getByRole('link',{name:'FAQs'}).click();
+ await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
  await page.getByRole('button',{name:'Menu'}).click();
- await expect(nav.getByRole('link',{name:'User guide'})).toHaveAttribute('aria-current','page');
+ await expect(nav.getByRole('link',{name:'FAQs'})).toHaveAttribute('aria-current','page');
  await page.getByRole('button',{name:'বাংলা'}).click();
  const bnNav=page.getByRole('navigation',{name:'প্রধান নেভিগেশন'});
  await expect(bnNav.getByRole('link',{name:'লগইন'})).toBeVisible();
  await expect(bnNav.getByRole('link',{name:'লগইন'})).toHaveAttribute('href','?action=taxpayer_login&lang=bn');
- await expect(bnNav.getByRole('link',{name:'ব্যবহার নির্দেশিকা'})).toHaveAttribute('aria-current','page');
+ await expect(bnNav.getByRole('link',{name:'প্রশ্নোত্তর'})).toHaveAttribute('aria-current','page');
  await bnNav.getByRole('link',{name:'অভিযোগ'}).click();
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();
 });

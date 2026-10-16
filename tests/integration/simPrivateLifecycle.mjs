@@ -43,17 +43,32 @@ assert.ok((await rpc('sim_payment_history',{p_user_id:'user1',p_view:'beneficiar
  'Anonymous browser must not read an assigned identity');
 assert.ok((await rpc('sim_payment_notices',{p_user_id:'user2'})).status>=400,
  'Anonymous browser must not read protected notifications');
+assert.ok((await rpc('sim_payment_history',{p_user_id:'user3',p_view:'payer'},stranger.token)).status>=400,
+ 'Authenticated but unbound account must not browse fictional histories');
+assert.ok((await rpc('sim_payment_notices',{p_user_id:'user3'},stranger.token)).status>=400,
+ 'Authenticated but unbound account must not browse fictional notifications');
 assert.ok((await rpc('sim_submit_payment',{p_payer_id:'user1',
   p_lines:[{beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:100}],
   p_idempotency_key:randomUUID()})).status>=400,
  'Anonymous browser must not impersonate a bound payer');
-assert.ok((await rpc('sim_submit_payment',{p_payer_id:'user3',
+assert.ok((await rpc('sim_submit_payment',{p_payer_id:'user1',
+  p_lines:[{beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:100}],
+  p_idempotency_key:randomUUID()},payer.token)).status>=400,
+ 'Authenticated clients must use the owner-bound payment RPC');
+assert.ok((await rpc('sim_submit_payment',{p_payer_id:'user5',
   p_lines:[{beneficiary:'user2',category:'PENALTY',assessmentYear:'2026-27',amountMinor:100}],
   p_idempotency_key:randomUUID()})).status>=400,
- 'Anonymous unbound payer must not target a bound beneficiary');
+ 'Anonymous caller must not submit a payment for any fictional profile');
 
 assert.ok((await rpc('sim_my_payment_history',{p_view:'all'},payer.token)).status>=400);
 assert.ok((await rpc('sim_my_payment_history',{p_view:'payer'})).status>=400);
+const beforeInvalid=psql('select count(*) from public.sim_payment_transactions');
+assert.ok((await rpc('sim_submit_my_payment',{p_lines:[
+  {beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:-1}
+],p_idempotency_key:randomUUID()},payer.token)).status>=400,
+ 'Invalid negative allocation must fail through the authenticated owner-bound RPC');
+assert.equal(psql('select count(*) from public.sim_payment_transactions'),beforeInvalid,
+ 'Rejected invalid allocation must not create a partial synthetic transaction');
 const lines=[{beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:25125},{beneficiary:'user2',category:'PENALTY',assessmentYear:'2025-26',amountMinor:575}],key=randomUUID();
 assert.ok((await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:key})).status>=400);
 const creation=await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:key},payer.token);
@@ -63,8 +78,7 @@ const repeat=await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:
 assert.equal(repeat.status,200);assert.equal(repeat.data.replayed,true);assert.equal(repeat.data.transactionId,id);
 assert.ok((await rpc('sim_submit_my_payment',{p_lines:lines,p_idempotency_key:key},beneficiary.token)).status>=400);
 const publicHistory=await rpc('sim_payment_history',{p_user_id:null,p_view:'all'});
-assert.equal(publicHistory.status,200);
-assert.ok(!publicHistory.data.some(tx=>tx.transactionId===id),'Bound payment leaked to public all view');
+assert.ok(publicHistory.status>=400,'Anonymous all-history API must be disabled');
 const officerHistory=await rpc('sim_payment_history',{p_user_id:null,p_view:'all'},approver.token);
 assert.equal(officerHistory.status,200);
 assert.ok(officerHistory.data.some(tx=>tx.transactionId===id),'Authorized officer missing full ledger');

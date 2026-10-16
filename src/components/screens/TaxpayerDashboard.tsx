@@ -4,13 +4,12 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
-import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
 const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
 export const TaxpayerDashboard: React.FC = () => {
-  const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt } = useTaxState();
+  const { language, receipts, taxpayerProfile, demoUser, userRole, navigate, selectReceipt } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
@@ -63,7 +62,6 @@ export const TaxpayerDashboard: React.FC = () => {
     <header className={card+' taxpayer-dashboard-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-800 sm:text-[28px]">{tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
-        {previewAccount && <p className="mt-1 text-sm text-slate-500">{tr('User ID','ইউজার আইডি')}: {previewAccount.id}</p>}
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
@@ -72,15 +70,6 @@ export const TaxpayerDashboard: React.FC = () => {
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>
     </header>
-    {previewAccount && demoUser && !user && (
-      <>
-        <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>
-        <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-950">
-          {tr('The SQL-backed service scenarios above are fictional examples. The payment-record panels below are a separate evidence view and may have no verified records.',
-            'উপরের SQL-ভিত্তিক সেবার তথ্য কাল্পনিক উদাহরণ। নিচের পেমেন্ট রেকর্ডের অংশটি পৃথক প্রমাণভিত্তিক দৃশ্য; সেখানে যাচাইকৃত রেকর্ড নাও থাকতে পারে।')}
-        </p>
-      </>
-    )}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
         <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span className="rounded-lg bg-blue-50 p-2 text-blue-700">{i===1?<ShieldCheck size={19} aria-hidden="true"/>:i===2?<Receipt size={19} aria-hidden="true"/>:<WalletCards size={19} aria-hidden="true"/>}</span></div>

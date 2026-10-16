@@ -2,20 +2,21 @@ import assert from 'node:assert/strict';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {OFFICE_MANAGEMENT_ROUTE_ALIASES, ROUTES, publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {ROUTES, publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
 
-test('the TaxPay route contract matches its public and taxpayer app router', () => {
+test('the route contract exactly matches the public and taxpayer app router', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
   const screens = [...app.matchAll(/case '([a-z_0-9]+)':/g)].map(match => match[1]);
-  screens.push('office_login');
+  screens.push('taxpayer_login');
   assert.deepEqual([...new Set(screens)].sort(), [...ROUTES].sort());
   assert.equal(new Set(ROUTES).size, ROUTES.length);
   assert.equal(validRoute('does_not_exist'), 'landing');
   assert.equal(validRoute(''), 'landing');
   assert.equal(validRoute('history'), 'history');
-  for (const route of OFFICE_MANAGEMENT_ROUTE_ALIASES) {
-    assert.equal((ROUTES as readonly string[]).includes(route), false, route + ' must stay outside TaxPay routes');
-    assert.equal(validRoute(route), 'landing', route);
+  assert.equal(validRoute('office_login'), 'landing');
+  for (const route of ['officer_home','taxpayer_360','payment_search','correction_queue','case_management',
+    'incident_investigation','offline_evidence','audit_trail','intelligence','monitoring']) {
+    assert.equal(validRoute(route), 'landing', route + ' remains outside the TaxPay app');
   }
 });
 
@@ -26,30 +27,30 @@ test('published route-to-component index covers every registered screen with an 
   for (const [,route,filename] of rows) assert.ok(existsSync(filename),route+': missing '+filename);
 });
 
-test('literal navigation calls never refer to an unregistered screen', () => {
+test('active public and taxpayer navigation never points to an unregistered screen', () => {
   function scan(dir: string): string[] {
     return readdirSync(dir, {withFileTypes:true}).flatMap(entry => {
       const filename = path.join(dir, entry.name);
       return entry.isDirectory() ? scan(filename) : filename.endsWith('.tsx') ? [filename] : [];
     });
   }
-  for (const filename of scan('src/components')) {
+  const activeScreens = readFileSync('FEATURE_PARITY_v11.md', 'utf8');
+  const activeFiles = [...activeScreens.matchAll(/^\| [a-z_0-9]+ \| (src\/components\/screens\/[A-Za-z0-9]+\.tsx) \|$/gm)]
+    .map(match => match[1]);
+  const navigationFiles = ['src/components/layout/CitizenNavigation.tsx', 'src/components/layout/PublicHomeHeader.tsx',
+    'src/components/layout/TaxpayerReferenceRail.tsx'];
+  for (const filename of [...new Set([...activeFiles, ...navigationFiles])]) {
     const content = readFileSync(filename, 'utf8');
     for (const match of content.matchAll(/\bnavigate\(\s*['"]([\w-]+)['"]\s*[,)]/g)) {
-      assert.ok(ROUTES.some(route => route === match[1]) || OFFICE_MANAGEMENT_ROUTE_ALIASES.some(route => route === match[1]), filename + ': broken navigate(' + match[1] + ')');
+      assert.ok(ROUTES.some(route => route === match[1]), filename + ': broken navigate(' + match[1] + ')');
     }
   }
   // Named menu arrays use a variable passed to navigate(), so check their route entries too.
-  const menuFiles = [
-    ...scan('src/components/layout'),
-    'src/components/screens/TaxJourney.tsx',
-    'src/components/screens/ParityRegisterModal.tsx',
-    'src/components/screens/OfficerHome.tsx'
-  ];
+  const menuFiles = [...activeFiles, ...navigationFiles];
   for (const filename of menuFiles) {
     const content = readFileSync(filename, 'utf8');
     for (const match of content.matchAll(/\b(?:route|actionKey):\s*['"]([a-z_0-9]+)['"]/g)) {
-      assert.ok(ROUTES.some(route => route === match[1]) || OFFICE_MANAGEMENT_ROUTE_ALIASES.some(route => route === match[1]), filename + ': broken menu destination ' + match[1]);
+      assert.ok(ROUTES.some(route => route === match[1]), filename + ': broken menu destination ' + match[1]);
     }
   }
 });

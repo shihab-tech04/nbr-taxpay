@@ -11,14 +11,11 @@ export const PaymentDetailView: React.FC = () => {
   const { selectedReceipt, receipts, taxpayerProfile, userRole, demoUser, routeParams, navigate } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   const returnTo = receiptReturnRoute(routeParams.returnTo);
-  const officerContext = returnTo === 'payment_search' || returnTo === 'taxpayer_360';
   const isPublicFixture = selectedReceipt && INITIAL_RECEIPTS.some(receipt => receipt.id === selectedReceipt.id);
   const allowedPreviewReceipts = taxpayerPreviewReceipts(receipts, taxpayerProfile.tin, userRole, demoUser, Boolean(authenticatedUser));
-  const availableReceipt = officerContext || !isPublicFixture || allowedPreviewReceipts.some(receipt => receipt.id === selectedReceipt?.id)
+  const availableReceipt = !isPublicFixture || allowedPreviewReceipts.some(receipt => receipt.id === selectedReceipt?.id)
     ? selectedReceipt : null;
-  const backLabel = returnTo === 'payment_search' ? 'Back to Payment Search' :
-    returnTo === 'taxpayer_360' ? 'Back to Taxpayer 360' :
-    returnTo === 'dashboard' || returnTo === 'taxpayer_home' ? 'Back to Dashboard' : 'Back to Payment History';
+  const backLabel = returnTo === 'dashboard' || returnTo === 'taxpayer_home' ? 'Back to Dashboard' : 'Back to Payment History';
 
   if (!availableReceipt) {
     return (

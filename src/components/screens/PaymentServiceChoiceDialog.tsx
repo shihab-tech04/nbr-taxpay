@@ -4,6 +4,7 @@ import {
   Landmark, Layers3, MoreHorizontal, Plane
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
@@ -23,7 +24,8 @@ export const PAYMENT_SERVICE_CHOICES = [
 type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
 
 export function PaymentServiceChoiceDialog() {
-  const { language, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, setPaymentServiceChoiceOpen } = useTaxState();
+  const { user: authenticatedUser } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(null);
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const flowRef = useRef<HTMLElement>(null);
@@ -32,7 +34,16 @@ export function PaymentServiceChoiceDialog() {
   const close = () => setPaymentServiceChoiceOpen(false);
   const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
-  const advanceToDetails = () => { if (selected) setStage(2); };
+  const advanceToDetails = () => {
+    if (!selected) return;
+    // Authenticated taxpayers enter the owner-bound simulation workspace. The
+    // public form below remains a local preview and never impersonates an account.
+    if (authenticatedUser && selected !== 'TRAVEL_TAX') {
+      navigate('wizard', { initialCategory: selected });
+      return;
+    }
+    setStage(2);
+  };
   const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
 
   useEffect(() => {

@@ -35,6 +35,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Verify hosted anonymous simulator read boundary
+        env:
+          TAXPAY_HOSTED_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          TAXPAY_HOSTED_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+        run: |
+          set -euo pipefail
+          test -n "$TAXPAY_HOSTED_SUPABASE_URL"
+          test -n "$TAXPAY_HOSTED_PUBLISHABLE_KEY"
+          npm run test:hosted
+
       - name: Verify TypeScript and domain constraints
         run: |
           npm run lint
@@ -50,7 +60,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts
 
-      - name: Verify the separate two-field TaxPay login popup
+      - name: Verify TaxPay login has no synthetic credential bypass
         env:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts
@@ -174,15 +184,17 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
 
-      - name: Verify deployed private-route authentication boundary in Chromium
+      - name: Verify deployed public and taxpayer journeys in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-public-auth.mjs
 
-      - name: Upload live signed-out browser evidence
+      - name: Upload live desktop/mobile browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: taxpay-live-auth-browser-evidence
-          path: test-results/live-auth-*.png
+          path: |
+            test-results/live-auth-*.png
+            test-results/live-guest-*.png
           if-no-files-found: ignore

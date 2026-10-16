@@ -232,16 +232,17 @@ test('a sample taxpayer preview restores only its own browser-history entry',asy
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
 });
 
-test('TaxPay rejects Office Management destinations at every direct route entry',async({page})=>{
-  const routes=['officer_home','taxpayer_360','payment_search','correction_queue','case_management',
-    'incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'];
-  for(const route of routes){
-    await page.goto('/?action='+route);
-    await expect(page).toHaveURL(/action=landing(?:&|$)/);
+test('TaxPay rejects Office Management routes and synthetic receipt deep links',async({page})=>{
+  for (const route of ['office_login','officer_home','taxpayer_360','payment_search','correction_queue',
+    'case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring']) {
+    await page.goto('/?action='+route+'&demoUser=user1');
+    await expect(page).toHaveURL(/action=landing/);
     await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
-    await expect(page.locator('header.bg-emerald-950')).toHaveCount(0);
-    await expect(page.getByRole('heading',{name:'Officer review inbox'})).toHaveCount(0);
+    await expect(page.getByRole('heading',{name:/Universal Cross-Treasury Payment Search/})).toHaveCount(0);
   }
+  await page.goto('/?action=payment_details&returnTo=taxpayer_360&demoReceipt=rcpt-101');
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toHaveCount(0);
 });
 
 test('Taxpayer receipt inspection retains its private navigation and returns to activity',async({page},info)=>{
@@ -271,7 +272,7 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });
 
-test('ontology choices are keyboard-operable',async({page})=>{
+test('ontology choices remain keyboard-operable',async({page})=>{
   await page.goto('/?action=ontology');
   const payer=page.getByRole('button',{name:/Payer \(Ortho-prodan-kari\)/});
   await expect(payer).toHaveAttribute('aria-pressed','false');

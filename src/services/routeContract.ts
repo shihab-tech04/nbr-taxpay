@@ -4,19 +4,13 @@ export const ROUTES = [
   'travel', 'verify', 'incident', 'architecture', 'taxpayer_home', 'dashboard',
   'wizard', 'history', 'payment_details', 'ledger', 'journey', 'certificates',
   'corrections', 'notifications', 'account_notifications', 'account_profile',
-  'account_settings', 'services', 'taxpayer_login', 'office_login', 'ontology', 'glossary', 'guidance'
+  'account_settings', 'services', 'taxpayer_login', 'ontology',
+  'glossary', 'guidance'
 ] as const;
 
 const registered = new Set<string>(ROUTES);
-/** Legacy Officer URLs are rejected here because Office Management is a separate product. */
-export const OFFICE_MANAGEMENT_ROUTE_ALIASES = [
-  'officer_home', 'taxpayer_360', 'payment_search', 'correction_queue', 'case_management',
-  'incident_investigation', 'offline_evidence', 'audit_trail', 'intelligence', 'monitoring'
-] as const;
-const officeManagementAliases = new Set<string>(OFFICE_MANAGEMENT_ROUTE_ALIASES);
-
 export const validRoute = (value: string | null | undefined): string =>
-  value && registered.has(value) && !officeManagementAliases.has(value) ? value : 'landing';
+  value && registered.has(value) ? value : 'landing';
 
 /** Only navigation context and public synthetic fixture selectors belong in the URL. */
 const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt'] as const;
