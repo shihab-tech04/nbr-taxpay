@@ -4,6 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { PaymentCategory, UserRole } from '../../types/tax';
+import { taxpayerBrandName } from '../../config/brand';
 
 type CitizenAction = { route: string; en: string; bn: string };
 const guestLinks: CitizenAction[] = [
@@ -180,9 +181,9 @@ export function CitizenNavigation() {
             <Menu size={23} aria-hidden="true" />
           </button>}
           <button type="button" className="citizen-brand" onClick={goHome}
-            aria-label={bn ? 'TaxPay মূল পাতা' : 'TaxPay home'}>
+            aria-label={bn ? 'আমার কর মূল পাতা' : 'Amar Kor home'}>
             <Landmark aria-hidden="true" size={24} />
-            <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
+            <span><strong>{taxpayerBrandName(language)}</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
           </button>
           {inTransaction ? (
             <div className="citizen-flow-actions">

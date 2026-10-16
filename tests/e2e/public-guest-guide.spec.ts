@@ -41,7 +41,7 @@ test('see-more links open topic guide with responsive search, FAQs and languages
  test.skip(info.project.name!=='mobile-375','Guide journey on mobile');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'See more'}).first().click();
- await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
  await page.getByRole('button',{name:'Travel tax'}).click();
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
@@ -50,7 +50,7 @@ test('see-more links open topic guide with responsive search, FAQs and languages
  await page.getByRole('searchbox',{name:'Search questions'}).fill('rates');
  await expect(page.getByText('Are the rates final?')).toBeVisible();
  await page.getByRole('button',{name:'বাংলা'}).click();
- await expect(page.getByRole('heading',{name:'TaxPay ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'আমার কর ব্যবহার নির্দেশিকা'})).toBeVisible();
  await expect(page.getByRole('button',{name:'মোবাইল'})).toHaveAttribute('aria-pressed','true');
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
@@ -60,11 +60,11 @@ test('floating help uses guide answers and report form never sends an official t
  test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Chat support'}).click();
- await expect(page.getByRole('heading',{name:'TaxPay help'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Amar Kor help'})).toBeVisible();
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('link',{name:'Open user guide'}).click();
- await expect(page.getByRole('heading',{name:'TaxPay user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
  await expect(page.getByRole('heading',{name:'Report a problem'})).toBeVisible();
  await expect(page.getByText('No report is sent and no official ticket is created.',{exact:false})).toBeVisible();

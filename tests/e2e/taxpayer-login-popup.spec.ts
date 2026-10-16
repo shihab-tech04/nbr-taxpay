@@ -9,7 +9,7 @@ test('public Login opens the TaxPay-only popup; invalid ID stays signed out', as
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your TaxPay Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeFocused();
   await expect(dialog.locator('input[type=password]')).toHaveCount(0);
@@ -31,7 +31,7 @@ test('all ten User IDs open their own taxpayer dashboard and profile, then sign 
   page.on('request',req=>{if(new URL(req.url()).hostname.endsWith('.supabase.co'))hostedCalls.push(req.url());});
   for(let id=1;id<=10;id++){
     await page.goto('/?action=taxpayer_login');
-    const dialog=page.getByRole('dialog',{name:'Sign In To Your TaxPay Account'});
+    const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
     await dialog.getByRole('textbox',{name:'User ID'}).fill('user'+id);
     await dialog.getByRole('button',{name:'Login'}).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);

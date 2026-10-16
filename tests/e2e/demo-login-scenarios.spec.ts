@@ -39,7 +39,7 @@ test('legacy URL offers account access without fabricated sign-out',async({page}
  const dialog=page.getByRole('dialog',{name:'Services & menu'});
  await expect(dialog.getByRole('button',{name:'Exit demonstration account'})).toHaveCount(0);
  await dialog.getByRole('button',{name:'Sign in'}).click();
- await expect(page.getByRole('dialog',{name:'Sign In To Your TaxPay Account'})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'})).toBeVisible();
  await expect(page).not.toHaveURL(/demoUser=/);
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop'))

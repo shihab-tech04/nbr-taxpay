@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, UserRound, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { taxpayerBrandName } from '../../config/brand';
 
 /** TaxPay-only, password-free preview account entry. This does not authenticate API calls. */
 export function TaxpayerLoginDialog() {
@@ -58,7 +59,7 @@ export function TaxpayerLoginDialog() {
     <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="taxpayer-login-title"
       className="taxpayer-login-dialog">
       <div className="taxpayer-login-heading">
-        <h2 id="taxpayer-login-title">{bn ? 'আপনার TaxPay অ্যাকাউন্টে সাইন ইন করুন' : 'Sign In To Your TaxPay Account'}</h2>
+        <h2 id="taxpayer-login-title">{bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`}</h2>
         <button type="button" onClick={close} aria-label={bn ? 'বন্ধ করুন' : 'Close'}>
           <X size={24} aria-hidden="true" />
         </button>

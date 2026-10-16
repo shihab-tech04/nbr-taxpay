@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CircleUserRound, FileCheck2, FilePenLine, Home, Landmark, LogOut, ReceiptText, Settings2, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
+import { taxpayerBrandName } from '../../config/brand';
 
 type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentType<{size?: number; 'aria-hidden'?: boolean}> };
 
@@ -46,7 +47,7 @@ export function TaxpayerReferenceRail() {
       <div>
         <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(user || sampleProfile ? 'taxpayer_home' : 'landing')}>
           <Landmark size={23} aria-hidden={true} />
-          <span><strong>TaxPay</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
+          <span><strong>{taxpayerBrandName(language)}</strong><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (

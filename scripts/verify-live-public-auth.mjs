@@ -28,7 +28,7 @@ try {
     await page.screenshot({ path: `test-results/live-auth-${name}.png`, fullPage: true });
     await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/action=taxpayer_login/);
-    const dialog = page.getByRole('dialog', { name: 'Sign In To Your TaxPay Account' });
+    const dialog = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: 'User ID' })).toBeVisible();
     await expect(dialog.locator('input[type=password]')).toHaveCount(0);

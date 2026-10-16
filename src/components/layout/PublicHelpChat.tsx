@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, BookOpen } from 'lucide-react';
 import { GUIDE_CONTENT } from '../screens/PublicUserGuide';
 import {useTaxState} from '../../services/taxState';
+import { taxpayerBrandName } from '../../config/brand';
 
 type Message = {from:'user'|'assistant';value:string};
 export function PublicHelpChat(){
@@ -27,9 +28,9 @@ export function PublicHelpChat(){
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };
- return <aside className="public-help-widget" aria-label={bn?'TaxPay সহায়তা':'TaxPay help'}>
+ return <aside className="public-help-widget" aria-label={bn?'আমার কর সহায়তা':'Amar Kor help'}>
   {open&&<section className="public-help-panel" aria-labelledby="public-help-title">
-   <header><div><h2 id="public-help-title">{bn?'TaxPay সহায়তা':'TaxPay help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
+   <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
      <button onClick={()=>setOpen(false)} type="button" aria-label={bn?'চ্যাট বন্ধ করুন':'Close chat'}><X size={18}/></button></header>
    <div className="public-help-messages" role="log" aria-live="polite">
     <p className="public-help-opening">{bn?'কী জানতে চান? নিচের কোনো বিষয় বেছে নিন।':'How can we help? Choose a topic or type a question.'}</p>

@@ -12,7 +12,7 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
   await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/action=taxpayer_login/);
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your TaxPay Account' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'User ID' }).fill('not-a-user');
   await page.getByRole('button', { name: 'Login', exact: true }).click();

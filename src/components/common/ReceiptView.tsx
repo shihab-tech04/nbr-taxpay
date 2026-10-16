@@ -27,7 +27,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
-    title: 'ট্যাক্সপে — রসিদের বিবরণ', subtitle: 'এনবিআর কর্তৃক ইস্যুকৃত নয়',
+    title: 'আমার কর — রসিদের বিবরণ', subtitle: 'এনবিআর কর্তৃক ইস্যুকৃত নয়',
     fictional: 'যাচাইকৃত ট্রেজারি জমা বা সরকারি টিআর-৬ ইস্যু করা হয়নি।', demo: 'ইস্যু হয়নি',
     challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ',
@@ -47,7 +47,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     noIssuance: 'শুধু সিমুলেশন — এনবিআর বা ব্যাংক ইস্যু/স্বাক্ষর করেনি'
   } : {
     back: 'Back to records', print: 'Print receipt', export: 'Export JSON',
-    title: 'TaxPay — Receipt details', subtitle: 'Not issued by NBR',
+    title: 'Amar Kor — Receipt details', subtitle: 'Not issued by NBR',
     fictional: 'No verified Treasury settlement or official Form TR-6 is issued.', demo: 'NOT ISSUED',
     challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year',
