@@ -206,9 +206,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 {previewAccount && demoSql.status === 'loading' && <p role="status">{language === 'bn' ? 'SQL প্রোফাইল লোড হচ্ছে…' : 'Loading SQL profile…'}</p>}
                 {previewAccount && demoSql.status === 'error' && <p role="alert">{language === 'bn' ? 'SQL প্রোফাইল পাওয়া যাচ্ছে না।' : 'SQL profile unavailable.'} {demoSql.error}</p>}
                 {previewAccount && demoSql.status === 'ready' && !demoSql.profile && <p role="status">{language === 'bn' ? 'এই অ্যাকাউন্টের SQL প্রোফাইল নেই।' : 'No SQL profile for this account.'}</p>}
-                {(!previewAccount || (demoSql.status === 'ready' && demoSql.profile)) && (
-                  <dl className="taxpayer-account-facts">
-                    {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
+                <dl className="taxpayer-account-facts">
+                  {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
+                  {(!previewAccount || (demoSql.status === 'ready' && demoSql.profile)) && <>
                     <div><dt>{t.name}</dt><dd>{demoSql.profile ? (language === 'bn' ? demoSql.profile.nameBn : demoSql.profile.nameEn) : (language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn)}</dd></div>
                     <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
                     {demoSql.profile && <>
@@ -216,8 +216,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <div><dt>{language === 'bn' ? 'নমুনা টিআইএন' : 'Sample TIN stub'}</dt><dd>{demoSql.profile.tinStub ?? '—'}</dd></div>
                       <div><dt>{language === 'bn' ? 'নমুনা কর সার্কেল' : 'Sample tax circle'}</dt><dd>{demoSql.profile.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
-                  </dl>
-                )}
+                  </>}
+                </dl>
               </>
             )}
             {sampleOnly && page === 'settings' && (
