@@ -53,7 +53,7 @@ test('password login uses real Auth request, enters personal dashboard and allow
 test('incorrect password shows an actionable error without granting a dashboard',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Auth protocol is viewport-independent');
   let attempted=false;
-  await page.route(`${backend}/auth/v1/token?grant_type=password`,async route=>{
+  await page.route(`${backend}/auth/v1/token**`,async route=>{
     attempted=true;
     await route.fulfill(response({code:'invalid_credentials',msg:'Invalid login credentials'},400));
   });
@@ -69,7 +69,7 @@ test('incorrect password shows an actionable error without granting a dashboard'
 test('forgot-password sends a reset link back to the GitHub Pages login route',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Auth protocol is viewport-independent');
   let redirect='';
-  await page.route(`${backend}/auth/v1/recover`,async route=>{
+  await page.route(`${backend}/auth/v1/recover**`,async route=>{
     redirect=new URL(route.request().url()).searchParams.get('redirect_to')??'';
     await route.fulfill(response({}));
   });
