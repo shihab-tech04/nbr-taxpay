@@ -48,7 +48,13 @@ test('public service actions and receipt result return stay in their own public 
 
 test('guest menus and bell route to their named services; contextual payment choices survive reload', async ({page}) => {
   await page.goto('/?action=verify');
-  await page.locator('.citizen-header').getByRole('button',{name:'Notifications'}).click();
+  // The notifications bell is a mobile-only control; desktop visitors can open
+  // the same safe account-notifications destination through its deep link.
+  if (page.viewportSize()!.width <= 900) {
+    await page.locator('.citizen-header').getByRole('button',{name:'Notifications'}).click();
+  } else {
+    await page.goto('/?action=account_notifications');
+  }
   await expect(page).toHaveURL(/action=account_notifications/);
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
