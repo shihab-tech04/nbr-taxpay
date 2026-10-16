@@ -34,7 +34,8 @@ test('public footer utility links open their actual destinations without copying
   await page.goto('/?action=landing&lang=en');
   const footer = page.getByRole('contentinfo',{name:'Amar Kor footer'});
   await footer.getByRole('button',{name:'Receipts & corrections'}).click();
-  await expect(page).toHaveURL(/action=user_guide&category=records/);
+  await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe('user_guide');
+  await expect.poll(() => new URL(page.url()).searchParams.get('category')).toBe('records');
   await expect(page.getByRole('heading',{name:'Receipts & corrections'})).toBeVisible();
   await footer.getByRole('button',{name:'Payment status & receipt'}).click();
   await expect(page).toHaveURL(/action=verify/);
