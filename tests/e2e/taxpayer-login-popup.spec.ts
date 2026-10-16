@@ -39,7 +39,7 @@ test('all ten User IDs open their own taxpayer dashboard and profile, then sign 
     await page.locator('.taxpayer-reference-rail summary').click();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Profile',exact:true}).click();
     await expect(page).toHaveURL(/action=account_profile/);
-    if (id!==1) await expect(page.getByText('user'+id,{exact:true})).toBeVisible();
+    if (id!==1) await expect(page.getByText('user'+id,{exact:true}).first()).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
     await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
