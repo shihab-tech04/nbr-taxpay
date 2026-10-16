@@ -25,7 +25,9 @@ test('invalid password-free ID cannot open a taxpayer profile',async({page},info
   await expect(page.getByRole('alert')).toContainText('valid User ID');
   await expect(page).toHaveURL(/action=taxpayer_login/);
   await page.goto('/?action=account_profile');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
+  await expect(page.getByText('User ID: administrator')).toHaveCount(0);
+  expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
 });
 
 test('TaxPay retains a separate authenticated email access screen',async({page},info)=>{
