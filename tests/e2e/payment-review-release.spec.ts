@@ -192,7 +192,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText('Preview token:')).toBeVisible();
   await expect(page.getByText('Not sent')).toBeVisible();
   await expect(page.getByText('No scroll reference')).toBeVisible();
-  await expect(page.getByText(/PREVIEW-\d{4}-PAY-/)).toBeVisible();
+  await expect(page.getByText(/PREVIEW-\d{4}-PAY-/).filter({visible:true}).first()).toBeVisible();
   await expect(page.getByText(/BB-SCRL-/)).toHaveCount(0);
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });

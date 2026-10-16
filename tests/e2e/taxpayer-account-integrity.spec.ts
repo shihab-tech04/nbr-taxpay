@@ -10,7 +10,7 @@ test('generic taxpayer preview shows the same payer receipts in dashboard and ac
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('region',{name:'Search and filters'})).toContainText(/Records\s*:\s*3/);
   await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
-  await expect(page.getByText('NOT ISSUED').first()).toBeVisible();
+  await expect(page.getByText('NOT ISSUED').filter({visible:true}).first()).toBeVisible();
   await expect(page.getByText('Treasury recorded')).toHaveCount(0);
   await page.getByRole('button',{name:'Tax Ledger',exact:true}).filter({visible:true}).first().click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
