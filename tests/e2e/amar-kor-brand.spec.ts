@@ -13,7 +13,7 @@ test('approved Amar Kor branding stays consistent across public and taxpayer she
   await expect(page.locator('.public-footer__identity strong')).toHaveText('আমার কর');
 
   await page.goto('/?action=office_login&lang=bn');
-  await expect(page.locator('.login-form-brand-title')).toHaveText('আমার কর');
+  await expect(page.getByRole('dialog', { name: 'আপনার আমার কর অ্যাকাউন্টে সাইন ইন করুন' })).toBeVisible();
   await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.locator('.login-form-brand-title')).toHaveText('Amar Kor');
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' })).toBeVisible();
 });
