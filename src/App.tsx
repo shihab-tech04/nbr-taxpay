@@ -177,7 +177,7 @@ const MainRouter: React.FC = () => {
           </section>
         ) : renderActiveScreen()}
       </main>
-      {!taxpayerReference && <CitizenFooter />}
+      {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
