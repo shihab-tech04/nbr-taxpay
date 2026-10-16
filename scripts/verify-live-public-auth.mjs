@@ -16,6 +16,7 @@ try {
     ['mobile', { width: 375, height: 812 }, true]
   ]) {
     const page = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     const url = new URL(base);
     url.searchParams.set('action', 'taxpayer_home');
     url.searchParams.set('demoUser', 'user1');
