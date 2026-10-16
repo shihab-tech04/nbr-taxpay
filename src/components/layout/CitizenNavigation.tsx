@@ -4,7 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { PaymentCategory, UserRole } from '../../types/tax';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-approved.png';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
 
 type CitizenAction = { route: string; en: string; bn: string };
 const guestLinks: CitizenAction[] = [
