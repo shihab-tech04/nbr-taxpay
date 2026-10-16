@@ -94,6 +94,12 @@
   align-items: flex-end;
 }
 
+.public-hero-carousel__slide .public-hero-carousel__service-image {
+  max-height: none;
+  object-fit: cover;
+  object-position: center;
+}
+
 .public-hero-carousel__image-placeholder {
   display: grid;
   place-items: center;

@@ -5,7 +5,7 @@ test('public hero opens service choice before the guest payment form while the r
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
  await expect(page.getByRole('button',{name:'Check payment & receipt'})).toBeVisible();
- await expect(page.locator('.public-information-hero__image')).toBeVisible();
+ await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);

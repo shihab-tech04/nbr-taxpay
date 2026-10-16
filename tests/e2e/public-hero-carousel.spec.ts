@@ -11,7 +11,7 @@ test('hero provides five bilingual service slides with the original opening bann
   await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
-  await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(4);
+  await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(3);
 
   await carousel.focus();
   const destinations = [
@@ -25,7 +25,13 @@ test('hero provides five bilingual service slides with the original opening bann
     await expect(carousel).toHaveAttribute('data-active-slide', String(index + 1));
     await expect(carousel.getByRole('heading', { name: heading })).toBeVisible();
     await expect(carousel.locator(`[data-banner-service="${service}"]`)).not.toHaveAttribute('inert', '');
-    await expect(carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__image-placeholder`)).toBeVisible();
+    if (service === 'travel') {
+      const travelImage = carousel.locator('[data-banner-service="travel"] .public-hero-carousel__service-image');
+      await expect(travelImage).toBeVisible();
+      await expect.poll(() => travelImage.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    } else {
+      await expect(carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__image-placeholder`)).toBeVisible();
+    }
     await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);
   }
@@ -71,6 +77,9 @@ test('desktop banner uses equal columns, flat elevation and distinct service col
   const introButtonColor = await carousel.locator('[data-banner-service="intro"] .citizen-public-primary')
     .evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
+  const travelImageFit = await carousel.locator('[data-banner-service="travel"] .public-hero-carousel__service-image')
+    .evaluate(image => getComputedStyle(image).objectFit);
+  expect(travelImageFit).toBe('cover');
 });
 
 test('service labels remain specific and concise in Bangla', async ({ page }) => {
