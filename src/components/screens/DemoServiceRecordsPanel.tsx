@@ -154,7 +154,7 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
       )}
       {status === 'ready' && !profile && (
         <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-taxpay-muted" role="status">
-          {tr('No SQL profile has been assigned to this account.', 'এই অ্যাকাউন্টের জন্য SQL প্রোফাইল পাওয়া যায়নি।')}
+          {tr('No profile found for this account.', 'এই অ্যাকাউন্টের প্রোফাইল পাওয়া যায়নি।')}
         </p>
       )}
       {status === 'ready' && profile && (

@@ -26,7 +26,7 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-018')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
-  await expect(page.getByText('Government challan: Not connected')).toBeVisible();
+  await expect(page.getByText('Government challan: Not available')).toBeVisible();
   await page.goto('/?action=account_profile');
   await expect(page.getByText('DEMO-TIN-006', { exact: true })).toBeVisible();
   await expect(page.getByText('Advance-tax instalments')).toBeVisible();

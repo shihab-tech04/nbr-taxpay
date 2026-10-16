@@ -101,21 +101,19 @@ export const DemoPaymentActivity:React.FC=()=>{
   // journey, rather than attempting a permanently rejected public transaction.
   if(!authenticatedUser)return <main className="mx-auto max-w-5xl space-y-4 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
     <h1 className="text-2xl font-bold text-taxpay-text">{txt('Sign in to simulate a payment','পেমেন্ট সিমুলেশনের জন্য সাইন ইন করুন')}</h1>
-    <p className="text-sm text-taxpay-muted">{txt('Payment records are stored in a shared database. A verified account and an authorized fictional profile assignment are required before creating or viewing them. No real money, government receipt, or tax credit is involved.','পেমেন্টের তথ্য যৌথ ডাটাবেসে সংরক্ষিত হয়। পেমেন্ট তৈরি বা দেখার আগে যাচাইকৃত অ্যাকাউন্ট এবং অনুমোদিত কাল্পনিক প্রোফাইলের সংযোগ প্রয়োজন। কোনো বাস্তব অর্থ বা কর ক্রেডিট জড়িত নয়।')}</p>
+    <p className="text-sm text-taxpay-muted">{txt('Sign in to access payment activity for your assigned profile.','আপনার নির্ধারিত প্রোফাইলের পেমেন্ট কার্যক্রম দেখতে সাইন ইন করুন।')}</p>
     <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{txt('Open sign-in','সাইন ইন খুলুন')}</button>
   </main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-5xl space-y-3 p-6">
-    <h1 className="text-xl font-semibold text-taxpay-text">Protected simulation payment account</h1>
+    <h1 className="text-xl font-semibold text-taxpay-text">Payment account</h1>
     <p role="status">{bindingError||'Checking your verified account assignment…'}</p>
-    <p className="text-sm text-taxpay-muted">An authorized Approver must assign one fictional user1–user10 profile to this authenticated account. No other profile can be selected by URL.</p>
+    <p className="text-sm text-taxpay-muted">Ask your account administrator to assign a taxpayer profile.</p>
   </main>;
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-      <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected simulation workspace','সংযুক্ত সিমুলেশন ওয়ার্কস্পেস')}</p>
+      <p className="text-sm font-semibold text-taxpay-dark">{txt('User ID','ইউজার আইডি')}: {id}</p>
       <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
-      <p className="mt-2 text-sm text-taxpay-muted">{privateMode?txt('Protected account — verified server-side profile assignment. All changes sync with Office Management. Simulation only; no payment or credit.','সুরক্ষিত অ্যাকাউন্ট — সার্ভারে প্রোফাইল যাচাইকৃত। সব তথ্য অফিস ম্যানেজমেন্টে সমন্বিত। শুধু সিমুলেশন।'):txt('Simulation only: no real payment, government challan or tax credit.','শুধু সিমুলেশন: বাস্তব পেমেন্ট, সরকারি চালান বা কর ক্রেডিট নেই।')}</p>
-      {!privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Public fictional sandbox. All sample accounts are unverified examples; do not enter personal data.','উন্মুক্ত কাল্পনিক নমুনা। ব্যক্তিগত তথ্য প্রবেশ করাবেন না।')}</p>}
     </header>
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New simulated payment','নতুন সিমুলেটেড পেমেন্ট')}>
@@ -202,7 +200,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
       </button>)}
     </nav>
-    <section className="space-y-3" aria-label={txt('Shared SQL transaction history','SQL লেনদেনের ইতিহাস')}>
+    <section className="space-y-3" aria-label={txt('Transaction history','লেনদেনের ইতিহাস')}>
       {loading?<p role="status">{txt('Loading shared transactions…','সংযুক্ত লেনদেন লোড হচ্ছে…')}</p>:loadError?<p role="alert">{txt('Could not synchronize transaction history: ','লেনদেনের তথ্য সমন্বয় করা যায়নি: ')}{loadError}</p>:
         rows.length===0?<section className="rounded-xl border border-taxpay-border bg-white p-5"><h2 className="font-bold">{txt('No transactions yet','এখনো কোনো লেনদেন নেই')}</h2><p className="mt-2 text-sm text-taxpay-muted">{txt('Create a simulated payment to populate this history and the admin ledger.','পেমেন্ট সিমুলেট করলে এই হিসাব এবং অ্যাডমিন লেজারে দেখা যাবে।')}</p></section>:
         rows.map(tx=><article key={tx.transactionId} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">

@@ -1,11 +1,11 @@
 import React from 'react';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { PAYMENT_SERVICE_CHOICES } from './PaymentServiceChoiceDialog';
 
 /** A directory of actual payment categories, not the retired connection-status mockup. */
 export const PaymentServicesPage: React.FC = () => {
-  const { language, previewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, setPaymentServiceChoiceOpen } = useTaxState();
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
 
@@ -20,9 +20,6 @@ export const PaymentServicesPage: React.FC = () => {
         {tr('Select a service', 'সেবা নির্বাচন করুন')} <ArrowRight size={18} aria-hidden="true" />
       </button>
     </header>
-    {previewAccount && <p className="taxpayer-service-directory__notice" role="note"><Info size={18} aria-hidden="true" />
-      {tr('This user ID is a visual preview. A verified application session is required for account-bound payments.', 'এই ইউজার আইডিটি শুধু নমুনা দেখার জন্য। অ্যাকাউন্টের অধীনে পেমেন্ট করতে যাচাইকৃত সেশন প্রয়োজন।')}
-    </p>}
     <section className="taxpayer-service-directory__grid" aria-label={tr('Eight tax payment types', 'আট ধরনের কর পরিশোধ')}>
       {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }, index) => (
         <article className="taxpayer-service-directory__card" key={id}>

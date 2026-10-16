@@ -55,8 +55,8 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
   await expect(page.getByText('DEMO-TIN-001').first()).toBeVisible();
-  await expect(page.getByText('Real TIN verified')).toBeVisible();
-  await expect(page.getByText('No',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Taxpayer class')).toBeVisible();
+  await expect(page.getByText('Individual',{exact:true})).toBeVisible();
 });
 
 test('user1 mobile design is bilingual and has no horizontal overflow',async({page},info)=>{

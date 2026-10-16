@@ -62,7 +62,7 @@
 .payment-review__method{display:inline-flex;align-items:center;gap:8px;min-height:44px;border:1px solid #dce5ef;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;color:#385370;background:#fff;cursor:pointer}
 .payment-review__method--selected{border-color:#2e66ad;background:#eef5ff;color:#214e85}
 .payment-review__method input,.payment-review__ack input,.payment-review__fail-toggle input{accent-color:#2e66ad;width:17px;height:17px;flex:none}
-.payment-review__fail-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:12px;color:#58708a;padding:8px 10px;border-radius:9px;background:#f7f9fc}
+.payment-review__fail-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:12px;color:#405a74;padding:8px 10px;border-radius:9px;background:#f7f9fc}
 .payment-review__bank-note{display:flex;align-items:flex-start;gap:9px;margin-top:15px;padding:12px;border-radius:9px;background:#fffaec;color:#765d26;font-size:12px;line-height:1.6}
 .payment-review__bank-note svg{flex:none;margin-top:1px}
 .payment-review__aside{display:grid;gap:13px;position:sticky;top:0;min-width:0}
