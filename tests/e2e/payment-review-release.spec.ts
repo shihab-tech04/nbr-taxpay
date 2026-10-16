@@ -153,10 +153,14 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByRole('button', { name: 'Pay at a bank branch' })).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
-    const controls = await page.locator('main input:not([type="radio"]), main select, main button').evaluateAll(elements =>
+    const controls = await page.locator('main input:not([type="radio"]):not([type="checkbox"]), main select, main button').evaluateAll(elements =>
       elements.map(element => ({ name: element.getAttribute('aria-label') || element.textContent?.trim() || element.id, height: (element as HTMLElement).getBoundingClientRect().height }))
     );
     expect(controls.filter(control => control.height < 43).map(control => control.name)).toEqual([]);
+    const checkboxes = await page.locator('main .payment-review__ack, main .payment-review__fail-toggle').evaluateAll(elements =>
+      elements.map(element => ({ label: element.textContent?.trim(), height: element.getBoundingClientRect().height }))
+    );
+    expect(checkboxes.filter(control => control.height < 44).map(control => control.label)).toEqual([]);
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
     expect(axe.violations.map(({ id, impact, nodes }) => ({ id, impact, count: nodes.length, targets: nodes.flatMap(node => node.target) }))).toEqual([]);
   }
