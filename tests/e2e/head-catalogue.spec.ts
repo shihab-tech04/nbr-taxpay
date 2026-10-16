@@ -98,10 +98,10 @@ test('public footer accurately describes service and does not promise challan is
  await page.goto('/?action=landing');
  const footer=page.locator('footer');
  await expect(footer.getByText('Income tax payment information')).toBeVisible();
- await expect(footer.getByText('No government payments or challans are issued here.')).toBeVisible();
+ await expect(footer.getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(footer.getByText('আয়কর পরিশোধের তথ্য')).toBeVisible();
- await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toBeVisible();
+ await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 
 test('public header exposes information only and no role impersonation control',async({page})=>{

@@ -3,7 +3,7 @@ import { ArrowRight, CircleHelp, Globe2, House, Menu, ShieldAlert, X } from 'luc
 import { useTaxState } from '../../services/taxState';
 import governmentSeal from '../../assets/bangladesh-government-seal.svg';
 
-const ACCOUNT_ACCESS_ROUTE = 'secure_workspace';
+const ACCOUNT_ACCESS_ROUTE = 'office_login';
 const LINKS = [
   {route:'landing',en:'Home',bn:'মূল পাতা',Icon:House},
   {route:'user_guide',en:'FAQs',bn:'প্রশ্নোত্তর',Icon:CircleHelp},
@@ -57,7 +57,7 @@ export function PublicHomeHeader() {
         event.preventDefault();navigate('landing');setMenuOpen(false);
       }}>
         {logoFailed?<span className="public-home-seal-fallback" aria-hidden="true">TP</span>:<img src={governmentSeal} alt="Government Seal of Bangladesh" onError={()=>setLogoFailed(true)}/>}
-        <span className="public-home-brand__copy"><strong>TaxPay</strong><small>{bn?'স্বতন্ত্র আয়কর তথ্যসেবা':'Independent tax information service'}</small></span>
+        <span className="public-home-brand__copy"><strong>TaxPay</strong><small>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</small></span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
         {LINKS.map(routeLink)}{login(true)}

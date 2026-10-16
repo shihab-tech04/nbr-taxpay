@@ -1,5 +1,5 @@
 import React from 'react';
-import {Landmark, ShieldAlert, ArrowUpRight} from 'lucide-react';
+import {Landmark, ArrowUpRight} from 'lucide-react';
 import governmentSeal from '../../assets/bangladesh-government-seal.svg';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -30,8 +30,7 @@ export function CitizenFooter(){
         </section>
       </div>
       <div className="public-footer__bottom">
-        <p>{bn?'স্বতন্ত্র তথ্যসেবা; এনবিআর পরিচালিত সরকারি পোর্টাল নয়।':'Independent information service; not an NBR-operated government portal.'}</p>
-        <p><ShieldAlert size={15} aria-hidden="true"/>{bn?'এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।':'No government payments or challans are issued here.'}</p>
+        <p>{bn?'© ২০২৬ TaxPay · কর পরিশোধের নির্দেশনা ও অ্যাকাউন্ট সেবা':'© 2026 TaxPay · Payment guidance and account services'}</p>
       </div>
     </div>
   </footer>;
@@ -45,17 +44,13 @@ export function CitizenFooter(){
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
         <Landmark size={21} aria-hidden="true"/>
-        <div><strong>TaxPay</strong><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস':'Independent tax payment workspace')}</p></div>
+        <div><strong>TaxPay</strong><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
       </div>
       <nav className="citizen-footer__links" aria-label={bn?'সহায়তা লিংক':'Support links'}>
         {links.map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}>
           {bn?item.bn:item.en}
         </button>)}
       </nav>
-      {currentRoute==='landing' && <p className="citizen-footer__independence">{bn?'স্বতন্ত্র তথ্যসেবা; এটি জাতীয় রাজস্ব বোর্ড পরিচালিত সরকারি পোর্টাল নয়।':'Independent information service; this is not an NBR-operated government portal.'}</p>}
-      {currentRoute==='landing' && <p className="citizen-footer__disclaimer"><ShieldAlert size={15} aria-hidden="true"/>
-        {bn?'এই তথ্যসেবা অর্থ গ্রহণ বা সরকারি চালান ইস্যু করে না।':'This information service does not collect money or issue official challans.'}
-      </p>}
     </div>
   </footer>;
 }
