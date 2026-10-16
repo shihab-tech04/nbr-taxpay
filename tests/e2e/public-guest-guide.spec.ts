@@ -87,6 +87,43 @@ test('Help Center typography and interactions remain usable at each viewport', a
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
+test('User guide search and text weights follow the citizen typography contract', async ({ page }, info) => {
+  await page.goto('/?action=user_guide');
+  const guide = page.locator('.public-guide-page');
+  const typography = await guide.evaluate(element => {
+    const style = (selector: string) => getComputedStyle(element.querySelector(selector)!);
+    return {
+      fontFamily: style('.public-guide-content').fontFamily,
+      title: style('.public-guide-intro h1').fontWeight,
+      topic: style('.public-guide-topics button:not([aria-current="true"])').fontWeight,
+      stepTitle: style('.public-guide-steps h3').fontWeight,
+      stepBody: style('.public-guide-steps p').fontWeight,
+      faq: style('.public-guide-questions summary').fontWeight,
+      search: style('.public-guide-search input').fontWeight,
+    };
+  });
+  expect(typography.fontFamily).toContain('Poppins');
+  expect(typography).toMatchObject({title:'700',topic:'500',stepTitle:'600',stepBody:'400',faq:'600',search:'400'});
+
+  const field = guide.locator('.public-guide-search');
+  const fieldBox = await field.boundingBox();
+  const contentBox = await guide.locator('.public-guide-content').boundingBox();
+  expect(fieldBox).not.toBeNull();
+  expect(contentBox).not.toBeNull();
+  expect(fieldBox!.width).toBeLessThanOrEqual(640);
+  expect(fieldBox!.width).toBeLessThan(contentBox!.width);
+  if (info.project.name === 'desktop-1280') {
+    expect(fieldBox!.width).toBeGreaterThan(500);
+  }
+
+  const input = guide.getByRole('searchbox', { name: 'Search questions' });
+  await input.focus();
+  await expect(field).toHaveCSS('border-color', 'rgb(44, 94, 173)');
+  await expect(input).toHaveCSS('outline-style', 'none');
+  await input.fill('receipt');
+  await expect(guide.getByText('Does a receipt confirm tax credit?')).toBeVisible();
+});
+
 
 
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
