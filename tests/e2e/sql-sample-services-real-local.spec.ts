@@ -19,8 +19,8 @@ test('isolated SQL profiles and service scenarios render for user6, user8 and us
   const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user6');
   await expect(panel.getByText('Advance-tax Taxpayer 06')).toBeVisible();
-  await expect(panel.getByText('SAMPLE-SRV-017')).toBeVisible();
-  await expect(panel.getByText('SAMPLE-SRV-018')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-017')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-018')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await expect(page.getByText('Government challan: Not connected')).toBeVisible();
@@ -33,9 +33,9 @@ test('isolated SQL profiles and service scenarios render for user6, user8 and us
 
   await signIn(page, 'user8');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user8');
-  await expect(panel.getByText('SAMPLE-SRV-023')).toBeVisible();
-  await expect(panel.getByText('SAMPLE-SRV-024')).toBeVisible();
-  await expect(panel.getByText('SAMPLE-SRV-025')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-023')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-024')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-025')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-017')).toHaveCount(0);
   await expect(panel.getByText('Failed', { exact: true }).first()).toBeVisible();
   await expect(panel.getByText('Reversed', { exact: true }).first()).toBeVisible();
@@ -44,6 +44,6 @@ test('isolated SQL profiles and service scenarios render for user6, user8 and us
   await signIn(page, 'user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(panel).toHaveAttribute('data-scenario-user', 'user1');
-  await expect(panel.getByText('SAMPLE-SRV-003')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
 });
