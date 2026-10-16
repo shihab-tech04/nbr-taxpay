@@ -1,14 +1,17 @@
 import React from 'react';
 import { BookOpen, Download, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { hasVerifiedTaxLedgerSource } from '../../services/taxpayerEvidence';
 import { formatCurrency } from '../../services/numberFormat';
 
 export const TaxLedger: React.FC = () => {
   const { ledgerEntries, language } = useTaxState();
   const bn = language === 'bn';
 
-  const totalDebits = ledgerEntries.reduce((acc, curr) => acc + curr.debit, 0);
-  const totalCredits = ledgerEntries.reduce((acc, curr) => acc + curr.credit, 0);
+  const visibleEntries = hasVerifiedTaxLedgerSource ? ledgerEntries : [];
+  const hasEntries = visibleEntries.length > 0;
+  const totalDebits = visibleEntries.reduce((acc, curr) => acc + curr.debit, 0);
+  const totalCredits = visibleEntries.reduce((acc, curr) => acc + curr.credit, 0);
   const netBalance = totalCredits - totalDebits;
 
   return (
@@ -31,9 +34,11 @@ export const TaxLedger: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              disabled={!hasEntries}
               onClick={() => {
                 const element = document.createElement('a');
-                const file = new Blob([JSON.stringify(ledgerEntries, null, 2)], { type: 'application/json' });
+                const file = new Blob([JSON.stringify(visibleEntries, null, 2)], { type: 'application/json' });
                 element.href = URL.createObjectURL(file);
                 element.download = 'TaxPay_shared_ledger_sample_NOT_OFFICIAL.json';
                 document.body.appendChild(element);
@@ -41,7 +46,7 @@ export const TaxLedger: React.FC = () => {
                 document.body.removeChild(element);
                 URL.revokeObjectURL(element.href);
               }}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
               <span>{bn ? 'লেজার তথ্য নিন' : 'Export ledger data'}</span>
@@ -57,7 +62,7 @@ export const TaxLedger: React.FC = () => {
             <div className="flex items-center gap-2 mt-1">
               <TrendingDown className="w-4 h-4 text-rose-600" />
               <span className="font-mono-plex font-bold text-lg text-rose-800">
-                {formatCurrency(totalDebits, language)}
+                {hasEntries ? formatCurrency(totalDebits, language) : (bn ? 'পাওয়া যাচ্ছে না' : 'Not available')}
               </span>
             </div>
           </div>
@@ -67,7 +72,7 @@ export const TaxLedger: React.FC = () => {
             <div className="flex items-center gap-2 mt-1">
               <TrendingUp className="w-4 h-4 text-taxpay-primary" />
               <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
-                {formatCurrency(totalCredits, language)}
+                {hasEntries ? formatCurrency(totalCredits, language) : (bn ? 'পাওয়া যাচ্ছে না' : 'Not available')}
               </span>
             </div>
           </div>
@@ -75,13 +80,13 @@ export const TaxLedger: React.FC = () => {
           <div className="p-4 rounded-xl bg-taxpay-light border border-taxpay-border">
             <span className="text-taxpay-dark font-medium block">{bn ? 'পার্থক্য' : 'Difference'}</span>
             <div className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1">
-              {netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}`}
+              {hasEntries ? netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}` : (bn ? 'পাওয়া যাচ্ছে না' : 'Not available')}
             </div>
           </div>
         </div>
 
         <div className="grid gap-3 md:hidden">
-          {ledgerEntries.map(entry => (
+          {visibleEntries.map(entry => (
             <article key={entry.id} className="rounded-xl border border-taxpay-border bg-white p-4 space-y-2">
               <h2 className="text-sm font-semibold text-taxpay-text">{entry.headName}</h2>
               <p className="text-xs text-slate-600">{entry.date} · AY {entry.assessmentYear}</p>
@@ -95,7 +100,11 @@ export const TaxLedger: React.FC = () => {
           ))}
         </div>
         {/* Ledger Entries Table */}
-        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
+        {!hasEntries ? (
+          <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+            {bn ? 'এই অ্যাকাউন্টের যাচাইকৃত কর লেজার এখনো সংযুক্ত হয়নি।' : 'No verified, account-bound tax ledger is connected.'}
+          </p>
+        ) : <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
@@ -109,7 +118,7 @@ export const TaxLedger: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
-              {ledgerEntries.map((entry) => (
+              {visibleEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-slate-50">
                   <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
                     {entry.date}
@@ -140,7 +149,7 @@ export const TaxLedger: React.FC = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </div>}
       </div>
     </div>
   );

@@ -16,7 +16,6 @@ import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRout
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
-  INITIAL_LEDGER_ENTRIES, 
   INITIAL_CORRECTIONS, 
   INITIAL_CASES, 
   INITIAL_INCIDENTS, 
@@ -89,7 +88,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
-  const [ledgerEntries] = useState<TaxLedgerEntry[]>(INITIAL_LEDGER_ENTRIES);
+  // A public fictional journal is not a taxpayer's account-bound ledger.
+  // Keep the typed state empty until an authorized verified source exists.
+  const [ledgerEntries] = useState<TaxLedgerEntry[]>([]);
   const [corrections, setCorrections] = useState<CorrectionRequest[]>(INITIAL_CORRECTIONS);
   const [cases] = useState<CaseRecord[]>(INITIAL_CASES);
   const [incidents, setIncidents] = useState<IncidentReport[]>(INITIAL_INCIDENTS);
@@ -213,6 +214,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addCorrectionRequest = (corrData: Omit<CorrectionRequest, 'id' | 'ticketNo' | 'lastUpdated'>): string => {
+    if (!receipts.some(receipt=>receipt.isSimulatedDemo && receipt.challanNo===corrData.challanNo && receipt.payerTin===corrData.taxpayerTin)) {
+      throw new Error('This sample payment does not belong to the selected preview.');
+    }
     const ticketNo = `CORR-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
     const newCorr: CorrectionRequest = {
       ...corrData,

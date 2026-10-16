@@ -6,6 +6,7 @@ import { useTaxState } from '../../services/taxState';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { formatCurrency } from '../../services/numberFormat';
+import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import type { ChallanReceipt, PaymentCategory } from '../../types/tax';
 
 const statusText: Record<string, {en:string; bn:string}> = {
@@ -30,7 +31,7 @@ const escapeCsv = (value: unknown) => {
 };
 
 export const PaymentHistory: React.FC = () => {
-  const { receipts, selectReceipt, language, taxpayerProfile, demoUser } = useTaxState();
+  const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('ALL');
@@ -39,7 +40,7 @@ export const PaymentHistory: React.FC = () => {
   const label = (en:string,bengali:string)=> bn ? bengali : en;
   // payerTin is not authoritative taxpayer/credit ownership. Only initiated demo receipts
   // are visible until a separate beneficiary and entitlement contract has been certified.
-  const filtered = receipts.filter(r => r.payerTin === taxpayerProfile.tin)
+  const filtered = taxpayerPreviewReceipts(receipts, taxpayerProfile.tin, userRole, demoUser, Boolean(authenticatedUser))
     .filter(r => (r.challanNo + ' ' + r.tokenNumber + ' ' + r.payerName).toLowerCase().includes(query.trim().toLowerCase()))
     .filter(r => year === 'ALL' || r.assessmentYear === year)
     .filter(r => category === 'ALL' || r.paymentCategory === category);

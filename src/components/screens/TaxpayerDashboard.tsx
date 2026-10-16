@@ -3,12 +3,13 @@ import { Activity, ArrowRight, BookOpen, CalendarDays, Download, FileText, Recei
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
+import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
 const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
 export const TaxpayerDashboard: React.FC = () => {
-  const { language, receipts, taxpayerProfile, demoUser, navigate, selectReceipt } = useTaxState();
+  const { language, receipts, taxpayerProfile, demoUser, userRole, navigate, selectReceipt } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
@@ -16,9 +17,8 @@ export const TaxpayerDashboard: React.FC = () => {
   const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
   // Explicit demo activity ONLY. Payer-TIN fixtures do not establish credit ownership.
-  const exampleRecords = useMemo(()=> demoUser && !user
-    ? receipts.filter(r=>r.payerTin===taxpayerProfile.tin && r.assessmentYear===year) : [],
-    [demoUser,user,receipts,taxpayerProfile.tin,year]);
+  const exampleRecords = useMemo(()=>taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(user))
+    .filter(r=>r.assessmentYear===year),[receipts,taxpayerProfile.tin,userRole,demoUser,user,year]);
   const classify = (kind:string):Category => {
     const x=kind.toUpperCase();
     if (x.includes('TRAVEL')) return 'travel';

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { FileText, Printer } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
+import { useAccountIdentity } from '../../services/accountIdentity';
+import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 
 type CertificatePreview = 'ANNUAL_PAYMENT' | 'WITHHOLDING_PROOF' | 'TRAVEL_CLEARANCE';
 
@@ -12,20 +14,22 @@ const previewOptions: { id: CertificatePreview; en: string; bn: string }[] = [
 ];
 
 export const CertificatesView: React.FC = () => {
-  const { taxpayerProfile, receipts, language } = useTaxState();
+  const { taxpayerProfile, receipts, language, userRole, demoUser } = useTaxState();
+  const {user:authenticatedUser}=useAccountIdentity();
   const [selectedPreview, setSelectedPreview] = useState<CertificatePreview>('ANNUAL_PAYMENT');
   const bn = language === 'bn';
   const label = (en: string, bengali: string) => bn ? bengali : en;
 
   // These payer-linked records are synthetic UI fixtures. They do not prove settlement,
   // identify a tax-credit owner, or support a government-issued certificate.
-  const sampleReceipts = receipts.filter(receipt => receipt.payerTin === taxpayerProfile.tin);
+  const sampleReceipts = taxpayerPreviewReceipts(receipts, taxpayerProfile.tin, userRole, demoUser, Boolean(authenticatedUser));
   const sampleTotal = sampleReceipts.reduce((total, receipt) => total + receipt.totalAmount, 0);
+  const sampleAvailable = sampleReceipts.length > 0;
 
   const details = selectedPreview === 'ANNUAL_PAYMENT'
     ? [
-      { label: label('Payment total', 'পেমেন্টের মোট'), value: formatCurrency(sampleTotal, language) },
-      { label: label('Records', 'রেকর্ড'), value: new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(sampleReceipts.length) },
+      { label: label('Payment total', 'পেমেন্টের মোট'), value: sampleAvailable ? formatCurrency(sampleTotal, language) : label('Not available', 'পাওয়া যাচ্ছে না') },
+      { label: label('Records', 'রেকর্ড'), value: sampleAvailable ? new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(sampleReceipts.length) : label('Not available', 'পাওয়া যাচ্ছে না') },
       { label: label('Treasury settlement', 'ট্রেজারি জমা'), value: label('Not verified', 'যাচাই হয়নি') },
       { label: label('Tax credit', 'কর ক্রেডিট'), value: label('Not verified', 'যাচাই হয়নি') }
     ]
