@@ -162,7 +162,7 @@ test('User guide has real platform-specific steps and searches across all topics
 test('Guide search covers steps and answers, while topic FAQs stay contextual', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide=page.locator('.public-guide-page');
-  await expect(guide.locator('.public-guide-questions details')).toHaveCount(2);
+  await expect(guide.locator('.public-guide-questions details')).toHaveCount(1);
   await expect(guide.getByText('Are the rates final?')).toHaveCount(0);
   const field=guide.getByRole('searchbox',{name:'Search the guide'});
   await field.fill('passport');
@@ -295,9 +295,9 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
  await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'রেকর্ড খুঁজুন'})).toBeDisabled();
  await dialog.locator('.receipt-lookup__sample').first().click();
- await expect(dialog.getByText('সরকারি চালান নয়')).toBeVisible();
+ await expect(dialog.getByText('সরকারি চালান নয়')).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'রেকর্ডে ফিরুন'})).toHaveCount(0);
- await expect(dialog.getByRole('button',{name:'প্রিন্ট প্রিভিউ'})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'রসিদ প্রিন্ট'})).toBeVisible();
  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
  const dimensions=await dialog.locator('.receipt-view__paper').evaluate(el=>({paper:el.getBoundingClientRect().width,viewport:window.innerWidth}));
  expect(dimensions.paper).toBeLessThanOrEqual(dimensions.viewport);
@@ -415,7 +415,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await modal.getByRole('button',{name:'যাত্রীর তথ্য দিন'}).click();
  await expect(modal.getByLabel('পাসপোর্ট অনুযায়ী যাত্রীর নাম')).toBeVisible();
  await modal.getByLabel('পাসপোর্ট অনুযায়ী যাত্রীর নাম').fill('DEMO NAME');
- await modal.getByLabel('পাসপোর্ট নম্বর (শুধু কৃত্রিম তথ্য)').fill('FAKE001');
+ await modal.getByLabel('পাসপোর্ট রেফারেন্স').fill('FAKE001');
  await modal.getByLabel('রসিদের জন্য মোবাইল নম্বর').fill('01712345678');
  await modal.getByRole('button',{name:'পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'তথ্য পর্যালোচনা'})).toBeVisible();
