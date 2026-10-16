@@ -230,7 +230,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         <form id="travel-tax-form" onSubmit={handlePayTravelTax} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
           {step === 0 && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
-            <PaymentFormSection number={1} title={workflow.select} description={t.intro}>
+            <PaymentFormSection number={1} title={workflow.select}>
             <header className="travel-flow__section-header">
               <h3 id="travel-route-heading">{workflow.select}</h3>
               <p>{t.intro}</p>
