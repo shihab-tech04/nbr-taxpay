@@ -224,6 +224,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     lifecycleTimers.current = [];
   }, []);
 
+  // The status timeline can be long, especially in the modal. When settlement
+  // completes, bring the newly available receipt into view for the taxpayer.
+  useEffect(() => {
+    if (step !== 4 || !createdReceipt) return;
+    const frame = requestAnimationFrame(() => {
+      const target = embedded
+        ? document.querySelector<HTMLElement>('.payment-flow-embedded--receipt .receipt-view__header h3')
+        : document.querySelector<HTMLElement>('.receipt-view--page h1');
+      target?.scrollIntoView({ block: 'start', behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [step, createdReceipt, embedded]);
+
   useEffect(() => {
     if (isWithholdingMode) {
       setCategory('SOURCE_TAX_DEPOSIT');
