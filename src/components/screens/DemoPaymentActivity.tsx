@@ -210,7 +210,7 @@ export const DemoPaymentActivity:React.FC=()=>{
             <p className="font-bold tabular-nums text-taxpay-text">{formatSimulatedAmount(tx.allocations.reduce((n,a)=>n+a.amountMinor,0))}</p>
           </div>
           <p className="mt-2 text-sm font-semibold text-taxpay-dark">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
-          <p className="mt-2 text-xs text-taxpay-muted">{txt('Shared SQL transaction · no Treasury settlement or tax credit','SQL লেনদেন · সরকারি পেমেন্ট বা কর ক্রেডিট নয়')}</p>
+          <p className="mt-2 text-xs text-taxpay-muted">{txt('Not a Treasury payment or tax credit','সরকারি পেমেন্ট বা কর ক্রেডিট নয়')}</p>
           <h3 className="mt-4 font-semibold text-taxpay-text">{txt('Allocation details','বরাদ্দের বিবরণ')}</h3>
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
             <div><p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>

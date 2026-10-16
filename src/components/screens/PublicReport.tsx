@@ -17,11 +17,11 @@ export function PublicReport(){
    </header>
    <div className="public-report-card">
      <div className="public-service-dialog__notice" role="note"><AlertTriangle size={17} aria-hidden="true"/>
-       {bn?'এটি শুধু ফর্মের নমুনা। কোনো অভিযোগ প্রেরণ বা সরকারি টিকিট তৈরি হয় না।':'This is a form preview. No report is sent and no official ticket is created.'}
+       {bn?'এই ফর্ম থেকে কোনো অভিযোগ পাঠানো হয় না বা সরকারি টিকিট তৈরি হয় না।':'This form does not send reports or create official tickets.'}
      </div>
      {submitted?<div role="status" className="public-report-result">
        <CheckCircle2 size={20} aria-hidden="true"/>
-       <div><h2>{bn?'নমুনা ফর্ম সম্পন্ন':'Preview complete'}</h2>
+       <div><h2>{bn?'ফর্ম পর্যালোচনা সম্পন্ন':'Form reviewed'}</h2>
          <p>{bn?'তথ্য কোথাও জমা হয়নি। প্রকৃত সমস্যায় ব্যাংক বা অনুমোদিত কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন।':'Nothing was submitted. Contact your bank or an authorized service for a real issue.'}</p>
          <button type="button" onClick={()=>{setDetails('');setSubmitted(false);}}>{bn?'নতুন ফর্ম':'Start again'}</button>
        </div>
@@ -35,7 +35,7 @@ export function PublicReport(){
        <label htmlFor="public-report-details">{bn?'সংক্ষিপ্ত বিবরণ':'Short description'}</label>
        <textarea id="public-report-details" rows={4} minLength={10} maxLength={500} required
          value={details} onChange={e=>setDetails(e.target.value)} placeholder={bn?'ব্যক্তিগত বা ব্যাংক তথ্য দেবেন না':'Do not enter personal or bank details'}/>
-       <button className="public-report-submit" type="submit">{bn?'নমুনা ফর্ম দেখুন':'Review demo form'}</button>
+       <button className="public-report-submit" type="submit">{bn?'ফর্ম পর্যালোচনা করুন':'Review form'}</button>
      </form>}
      <p className="public-report-contact">{bn?'প্রকৃত অর্থ কাটা গেলে ব্যাংক বা পেমেন্ট সেবাদাতার সঙ্গে যোগাযোগ করুন।':'If money was debited, contact your bank or payment provider.'}</p>
    </div>
