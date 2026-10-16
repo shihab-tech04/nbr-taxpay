@@ -49,7 +49,7 @@ export const NotificationsView:React.FC=()=>{
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
   if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-3 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
     <h1 className="text-2xl font-bold text-taxpay-text">{label('Sign in to view payment notifications','পেমেন্ট বিজ্ঞপ্তি দেখতে সাইন ইন করুন')}</h1>
-    <p className="text-sm text-taxpay-muted">{label('Payment notifications are available only for a verified, bound account. Anonymous simulation access is disabled.','পেমেন্ট বিজ্ঞপ্তি কেবল যাচাইকৃত ও সংযুক্ত অ্যাকাউন্টের জন্য উপলব্ধ। বেনামী প্রবেশ বন্ধ।')}</p>
+    <p className="text-sm text-taxpay-muted">{label('Sign in to view notifications for your assigned account.','আপনার নির্ধারিত অ্যাকাউন্টের বিজ্ঞপ্তি দেখতে সাইন ইন করুন।')}</p>
     <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{label('Open sign-in','সাইন ইন খুলুন')}</button>
   </main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
@@ -57,7 +57,6 @@ export const NotificationsView:React.FC=()=>{
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
       <h1 className="text-2xl font-bold text-taxpay-text">{label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}</h1>
-      <p className="mt-2 text-sm text-taxpay-muted">{privateMode?label('Private SQL notifications for your verified account. No official receipts or credits.','আপনার যাচাইকৃত অ্যাকাউন্টের SQL বিজ্ঞপ্তি; সরকারি রসিদ বা ক্রেডিট নয়।'):label('Public fictional simulation activity, not private government notices.','উন্মুক্ত কাল্পনিক সিমুলেশন, সরকারি নোটিশ নয়।')}</p>
     </header>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:

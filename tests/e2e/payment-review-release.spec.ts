@@ -92,7 +92,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
   await expect(page.getByRole('region',{name:'Payment records summary'})).toContainText('Recorded income tax');
-  await expect(page.getByText('Recorded activity · verified liability and tax credit not connected')).toBeVisible();
+  await expect(page.getByText(/verified liability and tax credit not connected/i)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open transaction history' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Review tax ledger', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'View documents' })).toBeVisible();
@@ -118,7 +118,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await switchToBangla();
   await expect(page.getByRole('heading', { name: 'ড্যাশবোর্ড সারসংক্ষেপ' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'পেমেন্ট রেকর্ডের সারসংক্ষেপ' })).toContainText('নথিভুক্ত আয়কর');
-  await expect(page.getByText('নথিভুক্ত লেনদেন · যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়')).toBeVisible();
+  await expect(page.getByText(/যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়/)).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'পেমেন্টের বিভাজন' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('taxpayer-home-bn');

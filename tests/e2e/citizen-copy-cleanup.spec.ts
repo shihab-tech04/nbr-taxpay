@@ -38,6 +38,7 @@ test('retired connection-status page is replaced by eight real payment service t
   await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
   await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(8);
   await expect(page.getByText('Not connected',{exact:true})).toHaveCount(0);
+  await expect(page.getByText(/visual preview|verified application session|SQL-backed service scenarios|fictional examples/i)).toHaveCount(0);
 });
 
 test('read-only receipt remains clearly non-official even after copy reduction',async({page},info)=>{

@@ -785,13 +785,6 @@
   background:var(--color-taxpay-primary); color:white; font-size:.9375rem; font-weight:600;
 }
 .taxpay-taxpayer-reference .taxpayer-service-directory__primary:hover { background:var(--color-taxpay-dark); }
-.taxpay-taxpayer-reference .taxpayer-service-directory__notice {
-  display:flex; align-items:flex-start; gap:.7rem; padding:.9rem 1rem;
-  background:var(--color-taxpay-light); color:var(--color-taxpay-dark);
-  border:1px solid color-mix(in srgb,var(--color-taxpay-primary) 20%,white);
-  border-radius:10px; font-size:.875rem; line-height:1.55;
-}
-.taxpay-taxpayer-reference .taxpayer-service-directory__notice svg { flex:none; }
 .taxpay-taxpayer-reference .taxpayer-service-directory__grid {
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem;
 }

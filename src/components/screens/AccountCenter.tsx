@@ -203,9 +203,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             <p>{sampleOnly ? t.demoNotice : !backendConfigured ? t.unavailable : t.guest}</p>
             {sampleOnly && page === 'profile' && (
               <>
-                {previewAccount && demoSql.status === 'loading' && <p role="status">{language === 'bn' ? 'SQL প্রোফাইল লোড হচ্ছে…' : 'Loading SQL profile…'}</p>}
-                {previewAccount && demoSql.status === 'error' && <p role="alert">{language === 'bn' ? 'SQL প্রোফাইল পাওয়া যাচ্ছে না।' : 'SQL profile unavailable.'} {demoSql.error}</p>}
-                {previewAccount && demoSql.status === 'ready' && !demoSql.profile && <p role="status">{language === 'bn' ? 'এই অ্যাকাউন্টের SQL প্রোফাইল নেই।' : 'No SQL profile for this account.'}</p>}
+                {previewAccount && demoSql.status === 'loading' && <p role="status">{language === 'bn' ? 'প্রোফাইল লোড হচ্ছে…' : 'Loading profile…'}</p>}
+                {previewAccount && demoSql.status === 'error' && <p role="alert">{language === 'bn' ? 'প্রোফাইল পাওয়া যাচ্ছে না।' : 'Profile unavailable.'} {demoSql.error}</p>}
+                {previewAccount && demoSql.status === 'ready' && !demoSql.profile && <p role="status">{language === 'bn' ? 'এই অ্যাকাউন্টের প্রোফাইল পাওয়া যায়নি।' : 'No profile found for this account.'}</p>}
                 <dl className="taxpayer-account-facts">
                   {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
                   {(!previewAccount || (demoSql.status === 'ready' && demoSql.profile)) && <>
@@ -213,8 +213,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                     <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
                     {demoSql.profile && <>
                       <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{language === 'bn' ? demoSql.profile.focusBn : demoSql.profile.focusEn}</dd></div>
-                      <div><dt>{language === 'bn' ? 'নমুনা টিআইএন' : 'Sample TIN stub'}</dt><dd>{demoSql.profile.tinStub ?? '—'}</dd></div>
-                      <div><dt>{language === 'bn' ? 'নমুনা কর সার্কেল' : 'Sample tax circle'}</dt><dd>{demoSql.profile.jurisdictionLabel ?? '—'}</dd></div>
+                      <div><dt>{language === 'bn' ? 'টিআইএন রেফারেন্স' : 'TIN reference'}</dt><dd>{demoSql.profile.tinStub ?? '—'}</dd></div>
+                      <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{demoSql.profile.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                   </>}
                 </dl>

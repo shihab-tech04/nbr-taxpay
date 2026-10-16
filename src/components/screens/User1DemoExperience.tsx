@@ -327,9 +327,8 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{[
       ['Account','user1'],['Display name','Individual Taxpayer 01'],['Identifier','DEMO-TIN-001'],['Taxpayer class','Individual'],
       ['Income sources','Salary, bank interest and consultancy'],['Address','Address unavailable'],
-      ['Assessment years',taxYears.map(x=>x.year).join(', ')],['Real TIN verified','No'],['Representative mandate','Not applicable'],['Government connection','Not connected']
+      ['Assessment years',taxYears.map(x=>x.year).join(', ')],['Representative mandate','Not applicable']
     ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="text-xs text-slate-500">{x[0]}</p><p className="mt-1 text-sm font-semibold">{x[1]}</p></div>)}</div>
-    {sub('Account information is not linked to a verified taxpayer identity.','অ্যাকাউন্টের তথ্য যাচাইকৃত করদাতা পরিচয়ের সঙ্গে সংযুক্ত নয়।')}
   </section>;
   const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Recent updates','সাম্প্রতিক আপডেট')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
   const settings=<section className={panel+' taxpayer-preferences'}>
@@ -343,7 +342,6 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </label>
     <div className="mt-6 border-t border-taxpay-border pt-4">
       <h3 className="text-base font-semibold">{tr('Account information','অ্যাকাউন্টের তথ্য')}</h3>
-    {sub('You are viewing the user1 preview profile. Profile changes and government connections are not enabled for this account.','আপনি user1 প্রিভিউ প্রোফাইল দেখছেন। এই অ্যাকাউন্টে প্রোফাইল পরিবর্তন বা সরকারি সংযোগ চালু নেই।')}
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
