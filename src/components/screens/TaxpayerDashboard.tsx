@@ -4,6 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
+import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -71,6 +72,15 @@ export const TaxpayerDashboard: React.FC = () => {
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>
     </header>
+    {previewAccount && demoUser && !user && (
+      <>
+        <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>
+        <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-950">
+          {tr('The SQL-backed service scenarios above are fictional examples. The payment-record panels below are a separate evidence view and may have no verified records.',
+            'উপরের SQL-ভিত্তিক সেবার তথ্য কাল্পনিক উদাহরণ। নিচের পেমেন্ট রেকর্ডের অংশটি পৃথক প্রমাণভিত্তিক দৃশ্য; সেখানে যাচাইকৃত রেকর্ড নাও থাকতে পারে।')}
+        </p>
+      </>
+    )}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
         <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span className="rounded-lg bg-blue-50 p-2 text-blue-700">{i===1?<ShieldCheck size={19} aria-hidden="true"/>:i===2?<Receipt size={19} aria-hidden="true"/>:<WalletCards size={19} aria-hidden="true"/>}</span></div>

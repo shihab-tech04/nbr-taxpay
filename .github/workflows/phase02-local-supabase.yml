@@ -70,12 +70,19 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 13
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 14
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_transactions') is not null")" = t
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_allocations') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
-          echo "PASS: thirteen migrations installed; original five safe owner-update grants retained; synthetic ledger tables present"
+          echo "PASS: fourteen migrations installed; original five safe owner-update grants retained; synthetic ledger tables present"
+
+      - name: Verify all ten SQL personas and eight publicly read-only simulated tax services
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/verifySyntheticServiceProfiles.sql
 
       - name: Verify primary administrator identity requires email confirmation (rollback only)
         shell: bash
@@ -128,6 +135,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/secure-workspace-real-local.spec.ts --project=mobile-375
+
+      - name: Verify SQL profiles and all eight service types render for real preview identities
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/sql-sample-services-real-local.spec.ts --project=desktop-1280
 
       - name: Verify live React synthetic multi-beneficiary payment, cross-account notices and officer read-back
         env:
