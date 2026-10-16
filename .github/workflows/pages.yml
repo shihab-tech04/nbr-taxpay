@@ -35,6 +35,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Verify hosted anonymous simulator read boundary
+        env:
+          TAXPAY_HOSTED_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          TAXPAY_HOSTED_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+        run: |
+          set -euo pipefail
+          test -n "$TAXPAY_HOSTED_SUPABASE_URL"
+          test -n "$TAXPAY_HOSTED_PUBLISHABLE_KEY"
+          npm run test:hosted
+
       - name: Verify TypeScript and domain constraints
         run: |
           npm run lint

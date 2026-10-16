@@ -3,14 +3,14 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {formatCurrency} from '../../services/numberFormat';
 import {
-  simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
+  simulationUsers,simulationCategories,simulationCategoryLabels,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
 
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
-/** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
+/** Authenticated, bound synthetic transaction workspace. NEVER official payment evidence. */
 export const DemoPaymentActivity:React.FC=()=>{
   const {demoUser,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
@@ -48,7 +48,7 @@ export const DemoPaymentActivity:React.FC=()=>{
     setRows([]);setLoading(true);setLoadError('');
     const run=async()=>{
       try{
-        const next=privateMode?await getPrivateSimulationHistory(view):await loadSimulationHistory(id,view);
+        const next=await getPrivateSimulationHistory(view);
         if(active){setRows(next);setLoadError('');setLoading(false);}
       }catch(e){
         if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
@@ -73,8 +73,8 @@ export const DemoPaymentActivity:React.FC=()=>{
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
       }));
-      const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
-      const readback=privateMode?await getPrivateSimulationHistory('payer'):await loadSimulationHistory(id,'payer');
+      const result=await submitPrivateSimulationPayment(checked,nonce);
+      const readback=await getPrivateSimulationHistory('payer');
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');

@@ -2,11 +2,11 @@ import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {loadSimulationNotices,getBoundSimulationUser,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
+import {getBoundSimulationUser,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
 export const NotificationsView:React.FC=()=>{
-  const {demoUser,language,navigate}=useTaxState();
+  const {language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
@@ -29,7 +29,7 @@ export const NotificationsView:React.FC=()=>{
     if(!id||!privateMode)return;
     let active=true;setNotices([]);setLoading(true);setError('');
     const read=async()=>{
-      try{const data=privateMode?await getPrivateSimulationNotices():await loadSimulationNotices(id);if(active){setNotices(data);setLoading(false);setError('');}}
+      try{const data=await getPrivateSimulationNotices();if(active){setNotices(data);setLoading(false);setError('');}}
       catch(e){if(active){setError(e instanceof Error?e.message:'Notification API failed');setLoading(false);}}
     };
     void read();const timer=window.setInterval(()=>void read(),7000);
