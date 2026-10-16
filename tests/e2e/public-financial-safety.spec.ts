@@ -39,7 +39,7 @@ test('public mobile information menu is keyboard usable with accessible targets'
  test.skip(info.project.name==='desktop-1280','Mobile navigation only');
  await page.goto('/?action=landing');
  const header=page.locator('.public-home-header');
- const home=header.getByRole('link',{name:/TaxPay/});
+ const home=header.getByRole('link',{name:/Amar Kor/});
  await expect(home).toBeVisible();
  await home.focus(); await expect(home).toBeFocused();
  const menu=header.getByRole('button',{name:'Menu'});
