@@ -94,13 +94,12 @@ test('secure workspace starts without a presumed legal AY and remains usable on 
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();
 });
 
-test('income tax guidance refuses unverified calculations and official-payment promises', async ({ page }) => {
+test('legacy help URL uses the current guide and cannot offer unverified calculated payments', async ({ page }) => {
   await page.goto('/?action=guidance');
-  await expect(page.getByRole('heading', { name: 'Individual income tax estimator — unavailable' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Proceed to Pay Estimated Tax' })).toHaveCount(0);
-  await expect(page.getByText(/No verified, year-specific income tax thresholds/)).toBeVisible();
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('heading', { name: 'ব্যক্তিগত আয়কর হিসাব — বর্তমানে বন্ধ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
 test('travel-tax page explicitly denies real official receipts and clearance', async ({ page }) => {

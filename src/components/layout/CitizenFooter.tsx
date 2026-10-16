@@ -12,7 +12,7 @@ export function CitizenFooter(){
   const bn=language==='bn';
   const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
-  const isPublic=['landing','user_guide','incident'].includes(currentRoute);
+  const isPublic=['landing','user_guide','guidance','incident'].includes(currentRoute);
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'আমার কর ফুটার':'Amar Kor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
@@ -33,7 +33,7 @@ export function CitizenFooter(){
   const links=[
     {route:home,en:'Home',bn:'মূল পাতা'},
     {route:'verify',en:'Payment status & receipt lookup',bn:'পেমেন্টের অবস্থা ও রসিদ'},
-    {route:'guidance',en:'Help',bn:'সহায়তা'},
+    {route:'user_guide',en:'Help',bn:'সহায়তা'},
     {route:'incident',en:'Report a security concern',bn:'নিরাপত্তা সমস্যা জানান'},
   ];
   return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'আমার কর সহায়তা ও তথ্য':'Amar Kor support and information'}>

@@ -61,8 +61,9 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await expect(rail.getByRole('button',{name:'Tax ledger'})).toHaveAttribute('aria-current','page');
   await expect(page.getByText('Ledger information')).toBeVisible();
   await rail.locator('.taxpayer-reference-account > summary').click();
-  await rail.getByRole('button',{name:'Account access'}).click();
-  await expect(page.locator('.taxpayer-reference-secure')).toBeVisible();
+  await expect(rail.getByRole('button',{name:'Account access'})).toHaveCount(0);
+  await rail.getByRole('button',{name:'Profile',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Profile',exact:true}).first()).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
 });
 

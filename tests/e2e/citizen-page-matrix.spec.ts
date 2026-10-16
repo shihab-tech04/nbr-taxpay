@@ -11,7 +11,7 @@ const privateRoutes={
   certificates: {kind:'menu',button:'Certificates'},
   corrections: {kind:'menu',button:'Corrections'},
   notifications: {kind:'menu',button:'Notifications'},
-  services: {kind:'menu',button:'Connected Services'}
+  services: {kind:'menu',button:'Payment services'}
 } as const;
 
 const visualAudit=async(page:import('@playwright/test').Page,key:string,viewport:string) => {

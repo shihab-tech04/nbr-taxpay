@@ -14,19 +14,12 @@ test('public page does not claim real payment processing or grant account roles'
  await expect(page.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 
-test('unverified tax calculator never quotes fictitious slab liability', async ({page}) => {
+test('legacy help URL resolves to maintained guide without an unverified tax calculator', async ({page}) => {
   await page.goto('/?action=guidance');
-  await expect(page.getByRole('heading',{name:'Individual income tax estimator — unavailable'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Proceed to Pay Estimated Tax'})).toHaveCount(0);
-  await expect(page.getByText(/Tax calculations are unavailable until the applicable tax rules are verified/)).toBeVisible();
-  if (await page.locator('.citizen-mobile-menu-trigger').isVisible()) {
-    await page.getByRole('button',{name:'Open menu'}).click();
-    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
-    await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  } else {
-    await page.locator('.citizen-header').getByRole('button',{name:'বাংলা'}).click();
-  }
-  await expect(page.getByRole('heading',{name:'ব্যক্তিগত আয়কর হিসাব — বর্তমানে বন্ধ'})).toBeVisible();
+  await page.getByRole('button',{name:'বাংলা'}).first().click();
+  await expect(page.getByRole('heading',{name:'আমার কর ব্যবহার নির্দেশিকা'})).toBeVisible();
 });
 
 test('travel tax simulation cannot be presented as a real immigration challan',async ({page})=>{

@@ -30,10 +30,9 @@ import { CertificatesView } from './components/screens/CertificatesView';
 import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
-import { ConnectedServices } from './components/screens/ConnectedServices';
+import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
 import { OntologyView } from './components/screens/OntologyView';
 import { GlossaryView } from './components/screens/GlossaryView';
-import { GuidanceAssistant } from './components/screens/GuidanceAssistant';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
@@ -53,10 +52,14 @@ const MainRouter: React.FC = () => {
   const privateSampleGate = !previewAccess && requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login';
-  const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute) || loginOverlay;
+  const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||
+    (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
+  const taxpayerSupportRoute = taxpayerSession && ['verify','user_guide','guidance'].includes(currentRoute);
+  const publicInformationRoute = ['landing','incident'].includes(currentRoute) ||
+    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
   // Guest payment routes never inherit this reference palette.
-  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace';
+  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace';
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -95,6 +98,7 @@ const MainRouter: React.FC = () => {
       case 'office_login':
         return <PublicLanding />;
       case 'user_guide':
+      case 'guidance': // Legacy help bookmarks use the maintained user guide.
         return <PublicUserGuide />;
       case 'secure_workspace':
         return <SecureWorkspace />;
@@ -141,15 +145,13 @@ const MainRouter: React.FC = () => {
       case 'account_settings':
         return <AccountCenter page="settings" />;
       case 'services':
-        return <ConnectedServices />;
+        return <PaymentServicesPage />;
 
       // Knowledge, Ontology & Guidance
       case 'ontology':
         return <OntologyView />;
       case 'glossary':
         return <GlossaryView />;
-      case 'guidance':
-        return <GuidanceAssistant />;
 
       default:
         return <PublicLanding />;
@@ -175,7 +177,7 @@ const MainRouter: React.FC = () => {
           </section>
         ) : renderActiveScreen()}
       </main>
-      <CitizenFooter />
+      {!taxpayerReference && <CitizenFooter />}
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
