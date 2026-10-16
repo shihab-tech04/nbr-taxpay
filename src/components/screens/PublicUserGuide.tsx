@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, BookOpen, Monitor, Smartphone, Search, ChevronDown, ExternalLink } from 'lucide-react';
+import { BookOpen, Monitor, Smartphone, Search, ChevronDown, ExternalLink } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 
 type Category = 'payments'|'status'|'travel'|'withholding'|'records'|'security';
@@ -63,7 +63,6 @@ export const PublicUserGuide:React.FC=()=>{
  const matches=current.faqs.filter(x=>(x.q.join(' ')+x.a.join(' ')).toLowerCase().includes(search.trim().toLowerCase()));
  const labels=bn?['ওয়েব','মোবাইল']:['Web','Mobile'];
  return <div className={'public-guide-page '+(bn?'font-bengali':'')}>
-  <button className="public-guide-back" type="button" onClick={()=>navigate('landing')}><ArrowLeft size={17}/>{bn?'হোমে ফিরুন':'Back to home'}</button>
   <header className="public-guide-intro">
     <p className="citizen-hub-eyebrow">{bn?'সহায়তা কেন্দ্র':'Help center'}</p>
     <h1>{bn?'আমার কর ব্যবহার নির্দেশিকা':'Amar Kor user guide'}</h1>
