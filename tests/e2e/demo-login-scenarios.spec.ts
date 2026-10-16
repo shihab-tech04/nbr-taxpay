@@ -26,5 +26,5 @@ test('legacy URL offers account access without fabricated sign-out',async({page}
  await expect(page).not.toHaveURL(/demoUser=/);
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop'))
-   .toHaveAttribute('href','https://shihab-tech04.github.io/NBR-Officemanagment-UI-V2/payments/transactions');
+   .toHaveAttribute('href','?action=secure_workspace');
 });

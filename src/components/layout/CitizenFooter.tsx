@@ -2,12 +2,14 @@ import React from 'react';
 import {Landmark, ShieldAlert, ArrowUpRight} from 'lucide-react';
 import governmentSeal from '../../assets/bangladesh-government-seal.svg';
 import {useTaxState} from '../../services/taxState';
+import {useAccountIdentity} from '../../services/accountIdentity';
 
 /** Citizen-only footer. The existing Officer Footer remains unchanged. */
 export function CitizenFooter(){
   const {language,navigate,userRole,currentRoute}=useTaxState();
+  const {user}=useAccountIdentity();
   const bn=language==='bn';
-  const isTaxpayer=['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
+  const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
   const isPublic=['landing','user_guide','incident'].includes(currentRoute);
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'TaxPay ফুটার':'TaxPay footer'}>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   Language, 
   UserRole, 
@@ -12,6 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
+import { routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -58,11 +59,15 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     // Public payment discovery is the primary citizen entry. The existing office-login demo remains available by explicit deep link.
     const action = new URLSearchParams(window.location.search).get('action');
-    return action || 'landing';
+    return validRoute(action);
   });
-  const [routeParams, setRouteParams] = useState<Record<string, any>>({});
+  const [routeParams, setRouteParams] = useState<Record<string, any>>(() => {
+    const search = new URLSearchParams(window.location.search);
+    return routeContextFromUrl(validRoute(search.get('action')), search);
+  });
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
   const [demoUser, setDemoUser] = useState<DemoUser | null>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
+  const demoUserRef = useRef(demoUser);
   const [userRole, setUserRole] = useState<UserRole>(() => getDemoUser(new URLSearchParams(window.location.search).get('demoUser'))?.role ?? 'GUEST');
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
@@ -89,17 +94,27 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         representativeScope:{isAuthorized:false}}
     : baseTaxpayerProfile;
 
-  const navigate = (route: string, params: Record<string, any> = {}) => {
+  const updateLanguage = (lang: Language) => {
+    setLanguage(lang);
+    const next = new URL(window.location.href);
+    if (lang === 'bn') next.searchParams.set('lang', 'bn');
+    else next.searchParams.delete('lang');
+    window.history.replaceState(window.history.state, '', next);
+  };
+  const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
+    const route = validRoute(requestedRoute);
     setCurrentRoute(route);
     setRouteParams(params);
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
+    writeRouteContext(route, params, next.searchParams);
     // Legacy sample deep-link state must not survive entry to real account access.
     if (route === 'secure_workspace' || route === 'landing') {
       next.searchParams.delete('demoUser');
       if (demoUser) {
         setDemoUser(null);
+        demoUserRef.current = null;
         setUserRole('GUEST');
       }
     }
@@ -111,9 +126,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const onPopState = (event: PopStateEvent) => {
-      const route = new URLSearchParams(window.location.search).get('action') || 'landing';
+      const search = new URLSearchParams(window.location.search);
+      const route = validRoute(search.get('action'));
       setCurrentRoute(route);
-      setRouteParams(event.state?.taxpayParams || {});
+      setRouteParams(event.state?.taxpayRoute === route
+        ? event.state.taxpayParams ?? routeContextFromUrl(route, search)
+        : routeContextFromUrl(route, search));
+      setLanguage(search.get('lang') === 'bn' ? 'bn' : 'en');
+      const previousDemo = getDemoUser(search.get('demoUser'));
+      const leavingDemo = Boolean(demoUserRef.current && !previousDemo);
+      demoUserRef.current = previousDemo;
+      setDemoUser(previousDemo);
+      if (previousDemo) setUserRole(previousDemo.role);
+      else if (leavingDemo) setUserRole('GUEST');
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
     window.addEventListener('popstate', onPopState);
@@ -218,7 +243,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         routeParams,
         navigate,
         language,
-        setLanguage,
+        setLanguage: updateLanguage,
         userRole,
         setUserRole,
         taxpayerProfile,
