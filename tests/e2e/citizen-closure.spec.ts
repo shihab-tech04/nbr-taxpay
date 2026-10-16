@@ -70,7 +70,7 @@ test('public mobile navigation offers information anchors but no payment initiat
  await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await page.getByRole('button',{name:'Menu'}).click();
- await expect(page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'})).toBeVisible();
  await page.keyboard.press('Escape');
  await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
 });

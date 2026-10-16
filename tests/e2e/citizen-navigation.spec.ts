@@ -28,7 +28,7 @@ test('public menu contains informational navigation with no sample profile selec
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Menu'}).click();
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
- await expect(nav.getByRole('link',{name:'FAQs'})).toBeVisible();
+ await expect(nav.getByRole('link',{name:'User guide'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await page.keyboard.press('Escape');
  await expect(nav).toBeHidden();
@@ -83,7 +83,7 @@ test('citizen navigation has no automated serious accessibility violations',asyn
 test('public guidance links stay on-page without authorizing account access',async({page})=>{
  await page.goto('/?action=landing');
  if (page.viewportSize()!.width<=900) await page.getByRole('button',{name:'Menu'}).click();
- await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'FAQs'}).click();
+ await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -144,7 +144,7 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  await page.goto('/?action=landing');
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
  const home=nav.getByRole('link',{name:'Home'});
- const faq=nav.getByRole('link',{name:'FAQs'});
+ const faq=nav.getByRole('link',{name:'User guide'});
  const report=nav.getByRole('link',{name:'Report'});
  const login=page.locator('.public-home-header__tools').getByRole('link',{name:'Login'});
  await expect(login).toBeVisible();
@@ -171,22 +171,22 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  await expect(report).toHaveAttribute('aria-current','page');
 });
 
-test('mobile navigation opens FAQs and Report in English and Bengali',async({page},info)=>{
+test('mobile navigation opens User guide and Report in English and Bengali',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','Mobile controls at 375px');
  await page.goto('/?action=landing');
  const nav=page.getByRole('navigation',{name:'Primary navigation'});
  await expect(nav).toBeHidden();
  await page.getByRole('button',{name:'Menu'}).click();
  await expect(nav.getByRole('link',{name:'Login'})).toBeVisible();
- await nav.getByRole('link',{name:'FAQs'}).click();
+ await nav.getByRole('link',{name:'User guide'}).click();
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await page.getByRole('button',{name:'Menu'}).click();
- await expect(nav.getByRole('link',{name:'FAQs'})).toHaveAttribute('aria-current','page');
+ await expect(nav.getByRole('link',{name:'User guide'})).toHaveAttribute('aria-current','page');
  await page.getByRole('button',{name:'বাংলা'}).click();
  const bnNav=page.getByRole('navigation',{name:'প্রধান নেভিগেশন'});
  await expect(bnNav.getByRole('link',{name:'লগইন'})).toBeVisible();
  await expect(bnNav.getByRole('link',{name:'লগইন'})).toHaveAttribute('href','?action=taxpayer_login&lang=bn');
- await expect(bnNav.getByRole('link',{name:'প্রশ্নোত্তর'})).toHaveAttribute('aria-current','page');
+ await expect(bnNav.getByRole('link',{name:'ব্যবহার নির্দেশিকা'})).toHaveAttribute('aria-current','page');
  await bnNav.getByRole('link',{name:'অভিযোগ'}).click();
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();
 });
