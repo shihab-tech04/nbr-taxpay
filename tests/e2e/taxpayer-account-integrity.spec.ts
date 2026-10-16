@@ -43,5 +43,12 @@ test('sample correction picker never lists another payer and does not claim offi
   const picker=page.getByLabel('Select A-Challan for Rectification *');
   await expect(picker.locator('option')).toHaveCount(3);
   await expect(picker.locator('option',{hasText:'AC-2025-09-DEMO-REF-005'})).toHaveCount(0);
+  await picker.selectOption('AC-2025-06-DEMO-REF-003');
+  await expect(page.getByLabel('Current Assessment Year')).toHaveValue('2025-2026');
+  await expect(page.getByLabel('Current payment head (sample reference)')).toHaveValue('1-1141-0015-0201');
+  await expect(page.getByLabel('Proposed payment head (unverified options)')).toHaveValue('1-1141-0015-0201');
+  await picker.selectOption('AC-2025-09-DEMO-REF-001');
+  await expect(page.getByLabel('Current Assessment Year')).toHaveValue('2024-2025');
+  await expect(page.getByLabel('Current payment head (sample reference)')).toHaveValue('1-1141-0010-0101');
   await expect(page.getByText('No official petition is submitted from this screen.',{exact:false})).toBeVisible();
 });

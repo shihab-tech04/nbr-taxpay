@@ -2,13 +2,7 @@ import React, { useState } from 'react';
 import { 
   FileEdit, 
   Send, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  ShieldCheck, 
-  Upload, 
-  ArrowRight,
-  Info
+  CheckCircle2
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
@@ -23,13 +17,15 @@ export const CorrectionRequests: React.FC = () => {
   const visibleCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
 
   const [challanNo, setChallanNo] = useState('');
-  const selectedChallanNo = visibleReceipts.some(r=>r.challanNo===challanNo) ? challanNo : visibleReceipts[0]?.challanNo ?? '';
-  const [currentAY, setCurrentAY] = useState('2024-2025');
+  const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo) ?? visibleReceipts[0];
+  const selectedChallanNo = selectedReceipt?.challanNo ?? '';
+  const currentAY = selectedReceipt?.assessmentYear ?? '';
   const [proposedAY, setProposedAY] = useState('2025-2026');
-  const [currentCircle, setCurrentCircle] = useState(taxpayerProfile.taxCircle);
+  const currentCircle = selectedReceipt?.taxCircle ?? '';
   const [proposedCircle, setProposedCircle] = useState(taxpayerProfile.taxCircle);
-  const [currentHeadCode, setCurrentHeadCode] = useState('1-1141-0015-0201');
-  const [proposedHeadCode, setProposedHeadCode] = useState('1-1141-0015-0201');
+  const currentHeadCode = selectedReceipt?.items[0]?.economicCode ?? '';
+  const [proposedHeadCode, setProposedHeadCode] = useState('');
+  const proposedHead = proposedHeadCode || currentHeadCode;
   const [reason, setReason] = useState('');
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -38,6 +34,10 @@ export const CorrectionRequests: React.FC = () => {
     e.preventDefault();
     if (!selectedChallanNo || !visibleReceipts.some(r=>r.challanNo===selectedChallanNo) || !reason.trim()) {
       setError('Select a payment reference belonging to this preview and provide an explanation.');
+      return;
+    }
+    if (currentAY === proposedAY && currentCircle === proposedCircle && currentHeadCode === proposedHead) {
+      setError('Choose at least one proposed change to the year, circle or payment head.');
       return;
     }
     setError('');
@@ -53,7 +53,7 @@ export const CorrectionRequests: React.FC = () => {
       currentCircle,
       proposedCircle,
       currentHeadCode,
-      proposedHeadCode,
+      proposedHeadCode: proposedHead,
       reason,
       workflowStage: 'MAKER_SUBMITTED',
       makerRemarks: 'Local sample request only. No official petition or Revenue Officer workflow initiated.'
@@ -108,7 +108,12 @@ export const CorrectionRequests: React.FC = () => {
               <select
                 id="correction-challan"
                 value={selectedChallanNo}
-                onChange={(e) => setChallanNo(e.target.value)}
+                onChange={(e) => {
+                  const receipt = visibleReceipts.find(r => r.challanNo === e.target.value);
+                  setChallanNo(e.target.value);
+                  setProposedCircle(receipt?.taxCircle ?? '');
+                  setProposedHeadCode('');
+                }}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex"
               >
                 {visibleReceipts.map(r => (
@@ -136,16 +141,12 @@ export const CorrectionRequests: React.FC = () => {
               <label htmlFor="correction-current-year" className="block font-semibold text-slate-700 mb-1">
                 Current Assessment Year
               </label>
-              <select
+              <input
                 id="correction-current-year"
                 value={currentAY}
-                onChange={(e) => setCurrentAY(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
-              >
-                {ASSESSMENT_YEARS.map(ay => (
-                  <option key={ay} value={ay}>{ay}</option>
-                ))}
-              </select>
+                readOnly
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-medium"
+              />
             </div>
 
             <div>
@@ -172,8 +173,8 @@ export const CorrectionRequests: React.FC = () => {
                 id="correction-current-circle"
                 type="text"
                 value={currentCircle}
-                onChange={(e) => setCurrentCircle(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300"
+                readOnly
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
               />
             </div>
 
@@ -188,6 +189,26 @@ export const CorrectionRequests: React.FC = () => {
                 onChange={(e) => setProposedCircle(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50"
               />
+            </div>
+
+            <div>
+              <label htmlFor="correction-current-head" className="block font-semibold text-slate-700 mb-1">
+                Current payment head (sample reference)
+              </label>
+              <input id="correction-current-head" value={currentHeadCode} readOnly
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-mono-plex" />
+            </div>
+            <div>
+              <label htmlFor="correction-proposed-head" className="block font-semibold text-taxpay-dark mb-1">
+                Proposed payment head (unverified options)
+              </label>
+              <select id="correction-proposed-head" value={proposedHead}
+                onChange={(e) => setProposedHeadCode(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50 text-taxpay-dark">
+                {MASTER_PAYMENT_HEADS.filter(head => head.status !== 'BLOCKED').map(head => (
+                  <option key={head.id} value={head.economicCode}>{head.economicCode} — {head.nameEn}</option>
+                ))}
+              </select>
             </div>
           </div>
 
