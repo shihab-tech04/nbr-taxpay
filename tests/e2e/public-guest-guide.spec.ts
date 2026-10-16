@@ -87,6 +87,30 @@ test('Help Center typography and interactions remain usable at each viewport', a
   expect(overflow).toBeLessThanOrEqual(2);
 });
 
+test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
+  await page.goto('/?action=user_guide');
+  const guide = page.locator('.public-guide-page');
+  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toBeVisible();
+  await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
+  await expect(guide.getByText('On Home, tap Pay Tax', { exact: false })).toBeVisible();
+  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toHaveCount(0);
+
+  const search = guide.getByRole('searchbox', { name: 'Search questions' });
+  await search.fill('rates');
+  const travelQuestion = guide.locator('.public-guide-questions details').filter({ hasText: 'Are the rates final?' });
+  await expect(travelQuestion).toBeVisible();
+  await expect(travelQuestion.getByText('Travel tax')).toBeVisible();
+  await search.fill('this-question-does-not-exist');
+  await expect(guide.getByText('No matching questions.')).toBeVisible();
+  await search.fill('');
+  await expect(guide.getByText('What should I check before payment?')).toBeVisible();
+  await expect(travelQuestion).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await expect(guide.getByText('মোবাইলের জন্য ধাপগুলো দেখানো হচ্ছে।')).toBeVisible();
+  await expect(guide.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
+});
+
 
 test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
   const views = [
