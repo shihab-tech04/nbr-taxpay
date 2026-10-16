@@ -15,14 +15,20 @@ export const validRoute = (value: string | null | undefined): string =>
   value && registered.has(value) ? value : 'landing';
 
 /** Only navigation context, never payment fields or taxpayer identity, belongs in the URL. */
-const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses'] as const;
+const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo'] as const;
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
+const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home', 'payment_search', 'taxpayer_360']);
+
+/** A receipt may return only to its actual originating record list, never an arbitrary URL. */
+export const receiptReturnRoute = (value: unknown): string =>
+  typeof value === 'string' && receiptReturnRoutes.has(value) ? value : 'history';
 
 export function routeContextFromUrl(route: string, search: URLSearchParams): Record<string, unknown> {
   if (route === 'user_guide' && search.has('category')) return {category: search.get('category')};
   if ((route === 'guest' || route === 'wizard') && search.has('initialCategory'))
     return {initialCategory: search.get('initialCategory')};
   if (route === 'secure_workspace' && search.has('draftCategory')) return {draftCategory: search.get('draftCategory')};
+  if (route === 'payment_details') return {returnTo: receiptReturnRoute(search.get('returnTo'))};
   if (route !== 'history') return {};
   const result: Record<string, unknown> = {};
   if (search.has('categoryFilter')) result.categoryFilter = search.get('categoryFilter');
@@ -39,6 +45,7 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
   if (route === 'user_guide') put('category', params.category);
   if (route === 'guest' || route === 'wizard') put('initialCategory', params.initialCategory);
   if (route === 'secure_workspace') put('draftCategory', params.draftCategory);
+  if (route === 'payment_details') put('returnTo', receiptReturnRoute(params.returnTo));
   if (route === 'history') {
     put('categoryFilter', params.categoryFilter);
     if (Array.isArray(params.reviewStatuses)) {

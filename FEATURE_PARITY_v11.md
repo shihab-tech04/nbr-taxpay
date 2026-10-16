@@ -5,13 +5,16 @@
 | Action key | Source component |
 |---|---|
 | landing | src/components/screens/PublicLanding.tsx |
+| user_guide | src/components/screens/PublicUserGuide.tsx |
+| secure_workspace | src/components/screens/SecureWorkspace.tsx |
+| head_catalogue | src/components/screens/HeadCatalogue.tsx |
 | guest | src/components/screens/GuestPayment.tsx |
 | guestwh | src/components/screens/GuestPayment.tsx |
 | travel | src/components/screens/TravelTax.tsx |
 | verify | src/components/screens/ReceiptLookup.tsx |
-| incident | src/components/screens/IncidentReporting.tsx |
+| incident | src/components/screens/PublicReport.tsx |
 | architecture | src/components/screens/ArchitectureView.tsx |
-| taxpayer_home | src/components/screens/TaxpayerHome.tsx |
+| taxpayer_home | src/components/screens/TaxpayerDashboard.tsx |
 | dashboard | src/components/screens/TaxpayerDashboard.tsx |
 | wizard | src/components/screens/PaymentWizard.tsx |
 | history | src/components/screens/PaymentHistory.tsx |
@@ -21,7 +24,11 @@
 | certificates | src/components/screens/CertificatesView.tsx |
 | corrections | src/components/screens/CorrectionRequests.tsx |
 | notifications | src/components/screens/NotificationsView.tsx |
+| account_notifications | src/components/screens/AccountCenter.tsx |
+| account_profile | src/components/screens/AccountCenter.tsx |
+| account_settings | src/components/screens/AccountCenter.tsx |
 | services | src/components/screens/ConnectedServices.tsx |
+| office_login | src/components/screens/OfficeLoginPage.tsx |
 | officer_home | src/components/screens/OfficerHome.tsx |
 | taxpayer_360 | src/components/screens/Taxpayer360.tsx |
 | payment_search | src/components/screens/PaymentSearch.tsx |
@@ -33,5 +40,7 @@
 | intelligence | src/components/screens/IntelligenceScreen.tsx |
 | monitoring | src/components/screens/MonitoringScreen.tsx |
 | ontology | src/components/screens/OntologyView.tsx |
+| glossary | src/components/screens/GlossaryView.tsx |
+| guidance | src/components/screens/GuidanceAssistant.tsx |
 
 Current executable checks and limitations are in TEST_REPORT.md. The frontend build is a demonstration; financial and backend functions remain disabled or unverified.
