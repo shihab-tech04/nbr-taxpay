@@ -80,6 +80,7 @@ test('Scrolled-away mobile header is inert rather than an invisible Tab trap', a
   const header = page.locator('.citizen-header');
   await page.evaluate(() => window.scrollTo(0, 650));
   await expect(header).toHaveAttribute('inert', '');
+  await expect(header).toHaveCSS('visibility', 'hidden');
   await header.locator('button').first().evaluate((button) => (button as HTMLButtonElement).focus());
   expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.citizen-header')))).toBe(false);
   await page.evaluate(() => window.scrollTo(0, 0));

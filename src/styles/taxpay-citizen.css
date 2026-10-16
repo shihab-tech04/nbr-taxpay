@@ -32,7 +32,8 @@
   position: sticky; top: 0; z-index: 40;
   color: white; background: var(--citizen-primary-dark);
   border-bottom: 1px solid var(--citizen-primary); 
-  transition: transform 180ms ease, visibility 180ms ease;
+  /* Inactive header controls must become unfocusable immediately on scroll. */
+  transition: transform 180ms ease;
 }
 .citizen-header--hidden { transform: translateY(-110%); visibility: hidden; pointer-events: none; }
 .citizen-header__inner {
