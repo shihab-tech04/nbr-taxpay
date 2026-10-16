@@ -73,7 +73,9 @@ const MainRouter: React.FC = () => {
 
   // SPA navigation should announce the new main region to keyboard users.
   useEffect(() => {
-    if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute) {
+    const leavingLogin = priorCitizenRouteRef.current === 'taxpayer_login' || priorCitizenRouteRef.current === 'office_login';
+    if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute &&
+        currentRoute !== 'taxpayer_login' && currentRoute !== 'office_login' && !leavingLogin) {
       mainContentRef.current?.focus({ preventScroll: true });
     }
     priorCitizenRouteRef.current = currentRoute;

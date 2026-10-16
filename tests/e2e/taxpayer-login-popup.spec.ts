@@ -58,5 +58,7 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await expect(page).not.toHaveURL(/demoUser=/);
   await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
   await page.goto('/?action=account_profile');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
+  await expect(page.getByText('user8',{exact:true})).toHaveCount(0);
+  expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
 });
