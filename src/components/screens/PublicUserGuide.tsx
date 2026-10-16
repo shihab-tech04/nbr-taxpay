@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 
@@ -62,6 +62,13 @@ export const PublicUserGuide:React.FC=()=>{
  },[routeParams]);
  const [search,setSearch]=useState('');
  const [device,setDevice]=useState<'web'|'mobile'>('web');
+ const contentRef=useRef<HTMLElement>(null);
+ const chooseTopic=(id:Category)=>{
+   setSelected(id);
+   navigate('user_guide',{category:id});
+   // Topic changes should take the reader to the new instructions, not back to the page hero.
+   window.requestAnimationFrame(()=>contentRef.current?.scrollIntoView({block:'start',behavior:'instant'}));
+ };
  const current=GUIDE_CONTENT.find(x=>x.id===selected)!;
  const query=search.trim().toLocaleLowerCase();
  const results=query?GUIDE_CONTENT.map(category=>{
@@ -78,24 +85,33 @@ export const PublicUserGuide:React.FC=()=>{
  }).filter(item=>item.steps.length||item.faqs.length):[];
  const resultCount=results.reduce((count,item)=>count+item.steps.length+item.faqs.length,0);
  const labels=bn?['ওয়েব','মোবাইল']:['Web','Mobile'];
+ const officialSource=<aside className="public-guide-source" aria-label={bn?'সরকারি তথ্যের উৎস':'Official information'}>
+   <div className="public-guide-source-copy">
+     <h3>{bn?'সরকারি তথ্য':'Official information'}</h3>
+     <p>{bn?'বর্তমান করহার ও প্রযোজ্য শর্ত যাচাই করতে এনবিআরের প্রকাশনা দেখুন।':'For current tax rates and requirements, refer to NBR publications.'}</p>
+   </div>
+   <a href="https://nbr.gov.bd/" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ExternalLink size={16} aria-hidden="true"/></a>
+ </aside>;
  return <div className={'public-guide-page '+(bn?'font-bengali':'')}>
-  <header className="public-guide-intro">
-    <p className="citizen-hub-eyebrow">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</p>
-    <h1>{bn?'আমার কর ব্যবহার নির্দেশিকা':'Amar Kor user guide'}</h1>
-    <p>{bn?'পেমেন্টের ধাপ, রসিদ ও সাধারণ প্রশ্ন।':'Clear steps, payment references and common questions.'}</p>
-  </header>
-  <section className="public-guide-find" aria-labelledby="guide-search-title">
-    <div className="public-guide-find-copy">
-      <h2 id="guide-search-title">{bn?'উত্তর খুঁজুন':'Find an answer'}</h2>
-      <p>{bn?'ছয়টি বিষয়ের ধাপ ও সাধারণ প্রশ্ন খুঁজুন।':'Search instructions and questions across all six topics.'}</p>
-    </div>
-    <div className="public-guide-find-controls">
-      <label className="public-guide-search"><Search size={20} aria-hidden="true"/><span className="sr-only">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</span>
-        <input value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="search"/>
-      </label>
-      {query&&<button className="public-guide-clear" type="button" onClick={()=>setSearch('')}><X size={16} aria-hidden="true"/>{bn?'মুছুন':'Clear'}</button>}
-    </div>
-  </section>
+  <div className="public-guide-overview">
+    <header className="public-guide-intro">
+      <p className="citizen-hub-eyebrow">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</p>
+      <h1>{bn?'আমার কর ব্যবহার নির্দেশিকা':'Amar Kor user guide'}</h1>
+      <p>{bn?'পেমেন্টের ধাপ, রসিদ ও সাধারণ প্রশ্ন।':'Clear steps, payment references and common questions.'}</p>
+    </header>
+    <section className="public-guide-find" aria-labelledby="guide-search-title">
+      <div className="public-guide-find-copy">
+        <h2 id="guide-search-title">{bn?'উত্তর খুঁজুন':'Find an answer'}</h2>
+        <p>{bn?'ছয়টি বিষয়ের ধাপ ও সাধারণ প্রশ্ন খুঁজুন।':'Search instructions and questions across all six topics.'}</p>
+      </div>
+      <div className="public-guide-find-controls">
+        <label className="public-guide-search"><Search size={20} aria-hidden="true"/><span className="sr-only">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</span>
+          <input value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="search"/>
+        </label>
+        {query&&<button className="public-guide-clear" type="button" onClick={()=>setSearch('')}><X size={16} aria-hidden="true"/>{bn?'মুছুন':'Clear'}</button>}
+      </div>
+    </section>
+  </div>
   {query?<section className="public-guide-results" aria-labelledby="guide-results-title" id="guide-search-results">
     <div className="public-guide-results-head">
       <h2 id="guide-results-title">{bn?'অনুসন্ধানের ফল':'Search results'}</h2>
@@ -116,13 +132,14 @@ export const PublicUserGuide:React.FC=()=>{
       <h3>{bn?'কোনো ফল পাওয়া যায়নি':'No results found'}</h3>
       <p>{bn?'অন্য শব্দ দিয়ে খুঁজুন বা অনুসন্ধান মুছে বিষয়গুলো দেখুন।':'Try a different term, or clear the search to browse by topic.'}</p>
     </div>}
+    {officialSource}
   </section>:<div className="public-guide-layout">
     <nav className="public-guide-topics" aria-label={bn?'বিষয় নির্বাচন':'Guide topics'}>
       <h2>{bn?'বিষয় বেছে নিন':'Browse topics'}</h2>
       {GUIDE_CONTENT.map((item,index)=><button type="button" key={item.id} aria-current={selected===item.id?'true':undefined}
-        onClick={()=>{setSelected(item.id);navigate('user_guide',{category:item.id});}}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span>{bn?item.bn:item.en}</button>)}
+        onClick={()=>chooseTopic(item.id)}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span>{bn?item.bn:item.en}</button>)}
     </nav>
-    <article className="public-guide-content">
+    <article className="public-guide-content" ref={contentRef}>
       <div className="public-guide-content-head">
         <div><p className="citizen-hub-eyebrow">{bn?`বিষয় ${GUIDE_CONTENT.findIndex(x=>x.id===selected)+1} / ৬`:`TOPIC ${GUIDE_CONTENT.findIndex(x=>x.id===selected)+1} OF 6`}</p><h2>{bn?current.bn:current.en}</h2><p>{t(current.description)}</p></div>
       </div>
@@ -148,10 +165,8 @@ export const PublicUserGuide:React.FC=()=>{
           <summary><span>{t(item.q)}</span><ChevronDown size={18} aria-hidden="true"/></summary><p>{t(item.a)}</p>
         </details>)}
       </section>
+      {officialSource}
     </article>
   </div>}
-  <div className="public-guide-source"><p>{bn?'আইনি হার বা শর্ত জানতে বর্তমান সরকারি তথ্য দেখুন।':'Check current official sources for legal rates and requirements.'}</p>
-    <a href="https://nbr.gov.bd/" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ExternalLink size={14}/></a>
-  </div>
  </div>;
 };

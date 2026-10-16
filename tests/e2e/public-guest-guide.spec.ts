@@ -115,14 +115,15 @@ test('User guide search and text weights follow the citizen typography contract'
   expect(findBox).not.toBeNull();
   expect(fieldBox!.width).toBeGreaterThanOrEqual(findBox!.width - 2);
   if (info.project.name === 'desktop-1280') {
-    expect(fieldBox!.width).toBeGreaterThan(500);
+    expect(fieldBox!.width).toBeGreaterThan(700);
   }
   const introBox = await guide.locator('.public-guide-intro').boundingBox();
   const searchSectionBox = await guide.locator('.public-guide-find').boundingBox();
+  const overviewBox = await guide.locator('.public-guide-overview').boundingBox();
   const layoutBox = await guide.locator('.public-guide-layout').boundingBox();
-  expect(introBox && searchSectionBox && layoutBox).toBeTruthy();
-  expect(searchSectionBox!.y).toBeGreaterThan(introBox!.y + introBox!.height);
-  expect(layoutBox!.y).toBeGreaterThan(searchSectionBox!.y + searchSectionBox!.height);
+  expect(introBox && searchSectionBox && overviewBox && layoutBox).toBeTruthy();
+  expect(searchSectionBox!.y).toBeGreaterThanOrEqual(introBox!.y + introBox!.height - 1);
+  expect(layoutBox!.y).toBeGreaterThan(overviewBox!.y + overviewBox!.height);
 
   const input = guide.getByRole('searchbox', { name: 'Search the guide' });
   await input.focus();
@@ -177,6 +178,27 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await guide.getByRole('button',{name:'Travel tax'}).click();
   await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
   await expect(guide.getByRole('button',{name:'Travel tax'})).toHaveAttribute('aria-current','true');
+});
+
+test('User guide official reference belongs to the reading card, not a separate floating strip', async ({ page }) => {
+  await page.goto('/?action=user_guide');
+  const guide=page.locator('.public-guide-page');
+  const article=guide.locator('.public-guide-content');
+  await expect(guide.locator(':scope > .public-guide-source')).toHaveCount(0);
+  await expect(article.locator('.public-guide-source').getByRole('heading',{name:'Official information'})).toBeVisible();
+  await expect(article.locator('.public-guide-source').getByRole('link',{name:'NBR publications'})).toBeVisible();
+  await guide.getByRole('searchbox',{name:'Search the guide'}).fill('challan');
+  await expect(guide.locator('.public-guide-results .public-guide-source')).toBeVisible();
+  await expect(guide.locator('.public-guide-content')).toHaveCount(0);
+});
+
+test('Selecting a topic takes mobile readers directly to its instructions', async ({ page }, info) => {
+  test.skip(info.project.name!=='mobile-375','Mobile reading flow');
+  await page.goto('/?action=user_guide');
+  const topic=page.locator('.public-guide-topics').getByRole('button',{name:'Receipts & corrections'});
+  await topic.click();
+  await expect(page.locator('.public-guide-content-head').getByRole('heading',{name:'Receipts & corrections'})).toBeInViewport();
+  await expect(topic).toHaveAttribute('aria-current','true');
 });
 
 test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
