@@ -35,6 +35,22 @@ export function receiptSelectionFromHistory(state: unknown, route: string, avail
       ? record.taxpayReceiptId : null;
 }
 
+/** A second record opened on the same details URL must replace the tab-local
+ * selection. Do not add a duplicate Back entry or leak an ID into the URL. */
+export function routeHistoryWriteMode(
+  urlChanged: boolean,
+  route: string,
+  existingState: unknown,
+  receiptId: string | null
+): 'push' | 'replace' | 'none' {
+  if (urlChanged) return 'push';
+  if (route !== 'payment_details') return 'none';
+  const state = existingState && typeof existingState === 'object'
+    ? existingState as Record<string, unknown> : null;
+  return state?.taxpayRoute !== 'payment_details' ||
+    state.taxpayReceiptId !== (receiptId ?? undefined) ? 'replace' : 'none';
+}
+
 export function routeContextFromUrl(route: string, search: URLSearchParams): Record<string, unknown> {
   if (route === 'user_guide' && search.has('category')) return {category: search.get('category')};
   if ((route === 'guest' || route === 'wizard') && search.has('initialCategory'))

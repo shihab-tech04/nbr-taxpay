@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {ROUTES, receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {ROUTES, receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, routeHistoryWriteMode, validRoute, writeRouteContext} from '../src/services/routeContract';
 
 test('the route contract exactly matches the app router, including the Office login branch', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
@@ -96,4 +96,15 @@ test('receipt details can restore a tab-local selected record without URL identi
   const search = new URLSearchParams('action=payment_details&returnTo=payment_search');
   assert.equal(search.has('receiptId'),false);
   assert.equal(search.has('taxpayReceiptId'),false);
+});
+
+test('switching records at an unchanged details URL updates tab history without duplicate Back entries', () => {
+  const first = {taxpayRoute:'payment_details',taxpayReceiptId:'sample-1'};
+  assert.equal(routeHistoryWriteMode(true,'payment_details',first,'sample-2'),'push');
+  assert.equal(routeHistoryWriteMode(false,'payment_details',first,'sample-2'),'replace');
+  assert.equal(routeHistoryWriteMode(false,'payment_details',first,'sample-1'),'none');
+  assert.equal(routeHistoryWriteMode(false,'payment_details',null,'sample-1'),'replace');
+  assert.equal(routeHistoryWriteMode(false,'payment_details',first,null),'replace');
+  assert.equal(routeHistoryWriteMode(false,'history',first,null),'none');
+  assert.equal(routeHistoryWriteMode(true,'history',first,null),'push');
 });

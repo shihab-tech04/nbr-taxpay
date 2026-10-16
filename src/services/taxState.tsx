@@ -12,7 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
-import { receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
+import { receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, routeHistoryWriteMode, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -109,8 +109,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     const route = validRoute(requestedRoute);
     const { receiptId: requestedReceiptId, ...safeParams } = params;
+    const selectedId = route === 'payment_details' &&
+      typeof requestedReceiptId === 'string' && receipts.some(receipt => receipt.id === requestedReceiptId)
+        ? requestedReceiptId : null;
     setCurrentRoute(route);
     setRouteParams(safeParams);
+    setSelectedReceiptId(selectedId);
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
@@ -124,13 +128,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUserRole('GUEST');
       }
     }
-    if (next.href !== window.location.href) {
-      const selectedId = route === 'payment_details' &&
-        typeof requestedReceiptId === 'string' && receipts.some(receipt => receipt.id === requestedReceiptId)
-          ? requestedReceiptId : null;
-      window.history.pushState({ taxpayRoute: route, taxpayParams: safeParams,
-        ...(selectedId ? { taxpayReceiptId: selectedId } : {}) }, '', next);
-    }
+    const historyMode = routeHistoryWriteMode(next.href !== window.location.href,
+      route, window.history.state, selectedId);
+    const historyState = {taxpayRoute: route, taxpayParams: safeParams,
+      ...(selectedId ? {taxpayReceiptId: selectedId} : {})};
+    if (historyMode === 'push') window.history.pushState(historyState, '', next);
+    else if (historyMode === 'replace') window.history.replaceState(historyState, '', next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
