@@ -77,7 +77,7 @@ export function TaxpayerReferenceRail() {
       <div className="taxpayer-reference-rail-bottom">
         {(user || sampleProfile) && <button type="button" disabled={signingOut} onClick={logout}>
           <LogOut size={17} aria-hidden={true} />
-          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ডেমো থেকে বের হন' : 'Exit demo')}</span>
+          <span>{user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}</span>
         </button>}
         {signOutError && <p role="alert">{signOutError}</p>}
         <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>
