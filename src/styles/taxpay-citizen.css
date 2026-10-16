@@ -919,8 +919,6 @@
 }
 
 .public-guide-page{width:100%;max-width:1200px;margin:0 auto;padding:1rem 0 3.5rem;color:var(--citizen-text);}
-.public-guide-back{display:inline-flex;align-items:center;gap:.55rem;min-height:44px;color:var(--citizen-primary-dark);font-size:.94rem;font-weight:700;margin-bottom:1rem;}
-.public-guide-back:hover{text-decoration:underline;text-underline-offset:3px;}
 .public-guide-intro{padding:1.8rem 2rem 2rem;background:linear-gradient(110deg,var(--citizen-primary-light),var(--citizen-surface) 85%);border:1px solid var(--citizen-border);border-radius:1.1rem;box-shadow:0 1px rgba(0,0,0,.05);}
 .public-guide-intro h1{font-size:clamp(1.8rem,2.8vw,2.2rem);line-height:1.2;font-weight:800;margin:.45rem 0 .6rem;color:var(--citizen-text);}
 .public-guide-intro>p:last-child{font-size:1rem;line-height:1.6;color:var(--citizen-muted);}

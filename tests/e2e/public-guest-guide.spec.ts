@@ -60,6 +60,8 @@ test('Help Center typography and interactions remain usable at each viewport', a
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
   await expect(guide.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
+  await expect(guide.getByRole('button', { name: 'Back to home' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'Home' })).toBeVisible();
 
   const fontSizes = await guide.evaluate(element => {
     const selectors = [
