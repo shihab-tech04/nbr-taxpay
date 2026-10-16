@@ -8,7 +8,7 @@ test('public preview keeps Auth and drafts disabled without explicit backend con
   });
 
   await page.goto('/?action=secure_workspace');
-  await expect(page.getByRole('heading', { name: 'Secure TaxPay workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Secure Amar Kor workspace' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Account unavailable' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Sign in with email' })).toHaveCount(0);
   await expect(page.getByText('Sign-in and saved drafts are not available right now.')).toBeVisible();
@@ -21,7 +21,7 @@ test('public preview keeps Auth and drafts disabled without explicit backend con
   } else {
     await page.locator('.citizen-header').getByRole('button', { name: 'বাংলা' }).click();
   }
-  await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'নিরাপদ আমার কর ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'অ্যাকাউন্ট আপাতত চালু নেই' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toHaveCount(0);
   await expect.poll(() => hostedSupabaseRequests).toEqual([]);

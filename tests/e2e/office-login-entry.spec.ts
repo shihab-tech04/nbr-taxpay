@@ -5,11 +5,11 @@ test('Office-style login lets user1 open the correct dashboard without a passwor
   page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co')) hostedAuthRequests.push(request.url())});
   await page.goto('/?action=office_login');
   await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'TaxPay',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Amar Kor',exact:true})).toBeVisible();
   await expect(page.getByRole('textbox',{name:'User ID or email'})).toBeEnabled();
   await expect(page.getByLabel('Password',{exact:true})).toBeEnabled();
   await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeEnabled();
-  await expect(page.getByRole('button',{name:'Back to TaxPay'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Back to Amar Kor'})).toBeVisible();
   await expect(page.locator('.office-auth-safe-message')).toHaveCount(0);
   expect(hostedAuthRequests).toEqual([]);
   await expect(page.locator('.login-form-card')).toBeVisible();
@@ -36,7 +36,7 @@ test('explicit Office login keeps source carousel controls and EN/BN navigation'
   await page.goto('/?action=office_login');
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'স্বাগতম'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'ট্যাক্সপেতে ফিরুন'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'আমার কর-এ ফিরুন'})).toBeVisible();
   await expect(page.getByRole('button',{name:'সাইন ইন',exact:true})).toBeEnabled();
   await page.getByRole('button',{name:'EN'}).click();
   await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();

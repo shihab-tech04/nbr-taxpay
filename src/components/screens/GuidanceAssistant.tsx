@@ -14,7 +14,7 @@ const CONTENT = {
     estimatorFoot: 'A tax calculation requires controlling law, income and assessment periods, taxpayer class, exceptions, verified parameters and tested rule versions. A displayed year alone is not enough.',
     faqTitle: 'Payment safety and application guidance',
     entries: [
-      { q: 'Can I pay real income tax through TaxPay today?', a: 'No. Payment processing is not enabled and previews are not official challans.' },
+      { q: 'Can I pay real income tax through Amar Kor today?', a: 'No. Payment processing is not enabled and previews are not official challans.' },
       { q: 'Does an example wallet debit or challan establish a Treasury deposit?', a: 'No. Treasury settlement and tax credit require official reconciliation.' },
       { q: 'Can a withholding agent claim a credit for every withholding deposit?', a: 'Not automatically. Credit depends on the correct deductee, year and verified reconciliation.' },
       { q: 'What if my actual bank or wallet payment has a problem?', a: 'Contact the bank or payment provider and check official channels.' },
@@ -22,14 +22,14 @@ const CONTENT = {
     ]
   },
   bn: {
-    title: 'TaxPay নির্দেশিকা ও সচরাচর প্রশ্ন',
+    title: 'আমার কর নির্দেশিকা ও সচরাচর প্রশ্ন',
     subtitle: 'কর পরিশোধের সাধারণ প্রশ্নের উত্তর।',
     estimatorTitle: 'ব্যক্তিগত আয়কর হিসাব — বর্তমানে বন্ধ',
     estimatorNotice: 'প্রযোজ্য করবিধি যাচাই না হওয়া পর্যন্ত কর হিসাব চালু নেই।',
     estimatorFoot: 'কর হিসাবের জন্য প্রযোজ্য আইন, আয়বর্ষ, করবর্ষ, করদাতার ধরন, ব্যতিক্রম, যাচাইকৃত পরামিতি ও পরীক্ষিত নিয়ম প্রয়োজন। শুধু করবর্ষের নাম যথেষ্ট নয়।',
     faqTitle: 'পরিশোধের নিরাপত্তা ও অ্যাপ নির্দেশিকা',
     entries: [
-      { q: 'এখন কি TaxPay দিয়ে প্রকৃত আয়কর জমা দেওয়া যায়?', a: 'না। পেমেন্ট চালু নেই এবং প্রিভিউ সরকারি চালান নয়।' },
+      { q: 'এখন কি আমার কর দিয়ে প্রকৃত আয়কর জমা দেওয়া যায়?', a: 'না। পেমেন্ট চালু নেই এবং প্রিভিউ সরকারি চালান নয়।' },
       { q: 'নমুনা ওয়ালেট ডেবিট বা চালান কি ট্রেজারিতে জমার প্রমাণ?', a: 'না। ট্রেজারি জমা ও কর ক্রেডিটের জন্য সরকারি সমন্বয় প্রয়োজন।' },
       { q: 'উৎস কর জমা দিলেই কি জমাদানকারীর নিজের কর ক্রেডিট হয়?', a: 'সরাসরি নয়। সঠিক কর কর্তনগ্রহীতা, করবর্ষ এবং যাচাইকৃত সমন্বয় প্রয়োজন।' },
       { q: 'প্রকৃত ব্যাংক বা মোবাইল ওয়ালেট পরিশোধে সমস্যা হলে কী করব?', a: 'ব্যাংক বা পেমেন্ট সেবাদাতার সঙ্গে যোগাযোগ করুন এবং সরকারি মাধ্যমে যাচাই করুন।' },

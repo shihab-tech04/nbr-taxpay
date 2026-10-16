@@ -2,6 +2,7 @@ import React from 'react';
 import { Landmark, CheckCircle2 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { UI_STRINGS } from '../../services/localization';
+import { taxpayerBrandName } from '../../config/brand';
 
 export const Footer: React.FC = () => {
   const { language, navigate, setIsParityModalOpen } = useTaxState();
@@ -16,7 +17,7 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-2 text-white">
               <Landmark className="w-5 h-5 text-amber-400" />
               <span className="font-serif-fraunces font-bold text-base">
-                TaxPay
+                {taxpayerBrandName(language)}
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">{language === 'bn' ? 'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস' : 'Independent tax payment workspace'}</p>
@@ -141,7 +142,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 pt-4 border-t border-slate-800 text-xs text-slate-400"><p>{language === 'bn' ? '© ২০২৬ TaxPay' : '© 2026 TaxPay'}</p></div>
+        <div className="mt-8 pt-4 border-t border-slate-800 text-xs text-slate-400"><p>{language === 'bn' ? '© ২০২৬ আমার কর' : '© 2026 Amar Kor'}</p></div>
       </div>
     </footer>
   );
