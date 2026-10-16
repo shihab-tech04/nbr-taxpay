@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import {readFileSync, readdirSync} from 'node:fs';
+import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {ROUTES, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {ROUTES, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
 
 test('the route contract exactly matches the app router, including the Office login branch', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
@@ -13,6 +13,13 @@ test('the route contract exactly matches the app router, including the Office lo
   assert.equal(validRoute('does_not_exist'), 'landing');
   assert.equal(validRoute(''), 'landing');
   assert.equal(validRoute('history'), 'history');
+});
+
+test('published route-to-component index covers every registered screen with an existing file', () => {
+  const index = readFileSync('FEATURE_PARITY_v11.md', 'utf8');
+  const rows = [...index.matchAll(/^\| ([a-z_0-9]+) \| (src\/components\/screens\/[A-Za-z0-9]+\.tsx) \|$/gm)];
+  assert.deepEqual(rows.map(row=>row[1]).sort(), [...ROUTES].sort());
+  for (const [,route,filename] of rows) assert.ok(existsSync(filename),route+': missing '+filename);
 });
 
 test('literal navigation calls never refer to an unregistered screen', () => {
@@ -60,4 +67,20 @@ test('navigational context survives deep links, clears across unrelated routes a
   writeRouteContext('landing', {category:'security'}, search);
   assert.equal(search.has('reviewStatuses'), false);
   assert.deepEqual(routeContextFromUrl('landing', search), {});
+});
+
+test('receipt origin remains a safe, reloadable list route and cannot become an arbitrary redirect', () => {
+  const search = new URLSearchParams('action=payment_details&returnTo=https://unsafe.example');
+  assert.equal(receiptReturnRoute('payment_search'), 'payment_search');
+  assert.equal(receiptReturnRoute('taxpayer_360'), 'taxpayer_360');
+  assert.equal(receiptReturnRoute('dashboard'), 'dashboard');
+  assert.equal(receiptReturnRoute('landing'), 'history');
+  assert.equal(receiptReturnRoute('https://unsafe.example'), 'history');
+  assert.deepEqual(routeContextFromUrl('payment_details', search), {returnTo:'history'});
+  writeRouteContext('payment_details', {returnTo:'payment_search',payerTin:'123456789012'}, search);
+  assert.equal(search.get('returnTo'), 'payment_search');
+  assert.equal(search.has('payerTin'), false);
+  assert.deepEqual(routeContextFromUrl('payment_details',search), {returnTo:'payment_search'});
+  writeRouteContext('user_guide', {category:'travel'}, search);
+  assert.equal(search.has('returnTo'), false);
 });

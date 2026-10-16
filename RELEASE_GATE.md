@@ -1,8 +1,10 @@
-# TaxPay Phase 02 — controlled release and verified evidence (2026-10-12)
+# TaxPay Phase 02 — controlled release and verified evidence (2026-10-12; publication boundary updated 2026-10-16)
 
 ## Public publication boundary — mandatory
 
-**The public website is an independent, backend-disabled demonstration, NOT an operational NBR system.** The GitHub Pages workflow always uses `VITE_SUPABASE_DISABLED=true`, an empty Supabase URL and an empty browser key, and checks that no hosted Supabase project URL or synthetic taxpayer data are bundled. No hosted private accounts or payment services are enabled by source-code deployment.
+**The public website is an independent demonstration, NOT an operational NBR system.** The GitHub Pages workflow runs its public/financial browser checks with `VITE_SUPABASE_DISABLED=true`, then compiles its published review-only frontend with a scoped hosted Supabase URL and **publishable** browser key for application account access. Authenticated application identity is not e-TIN ownership, legal taxpayer entitlement, a verified NBR record, or an authorization to execute payments. Financial settlement, government challans, ACS/Treasury posting and official tax credits remain unavailable. No privileged or secret key belongs in the browser bundle.
+
+The current Pages workflow's publishable-only build, live public HTML read-back and deployed synthetic `user1` browser check passed on main commit `2963c97fe52c9b472fe03631cbd9ecb0a29c38c5` ([run 38850899543](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38850899543)). Isolated Auth/RLS verification passed on the same commit ([run 38850899460](https://github.com/shihab-tech04/nbr-taxpay/actions/runs/38850899460)); this is **not** proof of official hosted taxpayer identity, payment or financial entitlement. Preserve these distinctions in later release claims.
 
 Preserve Government Blue, accepted Guest payment-first and mobile Taxpayer navigation, floating Pay action, EN/BN layouts, payment-head fail-closed rules, Office Management separation and current UI. Do not publish real authentication, taxpayer records, payment processing, ACS, Treasury, official challans, eTIN ownership inference or financial credits.
 
@@ -34,4 +36,4 @@ Preserve Government Blue, accepted Guest payment-first and mobile Taxpayer navig
 
 Source IDs 5 and 150 remain blocked and non-executable. No payment, Treasury or official ledger posting is permitted.
 
-**Deployment decision:** publish only verified, safe Phase 02 frontend/source-test/document changes through the existing disabled-backend GitHub Pages workflow after exact-head CI. Keep actual backend activation limited to an approved isolated environment and never represent the public site as a live secure taxpayer account system.
+**Deployment decision:** publish only verified, safe Phase 02 frontend/source-test/document changes through the existing publishable-only GitHub Pages workflow after exact-head CI. The current frontend may offer scoped application Auth and read-only draft review; never represent it as an official secure NBR taxpayer account, verified financial integration or operational payment system. Any expansion of hosted database permissions, taxpayer identity or financial execution requires separate authoritative approval and testing.

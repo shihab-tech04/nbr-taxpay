@@ -73,7 +73,7 @@ export const PublicUserGuide:React.FC=()=>{
     <nav className="public-guide-topics" aria-label={bn?'বিষয় নির্বাচন':'Guide topics'}>
       <h2>{bn?'বিষয়':'Topics'}</h2>
       {GUIDE_CONTENT.map(item=><button type="button" key={item.id} aria-current={selected===item.id?'true':undefined}
-        onClick={()=>{setSelected(item.id);setSearch('');}}>{bn?item.bn:item.en}</button>)}
+        onClick={()=>{setSelected(item.id);setSearch('');navigate('user_guide',{category:item.id});}}>{bn?item.bn:item.en}</button>)}
     </nav>
     <article className="public-guide-content">
       <div className="public-guide-content-head">
