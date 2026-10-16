@@ -48,7 +48,8 @@ export function CitizenNavigation() {
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
-  const isTaxpayer = taxpayerRoles.includes(userRole);
+  // An application session is sufficient for account navigation, not for tax-credit entitlement.
+  const isTaxpayer = Boolean(applicationUser) || taxpayerRoles.includes(userRole);
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
@@ -190,7 +191,7 @@ export function CitizenNavigation() {
                 {isTaxpayer && <button type="button" className="citizen-nav-link" onClick={() => setMenuOpen(true)}>{bn ? 'আরও' : 'More'}</button>}
               </nav>
               <div className="citizen-header__utilities">
-                <button type="button" className="citizen-header__notification" onClick={() => go(isTaxpayer ? 'account_notifications' : 'secure_workspace')}
+                <button type="button" className="citizen-header__notification" onClick={() => go('account_notifications')}
                   aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'} title={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell size={23} aria-hidden="true"/></button>
                 <button type="button" className="citizen-language citizen-desktop-control" onClick={() => setLanguage(bn ? 'en' : 'bn')}
                   title={bn ? 'Switch to English' : 'বাংলায় দেখুন'}><Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}</button>
@@ -222,7 +223,7 @@ export function CitizenNavigation() {
         <div className="citizen-corners" aria-label={bn ? 'সংক্ষিপ্ত নেভিগেশন' : 'Compact navigation'}>
           <button className="citizen-corner citizen-corner--top-left" onClick={() => setMenuOpen(true)}
             aria-label={bn ? 'মেনু খুলুন' : 'Open menu'}><Menu aria-hidden="true"/></button>
-          <button className="citizen-corner citizen-corner--top-right" onClick={() => go(isTaxpayer ? 'account_notifications' : 'secure_workspace')}
+          <button className="citizen-corner citizen-corner--top-right" onClick={() => go('account_notifications')}
             aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell aria-hidden="true"/></button>
           <button className="citizen-corner citizen-corner--bottom-left" onClick={() => go(home)}
             aria-label={bn ? 'মূল পাতা' : 'Home'}><Home aria-hidden="true"/></button>

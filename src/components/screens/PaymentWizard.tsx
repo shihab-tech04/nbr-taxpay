@@ -59,7 +59,8 @@ export const PaymentWizard: React.FC = () => {
 
   // Initial category from params if any
   const [category, setCategory] = useState<PaymentCategory>(
-    (routeParams?.initialCategory as PaymentCategory) || 'TAX_WITH_RETURN'
+    (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
+      ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN')
   );
 
   const [assessmentYear, setAssessmentYear] = useState('2025-2026');
@@ -80,7 +81,7 @@ export const PaymentWizard: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    if (routeParams?.initialCategory) {
+    if (routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
       setCategory(routeParams.initialCategory as PaymentCategory);
       const first = MASTER_PAYMENT_HEADS.find(h => h.category === routeParams.initialCategory);
       if (first) setSelectedHeadId(first.id);

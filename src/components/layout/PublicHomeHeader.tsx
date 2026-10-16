@@ -33,9 +33,12 @@ export function PublicHomeHeader() {
     return ()=>document.removeEventListener('keydown',dismiss);
   },[menuOpen]);
   const routeLink=(item:typeof LINKS[number])=>
-    <a key={item.route} href={item.route==='landing' ? import.meta.env.BASE_URL : '?action='+item.route}
+    <a key={item.route} href={item.route==='landing' ? import.meta.env.BASE_URL + (bn ? '?lang=bn' : '') : '?action='+item.route+(bn?'&lang=bn':'')}
       aria-current={currentRoute===item.route?'page':undefined}
-      onClick={event=>{event.preventDefault();navigate(item.route);setMenuOpen(false);}}>
+      onClick={event=>{
+        if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
+        event.preventDefault();navigate(item.route);setMenuOpen(false);
+      }}>
       <item.Icon size={16} aria-hidden="true"/>{bn?item.bn:item.en}
     </a>;
   const login=(mobile:boolean)=>
@@ -49,7 +52,10 @@ export function PublicHomeHeader() {
   return <header className="public-home-header">
     <a className="public-home-skip-link" href="#main-content">{bn?'মূল কনটেন্টে যান':'Skip to main content'} <ArrowRight size={16} aria-hidden="true"/></a>
     <div className="public-home-header__inner">
-      <a href={import.meta.env.BASE_URL} className="public-home-brand" onClick={event=>{event.preventDefault();navigate('landing');setMenuOpen(false);}}>
+      <a href={import.meta.env.BASE_URL + (bn ? '?lang=bn' : '')} className="public-home-brand" onClick={event=>{
+        if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
+        event.preventDefault();navigate('landing');setMenuOpen(false);
+      }}>
         {logoFailed?<span className="public-home-seal-fallback" aria-hidden="true">TP</span>:<img src={governmentSeal} alt="Government Seal of Bangladesh" onError={()=>setLogoFailed(true)}/>}
         <span className="public-home-brand__copy"><strong>TaxPay</strong><small>{bn?'স্বতন্ত্র আয়কর তথ্যসেবা':'Independent tax information service'}</small></span>
       </a>
