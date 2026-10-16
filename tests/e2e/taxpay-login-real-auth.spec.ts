@@ -17,6 +17,8 @@ const response=(body:unknown,status=200)=>({status,contentType:'application/json
 
 test('password login uses real Auth request, enters personal dashboard and allows sign out',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Auth protocol is viewport-independent');
+  // The fixed desktop sidebar appears at >=1440px; narrower screens use the menu.
+  await page.setViewportSize({width:1600,height:900});
   const requests:string[]=[];
   await page.route(`${backend}/**`,async route=>{
     const request=route.request(),url=new URL(request.url());
