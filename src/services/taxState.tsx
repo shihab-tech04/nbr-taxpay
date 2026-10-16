@@ -12,7 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
-import { routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
+import { receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -148,7 +148,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const selectReceipt = (id: string | null) => {
     setSelectedReceiptId(id);
     if (id) {
-      navigate('payment_details');
+      navigate('payment_details', {returnTo: receiptReturnRoute(currentRoute)});
     }
   };
 

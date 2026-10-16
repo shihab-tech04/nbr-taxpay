@@ -47,15 +47,18 @@ import { GlossaryView } from './components/screens/GlossaryView';
 import { GuidanceAssistant } from './components/screens/GuidanceAssistant';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
+import { receiptReturnRoute } from './services/routeContract';
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, navigate, userRole, setUserRole, language, demoUser } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser } = useTaxState();
   const {user:verifiedApplicationUser}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
-  const officerRoute = ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
-  const privateTaxpayerRoute = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
-  const privateSampleGate = ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute) && !verifiedApplicationUser && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
+  const receiptOrigin = receiptReturnRoute(routeParams.returnTo);
+  const officerReceiptDetails = currentRoute === 'payment_details' && ['payment_search','taxpayer_360'].includes(receiptOrigin);
+  const officerRoute = officerReceiptDetails || ['officer_home','taxpayer_360','payment_search','correction_queue','case_management','incident_investigation','offline_evidence','audit_trail','intelligence','monitoring'].includes(currentRoute);
+  const privateTaxpayerRoute = (currentRoute === 'payment_details' && !officerRoute) || ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','notifications','account_notifications','account_profile','account_settings','services'].includes(currentRoute);
+  const privateSampleGate = !officerRoute && (currentRoute === 'payment_details' || ['taxpayer_home','dashboard','wizard','history','ledger','journey','certificates','corrections','services'].includes(currentRoute)) && !verifiedApplicationUser && !['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
