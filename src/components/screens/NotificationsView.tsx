@@ -50,7 +50,7 @@ export const NotificationsView:React.FC=()=>{
   if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-3 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
     <h1 className="text-2xl font-bold text-taxpay-text">{label('Sign in to view payment notifications','পেমেন্ট বিজ্ঞপ্তি দেখতে সাইন ইন করুন')}</h1>
     <p className="text-sm text-taxpay-muted">{label('Payment notifications are available only for a verified, bound account. Anonymous simulation access is disabled.','পেমেন্ট বিজ্ঞপ্তি কেবল যাচাইকৃত ও সংযুক্ত অ্যাকাউন্টের জন্য উপলব্ধ। বেনামী প্রবেশ বন্ধ।')}</p>
-    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('secure_workspace')}>{label('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button>
+    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('office_login')}>{label('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button>
   </main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
   if(!id)return <AccountCenter page="notifications"/>;

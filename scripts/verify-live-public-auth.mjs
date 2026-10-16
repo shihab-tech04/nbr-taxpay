@@ -27,7 +27,10 @@ try {
     if (overflow > 2) throw new Error(`Live ${name} private-entry overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-auth-${name}.png`, fullPage: true });
     await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
+    await expect(page).toHaveURL(/action=office_login/);
+    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Account email address' })).toBeVisible();
+    await expect(page.getByText(/Example account access: user1/)).toHaveCount(0);
     await page.close();
   }
   console.log('PASS: live desktop/mobile auth gating, sign-in destination and no synthetic dashboard exposure');

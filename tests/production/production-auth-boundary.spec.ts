@@ -11,9 +11,14 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
   await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/action=secure_workspace/);
-  await expect(page.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
+  await expect(page).toHaveURL(/action=office_login/);
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+  await expect(page.getByText(/Example account access: user1/)).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Account email address' }).fill('user1');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Enter your account email address');
+  await expect(page).toHaveURL(/action=office_login/);
   await page.goBack();
   await expect(gate).toBeVisible();
 });
@@ -36,8 +41,8 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await page.goto(site + '?action=taxpayer_home&demoUser=user1&lang=bn');
   await expect(page.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible();
   await page.locator('.citizen-account-gate').getByRole('button', { name: 'সাইন ইন' }).click();
-  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page).toHaveURL(/action=office_login/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('heading', { name: 'নিরাপদ TaxPay ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'স্বাগতম' })).toBeVisible();
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });

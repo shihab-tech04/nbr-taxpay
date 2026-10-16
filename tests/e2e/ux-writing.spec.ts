@@ -46,7 +46,7 @@ test('public information copy is concise and bilingual while preserving payment 
  test.skip(info.project.name!=='mobile-320','One bilingual content runner');
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
- await expect(page.locator('footer').getByText('No government payments or challans are issued here.')).toBeVisible();
+ await expect(page.locator('footer').getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await expect(page.getByText('Prototype status')).toHaveCount(0);
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();

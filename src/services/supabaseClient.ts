@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
+import {taxpayAuthStorage} from './taxpayAuthStorage';
 
 const url = TAXPAY_PUBLIC_ENDPOINT.url;
 const key = TAXPAY_PUBLIC_ENDPOINT.publishableKey;
@@ -8,7 +9,7 @@ const key = TAXPAY_PUBLIC_ENDPOINT.publishableKey;
 // An unset configuration must fail closed, never silently switch to mock user data.
 // This key is publishable, not a server/secret/service-role key.
 export const supabase = url && key
-  ? createClient(url, key, { auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } })
+  ? createClient(url, key, { auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, storage: taxpayAuthStorage } })
   : null;
 
 export const backendConfigured = Boolean(supabase);
