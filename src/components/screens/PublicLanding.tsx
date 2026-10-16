@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, ReceiptText, ShieldCheck, WalletCards, Plane, Search } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import {PublicServiceModal, type PublicService} from './PublicServiceModal';
+import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
 
 
 export const PublicLanding: React.FC = () => {
@@ -35,19 +36,13 @@ export const PublicLanding: React.FC = () => {
         <h1 id="public-home-title">{t('Understand tax payments. Stay in control.', 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।')}</h1>
         <p>{t('Explore payment guidance. Manage your transactions after login.', 'কর পরিশোধের তথ্য জানুন। লগইনের পর লেনদেন পরিচালনা করুন।')}</p>
         <div className="citizen-public-hero__actions public-guest-actions">
-          <button type="button" className="citizen-public-primary public-guest-action" onClick={()=>setOpenService('status')}><Search size={18} aria-hidden="true"/>{t('Check payment status & receipt','পেমেন্টের অবস্থা ও রসিদ দেখুন')}</button>
-          <button type="button" className="citizen-public-secondary public-guest-action" onClick={()=>setOpenService('travel')}><Plane size={18} aria-hidden="true"/>{t('Pay travel tax','ভ্রমণ কর পরিশোধ')}</button>
+          <button type="button" className="citizen-public-primary public-guest-action" onClick={()=>navigate('guest')}><WalletCards size={18} aria-hidden="true"/>{t('Pay Tax','কর পরিশোধ')}</button>
+          <button type="button" className="citizen-public-secondary public-guest-action" onClick={()=>setOpenService('status')}><Search size={18} aria-hidden="true"/>{t('Check payment & receipt','পেমেন্ট ও রসিদ যাচাই')}</button>
         </div>
       </div>
-      <aside className="citizen-public-hero__panel public-information-guide" aria-labelledby="prepare-title">
-
-        <h2 id="prepare-title">{t('Check these details', 'যা যাচাই করবেন')}</h2>
-        <ol>
-          <li><span>01</span><p>{t('Taxpayer and payment ownership', 'করদাতা ও পেমেন্টের মালিকানা')}</p></li>
-          <li><span>02</span><p>{t('Payment category and applicable year', 'পেমেন্টের ধরন ও প্রযোজ্য করবর্ষ')}</p></li>
-          <li><span>03</span><p>{t('Reference and payment status', 'রেফারেন্স ও পেমেন্টের অবস্থা')}</p></li>
-        </ol>
-      </aside>
+      <div className="public-information-hero__media" aria-hidden="true">
+        <img className="public-information-hero__image" src={heroPaymentIllustration} alt="" decoding="async" />
+      </div>
     </section>
 
     <section id="public-payment-types" className="citizen-hub-section public-info-section" aria-labelledby="payment-types-title">
@@ -55,7 +50,10 @@ export const PublicLanding: React.FC = () => {
 
         <h2 id="payment-types-title">{t('Explore payment types', 'কর পরিশোধের ধরন জানুন')}</h2>
         <p>{t('Choose a payment category.', 'পেমেন্টের ধরন বেছে নিন।')}</p>
-      </div><button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button></div>
+      </div><div className="public-info-section__links">
+        <button type="button" className="public-more-link" onClick={()=>setOpenService('travel')}><Plane size={15} aria-hidden="true"/>{t('Pay travel tax','ভ্রমণ কর পরিশোধ')}</button>
+        <button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button>
+      </div></div>
       <div className="public-info-topic-grid">
         {topics.map(({tone,Icon,title,copy})=><article className="public-info-topic" data-taxpay-service={tone} key={tone}>
           <span className="citizen-hub-service-grid__icon"><Icon size={20} aria-hidden="true" /></span>

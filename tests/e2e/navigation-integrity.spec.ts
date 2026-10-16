@@ -30,11 +30,15 @@ test('public header, FAQ topics, footer links, language and browser history reac
   await expect(page.getByRole('heading',{name:'নিরাপত্তা ও সহায়তা'})).toBeVisible();
 });
 
-test('public service actions and receipt result return stay in their own public flows', async ({page}) => {
+test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Check payment status & receipt'}).click();
+  await page.getByRole('button',{name:'Check payment & receipt'}).click();
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
+  await page.getByRole('button',{name:'Pay Tax'}).click();
+  await expect(page).toHaveURL(/action=guest/);
+  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
+  await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay travel tax'}).click();
   await expect(page.getByRole('dialog',{name:/Travel tax/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
