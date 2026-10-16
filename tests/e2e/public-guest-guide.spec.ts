@@ -87,6 +87,7 @@ test('Help Center typography and interactions remain usable at each viewport', a
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
+
 test('User guide search and text weights follow the citizen typography contract', async ({ page }, info) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
@@ -123,7 +124,6 @@ test('User guide search and text weights follow the citizen typography contract'
   await input.fill('receipt');
   await expect(guide.getByText('Does a receipt confirm tax credit?')).toBeVisible();
 });
-
 
 
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
