@@ -16,7 +16,7 @@ async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
 }
 
-test('Public and Taxpayer share exact Government Blue tokens while Officer remains isolated', async ({page}) => {
+test('Public and Taxpayer retain Government Blue tokens; legacy Office URL returns to Public', async ({page}) => {
   await page.goto('/?action=landing');
   const guest = page.locator('.taxpay-citizen-shell');
   await expect(guest).toBeVisible();
@@ -36,10 +36,10 @@ test('Public and Taxpayer share exact Government Blue tokens while Officer remai
   expect(taxpayerTheme.toLowerCase()).toBe(guestTheme.toLowerCase());
   expect(await taxpayer.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Poppins');
   await page.goto('/?action=officer_home');
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(page.locator('.taxpay-citizen-shell')).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
-  await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
-     await expect(page.locator('.citizen-pay')).toHaveCount(0);
-  await expect(page.locator('.taxpay-citizen-shell')).toHaveCount(0);
+  await expect(page.locator('header.bg-emerald-950')).toHaveCount(0);
 });
 
 test('reference desktop rail preserves contextual demo routes and selected state', async ({page}, info) => {
