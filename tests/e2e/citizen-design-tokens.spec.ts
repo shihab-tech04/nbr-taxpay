@@ -35,3 +35,33 @@ test('Bangla text uses Noto Sans Bengali while keeping the same four tax-service
   const font = await page.locator('.taxpay-citizen-shell').evaluate(element => getComputedStyle(element).fontFamily);
   expect(font).toMatch(/^['"]?Noto Sans Bengali/);
 });
+
+test('Sobaike-level flat elevation is consistent across the public hero, section cards and mobile layout', async ({ page }) => {
+  await page.goto('/');
+
+  const checkElevation = async () => page.evaluate(() => {
+    const selectors = [
+      '.public-information-hero',
+      '.public-information-guide',
+      '.public-information-hub .public-info-section',
+      '.public-info-topic[data-taxpay-service="return"]',
+    ];
+    const shadows = selectors.map(selector => {
+      const surface = document.querySelector<HTMLElement>(selector);
+      if (!surface) throw new Error(`Missing public surface: ${selector}`);
+      return getComputedStyle(surface).boxShadow;
+    });
+    const header = document.querySelector<HTMLElement>('.public-home-header');
+    if (!header) throw new Error('Missing public header');
+    return { shadows, headerShadow: getComputedStyle(header).boxShadow };
+  });
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const elevation = await checkElevation();
+    expect(elevation.shadows[0]).toContain('0px 1px 0px');
+    expect(elevation.shadows[0]).toContain('0.05');
+    expect(new Set(elevation.shadows).size).toBe(1);
+    expect(elevation.headerShadow).toBe('none');
+  }
+});

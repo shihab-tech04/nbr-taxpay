@@ -9,7 +9,7 @@ Baseline: TaxPay `7f8c4e2` (`main`, inspected 2026-10-16); source reference: `So
 - **Citizen type scale:** body 16px; helper/meta/action 14px; label 16px; mobile H1/H2/H3/H4 28/22/18/16px; desktop 32/24/20/18px. Existing specialized financial, table, and compact labels retain their accepted component sizes.
 - **Light surfaces:** page `#F0F2F5`; subtle `#F7F9FC`; cards `#FFFFFF`; border `#E1E6EE`; text `#172033`; secondary text `#5F6B7A`.
 - **Radius:** controls 12px, cards 16px, desktop modals 24px, pills full. Mobile full-screen modal geometry remains unchanged.
-- **Elevation:** control `0 1px 2px rgba(23,32,51,.06)`, card `0 1px 3px rgba(23,32,51,.08)`, raised `0 8px 24px rgba(23,32,51,.10)`, modal `0 18px 48px rgba(23,32,51,.20)`. Print receipts must not acquire decorative elevation.
+- **Elevation (revised 2026-10-16 after screenshot comparison):** control/card `0 1px rgba(0,0,0,.05)` (matching Sobaike Janao's `--elevation-low`); raised/floating `0 2px 6px rgba(0,0,0,.06)`; modal/overlay `0 6px 20px rgba(0,0,0,.12)`. Hero, information sections, service cards and taxpayer dashboard panels use the near-flat card elevation. The header uses a border without shadow. Existing Tailwind shadow utility classes are normalized within the citizen shell, never across the Office UI. Borders, rather than broad blur, separate layers. Preserve print receipts without decorative elevation.
 
 ## Existing payment-type color families
 
