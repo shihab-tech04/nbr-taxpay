@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {ROUTES, receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, routeHistoryWriteMode, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {ROUTES, receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, routeHistoryWriteMode, validatedRouteContext, validRoute, writeRouteContext} from '../src/services/routeContract';
 
 test('the route contract exactly matches the app router, including the Office login branch', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
@@ -107,4 +107,20 @@ test('switching records at an unchanged details URL updates tab history without 
   assert.equal(routeHistoryWriteMode(false,'payment_details',first,null),'replace');
   assert.equal(routeHistoryWriteMode(false,'history',first,null),'none');
   assert.equal(routeHistoryWriteMode(true,'history',first,null),'push');
+});
+
+test('state and tab history contain only the navigation keys that survive a URL round-trip', () => {
+  assert.deepEqual(validatedRouteContext('guest', {
+    initialCategory:'TAX_WITH_RETURN', payerTin:'123456789012', amount:120000, privateForm:{name:'Person'}
+  }), {initialCategory:'TAX_WITH_RETURN'});
+  assert.deepEqual(validatedRouteContext('history', {
+    categoryFilter:'source', reviewStatuses:['FAILED','UNKNOWN','PENDING'], accountEmail:'private@example.invalid'
+  }), {categoryFilter:'source', reviewStatuses:['FAILED','PENDING']});
+  assert.deepEqual(validatedRouteContext('payment_details', {
+    returnTo:'payment_search', receiptId:'sample-1', payerName:'Sensitive name', taxpayReceiptId:'sample-2'
+  }), {returnTo:'payment_search'});
+  assert.deepEqual(validatedRouteContext('payment_details', {
+    returnTo:'https://untrusted.invalid/', receiptId:'sample-1'
+  }), {returnTo:'history'});
+  assert.deepEqual(validatedRouteContext('landing', {payerTin:'123456789012', password:'not-allowed'}), {});
 });

@@ -12,7 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
-import { receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, routeHistoryWriteMode, validRoute, writeRouteContext } from './routeContract';
+import { receiptReturnRoute, receiptSelectionFromHistory, routeContextFromUrl, routeHistoryWriteMode, validatedRouteContext, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
   INITIAL_RECEIPTS, 
@@ -108,7 +108,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     const route = validRoute(requestedRoute);
-    const { receiptId: requestedReceiptId, ...safeParams } = params;
+    const { receiptId: requestedReceiptId, ...requestedParams } = params;
+    const safeParams = validatedRouteContext(route, requestedParams);
     const selectedId = route === 'payment_details' &&
       typeof requestedReceiptId === 'string' && receipts.some(receipt => receipt.id === requestedReceiptId)
         ? requestedReceiptId : null;
@@ -142,9 +143,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const search = new URLSearchParams(window.location.search);
       const route = validRoute(search.get('action'));
       setCurrentRoute(route);
-      setRouteParams(event.state?.taxpayRoute === route
-        ? event.state.taxpayParams ?? routeContextFromUrl(route, search)
-        : routeContextFromUrl(route, search));
+      // The address is the canonical source for navigation context. History
+      // state can identify a validated receipt, but cannot override URL fields.
+      setRouteParams(routeContextFromUrl(route, search));
       setSelectedReceiptId(receiptSelectionFromHistory(event.state, route,
         new Set(receiptsRef.current.map(receipt => receipt.id))));
       setLanguage(search.get('lang') === 'bn' ? 'bn' : 'en');

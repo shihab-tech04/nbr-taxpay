@@ -3,14 +3,14 @@
   "changes": [
     {
       "path": "src/services/taxState.tsx",
-      "requirement": "Preserve correct receipt-details navigation across reload, same-URL record replacement and browser Back/Forward without exposing identifiers in public URLs.",
+      "requirement": "Preserve correct receipt-details navigation and Back/Forward; retain only approved route context in URL, React state, and tab history.",
       "approvalReference": "Owner's 2026-10-16 instruction to fix navigation and preserve already-working routes and UI.",
       "approvedDesign": "Existing src/components/screens/PaymentDetailView.tsx and ReceiptView.tsx unchanged.",
       "forbiddenAdditions": ["No new visible controls", "No new public URL parameters", "No taxpayer data persisted in browser storage", "No change to payment or credit logic"]
     },
     {
       "path": "src/services/routeContract.ts",
-      "requirement": "Prevent duplicate browser-history entries and restore the correct inspected receipt when the detail URL stays the same.",
+      "requirement": "Prevent duplicate browser-history entries, restore the inspected receipt, and exclude unapproved private route data from browser navigation state.",
       "approvalReference": "Owner's 2026-10-16 instruction to fix remaining defects without breaking verified receipt flows.",
       "approvedDesign": "Existing receipt details screen and URL shape unchanged; history selection remains tab-local and validated against records.",
       "forbiddenAdditions": ["No new visible controls", "No new URL identifiers", "No external navigation", "No changes to financial or authentication data"]

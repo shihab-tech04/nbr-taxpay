@@ -82,3 +82,12 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
     }
   }
 }
+
+/** Keep the same allowlisted context in React state and tab history as in the
+ * URL. Arbitrary parameters (including payer identity or payment form data)
+ * must never survive a route transition merely because the URL omits them. */
+export function validatedRouteContext(route: string, params: Record<string, unknown>): Record<string, unknown> {
+  const search = new URLSearchParams();
+  writeRouteContext(route, params, search);
+  return routeContextFromUrl(route, search);
+}
