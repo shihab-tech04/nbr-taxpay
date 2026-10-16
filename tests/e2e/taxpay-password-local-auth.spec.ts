@@ -129,6 +129,7 @@ test('password reset email updates a disposable local account and the new passwo
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await page.locator('.taxpayer-reference-rail').getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
 
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox', { name: 'User ID or email' }).fill(email);
