@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('public Login opens the TaxPay-only popup; invalid ID stays signed out', async ({page}) => {
+test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials stay signed out', async ({page}) => {
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
   if (page.viewportSize()!.width<=900) {
@@ -12,11 +12,19 @@ test('public Login opens the TaxPay-only popup; invalid ID stays signed out', as
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeFocused();
-  await expect(dialog.locator('input[type=password]')).toHaveCount(0);
+  await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
+  await expect(dialog.getByText('Forgot your details?')).toBeVisible();
+  await dialog.getByRole('button',{name:'Recover Account'}).click();
+  await expect(dialog.getByRole('status')).toContainText('password is the same as the User ID');
+  await dialog.getByRole('button',{name:'Show password'}).click();
+  await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','text');
+  await dialog.getByRole('button',{name:'Hide password'}).click();
+  await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
   await dialog.getByRole('textbox',{name:'User ID'}).fill('user11');
-  await dialog.getByRole('button',{name:'Login'}).click();
-  await expect(dialog.getByRole('alert')).toContainText('valid User ID');
+  await dialog.getByLabel('Password',{exact:true}).fill('user11');
+  await dialog.getByRole('button',{name:'Sign In'}).click();
+  await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   await page.keyboard.press('Escape');
@@ -24,7 +32,7 @@ test('public Login opens the TaxPay-only popup; invalid ID stays signed out', as
   await expect(page).toHaveURL(/action=landing/);
 });
 
-test('all ten User IDs open their own taxpayer dashboard and profile, then sign out', async ({page}, info) => {
+test('all ten matching ID/password pairs open their own taxpayer dashboard and profile, then sign out', async ({page}, info) => {
   test.skip(info.project.name!=='desktop-1280','Complete ID matrix on desktop');
   await page.setViewportSize({width:1600,height:900});
   const hostedCalls:string[]=[];
@@ -33,7 +41,8 @@ test('all ten User IDs open their own taxpayer dashboard and profile, then sign 
     await page.goto('/?action=taxpayer_login');
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
     await dialog.getByRole('textbox',{name:'User ID'}).fill('user'+id);
-    await dialog.getByRole('button',{name:'Login'}).click();
+    await dialog.getByLabel('Password',{exact:true}).fill('user'+id);
+    await dialog.getByRole('button',{name:'Sign In'}).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
     await page.locator('.taxpayer-reference-rail summary').click();
@@ -52,7 +61,8 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox',{name:'User ID'}).fill('user8');
-  await page.getByRole('button',{name:'Login'}).click();
+  await page.getByLabel('Password',{exact:true}).fill('user8');
+  await page.getByRole('button',{name:'Sign In'}).click();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);
@@ -60,5 +70,19 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.goto('/?action=account_profile');
   await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
   await expect(page.getByText('user8',{exact:true})).toHaveCount(0);
+  expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+});
+
+test('empty and mismatched passwords cannot sign in even with a valid User ID', async ({page},info) => {
+  test.skip(info.project.name!=='desktop-1280','One password validation case');
+  await page.goto('/?action=taxpayer_login');
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  await dialog.getByLabel('User ID',{exact:true}).fill('user1');
+  await dialog.getByRole('button',{name:'Sign In'}).click();
+  await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
+  await dialog.getByLabel('Password',{exact:true}).fill('user2');
+  await dialog.getByRole('button',{name:'Sign In'}).click();
+  await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
+  await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
 });

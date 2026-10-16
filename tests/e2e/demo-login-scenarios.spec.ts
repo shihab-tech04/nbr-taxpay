@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
 
-test('all ten permitted User IDs open their own account views from Login without a password',async({page},info)=>{
+test('all ten matching User ID and password pairs open their own account views',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','One complete user-ID routing matrix');
  const backendCalls:string[]=[];
  page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co'))backendCalls.push(request.url());});
  for(let n=1;n<=10;n++){
    await page.goto('/?action=taxpayer_login');
    await page.getByRole('textbox',{name:'User ID'}).fill('user'+n);
-   await expect(page.getByRole('button',{name:'Login',exact:true})).toBeEnabled();
-   await page.getByRole('button',{name:'Login',exact:true}).click();
+   await page.getByLabel('Password',{exact:true}).fill('user'+n);
+   await expect(page.getByRole('button',{name:'Sign In',exact:true})).toBeEnabled();
+   await page.getByRole('button',{name:'Sign In',exact:true}).click();
    await expect(page).toHaveURL(/action=taxpayer_home/);
    await expect(page).not.toHaveURL(/demoUser=/);
    await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();

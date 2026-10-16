@@ -9,7 +9,8 @@ test('a User ID popup session never creates a Supabase authenticated user',async
   });
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox',{name:'User ID'}).fill('user2');
-  await page.getByRole('button',{name:'Login'}).click();
+  await page.getByLabel('Password',{exact:true}).fill('user2');
+  await page.getByRole('button',{name:'Sign In'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('User ID: user2')).toBeVisible();
@@ -17,12 +18,13 @@ test('a User ID popup session never creates a Supabase authenticated user',async
   expect(await page.evaluate(()=>Object.keys(localStorage).filter(key=>key.startsWith('sb-')))).toEqual([]);
 });
 
-test('invalid password-free ID cannot open a taxpayer profile',async({page},info)=>{
+test('invalid ID and password cannot open a taxpayer profile',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One validation case');
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox',{name:'User ID'}).fill('administrator');
-  await page.getByRole('button',{name:'Login'}).click();
-  await expect(page.getByRole('alert')).toContainText('valid User ID');
+  await page.getByLabel('Password',{exact:true}).fill('administrator');
+  await page.getByRole('button',{name:'Sign In'}).click();
+  await expect(page.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);
   await page.goto('/?action=account_profile');
   await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();

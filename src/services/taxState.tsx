@@ -27,7 +27,7 @@ export interface TaxStateContextType {
   currentRoute: string;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
-  loginPreviewAccount: (userId: string) => boolean;
+  loginPreviewAccount: (userId: string, password: string) => boolean;
   clearPreviewAccount: () => void;
   logoutPreviewAccount: () => void;
   routeParams: Record<string, any>;
@@ -189,11 +189,11 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => window.removeEventListener('popstate', onPopState);
   }, [previewAccount]);
 
-  // A password-free ID selects only a browser-local, fictional UI profile.
+  // Temporary matching ID/password credentials only select a browser-local UI profile.
   // This deliberately creates no Supabase Auth session or API entitlement.
-  const loginPreviewAccount = (userId: string): boolean => {
+  const loginPreviewAccount = (userId: string, password: string): boolean => {
     const selected = getDemoUser(userId.trim().toLowerCase());
-    if (!selected) return false;
+    if (!selected || password !== selected.id) return false;
     window.sessionStorage.setItem(previewStorageKey, selected.id);
     setPreviewAccount(selected);
     setLegacyDemoUser(null);

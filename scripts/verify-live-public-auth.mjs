@@ -31,9 +31,10 @@ try {
     const dialog = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: 'User ID' })).toBeVisible();
-    await expect(dialog.locator('input[type=password]')).toHaveCount(0);
+    await expect(dialog.getByLabel('Password', { exact: true })).toHaveAttribute('type','password');
     await dialog.getByRole('textbox', { name: 'User ID' }).fill('user1');
-    await dialog.getByRole('button', { name: 'Login' }).click();
+    await dialog.getByLabel('Password', { exact: true }).fill('user1');
+    await dialog.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
     await expect(page).not.toHaveURL(/demoUser=/);
