@@ -35,7 +35,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await chooser.getByRole('button', { name: /Continue to Review & Pay/ }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment summary', { exact: true })).toBeVisible();
-  await expect(chooser.getByText('12,450')).toBeVisible();
+  await expect(chooser.getByText('BDT 12,450', { exact: true })).toBeVisible();
   await chooser.getByRole('button', { name: /Run payment simulation/ }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment preview ready.')).toBeVisible();

@@ -31,7 +31,7 @@ test('Source tax and travel tax stay inside the same modal with their category-s
   await chooser.getByRole('button', { name: /Continue/ }).click();
   await expect(chooser).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
-  await expect(chooser.getByText('Source Tax Deposit', { exact: true }).last()).toBeVisible();
+  await expect(chooser.locator('#guest-category')).toHaveValue('SOURCE_TAX_DEPOSIT');
   expect(page.url()).toBe(originalUrl);
 
   await page.goto('/');
