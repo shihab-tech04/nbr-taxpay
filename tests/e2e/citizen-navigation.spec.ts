@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('public hero leads to the guest payment flow while the receipt action stays available',async({page})=>{
+test('public hero opens service choice before the guest payment form while the receipt action stays available',async({page})=>{
  await page.goto('/?action=landing');
  await expect(page.getByRole('button',{name:'Check payment & receipt'})).toBeVisible();
  await expect(page.locator('.public-information-hero__image')).toBeVisible();
@@ -10,6 +10,10 @@ test('public hero leads to the guest payment flow while the receipt action stays
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
  await page.getByRole('button',{name:'Pay Tax'}).click();
+ const services=page.getByRole('dialog',{name:'Pay Tax'});
+ await expect(services.locator('.tax-service-choice__card')).toHaveCount(8);
+ await services.getByRole('button',{name:/Tax with Return/}).click();
+ await services.getByRole('button',{name:'Continue'}).click();
  await expect(page).toHaveURL(/action=guest/);
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });

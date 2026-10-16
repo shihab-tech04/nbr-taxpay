@@ -48,6 +48,9 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
   await page.getByRole('button',{name:'Pay Tax'}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
   await expect(page).toHaveURL(/action=guest/);
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
   await page.goto('/?action=landing');
@@ -78,7 +81,9 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page).toHaveURL(/action=account_notifications/);
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await page.getByRole('dialog',{name:'Select payment type'}).getByRole('button',{name:'Advance Tax',exact:true}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Advance Tax/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
   await expect(page).toHaveURL(/action=guest&initialCategory=ADVANCE_TAX/);
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
   await page.reload();
@@ -122,13 +127,16 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
 });
 
-test('desktop sidebar Pay Tax action opens the existing payment wizard',async({page},info)=>{
+test('desktop sidebar Pay Tax action opens service choice then the payment wizard',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Wide desktop payment-entry check');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await rail.getByRole('button',{name:'Pay — select payment type'}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
   await expect(page).toHaveURL(/action=wizard/);
   await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
   await expect(rail).toBeVisible();
@@ -144,7 +152,7 @@ test('desktop guest account access keeps the existing payment type chooser',asyn
   await expect(rail).toBeVisible();
   await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await expect(page.getByRole('dialog',{name:'Select payment type'})).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
   await expect(page).toHaveURL(/action=secure_workspace/);
 });
 
@@ -160,6 +168,9 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Journey'}).click();
   await expect(page).toHaveURL(/action=journey/);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
   await expect(page).toHaveURL(/action=wizard/);
   await expect(page.locator('.taxpay-payment-wizard')).toBeVisible();
   await page.goto('/?action=taxpayer_home');

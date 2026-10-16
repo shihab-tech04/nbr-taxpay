@@ -109,6 +109,9 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
     await page.getByRole('button',{name:'Pay — select payment type'}).click();
+    const services=page.getByRole('dialog',{name:'Pay Tax'});
+    await services.getByRole('button',{name:/Tax with Return/}).click();
+    await services.getByRole('button',{name:'Continue'}).click();
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=page.locator('.taxpay-payment-wizard');
     await expect(payment).toBeVisible();
@@ -171,6 +174,9 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  const services=page.getByRole('dialog',{name:'Pay Tax'});
+  await services.getByRole('button',{name:/Tax with Return/}).click();
+  await services.getByRole('button',{name:'Continue'}).click();
   const field=page.locator('.taxpay-payment-wizard input:visible').first();
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });

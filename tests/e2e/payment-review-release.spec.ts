@@ -190,6 +190,9 @@ test('authenticated taxpayer wizard preserves amounts while localizing the full 
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
+  const services = page.getByRole('dialog', { name: 'Pay Tax' });
+  await services.getByRole('button', { name: /Tax with Return/ }).click();
+  await services.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'Income tax payment' })).toBeVisible();
   await expect(page.getByLabel('Assessment year')).toBeVisible();
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
