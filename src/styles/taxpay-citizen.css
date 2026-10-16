@@ -914,8 +914,8 @@
 .public-guide-topics button{width:100%;min-height:48px;border-radius:.6rem;padding:.7rem .85rem;text-align:left;font-size:1rem;font-weight:500;line-height:1.5;color:var(--citizen-text);transition:background-color 150ms ease;}
 .public-guide-topics button:hover,.public-guide-topics button[aria-current="true"]{color:var(--citizen-primary-dark);background:var(--citizen-primary-light);}
 .public-guide-topics button[aria-current="true"]{box-shadow:inset 3px 0 0 var(--citizen-primary);font-weight:600;}
-.public-guide-page .citizen-hub-eyebrow{font-weight:600;letter-spacing:.035em;}
 .public-guide-content{min-width:0;background:var(--citizen-surface);border:1px solid var(--citizen-border);border-radius:1.1rem;padding:clamp(1.35rem,3vw,2rem);box-shadow:0 1px rgba(0,0,0,.05);}
+.public-guide-page .citizen-hub-eyebrow{font-weight:600;letter-spacing:.035em;}
 .public-guide-content-head{display:flex;justify-content:space-between;align-items:start;gap:1rem;}
 .public-guide-content-head>svg{flex:none;color:var(--citizen-primary);background:var(--citizen-primary-light);box-sizing:content-box;padding:.7rem;border-radius:.8rem;}
 .public-guide-content-head h2{font-size:clamp(1.4rem,2vw,1.5rem);font-weight:700;line-height:1.35;letter-spacing:-.015em;margin:.3rem 0 .4rem;}
