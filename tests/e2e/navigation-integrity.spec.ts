@@ -178,6 +178,8 @@ test('Officer receipt inspection stays in Officer layout and returns to its exac
 test('Taxpayer receipt inspection retains its private navigation and returns to activity',async({page})=>{
   await page.goto('/?action=history');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await page.getByRole('button',{name:'Activity',exact:true}).first().click();
+  await expect(page).toHaveURL(/action=history/);
   if(page.viewportSize()!.width >= 901){
     await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
     await page.getByRole('button',{name:'View',exact:true}).first().click();
