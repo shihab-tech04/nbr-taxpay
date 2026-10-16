@@ -44,14 +44,16 @@ test('see-more links open topic guide with responsive search, FAQs and languages
  await page.getByRole('button',{name:'See more'}).first().click();
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
+ await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
  await page.getByRole('button',{name:'Mobile'}).click();
  await expect(page.getByRole('button',{name:'Mobile'})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('searchbox',{name:'Search questions'}).fill('rates');
+ await page.getByRole('searchbox',{name:'Search the guide'}).fill('rates');
  await expect(page.getByText('Are the rates final?')).toBeVisible();
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(page.getByRole('heading',{name:'আমার কর ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await page.getByRole('button',{name:'মুছুন'}).click();
  await expect(page.getByRole('button',{name:'মোবাইল'})).toHaveAttribute('aria-pressed','true');
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
@@ -79,7 +81,7 @@ test('Help Center typography and interactions remain usable at each viewport', a
 
   await guide.getByRole('button', { name: 'Travel tax' }).click();
   await expect(guide.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await guide.getByRole('searchbox', { name: 'Search questions' }).fill('rates');
+  await guide.getByRole('searchbox', { name: 'Search the guide' }).fill('rates');
   await expect(guide.getByText('Are the rates final?')).toBeVisible();
   await guide.getByText('Are the rates final?').click();
   await expect(guide.getByText('Rates and exemptions must be checked', { exact: false })).toBeVisible();
@@ -97,7 +99,7 @@ test('User guide search and text weights follow the citizen typography contract'
       fontFamily: style('.public-guide-content').fontFamily,
       title: style('.public-guide-intro h1').fontWeight,
       topic: style('.public-guide-topics button:not([aria-current="true"])').fontWeight,
-      stepTitle: style('.public-guide-steps h3').fontWeight,
+      stepTitle: style('.public-guide-steps h4').fontWeight,
       stepBody: style('.public-guide-steps p').fontWeight,
       faq: style('.public-guide-questions summary').fontWeight,
       search: style('.public-guide-search input').fontWeight,
@@ -108,21 +110,27 @@ test('User guide search and text weights follow the citizen typography contract'
 
   const field = guide.locator('.public-guide-search');
   const fieldBox = await field.boundingBox();
-  const contentBox = await guide.locator('.public-guide-content').boundingBox();
+  const findBox = await guide.locator('.public-guide-find-controls').boundingBox();
   expect(fieldBox).not.toBeNull();
-  expect(contentBox).not.toBeNull();
-  expect(fieldBox!.width).toBeLessThanOrEqual(640);
-  expect(fieldBox!.width).toBeLessThan(contentBox!.width);
+  expect(findBox).not.toBeNull();
+  expect(fieldBox!.width).toBeGreaterThanOrEqual(findBox!.width - 2);
   if (info.project.name === 'desktop-1280') {
     expect(fieldBox!.width).toBeGreaterThan(500);
   }
+  const introBox = await guide.locator('.public-guide-intro').boundingBox();
+  const searchSectionBox = await guide.locator('.public-guide-find').boundingBox();
+  const layoutBox = await guide.locator('.public-guide-layout').boundingBox();
+  expect(introBox && searchSectionBox && layoutBox).toBeTruthy();
+  expect(searchSectionBox!.y).toBeGreaterThan(introBox!.y + introBox!.height);
+  expect(layoutBox!.y).toBeGreaterThan(searchSectionBox!.y + searchSectionBox!.height);
 
-  const input = guide.getByRole('searchbox', { name: 'Search questions' });
+  const input = guide.getByRole('searchbox', { name: 'Search the guide' });
   await input.focus();
   await expect(field).toHaveCSS('border-color', 'rgb(44, 94, 173)');
   await expect(input).toHaveCSS('outline-style', 'none');
   await input.fill('receipt');
   await expect(guide.getByText('Does a receipt confirm tax credit?')).toBeVisible();
+  await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
 });
 
 
@@ -134,20 +142,41 @@ test('User guide has real platform-specific steps and searches across all topics
   await expect(guide.getByText('On Home, tap Pay Tax', { exact: false })).toBeVisible();
   await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toHaveCount(0);
 
-  const search = guide.getByRole('searchbox', { name: 'Search questions' });
+  const search = guide.getByRole('searchbox', { name: 'Search the guide' });
   await search.fill('rates');
-  const travelQuestion = guide.locator('.public-guide-questions details').filter({ hasText: 'Are the rates final?' });
+  const travelQuestion = guide.locator('.public-guide-result-faq').filter({ hasText: 'Are the rates final?' });
   await expect(travelQuestion).toBeVisible();
-  await expect(travelQuestion.getByText('Travel tax')).toBeVisible();
+  await expect(guide.locator('.public-guide-result-group').getByRole('heading',{name:'Travel tax'})).toBeVisible();
   await search.fill('this-question-does-not-exist');
-  await expect(guide.getByText('No matching questions.')).toBeVisible();
+  await expect(guide.getByText('No results found')).toBeVisible();
   await search.fill('');
   await expect(guide.getByText('What should I check before payment?')).toBeVisible();
   await expect(travelQuestion).toHaveCount(0);
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(guide.getByText('মোবাইলের জন্য ধাপগুলো দেখানো হচ্ছে।')).toBeVisible();
+  await expect(guide.getByText('আপনার ডিভাইস অনুযায়ী নির্দেশনা দেখুন।')).toBeVisible();
   await expect(guide.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
+});
+
+test('Guide search covers steps and answers, while topic FAQs stay contextual', async ({ page }) => {
+  await page.goto('/?action=user_guide');
+  const guide=page.locator('.public-guide-page');
+  await expect(guide.locator('.public-guide-questions details')).toHaveCount(2);
+  await expect(guide.getByText('Are the rates final?')).toHaveCount(0);
+  const field=guide.getByRole('searchbox',{name:'Search the guide'});
+  await field.fill('passport');
+  await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
+  await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Enter passenger details');
+  await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
+  await field.fill('tap Pay Tax');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('On Home, tap Pay Tax');
+  await guide.getByRole('button',{name:'Clear'}).click();
+  await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
+  await guide.getByRole('button',{name:'Travel tax'}).click();
+  await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
+  await expect(guide.getByRole('button',{name:'Travel tax'})).toHaveAttribute('aria-current','true');
 });
 
 test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
