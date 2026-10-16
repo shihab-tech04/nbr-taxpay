@@ -30,7 +30,8 @@
 | account_profile | src/components/screens/AccountCenter.tsx |
 | account_settings | src/components/screens/AccountCenter.tsx |
 | services | src/components/screens/ConnectedServices.tsx |
-| office_login | src/components/screens/OfficeLoginPage.tsx |
+| office_login | src/components/screens/TaxpayerLoginDialog.tsx |
+| taxpayer_login | src/components/screens/TaxpayerLoginDialog.tsx |
 | ontology | src/components/screens/OntologyView.tsx |
 | glossary | src/components/screens/GlossaryView.tsx |
 | guidance | src/components/screens/GuidanceAssistant.tsx |

@@ -91,7 +91,7 @@ export const DemoPaymentActivity:React.FC=()=>{
   if(!authenticatedUser)return <main className="mx-auto max-w-5xl space-y-4 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
     <h1 className="text-2xl font-bold text-taxpay-text">{txt('Sign in to simulate a payment','পেমেন্ট সিমুলেশনের জন্য সাইন ইন করুন')}</h1>
     <p className="text-sm text-taxpay-muted">{txt('Payment records are stored in a shared database. A verified account and an authorized fictional profile assignment are required before creating or viewing them. No real money, government receipt, or tax credit is involved.','পেমেন্টের তথ্য যৌথ ডাটাবেসে সংরক্ষিত হয়। পেমেন্ট তৈরি বা দেখার আগে যাচাইকৃত অ্যাকাউন্ট এবং অনুমোদিত কাল্পনিক প্রোফাইলের সংযোগ প্রয়োজন। কোনো বাস্তব অর্থ বা কর ক্রেডিট জড়িত নয়।')}</p>
-    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('office_login')}>{txt('Open secure sign-in','নিরাপদ সাইন ইন খুলুন')}</button>
+    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{txt('Open sign-in','সাইন ইন খুলুন')}</button>
   </main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-5xl space-y-3 p-6">
     <h1 className="text-xl font-semibold text-taxpay-text">Protected simulation payment account</h1>

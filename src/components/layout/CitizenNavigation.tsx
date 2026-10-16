@@ -32,11 +32,16 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
   const logOut = async () => {
+    if (previewAccount && !applicationUser) {
+      setMenuOpen(false); setPayOpen(false);
+      logoutPreviewAccount();
+      return;
+    }
     setSignOutError('');
     setSigningOut(true);
     try {
@@ -264,10 +269,10 @@ export function CitizenNavigation() {
                       <Globe2 size={18} aria-hidden="true"/>{bn ? 'English' : 'বাংলা'}
                     </button>
                   </div>
-                  {applicationUser ? (
+                  {applicationUser || previewAccount ? (
                     <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>
                   ) : (
-                    <button type="button" className="citizen-dialog-signout" onClick={() => go('office_login')}>{bn ? 'সাইন ইন' : 'Sign in'}</button>
+                    <button type="button" className="citizen-dialog-signout" onClick={() => go('taxpayer_login')}>{bn ? 'সাইন ইন' : 'Sign in'}</button>
                   )}
                   {signOutError && <p role="alert" className="citizen-dialog__notice">{signOutError}</p>}
                 </section>
