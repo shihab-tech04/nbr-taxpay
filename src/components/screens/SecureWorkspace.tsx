@@ -355,7 +355,7 @@ export const SecureWorkspace: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4">
             <UiButton type="submit" disabled={busy}>{copy.sendSignInLink}</UiButton>
             <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
-              href={bn ? '?action=office_login&lang=bn' : '?action=office_login'}>
+              href={bn ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
               {bn ? 'ইউজার আইডি ও পাসওয়ার্ড' : 'Sign in with User ID or password'}
             </a>
             {sampleJourneysEnabled && <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"

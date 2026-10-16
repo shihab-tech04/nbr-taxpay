@@ -17,6 +17,7 @@ const statusText: Record<string, {en:string; bn:string}> = {
   FAILED:{en:'Failed',bn:'ব্যর্থ'},
   EXPIRED:{en:'Expired',bn:'মেয়াদ শেষ'},
   REVERSED:{en:'Reversed',bn:'প্রত্যাবর্তিত'},
+  NOT_ISSUED:{en:'NOT ISSUED',bn:'ইস্যু হয়নি'},
   NOT_APPLICABLE:{en:'Not applicable',bn:'প্রযোজ্য নয়'},
   PENDING_RECONCILIATION:{en:'Reconciliation pending',bn:'সমন্বয় অপেক্ষমাণ'},
   CREDITED_TO_LEDGER:{en:'Credit not verified',bn:'ক্রেডিট যাচাই হয়নি'},
@@ -47,10 +48,11 @@ export const PaymentHistory: React.FC = () => {
   const categoryText = (value: PaymentCategory) =>
     bn ? (CATEGORY_LABELS[value]?.bn || value) : (CATEGORY_LABELS[value]?.en || value);
   const statusLabel = (value:string) => statusText[value] ? (bn ? statusText[value].bn : statusText[value].en) : value;
+  const paymentStatus = (receipt:ChallanReceipt) => receipt.isSimulatedDemo ? statusLabel('NOT_ISSUED') : statusLabel(receipt.treasuryStatus);
   const exportDemo = () => {
     const headings=['DEMONSTRATION ONLY','Reference','Token','Payment category','Assessment year','Payer TIN (not credit owner)','Amount BDT','Treasury sample status','Credit sample status'];
     const lines = filtered.map((r:ChallanReceipt)=>[
-      'Not government payment evidence',r.challanNo,r.tokenNumber,r.paymentCategory,r.assessmentYear,r.payerTin,r.totalAmount,r.treasuryStatus,r.taxCreditStatus
+      'Not government payment evidence',r.challanNo,r.tokenNumber,r.paymentCategory,r.assessmentYear,r.payerTin,r.totalAmount,paymentStatus(r),r.taxCreditStatus
     ].map(escapeCsv).join(','));
     const csv=[headings.map(escapeCsv).join(','),...lines].join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}));
@@ -117,7 +119,7 @@ export const PaymentHistory: React.FC = () => {
                   <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
                 </div>
                 <p className="mt-1 text-xs text-taxpay-muted">{categoryText(r.paymentCategory)} · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
-                <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {statusLabel(r.treasuryStatus)}</p>
+                <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {paymentStatus(r)}</p>
                 <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
                 <button type="button" onClick={()=>selectReceipt(r.id)}
                   className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
@@ -144,7 +146,7 @@ export const PaymentHistory: React.FC = () => {
                   <td className="px-3 py-3">{categoryText(r.paymentCategory)}</td>
                   <td className="whitespace-nowrap px-3 py-3">{r.assessmentYear}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">{formatCurrency(r.totalAmount,language)}</td>
-                  <td className="px-3 py-3">{statusLabel(r.treasuryStatus)}</td>
+                  <td className="px-3 py-3">{paymentStatus(r)}</td>
                   <td className="px-3 py-3"><button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button></td>
                 </tr>)}
               </tbody>

@@ -14,7 +14,7 @@ import {
   Search,
   X
 } from 'lucide-react';
-import { useTaxState } from '../../services/taxState';
+import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import { formatCurrency } from '../../services/numberFormat';
 import { ChallanReceipt } from '../../types/tax';
@@ -100,8 +100,8 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-trv-${Date.now()}`,
-        challanNo: `AC-${year}-TRV-${randChallan}`,
-        tokenNumber: `TRV-${randToken}`,
+        challanNo: `PREVIEW-${year}-TRV-${randChallan}`,
+        tokenNumber: `PREVIEW-${randToken}`,
         paymentCategory: 'OTHER_TAX_PAYMENT',
         assessmentYear: '2025-2026',
         payerName: `${passengerName} (Passport: ${passportNumber})`,
@@ -125,10 +125,10 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         ],
         totalAmount,
         paymentMethod: 'BKASH',
-        gatewayTransactionId: `BKSH-TRV-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: embedded ? undefined : `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
-        treasuryDate: embedded ? undefined : now,
-        treasuryStatus: embedded ? 'INITIATED' : 'TREASURY_SCROLLED',
+        gatewayTransactionId: 'SIMULATION-NOT-SENT',
+        treasuryScrollNo: undefined,
+        treasuryDate: undefined,
+        treasuryStatus: 'INITIATED',
         taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
         completedAt: now,
@@ -194,6 +194,22 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
     setPassengerCount(1); setSelectedRouteIdx(0); setError('');
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
+
+  if (!sampleJourneysEnabled) {
+    return (
+      <section className={`travel-flow${bn ? ' font-bengali' : ''}`} lang={language}>
+        {!embedded && <h1 className="travel-flow__standalone-title">{t.title}</h1>}
+        <div className="travel-flow__main">
+          <p>{bn
+            ? 'এনবিআরের ভ্রমণ কর লিংক আপনাকে সোনালী ব্যাংকের সংগ্রহ পৃষ্ঠায় নিয়ে যাবে।'
+            : "NBR's Travel Tax link opens Sonali Bank's collection page."}</p>
+          <a className="travel-flow__primary" href="https://billpay.sonalibank.com.bd/nbrTravelTax/Collection/Create" target="_blank" rel="noopener noreferrer">
+            {bn ? 'সোনালী ব্যাংকের ভ্রমণ কর পৃষ্ঠা খুলুন' : 'Open Sonali Bank Travel Tax'}
+          </a>
+        </div>
+      </section>
+    );
+  }
   // One state-controlled action, rendered in the modal footer (or alongside
   // the summary only on the standalone Travel Tax route).
   const primaryAction = createdReceipt ? (

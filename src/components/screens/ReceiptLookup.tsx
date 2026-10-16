@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
-import { useTaxState } from '../../services/taxState';
+import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
 
@@ -13,6 +13,20 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
   const [query, setQuery] = useState('');
   const [searchedReference, setSearchedReference] = useState('');
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
+
+  if (!sampleJourneysEnabled) {
+    return (
+      <section className={embedded ? 'receipt-lookup receipt-lookup--embedded' : 'receipt-lookup receipt-lookup--page'}>
+        {!embedded && <header className="receipt-lookup__page-header"><h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1></header>}
+        <div className="receipt-lookup__content">
+          <p>{t('Use iBAS++ e-Services to verify a deposited government challan.', 'জমাকৃত সরকারি চালান যাচাই করতে iBAS++ ই-সেবা ব্যবহার করুন।')}</p>
+          <a className="receipt-lookup__submit" href="https://ibas.finance.gov.bd/portal/eservices" target="_blank" rel="noopener noreferrer">
+            {t('Open iBAS++ challan services', 'iBAS++ চালান সেবা খুলুন')}
+          </a>
+        </div>
+      </section>
+    );
+  }
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,7 +79,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
               </button>
             </div>
           </div>
-          {receipts.length > 0 && (
+          {sampleJourneysEnabled && receipts.length > 0 && (
             <div className="receipt-lookup__examples">
               <p className="receipt-lookup__examples-label">{t('Try a reference', 'রেফারেন্স ব্যবহার করুন')}</p>
               <div className="receipt-lookup__example-list">

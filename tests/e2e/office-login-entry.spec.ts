@@ -1,9 +1,9 @@
 import {expect, test} from '@playwright/test';
 
-test('Office-style login lets user1 open the correct dashboard without a password or hosted requests', async ({page}, info) => {
+test('local synthetic account access opens its dashboard without hosted requests', async ({page}, info) => {
   const hostedAuthRequests: string[]=[];
   page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co')) hostedAuthRequests.push(request.url())});
-  await page.goto('/?action=office_login');
+  await page.goto('/?action=taxpayer_login');
   await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TaxPay',exact:true})).toBeVisible();
   await expect(page.getByRole('textbox',{name:'User ID or email'})).toBeEnabled();
@@ -32,8 +32,8 @@ test('Office-style login lets user1 open the correct dashboard without a passwor
   expect(hostedAuthRequests).toEqual([]);
 });
 
-test('explicit Office login keeps source carousel controls and EN/BN navigation', async ({page}, info) => {
-  await page.goto('/?action=office_login');
+test('TaxPay account sign-in keeps carousel controls and EN/BN navigation', async ({page}, info) => {
+  await page.goto('/?action=taxpayer_login');
   await page.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('heading',{name:'স্বাগতম'})).toBeVisible();
   await expect(page.getByRole('button',{name:'ট্যাক্সপেতে ফিরুন'})).toBeVisible();
@@ -57,7 +57,7 @@ test('root shows information hub with navigational Login and no forced Office se
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
- await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=office_login');
+ await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=taxpayer_login');
  await expect(page.locator('.office-auth')).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  if(page.viewportSize()!.width<=900){
@@ -66,7 +66,7 @@ test('root shows information hub with navigational Login and no forced Office se
  }else{
    await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
  }
- await expect(page).toHaveURL(/action=office_login/);
+ await expect(page).toHaveURL(/action=taxpayer_login/);
  await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
  await expect(page.locator('.office-auth')).toBeVisible();
 });

@@ -15,8 +15,8 @@ const developmentGuestAccountRoutes = new Set([
   'notifications', 'account_notifications', 'account_profile', 'account_settings'
 ]);
 
-export function isPrivateTaxpayerRoute(route: string, officerRoute: boolean): boolean {
-  return (!officerRoute && route === 'payment_details') || accountRoutes.has(route);
+export function isPrivateTaxpayerRoute(route: string): boolean {
+  return route === 'payment_details' || accountRoutes.has(route);
 }
 
 /** An application account must exist before a published site shows account pages.
@@ -25,12 +25,11 @@ export function isPrivateTaxpayerRoute(route: string, officerRoute: boolean): bo
  */
 export function requiresTaxpayerSignIn(
   route: string,
-  officerRoute: boolean,
   verifiedApplicationUser: boolean,
   localReviewMode: boolean,
   selectedRole: UserRole
 ): boolean {
   if (localReviewMode && developmentGuestAccountRoutes.has(route)) return false;
-  return !officerRoute && isPrivateTaxpayerRoute(route, false) &&
+  return isPrivateTaxpayerRoute(route) &&
     !verifiedApplicationUser && !(localReviewMode && reviewOnlySampleRoles.has(selectedRole));
 }

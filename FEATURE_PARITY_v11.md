@@ -1,8 +1,6 @@
-# TaxPay active route-to-source map
+# Prototype route-to-source map
 
 > This is a source-file index only. It does not certify that a screen is complete, equivalent to the v11 prototype, legally correct, integrated, or safe for production. Feature parity and statutory acceptance remain unverified.
-
-> Office Management screens are not mounted in TaxPay. Legacy Officer route URLs resolve to the public TaxPay entry; Officer workflows belong to the separate Office Management product.
 
 | Action key | Source component |
 |---|---|
@@ -30,7 +28,7 @@
 | account_profile | src/components/screens/AccountCenter.tsx |
 | account_settings | src/components/screens/AccountCenter.tsx |
 | services | src/components/screens/ConnectedServices.tsx |
-| office_login | src/components/screens/OfficeLoginPage.tsx |
+| taxpayer_login | src/components/screens/TaxpayerLoginPage.tsx |
 | ontology | src/components/screens/OntologyView.tsx |
 | glossary | src/components/screens/GlossaryView.tsx |
 | guidance | src/components/screens/GuidanceAssistant.tsx |

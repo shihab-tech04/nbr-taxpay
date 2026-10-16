@@ -5,7 +5,7 @@ test('all ten permitted User IDs open their own account views from Login without
  const backendCalls:string[]=[];
  page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co'))backendCalls.push(request.url());});
  for(let n=1;n<=10;n++){
-   await page.goto('/?action=office_login');
+   await page.goto('/?action=taxpayer_login');
    await page.getByRole('textbox',{name:'User ID or email'}).fill('user'+n);
    await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeEnabled();
    await page.getByRole('button',{name:'Sign in',exact:true}).click();
@@ -41,5 +41,5 @@ test('legacy URL offers account access without fabricated sign-out',async({page}
  await expect(page).not.toHaveURL(/demoUser=/);
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop'))
-   .toHaveAttribute('href','?action=office_login');
+   .toHaveAttribute('href','?action=taxpayer_login');
 });

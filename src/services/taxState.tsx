@@ -70,7 +70,7 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
-    // Public payment discovery is the primary citizen entry. TaxPay account access remains available by explicit deep link.
+    // Public payment discovery is the primary citizen entry.
     const action = new URLSearchParams(window.location.search).get('action');
     return validRoute(action);
   });
@@ -93,7 +93,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setUserRoleState(role);
   };
   
-  const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
+  // Published builds never expose synthetic receipt fixtures through public lookup.
+  const [receipts, setReceipts] = useState<ChallanReceipt[]>(sampleJourneysEnabled ? INITIAL_RECEIPTS : []);
   // A public fictional journal is not a taxpayer's account-bound ledger.
   // Keep the typed state empty until an authorized verified source exists.
   const [ledgerEntries] = useState<TaxLedgerEntry[]>([]);
@@ -134,7 +135,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     next.searchParams.set('action', route);
     writeRouteContext(route, params, next.searchParams);
     // Legacy sample deep-link state must not survive entry to real account access.
-    if (route === 'secure_workspace' || route === 'office_login' || route === 'landing') {
+    if (route === 'secure_workspace' || route === 'taxpayer_login' || route === 'landing') {
       next.searchParams.delete('demoUser');
       if (demoUser) {
         setDemoUser(null);
@@ -142,7 +143,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUserRole('GUEST');
       }
     }
-    const sampleRole = sampleJourneysEnabled && sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'office_login' && route !== 'secure_workspace'
+    const sampleRole = sampleJourneysEnabled && sampleTaxpayerRoles.includes(userRoleRef.current) && route !== 'landing' && route !== 'taxpayer_login' && route !== 'secure_workspace'
       ? {taxpaySampleRole: userRoleRef.current} : {};
     const historyEntry = {taxpayRoute: route, taxpayParams: params, ...sampleRole};
     if (next.href !== window.location.href) window.history.pushState(historyEntry, '', next);

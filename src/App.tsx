@@ -6,8 +6,7 @@ import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
-import { OfficeLoginPage } from './components/screens/OfficeLoginPage';
-import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
+import { TaxpayerLoginPage } from './components/screens/TaxpayerLoginPage';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
@@ -42,12 +41,12 @@ const MainRouter: React.FC = () => {
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
-  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
-  const privateSampleGate = requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
+  const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute);
+  const privateSampleGate = requiresTaxpayerSignIn(currentRoute, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const publicInformationRoute = ['landing','user_guide','incident'].includes(currentRoute);
   // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
-  // Guest payment routes never inherit this reference palette.
+  // Guest payment and Officer routes never inherit this reference palette.
   const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || currentRoute === 'secure_workspace';
 
   // Listen to browser URL search params for direct action links (?action=...)
@@ -60,6 +59,7 @@ const MainRouter: React.FC = () => {
   }, []);
 
   // SPA navigation should announce the new main region to keyboard users.
+  // Never intercept focus on initial load.
   useEffect(() => {
     if (priorCitizenRouteRef.current !== null && priorCitizenRouteRef.current !== currentRoute) {
       mainContentRef.current?.focus({ preventScroll: true });
@@ -139,7 +139,7 @@ const MainRouter: React.FC = () => {
     }
   };
 
-  if (currentRoute === 'office_login') return <OfficeLoginPage />;
+  if (currentRoute === 'taxpayer_login') return <TaxpayerLoginPage />;
 
   return (
     <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
@@ -156,13 +156,12 @@ const MainRouter: React.FC = () => {
               {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
             </a>}
             {sampleJourneysEnabled ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
-              <button type="button" onClick={() => navigate('office_login')}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</button>}
+              <button type="button" onClick={() => navigate('taxpayer_login')}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</button>}
           </section>
         ) : renderActiveScreen()}
       </main>
       <CitizenFooter />
       {publicInformationRoute && <PublicHelpChat />}
-      <ParityRegisterModal />
     </div>
   );
 };

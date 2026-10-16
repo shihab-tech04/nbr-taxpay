@@ -129,6 +129,20 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/secure-workspace-real-local.spec.ts --project=mobile-375
 
+      - name: Test taxpayer password login against disposable real Auth
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/taxpay-password-local-auth.spec.ts --project=desktop-1280
+
+      - name: Verify catalogue and anonymous backend boundaries in Chromium
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/head-catalogue.spec.ts tests/e2e/backend-boundary.spec.ts --project=desktop-1280 --project=mobile-375
+
       - name: Verify live React synthetic multi-beneficiary payment, cross-account notices and officer read-back
         env:
           VITE_SUPABASE_DISABLED: 'false'

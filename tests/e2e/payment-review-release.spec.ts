@@ -163,6 +163,11 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'ট্যাক্সপে — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
+  await expect(page.getByText('প্রিভিউ রেফারেন্স:')).toBeVisible();
+  await expect(page.getByText('প্রিভিউ টোকেন:')).toBeVisible();
+  await expect(page.getByText('পাঠানো হয়নি')).toBeVisible();
+  await expect(page.getByText('স্ক্রল রেফারেন্স নেই')).toBeVisible();
+  await expect(page.getByText(/BB-SCRL-/)).toHaveCount(0);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
 
@@ -183,6 +188,12 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await page.getByRole('button', { name: 'EN' }).click();
   await expect(page.getByRole('heading', { name: 'TaxPay — Receipt details' })).toBeVisible();
+  await expect(page.getByText('Preview reference:')).toBeVisible();
+  await expect(page.getByText('Preview token:')).toBeVisible();
+  await expect(page.getByText('Not sent')).toBeVisible();
+  await expect(page.getByText('No scroll reference')).toBeVisible();
+  await expect(page.getByText(/PREVIEW-\d{4}-PAY-/)).toBeVisible();
+  await expect(page.getByText(/BB-SCRL-/)).toHaveCount(0);
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 

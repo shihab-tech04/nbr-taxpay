@@ -273,8 +273,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-${Date.now()}`,
-        challanNo: `AC-${year}-${randChallan}`,
-        tokenNumber: `TKN-${randToken}`,
+        challanNo: `PREVIEW-${year}-PAY-${randChallan}`,
+        tokenNumber: `PREVIEW-${randToken}`,
         paymentCategory: category,
         assessmentYear,
         payerName,
@@ -289,14 +289,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         items: [lineItem],
         totalAmount,
         paymentMethod,
-        gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
+        gatewayTransactionId: 'SIMULATION-NOT-SENT',
+        treasuryScrollNo: undefined,
         treasuryDate: now,
-        treasuryStatus: 'TREASURY_SCROLLED',
-        // CRITICAL DOMAIN SEPARATION:
-        taxCreditStatus: (isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT') 
-          ? 'NOT_APPLICABLE' 
-          : 'PENDING_RECONCILIATION',
+        treasuryStatus: 'INITIATED',
+        taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
         completedAt: now,
         isSimulatedDemo: true

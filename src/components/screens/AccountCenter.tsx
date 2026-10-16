@@ -216,7 +216,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             )}
             {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
             <div className="taxpayer-account-actions">
-              <button type="button" onClick={() => navigate('office_login')}>{t.accountAccess}</button>
+              <button type="button" onClick={() => navigate('taxpayer_login')}>{t.accountAccess}</button>
               {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
                 setUserRole('GUEST'); navigate('landing');
               }}>{t.exitDemo}</button>}

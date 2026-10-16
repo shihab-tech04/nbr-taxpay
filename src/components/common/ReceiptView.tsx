@@ -29,10 +29,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
     title: 'ট্যাক্সপে — রসিদের বিবরণ', subtitle: 'এনবিআর কর্তৃক ইস্যুকৃত নয়',
     fictional: 'যাচাইকৃত ট্রেজারি জমা বা সরকারি টিআর-৬ ইস্যু করা হয়নি।', demo: 'ইস্যু হয়নি',
-    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
+    challan: 'প্রিভিউ রেফারেন্স', token: 'প্রিভিউ টোকেন', timestamp: 'তারিখ ও সময়', copy: 'প্রিভিউ রেফারেন্স কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ',
     zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
-    paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স',
+    paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স', notSent: 'পাঠানো হয়নি',
     scroll: 'ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'স্ক্রল রেফারেন্স নেই',
     withholdingTitle: 'উৎসে কর জমার নোটিশ', deductedFor: 'কর কর্তনগ্রহীতার টিআইএন-এর পক্ষে জমা:',
     noAgentCredit: 'এই রেকর্ডে কর কর্তনকারীর ব্যক্তিগত কর ক্রেডিট প্রতিষ্ঠিত হয় না।',
@@ -49,10 +49,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     back: 'Back to records', print: 'Print receipt', export: 'Export JSON',
     title: 'TaxPay — Receipt details', subtitle: 'Not issued by NBR',
     fictional: 'No verified Treasury settlement or official Form TR-6 is issued.', demo: 'NOT ISSUED',
-    challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
+    challan: 'Preview reference', token: 'Preview token', timestamp: 'Date and time', copy: 'Copy preview reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year',
     zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',
-    paymentMethod: 'Payment method', transaction: 'Transaction reference',
+    paymentMethod: 'Payment method', transaction: 'Transaction reference', notSent: 'Not sent',
     scroll: 'Treasury scroll reference', pendingScroll: 'No scroll reference',
     withholdingTitle: 'Withholding deposit notice', deductedFor: 'Deposit for deductee TIN:',
     noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
@@ -73,7 +73,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     CLAIMED_IN_RETURN: labels.claimed,
     DISPUTED: labels.disputed
   }[receipt.taxCreditStatus];
-  const treasuryStatusLabels = {
+  const treasuryStatusLabels = receipt.isSimulatedDemo ? labels.demo : {
     INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
     GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
     GATEWAY_SUCCESS: bn ? 'গেটওয়েতে সফল' : 'GATEWAY_SUCCESS',
@@ -169,10 +169,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
         )}
 
-        {/* Challan Identifiers Ribbon */}
+        {/* Preview identifiers are labeled as such whenever this is synthetic data. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 my-5 text-xs">
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'প্রিভিউ রেফারেন্স' : 'Preview reference') : labels.challan}:</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono-plex font-bold text-sm text-emerald-950">
                 {receipt.challanNo}
@@ -190,9 +190,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
 
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
+            <span className="text-slate-500 block">{embedded ? (bn ? 'প্রিভিউ টোকেন' : 'Preview token') : labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
-              {receipt.tokenNumber}
+              {receipt.isSimulatedDemo ? labels.demo : receipt.tokenNumber}
             </span>
           </div>
 
@@ -242,12 +242,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </div>
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.transaction}:</span>
-              <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
+              <span className="col-span-2 font-mono-plex text-slate-700">{receipt.isSimulatedDemo ? labels.notSent : receipt.gatewayTransactionId}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
-                {receipt.treasuryScrollNo || labels.pendingScroll}
+                {receipt.isSimulatedDemo ? labels.pendingScroll : receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
             </div>
 
@@ -358,7 +358,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div>
               <span className="font-semibold text-slate-700 block">{labels.treasuryStatus}:</span>
               <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {labels.simulated}: {treasuryStatusLabels}
+                {receipt.isSimulatedDemo ? labels.demo : `${labels.simulated}: ${treasuryStatusLabels}`}
               </span>
               {!embedded && <p className="text-[11px] text-slate-500 mt-0.5">
                 {labels.noTransfer}
