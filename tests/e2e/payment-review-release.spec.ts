@@ -149,7 +149,8 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByLabel('Tax Amount (৳)').fill('15000');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
   await expect(page.getByText('Payment simulation only')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Run payment simulation/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pay online' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pay at a bank branch' })).toBeVisible();
 
   if (info.project.name === 'mobile-320') {
     const controls = await page.locator('main input:not([type="radio"]), main select, main button').evaluateAll(elements =>
@@ -161,10 +162,13 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByText(/পেমেন্ট সিমুলেশন চালান/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'অনলাইনে পরিশোধ' })).toBeVisible();
   await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
-  await page.getByRole('button', { name: /পেমেন্ট সিমুলেশন চালান/ }).click();
-  await expect(page.getByText('পেমেন্টের প্রিভিউ প্রস্তুত।')).toBeVisible();
+  await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
+  await page.getByRole('radio', { name: 'bKash' }).check();
+  await page.getByRole('checkbox', { name: /আমি টিআইএন, পরিশোধের উদ্দেশ্য/ }).check();
+  await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
+  await expect(page.getByRole('heading', { name: 'সিমুলেটেড পরিশোধ সম্পন্ন' })).toBeVisible({ timeout: 12000 });
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
@@ -211,8 +215,11 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
   await expect(services.getByText('Step 3 of 4')).toBeVisible();
   await expect(services.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
-  await services.getByRole('button', { name: /Run payment simulation/ }).click();
-  await expect(services.getByText('Payment preview ready.')).toBeVisible();
+  await services.getByRole('button', { name: 'Pay online' }).click();
+  await services.getByRole('radio', { name: 'Nagad' }).check();
+  await services.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
+  await expect(services.getByRole('heading', { name: 'Simulated payment complete' })).toBeVisible({ timeout: 12000 });
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);
 

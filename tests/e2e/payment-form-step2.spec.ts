@@ -36,9 +36,13 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment summary', { exact: true })).toBeVisible();
   await expect(chooser.getByText('BDT 12,450', { exact: true })).toBeVisible();
-  await chooser.getByRole('button', { name: /Run payment simulation/ }).click();
+  await chooser.getByRole('button', { name: 'Pay online' }).click();
+  await chooser.getByRole('radio', { name: 'bKash' }).check();
+  await chooser.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await chooser.getByRole('button', { name: /Pay BDT 12,450/ }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
-  await expect(chooser.getByText('Payment preview ready.')).toBeVisible();
+  await expect(chooser.getByTestId('payment-lifecycle').getByText('CREDITED')).toBeVisible({ timeout: 12000 });
+  await expect(chooser.getByRole('heading', { name: 'Simulated payment complete' })).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });

@@ -215,6 +215,7 @@
 .payment-flow-embedded__payment > .payment-form-summary { grid-column:2;grid-row:1 / span 2;top:0; }
 .payment-flow-embedded__content > #guest-payment-error,
 .payment-flow-embedded__content > .space-y-6 { grid-column:1/-1; }
+.payment-flow-embedded__content > .payment-review { grid-column:1/-1; }
 .payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__identity > .payment-form-layout__sections { grid-row:2; }
 .payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__payment > .payment-form-layout__sections { grid-row:3; }
 .payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__payment > .payment-form-summary { grid-row:2 / span 2; }

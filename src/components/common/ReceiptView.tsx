@@ -84,7 +84,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   }[receipt.treasuryStatus];
   const paymentMethodLabels = {
     BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', SONALI_E_SHEBA: 'Sonali e-Sheba',
-    A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS'
+    A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS',
+    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch'
   }[receipt.paymentMethod];
 
   const handleCopy = (text: string) => {
@@ -244,6 +245,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <span className="text-slate-500">{labels.transaction}:</span>
               <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
             </div>
+            {receipt.taxEventId && <div className="grid grid-cols-3 gap-1">
+              <span className="text-slate-500">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
+              <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</span>
+            </div>}
+            {receipt.paymentTransactionId && <div className="grid grid-cols-3 gap-1">
+              <span className="text-slate-500">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
+              <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</span>
+            </div>}
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
