@@ -1,6 +1,6 @@
 import React from 'react';
 import {ArrowUpRight} from 'lucide-react';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-taka-20261017.png';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
