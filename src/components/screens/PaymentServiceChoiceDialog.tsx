@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2,
-  Plane, ReceiptText, Scale, WalletCards
+  ArrowLeft, ArrowRight, CalendarClock, Check, CheckCircle2, CircleAlert, ClipboardCheck, FileCheck2,
+  LockKeyhole, Plane, ReceiptText, Scale, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
@@ -29,6 +29,7 @@ export function PaymentServiceChoiceDialog() {
   const { language, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
   const { user: verifiedUser } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(null);
+  const [accessMode, setAccessMode] = useState<'guest' | 'account'>('guest');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [accountGate, setAccountGate] = useState<'message' | 'login' | null>(null);
   const [resumedAfterLogin, setResumedAfterLogin] = useState(false);
@@ -40,12 +41,17 @@ export function PaymentServiceChoiceDialog() {
   const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const shortStages = [tr('Service', 'সেবা'), tr('Details', 'তথ্য'), tr('Review', 'যাচাই'), tr('Done', 'শেষ')];
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
-  const advanceToDetails = () => { if (selected) setStage(2); };
+  const advanceToDetails = () => {
+    if (!selected) return;
+    if (accessMode === 'account') { requestAccountAccess(); return; }
+    setStage(2);
+  };
   const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
   const requestAccountAccess = () => {
     if (!selected || resolvePaymentServiceAccess(selected, 'VIEW_ACCOUNT_RECORDS').kind !== 'SIGN_IN_REQUIRED') return;
     if (verifiedUser || previewAccount) {
       setResumedAfterLogin(true);
+      if (stage === 1) setStage(2);
       return;
     }
     setAccountGate('message');
@@ -85,7 +91,7 @@ export function PaymentServiceChoiceDialog() {
       footer={(
         <div className="tax-service-choice__actions">
           {stage === 1 && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToDetails}>
-            {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
+            {accessMode === 'guest' ? tr('Continue', 'এগিয়ে যান') : tr('Proceed to login', 'সাইন ইনে এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
           {stage > 1 && selected === 'TRAVEL_TAX' && <button type="button" className="tax-service-choice__cancel" onClick={() => setStage(1)}>
             <ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}
@@ -123,6 +129,16 @@ export function PaymentServiceChoiceDialog() {
         </>}
         {stage === 1 ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
+        <div className="tax-service-choice__access-routes" role="group" aria-label={tr('Choose how to pay', 'কীভাবে কর দেবেন বেছে নিন')}>
+          <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'guest'} onClick={() => setAccessMode('guest')}>
+            <span className="tax-service-choice__access-route-title"><CheckCircle2 size={18} aria-hidden="true" /><strong>{tr('Pay without login', 'লগইন ছাড়া পরিশোধ')}</strong></span>
+            <span>{tr('All 8 payment services are available to guests.', '৮টি কর পরিশোধ সেবাই অতিথি ব্যবহারকারীদের জন্য উন্মুক্ত।')}</span>
+          </button>
+          <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'account'} onClick={() => setAccessMode('account')}>
+            <span className="tax-service-choice__access-route-title"><LockKeyhole size={18} aria-hidden="true" /><strong>{tr('Use my account · Login required', 'আমার অ্যাকাউন্ট · লগইন প্রয়োজন')}</strong></span>
+            <span>{tr('Sign in for private records, drafts and eTDS allocation.', 'ব্যক্তিগত রেকর্ড, খসড়া ও ই-টিডিএস সমন্বয়ের জন্য সাইন ইন করুন।')}</span>
+          </button>
+        </div>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
           {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
             <button type="button" key={id} aria-pressed={selected === id}
@@ -149,7 +165,10 @@ export function PaymentServiceChoiceDialog() {
           <h2 id="tax-service-auth-title">{tr('Sign in required', 'সাইন ইন করতে হবে')}</h2>
           <p id="tax-service-auth-description">{tr('Accessing your account records requires sign-in. Your selected service and entered payment details will be kept when you return.', 'অ্যাকাউন্টের তথ্য দেখতে সাইন ইন করতে হবে। ফিরে এলে নির্বাচিত সেবা ও দেওয়া পরিশোধের তথ্য আগের মতো থাকবে।')}</p>
           <div className="tax-service-auth-message__actions">
-            <button type="button" onClick={() => setAccountGate(null)}>{tr('Continue without login', 'সাইন ইন ছাড়া এগিয়ে যান')}</button>
+            <button type="button" onClick={() => {
+              if (stage === 1) { setAccessMode('guest'); setStage(2); }
+              setAccountGate(null);
+            }}>{tr('Continue without login', 'সাইন ইন ছাড়া এগিয়ে যান')}</button>
             <button type="button" onClick={() => setAccountGate('login')}>{tr('Go to login', 'সাইন ইন করুন')}</button>
           </div>
         </div>
@@ -157,7 +176,7 @@ export function PaymentServiceChoiceDialog() {
       {accountGate === 'login' && <TaxpayerLoginDialog
         preservePaymentJourney
         onClose={() => setAccountGate(null)}
-        onSuccess={() => { setResumedAfterLogin(true); setAccountGate(null); }}
+        onSuccess={() => { setResumedAfterLogin(true); if (stage === 1) setStage(2); setAccountGate(null); }}
       />}
     </TaxPayModal>
   );
