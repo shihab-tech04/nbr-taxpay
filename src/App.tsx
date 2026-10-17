@@ -42,15 +42,8 @@ const previewReadOnlyRoutes = new Set([
   'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services'
 ]);
 
-const activitySections = [
-  { route: 'history', en: 'Transactions', bn: 'লেনদেনসমূহ' },
-  { route: 'verify', en: 'Track payment', bn: 'পেমেন্ট অনুসন্ধান' },
-  { route: 'corrections', en: 'Issues & corrections', bn: 'সমস্যা ও সংশোধন' },
-  { route: 'certificates', en: 'Receipts & certificates', bn: 'রসিদ ও সনদপত্র' }
-] as const;
-
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -64,10 +57,9 @@ const MainRouter: React.FC = () => {
   const taxpayerSupportRoute = taxpayerSession && ['verify','user_guide','guidance'].includes(currentRoute);
   const publicInformationRoute = ['landing','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
-  // A guest draft deep link retains its existing responsive shell and sign-in gate.
+  // Visual-only taxpayer scope; a sample profile is NOT an authenticated NBR identity.
+  // Guest payment routes never inherit this reference palette.
   const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace';
-  const showActivitySections = taxpayerSession && !privateSampleGate &&
-    activitySections.some(section => section.route === currentRoute);
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -183,22 +175,12 @@ const MainRouter: React.FC = () => {
             {sampleJourneysEnabled ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
               <button type="button" onClick={() => navigate('taxpayer_login')}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</button>}
           </section>
-        ) : <>
-          {showActivitySections && <nav className="taxpayer-activity-sections" aria-label={language === 'bn' ? 'লেনদেনের বিভাগ' : 'Activity sections'}>
-            {activitySections.map(section => (
-              <button type="button" key={section.route} onClick={() => navigate(section.route)}
-                aria-current={currentRoute === section.route ? 'page' : undefined}>
-                {language === 'bn' ? section.bn : section.en}
-              </button>
-            ))}
-          </nav>}
-          {renderActiveScreen()}
-        </>}
+        ) : renderActiveScreen()}
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
-      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
+      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
       {loginOverlay && <TaxpayerLoginDialog />}
     </div>
   );
