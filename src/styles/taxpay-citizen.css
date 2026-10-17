@@ -72,11 +72,8 @@
 .citizen-dialog__title h2 { font-size:1.2rem; font-weight:750; color:var(--citizen-text); }
 .citizen-dialog__title button { min-width:44px; min-height:44px; display:grid; place-items:center; border-radius:.55rem; color:var(--citizen-primary-dark); }
 .citizen-dialog-language { display:flex; align-items:center; justify-content:center; gap:.45rem; min-width:64px; min-height:44px; margin:0 0 .75rem auto; padding:.5rem .75rem; border:1px solid var(--citizen-border); border-radius:.55rem; color:var(--citizen-primary-dark); font-weight:700; }
-.citizen-dialog__links { display:grid; gap:.45rem; }
-.citizen-dialog__links button { min-height:48px; border-radius:.7rem; text-align:left; padding:.75rem 1rem; background:var(--citizen-primary-light); color:var(--citizen-primary-dark); font-size:.94rem; font-weight:650; }
-.citizen-dialog__links button:hover { background:var(--citizen-border); }
+.citizen-dialog__links { display:grid; gap:0; }
 .citizen-dialog__intro { font-size:.85rem; line-height:1.5; margin-bottom:1rem; color:var(--citizen-muted); }
-.citizen-dialog__links .citizen-payment-choice { display:flex; justify-content:space-between; align-items:center; gap:1rem; }
 .citizen-select-label { display:block; font-size:.85rem; font-weight:650; margin-top:1rem; margin-bottom:.4rem; }
 #citizen-sample-role { width:100%; min-height:44px; border:1px solid var(--citizen-border); border-radius:.6rem; padding:.5rem; background:white; }
 .citizen-dialog__notice { display:flex; align-items:flex-start; gap:.5rem; margin-top:1rem; font-size:.8rem; color:var(--citizen-muted); line-height:1.45; }
@@ -1083,18 +1080,21 @@
 .citizen-dialog__title { flex:0 0 auto; }
 .citizen-dialog__navigation { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
 .citizen-dialog__section-label {
-  padding:.8rem .5rem .4rem; color:var(--citizen-muted); font-size:.75rem;
-  font-weight:750; letter-spacing:.02em;
+  padding:1rem .75rem .35rem; color:var(--citizen-muted); font-size:.75rem;
+  font-weight:700; letter-spacing:.01em;
 }
 .citizen-dialog__navigation .citizen-dialog__links { gap:0; }
-.citizen-dialog__navigation .citizen-nav-link {
-  width:100%; min-height:48px; padding:.7rem .8rem;
-  border-bottom:1px solid var(--citizen-border); border-radius:0;
-  background:transparent; text-align:left; font-size:.94rem; font-weight:650;
+.citizen-dialog__link {
+  display:flex; align-items:center; gap:.85rem; width:100%; min-height:49px;
+  padding:.75rem; border-bottom:1px solid var(--citizen-border); border-radius:0;
+  background:transparent; color:var(--citizen-text); text-align:left;
+  font-size:.94rem; font-weight:550; line-height:1.4;
 }
-.citizen-dialog__navigation .citizen-nav-link[aria-current="page"] {
+.citizen-dialog__link > svg { flex:none; color:var(--citizen-primary); }
+.citizen-dialog__link:hover { background:var(--citizen-primary-light); }
+.citizen-dialog__link[aria-current="page"] {
   background:var(--citizen-primary-light); color:var(--citizen-primary-dark);
-  border-left:3px solid var(--citizen-primary); padding-left:calc(.8rem - 3px);
+  font-weight:700; border-radius:.5rem;
 }
 .citizen-dialog__account {
   flex:0 0 auto; padding:.85rem .25rem .25rem; border-top:1px solid var(--citizen-border);
@@ -1138,8 +1138,6 @@
 }
 
 @media(max-width:900px) {
-  .taxpay-taxpayer-reference .citizen-mobile-menu-trigger,
-  .taxpay-taxpayer-reference .citizen-header__notification { color:var(--citizen-primary); }
   .citizen-dialog__account .citizen-dialog-signout:disabled { opacity:.55; cursor:wait; }
 }
 
