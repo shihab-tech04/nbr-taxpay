@@ -218,12 +218,42 @@ test('All eight services offer the policy-approved guest payment path before Ste
     await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
     await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
     if (i === 7) {
-      await chooser.locator('.travel-flow__footer-actions').getByRole('button', { name: 'Back to payment options' }).click();
+      await chooser.locator('.travel-flow__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
     } else {
-      await chooser.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back to payment options' }).click();
+      await chooser.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
     }
-    await chooser.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back to services' }).click();
+    await chooser.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
   }
+});
+
+test('Travel Tax keeps Back left, Continue right and route calculation available across steps', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop journey alignment');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.getByRole('button', { name: /Travel Tax/ }).click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  const footer = dialog.locator('.travel-flow__footer-actions');
+  const summary = dialog.locator('.travel-flow__summary');
+  await expect(summary).toContainText('Payment calculation');
+  await expect(footer.getByRole('button').first()).toHaveText('Back');
+  await dialog.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
+  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
+  await footer.getByRole('button').last().click();
+  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+  await expect(dialog.locator('#travel-tax-route-results')).toBeVisible();
+  await dialog.locator('#travel-tax-route-1').check();
+  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
+  const back = await footer.getByRole('button').first().boundingBox();
+  const next = await footer.getByRole('button').last().boundingBox();
+  expect(back).not.toBeNull();
+  expect(next).not.toBeNull();
+  expect(back!.x + back!.width).toBeLessThan(next!.x);
+  await dialog.getByLabel('Passport reference').fill('TRAVEL123');
+  await footer.getByRole('button').last().click();
+  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
+  await expect(summary).toContainText('Payment calculation');
 });
 
 test('Other Tax Payment asks for its policy-required NBR reference before purpose and amount', async ({ page }) => {
