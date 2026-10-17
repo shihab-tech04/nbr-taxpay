@@ -209,10 +209,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 <dl className="taxpayer-account-facts">
                   {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
                   {(!previewAccount || (demoSql.status === 'ready' && demoSql.profile)) && <>
-                    <div><dt>{t.name}</dt><dd>{demoSql.profile ? (language === 'bn' ? demoSql.profile.nameBn : demoSql.profile.nameEn) : (language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn)}</dd></div>
+                    <div><dt>{t.name}</dt><dd>{demoSql.profile ? ((language === 'bn' ? demoSql.profile.nameBn : demoSql.profile.nameEn) ?? '—') : (language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn)}</dd></div>
                     <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
                     {demoSql.profile && <>
-                      <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{language === 'bn' ? demoSql.profile.focusBn : demoSql.profile.focusEn}</dd></div>
+                      <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{(language === 'bn' ? demoSql.profile.focusBn : demoSql.profile.focusEn) ?? '—'}</dd></div>
                       <div><dt>{language === 'bn' ? 'নমুনা টিআইএন' : 'Sample TIN stub'}</dt><dd>{demoSql.profile.tinStub ?? '—'}</dd></div>
                       <div><dt>{language === 'bn' ? 'নমুনা কর সার্কেল' : 'Sample tax circle'}</dt><dd>{demoSql.profile.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
