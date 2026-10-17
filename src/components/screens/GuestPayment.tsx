@@ -608,7 +608,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {step === 2 && (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
-            <PaymentFormSection number={3} title={language === 'bn' ? 'কর পরিশোধের খাত' : 'Payment purpose & head'} description={language === 'bn' ? 'নির্বাচিত সেবার জন্য প্রযোজ্য খাত' : 'Select the applicable head for your chosen service'}>
+            <PaymentFormSection number={embedded ? 1 : 3} title={language === 'bn' ? 'কর পরিশোধের খাত' : 'Payment purpose & head'} description={language === 'bn' ? 'নির্বাচিত সেবার জন্য প্রযোজ্য খাত' : 'Select the applicable head for your chosen service'}>
             {!isWithholdingMode && <fieldset className="space-y-2">
               <legend className="text-xs font-semibold text-slate-700">{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'} *</legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -722,7 +722,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection>
 
             {/* Financial Amounts Breakdown */}
-            <PaymentFormSection number={4} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
+            <PaymentFormSection number={embedded ? 2 : 4} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
             <div className="payment-amount-fields space-y-4">
               <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
@@ -872,8 +872,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         <div className="payment-flow-embedded__footer-actions">
           {step === 1 ? (
             <>
-              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService} aria-label={language === 'bn' ? 'সেবা বাছাইয়ে ফিরুন' : 'Back to services'}>
-                <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__action-long">{language === 'bn' ? 'সেবা বাছাইয়ে ফিরুন' : 'Back to services'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{commonCopy.btnBack}</span>
+              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService} aria-label={language === 'bn' ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}>
+                <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{commonCopy.btnBack}</span>
               </button>
               <button type="button" className="tax-service-choice__continue" onClick={handleStep1Next} aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
