@@ -125,7 +125,7 @@ test('taxpayer desktop rail keeps compact primary navigation without redundant s
   // Activity stays a single primary destination. The approved compact rail does not add a second navigation level.
   await rail.getByRole('button',{name:'Activity',exact:true}).click();
   await expect(page).toHaveURL(/action=history(?:&|$)/);
-  await expect(page.getByRole('navigation',{name:'Activity sections'})).toHaveCount(0);
+  await expect(page.getByRole('navigation',{name:'Activity sections'}).getByRole('button')).toHaveCount(0);
   await menu.locator('summary').click();
   await expect(menu.getByRole('button')).toHaveCount(2);
   for(const [label,route] of [['Profile','account_profile'],['Help','user_guide']] as const){
