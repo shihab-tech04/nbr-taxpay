@@ -13,6 +13,7 @@ const SWIPE_DOMINANCE_RATIO = 1.2;
 const slides = [
   {
     id: 'intro',
+    serviceCode: undefined,
     headingEn: 'Understand tax payments. Stay in control.',
     headingBn: 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।',
     descriptionEn: 'Choose the right tax service, check payment status and find receipts in one place.',
@@ -23,6 +24,7 @@ const slides = [
   },
   {
     id: 'return',
+    serviceCode: 'TAX_WITH_RETURN',
     headingEn: 'Tax with Return',
     headingBn: 'রিটার্নের সঙ্গে কর',
     descriptionEn: 'Settle the income tax linked to your return through clear, guided steps.',
@@ -33,6 +35,7 @@ const slides = [
   },
   {
     id: 'advance',
+    serviceCode: 'ADVANCE_TAX',
     headingEn: 'Advance Income Tax',
     headingBn: 'অগ্রিম আয়কর',
     descriptionEn: 'Plan ahead by paying income tax early for your chosen assessment year.',
@@ -43,6 +46,7 @@ const slides = [
   },
   {
     id: 'withholding',
+    serviceCode: 'SOURCE_TAX_DEPOSIT',
     headingEn: 'Source Tax Deposit (TDS/TCS)',
     headingBn: 'উৎসে কর জমা (টিডিএস/টিসিএস)',
     descriptionEn: 'Deposit tax already deducted or collected at source using the right payment head.',
@@ -53,6 +57,7 @@ const slides = [
   },
   {
     id: 'travel',
+    serviceCode: 'TRAVEL_TAX',
     headingEn: 'Travel Tax',
     headingBn: 'ভ্রমণ কর',
     descriptionEn: 'Choose your journey, add passenger details and move through travel tax with confidence.',
@@ -171,6 +176,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
+        data-payment-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onTouchStart={onTouchStart}
@@ -186,6 +192,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 key={slide.id}
                 className="citizen-public-hero public-information-hero public-hero-carousel__slide"
                 data-banner-service={slide.id}
+                data-payment-service={slide.serviceCode}
                 role="group"
                 aria-roledescription="slide"
                 aria-label={bn ? `স্লাইড ${index + 1} / ${slides.length}` : `Slide ${index + 1} of ${slides.length}`}

@@ -113,6 +113,86 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
   }
 });
 
+test('service banners share the exact selected-card palette, including text and the outer outline', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'Palette contract is viewport-independent');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await carousel.focus();
+  const services = [
+    ['return', 'TAX_WITH_RETURN'],
+    ['advance', 'ADVANCE_TAX'],
+    ['withholding', 'SOURCE_TAX_DEPOSIT'],
+    ['travel', 'TRAVEL_TAX'],
+  ] as const;
+  const banners = [];
+
+  for (const [service, code] of services) {
+    await page.keyboard.press('ArrowRight');
+    await expect(carousel).toHaveAttribute('data-payment-service', code);
+    const banner = await carousel.locator(`[data-banner-service="${service}"]`).evaluate(slide => {
+      const styles = getComputedStyle(slide);
+      const title = slide.querySelector('h2');
+      const description = slide.querySelector('.citizen-public-hero__copy > p');
+      const action = slide.querySelector('.citizen-public-primary');
+      if (!title || !description || !action) throw new Error('Incomplete service banner');
+      return {
+        background: styles.backgroundColor,
+        title: getComputedStyle(title).color,
+        description: getComputedStyle(description).color,
+        actionText: getComputedStyle(action).color,
+        actionBorder: getComputedStyle(action).borderColor,
+        outline: getComputedStyle(slide.closest('.public-hero-carousel')!).borderColor,
+        palette: {
+          primary: styles.getPropertyValue('--choice-primary').trim(),
+          background: styles.getPropertyValue('--choice-bg').trim(),
+          border: styles.getPropertyValue('--choice-border').trim(),
+          text: styles.getPropertyValue('--choice-text').trim(),
+        },
+      };
+    });
+    banners.push(banner);
+  }
+
+  // Color names come from the same source as the selected payment cards.
+  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  const cards = page.locator('.tax-service-choice__card[data-payment-service]');
+  await expect(cards).toHaveCount(8);
+  const rgb = (hex: string) => {
+    const bytes = hex.match(/[\da-f]{2}/gi);
+    if (!bytes || bytes.length !== 3) throw new Error(`Invalid service color ${hex}`);
+    return `rgb(${bytes.map(byte => parseInt(byte, 16)).join(', ')})`;
+  };
+
+  for (const [index, [, code]] of services.entries()) {
+    const option = page.locator(`.tax-service-choice__card[data-payment-service="${code}"]`);
+    await option.click();
+    await expect(option).toHaveAttribute('aria-pressed', 'true');
+    const cardStyles = await option.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        border: style.borderColor,
+        palette: {
+          primary: style.getPropertyValue('--choice-primary').trim(),
+          background: style.getPropertyValue('--choice-bg').trim(),
+          border: style.getPropertyValue('--choice-border').trim(),
+          text: style.getPropertyValue('--choice-text').trim(),
+        },
+      };
+    });
+    const banner = banners[index];
+    expect(banner.palette).toEqual(cardStyles.palette);
+    expect(banner.background).toBe(cardStyles.background);
+    expect(banner.title).toBe(rgb(cardStyles.palette.text));
+    expect(banner.actionText).toBe(rgb(cardStyles.palette.text));
+    expect(banner.actionBorder).toBe(rgb(cardStyles.palette.primary));
+    expect(banner.outline).toBe(rgb(cardStyles.palette.border));
+    expect(banner.description).not.toBe('rgb(95, 107, 122)');
+  }
+});
+
 test('mobile illustrated banners blend downward into the image', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'desktop-1280', 'Mobile fade is evaluated in each mobile project');
   await page.emulateMedia({ reducedMotion: 'reduce' });
