@@ -67,8 +67,8 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  await one.page.getByLabel('Payment category').nth(1).selectOption('PENALTY');
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2025-26');
  await one.page.getByLabel('Amount (BDT)').nth(1).fill('23.50');
- await one.page.getByRole('button',{name:'Simulate and save payment'}).click();
- await expect(one.page.getByRole('heading',{name:'Payment simulation completed'})).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Save payment record'}).click();
+ await expect(one.page.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:15000});
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)

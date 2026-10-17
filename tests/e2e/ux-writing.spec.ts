@@ -52,6 +52,6 @@ test('public information copy is concise and bilingual while preserving payment 
  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
  await page.goto('/?action=travel');
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
- await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
+ await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
 });
 

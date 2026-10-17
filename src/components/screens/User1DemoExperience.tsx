@@ -164,7 +164,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     </article>)}</div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </div>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate previews','সনদের প্রিভিউ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<header className={panel+' taxpayer-dashboard-header'}>
     <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-5">
       <div className="min-w-0">
@@ -352,10 +352,9 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
       <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3"><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2><button type="button" className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
-        <p className="mt-2 text-xs font-semibold text-amber-800">{tr('Not a government challan','সরকারি চালান নয়')}</p>
         <dl className="mt-4 space-y-3">{[
           ['Reference',selected.ref],['Assessment year',selected.year],['Date',selected.date],['Category',tr(...labels[selected.kind])],['Amount',money(selected.amount)],
-          ['Status',tr(...stateLabels[selected.state])],['Channel',selected.channel],['Challan reference',selected.challan||'Not issued'],['Meaning',selected.detail]
+          ['Status',tr(...stateLabels[selected.state])],['Channel',selected.channel],['Challan reference',selected.challan||'Unavailable'],['Meaning',selected.detail]
         ].map(x=><div className="border-b border-slate-100 pb-2" key={x[0]}><dt className="text-xs text-slate-500">{x[0]}</dt><dd className="mt-1 break-words text-sm font-semibold">{x[1]}</dd></div>)}</dl>
       </section>
     </div>}

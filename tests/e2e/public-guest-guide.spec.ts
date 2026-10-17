@@ -22,17 +22,17 @@ test('public hero opens receipt lookup while travel tax remains available below 
  const travel=page.getByRole('dialog',{name:'Travel tax'});
  await expect(travel.getByRole('heading',{name:'Travel tax',level:2})).toBeVisible();
  await expect(travel.locator('.public-service-dialog__notice')).toHaveCount(0);
- await expect(travel.getByText('Rates and exemptions are not verified.',{exact:false})).toBeVisible();
+ await expect(travel.getByText('Rates and exemptions are not verified.',{exact:false})).toHaveCount(0);
  await expect(travel.getByRole('heading',{name:'Payment summary'})).toBeVisible();
  await travel.getByRole('button',{name:'Continue to passenger details'}).click();
  await travel.getByLabel('Passenger name (as in passport)').fill('TEST PASSENGER');
- await travel.getByLabel('Passport number (synthetic data only)').fill('DEMO1234');
+ await travel.getByLabel('Passport reference').fill('DEMO1234');
  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review travel details'})).toBeVisible();
- await travel.getByRole('button',{name:'Run payment simulation'}).click();
- await expect(travel.getByRole('heading',{name:'Travel tax preview ready.'})).toBeVisible();
- await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toBeVisible();
+ await travel.getByRole('button',{name:'Continue payment'}).click();
+ await expect(travel.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
+ await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toHaveCount(0);
  await page.keyboard.press('Escape');
  await expect(travel).toHaveCount(0);
  expect(hosted).toEqual([]);
@@ -115,14 +115,15 @@ test('User guide search and text weights follow the citizen typography contract'
   expect(findBox).not.toBeNull();
   expect(fieldBox!.width).toBeGreaterThanOrEqual(findBox!.width - 2);
   if (info.project.name === 'desktop-1280') {
-    expect(fieldBox!.width).toBeGreaterThan(500);
+    expect(fieldBox!.width).toBeGreaterThan(700);
   }
   const introBox = await guide.locator('.public-guide-intro').boundingBox();
   const searchSectionBox = await guide.locator('.public-guide-find').boundingBox();
+  const overviewBox = await guide.locator('.public-guide-overview').boundingBox();
   const layoutBox = await guide.locator('.public-guide-layout').boundingBox();
-  expect(introBox && searchSectionBox && layoutBox).toBeTruthy();
-  expect(searchSectionBox!.y).toBeGreaterThan(introBox!.y + introBox!.height);
-  expect(layoutBox!.y).toBeGreaterThan(searchSectionBox!.y + searchSectionBox!.height);
+  expect(introBox && searchSectionBox && overviewBox && layoutBox).toBeTruthy();
+  expect(searchSectionBox!.y).toBeGreaterThanOrEqual(introBox!.y + introBox!.height - 1);
+  expect(layoutBox!.y).toBeGreaterThan(overviewBox!.y + overviewBox!.height);
 
   const input = guide.getByRole('searchbox', { name: 'Search the guide' });
   await input.focus();
@@ -161,7 +162,7 @@ test('User guide has real platform-specific steps and searches across all topics
 test('Guide search covers steps and answers, while topic FAQs stay contextual', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide=page.locator('.public-guide-page');
-  await expect(guide.locator('.public-guide-questions details')).toHaveCount(2);
+  await expect(guide.locator('.public-guide-questions details')).toHaveCount(1);
   await expect(guide.getByText('Are the rates final?')).toHaveCount(0);
   const field=guide.getByRole('searchbox',{name:'Search the guide'});
   await field.fill('passport');
@@ -177,6 +178,27 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await guide.getByRole('button',{name:'Travel tax'}).click();
   await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
   await expect(guide.getByRole('button',{name:'Travel tax'})).toHaveAttribute('aria-current','true');
+});
+
+test('User guide official reference belongs to the reading card, not a separate floating strip', async ({ page }) => {
+  await page.goto('/?action=user_guide');
+  const guide=page.locator('.public-guide-page');
+  const article=guide.locator('.public-guide-content');
+  await expect(guide.locator(':scope > .public-guide-source')).toHaveCount(0);
+  await expect(article.locator('.public-guide-source').getByRole('heading',{name:'Official information'})).toBeVisible();
+  await expect(article.locator('.public-guide-source').getByRole('link',{name:'NBR publications'})).toBeVisible();
+  await guide.getByRole('searchbox',{name:'Search the guide'}).fill('challan');
+  await expect(guide.locator('.public-guide-results .public-guide-source')).toBeVisible();
+  await expect(guide.locator('.public-guide-content')).toHaveCount(0);
+});
+
+test('Selecting a topic takes mobile readers directly to its instructions', async ({ page }, info) => {
+  test.skip(info.project.name!=='mobile-375','Mobile reading flow');
+  await page.goto('/?action=user_guide');
+  const topic=page.locator('.public-guide-topics').getByRole('button',{name:'Receipts & corrections'});
+  await topic.click();
+  await expect(page.locator('.public-guide-content-head').getByRole('heading',{name:'Receipts & corrections'})).toBeInViewport();
+  await expect(topic).toHaveAttribute('aria-current','true');
 });
 
 test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
@@ -241,9 +263,9 @@ test('guest receipt lookup keeps a compact accessible layout and honest demo res
  await expect(samples).toHaveCount(3);
  await samples.first().click();
  await expect(dialog.getByRole('heading',{name:'Receipt details'})).toBeVisible();
- await expect(dialog.getByText('Not an official challan')).toBeVisible();
+ await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'Back to records'})).toHaveCount(0);
- await expect(dialog.getByRole('button',{name:'Print preview'})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Print receipt'})).toBeVisible();
  await expect(dialog.getByRole('button',{name:'Download JSON'})).toBeVisible();
  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
  await expect(dialog.locator('.receipt-view__table')).toBeHidden();
@@ -251,7 +273,7 @@ test('guest receipt lookup keeps a compact accessible layout and honest demo res
  const cardWidth=await dialog.locator('.receipt-view__paper').evaluate(el=>el.getBoundingClientRect().width);
  expect(cardWidth).toBeLessThanOrEqual(dialogBox!.width);
  await expect(dialog.locator('.receipt-lookup__result--found')).toHaveCount(0);
- await expect(dialog.getByText('Not an official challan')).toHaveCount(1);
+ await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
  await dialog.getByPlaceholder('Enter a reference').fill('NO-SUCH-DEMO-REFERENCE-12345');
  await expect(dialog.locator('.receipt-view--embedded')).toHaveCount(0);
  await dialog.getByRole('button',{name:'Search records'}).click();
@@ -273,9 +295,9 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
  await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
  await expect(dialog.getByRole('button',{name:'রেকর্ড খুঁজুন'})).toBeDisabled();
  await dialog.locator('.receipt-lookup__sample').first().click();
- await expect(dialog.getByText('সরকারি চালান নয়')).toBeVisible();
+ await expect(dialog.getByText('সরকারি চালান নয়')).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'রেকর্ডে ফিরুন'})).toHaveCount(0);
- await expect(dialog.getByRole('button',{name:'প্রিন্ট প্রিভিউ'})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'রসিদ প্রিন্ট'})).toBeVisible();
  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
  const dimensions=await dialog.locator('.receipt-view__paper').evaluate(el=>({paper:el.getBoundingClientRect().width,viewport:window.innerWidth}));
  expect(dimensions.paper).toBeLessThanOrEqual(dimensions.viewport);
@@ -367,18 +389,18 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await modal.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('alert')).toContainText('Enter the passenger name shown on the passport.');
  await modal.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC USER');
- await modal.getByLabel('Passport number (synthetic data only)').fill('FAKE0001');
+ await modal.getByLabel('Passport reference').fill('FAKE0001');
  await modal.getByLabel('Mobile number for receipt').fill('01712345678');
  await modal.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await expect(modal.getByText('Preview ready',{exact:true})).toHaveCount(0);
- await expect(side.getByText('Illustrative total')).toBeVisible();
- await expect(modal.getByRole('button',{name:'Run payment simulation'})).toBeVisible();
- await modal.getByRole('button',{name:'Run payment simulation'}).click();
- await expect(modal.getByRole('heading',{name:'Travel tax preview ready.'})).toBeVisible();
- await expect(modal.getByRole('button',{name:'Print preview'})).toBeVisible();
+ await expect(side.getByText('Total amount')).toBeVisible();
+ await expect(modal.getByRole('button',{name:'Continue payment'})).toBeVisible();
+ await modal.getByRole('button',{name:'Continue payment'}).click();
+ await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
+ await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Download JSON'})).toBeVisible();
- await expect(side.getByText('No payment processed')).toBeVisible();
+ await expect(side.getByText('Record ready')).toBeVisible();
 });
 
 test('travel tax mobile keeps a compact anchored estimate and Bengali step navigation',async({page},info)=>{
@@ -393,7 +415,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await modal.getByRole('button',{name:'যাত্রীর তথ্য দিন'}).click();
  await expect(modal.getByLabel('পাসপোর্ট অনুযায়ী যাত্রীর নাম')).toBeVisible();
  await modal.getByLabel('পাসপোর্ট অনুযায়ী যাত্রীর নাম').fill('DEMO NAME');
- await modal.getByLabel('পাসপোর্ট নম্বর (শুধু কৃত্রিম তথ্য)').fill('FAKE001');
+ await modal.getByLabel('পাসপোর্ট রেফারেন্স').fill('FAKE001');
  await modal.getByLabel('রসিদের জন্য মোবাইল নম্বর').fill('01712345678');
  await modal.getByRole('button',{name:'পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'তথ্য পর্যালোচনা'})).toBeVisible();
@@ -434,18 +456,18 @@ test('Travel Tax primary action lives in fixed modal footer across all steps',as
  await actions.getByRole('button',{name:'Continue to passenger details'}).click();
  await expect(actions.getByRole('button',{name:'Continue to review'})).toBeVisible();
  await modal.getByLabel('Passenger name (as in passport)').fill('SYNTHETIC PASSENGER');
- await modal.getByLabel('Passport number (synthetic data only)').fill('DEMOFAKE01');
+ await modal.getByLabel('Passport reference').fill('DEMOFAKE01');
  await modal.getByLabel('Mobile number for receipt').fill('01712345678');
  await actions.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
- await expect(actions.getByRole('button',{name:'Run payment simulation'})).toBeVisible();
- await actions.getByRole('button',{name:'Run payment simulation'}).click();
- await expect(modal.getByRole('heading',{name:'Travel tax preview ready.'})).toBeVisible();
- await expect(actions.getByRole('button',{name:'Start a new preview'})).toBeVisible();
+ await expect(actions.getByRole('button',{name:'Continue payment'})).toBeVisible();
+ await actions.getByRole('button',{name:'Continue payment'}).click();
+ await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
+ await expect(actions.getByRole('button',{name:'Start a new payment'})).toBeVisible();
  await expect(summary.locator('button')).toHaveCount(0);
  p=await positions();
  expect(p.actionBottom).toBeLessThanOrEqual(p.footerBottom+1);
- await actions.getByRole('button',{name:'Start a new preview'}).click();
+ await actions.getByRole('button',{name:'Start a new payment'}).click();
  await expect(actions.getByRole('button',{name:'Continue to passenger details'})).toBeVisible();
 });
 

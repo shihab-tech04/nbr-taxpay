@@ -37,7 +37,7 @@ test('user1 year selection stays consistent across documents and correction scre
   await page.locator('.citizen-menu-open').click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
   await expect(page).toHaveURL(/scenarioYear=2024-2025/);
-  await expect(page.getByRole('heading',{name:'Certificate previews'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
   await expect(page.getByText('DEMO-CH-24-01').first()).toBeVisible();
   await page.getByRole('button',{name:'Tax Ledger',exact:true}).click();
   await expect(page.getByText('DEMO-PAY-24-01').first()).toBeVisible();

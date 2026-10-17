@@ -42,7 +42,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await chooser.getByRole('button', { name: /Pay BDT 12,450/ }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByTestId('payment-lifecycle').getByText('CREDITED')).toBeVisible({ timeout: 12000 });
-  await expect(chooser.getByRole('heading', { name: 'Simulated payment complete' })).toBeVisible();
+  await expect(chooser.getByRole('heading', { name: 'Payment process complete' })).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });
@@ -62,7 +62,7 @@ test('Travel tax form applies exact v11 journey rates and age bands', async ({ p
   await travel.getByLabel('Passenger age').selectOption('ADULT');
   await expect(summary).toContainText('2,000');
   await travel.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport number (synthetic data only)').fill('FAKE002');
+  await travel.getByLabel('Passport reference').fill('FAKE002');
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await expect(travel.getByRole('heading', { name: 'Review travel details' })).toBeVisible();

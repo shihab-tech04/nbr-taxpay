@@ -20,7 +20,7 @@ const serviceLabels: Record<DemoServiceCode, Bilingual> = {
   TRAVEL_TAX: { en: 'Travel tax', bn: 'ভ্রমণ কর' },
 };
 const stateLabels: Record<DemoServiceRecordState, Bilingual> = {
-  SIMULATED: { en: 'Simulated', bn: 'সিমুলেটেড' },
+  SIMULATED: { en: 'Recorded', bn: 'নথিভুক্ত' },
   PENDING: { en: 'Pending', bn: 'অপেক্ষমাণ' },
   FAILED: { en: 'Failed', bn: 'ব্যর্থ' },
   REVERSED: { en: 'Reversed', bn: 'প্রত্যাবর্তিত' },
@@ -86,13 +86,13 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
     },
     {
       key: 'income',
-      title: tr('Income-tax simulations', 'আয়কর সিমুলেশন'),
+      title: tr('Income-tax records', 'আয়কর রেকর্ড'),
       value: summary.incomeSimulated.length ? amount(sumMinor(summary.incomeSimulated), locale) : '—',
-      detail: tr('Simulated state only · seven income-tax services', 'শুধু সিমুলেটেড অবস্থা · সাতটি আয়কর সেবা'),
+      detail: tr('Seven income-tax service types', 'সাত ধরনের আয়কর সেবা'),
     },
     {
       key: 'travel',
-      title: tr('Travel-tax simulations', 'ভ্রমণ কর সিমুলেশন'),
+      title: tr('Travel-tax records', 'ভ্রমণ কর রেকর্ড'),
       value: summary.travelSimulated.length ? amount(sumMinor(summary.travelSimulated), locale) : '—',
       detail: tr('Separate from income-tax amounts', 'আয়করের হিসাব থেকে পৃথক'),
     },

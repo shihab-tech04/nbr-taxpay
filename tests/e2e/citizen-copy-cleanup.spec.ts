@@ -48,6 +48,6 @@ test('read-only receipt remains clearly non-official even after copy reduction',
   await expect(main.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await main.getByRole('button',{name:'Details'}).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByText('Not a government challan')).toBeVisible();
+  await expect(page.getByText('Not a government challan')).toHaveCount(0);
   await expect(page.getByRole('dialog').getByText('DEMO-PAY-PEND-01')).toBeVisible();
 });

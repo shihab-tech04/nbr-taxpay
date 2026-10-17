@@ -148,7 +148,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByLabel('Tax Amount (৳)')).toHaveAttribute('aria-invalid', 'true');
   await page.getByLabel('Tax Amount (৳)').fill('15000');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
-  await expect(page.getByText('Payment simulation only')).toBeVisible();
+  await expect(page.getByText('Payment simulation only')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Pay online' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pay at a bank branch' })).toBeVisible();
 
@@ -167,16 +167,16 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('button', { name: 'অনলাইনে পরিশোধ' })).toBeVisible();
-  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toBeVisible();
+  await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toHaveCount(0);
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('radio', { name: 'bKash' }).check();
   await page.getByRole('checkbox', { name: /আমি টিআইএন, পরিশোধের উদ্দেশ্য/ }).check();
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
-  await expect(page.getByRole('heading', { name: 'সিমুলেটেড পরিশোধ সম্পন্ন' })).toBeVisible({ timeout: 12000 });
+  await expect(page.getByRole('heading', { name: 'পেমেন্ট প্রক্রিয়া সম্পন্ন' })).toBeVisible({ timeout: 12000 });
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
-  await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toBeVisible();
+  await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
 
   if (info.project.name === 'mobile-320') {
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
@@ -218,12 +218,12 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.locator('#guest-tax-amount').fill('25000');
   await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
   await expect(services.getByText('Step 3 of 4')).toBeVisible();
-  await expect(services.getByText('No money is transferred and no official challan is issued.')).toBeVisible();
+  await expect(services.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await services.getByRole('button', { name: 'Pay online' }).click();
   await services.getByRole('radio', { name: 'Nagad' }).check();
   await services.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
   await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
-  await expect(services.getByRole('heading', { name: 'Simulated payment complete' })).toBeVisible({ timeout: 12000 });
+  await expect(services.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);
 
@@ -240,24 +240,24 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
 test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await expect(page.getByText(/Rates and exemptions are not verified/)).toBeVisible();
+  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
   await expect(page.getByRole('radio', { name: /By air to the Americas/ }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
   await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
-  await page.getByLabel('Passport number (synthetic data only)').fill('SAMPLE123');
+  await page.getByLabel('Passport reference').fill('SAMPLE123');
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
-  await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toBeVisible();
+  await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toHaveCount(0);
   await expect(page.getByLabel('যাত্রীর বয়স')).toBeVisible();
   await page.getByRole('button', { name: 'পর্যালোচনায় যান' }).click();
   await expect(page.getByRole('heading', { name: 'তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' })).toBeVisible();
-  await page.getByRole('button', { name: 'পেমেন্ট সিমুলেশন চালান' }).click();
-  await expect(page.getByText('ভ্রমণ করের প্রিভিউ প্রস্তুত।')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' })).toBeVisible();
+  await page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' }).click();
+  await expect(page.getByText('ভ্রমণ করের তথ্য প্রস্তুত')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
-  await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toBeVisible();
+  await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toHaveCount(0);
 
   if (info.project.name === 'mobile-320') {
     expect(await pageWidth(page)).toBeLessThanOrEqual(322);

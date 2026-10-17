@@ -62,7 +62,7 @@ export function PaymentLiveSummary({ language, category, tin, year, head, amount
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
         {breakdown.map(item => <div key={item.label}><span>{item.label}</span><strong>{formatCurrency(item.value, language)}</strong></div>)}
       </div>}
-      <p className="payment-form-summary__notice">{note || (bn ? 'এটি পেমেন্ট সিমুলেশনের হিসাব। কোনো অর্থ স্থানান্তর হয়নি।' : 'Simulation estimate only. No money has been transferred.')}</p>
+      {note && <p className="payment-form-summary__notice">{note}</p>}
     </aside>
   );
 }
