@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDown, CircleCheck, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
+import type { ServiceCategoryCode } from './ServiceCategoryTag';
 
 type Language = 'en' | 'bn';
 
@@ -33,6 +34,7 @@ export function PaymentFormSection({ title, description, number, children, defau
 interface PaymentSummaryProps {
   language: Language;
   category: string;
+  categoryCode?: ServiceCategoryCode;
   tin?: string;
   year?: string;
   head?: string;
@@ -41,7 +43,7 @@ interface PaymentSummaryProps {
   breakdown?: { label: string; value: number }[];
 }
 
-export function PaymentLiveSummary({ language, category, tin, year, head, amount, note, breakdown }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, tin, year, head, amount, note, breakdown }: PaymentSummaryProps) {
   const bn = language === 'bn';
   return (
     <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
@@ -53,7 +55,7 @@ export function PaymentLiveSummary({ language, category, tin, year, head, amount
       <output className="payment-form-summary__total" aria-live="polite">{formatCurrency(amount, language)}</output>
       <p className="payment-form-summary__help">{bn ? 'ফর্মে তথ্য পরিবর্তনের সঙ্গে হিসাব আপডেট হয়।' : 'Updates as you complete the form.'}</p>
       <dl className="payment-form-summary__rows">
-        <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd>{category}</dd></div>
+        <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd className={categoryCode ? 'taxpay-service-value' : undefined} data-payment-service={categoryCode}>{category}</dd></div>
         {tin && <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd className="payment-form-summary__mono">{tin}</dd></div>}
         {year && <div><dt>{bn ? 'করবর্ষ' : 'Assessment year'}</dt><dd>{year}</dd></div>}
         {head && <div><dt>{bn ? 'খাত' : 'Payment head'}</dt><dd>{head}</dd></div>}

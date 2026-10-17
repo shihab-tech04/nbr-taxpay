@@ -275,14 +275,14 @@ export const PaymentWizard: React.FC = () => {
                   {t.category} *
                 </label>
                 <select
-                  id="wizard-payment-category" value={category}
+                  id="wizard-payment-category" value={category} data-payment-service={category}
                   onChange={(e) => {
                     const newCat = e.target.value as PaymentCategory;
                     setCategory(newCat);
                     const first = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
                     if (first) setSelectedHeadId(first.id);
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
+                  className="taxpay-service-select w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
                 >
                   {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
@@ -376,7 +376,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} />
           </div>
         )}
 
@@ -496,7 +496,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
           </div>
         )}
 

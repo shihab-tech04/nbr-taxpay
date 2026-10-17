@@ -75,7 +75,7 @@ export function PaymentServiceChoiceDialog() {
         </>}
         {stage > 1 && selected !== 'TRAVEL_TAX' && chosenService && <p className="tax-service-choice__selected-service">
           <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
-          <strong>{tr(chosenService.en, chosenService.bn)}</strong>
+          <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
         </p>}
         {stage === 1 ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>

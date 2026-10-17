@@ -482,7 +482,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               {copy.intro}
             </p>
             <p className="mt-2 text-xs font-semibold text-taxpay-dark" aria-live="polite">
-              {copy.selectedPurpose}: {language === 'bn' ? CATEGORY_LABELS[category]?.bn || copy.underReview : CATEGORY_LABELS[category]?.en || copy.underReview}
+              {copy.selectedPurpose}: <span className="taxpay-service-value" data-payment-service={category}>{language === 'bn' ? CATEGORY_LABELS[category]?.bn || copy.underReview : CATEGORY_LABELS[category]?.en || copy.underReview}</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -599,7 +599,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            {!embedded && <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} amount={totalAmount} note={language === 'bn' ? 'পরের ধাপে খাত ও পরিমাণ ঠিক করুন।' : 'Confirm the payment head and amount in the next section.'} />}
+            {!embedded && <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={tin} year={assessmentYear} amount={totalAmount} note={language === 'bn' ? 'পরের ধাপে খাত ও পরিমাণ ঠিক করুন।' : 'Confirm the payment head and amount in the next section.'} />}
           </div>
         )}
 
@@ -621,6 +621,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </label>
               <select
                 id="guest-category"
+                data-payment-service={category}
                 disabled={isWithholdingMode}
                 value={category}
                 onChange={(e) => {
@@ -629,7 +630,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   const firstInCat = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
                   if (firstInCat) setSelectedHeadId(firstInCat.id);
                 }}
-                className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
+                className="taxpay-service-select min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
               >
                 {Object.entries(CATEGORY_LABELS).map(([catKey, label]) => (
                   <option key={catKey} value={catKey}>
@@ -809,7 +810,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} breakdown={[{label:copy.taxAmount,value:taxAmount},{label:copy.penalty,value:penaltyAmount},{label:copy.surcharge,value:surchargeAmount},{label:copy.interest,value:interestAmount}]} />
+            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} breakdown={[{label:copy.taxAmount,value:taxAmount},{label:copy.penalty,value:penaltyAmount},{label:copy.surcharge,value:surchargeAmount},{label:copy.interest,value:interestAmount}]} />
           </div>
         )}
 
@@ -822,7 +823,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <dl className="payment-review__rows">
                   <div><dt>{language === 'bn' ? 'যাঁর কর পরিশোধ হচ্ছে' : 'Taxpayer TIN'}</dt><dd className="font-mono-plex">{tin}</dd></div>
                   <div><dt>{language === 'bn' ? 'পরিশোধকারী' : 'Payer'}</dt><dd>{forSelf ? (language === 'bn' ? 'করদাতা নিজে' : 'Taxpayer (self)') : (payerName || copy.unspecified)}</dd></div>
-                  <div><dt>{language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'}</dt><dd>{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</dd></div>
+                  <div><dt>{language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'}</dt><dd className="taxpay-service-value" data-payment-service={category}>{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</dd></div>
                   <div><dt>{language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}</dt><dd>{selectedHead?.economicCode} — {language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}</dd></div>
                   {category !== 'SOURCE_TAX_DEPOSIT' && <div><dt>{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'}</dt><dd>{incomeTaxType === 'COMPANY' ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'কোম্পানি ব্যতীত ব্যক্তি' : 'Person other than company')}</dd></div>}
                   <div><dt>{commonCopy.assessmentYear}</dt><dd>{assessmentYear}</dd></div>

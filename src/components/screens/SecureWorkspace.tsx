@@ -385,7 +385,7 @@ export const SecureWorkspace: React.FC = () => {
                 </select>
               </label>
               <label className="text-sm font-semibold">{copy.category}
-                <select className="block w-full mt-2 border border-slate-300 rounded-lg p-3" value={draft.category} onChange={e => setDraft(p => ({ ...p, category: e.target.value as DraftCategory }))}>
+                <select className="taxpay-service-select block w-full mt-2 border border-slate-300 rounded-lg p-3" data-payment-service={draft.category} value={draft.category} onChange={e => setDraft(p => ({ ...p, category: e.target.value as DraftCategory }))}>
                   {categoryOptions(draft.purpose).map(c => <option key={c} value={c}>{copy.categories[c]}</option>)}
                 </select>
               </label>

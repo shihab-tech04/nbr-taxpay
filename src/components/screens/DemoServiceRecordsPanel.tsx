@@ -1,4 +1,5 @@
 import React from 'react';
+import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import type { DemoUserId } from '../../data/demoUsers';
 import type { Language } from '../../types/tax';
 import {
@@ -190,7 +191,7 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                     {records.map(record => (
                       <tr key={record.recordId} className="align-top">
                         <td className="px-3 py-3">
-                          <p className="font-medium text-taxpay-text">{label(serviceLabels[record.serviceCode])}</p>
+                          <ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag>
                           <p className="mt-1 break-all text-xs text-taxpay-muted">{record.recordId}</p>
                         </td>
                         <td className="px-3 py-3 text-taxpay-text">
@@ -209,7 +210,7 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                 {records.map(record => (
                   <li key={record.recordId} className="rounded-xl border border-taxpay-border p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <h4 className="min-w-0 text-sm font-semibold text-taxpay-text">{label(serviceLabels[record.serviceCode])}</h4>
+                      <h4 className="min-w-0 text-sm"><ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag></h4>
                       {renderState(record)}
                     </div>
                     <p className="mt-1 break-all text-xs text-taxpay-muted">{record.recordId}</p>

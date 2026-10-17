@@ -15,6 +15,8 @@ import {
 import { useTaxState } from '../../services/taxState';
 import { DEMO_TAXPAYERS } from '../../data/mockData';
 import { formatCurrency } from '../../services/numberFormat';
+import { CATEGORY_LABELS } from '../../data/paymentHeads';
+import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 
 export const Taxpayer360: React.FC = () => {
   const { receipts, ledgerEntries, cases, selectReceipt, language } = useTaxState();
@@ -162,7 +164,7 @@ export const Taxpayer360: React.FC = () => {
                   <span className="font-mono-plex font-bold text-slate-900">{formatCurrency(rcpt.totalAmount, language)}</span>
                 </span>
                 <span className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span>{rcpt.paymentCategory} (AY {rcpt.assessmentYear})</span>
+                  <span><ServiceCategoryTag code={rcpt.paymentCategory}>{CATEGORY_LABELS[rcpt.paymentCategory]?.[language] ?? rcpt.paymentCategory}</ServiceCategoryTag> (AY {rcpt.assessmentYear})</span>
                   <span className="text-emerald-700 font-semibold">{rcpt.treasuryStatus}</span>
                 </span>
               </button>

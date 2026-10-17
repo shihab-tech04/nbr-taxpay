@@ -5,6 +5,8 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
+import { CATEGORY_LABELS } from '../../data/paymentHeads';
+import { ServiceCategoryTag, type ServiceCategoryCode } from '../ui/ServiceCategoryTag';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -14,6 +16,7 @@ export const TaxpayerDashboard: React.FC = () => {
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
+  const serviceName = (code: ServiceCategoryCode) => code === 'TRAVEL_TAX' ? tr('Travel tax','ভ্রমণ কর') : (CATEGORY_LABELS[code]?.[language] ?? code);
   const [year,setYear] = useState(ASSESSMENT_YEARS[0] || '2026-2027');
   const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
@@ -75,7 +78,7 @@ export const TaxpayerDashboard: React.FC = () => {
     {previewAccount && demoUser && !user && <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
-        <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span className="rounded-lg bg-blue-50 p-2 text-blue-700">{i===1?<ShieldCheck size={19} aria-hidden="true"/>:i===2?<Receipt size={19} aria-hidden="true"/>:<WalletCards size={19} aria-hidden="true"/>}</span></div>
+        <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span data-payment-service={i===1?'SOURCE_TAX_DEPOSIT':i===2?'TRAVEL_TAX':'TAX_WITH_RETURN'} className="taxpayer-dashboard__category-icon rounded-lg p-2">{i===1?<ShieldCheck size={19} aria-hidden="true"/>:i===2?<Receipt size={19} aria-hidden="true"/>:<WalletCards size={19} aria-hidden="true"/>}</span></div>
         <p className="mt-4 break-words text-xl font-semibold text-slate-800 sm:text-2xl">{m.value}</p>
         <span className="sr-only">{tr(m.note,m.noteBn)}</span>
       </article>)}
@@ -96,17 +99,17 @@ export const TaxpayerDashboard: React.FC = () => {
       <section className={card} aria-labelledby="composition-heading">
         <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>
         <p className="mt-1 text-xs text-slate-500">{tr('Activity by payment category','খাতভিত্তিক লেনদেন')}</p>
-        {exampleRecords.length?<><div role="img" aria-label={tr('Transaction category breakdown','খাতভিত্তিক লেনদেন')} className="relative mx-auto my-6 h-52 w-52 rounded-full" style={{background:`conic-gradient(#5ea9e4 0% ${100*demoTotals[0]/(sum||1)}%, #a078c7 ${100*demoTotals[0]/(sum||1)}% ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}%, #ed977e ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}% 100%)`}}><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Activity breakdown','লেনদেনের বিভাজন')}</div></div>
-        {['Income tax','Source tax','Travel tax'].map((label,i)=><div className="flex items-center justify-between border-t border-slate-100 py-3 text-sm" key={label}><p><span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${['bg-sky-400','bg-purple-400','bg-orange-400'][i]}`}/>{label}</p><p className="font-semibold">৳ {fmt(demoTotals[i])}</p></div>)}</>:
+        {exampleRecords.length?<><div role="img" aria-label={tr('Transaction category breakdown','খাতভিত্তিক লেনদেন')} className="relative mx-auto my-6 h-52 w-52 rounded-full" style={{background:`conic-gradient(var(--service-return-primary) 0% ${100*demoTotals[0]/(sum||1)}%, var(--service-withholding-primary) ${100*demoTotals[0]/(sum||1)}% ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}%, var(--service-other-primary) ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}% 100%)`}}><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Activity breakdown','লেনদেনের বিভাজন')}</div></div>
+        {[tr('Income tax','আয়কর'),tr('Source tax','উৎসে কর'),tr('Travel tax','ভ্রমণ কর')].map((label,i)=><div className="flex items-center justify-between border-t border-slate-100 py-3 text-sm" key={label}><p><span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${['taxpayer-category-legend__swatch--income','taxpayer-category-legend__swatch--source','taxpayer-category-legend__swatch--travel'][i]}`}/>{label}</p><p className="font-semibold">৳ {fmt(demoTotals[i])}</p></div>)}</>:
         empty(tr('No activity to summarize','সারসংক্ষেপের তথ্য নেই'),tr('No payment records for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেকর্ড নেই।'))}
       </section>
       <section className={card} aria-labelledby="activity-heading">
         <div className="flex items-start justify-between"><div><h2 id="activity-heading" className="text-base font-semibold text-slate-800">{tr('Transaction activity','লেনদেনের কার্যক্রম')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Monthly distribution by selected payment type','নির্বাচিত পেমেন্টের মাসভিত্তিক বণ্টন')}</p></div><CalendarDays size={20} className="text-blue-700"/></div>
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={tr('Category filter','খাতের ফিল্টার')}>
-          {filterLabels.map(f=><button key={f.key} type="button" aria-pressed={category===f.key} className={`min-h-11 rounded-lg border px-2 text-xs font-medium ${category===f.key?'border-blue-700 bg-blue-50 text-blue-900':'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`} onClick={()=>setCategory(f.key)}>{tr(f.en,f.bn)}</button>)}
+          {filterLabels.map(f=><button key={f.key} type="button" aria-pressed={category===f.key} data-payment-service={f.key==='source'?'SOURCE_TAX_DEPOSIT':f.key==='travel'?'TRAVEL_TAX':f.key==='income'?'TAX_WITH_RETURN':undefined} className={`taxpayer-dashboard__category-filter min-h-11 rounded-lg border px-2 text-xs font-medium ${category===f.key?'border-blue-700 bg-blue-50 text-blue-900':'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`} onClick={()=>setCategory(f.key)}>{tr(f.en,f.bn)}</button>)}
         </div>
         {records.length?<div className="mt-8 flex h-64 items-end gap-2 border-b border-slate-200 pb-6" role="img" aria-label={tr('Transaction amounts by record','রেকর্ড অনুযায়ী লেনদেনের পরিমাণ')}>
-          {records.slice(0,12).map((r,i)=>{const max=Math.max(...records.map(x=>x.totalAmount),1);return <div key={r.id} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2"><p className="text-[10px] text-slate-500">{fmt(r.totalAmount)}</p><div className="w-full max-w-12 rounded-t-md bg-blue-400" style={{height:Math.max(4,r.totalAmount/max*185)}}/><p className="text-[10px] text-slate-500">{i+1}</p></div>})}
+          {records.slice(0,12).map((r,i)=>{const max=Math.max(...records.map(x=>x.totalAmount),1);return <div key={r.id} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2"><p className="text-[10px] text-slate-500">{fmt(r.totalAmount)}</p><div data-payment-service={r.paymentCategory} className="taxpayer-dashboard__category-bar w-full max-w-12 rounded-t-md" style={{height:Math.max(4,r.totalAmount/max*185)}}/><p className="text-[10px] text-slate-500">{i+1}</p></div>})}
         </div>:<div className="mt-5">{empty(tr('No activity for this selection','এই বাছাইয়ে লেনদেন নেই'),tr('No transactions match the selected category.','নির্বাচিত খাতে কোনো লেনদেন নেই।'))}</div>}
       </section>
     </div>
@@ -127,7 +130,7 @@ export const TaxpayerDashboard: React.FC = () => {
     <section className={card} aria-labelledby="transactions-heading">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 id="transactions-heading" className="text-base font-semibold">{tr('Payment & transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Select a record to view its status','অবস্থা দেখতে একটি রেকর্ড নির্বাচন করুন')}</p></div>
         <label className="relative flex items-center"><Search className="absolute left-3 text-slate-400" size={17}/><input type="search" className="min-h-11 w-full rounded-lg border border-slate-200 py-2 pl-10 pr-3 text-sm sm:w-64" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference or type','রেফারেন্স বা খাত খুঁজুন')} aria-label={tr('Search transactions','লেনদেন খুঁজুন')}/></label></div>
-      {records.length?<div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">{tr('Reference','রেফারেন্স')}</th><th className="p-3">{tr('Category','খাত')}</th><th className="p-3">{tr('Amount','পরিমাণ')}</th><th className="p-3">{tr('Status','অবস্থা')}</th><th className="p-3">{tr('Action','বিস্তারিত')}</th></tr></thead><tbody>{records.slice(0,10).map(r=><tr key={r.id} className="border-b border-slate-100"><td className="p-3 font-medium">{r.challanNo}</td><td className="p-3">{String(r.paymentCategory)}</td><td className="p-3">৳ {fmt(r.totalAmount)}</td><td className="p-3 text-slate-600">{r.treasuryStatus}</td><td className="p-3"><button type="button" className="min-h-10 text-blue-800 underline" onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button></td></tr>)}</tbody></table></div>:
+      {records.length?<div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">{tr('Reference','রেফারেন্স')}</th><th className="p-3">{tr('Category','খাত')}</th><th className="p-3">{tr('Amount','পরিমাণ')}</th><th className="p-3">{tr('Status','অবস্থা')}</th><th className="p-3">{tr('Action','বিস্তারিত')}</th></tr></thead><tbody>{records.slice(0,10).map(r=><tr key={r.id} className="border-b border-slate-100"><td className="p-3 font-medium">{r.challanNo}</td><td className="p-3"><ServiceCategoryTag code={r.paymentCategory}>{serviceName(r.paymentCategory)}</ServiceCategoryTag></td><td className="p-3">৳ {fmt(r.totalAmount)}</td><td className="p-3 text-slate-600">{r.treasuryStatus}</td><td className="p-3"><button type="button" className="min-h-10 text-blue-800 underline" onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button></td></tr>)}</tbody></table></div>:
       <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another assessment year or category.','অন্য করবর্ষ বা খাত নির্বাচন করুন।'))}</div>}
       <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" onClick={()=>navigate('history')}>{tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')}<ArrowRight size={16}/></button>
     </section>

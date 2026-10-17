@@ -5,6 +5,7 @@ import {useAccountIdentity} from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
+import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { formatCurrency } from '../../services/numberFormat';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import type { ChallanReceipt, PaymentCategory } from '../../types/tax';
@@ -116,7 +117,7 @@ export const PaymentHistory: React.FC = () => {
                   <h2 className="min-w-0 break-all font-mono-plex text-sm font-semibold text-taxpay-text">{r.challanNo}</h2>
                   <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
                 </div>
-                <p className="mt-1 text-xs text-taxpay-muted">{categoryText(r.paymentCategory)} · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
+                <p className="mt-1 text-xs text-taxpay-muted"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag> · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
                 <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {statusLabel(r.treasuryStatus)}</p>
                 <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
                 <button type="button" onClick={()=>selectReceipt(r.id)}
@@ -141,7 +142,7 @@ export const PaymentHistory: React.FC = () => {
               <tbody className="divide-y divide-taxpay-border">
                 {filtered.map(r=><tr key={r.id}>
                   <td className="break-all px-3 py-3 font-mono-plex text-xs">{r.challanNo}</td>
-                  <td className="px-3 py-3">{categoryText(r.paymentCategory)}</td>
+                  <td className="px-3 py-3"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag></td>
                   <td className="whitespace-nowrap px-3 py-3">{r.assessmentYear}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">{formatCurrency(r.totalAmount,language)}</td>
                   <td className="px-3 py-3">{statusLabel(r.treasuryStatus)}</td>

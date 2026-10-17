@@ -127,14 +127,14 @@ export const DemoPaymentActivity:React.FC=()=>{
         <h2 className="text-xl font-bold text-taxpay-text">{txt('Choose payment category','পেমেন্টের শ্রেণি নির্বাচন করুন')}</h2>
         <p className="text-sm text-taxpay-muted">{txt('Select the main category before entering payment details.','পেমেন্টের বিস্তারিত দেওয়ার আগে মূল শ্রেণি নির্বাচন করুন।')}</p>
         <div className="grid gap-3 sm:grid-cols-2">{simulationCategories.map(category=>
-          <button key={category} type="button" onClick={()=>chooseCategory(category)} className="min-h-20 rounded-xl border border-taxpay-border p-4 text-left font-semibold text-taxpay-dark hover:border-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+          <button key={category} type="button" data-payment-service={category} onClick={()=>chooseCategory(category)} className="taxpay-payment-category-option min-h-20 rounded-xl border border-taxpay-border p-4 text-left font-semibold text-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
             <span className="block">{simulationCategoryLabels[category][bn?'bn':'en']}</span>
             <span className="mt-2 block text-xs font-normal text-taxpay-muted">{txt('View category information →','শ্রেণির তথ্য দেখুন →')}</span>
           </button>)}</div>
       </div>}
       {paymentStage===1&&<div className="space-y-4">
         <h2 className="text-xl font-bold text-taxpay-text">{txt('Information before payment','পেমেন্টের আগে প্রয়োজনীয় তথ্য')}</h2>
-        <p className="font-semibold text-taxpay-dark">{simulationCategoryLabels[parentCategory][bn?'bn':'en']}</p>
+        <p className="font-semibold taxpay-service-value" data-payment-service={parentCategory}>{simulationCategoryLabels[parentCategory][bn?'bn':'en']}</p>
         <p className="text-sm text-taxpay-muted">{txt('Enter the beneficiary, assessment year, payment category and amount. You can add multiple allocations to the same record.','সুবিধাভোগী, করবর্ষ, পেমেন্টের শ্রেণি ও পরিমাণ দিন। একই রেকর্ডে একাধিক বরাদ্দ যোগ করা যায়।')}</p>
         <div className="flex flex-wrap justify-between gap-3">
           <button type="button" onClick={()=>setPaymentStage(0)} className="min-h-11 rounded-lg border border-taxpay-border px-5 font-semibold">{txt('Back','পূর্ববর্তী')}</button>
@@ -164,7 +164,7 @@ export const DemoPaymentActivity:React.FC=()=>{
               </select>
             </label>
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Payment category','পেমেন্টের খাত')}
-              <select className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.category} onChange={e=>modify(index,'category',e.target.value)}>
+              <select className="taxpay-service-select mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" data-payment-service={line.category} value={line.category} onChange={e=>modify(index,'category',e.target.value)}>
                 {simulationCategories.map(c=><option value={c} key={c}>{c.replace(/_/g,' ')}</option>)}
               </select>
             </label>
@@ -187,7 +187,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         </div>
           </PaymentFormSection>
           </div>
-          <PaymentLiveSummary language={language} category={simulationCategoryLabels[parentCategory][bn?'bn':'en']} year={lines.length===1?lines[0].assessmentYear:undefined} amount={lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0)} breakdown={lines.map((line,index)=>({label:`${txt('Allocation','বরাদ্দ')} ${index+1} · ${line.beneficiary}`,value:Number(line.amount)||0}))} />
+          <PaymentLiveSummary language={language} category={simulationCategoryLabels[parentCategory][bn?'bn':'en']} categoryCode={parentCategory} year={lines.length===1?lines[0].assessmentYear:undefined} amount={lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0)} breakdown={lines.map((line,index)=>({label:`${txt('Allocation','বরাদ্দ')} ${index+1} · ${line.beneficiary}`,value:Number(line.amount)||0}))} />
         </div>
         {submitMessage&&<p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-text">{submitMessage}</p>}
       </form></>}
@@ -211,7 +211,7 @@ export const DemoPaymentActivity:React.FC=()=>{
           <p className="mt-2 text-sm font-semibold text-taxpay-dark">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
           <h3 className="mt-4 font-semibold text-taxpay-text">{txt('Allocation details','বরাদ্দের বিবরণ')}</h3>
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
-            <div><p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
+            <div><p>{a.beneficiary} · <span className="taxpay-service-value" data-payment-service={a.category}>{simulationCategoryLabels[a.category][bn?'bn':'en']}</span></p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
             <p className="font-semibold tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p></li>)}</ul>
           <details className="mt-3 rounded-lg border border-taxpay-border p-3"><summary className="cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
             <ol className="mt-2 space-y-2">{tx.events.map(e=><li key={e.id} className="text-sm"><p className="font-semibold">{e.action}</p><p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p></li>)}</ol>

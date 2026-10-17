@@ -100,8 +100,8 @@
 }
 .tax-service-choice__selected-service strong {
   border-radius: 999px;
-  background: var(--citizen-primary-light);
-  color: var(--citizen-primary-dark);
+  background: var(--choice-bg, var(--citizen-primary-light));
+  color: var(--choice-text, var(--citizen-primary-dark));
   padding: .25rem .7rem;
   font-weight: 750;
 }
@@ -155,7 +155,9 @@
   background: var(--color-taxpay-surface-subtle);
 }
 .tax-service-choice__card[aria-pressed="true"] {
-  border-color: var(--choice-primary);
+  /* The far/right edge is a quiet service tint; the left keeps its 3px accent. */
+  border-color: var(--choice-border);
+  border-inline-start-color: var(--choice-primary);
   background: var(--choice-bg);
 }
 .tax-service-choice__card[aria-pressed="true"]::before {
@@ -228,7 +230,7 @@
   line-height: 1.55;
 }
 .tax-service-choice__card[aria-pressed="true"] .tax-service-choice__description {
-  color: var(--citizen-text);
+  color: color-mix(in srgb, var(--choice-text) 72%, var(--citizen-muted));
 }
 .tax-service-choice__actions {
   display: flex;

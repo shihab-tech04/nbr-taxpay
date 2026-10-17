@@ -111,60 +111,102 @@
   --service-text: var(--service-general-text);
 }
 
-/* Palette is attached to the service, rather than its current screen. */
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card) {
+/* One palette for every representation of a service: selector, directory, records and summaries. */
+.taxpay-citizen-shell [data-payment-service] {
   --choice-primary: var(--citizen-primary);
   --choice-bg: var(--citizen-primary-light);
   --choice-border: var(--citizen-border);
   --choice-text: var(--citizen-primary-dark);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="TAX_WITH_RETURN"] {
+.taxpay-citizen-shell [data-payment-service="TAX_WITH_RETURN"] {
   --choice-primary: var(--service-return-primary);
   --choice-bg: var(--service-return-bg);
   --choice-border: var(--service-return-border);
   --choice-text: var(--service-return-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="ADVANCE_TAX"] {
+.taxpay-citizen-shell [data-payment-service="ADVANCE_TAX"] {
   --choice-primary: var(--service-advance-primary);
   --choice-bg: var(--service-advance-bg);
   --choice-border: var(--service-advance-border);
   --choice-text: var(--service-advance-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="ASSESSED_DEMAND"] {
+.taxpay-citizen-shell [data-payment-service="ASSESSED_DEMAND"] {
   --choice-primary: var(--service-demand-primary);
   --choice-bg: var(--service-demand-bg);
   --choice-border: var(--service-demand-border);
   --choice-text: var(--service-demand-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="PENALTY"] {
+.taxpay-citizen-shell [data-payment-service="PENALTY"] {
   --choice-primary: var(--service-penalty-primary);
   --choice-bg: var(--service-penalty-bg);
   --choice-border: var(--service-penalty-border);
   --choice-text: var(--service-penalty-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="SOURCE_TAX_DEPOSIT"] {
+.taxpay-citizen-shell [data-payment-service="SOURCE_TAX_DEPOSIT"] {
   --choice-primary: var(--service-withholding-primary);
   --choice-bg: var(--service-withholding-bg);
   --choice-border: var(--service-withholding-border);
   --choice-text: var(--service-withholding-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="APPELLATE_TRIBUNAL"] {
+.taxpay-citizen-shell [data-payment-service="APPELLATE_TRIBUNAL"] {
   --choice-primary: var(--service-tribunal-primary);
   --choice-bg: var(--service-tribunal-bg);
   --choice-border: var(--service-tribunal-border);
   --choice-text: var(--service-tribunal-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="OTHER_TAX_PAYMENT"] {
+.taxpay-citizen-shell [data-payment-service="OTHER_TAX_PAYMENT"] {
   --choice-primary: var(--service-general-primary);
   --choice-bg: var(--service-general-bg);
   --choice-border: var(--service-general-border);
   --choice-text: var(--service-general-text);
 }
-.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="TRAVEL_TAX"] {
+.taxpay-citizen-shell [data-payment-service="TRAVEL_TAX"] {
   --choice-primary: var(--service-other-primary);
   --choice-bg: var(--service-other-bg);
   --choice-border: var(--service-other-border);
   --choice-text: var(--service-other-text);
+}
+/* Category badges use a quiet tint; receipt/payment state badges keep their separate meaning. */
+.taxpay-citizen-shell .taxpay-service-category {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: .16rem .48rem;
+  border: 1px solid var(--choice-border);
+  border-radius: .5rem;
+  background: var(--choice-bg);
+  color: var(--choice-text);
+  font-size: inherit;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.taxpay-citizen-shell .taxpay-service-value {
+  color: var(--choice-text);
+  font-weight: 650;
+}
+.taxpay-citizen-shell .taxpay-service-select[data-payment-service] {
+  border-color: var(--choice-border);
+  color: var(--choice-text);
+}
+.taxpay-citizen-shell .taxpay-payment-category-option {
+  border-color: var(--choice-border);
+  color: var(--choice-text);
+}
+.taxpay-citizen-shell .taxpay-payment-category-option:hover {
+  background: var(--choice-bg);
+  border-color: var(--choice-primary);
+}
+.taxpay-citizen-shell .taxpayer-category-legend__swatch--income { background: var(--service-return-primary); }
+.taxpay-citizen-shell .taxpayer-category-legend__swatch--source { background: var(--service-withholding-primary); }
+.taxpay-citizen-shell .taxpayer-category-legend__swatch--travel { background: var(--service-other-primary); }
+.taxpay-citizen-shell .taxpayer-dashboard__category-icon { background: var(--choice-bg); color: var(--choice-primary); }
+.taxpay-citizen-shell .taxpayer-dashboard__category-bar { background: var(--choice-primary); }
+.taxpay-citizen-shell .taxpayer-dashboard__category-filter[aria-pressed="true"][data-payment-service] {
+  background: var(--choice-bg);
+  border-color: var(--choice-border);
+  color: var(--choice-text);
 }
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service] .citizen-hub-service-grid__icon {
   background: var(--citizen-surface);
@@ -178,7 +220,7 @@
   line-height: 1.4;
 }
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service] p {
-  color: var(--citizen-text);
+  color: color-mix(in srgb, var(--service-text) 72%, var(--citizen-muted));
 }
 
 /* Preserve the approved modal structure and mobile full-screen behavior. */

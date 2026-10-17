@@ -63,6 +63,8 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   await expect(returnService).toHaveCSS('border-left-width', '1px');
   await expect(returnService).toHaveCSS('border-top-width', '1px');
   await expect(returnService).toHaveCSS('background-color', 'rgb(238, 244, 255)');
+  await expect(returnService).toHaveCSS('border-right-color', 'rgb(201, 216, 245)');
+  await expect(returnService).toHaveCSS('border-left-color', 'rgb(49, 93, 170)');
   expect(await returnService.evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(idleBorders[0].color);
   expect(await returnService.evaluate(el => getComputedStyle(el, '::before').backgroundColor)).toBe('rgb(49, 93, 170)');
   await expect(returnService).toHaveCSS('box-shadow', 'none');
