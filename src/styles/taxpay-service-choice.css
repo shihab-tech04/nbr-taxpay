@@ -7,6 +7,12 @@
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] .taxpay-modal__title {
   font-family: inherit;
 }
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"].tax-service-choice-modal--access {
+  width: min(100%, 700px);
+}
+.tax-service-choice-modal--access .taxpay-modal__footer {
+  justify-content: flex-start !important;
+}
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.payment-flow-embedded) {
   width: min(100%, 1160px);
   height: min(92dvh, 950px);
@@ -129,16 +135,20 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.tax-service-choice__access-gate {max-width:680px;margin:0 auto;padding:1.15rem 0 2rem;}
-.tax-service-choice .tax-service-choice__access-gate h3 {font-size:1.35rem;margin:0 0 .4rem;}
-.tax-service-choice__access-gate > p {color:var(--citizen-muted);font-size:.92rem;line-height:1.65;margin:0 0 1.25rem;}
-.tax-service-choice__access-gate .tax-service-choice__selected-service {margin-bottom:1.2rem;}
-.tax-service-choice__account-option {display:flex;align-items:center;justify-content:space-between;width:100%;gap:1rem;padding:1rem 1.2rem;border:1px solid var(--citizen-border);border-radius:12px;background:var(--citizen-surface);color:var(--citizen-text);text-align:left;cursor:pointer;}
-.tax-service-choice__account-option:hover {border-color:var(--citizen-primary);background:var(--color-taxpay-surface-subtle);}
-.tax-service-choice__account-option:focus-visible {outline:3px solid var(--citizen-primary);outline-offset:2px;}
-.tax-service-choice__account-option span {display:grid;gap:.35rem;}
-.tax-service-choice__account-option strong {font-size:.96rem;font-weight:700;}
-.tax-service-choice__account-option small {color:var(--citizen-muted);font-size:.82rem;line-height:1.5;}
+.tax-service-choice__access-gate {width:100%;padding:.15rem .2rem .5rem;}
+.tax-service-choice .tax-service-choice__access-gate h3 {font-size:1.2rem;line-height:1.4;margin:0 0 .4rem;}
+.tax-service-choice__access-gate > p {color:var(--citizen-muted);font-size:.88rem;line-height:1.6;margin:0 0 1.2rem;}
+.tax-service-choice__access-gate .tax-service-choice__selected-service {margin-bottom:1.35rem;}
+.tax-service-choice__access-options {display:grid;gap:.75rem;}
+.tax-service-choice__access-option {display:flex;align-items:center;width:100%;min-height:82px;gap:1rem;padding:.95rem 1rem;border:1px solid var(--citizen-border);border-radius:12px;background:var(--citizen-surface);color:var(--citizen-text);text-align:left;cursor:pointer;transition:background-color .15s ease,border-color .15s ease;}
+.tax-service-choice__access-option--guest {border-color:var(--citizen-primary);background:var(--color-taxpay-surface-subtle);}
+.tax-service-choice__access-option:hover {border-color:var(--citizen-primary);background:var(--citizen-primary-light);}
+.tax-service-choice__access-option:focus-visible {outline:3px solid var(--citizen-primary);outline-offset:2px;}
+.tax-service-choice__access-icon {display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:11px;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
+.tax-service-choice__access-copy {display:grid;flex:1;min-width:0;gap:.2rem;}
+.tax-service-choice__access-option strong {font-size:.94rem;line-height:1.45;font-weight:700;color:var(--citizen-text);}
+.tax-service-choice__access-option small {color:var(--citizen-muted);font-size:.83rem;line-height:1.5;}
+.tax-service-choice__access-arrow {flex:none;color:var(--citizen-primary-dark);}
 .tax-service-auth-overlay {
   position: fixed;
   inset: 0;
@@ -388,6 +398,7 @@
     max-height: 100dvh;
     border-radius: 0;
   }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"].tax-service-choice-modal--access {width:100%;}
   .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.payment-flow-embedded) {
     height: 100dvh;
     max-height: 100dvh;
@@ -409,6 +420,9 @@
   .tax-service-choice__stage-label--full { display: none; }
   .tax-service-choice__stage-label--short { display: block; }
   .tax-service-choice__grid { gap: .75rem; }
+  .tax-service-choice__access-gate {padding:.25rem 0 .65rem;}
+  .tax-service-choice__access-option {gap:.8rem;padding:.85rem;}
+  .tax-service-choice__access-icon {width:39px;height:39px;flex-basis:39px;}
   .tax-service-choice__card { min-height: 84px; padding: .8rem .85rem; gap: .8rem; }
   .tax-service-choice__icon { flex-basis: 42px; width:42px; height:42px; }
   .tax-service-choice__card strong { font-size: .9rem; }
