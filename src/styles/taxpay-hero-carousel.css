@@ -149,39 +149,66 @@
   object-position: center 62%;
 }
 
-.public-hero-carousel__arrow {
-  display: none;
-  position: absolute;
-  top: 50%;
-  z-index: 2;
-  width: 44px;
-  height: 44px;
+.public-hero-carousel__controls {
+  display: flex;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
-  transform: translateY(-50%);
-  border: 1px solid var(--citizen-border);
-  border-radius: 50%;
-  background: var(--citizen-surface);
-  color: var(--citizen-primary-dark);
-  opacity: 0;
-  box-shadow: var(--taxpay-shadow-control);
-  transition: opacity 200ms ease;
+  gap: .1rem;
+  border-top: 1px solid var(--citizen-border);
+  background: var(--citizen-primary-light);
 }
 
-.public-hero-carousel__arrow--previous { left: -56px; }
-.public-hero-carousel__arrow--next { right: -56px; }
-.public-hero-carousel__arrow:hover { background: var(--citizen-primary-light); }
-.public-hero-carousel-shell:hover .public-hero-carousel__arrow,
-.public-hero-carousel__arrow:focus-visible { opacity: 1; }
+.public-hero-carousel[data-payment-service] .public-hero-carousel__controls {
+  border-color: var(--choice-border);
+  background: var(--choice-bg);
+}
+
+.public-hero-carousel__indicator,
+.public-hero-carousel__playback {
+  display: inline-flex;
+  width: 40px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: .6rem;
+  color: var(--choice-primary, var(--citizen-primary));
+  background: transparent;
+  cursor: pointer;
+}
+
+.public-hero-carousel__indicator > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .4;
+  transition: width 160ms ease, opacity 160ms ease;
+}
+
+.public-hero-carousel__indicator[aria-pressed="true"] > span {
+  width: 18px;
+  opacity: 1;
+}
+
+.public-hero-carousel__indicator:hover,
+.public-hero-carousel__playback:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.public-hero-carousel__controls-separator {
+  width: 1px;
+  height: 17px;
+  margin-inline: .35rem;
+  background: var(--choice-border, var(--citizen-border));
+}
 
 .public-hero-carousel:focus-visible,
-.public-hero-carousel__arrow:focus-visible {
+.public-hero-carousel__indicator:focus-visible,
+.public-hero-carousel__playback:focus-visible {
   outline: 3px solid var(--citizen-primary);
   outline-offset: 3px;
-}
-
-@media (min-width: 1440px) and (hover: hover) and (pointer: fine) {
-  .public-hero-carousel__arrow { display: flex; }
 }
 
 @media (min-width: 901px) and (max-width: 1100px) {
@@ -214,7 +241,7 @@
     max-width: none;
     font-size: 1.75rem;
   }
-  .public-hero-carousel__slide .public-information-hero__media { height: 175px; }
+  .public-hero-carousel__slide .public-information-hero__media { height: clamp(175px, 30vw, 270px); }
   .public-hero-carousel__media--illustrated { --banner-fade-direction: to bottom; }
   /* Keep the payment confirmation readable at the top of the travel artwork. */
   .public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__media--illustrated {
@@ -227,10 +254,26 @@
   .public-hero-carousel { border-radius: 1rem; }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy { padding: 1.3rem 1rem .55rem; }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.75rem; }
-  .public-hero-carousel__slide .public-information-hero__media { height: 150px; }
+  .public-hero-carousel__slide .public-information-hero__media { height: clamp(145px, 43vw, 185px); }
+  .public-hero-carousel__slide.public-information-hero .public-guest-actions .public-guest-action {
+    min-height: 48px;
+    padding: .65rem .85rem;
+    font-size: .875rem;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 390px) {
+  .public-hero-carousel__slide[data-banner-service="intro"] .citizen-public-hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .public-hero-carousel__slide[data-banner-service="intro"] .public-guest-action {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .public-hero-carousel__track { transition: none; }
-  .public-hero-carousel__arrow { transition: none; }
+  .public-hero-carousel__indicator > span { transition: none; }
 }
