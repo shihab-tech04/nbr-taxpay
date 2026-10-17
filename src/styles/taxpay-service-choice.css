@@ -116,12 +116,14 @@
   min-width: 0;
   min-height: 76px;
   padding: .72rem 1rem;
-  border: 1px solid var(--citizen-border);
+  /* Reserve the selected border footprint so icon/text positions never jump. */
+  border: 2px solid transparent;
+  border-inline-start-width: 3px;
   border-radius: 13px;
   background: white;
   color: var(--citizen-text);
   text-align: left;
-  box-shadow: var(--taxpay-shadow-card);
+  box-shadow: inset 0 0 0 1px var(--citizen-border), var(--taxpay-shadow-card);
   cursor: pointer;
   transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
 }
@@ -130,7 +132,6 @@
 }
 .tax-service-choice__card[aria-pressed="true"] {
   border-color: var(--choice-primary);
-  border-inline-start: 3px solid var(--choice-primary);
   background: var(--choice-bg);
   box-shadow: var(--taxpay-shadow-card);
 }
@@ -150,7 +151,12 @@
   color: var(--choice-text);
 }
 .tax-service-choice__card[aria-pressed="true"] .tax-service-choice__icon {
-  background: var(--choice-bg);
+  border-color: var(--choice-primary);
+  background: var(--choice-primary);
+  color: white;
+}
+.tax-service-choice__card[aria-pressed="true"] .tax-service-choice__icon svg {
+  stroke-width: 2.3;
 }
 .tax-service-choice__copy {
   display: flex;
@@ -189,11 +195,19 @@
   line-height: 1.45;
   font-weight: 750;
 }
+.tax-service-choice__card[aria-pressed="true"] strong {
+  color: var(--choice-text);
+  font-weight: 800;
+}
 .tax-service-choice__description {
   display: block;
   color: var(--citizen-muted);
   font-size: .835rem;
   line-height: 1.45;
+}
+.tax-service-choice__card[aria-pressed="true"] .tax-service-choice__description {
+  color: var(--choice-text);
+  font-weight: 500;
 }
 .tax-service-choice__actions {
   display: flex;
