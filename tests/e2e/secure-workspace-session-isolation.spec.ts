@@ -158,7 +158,7 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await expect(appNavigation.getByRole('button',{name:'Activity',includeHidden:true})).toHaveCount(1);
   await expect(appNavigation.getByRole('button',{name:'Tax Ledger',includeHidden:true})).toHaveCount(1);
   await expect(appNavigation.getByRole('button',{name:'Payment Status',includeHidden:true})).toHaveCount(0);
-  await expect(page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Payment guide',includeHidden:true})).toHaveCount(1);
+  await expect(page.locator('.taxpayer-reference-rail .taxpayer-reference-account > summary')).toContainText('Menu');
   await expect(page.getByText('PRIVATE-OWNER-A-DRAFT')).toBeVisible();
   const ownerAHistory = page.getByRole('region', { name: 'My review inquiries' });
   await expect(ownerAHistory.getByText('SYN-A-REF-100001 — Pending evidence — not an approved correction')).toBeVisible();
