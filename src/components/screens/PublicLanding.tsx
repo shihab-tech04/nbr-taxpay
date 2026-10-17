@@ -6,7 +6,7 @@ import { PublicHeroCarousel } from './PublicHeroCarousel';
 
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, setPaymentServiceChoiceOpen, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService,setOpenService] = useState<PublicService|null>(null);
   const openGuide=(category:string)=>navigate('user_guide',{category});
   const bn = language === 'bn';
@@ -32,7 +32,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={() => setPaymentServiceChoiceOpen(true)}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
       onCheckReceipt={() => setOpenService('status')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
