@@ -67,7 +67,7 @@ test('Pay Tax opens the eight HTML-defined services and carries the chosen categ
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
   await expect(chooser.locator('.payment-form-section')).toHaveCount(4);
-  await expect(chooser.getByText('Advance Tax', { exact: true }).last()).toBeVisible();
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
   expect(page.url()).toBe(originalUrl);
 });
 

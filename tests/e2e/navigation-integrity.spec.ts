@@ -89,7 +89,7 @@ test('guest menus and bell route to their named services; contextual payment cho
   await services.getByRole('button',{name:'Continue'}).click();
   await expect(page).toHaveURL(/action=account_notifications/);
   await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
-  await expect(services.getByText('Advance Tax',{exact:true}).last()).toBeVisible();
+  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
   await page.reload();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);

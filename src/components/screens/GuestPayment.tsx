@@ -163,8 +163,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
-  const [selectedHeadId, setSelectedHeadId] = useState<number>(
-    V11_PAYMENT_OPTIONS.find(h => h.category === (isWithholdingMode ? 'SOURCE_TAX_DEPOSIT' : initialCategory || routeParams?.initialCategory) && h.status === 'ACTIVE')?.id || 1
+  const [selectedHeadId, setSelectedHeadId] = useState<number>(() =>
+    V11_PAYMENT_OPTIONS.find(h => h.category === category && h.status === 'ACTIVE')?.id || 1
   );
   const [headSearch, setHeadSearch] = useState('');
 
