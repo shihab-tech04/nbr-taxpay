@@ -77,7 +77,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
           {view === 'access' && <>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => setView('choice')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}</button>
+            <button type="button" className="tax-service-choice__cancel" onClick={() => setView('choice')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back', 'ফিরুন')}</button>
           </>}
         </div>
       )}
