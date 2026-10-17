@@ -280,12 +280,12 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
   await chooser.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
-  await chooser.getByLabel('Passport reference').fill('FAKE0001');
   await chooser.getByLabel('Mobile number for receipt').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
+  await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
+  await chooser.getByLabel('Passport reference').fill('FAKE0001');
   await expect(chooser.getByText('Payment purpose: Travel Tax')).toBeVisible();
   await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
