@@ -165,14 +165,16 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
-test('saved drafts deep links show public sign-in, without exposing taxpayer navigation',async({page},info)=>{
-  test.skip(info.project.name!=='desktop-1280','Desktop guest access check');
+test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop rail starts at 1440px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=secure_workspace');
-  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Secure Amar Kor workspace'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Account unavailable'})).toBeVisible();
-  await expect(page.getByRole('banner')).toBeVisible();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await expect(rail).toBeVisible();
+  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+  await expect(page).toHaveURL(/action=secure_workspace/);
 });
 
 test('taxpayer mobile menu and payment action link to the correct routes in both languages',async({page},info)=>{
