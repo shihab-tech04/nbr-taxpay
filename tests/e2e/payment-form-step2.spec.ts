@@ -102,7 +102,7 @@ test('guest amount view recalculates the right-hand summary', async ({ page }, i
   await chooser.getByRole('button', { name: /Continue to review/ }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment summary', { exact: true })).toBeVisible();
-  await expect(chooser.getByText('BDT 12,000', { exact: true })).toBeVisible();
+  await expect(chooser.locator('.payment-review__total-figure')).toHaveText('BDT 12,000');
   await chooser.getByRole('button', { name: 'Pay online' }).click();
   await chooser.getByRole('radio', { name: 'bKash' }).check();
   await chooser.getByRole('checkbox', { name: /I have checked the TIN/ }).check();

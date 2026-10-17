@@ -48,7 +48,7 @@ test('account sign-in returns to the exact selected service before data entry', 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.getByRole('button', { name: /Assessed Demand/ }).click();
-  await payment.getByRole('button', { name: /Use my account · Login required/ }).click();
+  await payment.getByRole('button', { name: /(Use my account · Login required|Account login)/ }).click();
   await payment.getByRole('button', { name: 'Proceed to login' }).click();
   const requirement = page.getByRole('alertdialog', { name: 'Sign in required' });
   await expect(requirement).toBeVisible();
