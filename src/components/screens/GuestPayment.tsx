@@ -254,7 +254,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return matchCat && matchQuery;
   });
 
-  const selectedHead = availableHeads.find(h => h.id === selectedHeadId) || availableHeads[0];
+  // Searching only filters the displayed choices; it must not silently change the payable head.
+  const selectedHead = V11_PAYMENT_OPTIONS.find(h => h.category === category && h.id === selectedHeadId);
 
   const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
 
@@ -654,6 +655,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 />
 
               <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="payment-head-options col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+                {availableHeads.length === 0 && <p className="p-4 text-sm text-slate-600">{language === 'bn' ? 'কোনো মিল থাকা পেমেন্ট খাত পাওয়া যায়নি।' : 'No matching payment heads. Try another search.'}</p>}
                 {availableHeads.map(head => {
                   const isBlocked = head.status !== 'ACTIVE';
                   const isSelected = selectedHead?.id === head.id;

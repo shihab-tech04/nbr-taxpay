@@ -26,6 +26,11 @@ test('mobile payment steps, Step 2 form, and footer actions stay compact and usa
   await expect(chooser.locator('.payment-form-summary__total')).toBeVisible();
   await expect(chooser.locator('.payment-form-summary__breakdown')).toBeHidden();
   expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('visible');
+  const originalHead = await chooser.locator('.payment-head-options input:checked').inputValue();
+  await chooser.locator('#guest-head-search').fill('no-matching-head-123');
+  await expect(chooser.locator('.payment-head-options')).toContainText('No matching payment heads');
+  await chooser.locator('#guest-head-search').fill('');
+  await expect(chooser.locator('.payment-head-options input:checked')).toHaveValue(originalHead);
 
   const buttons = footer.getByRole('button');
   await expect(buttons).toHaveCount(2);
