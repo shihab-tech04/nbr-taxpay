@@ -376,7 +376,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} />
           </div>
         )}
 
@@ -496,7 +496,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
           </div>
         )}
 
