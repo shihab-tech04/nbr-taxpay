@@ -5,7 +5,11 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
-export function TaxpayerLoginDialog() {
+export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false }: {
+  onClose?: () => void;
+  onSuccess?: () => void;
+  preservePaymentJourney?: boolean;
+} = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +20,7 @@ export function TaxpayerLoginDialog() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const bn = language === 'bn';
-  const close = () => navigate('landing');
+  const close = () => onClose ? onClose() : navigate('landing');
 
   useEffect(() => {
     const lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -50,9 +54,11 @@ export function TaxpayerLoginDialog() {
       setError('already_signed_in');
       return;
     }
-    if (!loginPreviewAccount(userId, password)) {
+    if (!loginPreviewAccount(userId, password, { preserveRoute: preservePaymentJourney })) {
       setError('invalid');
       inputRef.current?.focus();
+    } else {
+      onSuccess?.();
     }
   };
 
