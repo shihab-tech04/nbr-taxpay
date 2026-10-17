@@ -613,8 +613,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {[{ id: 'NON_COMPANY' as const, en: 'Person other than company', bn: 'কোম্পানি ব্যতীত ব্যক্তি' }, { id: 'COMPANY' as const, en: 'Company', bn: 'কোম্পানি' }].map(type => <label key={type.id} className={`flex gap-2 items-center border rounded-lg p-3 cursor-pointer text-xs font-semibold ${incomeTaxType === type.id ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200'}`}><input type="radio" name="guest-income-type" value={type.id} checked={incomeTaxType === type.id} onChange={() => setIncomeTaxType(type.id)} />{language === 'bn' ? type.bn : type.en}</label>)}
               </div>
             </fieldset>}
-            {/* Category Selector */}
-            <div>
+            {/* The modal locks the category chosen in Step 1. The standalone flow retains its selector. */}
+            {!embedded && <div>
               <label htmlFor="guest-category" className="block text-xs font-semibold text-slate-700 mb-1">
                 {commonCopy.category}
               </label>
@@ -636,7 +636,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   </option>
                 ))}
               </select>
-            </div>
+            </div>}
 
             {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
             <fieldset className="grid grid-cols-1 sm:grid-cols-[1fr_14rem] gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
@@ -653,7 +653,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   className="min-h-11 px-2.5 py-1 text-xs rounded border border-slate-300 w-full sm:w-56"
                 />
 
-              <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+              <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="payment-head-options col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
                 {availableHeads.map(head => {
                   const isBlocked = head.status !== 'ACTIVE';
                   const isSelected = selectedHead?.id === head.id;
@@ -661,9 +661,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     <label
                       key={head.id}
                       htmlFor={`guest-head-${head.id}`}
-                      className={`min-h-11 p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
+                      className={`payment-head-option min-h-11 p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-emerald-100/70 border-l-4 border-taxpay-primary'
+                          ? 'bg-blue-50 border-l-4 border-taxpay-primary'
                           : isBlocked
                           ? 'bg-rose-50/60 opacity-70 cursor-not-allowed'
                           : 'hover:bg-white'
@@ -687,9 +687,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                         <div className={`text-[11px] text-slate-500 ${language === 'bn' ? '' : 'font-bengali'}`} lang={language === 'bn' ? 'en' : 'bn'}>
                           {language === 'bn' ? head.nameEn : head.nameBn}
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600">
-                          <span>{language === 'bn' ? 'মূল নথির খাত-কোড' : 'Source head code'}: <strong lang="en">{head.economicCode}</strong></span>
-                        </div>
                         {head.rateNote && (
                           <div className="text-[11px] text-emerald-800 font-medium">
                             {copy.note}: <span lang="en">{head.rateNote}</span>
@@ -711,7 +708,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                         onChange={() => !isBlocked && setSelectedHeadId(head.id)}
                         aria-invalid={isFieldInvalid('headId') || undefined}
                         aria-describedby={errorDescription('headId')}
-                        className="mt-1 min-h-11 min-w-11 shrink-0 accent-emerald-800"
+                        className="payment-head-option__radio mt-1 shrink-0 accent-blue-700"
                       />
                     </label>
                   );
@@ -721,11 +718,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection>
 
             {/* Financial Amounts Breakdown */}
-            <PaymentFormSection number={4} title={language === 'bn' ? 'করবর্ষ ও পরিমাণ' : 'Assessment year & amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-taxpay-dark">
-                {copy.amountBreakdown}
-              </h3>
+            <PaymentFormSection number={4} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
+            <div className="payment-amount-fields space-y-4">
               <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
                   <label htmlFor="guest-tax-amount" className="block text-slate-600 font-medium mb-1">{copy.taxAmount} *</label>
@@ -787,14 +781,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 />
               </div>
 
-              <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">
-                  {copy.total}
-                </span>
-                <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
-                  {formatCurrency(totalAmount, language)}
-                </span>
-              </div>
             </div>
             </PaymentFormSection>
 
@@ -882,9 +868,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       {embedded && modalFooterTarget && createPortal(
         <div className="payment-flow-embedded__footer-actions">
           {step === 1 ? (
-            <button type="button" className="tax-service-choice__continue" onClick={handleEmbeddedDetailsNext}>
-              {language === 'bn' ? 'পর্যালোচনা ও পরিশোধ' : 'Continue to Review & Pay'} <ArrowRight size={18} aria-hidden="true" />
-            </button>
+            <>
+              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService} aria-label={language === 'bn' ? 'সেবা বাছাইয়ে ফিরুন' : 'Back to services'}>
+                <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__action-long">{language === 'bn' ? 'সেবা বাছাইয়ে ফিরুন' : 'Back to services'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{commonCopy.btnBack}</span>
+              </button>
+              <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পর্যালোচনা ও পরিশোধ' : 'Continue to Review & Pay'} onClick={handleEmbeddedDetailsNext}>
+                <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পর্যালোচনা ও পরিশোধ' : 'Continue to Review & Pay'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পর্যালোচনা' : 'Review & Pay'}</span><ArrowRight size={18} aria-hidden="true" />
+              </button>
+            </>
           ) : step === 3 ? (<>
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(1)} disabled={isProcessing}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
