@@ -5,9 +5,9 @@ No payment-v1 requests or financial transactions were created during these check
 
 | Check | TaxPay SQL | Office SQL |
 | --- | --- | --- |
-| Public `payment_v1_*` functions registered | 23 | 23 |
+| Public `payment_v1_*` functions registered | 25 | 25 |
 | `anon` can execute payment-v1 RPC | 0 | 0 |
-| Internal RPCs restricted to `service_role` | 8/8 | 8/8 |
+| Internal RPCs restricted to `service_role` | 9/9 | 9/9 |
 | Both event/command cron dispatch jobs enabled | Yes | Yes |
 | `payment-command-bridge` deployed ACTIVE | Yes | Yes |
 | Eight service validators returned expected 100 minor units | 8/8 | 8/8 |
