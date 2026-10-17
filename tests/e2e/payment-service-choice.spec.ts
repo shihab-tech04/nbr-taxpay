@@ -188,9 +188,9 @@ test('All eight services offer the policy-approved guest payment path before Ste
     await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
     await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
     if (i === 7) {
-      await chooser.locator('.travel-flow__footer-actions').getByRole('button', { name: 'Back to services' }).click();
+      await chooser.locator('.travel-flow__footer-actions').getByRole('button', { name: 'Back to payment options' }).click();
     } else {
-      await chooser.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back to services' }).click();
+      await chooser.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back to payment options' }).click();
     }
     await chooser.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back to services' }).click();
   }
@@ -220,7 +220,7 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'Destination and travel mode' })).toBeVisible();
+  await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
   await chooser.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
   await chooser.getByLabel('Passport reference').fill('FAKE0001');
   await chooser.getByLabel('Mobile number for receipt').fill('01712345678');
