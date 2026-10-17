@@ -4,6 +4,7 @@ import {
   LockKeyhole, Plane, ReceiptText, Scale, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import type { BannerPaymentService } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
@@ -25,12 +26,12 @@ export const PAYMENT_SERVICE_CHOICES = [
 
 type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
 
-export function PaymentServiceChoiceDialog() {
+export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
   const { user: verifiedUser } = useAccountIdentity();
-  const [selected, setSelected] = useState<ServiceId | null>(null);
+  const [selected, setSelected] = useState<ServiceId | null>(initialService);
   const [accessMode, setAccessMode] = useState<'guest' | 'account'>('guest');
-  const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
+  const [stage, setStage] = useState<1 | 2 | 3 | 4>(initialService ? 2 : 1);
   const [accountGate, setAccountGate] = useState<'message' | 'login' | null>(null);
   const [resumedAfterLogin, setResumedAfterLogin] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
