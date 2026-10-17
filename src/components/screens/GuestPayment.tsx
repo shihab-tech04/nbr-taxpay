@@ -278,7 +278,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const selectedHead = selectedHeads[0];
   const headAmount = (headId: number) => parseGuestAmount(amountInputs[headId] || '') ?? 0;
   const amountsValid = selectedHeads.length > 0 && selectedHeads.every(head => parseGuestAmount(amountInputs[head.id] || '') !== null);
-  const totalAmount = selectedHeads.reduce((sum, head) => sum + headAmount(head.id), 0);
+  const totalAmount = selectedHeads.reduce((minorUnits, head) => minorUnits + Math.round(headAmount(head.id) * 100), 0) / 100;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
   const paymentCalculation = <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
