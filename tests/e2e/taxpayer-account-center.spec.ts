@@ -48,7 +48,8 @@ test('desktop taxpayer rail includes profile, notifications, settings and safe e
   await accountGroup.locator('summary').focus();
   await page.keyboard.press('Enter');
   await expect(accountGroup).toHaveAttribute('open','');
-  for(const label of ['Profile','Profile settings'])await expect(accountGroup.getByRole('button',{name:label,exact:true})).toBeVisible();
+  for(const label of ['Profile','Help'])await expect(accountGroup.getByRole('button',{name:label,exact:true})).toBeVisible();
+  await expect(accountGroup.getByRole('button')).toHaveCount(2);
   await expect(rail.getByRole('button',{name:'Notifications',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();

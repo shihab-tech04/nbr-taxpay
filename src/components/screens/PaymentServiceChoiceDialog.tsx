@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2,
+  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
   Plane, ReceiptText, Scale, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
@@ -23,7 +24,8 @@ export const PAYMENT_SERVICE_CHOICES = [
 type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
 
 export function PaymentServiceChoiceDialog() {
-  const { language, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, setPaymentServiceChoiceOpen } = useTaxState();
+  const { user } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(null);
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const flowRef = useRef<HTMLElement>(null);
@@ -92,6 +94,11 @@ export function PaymentServiceChoiceDialog() {
             </button>
           ))}
         </div>
+        {user && <button type="button" className="tax-service-choice__saved-drafts"
+          onClick={() => { close(); navigate('secure_workspace'); }}>
+          <FolderOpen size={17} aria-hidden={true} />
+          {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
+        </button>}
         </> : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded />
         ) : selected ? (
