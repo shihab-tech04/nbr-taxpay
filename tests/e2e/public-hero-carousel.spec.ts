@@ -92,6 +92,20 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
   const travelImageFit = await carousel.locator('[data-banner-service="travel"] .public-hero-carousel__service-image')
     .evaluate(image => getComputedStyle(image).objectFit);
   expect(travelImageFit).toBe('cover');
+  const travelArtwork = await carousel.locator('[data-banner-service="travel"] .public-hero-carousel__service-image')
+    .evaluate(image => ({
+      src: (image as HTMLImageElement).src,
+      naturalWidth: (image as HTMLImageElement).naturalWidth,
+      bounds: image.getBoundingClientRect().toJSON(),
+      panel: image.parentElement?.getBoundingClientRect().toJSON(),
+    }));
+  expect(travelArtwork.src).toContain('taxpay-hero-travel-v3');
+  expect(travelArtwork.naturalWidth).toBeGreaterThan(1000);
+  expect(travelArtwork.bounds.width).toBeCloseTo(travelArtwork.panel!.width, 0);
+  expect(travelArtwork.bounds.height).toBeCloseTo(travelArtwork.panel!.height, 0);
+  const travelFade = await carousel.locator('[data-banner-service="travel"] .public-hero-carousel__media--illustrated')
+    .evaluate(media => getComputedStyle(media).getPropertyValue('--banner-fade-end').trim());
+  expect(travelFade).toBe('24%');
 });
 
 test('mobile illustrated banners blend downward into the image', async ({ page }, testInfo) => {
@@ -103,6 +117,9 @@ test('mobile illustrated banners blend downward into the image', async ({ page }
   const fadeDirection = await intro.locator('.public-hero-carousel__media--illustrated')
     .evaluate(media => getComputedStyle(media).getPropertyValue('--banner-fade-direction').trim());
   expect(fadeDirection).toBe('to bottom');
+  const travelFadeDirection = await carousel.locator('[data-banner-service="travel"] .public-hero-carousel__media--illustrated')
+    .evaluate(media => getComputedStyle(media).getPropertyValue('--banner-fade-direction').trim());
+  expect(travelFadeDirection).toBe('to bottom');
   const columns = await intro.evaluate(slide => getComputedStyle(slide).gridTemplateColumns.split(' '));
   expect(columns).toHaveLength(1);
   await expect(intro.locator('.public-information-hero__image')).toBeVisible();
