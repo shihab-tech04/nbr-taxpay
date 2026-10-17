@@ -323,7 +323,7 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{['Initiated','Gateway decision','Treasury settlement','Ledger allocation'].map((s,i)=><article key={s} className="rounded-xl border border-slate-200 p-4"><p className="text-xs font-semibold text-blue-800">{'0'+(i+1)}</p><h3 className="mt-1 font-semibold">{s}</h3><p className="mt-2 text-xs text-slate-500">{i===0?'Records begin as requests':i===1?'Failed and reversed attempts are tracked separately':i===2?'Only posted amounts are included in settlement':'Only eligible income tax, TDS and AIT is applied; travel excluded'}</p></article>)}</div>
     <div className="mt-4 flex flex-wrap gap-2">{view('history','Inspect transactions','লেনদেন দেখুন')}{view('ledger','Inspect allocations','ক্রেডিট দেখুন')}{view('certificates','Inspect evidence','প্রমাণ দেখুন')}</div>
   </section></>;
-  const profile=<section className={panel}><h2 className="text-base font-semibold">{tr('Taxpayer profile','করদাতার প্রোফাইল')}</h2>
+  const profile=<section className={panel}><h2 className="text-base font-semibold">{tr('Account details','অ্যাকাউন্টের তথ্য')}</h2>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{[
       ['Account','user1'],['Display name','Individual Taxpayer 01'],['Identifier','DEMO-TIN-001'],['Taxpayer class','Individual'],
       ['Income sources','Salary, bank interest and consultancy'],['Address','Address unavailable'],
