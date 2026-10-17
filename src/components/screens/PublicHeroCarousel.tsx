@@ -4,7 +4,7 @@ import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return.webp';
 import advanceTaxIllustration from '../../assets/taxpay-hero-advance.webp';
 import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding.webp';
-import travelTaxIllustration from '../../assets/taxpay-hero-travel-v3.webp';
+import travelTaxIllustration from '../../assets/taxpay-hero-travel-v4.webp';
 
 const AUTOPLAY_INTERVAL_MS = 4_500;
 const SWIPE_THRESHOLD_PX = 45;
