@@ -29,7 +29,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await chooser.locator('#guest-phone').fill('01712345678');
   const buttons = footer.getByRole('button');
   await expect(buttons).toHaveCount(2);
-  await expect(buttons.first()).toHaveAccessibleName('Back to payment options');
+  await expect(buttons.first()).toHaveAccessibleName('Back');
   await expect(buttons.last()).toHaveAccessibleName('Continue to purpose & amount');
   await buttons.last().click();
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '2. Purpose & amount');
@@ -40,8 +40,10 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('auto');
   const originalHead = await chooser.locator('.payment-head-options input:checked').inputValue();
   await chooser.locator('#guest-head-search').fill('no-matching-head-123');
+  await chooser.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(chooser.locator('.payment-head-options')).toContainText('No matching payment heads');
   await chooser.locator('#guest-head-search').fill('');
+  await chooser.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(chooser.locator('.payment-head-options input:checked')).toHaveValue(originalHead);
 
   await expect(buttons).toHaveCount(2);
@@ -68,9 +70,9 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('#guest-tax-amount')).toHaveValue('2100');
   await footer.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
-  await footer.getByRole('button', { name: 'Back to payment options' }).click();
+  await footer.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(progress).toHaveCount(0);
-  await footer.getByRole('button', { name: 'Back to services' }).click();
+  await footer.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(chooser.getByRole('button', { name: /Penalty/ })).toHaveAttribute('aria-pressed', 'true');
   await chooser.getByRole('button', { name: 'Close payment services' }).click();
   await expect(chooser).toHaveCount(0);
@@ -90,7 +92,9 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   const sections = chooser.locator('.payment-form-section');
   const summary = chooser.locator('.payment-form-summary');
   await expect(sections).toHaveCount(2);
-  await expect(summary).toHaveCount(0);
+  await expect(summary).toHaveCount(1);
+  await expect(summary).toBeVisible();
+  await expect(summary).toContainText('Payment calculation');
   await page.locator('#guest-tin').fill('123456789012');
   await page.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -122,6 +126,48 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(chooser.getByRole('heading', { name: 'Payment process complete' })).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
+});
+
+test('multiple payment heads have searchable selection, separate amounts and one accurate receipt', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
+  await chooser.getByRole('button', { name: /Advance Tax/ }).click();
+  await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
+  await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
+  await chooser.locator('#guest-tin').fill('123456789012');
+  await chooser.locator('#guest-phone').fill('01712345678');
+  await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
+
+  const choices = chooser.locator('.payment-head-options input[type="checkbox"]');
+  expect(await choices.count()).toBeGreaterThanOrEqual(2);
+  await expect(choices.first()).toBeChecked();
+  const second = choices.nth(1);
+  const secondId = await second.inputValue();
+  await second.check();
+  await expect(chooser.locator('.payment-head-amount')).toHaveCount(2);
+  await chooser.locator('#guest-tax-amount').fill('1200');
+  await chooser.locator(`#guest-tax-amount-${secondId}`).fill('300');
+  await expect(chooser.locator('.payment-form-summary__total')).toContainText('1,500');
+  await expect(chooser.locator('.payment-form-summary__breakdown')).toContainText('300');
+
+  await chooser.locator('#guest-head-search').fill('nonexistent-economic-code');
+  await chooser.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(chooser.locator('.payment-head-options')).toContainText('No matching payment heads');
+  await expect(chooser.locator('.payment-head-amount')).toHaveCount(2);
+  await expect(chooser.locator('.payment-form-summary__total')).toContainText('1,500');
+  await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(chooser.locator('.payment-form-summary__total')).toContainText('1,500');
+  await chooser.getByRole('button', { name: 'Pay online' }).click();
+  await chooser.getByRole('radio', { name: 'bKash' }).check();
+  await chooser.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await chooser.getByRole('button', { name: /Pay BDT 1,500/ }).click();
+  await expect(chooser.getByTestId('payment-lifecycle').getByText('CREDITED')).toBeVisible({ timeout: 12000 });
+  await expect(chooser.locator('.payment-form-summary__total')).toContainText('1,500');
+  await expect(chooser.locator('.receipt-view')).toContainText('1,500');
+  await expect(chooser.locator('.receipt-view')).toContainText('300');
 });
 
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
