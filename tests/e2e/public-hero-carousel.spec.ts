@@ -92,7 +92,7 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     return: 'taxpay-hero-return',
     advance: 'taxpay-hero-advance',
     withholding: 'taxpay-hero-withholding',
-    travel: 'taxpay-hero-travel-v4',
+    travel: 'taxpay-hero-travel-v5',
   };
   for (const [service, assetName] of Object.entries(expectedImages)) {
     const artwork = await carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__service-image`)
