@@ -136,17 +136,16 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(pageWidth(page)).resolves.toBeLessThanOrEqual(info.project.name === 'mobile-320' ? 322 : info.project.name === 'mobile-375' ? 377 : 1282);
 
   await page.getByLabel('Taxpayer Identification Number (e-TIN)').fill('123456789012');
-  await page.getByLabel('Name (optional)').fill('Sample Taxpayer');
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
-  await expect(page.getByRole('radiogroup', { name: 'Master payment head' })).toBeVisible();
-  await expect(page.getByRole('radio').first()).toBeVisible();
+  await expect(page.locator('.payment-head-single')).toBeVisible();
+  await page.getByRole('radio', { name: 'Person other than company' }).check();
 
-  await page.getByLabel('Tax Amount (৳)').fill('0');
+  await page.getByLabel('Payment amount (৳)').fill('0');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
   await expect(page.getByRole('alert')).toContainText('greater than zero');
-  await expect(page.getByLabel('Tax Amount (৳)')).toHaveAttribute('aria-invalid', 'true');
-  await page.getByLabel('Tax Amount (৳)').fill('15000');
+  await expect(page.getByLabel('Payment amount (৳)')).toHaveAttribute('aria-invalid', 'true');
+  await page.getByLabel('Payment amount (৳)').fill('15000');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
   await expect(page.getByText('Payment simulation only')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Pay online' })).toBeVisible();

@@ -569,7 +569,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('payerName')}
                   placeholder={copy.payerNamePlaceholder}
                   value={payerName}
-                   required autoComplete="name"
+                  required autoComplete="name"
                   onChange={(e) => setPayerName(e.target.value)}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 />
@@ -594,7 +594,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               {!isWithholdingMode && <div>
                 <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {category === 'OTHER_TAX_PAYMENT' ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
-                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => setNoticeReference(event.target.value)} required={category === 'OTHER_TAX_PAYMENT'} placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => setNoticeReference(event.target.value)} required={category === 'OTHER_TAX_PAYMENT'}
+                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
+                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
                 {fieldError('noticeReference')}
               </div>}
             </div>
