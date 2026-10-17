@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, ImageIcon, Search, WalletCards } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, WalletCards } from 'lucide-react';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
+import returnTaxIllustration from '../../assets/taxpay-hero-return.webp';
+import advanceTaxIllustration from '../../assets/taxpay-hero-advance.webp';
+import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding.webp';
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v3.webp';
 
 const AUTOPLAY_INTERVAL_MS = 4_500;
@@ -16,6 +19,7 @@ const slides = [
     descriptionBn: 'সঠিক করসেবা বেছে নিন, পেমেন্টের অবস্থা দেখুন ও রসিদ খুঁজুন এক জায়গায়।',
     actionEn: 'Pay Tax',
     actionBn: 'কর পরিশোধ',
+    image: heroPaymentIllustration,
   },
   {
     id: 'return',
@@ -25,6 +29,7 @@ const slides = [
     descriptionBn: 'রিটার্নের সঙ্গে সংশ্লিষ্ট আয়কর সহজ ও স্পষ্ট ধাপে পরিশোধ করুন।',
     actionEn: 'Pay Tax with Return',
     actionBn: 'রিটার্নের সঙ্গে কর পরিশোধ',
+    image: returnTaxIllustration,
   },
   {
     id: 'advance',
@@ -34,6 +39,7 @@ const slides = [
     descriptionBn: 'নির্বাচিত করবর্ষে আগাম আয়কর দিয়ে আপনার কর পরিকল্পনা এগিয়ে নিন।',
     actionEn: 'Pay Advance Income Tax',
     actionBn: 'অগ্রিম আয়কর পরিশোধ',
+    image: advanceTaxIllustration,
   },
   {
     id: 'withholding',
@@ -43,6 +49,7 @@ const slides = [
     descriptionBn: 'উৎসে কাটা বা সংগৃহীত কর সঠিক খাতে সহজে জমা দিন।',
     actionEn: 'Deposit Source Tax',
     actionBn: 'উৎসে কর জমা দিন',
+    image: withholdingTaxIllustration,
   },
   {
     id: 'travel',
@@ -52,6 +59,7 @@ const slides = [
     descriptionBn: 'ভ্রমণের ধরন ও যাত্রীর তথ্য দিয়ে ভ্রমণ করের ধাপগুলো সহজে এগিয়ে নিন।',
     actionEn: 'Pay Travel Tax',
     actionBn: 'ভ্রমণ কর পরিশোধ',
+    image: travelTaxIllustration,
   },
 ] as const;
 
@@ -198,14 +206,13 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                     )}
                   </div>
                 </div>
-                <div className={`public-information-hero__media${index === 0 || slide.id === 'travel' ? ' public-hero-carousel__media--illustrated' : ''}`} aria-hidden="true">
-                  {index === 0 ? (
-                    <img className="public-information-hero__image" src={heroPaymentIllustration} alt="" decoding="async" />
-                  ) : slide.id === 'travel' ? (
-                    <img className="public-information-hero__image public-hero-carousel__service-image" src={travelTaxIllustration} alt="" decoding="async" />
-                  ) : (
-                    <div className="public-hero-carousel__image-placeholder"><ImageIcon size={54} strokeWidth={1.25} /></div>
-                  )}
+                <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
+                  <img
+                    className={`public-information-hero__image${index === 0 ? '' : ' public-hero-carousel__service-image'}`}
+                    src={slide.image}
+                    alt=""
+                    decoding="async"
+                  />
                 </div>
               </article>
             );

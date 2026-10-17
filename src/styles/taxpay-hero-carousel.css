@@ -114,9 +114,9 @@
   --banner-fade-end: 47%;
 }
 
-/* The Travel illustration now fills the frame itself. Keep only a narrow CSS
- * transition into the service tint, so the scene isn't washed out twice. */
-.public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__media--illustrated {
+/* All service illustrations fill the frame. Keep their CSS fade narrow; the
+ * introduction retains its gentler, wider blend with the default brand tint. */
+.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__media--illustrated {
   --banner-fade-mid: 8%;
   --banner-fade-end: 24%;
 }
@@ -143,22 +143,6 @@
   max-height: none;
   object-fit: cover;
   object-position: center;
-}
-
-.public-hero-carousel__image-placeholder {
-  display: grid;
-  place-items: center;
-  width: min(80%, 410px);
-  height: 198px;
-  border: 1px dashed var(--citizen-border);
-  border-radius: 1rem;
-  background: rgb(255 255 255 / 48%);
-  color: var(--citizen-muted);
-}
-
-.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__image-placeholder {
-  border-color: var(--banner-service-border);
-  color: var(--banner-service-color);
 }
 
 .public-hero-carousel__arrow {
@@ -228,7 +212,6 @@
   }
   .public-hero-carousel__slide .public-information-hero__media { height: 175px; }
   .public-hero-carousel__media--illustrated { --banner-fade-direction: to bottom; }
-  .public-hero-carousel__image-placeholder { height: 160px; width: min(78%, 330px); }
 }
 
 @media (max-width: 600px) {
@@ -236,7 +219,6 @@
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy { padding: 1.3rem 1rem .55rem; }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.75rem; }
   .public-hero-carousel__slide .public-information-hero__media { height: 150px; }
-  .public-hero-carousel__image-placeholder { height: 135px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
