@@ -62,6 +62,7 @@ export const PublicUserGuide:React.FC=()=>{
  const [search,setSearch]=useState('');
  const [device,setDevice]=useState<'web'|'mobile'>('web');
  const contentRef=useRef<HTMLElement>(null);
+ const searchRef=useRef<HTMLInputElement>(null);
  const chooseTopic=(id:Category)=>{
    setSelected(id);
    navigate('user_guide',{category:id});
@@ -104,10 +105,12 @@ export const PublicUserGuide:React.FC=()=>{
         <p>{bn?'ছয়টি বিষয়ের ধাপ ও সাধারণ প্রশ্ন খুঁজুন।':'Search instructions and questions across all six topics.'}</p>
       </div>
       <div className="public-guide-find-controls">
-        <label className="public-guide-search"><Search size={20} aria-hidden="true"/><span className="sr-only">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</span>
-          <input value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="search"/>
-        </label>
-        {query&&<button className="public-guide-clear" type="button" onClick={()=>setSearch('')}><X size={16} aria-hidden="true"/>{bn?'মুছুন':'Clear'}</button>}
+        <div className="public-guide-search">
+          <Search size={20} aria-hidden="true"/>
+          <label className="sr-only" htmlFor="public-guide-search-input">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</label>
+          <input id="public-guide-search-input" ref={searchRef} value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="text" role="searchbox" inputMode="search"/>
+          {search&&<button className="public-guide-clear" type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'} onClick={()=>{setSearch('');searchRef.current?.focus();}}><X size={18} aria-hidden="true"/></button>}
+        </div>
       </div>
     </section>
   </div>

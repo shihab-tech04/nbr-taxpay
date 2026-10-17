@@ -173,7 +173,12 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await field.fill('tap Pay Tax');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('On Home, tap Pay Tax');
-  await guide.getByRole('button',{name:'Clear'}).click();
+  const clear=guide.getByRole('button',{name:'Clear search'});
+  await expect(clear).toHaveCount(1);
+  await expect(guide.locator('.public-guide-find-controls > .public-guide-clear')).toHaveCount(0);
+  await clear.click();
+  await expect(field).toBeFocused();
+  await expect(clear).toHaveCount(0);
   await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
   await guide.getByRole('button',{name:'Travel tax'}).click();
   await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
