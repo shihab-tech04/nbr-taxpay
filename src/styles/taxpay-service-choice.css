@@ -442,11 +442,15 @@
   .payment-flow-embedded .payment-form-section__heading-copy small { font-size:12px;line-height:1.4; }
   .payment-flow-embedded .payment-form-section__body label,
   .payment-flow-embedded .payment-form-section__body legend { font-size:13px;line-height:1.45; }
-  .payment-flow-embedded .payment-head-options { max-height:none;overflow:visible; }
+  .payment-flow-embedded .payment-head-options { max-height:260px;overflow-y:auto;overscroll-behavior:contain; }
   .payment-flow-embedded .payment-head-option { align-items:center;gap:10px;line-height:1.45; }
   .payment-flow-embedded .payment-head-option__radio { width:20px;height:20px;margin-top:0; }
   .payment-flow-embedded .payment-amount-fields { padding:0; border:0;background:transparent; }
-  .payment-flow-embedded .payment-amount-fields > .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .payment-flow-embedded .payment-amount-fields--simple { grid-template-columns:1fr; }
+  .payment-flow-embedded input:not([type="radio"]):not([type="checkbox"]),
+  .payment-flow-embedded select { font-size:16px; }
+  .payment-flow-embedded .payment-form-section__heading-copy h2 { font-size:15px; }
+  .payment-flow-embedded .payment-form-section__heading-copy p { font-size:13px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tax-service-choice__card { transition: none; }
