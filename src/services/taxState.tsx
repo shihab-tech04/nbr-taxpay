@@ -123,12 +123,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       : userRole === 'WITHHOLDING_AGENT'
       ? DEMO_TAXPAYERS['WITHHOLDING_DEDUCTOR']
       : DEMO_TAXPAYERS['INDIVIDUAL_REGULAR'];
-  const taxpayerProfile: TaxpayerProfile = demoUser
-    ? {...baseTaxpayerProfile,tin:`DEMO-TIN-${demoUser.id.slice(4).padStart(3,'0')}`,
-        nameEn:demoUser.id,nameBn:`নমুনা ${demoUser.id}`,
-        email:'demo@example.invalid',phone:'Not provided (demo)',
-        representativeScope:{isAuthorized:false}}
-    : baseTaxpayerProfile;
+  // First-time scenarios must not inherit an established taxpayer's fake TIN,
+  // address, circle, contact data or payment-owner information.
+  const firstTimeDemo = Boolean(demoUser && ['user7','user8','user9','user10'].includes(demoUser.id));
+  const taxpayerProfile: TaxpayerProfile = firstTimeDemo
+    ? {tin:'',nameEn:'',nameBn:'',type:'INDIVIDUAL',taxZone:'',taxCircle:'',
+       phone:'',email:'',address:'',isWithholdingEntity:false,
+       representativeScope:{isAuthorized:false}}
+    : demoUser
+      ? {...baseTaxpayerProfile,tin:`DEMO-TIN-${demoUser.id.slice(4).padStart(3,'0')}`,
+          nameEn:demoUser.id,nameBn:`নমুনা ${demoUser.id}`,
+          email:'demo@example.invalid',phone:'Not provided (demo)',
+          representativeScope:{isAuthorized:false}}
+      : baseTaxpayerProfile;
 
   const updateLanguage = (lang: Language) => {
     setLanguage(lang);
