@@ -35,6 +35,8 @@ browser-role table access. Browser clients never receive bridge signing keys.
 | `payment_v1_my_local_officer_decisions(p_request_id,p_limit)` | Read Office-owned review decisions | Office officers |
 | `payment_v1_office_notifications(p_limit,p_unread_only)` | Read TaxPay-originated cross-project notices | Office officers |
 | `payment_v1_office_set_notice_read(p_notice_id,p_is_read)` | Maintain per-officer cross-project notice read receipts | Office officers |
+| `payment_v1_office_my_role()` | Discover the signed-in Office user's role and whether it is active | Authenticated Office user |
+| `payment_v1_internal_set_officer_role(p_user_uid,p_role,p_active,p_reason)` | Grant, change or disable an existing Office user's role with an audit trail | Service role only; Office origin |
 
 All RPCs are deployed to both databases for migration symmetry. Origin-specific
 functions explicitly reject calls made on the wrong project. Every `payment_v1_internal_*`
@@ -77,7 +79,7 @@ state is separate from settlement/credit, which these endpoints cannot change.
   notification feeds and per-officer read receipts, delivery-status query.
 - **Deployed**: `payment-command-bridge` on both Supabase projects; the original
   `payment-sync-bridge` remains in place.
-- **Verified**: 23 `payment_v1_*` RPCs exist in each database; none grants
+- **Verified**: 25 `payment_v1_*` RPCs exist in each database; none grants
   `EXECUTE` to `anon`; all internal RPCs are service-role-only. Both cron jobs
   are enabled on each project. New private RLS tables are present.
 - **Not yet certified**: positive two-project end-to-end request/review delivery.
@@ -98,6 +100,11 @@ state is separate from settlement/credit, which these endpoints cannot change.
 4. `payment_v1_phase4_review_projections.sql`
 5. `payment_v1_phase5_notifications_and_status.sql`
 6. `payment_v1_phase5_office_local_reviews.sql`
+7. `payment_v1_phase5_office_roles.sql`
+
+Office has one additional hardening migration:
+`payment_v1_office_security_hardening.sql`, which revoked public execution of
+the internal RLS event-trigger handler (without removing the trigger).
 
 All migration files are stored under `docs/api/sql/`; command bridge source
 is `supabase/functions/payment-command-bridge/index.ts` on both API branches.
