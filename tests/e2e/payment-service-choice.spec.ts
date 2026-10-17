@@ -28,10 +28,11 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
 
   const idleBorders = await cards.evaluateAll(rows => rows.map(row => {
     const style = getComputedStyle(row);
-    return { color: style.borderTopColor, topWidth: style.borderTopWidth, leftWidth: style.borderLeftWidth };
+    return { color: style.borderTopColor, topWidth: style.borderTopWidth, leftWidth: style.borderLeftWidth, shadow: style.boxShadow };
   }));
   expect(new Set(idleBorders.map(border => border.color)).size).toBe(1);
-  expect(idleBorders.every(border => border.topWidth === '2px' && border.leftWidth === '3px')).toBe(true);
+  expect(idleBorders.every(border => border.topWidth === '1px' && border.leftWidth === '1px' && border.shadow === 'none')).toBe(true);
+  expect(await cards.first().evaluate(el => getComputedStyle(el, '::before').backgroundColor)).toBe('rgba(0, 0, 0, 0)');
 
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
@@ -59,26 +60,28 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   const idleDescriptionColor = await returnService.locator('.tax-service-choice__description').evaluate(el => getComputedStyle(el).color);
   await returnService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'true');
-  await expect(returnService).toHaveCSS('border-left-width', '3px');
-  await expect(returnService).toHaveCSS('border-top-width', '2px');
+  await expect(returnService).toHaveCSS('border-left-width', '1px');
+  await expect(returnService).toHaveCSS('border-top-width', '1px');
   await expect(returnService).toHaveCSS('background-color', 'rgb(238, 244, 255)');
   expect(await returnService.evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(idleBorders[0].color);
+  expect(await returnService.evaluate(el => getComputedStyle(el, '::before').backgroundColor)).toBe('rgb(49, 93, 170)');
+  await expect(returnService).toHaveCSS('box-shadow', 'none');
   await expectStablePositions(before);
-  await expect(returnService.locator('.tax-service-choice__icon')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(returnService.locator('.tax-service-choice__icon')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   expect(await returnService.locator('.tax-service-choice__icon').evaluate(el => getComputedStyle(el).color)).not.toBe(idleIconColor);
-  expect(await returnService.locator('.tax-service-choice__icon svg').evaluate(el => Number.parseFloat(getComputedStyle(el).strokeWidth))).toBeGreaterThan(1.9);
-  await expect(returnService.locator('strong')).toHaveCSS('font-weight', '800');
+  await expect(returnService.locator('strong')).toHaveCSS('font-weight', '700');
   expect(await returnService.locator('strong').evaluate(el => getComputedStyle(el).color)).not.toBe(idleTitleColor);
   expect(await returnService.locator('.tax-service-choice__description').evaluate(el => getComputedStyle(el).color)).not.toBe(idleDescriptionColor);
   await advanceService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'false');
-  await expect(returnService).toHaveCSS('border-left-width', '3px');
-  await expect(returnService).toHaveCSS('border-top-width', '2px');
+  await expect(returnService).toHaveCSS('border-left-width', '1px');
+  await expect(returnService).toHaveCSS('border-top-width', '1px');
   await expect(returnService).toHaveCSS('border-top-color', idleBorders[0].color);
   await expect(returnService).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  expect(await returnService.evaluate(el => getComputedStyle(el, '::before').backgroundColor)).toBe('rgba(0, 0, 0, 0)');
   await expectStablePositions(before);
   await expect(advanceService).toHaveAttribute('aria-pressed', 'true');
-  await expect(advanceService).toHaveCSS('border-left-width', '3px');
+  await expect(advanceService).toHaveCSS('border-left-width', '1px');
   await expect(advanceService.locator('.tax-service-choice__radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 });
 
