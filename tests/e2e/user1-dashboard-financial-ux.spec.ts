@@ -62,8 +62,9 @@ test('desktop navigation consolidates duplicate Home/Tax summary and groups acco
   await expect(rail).toBeVisible();
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCount(1);
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
-  await expect(rail.getByRole('button',{name:'Payment guide'})).toContainText('Payment guide');
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
   const account=rail.locator('.taxpayer-reference-account');
+  await expect(account.locator('summary')).toContainText('Menu');
   await expect(account).not.toHaveAttribute('open','');
   await account.locator('summary').focus();
   await page.keyboard.press('Enter');
@@ -71,7 +72,8 @@ test('desktop navigation consolidates duplicate Home/Tax summary and groups acco
   await expect(account.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
   await expect(account.getByRole('button',{name:'Profile settings'})).toBeVisible();
   await expect(account.getByRole('button',{name:'Account access'})).toHaveCount(0);
-  await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toBeVisible();
+  await expect(account.getByRole('button',{name:'Help',exact:true})).toBeVisible();
+  await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);
 });
 
 test('phone-to-wide-desktop layout keeps chart, KPIs and review actions usable',async({page},info)=>{
