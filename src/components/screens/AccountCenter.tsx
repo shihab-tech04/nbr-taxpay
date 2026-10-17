@@ -242,7 +242,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
           <>
             {page === 'profile' && (
               <section className="taxpayer-account-panel">
-                <h2>{t.profile}</h2>
+                <h2>{language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details'}</h2>
                 <dl className="taxpayer-account-facts">
                   <div><dt>{t.name}</dt><dd>{typeof user.user_metadata?.taxpay_display_name === 'string' && user.user_metadata.taxpay_display_name.trim() ? user.user_metadata.taxpay_display_name : t.noName}</dd></div>
                   <div><dt>{t.email}</dt><dd>{user.email ?? '—'}</dd></div>
@@ -253,7 +253,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 <p className="taxpayer-account-notice"><ShieldAlert size={17} aria-hidden />{t.consent}</p>
               </section>
             )}
-            {page === 'settings' && (
+            {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>
                 <label htmlFor="taxpay-profile-display-name">{t.name}</label>
