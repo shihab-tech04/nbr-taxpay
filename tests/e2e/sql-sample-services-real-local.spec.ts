@@ -32,17 +32,21 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(page.getByText('Advance-tax instalments')).toBeVisible();
 });
 
-test('user8 sees failed, pending, and reversed SQL examples but no user6 entries', async ({ page }) => {
+test('user8 begins with no saved activity or personal tax profile; user6 data stays isolated', async ({ page }) => {
   requireDisposableBackend();
   await signIn(page, 'user8');
   const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user8');
-  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-023')).toBeVisible();
-  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-024')).toBeVisible();
-  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-025')).toBeVisible();
-  await expect(panel.getByText('SAMPLE-SRV-017')).toHaveCount(0);
-  await expect(panel.getByText('Failed', { exact: true }).first()).toBeVisible();
-  await expect(panel.getByText('Reversed', { exact: true }).first()).toBeVisible();
+  await expect(panel.getByText('No stored service activity is available for this account.')).toBeVisible();
+  await expect(panel.getByRole('table')).toHaveCount(0);
+  for (const ref of ['SAMPLE-SRV-017','SAMPLE-SRV-023','SAMPLE-SRV-024','SAMPLE-SRV-025']) {
+    await expect(panel.getByText(ref)).toHaveCount(0);
+  }
+  await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
+  await page.goto('/?action=account_profile');
+  await expect(page.getByText('DEMO-TIN-008', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Payment Exception 08')).toHaveCount(0);
+  await expect(page.getByText('Account type')).toBeVisible();
 });
 
 test('user1 retains existing scenario plus its separate stored travel-tax example', async ({ page }) => {
