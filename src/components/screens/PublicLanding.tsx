@@ -6,7 +6,7 @@ import { PublicHeroCarousel } from './PublicHeroCarousel';
 
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, setPaymentServiceChoiceOpen, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService,setOpenService] = useState<PublicService|null>(null);
   const openGuide=(category:string)=>navigate('user_guide',{category});
   const bn = language === 'bn';
@@ -32,7 +32,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={() => setPaymentServiceChoiceOpen(true)}
+      onPayTax={openPaymentServiceChoice}
       onCheckReceipt={() => setOpenService('status')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
@@ -43,7 +43,7 @@ export const PublicLanding: React.FC = () => {
         <h2 id="payment-types-title">{t('Explore payment types', 'কর পরিশোধের ধরন জানুন')}</h2>
         <p>{t('Choose a payment category.', 'পেমেন্টের ধরন বেছে নিন।')}</p>
       </div><div className="public-info-section__links">
-        <button type="button" className="public-more-link" onClick={()=>setOpenService('travel')}><Plane size={15} aria-hidden="true"/>{t('Pay travel tax','ভ্রমণ কর পরিশোধ')}</button>
+        <button type="button" className="public-more-link" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}><Plane size={15} aria-hidden="true"/>{t('Pay travel tax','ভ্রমণ কর পরিশোধ')}</button>
         <button type="button" className="public-more-link" onClick={()=>openGuide('payments')}>{t('See more','আরও দেখুন')}<ArrowRight size={15}/></button>
       </div></div>
       <div className="public-info-topic-grid">
