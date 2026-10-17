@@ -7,6 +7,7 @@ test('public header, user-guide topics, footer links, language and browser histo
   await publicNav.getByRole('link',{name:'User guide'}).click();
   await expect(page).toHaveURL(/action=user_guide/);
   await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment basics'})).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page).toHaveURL(/action=user_guide&category=travel/);
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
@@ -121,13 +122,21 @@ test('taxpayer desktop rail keeps five primary choices and preserves specialist 
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
-  await menu.locator('summary').click();
+  // Four detailed workflows remain reachable under Activity, without crowding Menu.
+  const activityNav = page.getByRole('navigation',{name:'Activity sections'});
+  await rail.getByRole('button',{name:'Activity',exact:true}).click();
+  await expect(activityNav.getByRole('button')).toHaveCount(4);
   for(const [label,route] of [
-    ['Certificates','certificates'],['Corrections','corrections'],
-    ['Payment status','verify'],['Saved drafts','secure_workspace'],
-    ['Profile','account_profile'],['Profile settings','account_settings'],
-    ['Help','user_guide']
+    ['Transactions','history'],['Track payment','verify'],
+    ['Issues & corrections','corrections'],['Receipts & certificates','certificates']
   ] as const){
+    await activityNav.getByRole('button',{name:label,exact:true}).click();
+    await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
+    await expect(rail.getByRole('button',{name:'Activity',exact:true})).toHaveAttribute('aria-current','page');
+  }
+  await menu.locator('summary').click();
+  await expect(menu.getByRole('button')).toHaveCount(2);
+  for(const [label,route] of [['Profile','account_profile'],['Help','user_guide']] as const){
     await menu.getByRole('button',{name:label,exact:true}).click();
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
   }

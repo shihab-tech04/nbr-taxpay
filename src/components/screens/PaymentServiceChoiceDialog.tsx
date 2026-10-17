@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2,
+  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
   Plane, ReceiptText, Scale, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
@@ -26,7 +26,7 @@ export const PAYMENT_SERVICE_CHOICES = [
 type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
 
 export function PaymentServiceChoiceDialog() {
-  const { language, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
+  const { language, navigate, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
   const { user: verifiedUser } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(null);
   const [view, setView] = useState<'choice' | 'access' | 'payment'>('choice');
@@ -117,6 +117,11 @@ export function PaymentServiceChoiceDialog() {
             </button>
           ))}
         </div>
+        {verifiedUser && <button type="button" className="tax-service-choice__saved-drafts"
+          onClick={() => { close(); navigate('secure_workspace'); }}>
+          <FolderOpen size={17} aria-hidden="true" />
+          {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
+        </button>}
         </> : view === 'access' ? <div className="tax-service-choice__access-gate">
           {selected === 'TRAVEL_TAX' && chosenService && <p className="tax-service-choice__selected-service"><span>{tr('Selected payment service', 'নির্বাচিত সেবা')}</span><strong data-payment-service={selected}>{tr(chosenService.en, chosenService.bn)}</strong></p>}
           <h3 ref={accessHeadingRef} tabIndex={-1}>{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
