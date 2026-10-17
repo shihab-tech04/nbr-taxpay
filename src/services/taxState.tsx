@@ -23,10 +23,14 @@ import {
   INITIAL_GATEWAY_HEALTH 
 } from '../data/mockData';
 
+export type BannerPaymentService = 'TAX_WITH_RETURN' | 'ADVANCE_TAX' | 'SOURCE_TAX_DEPOSIT' | 'TRAVEL_TAX';
+
 export interface TaxStateContextType {
   currentRoute: string;
   isPaymentServiceChoiceOpen: boolean;
   setPaymentServiceChoiceOpen: (open: boolean) => void;
+  paymentServiceInitialSelection: BannerPaymentService | null;
+  openPaymentServiceChoice: (service?: BannerPaymentService) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
   loginPreviewAccount: (userId: string, password: string, options?: { preserveRoute?: boolean }) => boolean;
@@ -77,7 +81,16 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
     ? state.taxpaySampleRole as UserRole : null;
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen] = useState(false);
+  const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
+  const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
+  const setPaymentServiceChoiceOpen = (open: boolean) => {
+    if (!open) setPaymentServiceInitialSelection(null);
+    setPaymentServiceChoiceOpenState(open);
+  };
+  const openPaymentServiceChoice = (service?: BannerPaymentService) => {
+    setPaymentServiceInitialSelection(service ?? null);
+    setPaymentServiceChoiceOpenState(true);
+  };
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     // Public payment discovery is the primary citizen entry. TaxPay account access remains available by explicit deep link.
     const action = new URLSearchParams(window.location.search).get('action');
@@ -336,6 +349,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         currentRoute,
         isPaymentServiceChoiceOpen,
         setPaymentServiceChoiceOpen,
+        paymentServiceInitialSelection,
+        openPaymentServiceChoice,
         demoUser,
         previewAccount,
         loginPreviewAccount,
