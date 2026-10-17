@@ -50,7 +50,7 @@ const activitySections = [
 ] as const;
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -198,7 +198,7 @@ const MainRouter: React.FC = () => {
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
       {publicInformationRoute && <PublicHelpChat />}
       <ParityRegisterModal />
-      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog />}
+      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
       {loginOverlay && <TaxpayerLoginDialog />}
     </div>
   );

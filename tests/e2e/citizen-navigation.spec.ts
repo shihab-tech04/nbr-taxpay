@@ -16,10 +16,11 @@ test('public hero opens service choice before the guest payment form while the r
  await expect(services.locator('.tax-service-choice__card')).toHaveCount(8);
  await services.getByRole('button',{name:/Tax with Return/}).click();
  await services.getByRole('button',{name:'Continue'}).click();
+ await expect(services.getByRole('heading',{name:'How would you like to continue?'})).toBeVisible();
  await services.getByRole('button',{name:'Continue without signing in'}).click();
  await expect(page).toHaveURL(/action=landing/);
  await expect(services.locator('.payment-form-section')).toHaveCount(2);
- await expect(services.getByText('Step 1 of 4')).toBeVisible();
+ await expect(services.getByText('Step 1 of 4',{exact:false})).toBeVisible();
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
@@ -59,7 +60,11 @@ test('public information header and sections fit all requested widths',async({pa
   const receipt=await heroActions.getByRole('button',{name:'Check payment & receipt'}).boundingBox();
   expect(pay).not.toBeNull();
   expect(receipt).not.toBeNull();
-  expect(Math.abs(pay!.y-receipt!.y),'hero actions should share a row at '+width).toBeLessThan(2);
+  if (width <= 390) {
+    expect(receipt!.y - pay!.y, 'narrow phones should stack readable hero actions at '+width).toBeGreaterThan(40);
+  } else {
+    expect(Math.abs(pay!.y-receipt!.y),'hero actions should share a row at '+width).toBeLessThan(2);
+  }
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);

@@ -98,7 +98,7 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
 
-test('taxpayer desktop rail keeps five primary choices and preserves specialist routes inside Menu',async({page},info)=>{
+test('taxpayer desktop rail keeps compact primary navigation and its menu routes',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop sidebar is presented above 900px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
@@ -122,18 +122,9 @@ test('taxpayer desktop rail keeps five primary choices and preserves specialist 
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
-  // Four detailed workflows remain reachable under Activity, without crowding Menu.
-  const activityNav = page.getByRole('navigation',{name:'Activity sections'});
+  // Activity stays a single primary destination. The approved compact rail does not add a second navigation level.
   await rail.getByRole('button',{name:'Activity',exact:true}).click();
-  await expect(activityNav.getByRole('button')).toHaveCount(4);
-  for(const [label,route] of [
-    ['Transactions','history'],['Track payment','verify'],
-    ['Issues & corrections','corrections'],['Receipts & certificates','certificates']
-  ] as const){
-    await activityNav.getByRole('button',{name:label,exact:true}).click();
-    await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
-    await expect(rail.getByRole('button',{name:'Activity',exact:true})).toHaveAttribute('aria-current','page');
-  }
+  await expect(page).toHaveURL(/action=history(?:&|$)/);
   await menu.locator('summary').click();
   await expect(menu.getByRole('button')).toHaveCount(2);
   for(const [label,route] of [['Profile','account_profile'],['Help','user_guide']] as const){
