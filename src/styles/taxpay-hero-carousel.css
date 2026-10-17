@@ -14,6 +14,12 @@
   touch-action: pan-y;
 }
 
+/* The carousel's 1px outline follows the visible service without changing
+ * its box dimensions. The introduction retains the neutral brand outline. */
+.public-hero-carousel[data-payment-service] {
+  border-color: var(--choice-border);
+}
+
 .public-hero-carousel__track {
   display: flex;
   width: 100%;
@@ -55,42 +61,35 @@
   margin-top: 1.1rem;
 }
 
-.public-hero-carousel__slide[data-banner-service="return"] {
-  --banner-service-color: var(--service-return-primary);
-  --banner-service-text: var(--service-return-text);
-  --banner-service-border: var(--service-return-border);
-  --banner-bg: var(--service-return-bg);
+/* Each service banner reads the exact primary, surface, border and text
+ * variables of its matching payment-choice card. No parallel color mapping. */
+.public-hero-carousel__slide[data-payment-service] {
+  --banner-bg: var(--choice-bg);
 }
-.public-hero-carousel__slide[data-banner-service="advance"] {
-  --banner-service-color: var(--service-advance-primary);
-  --banner-service-text: var(--service-advance-text);
-  --banner-service-border: var(--service-advance-border);
-  --banner-bg: var(--service-advance-bg);
+
+.public-hero-carousel__slide.public-information-hero[data-payment-service] .citizen-public-hero__copy h2 {
+  color: var(--choice-text);
 }
-.public-hero-carousel__slide[data-banner-service="withholding"] {
-  --banner-service-color: var(--service-withholding-primary);
-  --banner-service-text: var(--service-withholding-text);
-  --banner-service-border: var(--service-withholding-border);
-  --banner-bg: var(--service-withholding-bg);
-}
-.public-hero-carousel__slide[data-banner-service="travel"] {
-  --banner-service-color: var(--service-other-primary);
-  --banner-service-text: var(--service-other-text);
-  --banner-service-border: var(--service-other-border);
-  --banner-bg: var(--service-other-bg);
+
+.public-hero-carousel__slide.public-information-hero[data-payment-service] .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {
+  color: color-mix(in srgb, var(--choice-text) 72%, var(--citizen-muted));
 }
 
 /* Match Sobaike's service-colored outlined hero CTAs without changing the
  * locked #2C5EAD brand primary or the original introduction CTA. */
-.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-guest-actions .citizen-public-primary {
+.public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary {
   background: var(--citizen-surface);
-  color: var(--banner-service-text);
-  border: 1px solid var(--banner-service-color);
+  color: var(--choice-text);
+  border: 1px solid var(--choice-primary);
 }
-.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-guest-actions .citizen-public-primary:hover {
-  background: var(--banner-service-color);
+.public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary:hover {
+  background: var(--choice-primary);
   color: white;
-  border-color: var(--banner-service-color);
+  border-color: var(--choice-primary);
+}
+.public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary:focus-visible {
+  outline: 2px solid var(--choice-primary);
+  outline-offset: 3px;
 }
 
 .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
