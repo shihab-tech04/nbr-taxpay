@@ -164,7 +164,7 @@ export const DemoPaymentActivity:React.FC=()=>{
               </select>
             </label>
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Payment category','পেমেন্টের খাত')}
-              <select className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.category} onChange={e=>modify(index,'category',e.target.value)}>
+              <select className="taxpay-service-select mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" data-payment-service={line.category} value={line.category} onChange={e=>modify(index,'category',e.target.value)}>
                 {simulationCategories.map(c=><option value={c} key={c}>{c.replace(/_/g,' ')}</option>)}
               </select>
             </label>
