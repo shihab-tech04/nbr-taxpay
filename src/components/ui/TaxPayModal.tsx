@@ -44,6 +44,8 @@ export function TaxPayModal({
     closeRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
+      // A login opened by this payment flow owns keyboard focus until it closes.
+      if (document.querySelector('.taxpayer-login-backdrop, .tax-service-auth-overlay')) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();

@@ -105,6 +105,69 @@
   padding: .25rem .7rem;
   font-weight: 750;
 }
+.tax-service-choice__account-access {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem 1rem;
+  flex-wrap: wrap;
+  margin: -.3rem 0 1rem;
+  color: var(--citizen-muted);
+  font-size: .83rem;
+  line-height: 1.5;
+}
+.tax-service-choice__account-access p { margin: 0; }
+.tax-service-choice__account-access button {
+  border: 0;
+  padding: .3rem 0;
+  color: var(--citizen-primary-dark);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tax-service-auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1150;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(13 25 46 / 55%);
+}
+.tax-service-auth-message {
+  width: min(100%, 500px);
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  border: 1px solid var(--citizen-border);
+  border-radius: var(--taxpay-radius-modal);
+  background: var(--citizen-surface);
+  color: var(--citizen-text);
+  box-shadow: var(--taxpay-shadow-modal);
+}
+.tax-service-auth-message h2 { margin: 0 0 .65rem; font-size: 1.28rem; font-weight: 700; }
+.tax-service-auth-message p { margin: 0; line-height: 1.6; color: var(--citizen-muted); }
+.tax-service-auth-message__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .7rem;
+  flex-wrap: wrap;
+  margin-top: 1.35rem;
+}
+.tax-service-auth-message__actions button {
+  min-height: 44px;
+  padding: .65rem 1rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: .6rem;
+  color: var(--citizen-primary-dark);
+  background: var(--citizen-surface);
+  font: inherit;
+  font-weight: 700;
+}
+.tax-service-auth-message__actions button:last-child {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary);
+  color: white;
+}
 .tax-service-choice h3 {
   margin: .15rem 0 1.2rem;
   color: var(--citizen-text);
