@@ -21,10 +21,10 @@ export type DemoServiceParticipantRole = 'PAYER' | 'BENEFICIARY';
 export interface DemoSqlUserProfile {
   id: DemoUserId;
   roleCode: string;
-  nameEn: string;
-  nameBn: string;
-  focusEn: string;
-  focusBn: string;
+  nameEn: string | null;
+  nameBn: string | null;
+  focusEn: string | null;
+  focusBn: string | null;
   tinStub: string | null;
   jurisdictionLabel: string | null;
 }
@@ -70,10 +70,10 @@ const parseProfile = (raw: unknown, requestedId: DemoUserId): DemoSqlUserProfile
   return {
     id: requestedId,
     roleCode: requiredText(raw.role_code, 'profile type'),
-    nameEn: requiredText(raw.name_en, 'English name'),
-    nameBn: requiredText(raw.name_bn, 'Bangla name'),
-    focusEn: requiredText(raw.focus_en, 'English profile focus'),
-    focusBn: requiredText(raw.focus_bn, 'Bangla profile focus'),
+    nameEn: nullableText(raw.name_en, 'English name'),
+    nameBn: nullableText(raw.name_bn, 'Bangla name'),
+    focusEn: nullableText(raw.focus_en, 'English profile focus'),
+    focusBn: nullableText(raw.focus_bn, 'Bangla profile focus'),
     tinStub: nullableText(raw.tin_stub, 'TIN reference'),
     jurisdictionLabel: nullableText(raw.jurisdiction_label, 'jurisdiction'),
   };

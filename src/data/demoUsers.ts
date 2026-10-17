@@ -10,10 +10,10 @@ export const DEMO_USERS: Record<DemoUserId, DemoUser> = {
  user4: {id:'user4',role:'TAXPAYER_INDIVIDUAL',nameEn:'Self-employed taxpayer',nameBn:'স্বনিযুক্ত করদাতা',focusEn:'Business and professional payment records',focusBn:'ব্যবসা ও পেশার পেমেন্ট রেকর্ড'},
  user5: {id:'user5',role:'TAXPAYER_INDIVIDUAL',nameEn:'Multi-year taxpayer',nameBn:'একাধিক করবর্ষের করদাতা',focusEn:'Assessment-year tracking',focusBn:'করবর্ষভিত্তিক তথ্য অনুসরণ'},
  user6: {id:'user6',role:'TAXPAYER_INDIVIDUAL',nameEn:'Advance-tax taxpayer',nameBn:'অগ্রিম কর পরিশোধকারী',focusEn:'Advance tax and instalment review',focusBn:'অগ্রিম কর ও কিস্তি পর্যালোচনা'},
- user7: {id:'user7',role:'TAXPAYER_INDIVIDUAL',nameEn:'Withholding recipient',nameBn:'উৎসে কর কর্তনগ্রহীতা',focusEn:'Withholding evidence and credit review',focusBn:'উৎসে করের প্রমাণ ও ক্রেডিট পর্যালোচনা'},
- user8: {id:'user8',role:'TAXPAYER_INDIVIDUAL',nameEn:'Payment exception case',nameBn:'পেমেন্টের সমস্যা বিষয়ক করদাতা',focusEn:'Pending, failed and reversed payments',focusBn:'অপেক্ষমাণ, ব্যর্থ ও ফেরত পেমেন্ট'},
- user9: {id:'user9',role:'TAXPAYER_INDIVIDUAL',nameEn:'Adjustment and refund case',nameBn:'সমন্বয় ও ফেরত বিষয়ক করদাতা',focusEn:'Adjustment and refund review',focusBn:'সমন্বয় ও ফেরতের পর্যালোচনা'},
- user10: {id:'user10',role:'TAXPAYER_INDIVIDUAL',nameEn:'Correction request case',nameBn:'সংশোধন আবেদনকারী',focusEn:'Payment corrections and reconciliation',focusBn:'পেমেন্ট সংশোধন ও সমন্বয়'}
+ user7: {id:'user7',role:'TAXPAYER_INDIVIDUAL',nameEn:'New taxpayer 07',nameBn:'নতুন করদাতা 07',focusEn:'First-time payment',focusBn:'প্রথমবার পেমেন্ট'},
+ user8: {id:'user8',role:'TAXPAYER_INDIVIDUAL',nameEn:'New taxpayer 08',nameBn:'নতুন করদাতা 08',focusEn:'First-time payment',focusBn:'প্রথমবার পেমেন্ট'},
+ user9: {id:'user9',role:'TAXPAYER_INDIVIDUAL',nameEn:'New taxpayer 09',nameBn:'নতুন করদাতা 09',focusEn:'First-time payment',focusBn:'প্রথমবার পেমেন্ট'},
+ user10: {id:'user10',role:'TAXPAYER_INDIVIDUAL',nameEn:'New taxpayer 10',nameBn:'নতুন করদাতা 10',focusEn:'First-time payment',focusBn:'প্রথমবার পেমেন্ট'},
 };
 export function getDemoUser(input: unknown): DemoUser | null {
  if(typeof input!=='string'||!/^user(?:10|[1-9])$/.test(input))return null;

@@ -1,15 +1,33 @@
 -- Read-only assertions against an isolated Supabase instance.
 do $$
 begin
-  if (select count(*) from public.sim_payment_users where name_en is not null and name_bn is not null
-      and role_code is not null and tin_stub like 'DEMO-TIN-%') <> 10 then
-    raise exception 'Expected all ten independently populated SQL demo profiles';
+  if (select count(*) from public.sim_payment_users where id in ('user1','user2','user3','user4','user5','user6')
+      and name_en is not null and name_bn is not null
+      and role_code is not null and tin_stub like 'DEMO-TIN-%') <> 6 then
+    raise exception 'Expected all six returning taxpayer profiles';
   end if;
-  if (select count(*) from public.sim_tax_service_records) <> 31 then
-    raise exception 'Expected exactly 31 initial fictional service records';
+  if (select count(*) from public.sim_tax_service_records) <> 19 then
+    raise exception 'Expected exactly 19 existing-user fictional service records';
   end if;
-  if (select count(distinct user_id) from public.sim_tax_service_records) <> 10 then
-    raise exception 'A taxpayer preview account has no service records';
+  if (select count(distinct user_id) from public.sim_tax_service_records) <> 6 then
+    raise exception 'Only the six returning taxpayers may begin with service records';
+  end if;
+  if (select count(*) from public.sim_payment_users where id in ('user7','user8','user9','user10')
+        and role_code = 'TAXPAYER_INDIVIDUAL'
+        and name_en is null and name_bn is null
+        and focus_en is null and focus_bn is null
+        and tin_stub is null and jurisdiction_label is null) <> 4 then
+    raise exception 'All four first-time user profiles must have zero optional profile fields';
+  end if;
+  if exists (select 1 from public.sim_tax_service_records
+              where user_id in ('user7','user8','user9','user10'))
+     or exists (select 1 from public.sim_payment_transactions
+                where payer_id in ('user7','user8','user9','user10'))
+     or exists (select 1 from public.sim_payment_allocations
+                where beneficiary_id in ('user7','user8','user9','user10'))
+     or exists (select 1 from public.sim_payment_notifications
+                where user_id in ('user7','user8','user9','user10')) then
+    raise exception 'A new account contains pre-existing simulated payment data';
   end if;
   if (select count(distinct service_code) from public.sim_tax_service_records) <> 8 then
     raise exception 'One of the eight tax services is missing';
@@ -43,7 +61,7 @@ begin;
 set local role anon;
 do $$
 begin
-  if (select count(*) from public.sim_tax_service_records) <> 31 then
+  if (select count(*) from public.sim_tax_service_records) <> 19 then
     raise exception 'Anonymous PostgREST client cannot read fictional service records';
   end if;
   if (select count(*) from public.sim_payment_users where role_code is not null) <> 10 then
