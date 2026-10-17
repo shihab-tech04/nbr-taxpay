@@ -126,7 +126,8 @@ test('User guide search and text weights follow the citizen typography contract'
   expect(layoutBox!.y).toBeGreaterThan(overviewBox!.y + overviewBox!.height);
 
   const input = guide.getByRole('searchbox', { name: 'Search the guide' });
-  await input.focus();
+  await field.locator('svg').first().click();
+  await expect(input).toBeFocused();
   await expect(field).toHaveCSS('border-color', 'rgb(44, 94, 173)');
   await expect(input).toHaveCSS('outline-style', 'none');
   await input.fill('receipt');

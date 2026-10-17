@@ -105,7 +105,7 @@ export const PublicUserGuide:React.FC=()=>{
         <p>{bn?'ছয়টি বিষয়ের ধাপ ও সাধারণ প্রশ্ন খুঁজুন।':'Search instructions and questions across all six topics.'}</p>
       </div>
       <div className="public-guide-find-controls">
-        <div className="public-guide-search">
+        <div className="public-guide-search" onClick={()=>searchRef.current?.focus()}>
           <Search size={20} aria-hidden="true"/>
           <label className="sr-only" htmlFor="public-guide-search-input">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</label>
           <input id="public-guide-search-input" ref={searchRef} value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="text" role="searchbox" inputMode="search"/>
