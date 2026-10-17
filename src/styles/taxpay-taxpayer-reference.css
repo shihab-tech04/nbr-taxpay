@@ -796,7 +796,8 @@
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem;
 }
 .taxpay-taxpayer-reference .taxpayer-service-directory__card {
-  min-width:0; padding:1.25rem; border:1px solid var(--color-taxpay-border);
+  min-width:0; padding:1.25rem; border:1px solid var(--choice-border);
+  border-inline-start:3px solid var(--choice-primary);
   background:var(--color-taxpay-surface); border-radius:14px;
 }
 .taxpay-taxpayer-reference .taxpayer-service-directory__card-top {
@@ -804,7 +805,7 @@
 }
 .taxpay-taxpayer-reference .taxpayer-service-directory__icon {
   display:grid; place-items:center; width:42px; height:42px; border-radius:10px;
-  background:var(--color-taxpay-light); color:var(--color-taxpay-primary);
+  background:var(--choice-bg); color:var(--choice-text); border:1px solid var(--choice-border);
 }
 .taxpay-taxpayer-reference .taxpayer-service-directory__number { font-size:.8125rem; font-weight:600; color:var(--color-taxpay-muted); }
 .taxpay-taxpayer-reference .taxpayer-service-directory__card h2 { font-size:1.1rem; font-weight:650; line-height:1.4; }

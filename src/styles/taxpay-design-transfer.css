@@ -14,7 +14,7 @@
   --citizen-radius-card: var(--taxpay-radius-card);
   --citizen-radius-modal: var(--taxpay-radius-modal);
 
-  /* Four distinct payment-service identities. No new services or actions. */
+  /* Service identities shared by the homepage banners and the payment selector. */
   --service-return-primary: #315DAA;
   --service-return-bg: #EEF4FF;
   --service-return-border: #C9D8F5;
@@ -23,10 +23,27 @@
   --service-advance-bg: #FFF6EC;
   --service-advance-border: #F3D9B8;
   --service-advance-text: #80420D;
+  --service-demand-primary: #22805A;
+  --service-demand-bg: #EDF8F2;
+  --service-demand-border: #C4E7D5;
+  --service-demand-text: #175C42;
+  --service-penalty-primary: #B44559;
+  --service-penalty-bg: #FFF1F3;
+  --service-penalty-border: #F2C8D1;
+  --service-penalty-text: #873145;
   --service-withholding-primary: #6D4BA8;
   --service-withholding-bg: #F6F1FC;
   --service-withholding-border: #DFD2F1;
   --service-withholding-text: #4E327B;
+  --service-tribunal-primary: #5264A7;
+  --service-tribunal-bg: #F0F3FF;
+  --service-tribunal-border: #D3DBF4;
+  --service-tribunal-text: #38497F;
+  --service-general-primary: #6F803A;
+  --service-general-bg: #F7F9EF;
+  --service-general-border: #DAE5B9;
+  --service-general-text: #495924;
+  /* The travel banner already uses this teal family. */
   --service-other-primary: #0C6D8D;
   --service-other-bg: #ECF8FC;
   --service-other-border: #BDE7F2;
@@ -88,10 +105,66 @@
   --service-text: var(--service-withholding-text);
 }
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service="other"] {
-  --service-primary: var(--service-other-primary);
-  --service-bg: var(--service-other-bg);
-  --service-border: var(--service-other-border);
-  --service-text: var(--service-other-text);
+  --service-primary: var(--service-general-primary);
+  --service-bg: var(--service-general-bg);
+  --service-border: var(--service-general-border);
+  --service-text: var(--service-general-text);
+}
+
+/* Palette is attached to the service, rather than its current screen. */
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card) {
+  --choice-primary: var(--citizen-primary);
+  --choice-bg: var(--citizen-primary-light);
+  --choice-border: var(--citizen-border);
+  --choice-text: var(--citizen-primary-dark);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="TAX_WITH_RETURN"] {
+  --choice-primary: var(--service-return-primary);
+  --choice-bg: var(--service-return-bg);
+  --choice-border: var(--service-return-border);
+  --choice-text: var(--service-return-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="ADVANCE_TAX"] {
+  --choice-primary: var(--service-advance-primary);
+  --choice-bg: var(--service-advance-bg);
+  --choice-border: var(--service-advance-border);
+  --choice-text: var(--service-advance-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="ASSESSED_DEMAND"] {
+  --choice-primary: var(--service-demand-primary);
+  --choice-bg: var(--service-demand-bg);
+  --choice-border: var(--service-demand-border);
+  --choice-text: var(--service-demand-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="PENALTY"] {
+  --choice-primary: var(--service-penalty-primary);
+  --choice-bg: var(--service-penalty-bg);
+  --choice-border: var(--service-penalty-border);
+  --choice-text: var(--service-penalty-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="SOURCE_TAX_DEPOSIT"] {
+  --choice-primary: var(--service-withholding-primary);
+  --choice-bg: var(--service-withholding-bg);
+  --choice-border: var(--service-withholding-border);
+  --choice-text: var(--service-withholding-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="APPELLATE_TRIBUNAL"] {
+  --choice-primary: var(--service-tribunal-primary);
+  --choice-bg: var(--service-tribunal-bg);
+  --choice-border: var(--service-tribunal-border);
+  --choice-text: var(--service-tribunal-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="OTHER_TAX_PAYMENT"] {
+  --choice-primary: var(--service-general-primary);
+  --choice-bg: var(--service-general-bg);
+  --choice-border: var(--service-general-border);
+  --choice-text: var(--service-general-text);
+}
+.taxpay-citizen-shell :is(.tax-service-choice__card, .taxpayer-service-directory__card)[data-payment-service="TRAVEL_TAX"] {
+  --choice-primary: var(--service-other-primary);
+  --choice-bg: var(--service-other-bg);
+  --choice-border: var(--service-other-border);
+  --choice-text: var(--service-other-text);
 }
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service] .citizen-hub-service-grid__icon {
   background: var(--citizen-surface);

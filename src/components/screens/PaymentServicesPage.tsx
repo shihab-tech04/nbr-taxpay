@@ -22,7 +22,7 @@ export const PaymentServicesPage: React.FC = () => {
     </header>
     <section className="taxpayer-service-directory__grid" aria-label={tr('Eight tax payment types', 'আট ধরনের কর পরিশোধ')}>
       {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }, index) => (
-        <article className="taxpayer-service-directory__card" key={id}>
+        <article className="taxpayer-service-directory__card" data-payment-service={id} key={id}>
           <div className="taxpayer-service-directory__card-top">
             <span className="taxpayer-service-directory__icon"><Icon size={22} aria-hidden="true" /></span>
             <span className="taxpayer-service-directory__number">{String(index + 1).padStart(2, '0')}</span>
