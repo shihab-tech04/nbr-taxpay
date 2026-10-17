@@ -9,13 +9,16 @@
 .payment-form-section__heading-copy{flex:1;display:grid;gap:3px}
 .payment-form-section__heading-copy strong{font-size:14px;font-weight:750}
 .payment-form-section__heading-copy small{font-size:12px;color:#566982;font-weight:450}
+.payment-form-section__heading-copy h2{font-size:15px;font-weight:750;line-height:1.4;margin:0}
+.payment-form-section__heading-copy p{font-size:13px;line-height:1.45;color:#566982;margin:0}
+.payment-form-section--static .payment-form-section__heading{cursor:default;border-bottom:1px solid #e6ebf2;min-height:0}
 .payment-form-section__chevron{flex:none;color:#71839e;transition:transform .2s}
 .payment-form-section[open] .payment-form-section__chevron{transform:rotate(180deg)}
 .payment-form-section__body{padding:18px;display:grid;gap:16px;min-width:0}
 .payment-form-summary{position:sticky;top:90px;min-width:0;border:1px solid #d7e2f0;border-radius:12px;background:#f8fbff;overflow:hidden;color:#18355a}
 .payment-form-summary__heading{display:flex;align-items:center;gap:9px;padding:16px 17px;border-bottom:1px solid #e0e9f4;color:#2c5ead}
 .payment-form-summary__heading h2{font-size:15px;font-weight:750;margin:0;flex:1}
-.payment-form-summary__live{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#0b7655}
+.payment-form-summary__live{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#2c5ead}
 .payment-form-summary__eyebrow{padding:20px 18px 0;margin:0;color:#516681;font-size:12px;font-weight:650}
 .payment-form-summary__total{display:block;padding:3px 18px 0;color:#1f56a1;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .payment-form-summary__help{margin:0;padding:1px 18px 17px;font-size:11px;color:#52667f}
@@ -30,7 +33,15 @@
 .payment-form-summary__breakdown strong{font-variant-numeric:tabular-nums;color:#263d5b}
 .payment-form-summary__notice{margin:0;border-top:1px solid #e0e9f4;padding:15px 18px;font-size:11px;line-height:1.65;color:#536883;background:#f0f6ff}
 .payment-form-layout input,.payment-form-layout select{max-width:100%}
+.payment-head-single{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #bfcee8;border-radius:10px;background:#f6f9ff;color:#254e92}
+.payment-head-single strong{display:block;font-size:14px;line-height:1.45}
+.payment-head-single small{display:block;margin-top:3px;font-size:12px;color:#566982}
+.payment-head-selected{margin:2px 0 0;font-size:12px;color:#526681}
+.payment-amount-fields--simple{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.payment-form-field-error{margin:6px 0 0;color:#a52335;font-size:13px;line-height:1.4;font-weight:600}
+@media (min-width:400px) and (max-width:639px){.payment-form-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.payment-form-layout{grid-template-columns:minmax(0,1fr)}.payment-form-summary{position:static;grid-row:1}.payment-form-summary__rows{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-form-summary__notice{padding:11px 18px}}
+@media(max-width:600px){.payment-amount-fields--simple{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:480px){.payment-form-section__heading{padding:13px}.payment-form-section__body{padding:14px}.payment-form-summary__total{font-size:25px}.payment-form-summary__rows{grid-template-columns:1fr}}
 
 /* Step 3: the v11 review / channel choice, shown inside the same tax-payment modal. */

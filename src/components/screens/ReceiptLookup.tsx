@@ -11,15 +11,17 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
+  const [receiptMobile, setReceiptMobile] = useState('');
   const [searchedReference, setSearchedReference] = useState('');
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
+  const sampleReceipts = receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const reference = query.trim();
     if (!reference) return;
     setSearchedReference(reference);
-    setSearchResult(lookupReceipt(reference) ?? 'NOT_FOUND');
+    setSearchResult(lookupReceipt(reference, receiptMobile) ?? 'NOT_FOUND');
   };
 
   return (
@@ -65,11 +67,19 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
               </button>
             </div>
           </div>
-          {receipts.length > 0 && (
+          <div className="receipt-lookup__field">
+            <label htmlFor="receipt-lookup-mobile">{t('Receipt mobile number', 'রসিদের মোবাইল নম্বর')}</label>
+            <input id="receipt-lookup-mobile" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={11}
+              placeholder="01XXXXXXXXX" value={receiptMobile}
+              onChange={event => { setReceiptMobile(event.target.value.replace(/\D/g, '').slice(0, 11)); setSearchResult(null); }}
+              className="receipt-lookup__input font-mono-plex" />
+            <p className="receipt-lookup__hint">{t('Required for receipts generated through the guest payment form.', 'অতিথি পেমেন্ট ফর্মের মাধ্যমে তৈরি রসিদের জন্য আবশ্যক।')}</p>
+          </div>
+          {sampleReceipts.length > 0 && (
             <div className="receipt-lookup__examples">
               <p className="receipt-lookup__examples-label">{t('Try a reference', 'রেফারেন্স ব্যবহার করুন')}</p>
               <div className="receipt-lookup__example-list">
-                {receipts.slice(0, 3).map(receipt => (
+                {sampleReceipts.map(receipt => (
                   <button
                     key={receipt.id}
                     type="button"

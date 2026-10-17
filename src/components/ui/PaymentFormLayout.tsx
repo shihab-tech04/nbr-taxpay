@@ -11,14 +11,23 @@ interface FormSectionProps {
   number: number;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  staticView?: boolean;
 }
 
 /** Native details/summary remain keyboard-operable and retain input state when collapsed. */
-export function PaymentFormSection({ title, description, number, children, defaultOpen = true }: FormSectionProps) {
+export function PaymentFormSection({ title, description, number, children, defaultOpen = true, staticView = false }: FormSectionProps) {
   const sectionRef = React.useRef<HTMLDetailsElement>(null);
   React.useEffect(() => {
     if (sectionRef.current) sectionRef.current.open = defaultOpen;
   }, [defaultOpen]);
+  if (staticView) return (
+    <section className="payment-form-section payment-form-section--static">
+      <div className="payment-form-section__heading">
+        <div className="payment-form-section__heading-copy"><h2>{title}</h2>{description && <p>{description}</p>}</div>
+      </div>
+      <div className="payment-form-section__body">{children}</div>
+    </section>
+  );
   return (
     <details ref={sectionRef} className="payment-form-section">
       <summary className="payment-form-section__heading">
@@ -51,7 +60,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, tin, year
         <h2>{bn ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</h2>
         <span className="payment-form-summary__live"><CircleCheck size={14} aria-hidden="true" />{bn ? 'হালনাগাদ' : 'Live'}</span>
       </div>
-      <p className="payment-form-summary__eyebrow">{bn ? 'মোট প্রদেয় কর' : 'Total tax payable'}</p>
+      <p className="payment-form-summary__eyebrow">{bn ? 'পরিশোধের মোট পরিমাণ' : 'Payment total'}</p>
       <output className="payment-form-summary__total" aria-live="polite">{formatCurrency(amount, language)}</output>
       <p className="payment-form-summary__help">{bn ? 'ফর্মে তথ্য পরিবর্তনের সঙ্গে হিসাব আপডেট হয়।' : 'Updates as you complete the form.'}</p>
       <dl className="payment-form-summary__rows">

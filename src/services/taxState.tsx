@@ -55,7 +55,7 @@ export interface TaxStateContextType {
   advanceCorrectionWorkflow: (id: string, stage: CorrectionRequest['workflowStage'], remarks: string) => void;
   addIncidentReport: (inc: Omit<IncidentReport, 'id' | 'incidentNumber' | 'reportDate' | 'status'>) => string;
   logAuditAction: (action: string, targetId: string, details: string) => void;
-  lookupReceipt: (query: string) => ChallanReceipt | undefined;
+  lookupReceipt: (query: string, mobile?: string) => ChallanReceipt | undefined;
 }
 
 const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined);
@@ -321,12 +321,15 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return incNumber;
   };
 
-  const lookupReceipt = (query: string): ChallanReceipt | undefined => {
+  const lookupReceipt = (query: string, mobile = ''): ChallanReceipt | undefined => {
     const clean = query.trim().toUpperCase();
-    return receipts.find(r => 
-      r.challanNo.toUpperCase() === clean || 
-      r.tokenNumber.toUpperCase() === clean ||
-      r.gatewayTransactionId.toUpperCase() === clean
+    const cleanMobile = mobile.replace(/\D/g, '');
+    return receipts.find(r =>
+      (!r.receiptMobile || r.receiptMobile === cleanMobile) && (
+        r.challanNo.toUpperCase() === clean ||
+        r.tokenNumber.toUpperCase() === clean ||
+        r.gatewayTransactionId.toUpperCase() === clean
+      )
     );
   };
 
