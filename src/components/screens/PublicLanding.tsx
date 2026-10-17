@@ -29,7 +29,7 @@ export const PublicLanding: React.FC = () => {
     { q: t('How can I find authoritative tax guidance?', 'প্রামাণ্য আয়কর নির্দেশনা কোথায় পাব?'), a: t('See current NBR publications and applicable law.', 'বর্তমান এনবিআর প্রকাশনা ও প্রযোজ্য আইন দেখুন।') }
   ];
 
-  return <div className={'citizen-public-hub public-information-hub mx-auto w-full max-w-[1296px] space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
+  return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
       onPayTax={() => setPaymentServiceChoiceOpen(true)}
