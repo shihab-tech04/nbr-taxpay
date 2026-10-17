@@ -211,7 +211,7 @@ test('floating help uses guide answers and report form never sends an official t
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
  await expect(page.getByRole('heading',{name:'Report a problem'})).toBeVisible();
- await expect(page.getByText('No report is sent and no official ticket is created.',{exact:false})).toBeVisible();
+ await expect(page.getByText('This form does not send reports or create official tickets.')).toBeVisible();
  await page.getByLabel('Short description').fill('Example payment record mismatch, using fake data.');
  await page.getByRole('button',{name:'Review form'}).click();
  await expect(page.getByRole('heading',{name:'Form reviewed'})).toBeVisible();
