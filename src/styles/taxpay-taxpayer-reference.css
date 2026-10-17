@@ -68,6 +68,18 @@
 }
 .taxpay-taxpayer-reference .citizen-overlay { background: var(--reference-overlay); }
 
+/* Mobile taxpayer navigation shares the white surface and dark controls of the desktop rail. */
+@media (max-width: 900px) {
+  .taxpay-taxpayer-reference .citizen-header {
+    background:var(--color-taxpay-surface);
+    color:var(--color-taxpay-text);
+    border-bottom-color:var(--color-taxpay-border);
+  }
+  .taxpay-taxpayer-reference .citizen-header .citizen-brand,
+  .taxpay-taxpayer-reference .citizen-mobile-menu-trigger,
+  .taxpay-taxpayer-reference .citizen-header__notification { color:var(--color-taxpay-dark); }
+}
+
 /* Reference desktop shell: fixed left rail and a centered reading workspace. */
 .taxpayer-reference-rail {
   display: none;

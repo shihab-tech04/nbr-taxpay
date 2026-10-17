@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, Bell, BookOpen, CircleHelp, Globe2, Home, Menu, Plus, Receipt, X } from 'lucide-react';
+import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, FileText, Globe2, Home, List, Menu, Plus, Receipt, RotateCcw, Route, Settings2, ShieldAlert, UserRound, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
@@ -16,16 +16,24 @@ const taxpayerLinks: CitizenAction[] = [
   { route: 'history', en: 'Activity', bn: 'লেনদেন' },
   { route: 'ledger', en: 'Tax Ledger', bn: 'কর লেজার' }
 ];
-const moreLinks: CitizenAction[] = [
+const serviceLinks: CitizenAction[] = [
+  { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
   { route: 'certificates', en: 'Certificates', bn: 'সনদ' },
   { route: 'corrections', en: 'Corrections', bn: 'সংশোধন' },
-  { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' },
-  { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
+  { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' }
+];
+const accountLinks: CitizenAction[] = [
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' },
   { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল' },
-  { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' },
+  { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' }
+];
+const supportLinks: CitizenAction[] = [
   { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' },
   { route: 'user_guide', category:'payments', en: 'Payment guide', bn: 'পেমেন্ট নির্দেশিকা' }
+];
+const guestServiceLinks: CitizenAction[] = [
+  { route:'incident',en:'Security reporting',bn:'নিরাপত্তা অভিযোগ' },
+  { route:'head_catalogue',en:'Payment head catalogue',bn:'কর খাতের তালিকা' }
 ];
 const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
@@ -157,6 +165,23 @@ export function CitizenNavigation() {
       aria-current={currentRoute === item.route && (!item.category || routeParams.category === item.category) ? 'page' : undefined}
       className="citizen-nav-link">{label(item)}</button>
   );
+  const menuAction = (item: CitizenAction) => {
+    const Icon = item.route === 'taxpayer_home' || item.route === 'landing' ? Home
+      : item.route === 'history' ? Activity : item.route === 'ledger' ? BookOpen
+      : item.route === 'verify' ? Receipt : item.route === 'services' ? CreditCard
+      : item.route === 'certificates' ? FileCheck2 : item.route === 'corrections' ? RotateCcw
+      : item.route === 'journey' ? Route : item.route === 'account_notifications' ? Bell
+      : item.route === 'account_profile' ? UserRound : item.route === 'account_settings' ? Settings2
+      : item.route === 'head_catalogue' ? List : item.route === 'incident' ? ShieldAlert
+      : item.category === 'payments' ? FileText : CircleHelp;
+    return <button key={item.route+':'+(item.category??'')} type="button"
+      onClick={() => go(item.route, item.category ? {category:item.category} : {})}
+      aria-current={currentRoute === item.route && (!item.category || routeParams.category === item.category) ? 'page' : undefined}
+      className="citizen-dialog__link">
+      <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+      <span>{label(item)}</span>
+    </button>;
+  };
   return (
     <>
       <a className="public-home-skip-link" href="#main-content">{bn ? 'মূল কনটেন্টে যান' : 'Skip to main content'}</a>
@@ -238,14 +263,15 @@ export function CitizenNavigation() {
             <>
                 <nav className="citizen-dialog__navigation" aria-label={bn ? 'সেবার নেভিগেশন' : 'Services navigation'}>
                   <p className="citizen-dialog__section-label">{bn ? 'প্রধান নেভিগেশন' : 'Navigation'}</p>
-                  <div className="citizen-dialog__links">{links.map(action)}</div>
-                  <p className="citizen-dialog__section-label">{bn ? 'অন্যান্য সেবা' : 'More services'}</p>
-                  <div className="citizen-dialog__links">
-                    {(isTaxpayer ? moreLinks : [
-                      {route:'incident',en:'Security reporting',bn:'নিরাপত্তা অভিযোগ'},
-                      {route:'head_catalogue',en:'Payment head catalogue',bn:'কর খাতের তালিকা'}
-                    ]).map(action)}
-                  </div>
+                  <div className="citizen-dialog__links">{links.map(menuAction)}</div>
+                  <p className="citizen-dialog__section-label">{bn ? 'সেবা' : 'Services'}</p>
+                  <div className="citizen-dialog__links">{(isTaxpayer ? serviceLinks : guestServiceLinks).map(menuAction)}</div>
+                  {isTaxpayer && <>
+                    <p className="citizen-dialog__section-label">{bn ? 'অ্যাকাউন্ট' : 'Account'}</p>
+                    <div className="citizen-dialog__links">{accountLinks.map(menuAction)}</div>
+                    <p className="citizen-dialog__section-label">{bn ? 'সহায়তা' : 'Support'}</p>
+                    <div className="citizen-dialog__links">{supportLinks.map(menuAction)}</div>
+                  </>}
                 </nav>
                 <section className="citizen-dialog__account" aria-label={bn ? 'ভাষা ও অ্যাকাউন্ট' : 'Language and account'}>
                   <div className="citizen-dialog__language-row">

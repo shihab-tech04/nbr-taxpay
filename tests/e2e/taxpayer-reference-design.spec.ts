@@ -129,6 +129,44 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
   }
 });
 
+test('taxpayer mobile header and Services menu keep desktop surface and readable navigation', async ({page},info) => {
+  test.skip(info.project.name !== 'mobile-375', 'One runner checks the mobile width matrix');
+  for (const width of [320,375,768,900]) {
+    await page.setViewportSize({width,height:740});
+    await openSampleTaxpayer(page);
+    const header = page.locator('.citizen-header');
+    await expect(header).toHaveCSS('background-color','rgb(255, 255, 255)');
+    await header.getByRole('button',{name:'Open menu'}).click();
+    const dialog = page.getByRole('dialog',{name:'Services & menu'});
+    const nav = dialog.getByRole('navigation',{name:'Services navigation'});
+    await expect(dialog).toBeVisible();
+    for (const group of ['Navigation','Services','Account','Support']) {
+      await expect(nav.getByText(group,{exact:true})).toBeVisible();
+    }
+    const items = nav.locator('.citizen-dialog__link');
+    await expect(items).toHaveCount(12);
+    const styles = await items.evaluateAll(buttons => buttons.map(button => {
+      const style = getComputedStyle(button);
+      return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
+        height:button.getBoundingClientRect().height};
+    }));
+    for (const item of styles) {
+      expect(item.text).toBeTruthy();
+      expect(item.color).not.toBe('rgb(255, 255, 255)');
+      expect(item.height).toBeGreaterThanOrEqual(44);
+    }
+    await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(nav.getByRole('button',{name:'Notifications'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Payment services'})).toBeVisible();
+    await dialog.getByRole('button',{name:'বাংলা'}).click();
+    const bengaliDialog = page.getByRole('dialog',{name:'সেবা ও মেনু'});
+    await expect(bengaliDialog.getByRole('button',{name:'কর পরিশোধ সেবা'})).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(bengaliDialog).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
+});
+
 test('private drafts receive reference inputs while backend remains disabled on Pages',async({page})=>{
   await page.goto('/?action=secure_workspace');
   const workspace=page.locator('.taxpayer-reference-secure');
