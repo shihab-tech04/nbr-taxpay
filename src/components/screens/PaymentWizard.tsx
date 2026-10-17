@@ -275,14 +275,14 @@ export const PaymentWizard: React.FC = () => {
                   {t.category} *
                 </label>
                 <select
-                  id="wizard-payment-category" value={category}
+                  id="wizard-payment-category" value={category} data-payment-service={category}
                   onChange={(e) => {
                     const newCat = e.target.value as PaymentCategory;
                     setCategory(newCat);
                     const first = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
                     if (first) setSelectedHeadId(first.id);
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
+                  className="taxpay-service-select w-full px-3 py-2 rounded-lg border border-slate-300 font-medium"
                 >
                   {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
