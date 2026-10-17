@@ -110,6 +110,15 @@
 .public-hero-carousel__media--illustrated {
   position: relative;
   --banner-fade-direction: to right;
+  --banner-fade-mid: 22%;
+  --banner-fade-end: 47%;
+}
+
+/* The Travel illustration now fills the frame itself. Keep only a narrow CSS
+ * transition into the service tint, so the scene isn't washed out twice. */
+.public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__media--illustrated {
+  --banner-fade-mid: 8%;
+  --banner-fade-end: 24%;
 }
 
 .public-hero-carousel__media--illustrated::before {
@@ -121,8 +130,8 @@
   background: linear-gradient(
     var(--banner-fade-direction),
     var(--banner-bg) 0%,
-    color-mix(in srgb, var(--banner-bg) 68%, transparent) 22%,
-    transparent 47%
+    color-mix(in srgb, var(--banner-bg) 68%, transparent) var(--banner-fade-mid),
+    transparent var(--banner-fade-end)
   );
 }
 

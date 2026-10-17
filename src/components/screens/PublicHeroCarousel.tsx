@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ImageIcon, Search, WalletCards } from 'lucide-react';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment.webp';
-import travelTaxIllustration from '../../assets/taxpay-hero-travel-v2.webp';
+import travelTaxIllustration from '../../assets/taxpay-hero-travel-v3.webp';
 
 const AUTOPLAY_INTERVAL_MS = 4_500;
 const SWIPE_THRESHOLD_PX = 45;
