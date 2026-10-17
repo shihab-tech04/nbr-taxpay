@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, WalletCards } from 'lucide-react';
+import { Pause, Play, Search, WalletCards } from 'lucide-react';
+import type { BannerPaymentService } from '../../services/taxState';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment-v3.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return-v3.webp';
 import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v3.webp';
 import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v3.webp';
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v6.webp';
 
-const AUTOPLAY_INTERVAL_MS = 4_500;
+const AUTOPLAY_INTERVAL_MS = 8_000;
 const SWIPE_THRESHOLD_PX = 45;
 const SWIPE_DOMINANCE_RATIO = 1.2;
 
@@ -70,7 +71,7 @@ const slides = [
 
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
-  onPayTax: () => void;
+  onPayTax: (service?: BannerPaymentService) => void;
   onCheckReceipt: () => void;
   paused?: boolean;
 };
@@ -87,6 +88,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const [isSwiping, setIsSwiping] = useState(false);
   const [isDocumentVisible, setIsDocumentVisible] = useState(true);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isPausedByUser, setIsPausedByUser] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -94,6 +96,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % slides.length), []);
   const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % slides.length), []);
+  const goToSlide = (index: number) => {
+    setActiveIndex(index);
+    setIsPausedByUser(true);
+  };
 
   useEffect(() => {
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -111,10 +117,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   }, []);
 
   useEffect(() => {
-    if (paused || prefersReducedMotion || isHovered || hasFocus || isSwiping || !isDocumentVisible) return;
+    if (paused || isPausedByUser || prefersReducedMotion || isHovered || hasFocus || isSwiping || !isDocumentVisible) return;
     const timer = window.setTimeout(goNext, AUTOPLAY_INTERVAL_MS);
     return () => window.clearTimeout(timer);
-  }, [activeIndex, goNext, hasFocus, isDocumentVisible, isHovered, isSwiping, paused, prefersReducedMotion]);
+  }, [activeIndex, goNext, hasFocus, isDocumentVisible, isHovered, isSwiping, paused, isPausedByUser, prefersReducedMotion]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -122,9 +128,11 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
       goPrevious();
+      setIsPausedByUser(true);
     } else if (event.key === 'ArrowRight') {
       event.preventDefault();
       goNext();
+      setIsPausedByUser(true);
     }
   };
 
@@ -147,6 +155,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       if (Math.abs(dx) > SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE_RATIO) {
         if (dx < 0) goNext();
         else goPrevious();
+        setIsPausedByUser(true);
       }
     }
     touchStartRef.current = null;
@@ -176,6 +185,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
+        data-user-paused={isPausedByUser}
         data-payment-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
@@ -203,7 +213,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                   {index === 0 ? <h1 id="public-home-title">{heading}</h1> : <h2>{heading}</h2>}
                   <p>{bn ? slide.descriptionBn : slide.descriptionEn}</p>
                   <div className="citizen-public-hero__actions public-guest-actions">
-                    <button className="citizen-public-primary public-guest-action" type="button" onClick={onPayTax}>
+                    <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax(slide.serviceCode)}>
                       <WalletCards size={18} aria-hidden="true" />{bn ? slide.actionBn : slide.actionEn}
                     </button>
                     {index === 0 && (
@@ -225,13 +235,29 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             );
           })}
         </div>
+        <nav className="public-hero-carousel__controls" aria-label={bn ? 'ব্যানার নিয়ন্ত্রণ' : 'Banner controls'}>
+          {slides.map((slide, index) => (
+            <button
+              key={slide.id}
+              className="public-hero-carousel__indicator"
+              type="button"
+              aria-label={bn ? `ব্যানার ${index + 1} / ${slides.length}: ${slide.headingBn}` : `Show banner ${index + 1} of ${slides.length}: ${slide.headingEn}`}
+              aria-pressed={activeIndex === index}
+              onClick={() => goToSlide(index)}
+            ><span aria-hidden="true" /></button>
+          ))}
+          {!prefersReducedMotion && <>
+            <span className="public-hero-carousel__controls-separator" aria-hidden="true" />
+            <button
+              type="button"
+              className="public-hero-carousel__playback"
+              onClick={() => setIsPausedByUser(value => !value)}
+              aria-label={bn ? (isPausedByUser ? 'ব্যানার আবার চালু করুন' : 'ব্যানার থামান') : (isPausedByUser ? 'Resume banner rotation' : 'Pause banner rotation')}
+              aria-pressed={isPausedByUser}
+            >{isPausedByUser ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}</button>
+          </>}
+        </nav>
       </section>
-      <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous" onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
-        <ChevronLeft size={21} aria-hidden="true" />
-      </button>
-      <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next" onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
-        <ChevronRight size={21} aria-hidden="true" />
-      </button>
     </div>
   );
 };
