@@ -70,7 +70,8 @@ test('desktop navigation consolidates duplicate Home/Tax summary and groups acco
   await page.keyboard.press('Enter');
   await expect(account).toHaveAttribute('open','');
   await expect(account.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
-  await expect(account.getByRole('button',{name:'Profile settings'})).toBeVisible();
+  await expect(account.getByRole('button',{name:'Profile settings'})).toHaveCount(0);
+  await expect(account.getByRole('button')).toHaveCount(2);
   await expect(account.getByRole('button',{name:'Account access'})).toHaveCount(0);
   await expect(account.getByRole('button',{name:'Help',exact:true})).toBeVisible();
   await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);
