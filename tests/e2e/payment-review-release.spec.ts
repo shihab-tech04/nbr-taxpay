@@ -205,18 +205,20 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await services.getByRole('button', { name: /Tax with Return/ }).click();
   await services.getByRole('button', { name: 'Continue' }).click();
-  await expect(services.locator('.payment-form-section')).toHaveCount(4);
-  await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
+  await services.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(services.locator('.payment-form-section')).toHaveCount(2);
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
   await expect(services).toBeVisible();
   await services.locator('#guest-tin').fill('123456789012');
   await services.locator('#guest-phone').fill('01712345678');
+  await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
   await services.locator('#guest-tax-amount').fill('0');
-  await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
+  await services.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(services.getByRole('alert')).toContainText('greater than zero');
   await services.locator('#guest-tax-amount').fill('25000');
-  await services.getByRole('button', { name: /Continue to Review & Pay/ }).click();
+  await services.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(services.getByText('Step 3 of 4')).toBeVisible();
   await expect(services.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await services.getByRole('button', { name: 'Pay online' }).click();

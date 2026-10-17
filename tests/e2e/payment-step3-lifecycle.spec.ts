@@ -7,10 +7,12 @@ async function openReview(page: Page, category = 'Tax with Return') {
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.getByRole('button', { name: new RegExp(category) }).click();
   await dialog.getByRole('button', { name: /Continue/ }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await dialog.locator('#guest-tax-amount').fill('12500');
-  await dialog.getByRole('button', { name: 'Continue to Review & Pay' }).click();
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
   await expect(page).toHaveURL(initialUrl);
   return dialog;

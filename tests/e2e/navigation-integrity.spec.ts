@@ -54,9 +54,10 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(services).toBeVisible();
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
+  await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=landing/);
-  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
-  await expect(services.locator('.payment-form-section')).toHaveCount(4);
+  await expect(services.getByText('Step 1 of 4')).toBeVisible();
+  await expect(services.locator('.payment-form-section')).toHaveCount(2);
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay travel tax'}).click();
   await expect(page.getByRole('dialog',{name:/Travel tax/})).toBeVisible();
@@ -88,8 +89,9 @@ test('guest menus and bell route to their named services; contextual payment cho
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Advance Tax/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
+  await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=account_notifications/);
-  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
   await page.reload();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
@@ -156,9 +158,10 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
+  await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(services.locator('.payment-form-section')).toHaveCount(4);
-  await expect(services.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(services.locator('.payment-form-section')).toHaveCount(2);
+  await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(rail).toBeVisible();
   // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
   await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
@@ -192,9 +195,10 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
+  await services.getByRole('button',{name:'Continue without signing in'}).click();
   // The payment workflow is modal-based and does not navigate away from Tax Journey.
   await expect(page).toHaveURL(/action=journey/);
-  await expect(services.locator('.payment-form-section')).toHaveCount(4);
+  await expect(services.locator('.payment-form-section')).toHaveCount(2);
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await open();
