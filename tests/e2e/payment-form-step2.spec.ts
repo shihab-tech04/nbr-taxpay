@@ -29,7 +29,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await chooser.locator('#guest-phone').fill('01712345678');
   const buttons = footer.getByRole('button');
   await expect(buttons).toHaveCount(2);
-  await expect(buttons.first()).toHaveAccessibleName('Back to services');
+  await expect(buttons.first()).toHaveAccessibleName('Back to payment options');
   await expect(buttons.last()).toHaveAccessibleName('Continue to purpose & amount');
   await buttons.last().click();
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '2. Purpose & amount');
@@ -67,7 +67,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('#guest-tax-amount')).toHaveValue('2100');
   await footer.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
-  await footer.getByRole('button', { name: 'Back to services' }).click();
+  await footer.getByRole('button', { name: 'Back to payment options' }).click();
   await expect(progress).toHaveCount(0);
   await footer.getByRole('button', { name: 'Back to services' }).click();
   await expect(chooser.getByRole('button', { name: /Advance Tax/ })).toHaveAttribute('aria-pressed', 'true');
