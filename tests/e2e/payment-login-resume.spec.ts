@@ -6,7 +6,8 @@ test('account sign-in returns to the exact selected service and preserves an in-
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.getByRole('button', { name: /Assessed Demand/ }).click();
   await payment.getByRole('button', { name: 'Continue' }).click();
-  await expect(payment.getByText('Assessed Demand', { exact: true }).last()).toBeVisible();
+  const selectedService = payment.locator('.tax-service-choice__selected-service strong');
+  await expect(selectedService).toHaveText('Assessed Demand');
 
   const tin = payment.locator('#guest-tin');
   await tin.fill('123456789012');
@@ -22,7 +23,7 @@ test('account sign-in returns to the exact selected service and preserves an in-
 
   await expect(login).toHaveCount(0);
   await expect(payment).toBeVisible();
-  await expect(payment.getByText('Assessed Demand', { exact: true }).last()).toBeVisible();
+  await expect(selectedService).toHaveText('Assessed Demand');
   await expect(tin).toHaveValue('123456789012');
   await expect(payment.getByText('Account selected. Your payment details are still here.')).toBeVisible();
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
