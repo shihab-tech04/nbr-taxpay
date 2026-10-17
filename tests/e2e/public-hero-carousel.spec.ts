@@ -259,6 +259,8 @@ test('all five banners can be selected manually with visible controls even with 
     await expect(indicators.nth(index)).toHaveAttribute('aria-pressed', 'true');
   }
   await expect(carousel).toHaveAttribute('data-user-paused', 'true');
+  await expect(carousel.getByRole('button', { name: 'Resume banner rotation' })).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await carousel.getByRole('button', { name: 'Resume banner rotation' }).click();
   await expect(carousel).toHaveAttribute('data-user-paused', 'false');
 });
