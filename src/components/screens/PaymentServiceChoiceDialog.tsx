@@ -117,7 +117,7 @@ export function PaymentServiceChoiceDialog() {
           {selected === 'TRAVEL_TAX' && chosenService && <p className="tax-service-choice__selected-service"><span>{tr('Selected payment service', 'নির্বাচিত সেবা')}</span><strong data-payment-service={selected}>{tr(chosenService.en, chosenService.bn)}</strong></p>}
           <h3>{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
           <p>{publicPayment ? tr('You can make this payment without signing in. Sign in if you want to use your account.', 'সাইন ইন ছাড়াই এই পেমেন্ট করা যাবে। অ্যাকাউন্ট ব্যবহার করতে চাইলে সাইন ইন করুন।') : tr('This service requires sign-in to continue.', 'এই সেবার জন্য সাইন ইন করতে হবে।')}</p>
-          <button type="button" className="tax-service-choice__account-option" onClick={requestAccountAccess}><span><strong>{tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</strong><small>{tr('Sign in to use your account details and records', 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করতে সাইন ইন করুন')}</small></span><ArrowRight size={19} aria-hidden="true" /></button>
+          <button type="button" className="tax-service-choice__account-option" onClick={requestAccountAccess} aria-label={tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}><span><strong>{tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</strong><small>{tr('Sign in to use your account details and records', 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করতে সাইন ইন করুন')}</small></span><ArrowRight size={19} aria-hidden="true" /></button>
         </div> : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded onBackToService={() => { setView('access'); setStage(1); }} onStageChange={reportStage} />
         ) : selected ? (
