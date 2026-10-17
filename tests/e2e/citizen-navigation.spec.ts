@@ -146,7 +146,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
 });
 
 
-test('public header centers icons at 1296px and routes to User Guide',async({page},info)=>{
+test('public header centers icons at 1100px content width and routes to User Guide',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','Desktop at 1600px');
  await page.setViewportSize({width:1600,height:900});
  await page.goto('/?action=landing');
@@ -168,8 +168,8 @@ test('public header centers icons at 1296px and routes to User Guide',async({pag
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  const bounds=await page.locator('.public-information-hub').boundingBox();
  expect(bounds).not.toBeNull();
- expect(bounds!.width).toBeGreaterThanOrEqual(1285);
- expect(bounds!.width).toBeLessThanOrEqual(1298);
+ expect(bounds!.width).toBeGreaterThanOrEqual(1099);
+ expect(bounds!.width).toBeLessThanOrEqual(1101);
  await faq.click();
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await expect(faq).toHaveAttribute('aria-current','page');
