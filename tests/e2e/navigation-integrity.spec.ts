@@ -7,6 +7,7 @@ test('public header, user-guide topics, footer links, language and browser histo
   await publicNav.getByRole('link',{name:'User guide'}).click();
   await expect(page).toHaveURL(/action=user_guide/);
   await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment basics'})).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page).toHaveURL(/action=user_guide&category=travel/);
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
@@ -119,13 +120,21 @@ test('taxpayer desktop rail keeps five primary choices and preserves specialist 
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
-  await menu.locator('summary').click();
+  // Four detailed workflows remain reachable under Activity, without crowding Menu.
+  const activityNav = page.getByRole('navigation',{name:'Activity sections'});
+  await rail.getByRole('button',{name:'Activity',exact:true}).click();
+  await expect(activityNav.getByRole('button')).toHaveCount(4);
   for(const [label,route] of [
-    ['Certificates','certificates'],['Corrections','corrections'],
-    ['Payment status','verify'],['Saved drafts','secure_workspace'],
-    ['Profile','account_profile'],['Profile settings','account_settings'],
-    ['Help','user_guide']
+    ['Transactions','history'],['Track payment','verify'],
+    ['Issues & corrections','corrections'],['Receipts & certificates','certificates']
   ] as const){
+    await activityNav.getByRole('button',{name:label,exact:true}).click();
+    await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
+    await expect(rail.getByRole('button',{name:'Activity',exact:true})).toHaveAttribute('aria-current','page');
+  }
+  await menu.locator('summary').click();
+  await expect(menu.getByRole('button')).toHaveCount(2);
+  for(const [label,route] of [['Profile','account_profile'],['Help','user_guide']] as const){
     await menu.getByRole('button',{name:label,exact:true}).click();
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
   }
@@ -156,16 +165,13 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
-test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{
-  test.skip(info.project.name!=='desktop-1280','Desktop rail starts at 1440px');
+test('saved drafts deep links show public sign-in, without exposing taxpayer navigation',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop guest access check');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=secure_workspace');
-  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  await expect(rail).toBeVisible();
-  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
-  await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
-  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Signed-in application user'})).toBeVisible();
+  await expect(page.getByRole('banner')).toBeVisible();
 });
 
 test('taxpayer mobile menu and payment action link to the correct routes in both languages',async({page},info)=>{
