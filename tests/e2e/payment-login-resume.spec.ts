@@ -4,8 +4,8 @@ test('the eight services clearly separate guest payments from account sign-in be
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  const guestRoute = payment.getByRole('button', { name: /Pay without login/ });
-  const accountRoute = payment.getByRole('button', { name: /Use my account · Login required/ });
+  const guestRoute = payment.getByRole('button', { name: /(Pay without login|Guest payment)/ });
+  const accountRoute = payment.getByRole('button', { name: /(Use my account · Login required|Account login)/ });
   await expect(guestRoute).toHaveAttribute('aria-pressed', 'true');
   await expect(accountRoute).toHaveAttribute('aria-pressed', 'false');
   await expect(payment.getByRole('group', { name: 'Tax payment services' }).getByRole('button')).toHaveCount(8);
@@ -34,7 +34,7 @@ test('dismissed account requirement proceeds as guest in the selected service', 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.getByRole('button', { name: /Source Tax Deposit/ }).click();
-  await payment.getByRole('button', { name: /Use my account · Login required/ }).click();
+  await payment.getByRole('button', { name: /(Use my account · Login required|Account login)/ }).click();
   await payment.getByRole('button', { name: 'Proceed to login' }).click();
   await page.getByRole('alertdialog', { name: 'Sign in required' })
     .getByRole('button', { name: 'Continue without login' }).click();

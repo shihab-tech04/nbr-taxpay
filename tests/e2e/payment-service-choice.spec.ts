@@ -37,9 +37,11 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
   const coordinates = () => returnService.evaluate(card => {
+    const cardRect = card.getBoundingClientRect();
     const getOrigin = (element: Element) => {
       const rect = element.getBoundingClientRect();
-      return { x: rect.x, y: rect.y };
+      // Scrolling the modal is allowed; selection must not move parts inside the card.
+      return { x: rect.x - cardRect.x, y: rect.y - cardRect.y };
     };
     return {
       icon: getOrigin(card.querySelector('.tax-service-choice__icon')!),
