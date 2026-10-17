@@ -98,6 +98,10 @@ export interface ChallanReceipt {
   assessmentYear: string;
   payerName: string;
   payerTin: string;
+  /** Account receiving the payment; never infer it from a guest payer. */
+  taxpayerTin?: string;
+  receiptMobile?: string;
+  noticeReference?: string;
   isRepresentativePayment: boolean;
   representativeTin?: string;
   taxZone: string;

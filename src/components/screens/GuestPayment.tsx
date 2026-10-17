@@ -22,6 +22,7 @@ import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
+import { parseGuestAmount } from '../../services/guestAmount';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 
 const GUEST_COPY = {
@@ -32,7 +33,7 @@ const GUEST_COPY = {
     selectedPurpose: 'Selected purpose', underReview: 'Under review', stepOf: (step: number) => `Step ${step} of 4`,
     steps: ['Taxpayer', 'Payment details', 'Review', 'Status'],
     tinPlaceholder: 'e-TIN', tinHint: 'Enter the 12-digit taxpayer identification number.',
-    payerName: 'Payer Legal Name', payerNamePlaceholder: 'Full name as registered on TIN certificate',
+    payerName: 'Payer Legal Name', payerNamePlaceholder: 'Your full name',
     year: 'Assessment Year', zoneCircle: 'Taxes Zone & Circle', zone: 'Taxes Zone', circle: 'Taxes Circle',
     mobile: 'Mobile number (optional)', mobilePlaceholder: 'Contact number',
     email: 'Email Address (optional)', deducteeDetails: 'Deductee (Supplier / Beneficiary) Particulars',
@@ -44,7 +45,7 @@ const GUEST_COPY = {
     representativeTin: 'Representative TIN', representativeTinPlaceholder: 'Representative 12-digit TIN',
     continueHead: 'Continue to Payment Head', category: 'Payment Category',
     selectHead: (count: number) => `Select Master Payment Head (${count} available in category)`,
-    searchHead: 'Filter by code or section...', blocked: 'BLOCKED', act: 'Act', legacy: 'Legacy', note: 'Note',
+    searchHead: 'Search by payment head or code…', blocked: 'Unavailable', act: 'Act', legacy: 'Legacy', note: 'Note',
     amountBreakdown: 'Payment Amount Breakdown (BDT)', taxAmount: 'Tax Amount (৳)', penalty: 'Penalty (৳)',
     surcharge: 'Surcharge (৳)', interest: 'Interest (৳)', remarks: 'Payment Remarks / Invoice Reference (Optional)',
     remarksPlaceholder: 'e.g. Assessment order #190 / Salary withholding month Oct 2026', total: 'Total Payable Amount:',
@@ -69,7 +70,7 @@ const GUEST_COPY = {
     selectedPurpose: 'নির্বাচিত উদ্দেশ্য', underReview: 'পর্যালোচনাধীন', stepOf: (step: number) => `ধাপ ${step} / ৪`,
     steps: ['করদাতা', 'পরিশোধের বিবরণ', 'পর্যালোচনা', 'অবস্থা'],
     tinPlaceholder: 'ই-টিআইএন', tinHint: '১২ সংখ্যার করদাতা শনাক্তকরণ নম্বর লিখুন।',
-    payerName: 'করদাতার আইনগত নাম', payerNamePlaceholder: 'টিআইএন সনদে নিবন্ধিত পূর্ণ নাম',
+    payerName: 'পরিশোধকারীর নাম', payerNamePlaceholder: 'আপনার পূর্ণ নাম',
     year: 'করবর্ষ', zoneCircle: 'কর অঞ্চল ও সার্কেল', zone: 'কর অঞ্চল', circle: 'কর সার্কেল',
     mobile: 'মোবাইল নম্বর (ঐচ্ছিক)', mobilePlaceholder: 'যোগাযোগ নম্বর',
     email: 'ইমেইল ঠিকানা (ঐচ্ছিক)', deducteeDetails: 'কর কর্তনগ্রহীতা (সরবরাহকারী / সুবিধাভোগী) তথ্য',
@@ -81,7 +82,7 @@ const GUEST_COPY = {
     representativeTin: 'প্রতিনিধির টিআইএন', representativeTinPlaceholder: 'প্রতিনিধির ১২ সংখ্যার টিআইএন',
     continueHead: 'পেমেন্ট খাতে এগিয়ে যান', category: 'পেমেন্টের শ্রেণি',
     selectHead: (count: number) => `মাস্টার পেমেন্ট খাত নির্বাচন করুন (এই শ্রেণিতে ${count}টি)`,
-    searchHead: 'কোড বা ধারা দিয়ে খুঁজুন…', blocked: 'নির্বাচনযোগ্য নয়', act: 'আইন', legacy: 'পূর্ববর্তী আইন', note: 'নোট',
+    searchHead: 'খাতের নাম বা কোড দিয়ে খুঁজুন…', blocked: 'নির্বাচনযোগ্য নয়', act: 'আইন', legacy: 'পূর্ববর্তী আইন', note: 'নোট',
     amountBreakdown: 'পেমেন্টের পরিমাণের হিসাব (টাকা)', taxAmount: 'কর (৳)', penalty: 'জরিমানা (৳)',
     surcharge: 'সারচার্জ (৳)', interest: 'সুদ (৳)', remarks: 'পেমেন্টের মন্তব্য / ইনভয়েস রেফারেন্স (ঐচ্ছিক)',
     remarksPlaceholder: 'যেমন: কর নির্ধারণ আদেশ #১৯০ / অক্টোবর ২০২৬-এর বেতন থেকে কর কর্তন', total: 'মোট প্রদেয় অর্থ:',
@@ -101,7 +102,7 @@ const GUEST_COPY = {
   },
 } as const;
 
-type GuestErrorField = 'tin' | 'payerName' | 'phone' | 'noticeReference' | 'headId' | 'taxAmount';
+type GuestErrorField = 'tin' | 'payerName' | 'phone' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
@@ -155,7 +156,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   const [forSelf, setForSelf] = useState(true);
   const [noticeReference, setNoticeReference] = useState('');
-  const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY'>('NON_COMPANY');
+  const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY' | null>(null);
   
 
   // Category and Head selection
@@ -170,11 +171,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [headSearch, setHeadSearch] = useState('');
 
   // Amounts
-  const [taxAmount, setTaxAmount] = useState<number>(0);
-  const [penaltyAmount, setPenaltyAmount] = useState<number>(0);
-  const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
-  const [interestAmount, setInterestAmount] = useState<number>(0);
-  const [note, setNote] = useState('');
+  const [amountInput, setAmountInput] = useState('');
 
   // Payment gateway choice
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
@@ -191,10 +188,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
 
   const errorDescription = (field: GuestErrorField, hintId?: string) => {
-    const ids = [hintId, errorField === field && errorMessage ? ERROR_ID : undefined].filter(Boolean);
+    const ids = [hintId, errorField === field && errorMessage ? `${ERROR_ID}-${field}` : undefined].filter(Boolean);
     return ids.length ? ids.join(' ') : undefined;
   };
   const isFieldInvalid = (field: GuestErrorField) => errorField === field && Boolean(errorMessage);
+  const fieldError = (field: GuestErrorField) => isFieldInvalid(field) ?
+    <p id={`${ERROR_ID}-${field}`} className="payment-form-field-error" role="alert">{errorMessage}</p> : null;
   const setValidationError = (message: string, field: GuestErrorField) => {
     setErrorMessage(message);
     setErrorField(field);
@@ -207,6 +206,24 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (embedded) onStageChange?.(step);
   }, [embedded, onStageChange, step]);
+
+  // The action is in a persistent footer; direct attention to the invalid input,
+  // even when the user has scrolled well past it.
+  useEffect(() => {
+    if (!errorField || !errorMessage) return;
+    const id: Record<GuestErrorField, string> = {
+      tin: 'guest-tin', payerName: 'guest-payer-name', phone: 'guest-phone',
+      noticeReference: 'guest-notice-ref', incomeTaxType: 'guest-income-type-NON_COMPANY',
+      headId: 'guest-head-static', taxAmount: 'guest-tax-amount'
+    };
+    const control = document.getElementById(id[errorField]) ||
+      (errorField === 'headId' ? document.querySelector<HTMLElement>('#guest-head-search, .payment-head-options input') : null);
+    if (!control) return;
+    const section = control.closest('details');
+    if (section) section.open = true;
+    control.scrollIntoView({ block: 'center', behavior: 'auto' });
+    control.focus({ preventScroll: true });
+  }, [errorField, errorMessage]);
 
   useEffect(() => () => {
     lifecycleTimers.current.forEach(clearTimeout);
@@ -244,21 +261,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   }, [routeParams, initialCategory, isWithholdingMode]);
 
   // Filter available heads
-  const availableHeads = V11_PAYMENT_OPTIONS.filter(head => {
-    const matchCat = head.category === category;
+  const categoryHeads = V11_PAYMENT_OPTIONS.filter(head => head.category === category);
+  const availableHeads = categoryHeads.filter(head => {
     const matchQuery = headSearch
       ? head.nameEn.toLowerCase().includes(headSearch.toLowerCase()) ||
         head.nameBn.includes(headSearch) ||
         head.economicCode.includes(headSearch) ||
         head.sectionAct2023.toLowerCase().includes(headSearch.toLowerCase())
       : true;
-    return matchCat && matchQuery;
+    return matchQuery;
   });
 
   // Searching only filters the displayed choices; it must not silently change the payable head.
   const selectedHead = V11_PAYMENT_OPTIONS.find(h => h.category === category && h.id === selectedHeadId);
 
-  const totalAmount = Number(taxAmount || 0) + Number(penaltyAmount || 0) + Number(surchargeAmount || 0) + Number(interestAmount || 0);
+  const parsedAmount = parseGuestAmount(amountInput);
+  const totalAmount = parsedAmount ?? 0;
+  const taxAmount = category === 'PENALTY' ? 0 : totalAmount;
+  const penaltyAmount = category === 'PENALTY' ? totalAmount : 0;
+  const surchargeAmount = 0;
+  const interestAmount = 0;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
 
   const validateIdentity = () => {
@@ -275,7 +297,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (requiresNBRReference && !noticeReference.trim()) {
-      setValidationError(language === 'bn' ? 'এই পরিশোধের জন্য NBR রেফারেন্স দিন।' : 'Enter an NBR reference for this payment service.', 'noticeReference');
+      setValidationError(language === 'bn' ? 'এই সেবার জন্য NBR রেফারেন্স দিন।' : 'Enter the NBR reference for this payment service.', 'noticeReference');
       return false;
     }
     clearValidationError();
@@ -288,6 +310,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleStep2Next = () => {
+    if (!isWithholdingMode && !incomeTaxType) {
+      setValidationError(language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন।' : 'Choose the income tax type.', 'incomeTaxType');
+      return;
+    }
     if (!selectedHead) {
       setValidationError(copy.requiredHead, 'headId');
       return;
@@ -296,7 +322,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.blockedHead(selectedHead.id), 'headId');
       return;
     }
-    if (totalAmount <= 0) {
+    if (parsedAmount === null) {
       setValidationError(copy.positiveAmount, 'taxAmount');
       return;
     }
@@ -350,7 +376,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         surchargeAmount: Number(surchargeAmount),
         interestAmount: Number(interestAmount),
         totalAmount,
-        note: [noticeReference && `NBR reference: ${noticeReference}`, !isWithholdingMode && `Income tax type: ${incomeTaxType}`, note].filter(Boolean).join(' · ') || undefined
+        note: [noticeReference && `NBR reference: ${noticeReference.trim()}`, !isWithholdingMode && `Income tax type: ${incomeTaxType}`].filter(Boolean).join(' · ') || undefined
       };
 
       const newReceipt: ChallanReceipt = {
@@ -361,8 +387,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         tokenNumber: `TKN-${randToken}`,
         paymentCategory: category,
         assessmentYear,
-        payerName: forSelf ? (payerName.trim() || 'Taxpayer / withholding agent') : payerName,
-        payerTin: tin,
+        payerName: forSelf ? 'Taxpayer / withholding agent' : payerName.trim(),
+        payerTin: 'GUEST',
+        taxpayerTin: tin,
+        receiptMobile: phone,
+        noticeReference: noticeReference.trim() || undefined,
         isRepresentativePayment: !forSelf,
         representativeTin: undefined,
         taxZone,
@@ -503,23 +532,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         </ol>
         </>}
 
-        {errorMessage && (
-          <div id={ERROR_ID} role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__identity' : ''}`}>
             <div className="payment-form-layout__sections">
-            <PaymentFormSection number={1} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="group" aria-label={language === 'bn' ? 'পরিশোধকারীর ধরন' : 'Payer relationship'}>
+            <PaymentFormSection number={1} staticView={embedded} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
+              <div className="payment-form-choice-grid grid grid-cols-1 sm:grid-cols-2 gap-3" role="group" aria-label={language === 'bn' ? 'পরিশোধকারীর ধরন' : 'Payer relationship'}>
                 {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My own tax', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার নিজের কর' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : "Someone else's tax", bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য কারও কর' }].map(choice => <button type="button" key={String(choice.value)} aria-pressed={forSelf === choice.value} onClick={() => setForSelf(choice.value)} className={`min-h-14 rounded-lg border-2 p-3 text-left font-semibold text-sm ${forSelf === choice.value ? 'border-taxpay-primary bg-blue-50 text-taxpay-dark' : 'border-slate-200 text-slate-700'}`}>{language === 'bn' ? choice.bn : choice.en}</button>)}
               </div>
             </PaymentFormSection>
-            <PaymentFormSection number={2} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? '১২ সংখ্যার টিআইএন ও ঐচ্ছিক রেফারেন্স' : '12-digit TIN and optional NBR reference'}>
+            <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? '১২ সংখ্যার টিআইএন ও ঐচ্ছিক রেফারেন্স' : '12-digit TIN and optional NBR reference'}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
@@ -532,15 +554,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('tin', 'guest-tin-hint')}
                   placeholder={copy.tinPlaceholder}
                   value={tin}
-                  inputMode="numeric" maxLength={12} autoComplete="off"
+                  inputMode="numeric" maxLength={12} autoComplete="off" required
                   onChange={(e) => setTin(e.target.value.replace(/\D/g, '').slice(0, 12))}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
                 <span id="guest-tin-hint" className="text-[11px] text-slate-500 mt-1 block">{language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন।' : 'Enter the 12-digit TIN.'}</span>
+                {fieldError('tin')}
               </div>
 
-              <div>
-                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{forSelf ? (language === 'bn' ? 'নাম (ঐচ্ছিক)' : 'Name (optional)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} {!forSelf && '*'}</label>
+              {!forSelf && <div>
+                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)'} *</label>
                 <input
                   id="guest-payer-name"
                   type="text"
@@ -548,46 +571,37 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('payerName')}
                   placeholder={copy.payerNamePlaceholder}
                   value={payerName}
+                  required autoComplete="name"
                   onChange={(e) => setPayerName(e.target.value)}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
                 />
-              </div>
-
-              <div>
-                <label htmlFor="guest-assessment-year" className="block text-xs font-semibold text-slate-700 mb-1">{commonCopy.assessmentYear} *</label>
-                <select
-                  id="guest-assessment-year"
-                  value={assessmentYear}
-                  onChange={(e) => setAssessmentYear(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
-                >
-                  {['2027-28','2026-27','2025-26','2024-25'].map(ay => (
-                    <option key={ay} value={ay}>{ay}</option>
-                  ))}
-                </select>
-              </div>
+                {fieldError('payerName')}
+              </div>}
 
               <div>
                 <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
                 <input
                   id="guest-phone"
-                  type="text"
+                  type="tel"
                   placeholder={copy.mobilePlaceholder}
                   value={phone}
                   aria-invalid={isFieldInvalid('phone') || undefined}
                   aria-describedby={errorDescription('phone')}
-                  inputMode="numeric" maxLength={11}
+                  inputMode="numeric" maxLength={11} autoComplete="tel-national" required
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
+                {fieldError('phone')}
               </div>
 
               {!isWithholdingMode && <div>
-                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? `NBR নোটিশ বা পেমেন্ট রেফারেন্স ${requiresNBRReference ? '*' : '(ঐচ্ছিক)'}` : `NBR notice or payment reference ${requiresNBRReference ? '*' : '(optional)'}`}</label>
-                <input id="guest-notice-ref" value={noticeReference} onChange={event => setNoticeReference(event.target.value)} aria-required={requiresNBRReference} aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')} placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
+                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => setNoticeReference(event.target.value)} required={requiresNBRReference}
+                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
+                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+                {fieldError('noticeReference')}
               </div>}
             </div>
-            <p className="text-xs text-slate-500">{language === 'bn' ? 'অন্য করদাতার ব্যক্তিগত তথ্য এখানে দেখানো হয় না।' : 'Other taxpayers’ private account information is not shown here.'}</p>
             </PaymentFormSection>
 
             {!embedded && <div className="flex justify-end pt-3">
@@ -608,12 +622,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {step === 2 && (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
-            <PaymentFormSection number={embedded ? 1 : 3} title={language === 'bn' ? 'কর পরিশোধের খাত' : 'Payment purpose & head'} description={language === 'bn' ? 'নির্বাচিত সেবার জন্য প্রযোজ্য খাত' : 'Select the applicable head for your chosen service'}>
+            <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'কর পরিশোধের খাত' : 'Payment purpose & head'} description={language === 'bn' ? 'নির্বাচিত সেবার জন্য প্রযোজ্য খাত' : 'Select the applicable head for your chosen service'}>
             {!isWithholdingMode && <fieldset className="space-y-2">
               <legend className="text-xs font-semibold text-slate-700">{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'} *</legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[{ id: 'NON_COMPANY' as const, en: 'Person other than company', bn: 'কোম্পানি ব্যতীত ব্যক্তি' }, { id: 'COMPANY' as const, en: 'Company', bn: 'কোম্পানি' }].map(type => <label key={type.id} className={`flex gap-2 items-center border rounded-lg p-3 cursor-pointer text-xs font-semibold ${incomeTaxType === type.id ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200'}`}><input type="radio" name="guest-income-type" value={type.id} checked={incomeTaxType === type.id} onChange={() => setIncomeTaxType(type.id)} />{language === 'bn' ? type.bn : type.en}</label>)}
+                {[{ id: 'NON_COMPANY' as const, en: 'Person other than company', bn: 'কোম্পানি ব্যতীত ব্যক্তি' }, { id: 'COMPANY' as const, en: 'Company', bn: 'কোম্পানি' }].map(type => <label key={type.id} className={`flex gap-2 items-center border rounded-lg p-3 cursor-pointer text-xs font-semibold ${incomeTaxType === type.id ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200'}`}><input id={`guest-income-type-${type.id}`} type="radio" name="guest-income-type" value={type.id} required checked={incomeTaxType === type.id} onChange={() => setIncomeTaxType(type.id)} aria-invalid={isFieldInvalid('incomeTaxType') || undefined} />{language === 'bn' ? type.bn : type.en}</label>)}
               </div>
+              {fieldError('incomeTaxType')}
             </fieldset>}
             {/* The modal locks the category chosen in Step 1. The standalone flow retains its selector. */}
             {!embedded && <div>
@@ -642,11 +657,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </div>}
 
             {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
-            <fieldset className="grid grid-cols-1 sm:grid-cols-[1fr_14rem] gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
+            {categoryHeads.length === 1 ? (
+              <div id="guest-head-static" className="payment-head-single" tabIndex={-1}>
+                <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head'}</small></div>
+                <CheckCircle size={19} aria-hidden="true" />
+              </div>
+            ) : <fieldset className="payment-head-fieldset grid grid-cols-1 gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
               <legend className="block text-xs font-semibold text-slate-700 self-center">
-                {copy.selectHead(availableHeads.length)}
+                {language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}
               </legend>
-                <input
+              {categoryHeads.length > 3 && <input
                   id="guest-head-search"
                   type="text"
                   aria-label={copy.searchHead}
@@ -654,7 +674,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   value={headSearch}
                   onChange={(e) => setHeadSearch(e.target.value)}
                   className="min-h-11 px-2.5 py-1 text-xs rounded border border-slate-300 w-full sm:w-56"
-                />
+                />}
 
               <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="payment-head-options col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
                 {availableHeads.length === 0 && <p className="p-4 text-sm text-slate-600">{language === 'bn' ? 'কোনো মিল থাকা পেমেন্ট খাত পাওয়া যায়নি।' : 'No matching payment heads. Try another search.'}</p>}
@@ -718,73 +738,28 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   );
                 })}
               </div>
-            </fieldset>
+              {categoryHeads.length > 3 && selectedHead && <p className="payment-head-selected">{language === 'bn' ? 'নির্বাচিত:' : 'Selected:'} {selectedHead.economicCode} — {language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}</p>}
+            </fieldset>}
+            {fieldError('headId')}
             </PaymentFormSection>
 
             {/* Financial Amounts Breakdown */}
-            <PaymentFormSection number={embedded ? 2 : 4} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
-            <div className="payment-amount-fields space-y-4">
-              <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div>
-                  <label htmlFor="guest-tax-amount" className="block text-slate-600 font-medium mb-1">{copy.taxAmount} *</label>
-                  <input
-                    id="guest-tax-amount"
-                    type="number"
-                    min="0"
-                    aria-invalid={isFieldInvalid('taxAmount') || undefined}
-                    aria-describedby={errorDescription('taxAmount')}
-                    value={taxAmount}
-                    onChange={(e) => setTaxAmount(Number(e.target.value))}
-                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="guest-penalty-amount" className="block text-slate-600 font-medium mb-1">{copy.penalty}</label>
-                  <input
-                    id="guest-penalty-amount"
-                    type="number"
-                    min="0"
-                    value={penaltyAmount}
-                    onChange={(e) => setPenaltyAmount(Number(e.target.value))}
-                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="guest-surcharge-amount" className="block text-slate-600 font-medium mb-1">{copy.surcharge}</label>
-                  <input
-                    id="guest-surcharge-amount"
-                    type="number"
-                    min="0"
-                    value={surchargeAmount}
-                    onChange={(e) => setSurchargeAmount(Number(e.target.value))}
-                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="guest-interest-amount" className="block text-slate-600 font-medium mb-1">{copy.interest}</label>
-                  <input
-                    id="guest-interest-amount"
-                    type="number"
-                    min="0"
-                    value={interestAmount}
-                    onChange={(e) => setInterestAmount(Number(e.target.value))}
-                    className="min-h-11 w-full px-3 py-1.5 rounded border border-slate-300 font-mono-plex"
-                  />
-                </div>
-              </div>
-
+            <PaymentFormSection number={4} staticView={embedded} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
+            <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
-                <label htmlFor="guest-note" className="block text-slate-600 text-xs font-medium mb-1">{copy.remarks}</label>
-                <input
-                  id="guest-note"
-                  type="text"
-                  placeholder={copy.remarksPlaceholder}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="min-h-11 w-full px-3 py-1.5 text-xs rounded border border-slate-300"
-                />
+                <label htmlFor="guest-assessment-year" className="block text-slate-600 font-medium mb-1">{commonCopy.assessmentYear} *</label>
+                <select id="guest-assessment-year" required value={assessmentYear} onChange={event => setAssessmentYear(event.target.value)} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
+                  {['2027-28', '2026-27', '2025-26', '2024-25'].map(year => <option value={year} key={year}>{year}</option>)}
+                </select>
               </div>
-
+              <div>
+                <label htmlFor="guest-tax-amount" className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
+                <input id="guest-tax-amount" type="text" inputMode="decimal" required autoComplete="off" maxLength={14}
+                  placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') || undefined} aria-describedby={errorDescription('taxAmount')}
+                  value={amountInput} onChange={event => setAmountInput(event.target.value)}
+                  className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
+                {fieldError('taxAmount')}
+              </div>
             </div>
             </PaymentFormSection>
 
@@ -811,7 +786,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} breakdown={[{label:copy.taxAmount,value:taxAmount},{label:copy.penalty,value:penaltyAmount},{label:copy.surcharge,value:surchargeAmount},{label:copy.interest,value:interestAmount}]} />
+            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} />
           </div>
         )}
 
@@ -847,7 +822,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   <div><dt>{language === 'bn' ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd className="font-mono-plex">{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
                   <div><dt>{language === 'bn' ? 'ক্রেডিট হবে' : 'Credited to'}</dt><dd>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'eTDS-এ বরাদ্দের পর কর্তিত ব্যক্তিদের, এজেন্টের নয়' : 'Deductees after allocation in eTDS, never the agent') : (language === 'bn' ? 'উল্লেখিত টিআইএন-এর করদাতার হিসাবে' : 'The taxpayer with the stated TIN, not the payer')}</dd></div>
                 </dl>
-                {note && <p className="payment-review__note">{language === 'bn' ? 'মন্তব্য:' : 'Remarks:'} {note}</p>}
               </section>
             </div>
             <aside className="payment-review__aside" aria-label={language === 'bn' ? 'মোট পেমেন্ট ও নিশ্চিতকরণ' : 'Payment total and confirmation'}>
@@ -855,7 +829,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <p className="payment-review__total-label">{language === 'bn' ? 'মোট পরিশোধের পরিমাণ' : 'Payment Amount'}</p>
                 <strong className="payment-review__total-figure">{formatCurrency(totalAmount, language)}</strong>
                 <dl className="payment-review__breakdown">
-                  {[[copy.taxAmount, taxAmount], [copy.penalty, penaltyAmount], [copy.surcharge, surchargeAmount], [copy.interest, interestAmount]].map(([label, amount]) => <div key={label}><dt>{label}</dt><dd>{formatCurrency(Number(amount), language)}</dd></div>)}
+                  <div><dt>{language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
                   <div className="payment-review__breakdown-fee"><dt>{language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge'}</dt><dd>{formatCurrency(0, language)}</dd></div>
                 </dl>
               </div>
@@ -875,13 +849,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <button type="button" className="tax-service-choice__cancel" onClick={onBackToService} aria-label={language === 'bn' ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}>
                 <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{commonCopy.btnBack}</span>
               </button>
-              <button type="button" className="tax-service-choice__continue" onClick={handleStep1Next} aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}>
+              <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
             </>
           ) : step === 2 ? (<>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}><ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}</button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleStep2Next} aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}>
+            <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
+              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            </button>
+            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>

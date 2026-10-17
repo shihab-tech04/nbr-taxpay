@@ -191,7 +191,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </div>
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.tin}:</span>
-              <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{receipt.payerTin}</span>
+              <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{receipt.taxpayerTin || receipt.payerTin}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.year}:</span>

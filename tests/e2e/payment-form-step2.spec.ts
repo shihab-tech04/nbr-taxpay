@@ -15,7 +15,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.getByRole('button', { name: 'Close payment services' })).toBeVisible();
   await expect(chooser.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
 
-  await chooser.getByRole('button', { name: /Advance Tax/ }).click();
+  await chooser.getByRole('button', { name: /Penalty/ }).click();
   await footer.getByRole('button', { name: 'Continue' }).click();
   await expect(progress).toHaveCount(0);
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
@@ -37,7 +37,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('.payment-form-section').last()).toContainText('Payment amount');
   await expect(chooser.locator('.payment-form-summary__total')).toBeVisible();
   await expect(chooser.locator('.payment-form-summary__breakdown')).toBeHidden();
-  expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('visible');
+  expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('auto');
   const originalHead = await chooser.locator('.payment-head-options input:checked').inputValue();
   await chooser.locator('#guest-head-search').fill('no-matching-head-123');
   await expect(chooser.locator('.payment-head-options')).toContainText('No matching payment heads');
@@ -57,6 +57,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   const bodyOverflow = await chooser.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth);
   expect(bodyOverflow).toBeLessThanOrEqual(1);
 
+  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
   await chooser.locator('#guest-tax-amount').fill('2100');
   await expect(chooser.locator('.payment-form-summary__total')).toContainText('2,100');
   await buttons.last().click();
@@ -70,7 +71,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await footer.getByRole('button', { name: 'Back to payment options' }).click();
   await expect(progress).toHaveCount(0);
   await footer.getByRole('button', { name: 'Back to services' }).click();
-  await expect(chooser.getByRole('button', { name: /Advance Tax/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(chooser.getByRole('button', { name: /Penalty/ })).toHaveAttribute('aria-pressed', 'true');
   await chooser.getByRole('button', { name: 'Close payment services' }).click();
   await expect(chooser).toHaveCount(0);
 });
@@ -101,28 +102,59 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   expect(columns).toBe(2);
 
   const paymentPurpose = sections.first();
-  await paymentPurpose.locator('summary').click();
-  await expect(paymentPurpose).not.toHaveAttribute('open');
-  await paymentPurpose.locator('summary').click();
-  await expect(paymentPurpose).toHaveAttribute('open');
+  await expect(paymentPurpose.getByRole('heading', { name: 'Payment purpose & head' })).toBeVisible();
+  await expect(paymentPurpose.locator('summary')).toHaveCount(0);
+  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
   await page.locator('#guest-tax-amount').fill('21875');
   await expect(page.locator('.payment-form-summary__total')).toContainText('21,875');
   await page.locator('#guest-tax-amount').fill('12000');
-  await page.locator('#guest-penalty-amount').fill('450');
-  await expect(page.locator('.payment-form-summary__total')).toContainText('12,450');
+  await expect(page.locator('.payment-form-summary__total')).toContainText('12,000');
   await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment summary', { exact: true })).toBeVisible();
-  await expect(chooser.getByText('BDT 12,450', { exact: true })).toBeVisible();
+  await expect(chooser.locator('.payment-review__total-figure')).toHaveText('BDT 12,000');
   await chooser.getByRole('button', { name: 'Pay online' }).click();
   await chooser.getByRole('radio', { name: 'bKash' }).check();
   await chooser.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
-  await chooser.getByRole('button', { name: /Pay BDT 12,450/ }).click();
+  await chooser.getByRole('button', { name: /Pay BDT 12,000/ }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByTestId('payment-lifecycle').getByText('CREDITED')).toBeVisible({ timeout: 12000 });
   await expect(chooser.getByRole('heading', { name: 'Payment process complete' })).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
+});
+
+test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.getByRole('button', { name: /Tax with Return/ }).click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
+  await payment.getByRole('button', { name: 'Continue without signing in' }).click();
+
+  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(payment.locator('#guest-tin')).toBeFocused();
+  await expect(payment.getByRole('alert')).toContainText('12-digit');
+  await payment.locator('#guest-tin').fill('123456789012');
+  await payment.locator('#guest-phone').fill('01712345678');
+  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(payment.locator('.payment-head-single')).toBeVisible();
+  await expect(payment.locator('#guest-head-search')).toHaveCount(0);
+
+  await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(payment.getByRole('alert')).toContainText('Choose the income tax type');
+  await expect(payment.getByRole('radio', { name: 'Person other than company' })).toBeFocused();
+  await payment.getByRole('radio', { name: 'Person other than company' }).check();
+  await payment.locator('#guest-tax-amount').fill('-5');
+  await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(payment.getByRole('alert')).toContainText('greater than zero');
+  await expect(payment.locator('#guest-tax-amount')).toBeFocused();
+  await payment.locator('#guest-tax-amount').fill('1250.75');
+  await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(payment.locator('.tax-service-choice__progress [aria-current="step"]')).toHaveAttribute('aria-label', '3. Payment channel');
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual(376);
 });
 
 test('Travel tax form applies exact v11 journey rates and age bands', async ({ page }) => {
