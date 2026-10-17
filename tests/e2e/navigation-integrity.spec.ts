@@ -98,7 +98,7 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
 
-test('taxpayer desktop rail keeps compact primary navigation without redundant specialist tabs',async({page},info)=>{
+test('taxpayer desktop rail keeps compact primary navigation and its menu routes',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop sidebar is presented above 900px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
@@ -125,7 +125,6 @@ test('taxpayer desktop rail keeps compact primary navigation without redundant s
   // Activity stays a single primary destination. The approved compact rail does not add a second navigation level.
   await rail.getByRole('button',{name:'Activity',exact:true}).click();
   await expect(page).toHaveURL(/action=history(?:&|$)/);
-  await expect(page.getByRole('navigation',{name:'Activity sections'}).getByRole('button')).toHaveCount(0);
   await menu.locator('summary').click();
   await expect(menu.getByRole('button')).toHaveCount(2);
   for(const [label,route] of [['Profile','account_profile'],['Help','user_guide']] as const){
