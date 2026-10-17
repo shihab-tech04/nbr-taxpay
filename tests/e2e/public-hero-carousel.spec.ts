@@ -43,6 +43,7 @@ test('hero provides five bilingual service slides with the original opening bann
 
   await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pay Tax' })).toBeVisible();
+  await expect(page.locator('.tax-service-choice--travel')).toBeVisible();
 });
 
 test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {
@@ -158,7 +159,8 @@ test('service banners share the exact selected-card palette, including text and 
   }
 
   // Color names come from the same source as the selected payment cards.
-  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  await carousel.getByRole('button', { name: /^Show banner 1 of 5:/ }).click();
+  await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const cards = page.locator('.tax-service-choice__card[data-payment-service]');
   await expect(cards).toHaveCount(8);
   const rgb = (hex: string) => {
@@ -232,15 +234,69 @@ test('service labels remain specific and concise in Bangla', async ({ page }) =>
   }
 });
 
-test('autoplay advances every 4.5 seconds, but reduced motion disables it', async ({ page }, testInfo) => {
+test('autoplay allows eight seconds to read, while reduced motion and manual selection stop it', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Avoid repeating the timed test on each viewport');
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
-  await expect(carousel).toHaveAttribute('data-active-slide', '1', { timeout: 7_500 });
+  await expect(carousel).toHaveAttribute('data-active-slide', '1', { timeout: 11_000 });
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
-  await page.waitForTimeout(4_800);
+  await page.waitForTimeout(8_300);
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
+});
+
+test('all five banners can be selected manually with visible controls even with reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const indicators = carousel.locator('.public-hero-carousel__indicator');
+  await expect(indicators).toHaveCount(5);
+  for (let index = 0; index < 5; index++) {
+    await indicators.nth(index).click();
+    await expect(carousel).toHaveAttribute('data-active-slide', String(index));
+    await expect(indicators.nth(index)).toHaveAttribute('aria-pressed', 'true');
+  }
+  await expect(carousel).toHaveAttribute('data-user-paused', 'true');
+  await carousel.getByRole('button', { name: 'Resume banner rotation' }).click();
+  await expect(carousel).toHaveAttribute('data-user-paused', 'false');
+});
+
+test('each service-specific banner action skips repeated service selection', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const services = [
+    ['return', 'TAX_WITH_RETURN', 'Pay Tax with Return'],
+    ['advance', 'ADVANCE_TAX', 'Pay Advance Income Tax'],
+    ['withholding', 'SOURCE_TAX_DEPOSIT', 'Deposit Source Tax'],
+    ['travel', 'TRAVEL_TAX', 'Pay Travel Tax'],
+  ] as const;
+
+  for (const [index, [banner, code, action]] of services.entries()) {
+    await carousel.locator('.public-hero-carousel__indicator').nth(index + 1).click();
+    await carousel.getByRole('button', { name: action, exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.tax-service-choice__grid')).toHaveCount(0);
+    if (banner === 'travel') {
+      await expect(dialog.locator('.tax-service-choice--travel')).toBeVisible();
+    } else {
+      await expect(dialog.locator('.tax-service-choice__selected-service strong')).toHaveAttribute('data-payment-service', code);
+    }
+    await dialog.getByRole('button', { name: 'Close payment services' }).click();
+  }
+});
+
+test('mobile banner buttons and artwork remain readable at narrow widths', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const media = carousel.locator('[data-banner-service="intro"] .public-information-hero__media');
+  await expect.poll(() => media.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(150);
+  await expect(carousel.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
+  await expect(carousel.getByRole('button', { name: /^Show banner 5 of 5:/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
