@@ -23,13 +23,12 @@ test('Service selector uses one horizontal row per service, unique accent colors
 
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
-  const unselectedBackground = await returnService.evaluate(row => getComputedStyle(row).backgroundColor);
   await returnService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'true');
-  await expect(returnService).not.toHaveCSS('background-color', unselectedBackground);
+  await expect(returnService).toHaveCSS('background-color', 'rgb(238, 244, 255)');
   await advanceService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'false');
-  await expect(returnService).toHaveCSS('background-color', unselectedBackground);
+  await expect(returnService).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(advanceService).toHaveAttribute('aria-pressed', 'true');
   await expect(advanceService.locator('.tax-service-choice__radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 });
