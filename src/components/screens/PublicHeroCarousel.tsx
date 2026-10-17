@@ -246,14 +246,16 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
               onClick={() => goToSlide(index)}
             ><span aria-hidden="true" /></button>
           ))}
-          <span className="public-hero-carousel__controls-separator" aria-hidden="true" />
-          <button
-            type="button"
-            className="public-hero-carousel__playback"
-            onClick={() => setIsPausedByUser(value => !value)}
-            aria-label={bn ? (isPausedByUser ? 'ব্যানার আবার চালু করুন' : 'ব্যানার থামান') : (isPausedByUser ? 'Resume banner rotation' : 'Pause banner rotation')}
-            aria-pressed={isPausedByUser}
-          >{isPausedByUser ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}</button>
+          {!prefersReducedMotion && <>
+            <span className="public-hero-carousel__controls-separator" aria-hidden="true" />
+            <button
+              type="button"
+              className="public-hero-carousel__playback"
+              onClick={() => setIsPausedByUser(value => !value)}
+              aria-label={bn ? (isPausedByUser ? 'ব্যানার আবার চালু করুন' : 'ব্যানার থামান') : (isPausedByUser ? 'Resume banner rotation' : 'Pause banner rotation')}
+              aria-pressed={isPausedByUser}
+            >{isPausedByUser ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}</button>
+          </>}
         </div>
       </section>
     </div>
