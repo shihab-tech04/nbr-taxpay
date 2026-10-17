@@ -148,6 +148,36 @@ test('Pay Tax opens the eight HTML-defined services and carries the chosen categ
   expect(page.url()).toBe(originalUrl);
 });
 
+test('The access breakpoint keeps guest and account choices together in a compact dialog', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
+  await chooser.getByRole('button', { name: /Penalty/ }).click();
+  await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
+
+  const guest = chooser.getByRole('button', { name: /Continue without signing in/ });
+  const account = chooser.getByRole('button', { name: /Continue with my account/ });
+  await expect(guest).toBeVisible();
+  await expect(account).toBeVisible();
+  await expect(chooser.locator('.tax-service-choice__access-options > button')).toHaveCount(2);
+  await expect(chooser.locator('.taxpay-modal__footer').getByRole('button', { name: /Continue/ })).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Penalty');
+  const dialogBox = await chooser.boundingBox();
+  const guestBox = await guest.boundingBox();
+  const accountBox = await account.boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(guestBox).not.toBeNull();
+  expect(accountBox).not.toBeNull();
+  expect(dialogBox!.width).toBeLessThanOrEqual(704);
+  expect(Math.abs(guestBox!.x - accountBox!.x)).toBeLessThan(2);
+  expect(Math.abs(guestBox!.width - accountBox!.width)).toBeLessThan(2);
+  expect(accountBox!.y).toBeGreaterThan(guestBox!.y + guestBox!.height);
+
+  await account.click();
+  await expect(page.getByRole('dialog', { name: /sign in/i })).toBeVisible();
+});
+
 test('Source tax and travel tax stay inside the same modal with their category-specific forms', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
