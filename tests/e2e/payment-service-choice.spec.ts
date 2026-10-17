@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('Service selector keeps unique icon colors with neutral idle cards and accented selection', async ({ page }) => {
+test('Service selector preserves geometry and uses icon, text and radio cues for selection', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
 
@@ -28,26 +28,93 @@ test('Service selector keeps unique icon colors with neutral idle cards and acce
 
   const idleBorders = await cards.evaluateAll(rows => rows.map(row => {
     const style = getComputedStyle(row);
-    return { color: style.borderTopColor, leftWidth: style.borderLeftWidth };
+    return { color: style.borderTopColor, topWidth: style.borderTopWidth, leftWidth: style.borderLeftWidth };
   }));
   expect(new Set(idleBorders.map(border => border.color)).size).toBe(1);
-  expect(idleBorders.every(border => border.leftWidth === '1px')).toBe(true);
+  expect(idleBorders.every(border => border.topWidth === '2px' && border.leftWidth === '3px')).toBe(true);
 
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
+  const coordinates = () => returnService.evaluate(card => {
+    const getOrigin = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y };
+    };
+    return {
+      icon: getOrigin(card.querySelector('.tax-service-choice__icon')!),
+      title: getOrigin(card.querySelector('strong')!),
+      radio: getOrigin(card.querySelector('.tax-service-choice__radio')!)
+    };
+  });
+  const expectStablePositions = async (before: Awaited<ReturnType<typeof coordinates>>) => {
+    const after = await coordinates();
+    for (const part of ['icon', 'title', 'radio'] as const) {
+      expect(Math.abs(after[part].x - before[part].x)).toBeLessThan(.5);
+      expect(Math.abs(after[part].y - before[part].y)).toBeLessThan(.5);
+    }
+  };
+  const before = await coordinates();
+  const idleIconColor = await returnService.locator('.tax-service-choice__icon').evaluate(el => getComputedStyle(el).color);
+  const idleTitleColor = await returnService.locator('strong').evaluate(el => getComputedStyle(el).color);
+  const idleDescriptionColor = await returnService.locator('.tax-service-choice__description').evaluate(el => getComputedStyle(el).color);
   await returnService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'true');
   await expect(returnService).toHaveCSS('border-left-width', '3px');
+  await expect(returnService).toHaveCSS('border-top-width', '2px');
   await expect(returnService).toHaveCSS('background-color', 'rgb(238, 244, 255)');
   expect(await returnService.evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(idleBorders[0].color);
+  await expectStablePositions(before);
+  await expect(returnService.locator('.tax-service-choice__icon')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  expect(await returnService.locator('.tax-service-choice__icon').evaluate(el => getComputedStyle(el).color)).not.toBe(idleIconColor);
+  expect(await returnService.locator('.tax-service-choice__icon svg').evaluate(el => Number.parseFloat(getComputedStyle(el).strokeWidth))).toBeGreaterThan(1.9);
+  await expect(returnService.locator('strong')).toHaveCSS('font-weight', '800');
+  expect(await returnService.locator('strong').evaluate(el => getComputedStyle(el).color)).not.toBe(idleTitleColor);
+  expect(await returnService.locator('.tax-service-choice__description').evaluate(el => getComputedStyle(el).color)).not.toBe(idleDescriptionColor);
   await advanceService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'false');
-  await expect(returnService).toHaveCSS('border-left-width', '1px');
+  await expect(returnService).toHaveCSS('border-left-width', '3px');
+  await expect(returnService).toHaveCSS('border-top-width', '2px');
   await expect(returnService).toHaveCSS('border-top-color', idleBorders[0].color);
   await expect(returnService).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expectStablePositions(before);
   await expect(advanceService).toHaveAttribute('aria-pressed', 'true');
   await expect(advanceService).toHaveCSS('border-left-width', '3px');
   await expect(advanceService.locator('.tax-service-choice__radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+});
+
+test('Every selected payment service has readable title, description and icon contrast', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const cards = page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card');
+
+  for (let index = 0; index < 8; index++) {
+    const card = cards.nth(index);
+    await card.click();
+    const contrast = await card.evaluate(node => {
+      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+      const luminance = (value: string) => {
+        const linear = rgb(value).map(channel => {
+          const normalized = channel / 255;
+          return normalized <= .04045 ? normalized / 12.92 : ((normalized + .055) / 1.055) ** 2.4;
+        });
+        return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722;
+      };
+      const ratio = (foreground: string, background: string) => {
+        const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+        return (values[0] + .05) / (values[1] + .05);
+      };
+      const cardBackground = getComputedStyle(node).backgroundColor;
+      const icon = node.querySelector<HTMLElement>('.tax-service-choice__icon')!;
+      return {
+        icon: ratio(getComputedStyle(icon).color, getComputedStyle(icon).backgroundColor),
+        title: ratio(getComputedStyle(node.querySelector('strong')!).color, cardBackground),
+        description: ratio(getComputedStyle(node.querySelector('.tax-service-choice__description')!).color, cardBackground)
+      };
+    });
+    expect(contrast.icon).toBeGreaterThanOrEqual(3);
+    expect(contrast.title).toBeGreaterThanOrEqual(4.5);
+    expect(contrast.description).toBeGreaterThanOrEqual(4.5);
+  }
 });
 
 test('Pay Tax opens the eight HTML-defined services and carries the chosen category to the form', async ({ page }) => {
