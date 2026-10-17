@@ -285,7 +285,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     categoryCode={category} tin={tin} year={assessmentYear}
     head={selectedHeads.length === 1 ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}` : undefined}
     amount={totalAmount}
-    breakdown={selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: headAmount(head.id) })) : undefined} />;
+    breakdown={step >= 3 ? [
+      ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: headAmount(head.id) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
+      { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
+    ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: headAmount(head.id) })) : undefined} />;
 
   const validateIdentity = () => {
     if (!/^\d{12}$/.test(tin)) {
