@@ -145,6 +145,11 @@
   object-position: center;
 }
 
+/* Show the traveler's shoes and suitcase wheels in the shortest phone crop. */
+.public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__service-image {
+  object-position: center 62%;
+}
+
 .public-hero-carousel__arrow {
   display: none;
   position: absolute;
@@ -212,6 +217,11 @@
   }
   .public-hero-carousel__slide .public-information-hero__media { height: 175px; }
   .public-hero-carousel__media--illustrated { --banner-fade-direction: to bottom; }
+  /* Keep the payment confirmation readable at the top of the travel artwork. */
+  .public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__media--illustrated {
+    --banner-fade-mid: 0%;
+    --banner-fade-end: 12%;
+  }
 }
 
 @media (max-width: 600px) {
