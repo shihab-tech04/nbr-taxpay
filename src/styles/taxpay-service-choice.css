@@ -130,7 +130,7 @@
   text-underline-offset: 3px;
 }
 .tax-service-choice__access-gate {max-width:680px;margin:0 auto;padding:1.15rem 0 2rem;}
-.tax-service-choice__access-gate h3 {font-size:1.35rem;margin:0 0 .4rem;}
+.tax-service-choice .tax-service-choice__access-gate h3 {font-size:1.35rem;margin:0 0 .4rem;}
 .tax-service-choice__access-gate > p {color:var(--citizen-muted);font-size:.92rem;line-height:1.65;margin:0 0 1.25rem;}
 .tax-service-choice__access-gate .tax-service-choice__selected-service {margin-bottom:1.2rem;}
 .tax-service-choice__account-option {display:flex;align-items:center;justify-content:space-between;width:100%;gap:1rem;padding:1rem 1.2rem;border:1px solid var(--citizen-border);border-radius:12px;background:var(--citizen-surface);color:var(--citizen-text);text-align:left;cursor:pointer;}
