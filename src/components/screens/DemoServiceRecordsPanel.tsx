@@ -126,8 +126,8 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
           </h2>
           {status === 'ready' && profile && (
             <>
-              <p className="mt-1 text-sm font-semibold text-taxpay-dark">{bn ? profile.nameBn : profile.nameEn}</p>
-              <p className="mt-1 text-sm text-taxpay-muted">{bn ? profile.focusBn : profile.focusEn}</p>
+              {(bn ? profile.nameBn : profile.nameEn) && <p className="mt-1 text-sm font-semibold text-taxpay-dark">{bn ? profile.nameBn : profile.nameEn}</p>}
+              {(bn ? profile.focusBn : profile.focusEn) && <p className="mt-1 text-sm text-taxpay-muted">{bn ? profile.focusBn : profile.focusEn}</p>}
               {(profile.tinStub || profile.jurisdictionLabel) && (
                 <p className="mt-1 text-xs text-taxpay-muted">
                   {[profile.tinStub, profile.jurisdictionLabel].filter(Boolean).join(' · ')}
