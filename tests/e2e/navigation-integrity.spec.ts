@@ -170,7 +170,8 @@ test('saved drafts deep links show public sign-in, without exposing taxpayer nav
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=secure_workspace');
   await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Signed-in application user'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Secure Amar Kor workspace'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Account unavailable'})).toBeVisible();
   await expect(page.getByRole('banner')).toBeVisible();
 });
 
