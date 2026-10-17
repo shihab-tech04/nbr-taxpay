@@ -1,4 +1,4 @@
-/* Step 1 — tax-service choice. Scoped to the shared citizen modal. */
+/* Service choice and account breakpoint precede the four payment steps. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] {
   width: min(100%, 1040px);
   border-radius: var(--taxpay-radius-modal);
@@ -12,7 +12,10 @@
   height: min(92dvh, 950px);
 }
 .tax-service-choice { font-family: inherit; }
-.tax-service-choice--travel { display:flex;flex:1 1 auto;min-width:0;min-height:0;height:100%; }
+.tax-service-choice--travel { display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;width:100%;height:100%; }
+.tax-service-choice--travel > .tax-service-choice__eyebrow { margin:1rem 1.4rem .4rem; }
+.tax-service-choice--travel > .tax-service-choice__progress { flex:0 0 auto;margin:0 1.4rem .5rem; }
+.tax-service-choice--travel > .travel-flow { flex:1 1 auto;min-height:0;height:auto; }
 .tax-service-choice__eyebrow {
   margin: 0 0 .65rem;
   color: var(--citizen-muted);
@@ -126,6 +129,16 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.tax-service-choice__access-gate {max-width:680px;margin:0 auto;padding:1.15rem 0 2rem;}
+.tax-service-choice__access-gate h3 {font-size:1.35rem;margin:0 0 .4rem;}
+.tax-service-choice__access-gate > p {color:var(--citizen-muted);font-size:.92rem;line-height:1.65;margin:0 0 1.25rem;}
+.tax-service-choice__access-gate .tax-service-choice__selected-service {margin-bottom:1.2rem;}
+.tax-service-choice__account-option {display:flex;align-items:center;justify-content:space-between;width:100%;gap:1rem;padding:1rem 1.2rem;border:1px solid var(--citizen-border);border-radius:12px;background:var(--citizen-surface);color:var(--citizen-text);text-align:left;cursor:pointer;}
+.tax-service-choice__account-option:hover {border-color:var(--citizen-primary);background:var(--color-taxpay-surface-subtle);}
+.tax-service-choice__account-option:focus-visible {outline:3px solid var(--citizen-primary);outline-offset:2px;}
+.tax-service-choice__account-option span {display:grid;gap:.35rem;}
+.tax-service-choice__account-option strong {font-size:.96rem;font-weight:700;}
+.tax-service-choice__account-option small {color:var(--citizen-muted);font-size:.82rem;line-height:1.5;}
 .tax-service-auth-overlay {
   position: fixed;
   inset: 0;
@@ -175,49 +188,6 @@
   font-weight: 700;
   line-height: 1.55;
 }
-.tax-service-choice__access-routes {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .75rem;
-  margin: -.25rem 0 1.25rem;
-}
-.tax-service-choice__access-route {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: .35rem;
-  min-height: 86px;
-  padding: .75rem .95rem;
-  border: 1px solid var(--citizen-border);
-  border-radius: 12px;
-  background: var(--citizen-surface);
-  color: var(--citizen-muted);
-  font: inherit;
-  font-size: .79rem;
-  line-height: 1.4;
-  text-align: start;
-  cursor: pointer;
-}
-.tax-service-choice__access-route[aria-pressed="true"] {
-  border-color: var(--citizen-primary);
-  background: var(--citizen-primary-light);
-  box-shadow: inset 3px 0 0 var(--citizen-primary);
-}
-.tax-service-choice__access-route:focus-visible {
-  outline: 3px solid var(--citizen-primary);
-  outline-offset: 2px;
-}
-.tax-service-choice__access-route-title {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  color: var(--citizen-text);
-  font-size: .88rem;
-}
-.tax-service-choice__access-route-title svg { flex-shrink: 0; color: var(--citizen-primary-dark); }
-.tax-service-choice__access-route-title strong { font-weight: 750; }
-.tax-service-choice__access-label--compact,
-.tax-service-choice__access-mobile-note { display: none; }
 .tax-service-choice__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -338,7 +308,8 @@
 }
 .tax-service-choice__actions:empty { display: none; }
 .tax-service-choice__actions:has(.tax-service-choice__continue) { width: 100%; }
-.tax-service-choice__actions:has(.tax-service-choice__continue) .tax-service-choice__continue { width: 100%; }
+.tax-service-choice__actions:has(.tax-service-choice__continue):not(:has(.tax-service-choice__cancel)) .tax-service-choice__continue { width: 100%; }
+.tax-service-choice__actions:has(.tax-service-choice__cancel) .tax-service-choice__continue { flex:1; }
 .tax-service-choice__actions button {
   display: inline-flex;
   align-items: center;
@@ -363,7 +334,7 @@
 .tax-service-choice__continue:hover:not(:disabled) { background: var(--citizen-primary-dark); }
 .tax-service-choice__continue:disabled { opacity: .48; cursor: not-allowed; }
 
-/* A single, continuous modal workflow: identity, payment head and total share Step 2. */
+/* Separate and responsive payment screens: identity, purpose/amount, channel, confirmation. */
 .payment-flow-embedded { min-width:0; }
 .payment-flow-embedded__content {
   display:grid;
@@ -373,15 +344,22 @@
   row-gap:14px;
 }
 .payment-flow-embedded__content > .payment-form-layout { display:contents; }
-.payment-flow-embedded__identity > .payment-form-layout__sections { grid-column:1;grid-row:1; }
-.payment-flow-embedded__payment > .payment-form-layout__sections { grid-column:1;grid-row:2; }
-.payment-flow-embedded__payment > .payment-form-summary { grid-column:2;grid-row:1 / span 2;top:0; }
+.payment-flow-embedded__identity > .payment-form-layout__sections { grid-column:1/-1;grid-row:1;max-width:800px;width:100%; }
+.payment-flow-embedded__payment > .payment-form-layout__sections { grid-column:1;grid-row:1; }
+.payment-flow-embedded__payment > .payment-form-summary { grid-column:2;grid-row:1;top:0; }
 .payment-flow-embedded__content > #guest-payment-error,
 .payment-flow-embedded__content > .space-y-6 { grid-column:1/-1; }
 .payment-flow-embedded__content > .payment-review { grid-column:1/-1; }
 .payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__identity > .payment-form-layout__sections { grid-row:2; }
-.payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__payment > .payment-form-layout__sections { grid-row:3; }
-.payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__payment > .payment-form-summary { grid-row:2 / span 2; }
+.payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__payment > .payment-form-layout__sections,
+.payment-flow-embedded__content:has(> #guest-payment-error) .payment-flow-embedded__payment > .payment-form-summary { grid-row:2; }
+.travel-flow__purpose-total {margin:1rem 0 0;padding:.95rem 1rem;border-radius:.65rem;background:var(--citizen-bg);font-size:.9rem;color:var(--citizen-text);}
+.travel-flow__channel-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;border:0;padding:0;margin:0;}
+.travel-flow__channel-option {display:flex;align-items:center;gap:.75rem;min-height:50px;padding:.8rem;border:1px solid var(--citizen-border);border-radius:.65rem;cursor:pointer;font-size:.88rem;}
+.travel-flow__channel-option:has(input:checked) {border-color:var(--citizen-primary);background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
+.travel-flow__channel-option input {accent-color:var(--citizen-primary);width:17px;height:17px;}
+.travel-flow__footer-actions {display:flex;align-items:center;gap:.7rem;justify-content:flex-end;flex-wrap:wrap;}
+.travel-flow__footer-actions > .tax-service-choice__cancel {min-height:44px;padding:.65rem .9rem;border-radius:10px;display:flex;align-items:center;gap:.35rem;}
 .payment-flow-embedded__footer-actions { display:flex;align-items:center;justify-content:flex-end;gap:.65rem;min-width:0; }
 .payment-flow-embedded__footer-actions button { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.65rem 1rem;border-radius:10px;font-size:.85rem;font-weight:700; }
 .payment-flow-embedded__action-short { display:none; }
@@ -402,6 +380,7 @@
   .payment-flow-embedded .payment-form-summary__notice { padding:10px 14px; }
   .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer { flex-wrap:wrap; }
   .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer-actions { flex:1 1 auto; }
+  .travel-flow__channel-options {grid-template-columns:1fr;}
 }
 @media (max-width: 650px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] {
@@ -430,19 +409,6 @@
   .tax-service-choice__stage-label--full { display: none; }
   .tax-service-choice__stage-label--short { display: block; }
   .tax-service-choice__grid { gap: .75rem; }
-  .tax-service-choice__access-routes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-bottom: .7rem; }
-  .tax-service-choice__access-route { min-height: 54px; padding: .5rem .65rem; }
-  .tax-service-choice__access-route-title { font-size: .81rem; gap: .35rem; }
-  .tax-service-choice__access-route-detail,
-  .tax-service-choice__access-label--full { display: none; }
-  .tax-service-choice__access-label--compact { display: inline; }
-  .tax-service-choice__access-mobile-note {
-    display: block;
-    margin: -.35rem 0 .75rem;
-    color: var(--citizen-muted);
-    font-size: .74rem;
-    line-height: 1.4;
-  }
   .tax-service-choice__card { min-height: 84px; padding: .8rem .85rem; gap: .8rem; }
   .tax-service-choice__icon { flex-basis: 42px; width:42px; height:42px; }
   .tax-service-choice__card strong { font-size: .9rem; }
