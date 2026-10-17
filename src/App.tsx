@@ -63,11 +63,9 @@ const MainRouter: React.FC = () => {
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
   const taxpayerSupportRoute = taxpayerSession && ['verify','user_guide','guidance'].includes(currentRoute);
   const publicInformationRoute = ['landing','incident'].includes(currentRoute) ||
-    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) ||
-    (currentRoute === 'secure_workspace' && !verifiedApplicationUser) || loginOverlay;
-  // Drafts use the private rail only with a verified application identity.
-  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
-    (currentRoute === 'secure_workspace' && Boolean(verifiedApplicationUser));
+    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
+  // A guest draft deep link retains its existing responsive shell and sign-in gate.
+  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace';
   const showActivitySections = taxpayerSession && !privateSampleGate &&
     activitySections.some(section => section.route === currentRoute);
 
