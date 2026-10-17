@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('Service selector uses one horizontal row per service, unique accent colors, and clear selection states', async ({ page }) => {
+test('Service selector uses two columns on desktop, one on mobile, unique accent colors, and clear selection states', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
 
@@ -13,8 +13,13 @@ test('Service selector uses one horizontal row per service, unique accent colors
   const second = await cards.nth(1).boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
-  expect(Math.abs(first!.x - second!.x)).toBeLessThan(2);
-  expect(second!.y).toBeGreaterThan(first!.y + first!.height);
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    expect(second!.x).toBeGreaterThan(first!.x + first!.width);
+    expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
+  } else {
+    expect(Math.abs(first!.x - second!.x)).toBeLessThan(2);
+    expect(second!.y).toBeGreaterThan(first!.y + first!.height);
+  }
 
   const iconColors = await cards.evaluateAll(rows => rows.map(row =>
     getComputedStyle(row.querySelector('.tax-service-choice__icon')!).color
