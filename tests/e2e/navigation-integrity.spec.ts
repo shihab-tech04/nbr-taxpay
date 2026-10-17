@@ -95,7 +95,7 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
 
-test('taxpayer desktop sidebar, account sub-menu and payment guide each open the labeled destination',async({page},info)=>{
+test('taxpayer desktop rail keeps five primary choices and preserves specialist routes inside Menu',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop sidebar is presented above 900px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
@@ -108,32 +108,33 @@ test('taxpayer desktop sidebar, account sub-menu and payment guide each open the
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
-  const links=[
-    ['Activity','history'],
-    ['Tax ledger','ledger'],
-    ['Certificates','certificates'],
-    ['Corrections','corrections'],
-    ['Notifications','account_notifications']
-  ] as const;
-  for(const [label,route] of links){
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
+  const menu=rail.locator('.taxpayer-reference-account');
+  await expect(menu.locator('summary')).toContainText('Menu');
+  await expect(menu.getByRole('button',{name:'Certificates'})).toBeHidden();
+  for(const [label,route] of [
+    ['Activity','history'],['Tax ledger','ledger'],['Notifications','account_notifications']
+  ] as const){
     await rail.getByRole('button',{name:label,exact:true}).click();
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
-  await rail.getByRole('button',{name:'Payment services',exact:true}).click();
-  await expect(page).toHaveURL(/action=services/);
-  await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
-  await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(8);
-  await rail.locator('.taxpayer-reference-account > summary').click();
-  await expect(rail.getByRole('button',{name:'Account access'})).toHaveCount(0);
-  await rail.getByRole('button',{name:'Profile',exact:true}).click();
-  await expect(page).toHaveURL(/action=account_profile/);
-  await rail.getByRole('button',{name:'Profile settings'}).click();
-  await expect(page).toHaveURL(/action=account_settings/);
-  await rail.getByRole('button',{name:'Payment guide'}).click();
-  await expect(page).toHaveURL(/action=user_guide&category=payments/);
+  await menu.locator('summary').click();
+  for(const [label,route] of [
+    ['Certificates','certificates'],['Corrections','corrections'],
+    ['Payment status','verify'],['Saved drafts','secure_workspace'],
+    ['Profile','account_profile'],['Profile settings','account_settings'],
+    ['Help','user_guide']
+  ] as const){
+    await menu.getByRole('button',{name:label,exact:true}).click();
+    await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
+  }
   await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
+  await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);
+  await expect(rail.getByRole('button',{name:'Payment guide',exact:true})).toHaveCount(0);
+  await pay.click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
 });
 
 test('desktop sidebar Pay Tax action opens service choice then the embedded payment form',async({page},info)=>{

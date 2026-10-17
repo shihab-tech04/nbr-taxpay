@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, FileCheck2, FilePenLine, Home, LogOut, ReceiptText, Settings2, WalletCards } from 'lucide-react';
+import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, FileCheck2, FilePenLine, FolderOpen, Home, LogOut, ReceiptText, Settings2 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-flat-v2.png';
@@ -8,18 +8,25 @@ type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentTy
 
 const links: RailLink[] = [
   { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা', Icon: Home },
-  { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা', Icon: WalletCards },
   { route: 'history', en: 'Activity', bn: 'লেনদেন', Icon: Activity },
   { route: 'ledger', en: 'Tax ledger', bn: 'কর লেজার', Icon: BookOpen },
+  { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell }
+];
+
+// Keep specialist workflows available without making them permanent desktop navigation items.
+const menuLinks: RailLink[] = [
+  { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল', Icon: CircleUserRound },
+  { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস', Icon: Settings2 },
+  { route: 'secure_workspace', en: 'Saved drafts', bn: 'সংরক্ষিত খসড়া', Icon: FolderOpen },
   { route: 'certificates', en: 'Certificates', bn: 'সনদপত্র', Icon: FileCheck2 },
   { route: 'corrections', en: 'Corrections', bn: 'সংশোধন', Icon: FilePenLine },
-  { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell },
+  { route: 'verify', en: 'Payment status', bn: 'পেমেন্টের অবস্থা', Icon: ReceiptText },
   { route: 'user_guide', en: 'Help', bn: 'সহায়তা', Icon: CircleHelp }
 ];
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [signingOut, setSigningOut] = React.useState(false);
@@ -42,6 +49,7 @@ export function TaxpayerReferenceRail() {
   };
   const bn = language === 'bn';
   const sampleProfile = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
+  const isMenuRoute = menuLinks.some(({route}) => route === currentRoute);
 
   return (
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
@@ -57,32 +65,24 @@ export function TaxpayerReferenceRail() {
         </button>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (
-            <button key={route} type="button" aria-current={((currentRoute === route && (route !== 'user_guide' || routeParams.category !== 'payments')) || (route==='taxpayer_home'&&currentRoute==='dashboard')) ? 'page' : undefined}
-              onClick={() => navigate(route, route === 'user_guide' ? {category:'security'} : {})}>
+            <button key={route} type="button" aria-current={(currentRoute === route || (route === 'taxpayer_home' && currentRoute === 'dashboard')) ? 'page' : undefined}
+              onClick={() => navigate(route)}>
               <Icon size={20} aria-hidden={true} />
               <span>{bn ? bnLabel : en}</span>
             </button>
           ))}
-          <button type="button" onClick={() => navigate('verify')} aria-current={currentRoute==='verify'?'page':undefined}>
-            <ReceiptText size={20} aria-hidden={true} /><span>{bn ? 'পেমেন্টের অবস্থা' : 'Payment status'}</span>
-          </button>
-          <details className="taxpayer-reference-account" key={['account_profile','account_settings'].includes(currentRoute)?'account-'+currentRoute:'account-closed'}
-            open={['account_profile','account_settings'].includes(currentRoute)||undefined}>
-            <summary><CircleUserRound size={20} aria-hidden={true}/><span>{bn?'অ্যাকাউন্ট':'Account'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
+          <details className="taxpayer-reference-account" key={isMenuRoute ? 'menu-' + currentRoute : 'menu-closed'}
+            open={isMenuRoute || undefined}>
+            <summary><CircleUserRound size={20} aria-hidden={true}/><span>{bn ? 'মেনু' : 'Menu'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
             <div className="taxpayer-reference-account__links">
-              {[
-                {route:'account_profile',en:'Profile',bn:'প্রোফাইল',Icon:CircleUserRound},
-                {route:'account_settings',en:'Profile settings',bn:'প্রোফাইল সেটিংস',Icon:Settings2}
-              ].map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}
-                aria-current={currentRoute===item.route?'page':undefined}>
-                <item.Icon size={17} aria-hidden={true}/><span>{bn?item.bn:item.en}</span>
-              </button>)}
+              {menuLinks.map(({route,en,bn:bnLabel,Icon}) => (
+                <button key={route} type="button" onClick={() => navigate(route, route === 'user_guide' ? {category:'security'} : {})}
+                  aria-current={currentRoute === route ? 'page' : undefined}>
+                  <Icon size={17} aria-hidden={true}/><span>{bn ? bnLabel : en}</span>
+                </button>
+              ))}
             </div>
           </details>
-          <button type="button" onClick={() => navigate('user_guide', {category:'payments'})}
-            aria-current={currentRoute==='user_guide'&&routeParams.category==='payments'?'page':undefined}>
-            <WalletCards size={20} aria-hidden={true}/><span>{bn?'পেমেন্ট নির্দেশিকা':'Payment guide'}</span>
-          </button>
         </nav>
       </div>
       <div className="taxpayer-reference-rail-bottom">
