@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, CalendarClock, Check, CheckCircle2, CircleAlert, ClipboardCheck, FileCheck2,
-  LockKeyhole, Plane, ReceiptText, Scale, WalletCards
+  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2,
+  Plane, ReceiptText, Scale, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
@@ -29,78 +29,56 @@ export function PaymentServiceChoiceDialog() {
   const { language, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
   const { user: verifiedUser } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(null);
-  const [accessMode, setAccessMode] = useState<'guest' | 'account'>('guest');
+  const [view, setView] = useState<'choice' | 'access' | 'payment'>('choice');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [accountGate, setAccountGate] = useState<'message' | 'login' | null>(null);
-  const [resumedAfterLogin, setResumedAfterLogin] = useState(false);
+  const [accountGate, setAccountGate] = useState<'login' | null>(null);
+  const [useAccount, setUseAccount] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
-  const gateRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
-  const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
-  const shortStages = [tr('Service', 'সেবা'), tr('Details', 'তথ্য'), tr('Review', 'যাচাই'), tr('Done', 'শেষ')];
+  const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
+  const shortStages = [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
-  const advanceToDetails = () => {
-    if (!selected) return;
-    if (accessMode === 'account') { requestAccountAccess(); return; }
-    setStage(2);
-  };
-  const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
+  const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
+  const publicPayment = paymentAccess?.kind === 'PUBLIC';
+  const advanceToAccess = () => { if (selected) setView('access'); };
+  const beginPayment = (withAccount: boolean) => { setUseAccount(withAccount); setStage(1); setView('payment'); };
+  const reportStage = useCallback((next: 1 | 2 | 3 | 4) => setStage(next), []);
   const requestAccountAccess = () => {
-    if (!selected || resolvePaymentServiceAccess(selected, 'VIEW_ACCOUNT_RECORDS').kind !== 'SIGN_IN_REQUIRED') return;
     if (verifiedUser || previewAccount) {
-      setResumedAfterLogin(true);
-      if (stage === 1) setStage(2);
+      beginPayment(true);
       return;
     }
-    setAccountGate('message');
+    setAccountGate('login');
   };
-
-  useEffect(() => {
-    if (accountGate !== 'message') return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    gateRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); setAccountGate(null); }
-      if (event.key !== 'Tab') return;
-      const buttons = Array.from(gateRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []);
-      if (!buttons.length) return;
-      if (event.shiftKey && document.activeElement === buttons[0]) {
-        event.preventDefault(); buttons[buttons.length - 1].focus();
-      } else if (!event.shiftKey && document.activeElement === buttons[buttons.length - 1]) {
-        event.preventDefault(); buttons[0].focus();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus(); };
-  }, [accountGate]);
 
   useEffect(() => {
     // Each stage starts at its beginning, even when the previous form was scrolled.
     const scroller = flowRef.current?.closest<HTMLElement>('.taxpay-modal__body');
     if (scroller) scroller.scrollTop = 0;
-  }, [stage]);
+  }, [stage, view]);
 
   return (
     <TaxPayModal
       title={tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
-      service={stage > 1 && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
+      service={view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
-          {stage === 1 && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToDetails}>
-            {accessMode === 'guest' ? tr('Continue', 'এগিয়ে যান') : tr('Proceed to login', 'সাইন ইনে এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
+          {view === 'choice' && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToAccess}>
+            {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
-          {stage > 1 && selected === 'TRAVEL_TAX' && <button type="button" className="tax-service-choice__cancel" onClick={() => setStage(1)}>
-            <ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}
-          </button>}
+          {view === 'access' && <>
+            <button type="button" className="tax-service-choice__cancel" onClick={() => setView('choice')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}</button>
+            {publicPayment && <button type="button" className="tax-service-choice__continue" onClick={() => beginPayment(false)}>{tr('Continue without signing in', 'সাইন ইন ছাড়াই এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" /></button>}
+          </>}
         </div>
       )}
     >
-      <section ref={flowRef} className={`tax-service-choice${stage > 1 && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
-        {!(selected === 'TRAVEL_TAX' && stage > 1) && <>
+      <section ref={flowRef} className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+        {view === 'payment' && <>
           <p className="tax-service-choice__eyebrow">{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)} · {stages[stage - 1]}</p>
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => (
@@ -113,33 +91,15 @@ export function PaymentServiceChoiceDialog() {
             ))}
           </ol>
         </>}
-        {stage > 1 && selected !== 'TRAVEL_TAX' && chosenService && <>
+        {view !== 'choice' && selected !== 'TRAVEL_TAX' && chosenService && <>
           <p className="tax-service-choice__selected-service">
             <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
             <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
           </p>
-          {stage < 4 && <div className="tax-service-choice__account-access">
-            <p>{resumedAfterLogin || verifiedUser || previewAccount
-              ? tr('Account selected. Your payment details are still here.', 'অ্যাকাউন্ট নির্বাচন করা হয়েছে। আপনার পরিশোধের তথ্য আগের মতোই আছে।')
-              : tr('You can pay without signing in.', 'সাইন ইন ছাড়াই পরিশোধ করতে পারবেন।')}</p>
-            {!resumedAfterLogin && !verifiedUser && !previewAccount && <button type="button" onClick={requestAccountAccess}>
-              {tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}
-            </button>}
-          </div>}
+          {view === 'payment' && stage < 4 && useAccount && <p className="tax-service-choice__account-access">{tr('Continuing with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যাচ্ছেন')}</p>}
         </>}
-        {stage === 1 ? <>
+        {view === 'choice' ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
-        <div className="tax-service-choice__access-routes" role="group" aria-label={tr('Choose how to pay', 'কীভাবে কর দেবেন বেছে নিন')}>
-          <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'guest'} onClick={() => setAccessMode('guest')}>
-            <span className="tax-service-choice__access-route-title"><CheckCircle2 size={18} aria-hidden="true" /><strong className="tax-service-choice__access-label--full">{tr('Pay without login', 'লগইন ছাড়া পরিশোধ')}</strong><strong className="tax-service-choice__access-label--compact">{tr('Guest payment', 'অতিথি পরিশোধ')}</strong></span>
-            <span className="tax-service-choice__access-route-detail">{tr('All 8 payment services are available to guests.', '৮টি কর পরিশোধ সেবাই অতিথি ব্যবহারকারীদের জন্য উন্মুক্ত।')}</span>
-          </button>
-          <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'account'} onClick={() => setAccessMode('account')}>
-            <span className="tax-service-choice__access-route-title"><LockKeyhole size={18} aria-hidden="true" /><strong className="tax-service-choice__access-label--full">{tr('Use my account · Login required', 'আমার অ্যাকাউন্ট · লগইন প্রয়োজন')}</strong><strong className="tax-service-choice__access-label--compact">{tr('Account login', 'অ্যাকাউন্ট লগইন')}</strong></span>
-            <span className="tax-service-choice__access-route-detail">{tr('Sign in for private records, drafts and eTDS allocation.', 'ব্যক্তিগত রেকর্ড, খসড়া ও ই-টিডিএস সমন্বয়ের জন্য সাইন ইন করুন।')}</span>
-          </button>
-        </div>
-        <p className="tax-service-choice__access-mobile-note">{tr('All 8 payments allow guests. Account records, drafts and eTDS allocation require login.', '৮টি সেবায় লগইন ছাড়াই পরিশোধ করা যায়। অ্যাকাউন্ট রেকর্ড, খসড়া ও ই-টিডিএসের জন্য লগইন প্রয়োজন।')}</p>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
           {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
             <button type="button" key={id} aria-pressed={selected === id}
@@ -153,31 +113,23 @@ export function PaymentServiceChoiceDialog() {
             </button>
           ))}
         </div>
-        </> : selected === 'TRAVEL_TAX' ? (
-          <TravelTax key="travel-tax-modal" embedded />
+        </> : view === 'access' ? <div className="tax-service-choice__access-gate">
+          {selected === 'TRAVEL_TAX' && chosenService && <p className="tax-service-choice__selected-service"><span>{tr('Selected payment service', 'নির্বাচিত সেবা')}</span><strong data-payment-service={selected}>{tr(chosenService.en, chosenService.bn)}</strong></p>}
+          <h3>{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
+          <p>{publicPayment ? tr('You can make this payment without signing in. Sign in if you want to use your account.', 'সাইন ইন ছাড়াই এই পেমেন্ট করা যাবে। অ্যাকাউন্ট ব্যবহার করতে চাইলে সাইন ইন করুন।') : tr('This service requires sign-in to continue.', 'এই সেবার জন্য সাইন ইন করতে হবে।')}</p>
+          <button type="button" className="tax-service-choice__account-option" onClick={requestAccountAccess}><span><strong>{tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</strong><small>{tr('Sign in to use your account details and records', 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করতে সাইন ইন করুন')}</small></span><ArrowRight size={19} aria-hidden="true" /></button>
+        </div> : selected === 'TRAVEL_TAX' ? (
+          <TravelTax key="travel-tax-modal" embedded onBackToService={() => { setView('access'); setStage(1); }} onStageChange={reportStage} />
         ) : selected ? (
           <GuestPayment key={selected} embedded initialCategory={selected}
             isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
-            onBackToService={() => setStage(1)} onStageChange={reportStage} />
+            onBackToService={() => { setView('access'); setStage(1); }} onStageChange={reportStage} />
         ) : null}
       </section>
-      {accountGate === 'message' && <div className="tax-service-auth-overlay">
-        <div ref={gateRef} className="tax-service-auth-message" role="alertdialog" aria-modal="true" aria-labelledby="tax-service-auth-title" aria-describedby="tax-service-auth-description">
-          <h2 id="tax-service-auth-title">{tr('Sign in required', 'সাইন ইন করতে হবে')}</h2>
-          <p id="tax-service-auth-description">{tr('Accessing your account records requires sign-in. Your selected service and entered payment details will be kept when you return.', 'অ্যাকাউন্টের তথ্য দেখতে সাইন ইন করতে হবে। ফিরে এলে নির্বাচিত সেবা ও দেওয়া পরিশোধের তথ্য আগের মতো থাকবে।')}</p>
-          <div className="tax-service-auth-message__actions">
-            <button type="button" onClick={() => {
-              if (stage === 1) { setAccessMode('guest'); setStage(2); }
-              setAccountGate(null);
-            }}>{tr('Continue without login', 'সাইন ইন ছাড়া এগিয়ে যান')}</button>
-            <button type="button" onClick={() => setAccountGate('login')}>{tr('Go to login', 'সাইন ইন করুন')}</button>
-          </div>
-        </div>
-      </div>}
       {accountGate === 'login' && <TaxpayerLoginDialog
         preservePaymentJourney
         onClose={() => setAccountGate(null)}
-        onSuccess={() => { setResumedAfterLogin(true); if (stage === 1) setStage(2); setAccountGate(null); }}
+        onSuccess={() => { setAccountGate(null); beginPayment(true); }}
       />}
     </TaxPayModal>
   );
