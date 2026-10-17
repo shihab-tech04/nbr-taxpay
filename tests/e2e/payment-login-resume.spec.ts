@@ -24,9 +24,9 @@ test('the eight services clearly separate guest payments from account sign-in be
   await login.getByRole('button', { name: 'Sign In' }).click();
 
   await expect(login).toHaveCount(0);
-  await expect(payment.getByText('Step 2 of 4 · Payment details')).toBeVisible();
+  await expect(payment.getByText('Step 1 of 4 · Taxpayer details')).toBeVisible();
   await expect(payment.locator('.tax-service-choice__selected-service strong')).toHaveText('Assessed Demand');
-  await expect(payment.getByText('Account selected. Your payment details are still here.')).toBeVisible();
+  await expect(payment.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
 });
 
 test('dismissed account requirement proceeds as guest in the selected service', async ({ page }) => {
@@ -39,22 +39,17 @@ test('dismissed account requirement proceeds as guest in the selected service', 
   await page.getByRole('alertdialog', { name: 'Sign in required' })
     .getByRole('button', { name: 'Continue without login' }).click();
   await expect(payment.locator('.tax-service-choice__selected-service strong')).toHaveText('Source Tax Deposit');
-  await expect(payment.getByText('You can pay without signing in.')).toBeVisible();
+  await expect(payment.getByText('Step 1 of 4 · Taxpayer details')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
 
-test('account sign-in returns to the exact selected service and preserves an in-progress payment', async ({ page }) => {
+test('account sign-in returns to the exact selected service before data entry', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.getByRole('button', { name: /Assessed Demand/ }).click();
-  await payment.getByRole('button', { name: 'Continue' }).click();
-  const selectedService = payment.locator('.tax-service-choice__selected-service strong');
-  await expect(selectedService).toHaveText('Assessed Demand');
-
-  const tin = payment.locator('#guest-tin');
-  await tin.fill('123456789012');
-  await payment.getByRole('button', { name: 'Continue with my account' }).click();
+  await payment.getByRole('button', { name: /Use my account · Login required/ }).click();
+  await payment.getByRole('button', { name: 'Proceed to login' }).click();
   const requirement = page.getByRole('alertdialog', { name: 'Sign in required' });
   await expect(requirement).toBeVisible();
   await requirement.getByRole('button', { name: 'Go to login' }).click();
@@ -66,9 +61,8 @@ test('account sign-in returns to the exact selected service and preserves an in-
 
   await expect(login).toHaveCount(0);
   await expect(payment).toBeVisible();
-  await expect(selectedService).toHaveText('Assessed Demand');
-  await expect(tin).toHaveValue('123456789012');
-  await expect(payment.getByText('Account selected. Your payment details are still here.')).toBeVisible();
+  await expect(payment.locator('.tax-service-choice__selected-service strong')).toHaveText('Assessed Demand');
+  await expect(payment.locator('#guest-tin')).toHaveValue('');
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
 });
 
@@ -78,10 +72,7 @@ test('guest payment continues without a login and no account records are opened'
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.getByRole('button', { name: /Source Tax Deposit/ }).click();
   await payment.getByRole('button', { name: 'Continue' }).click();
-  await payment.getByRole('button', { name: 'Continue with my account' }).click();
-  await page.getByRole('alertdialog', { name: 'Sign in required' })
-    .getByRole('button', { name: 'Continue without login' }).click();
   await expect(payment).toBeVisible();
-  await expect(payment.getByText('You can pay without signing in.')).toBeVisible();
+  await expect(payment.getByText('Step 1 of 4 · Taxpayer details')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });

@@ -9,8 +9,10 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.getByRole('button', { name: /Continue/ }).click();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to payment details' }).click();
+  await dialog.getByRole('radio', { name: 'Person other than company' }).check();
   await dialog.locator('#guest-tax-amount').fill('12500');
-  await dialog.getByRole('button', { name: 'Continue to Review & Pay' }).click();
+  await dialog.getByRole('button', { name: 'Continue to review' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
   await expect(page).toHaveURL(initialUrl);
   return dialog;

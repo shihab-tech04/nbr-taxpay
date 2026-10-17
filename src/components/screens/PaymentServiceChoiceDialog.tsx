@@ -30,28 +30,27 @@ export function PaymentServiceChoiceDialog() {
   const { user: verifiedUser } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(null);
   const [accessMode, setAccessMode] = useState<'guest' | 'account'>('guest');
-  const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
+  // Service choice is the entry screen, not one of the payment steps.
+  const [stage, setStage] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [accountGate, setAccountGate] = useState<'message' | 'login' | null>(null);
-  const [resumedAfterLogin, setResumedAfterLogin] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const gateRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
-  const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
-  const shortStages = [tr('Service', 'সেবা'), tr('Details', 'তথ্য'), tr('Review', 'যাচাই'), tr('Done', 'শেষ')];
+  const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Payment channel', 'পেমেন্ট মাধ্যম'), tr('Confirmation', 'নিশ্চিতকরণ')];
+  const shortStages = [tr('Taxpayer', 'করদাতা'), tr('Details', 'তথ্য'), tr('Pay', 'পরিশোধ'), tr('Done', 'শেষ')];
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const advanceToDetails = () => {
     if (!selected) return;
     if (accessMode === 'account') { requestAccountAccess(); return; }
-    setStage(2);
+    setStage(1);
   };
-  const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
+  const reportStage = useCallback((next: 1 | 2 | 3 | 4) => setStage(next), []);
   const requestAccountAccess = () => {
     if (!selected || resolvePaymentServiceAccess(selected, 'VIEW_ACCOUNT_RECORDS').kind !== 'SIGN_IN_REQUIRED') return;
     if (verifiedUser || previewAccount) {
-      setResumedAfterLogin(true);
-      if (stage === 1) setStage(2);
+      if (stage === 0) setStage(1);
       return;
     }
     setAccountGate('message');
@@ -86,21 +85,21 @@ export function PaymentServiceChoiceDialog() {
     <TaxPayModal
       title={tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
-      service={stage > 1 && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
+      service={stage > 0 && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
-          {stage === 1 && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToDetails}>
+          {stage === 0 && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToDetails}>
             {accessMode === 'guest' ? tr('Continue', 'এগিয়ে যান') : tr('Proceed to login', 'সাইন ইনে এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
-          {stage > 1 && selected === 'TRAVEL_TAX' && <button type="button" className="tax-service-choice__cancel" onClick={() => setStage(1)}>
+          {stage > 0 && selected === 'TRAVEL_TAX' && <button type="button" className="tax-service-choice__cancel" onClick={() => setStage(0)}>
             <ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}
           </button>}
         </div>
       )}
     >
-      <section ref={flowRef} className={`tax-service-choice${stage > 1 && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
-        {!(selected === 'TRAVEL_TAX' && stage > 1) && <>
+      <section ref={flowRef} className={`tax-service-choice${stage > 0 && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+        {stage > 0 && selected !== 'TRAVEL_TAX' && <>
           <p className="tax-service-choice__eyebrow">{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)} · {stages[stage - 1]}</p>
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => (
@@ -113,21 +112,13 @@ export function PaymentServiceChoiceDialog() {
             ))}
           </ol>
         </>}
-        {stage > 1 && selected !== 'TRAVEL_TAX' && chosenService && <>
+        {stage > 0 && selected !== 'TRAVEL_TAX' && chosenService && <>
           <p className="tax-service-choice__selected-service">
             <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
             <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
           </p>
-          {stage < 4 && <div className="tax-service-choice__account-access">
-            <p>{resumedAfterLogin || verifiedUser || previewAccount
-              ? tr('Account selected. Your payment details are still here.', 'অ্যাকাউন্ট নির্বাচন করা হয়েছে। আপনার পরিশোধের তথ্য আগের মতোই আছে।')
-              : tr('You can pay without signing in.', 'সাইন ইন ছাড়াই পরিশোধ করতে পারবেন।')}</p>
-            {!resumedAfterLogin && !verifiedUser && !previewAccount && <button type="button" onClick={requestAccountAccess}>
-              {tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}
-            </button>}
-          </div>}
         </>}
-        {stage === 1 ? <>
+        {stage === 0 ? <>
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__access-routes" role="group" aria-label={tr('Choose how to pay', 'কীভাবে কর দেবেন বেছে নিন')}>
           <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'guest'} onClick={() => setAccessMode('guest')}>
@@ -158,16 +149,16 @@ export function PaymentServiceChoiceDialog() {
         ) : selected ? (
           <GuestPayment key={selected} embedded initialCategory={selected}
             isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
-            onBackToService={() => setStage(1)} onStageChange={reportStage} />
+            onBackToService={() => setStage(0)} onStageChange={reportStage} />
         ) : null}
       </section>
       {accountGate === 'message' && <div className="tax-service-auth-overlay">
         <div ref={gateRef} className="tax-service-auth-message" role="alertdialog" aria-modal="true" aria-labelledby="tax-service-auth-title" aria-describedby="tax-service-auth-description">
           <h2 id="tax-service-auth-title">{tr('Sign in required', 'সাইন ইন করতে হবে')}</h2>
-          <p id="tax-service-auth-description">{tr('Accessing your account records requires sign-in. Your selected service and entered payment details will be kept when you return.', 'অ্যাকাউন্টের তথ্য দেখতে সাইন ইন করতে হবে। ফিরে এলে নির্বাচিত সেবা ও দেওয়া পরিশোধের তথ্য আগের মতো থাকবে।')}</p>
+          <p id="tax-service-auth-description">{tr('Accessing your account records requires sign-in. Your selected payment service will be kept when you return.', 'অ্যাকাউন্টের তথ্য দেখতে সাইন ইন করতে হবে। ফিরে এলে নির্বাচিত পরিশোধ সেবাটি আগের মতো থাকবে।')}</p>
           <div className="tax-service-auth-message__actions">
             <button type="button" onClick={() => {
-              if (stage === 1) { setAccessMode('guest'); setStage(2); }
+              if (stage === 0) { setAccessMode('guest'); setStage(1); }
               setAccountGate(null);
             }}>{tr('Continue without login', 'সাইন ইন ছাড়া এগিয়ে যান')}</button>
             <button type="button" onClick={() => setAccountGate('login')}>{tr('Go to login', 'সাইন ইন করুন')}</button>
@@ -177,7 +168,7 @@ export function PaymentServiceChoiceDialog() {
       {accountGate === 'login' && <TaxpayerLoginDialog
         preservePaymentJourney
         onClose={() => setAccountGate(null)}
-        onSuccess={() => { setResumedAfterLogin(true); if (stage === 1) setStage(2); setAccountGate(null); }}
+        onSuccess={() => { if (stage === 0) setStage(1); setAccountGate(null); }}
       />}
     </TaxPayModal>
   );
