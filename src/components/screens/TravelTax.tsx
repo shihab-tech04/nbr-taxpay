@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { 
@@ -43,14 +43,20 @@ const COPY = {
   }
 } as const;
 
-export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
+interface TravelTaxProps {
+  embedded?: boolean;
+  onBackToService?: () => void;
+  onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+}
+
+export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, onBackToService, onStageChange}) => {
   const { language, navigate, addPaymentReceipt } = useTaxState();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const t = COPY[language];
 
-  const [step, setStep] = useState<0 | 1 | 2>(0);
-  const [furthestStep, setFurthestStep] = useState<0 | 1 | 2>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [furthestStep, setFurthestStep] = useState<0 | 1 | 2 | 3>(0);
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
   const [routeSearch, setRouteSearch] = useState('');
   const [ageBand, setAgeBand] = useState<'ADULT' | 'CHILD' | 'UNDER5'>('ADULT');
@@ -61,6 +67,11 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
+
+  useEffect(() => {
+    if (embedded) onStageChange?.((step + 1) as 1 | 2 | 3 | 4);
+  }, [embedded, onStageChange, step]);
 
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route.amount;
@@ -116,7 +127,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
           }
         ],
         totalAmount,
-        paymentMethod: 'BKASH',
+        paymentMethod: embedded ? (paymentMethod || 'BKASH') : 'BKASH',
         gatewayTransactionId: `BKSH-TRV-${Math.floor(10000000 + Math.random() * 90000000)}`,
         treasuryScrollNo: embedded ? undefined : `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
         treasuryDate: embedded ? undefined : now,
@@ -129,6 +140,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
 
       if (!embedded) addPaymentReceipt(newReceipt);
       setCreatedReceipt(newReceipt);
+      if (embedded) goStep(3);
       setIsProcessing(false);
     }, 1000);
   };
@@ -163,30 +175,33 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         missing: 'Enter a passenger name, mobile number and passport reference.',
         hint: 'Use a test passport reference.' };
 
-  const goStep = (target: 0 | 1 | 2) => {
+  const goStep = (target: 0 | 1 | 2 | 3) => {
     setError('');
     setStep(target);
-    setFurthestStep(previous => Math.max(previous, target) as 0 | 1 | 2);
+    setFurthestStep(previous => Math.max(previous, target) as 0 | 1 | 2 | 3);
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   const continueStep = () => {
-    if (step === 0) { goStep(1); return; }
+    if (step === 0 && !embedded) { goStep(1); return; }
+    if (embedded && step === 1) { goStep(2); return; }
     if (!passengerName.trim()) { setError(t.requiredName); return; }
     if (!isDomestic && passportNumber.trim().length < 6) { setError(t.requiredPassport); return; }
     if (!travelDate || !/^01\d{9}$/.test(phone)) {
       setError(workflow.missing); return;
     }
-    goStep(2);
+    goStep(embedded ? 1 : 2);
   };
   const reset = () => {
     setCreatedReceipt(null); setStep(0); setFurthestStep(0);
     setPassengerName(''); setPassportNumber(''); setPhone('');
     setAgeBand('ADULT'); setSelectedRouteIdx(0); setError('');
+    setPaymentMethod(null);
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   // One state-controlled action, rendered in the modal footer (or alongside
   // the summary only on the standalone Travel Tax route).
-  const primaryAction = !createdReceipt && step === 2 && ageBand === 'UNDER5' ? (
+  const readyToPay = step === 2;
+  const primaryAction = !createdReceipt && readyToPay && ageBand === 'UNDER5' ? (
     <button type="button" className="travel-flow__primary" onClick={reset}>
       {bn ? 'অন্য যাত্রীর জন্য শুরু করুন' : 'Start for another passenger'}
     </button>
@@ -194,25 +209,25 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
     <button type="button" className="travel-flow__primary" onClick={reset}>
       {workflow.newPreview}
     </button>
-  ) : step === 2 ? (
+  ) : readyToPay ? (
     <button key="travel-generate" type="button" className="travel-flow__primary"
       onClick={() => {
         const form = document.getElementById('travel-tax-form');
         if (form instanceof HTMLFormElement) form.requestSubmit();
       }}
-      disabled={isProcessing} aria-busy={isProcessing}>
-      <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : t.run}
+      disabled={isProcessing || (embedded && !paymentMethod)} aria-busy={isProcessing}>
+      <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : (embedded ? (bn ? 'পেমেন্ট নিশ্চিত করুন' : 'Confirm payment') : t.run)}
     </button>
   ) : (
     <button key="travel-advance" type="button" className="travel-flow__primary" onClick={continueStep}>
-      {step === 0 ? workflow.continue : workflow.reviewNext}<ArrowRight size={17} aria-hidden="true" />
+      {embedded ? (step === 0 ? (bn ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount') : (bn ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')) : (step === 0 ? workflow.continue : workflow.reviewNext)}<ArrowRight size={17} aria-hidden="true" />
     </button>
   );
   return (
     <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
       <div className="travel-flow__main">
         {!embedded && <h1 className="travel-flow__standalone-title">{t.title}</h1>}
-        <nav className="travel-flow__steps" aria-label={bn ? 'ভ্রমণ করের ধাপ' : 'Travel tax steps'}>
+        {!embedded && <nav className="travel-flow__steps" aria-label={bn ? 'ভ্রমণ করের ধাপ' : 'Travel tax steps'}>
           {workflow.steps.map((name, idx) => (
             <button key={name} type="button" disabled={!!createdReceipt || idx > furthestStep}
               aria-current={idx === step ? 'step' : undefined}
@@ -221,7 +236,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
               <span className="travel-flow__step-count" aria-hidden="true">{idx + 1}</span><span>{name}</span>
             </button>
           ))}
-        </nav>
+        </nav>}
         <form id="travel-tax-form" onSubmit={handlePayTravelTax} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
           {step === 0 && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
@@ -274,7 +289,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
             </PaymentFormSection>
           </section>}
 
-          {step === 1 && <section className="travel-flow__panel" aria-labelledby="travel-passenger-heading">
+          {(step === 1 && !embedded || step === 0 && embedded) && <section className="travel-flow__panel" aria-labelledby="travel-passenger-heading">
             <PaymentFormSection number={2} title={workflow.passenger} description={workflow.hint}>
             <header className="travel-flow__section-header">
               <h3 id="travel-passenger-heading">{workflow.passenger}</h3>
@@ -316,7 +331,7 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
             </PaymentFormSection>
           </section>}
 
-          {step === 2 && <section className="travel-flow__panel" aria-labelledby="travel-review-heading">
+          {((step === 2 && !embedded) || (step === 1 && embedded) || (step === 3 && embedded)) && <section className="travel-flow__panel" aria-labelledby="travel-review-heading">
             <header className="travel-flow__section-header">
               <h3 id="travel-review-heading">{createdReceipt ? t.complete : workflow.review}</h3>
               {ageBand === 'UNDER5' && !createdReceipt && <p>{bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট প্রয়োজন নেই।' : 'This passenger is exempt — no payment is required.'}</p>}
@@ -334,9 +349,17 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
               <div><dt>{bn ? 'বয়সের ধরন' : 'Age band'}</dt><dd>{ageBand === 'ADULT' ? (bn ? 'পূর্ণ হার' : 'Full rate') : ageBand === 'CHILD' ? (bn ? 'অর্ধেক হার' : 'Half rate') : (bn ? 'করমুক্ত' : 'Exempt')}</dd></div>
               <div><dt>{t.date}</dt><dd>{travelDate}</dd></div>
             </dl>}
+            {embedded && step === 1 && <p className="travel-flow__purpose-total">{bn ? 'পরিশোধের খাত: ভ্রমণ কর' : 'Payment purpose: Travel Tax'} · <strong>{formatCurrency(totalAmount, language)}</strong></p>}
+          </section>}
+          {embedded && step === 2 && <section className="travel-flow__panel travel-flow__channel" aria-labelledby="travel-channel-heading">
+            <header className="travel-flow__section-header"><h3 id="travel-channel-heading">{bn ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h3><p>{bn ? 'পেমেন্টের পদ্ধতি নির্বাচন করুন, তারপর নিশ্চিত করুন।' : 'Select a payment method before confirming.'}</p></header>
+            <fieldset className="travel-flow__channel-options"><legend className="sr-only">{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</legend>
+              {([['BKASH','bKash'],['NAGAD','Nagad'],['ROCKET','Rocket'],['INTERNET_BANKING',bn ? 'ইন্টারনেট ব্যাংকিং' : 'Internet banking'],['VISA','Visa'],['MASTERCARD','Mastercard']] as const).map(([method,label]) => <label key={method} className="travel-flow__channel-option"><input type="radio" name="travel-payment-method" checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} /><span>{label}</span></label>)}
+            </fieldset>
+            <p className="travel-flow__purpose-total">{bn ? 'সর্বমোট' : 'Total payable'}: <strong>{formatCurrency(totalAmount, language)}</strong></p>
           </section>}
           {!createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
-            onClick={() => goStep((step - 1) as 0 | 1 | 2)}>
+            onClick={() => goStep((step - 1) as 0 | 1 | 2 | 3)}>
             <ArrowRight className="travel-flow__back-icon" size={16} aria-hidden="true" />{workflow.back}
           </button>}
         </form>
@@ -357,7 +380,10 @@ export const TravelTax: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
         </dl>
         {!embedded && primaryAction}
       </aside>
-      {embedded && modalFooterTarget && createPortal(primaryAction, modalFooterTarget)}
+      {embedded && modalFooterTarget && createPortal(<div className="travel-flow__footer-actions">
+        {step === 0 && <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}><ArrowRight className="travel-flow__back-icon" size={16} aria-hidden="true" />{bn ? 'সেবায় ফিরুন' : 'Back to services'}</button>}
+        {primaryAction}
+      </div>, modalFooterTarget)}
     </div>
   );
 };
