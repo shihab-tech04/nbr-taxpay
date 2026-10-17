@@ -131,14 +131,15 @@ export function PaymentServiceChoiceDialog() {
         <h3 id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__access-routes" role="group" aria-label={tr('Choose how to pay', 'কীভাবে কর দেবেন বেছে নিন')}>
           <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'guest'} onClick={() => setAccessMode('guest')}>
-            <span className="tax-service-choice__access-route-title"><CheckCircle2 size={18} aria-hidden="true" /><strong>{tr('Pay without login', 'লগইন ছাড়া পরিশোধ')}</strong></span>
-            <span>{tr('All 8 payment services are available to guests.', '৮টি কর পরিশোধ সেবাই অতিথি ব্যবহারকারীদের জন্য উন্মুক্ত।')}</span>
+            <span className="tax-service-choice__access-route-title"><CheckCircle2 size={18} aria-hidden="true" /><strong className="tax-service-choice__access-label--full">{tr('Pay without login', 'লগইন ছাড়া পরিশোধ')}</strong><strong className="tax-service-choice__access-label--compact">{tr('Guest payment', 'অতিথি পরিশোধ')}</strong></span>
+            <span className="tax-service-choice__access-route-detail">{tr('All 8 payment services are available to guests.', '৮টি কর পরিশোধ সেবাই অতিথি ব্যবহারকারীদের জন্য উন্মুক্ত।')}</span>
           </button>
           <button type="button" className="tax-service-choice__access-route" aria-pressed={accessMode === 'account'} onClick={() => setAccessMode('account')}>
-            <span className="tax-service-choice__access-route-title"><LockKeyhole size={18} aria-hidden="true" /><strong>{tr('Use my account · Login required', 'আমার অ্যাকাউন্ট · লগইন প্রয়োজন')}</strong></span>
-            <span>{tr('Sign in for private records, drafts and eTDS allocation.', 'ব্যক্তিগত রেকর্ড, খসড়া ও ই-টিডিএস সমন্বয়ের জন্য সাইন ইন করুন।')}</span>
+            <span className="tax-service-choice__access-route-title"><LockKeyhole size={18} aria-hidden="true" /><strong className="tax-service-choice__access-label--full">{tr('Use my account · Login required', 'আমার অ্যাকাউন্ট · লগইন প্রয়োজন')}</strong><strong className="tax-service-choice__access-label--compact">{tr('Account login', 'অ্যাকাউন্ট লগইন')}</strong></span>
+            <span className="tax-service-choice__access-route-detail">{tr('Sign in for private records, drafts and eTDS allocation.', 'ব্যক্তিগত রেকর্ড, খসড়া ও ই-টিডিএস সমন্বয়ের জন্য সাইন ইন করুন।')}</span>
           </button>
         </div>
+        <p className="tax-service-choice__access-mobile-note">{tr('All 8 payments allow guests. Account records, drafts and eTDS allocation require login.', '৮টি সেবায় লগইন ছাড়াই পরিশোধ করা যায়। অ্যাকাউন্ট রেকর্ড, খসড়া ও ই-টিডিএসের জন্য লগইন প্রয়োজন।')}</p>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
           {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
             <button type="button" key={id} aria-pressed={selected === id}
