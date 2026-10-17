@@ -307,7 +307,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                         const isNew = !Number.isFinite(readAt) || Date.parse(item.created_at) > readAt;
                         return <li key={item.id}>
                           <div><strong>{t.draft}</strong><span>{isNew ? t.new : t.viewed}</span></div>
-                          <p>{item.assessment_year} · {item.category} · {date(item.created_at)}</p>
+                          <p>{item.assessment_year} · <span className="taxpay-service-value" data-payment-service={item.category}>{item.category}</span> · {date(item.created_at)}</p>
                           <p>{t.draftCaption}</p>
                         </li>;
                       })}
