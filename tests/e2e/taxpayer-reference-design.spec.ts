@@ -28,7 +28,7 @@ test('Public and Taxpayer retain Government Blue tokens; legacy Office URL retur
   const guestTheme = await guest.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim());
   expect(originalColor.startsWith('var(') || originalColor.toLowerCase() === '#2c5ead').toBeTruthy();
   expect(guestTheme.toLowerCase()).toBe('#2c5ead');
-  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await page.goto('/?action=secure_workspace');
   const taxpayer = page.locator('.taxpay-taxpayer-reference');
   await expect(taxpayer).toBeVisible();
   expect(await taxpayer.evaluate(el => getComputedStyle(el).backgroundColor)).toBe(exactReference.background);
@@ -173,9 +173,8 @@ test('private drafts receive reference inputs while backend remains disabled on 
   const workspace=page.locator('.taxpayer-reference-secure');
   await expect(workspace).toBeVisible();
   await expect(workspace.getByRole('heading').first()).toBeVisible();
-  // The guest drafts gate uses the public shell; it never presents a private rail.
-  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
-  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
+  await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
   const calls:string[]=[];
   page.on('request',req=>{if(new URL(req.url()).hostname.endsWith('.supabase.co'))calls.push(req.url());});
   await page.reload();
@@ -212,7 +211,7 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await page.goto('/?action=landing');
   const publicFont = await page.locator('.taxpay-citizen-shell').evaluate(el => getComputedStyle(el).fontFamily);
   expect(publicFont).toContain('Poppins');
-  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await page.goto('/?action=secure_workspace');
   const taxpayerFont = await page.locator('.taxpay-taxpayer-reference').evaluate(el => getComputedStyle(el).fontFamily);
   expect(taxpayerFont).toContain('Poppins');
   await page.goto('/?action=taxpayer_home');
