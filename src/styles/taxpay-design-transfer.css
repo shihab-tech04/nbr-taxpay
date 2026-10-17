@@ -186,6 +186,10 @@
   color: var(--choice-text);
   font-weight: 650;
 }
+.taxpay-citizen-shell .taxpay-service-select[data-payment-service] {
+  border-color: var(--choice-border);
+  color: var(--choice-text);
+}
 .taxpay-citizen-shell .taxpay-payment-category-option {
   border-color: var(--choice-border);
   color: var(--choice-text);
