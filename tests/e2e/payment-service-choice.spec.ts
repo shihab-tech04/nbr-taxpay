@@ -33,6 +33,7 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   expect(new Set(idleBorders.map(border => border.color)).size).toBe(1);
   expect(idleBorders.every(border => border.topWidth === '1px' && border.leftWidth === '1px' && border.shadow === 'none')).toBe(true);
   expect(await cards.first().evaluate(el => getComputedStyle(el, '::before').backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+  expect(await cards.first().evaluate(el => getComputedStyle(el, '::before').insetInlineStart)).toBe('0px');
 
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
@@ -67,6 +68,7 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   await expect(returnService).toHaveCSS('border-left-color', 'rgb(49, 93, 170)');
   expect(await returnService.evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(idleBorders[0].color);
   expect(await returnService.evaluate(el => getComputedStyle(el, '::before').backgroundColor)).toBe('rgb(49, 93, 170)');
+  expect(await returnService.evaluate(el => getComputedStyle(el, '::before').insetBlockStart)).toBe('0px');
   await expect(returnService).toHaveCSS('box-shadow', 'none');
   await expectStablePositions(before);
   await expect(returnService.locator('.tax-service-choice__icon')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
