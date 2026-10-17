@@ -1,5 +1,68 @@
 import { expect, test } from '@playwright/test';
 
+test('mobile payment steps, Step 2 form, and footer actions stay compact and usable', async ({ page }, info) => {
+  test.skip(info.project.name === 'desktop-1280', 'Mobile regression at 320px and 375px');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
+  const footer = chooser.locator('.taxpay-modal__footer');
+  const progress = chooser.locator('.tax-service-choice__progress');
+
+  await expect(progress.locator('li')).toHaveCount(4);
+  await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Service');
+  await expect(progress.locator('.tax-service-choice__stage-label--short').first()).toBeVisible();
+  await expect(footer.getByRole('button')).toHaveCount(1);
+  await expect(footer.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  await expect(chooser.getByRole('button', { name: 'Close payment services' })).toBeVisible();
+  await expect(chooser.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
+
+  await chooser.getByRole('button', { name: /Advance Tax/ }).click();
+  await footer.getByRole('button', { name: 'Continue' }).click();
+  await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '2. Payment details');
+  await expect(chooser.locator('.payment-form-section')).toHaveCount(4);
+  await expect(chooser.locator('#guest-category')).toHaveCount(0);
+  await expect(chooser.locator('.payment-form-section').last()).toContainText('Payment amount');
+  await expect(chooser.locator('.payment-form-summary__total')).toBeVisible();
+  await expect(chooser.locator('.payment-form-summary__breakdown')).toBeHidden();
+  expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('visible');
+  const originalHead = await chooser.locator('.payment-head-options input:checked').inputValue();
+  await chooser.locator('#guest-head-search').fill('no-matching-head-123');
+  await expect(chooser.locator('.payment-head-options')).toContainText('No matching payment heads');
+  await chooser.locator('#guest-head-search').fill('');
+  await expect(chooser.locator('.payment-head-options input:checked')).toHaveValue(originalHead);
+
+  const buttons = footer.getByRole('button');
+  await expect(buttons).toHaveCount(2);
+  await expect(buttons.first()).toHaveAccessibleName('Back to services');
+  await expect(buttons.last()).toHaveAccessibleName('Continue to Review & Pay');
+  const backBox = await buttons.first().boundingBox();
+  const nextBox = await buttons.last().boundingBox();
+  expect(backBox).not.toBeNull();
+  expect(nextBox).not.toBeNull();
+  expect(Math.abs(backBox!.y - nextBox!.y)).toBeLessThan(2);
+  expect(backBox!.x + backBox!.width).toBeLessThan(nextBox!.x);
+  expect(nextBox!.x + nextBox!.width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  const bodyOverflow = await chooser.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth);
+  expect(bodyOverflow).toBeLessThanOrEqual(1);
+
+  await chooser.locator('#guest-tin').fill('123456789012');
+  await chooser.locator('#guest-phone').fill('01712345678');
+  await chooser.locator('#guest-tax-amount').fill('2100');
+  await expect(chooser.locator('.payment-form-summary__total')).toContainText('2,100');
+  await buttons.last().click();
+  await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '3. Review & pay');
+  await expect(footer.getByRole('button')).toHaveCount(2);
+  await footer.locator('.tax-service-choice__cancel').click();
+  await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '2. Payment details');
+  await expect(chooser.locator('#guest-tax-amount')).toHaveValue('2100');
+  await footer.getByRole('button', { name: 'Back to services' }).click();
+  await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Service');
+  await expect(chooser.getByRole('button', { name: /Advance Tax/ })).toHaveAttribute('aria-pressed', 'true');
+  await chooser.getByRole('button', { name: 'Close payment services' }).click();
+  await expect(chooser).toHaveCount(0);
+});
+
 test('Step 2 guest form groups inputs and recalculates the right-hand summary', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Two-column geometry on desktop');
   await page.emulateMedia({ reducedMotion: 'reduce' });

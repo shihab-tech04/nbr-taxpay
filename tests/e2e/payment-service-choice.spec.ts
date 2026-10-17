@@ -134,7 +134,7 @@ test('Pay Tax opens the eight HTML-defined services and carries the chosen categ
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
   await expect(chooser.locator('.payment-form-section')).toHaveCount(4);
-  await expect(chooser.getByText('Advance Tax', { exact: true }).last()).toBeVisible();
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
   expect(page.url()).toBe(originalUrl);
 });
 
@@ -148,7 +148,8 @@ test('Source tax and travel tax stay inside the same modal with their category-s
   await chooser.getByRole('button', { name: /Continue/ }).click();
   await expect(chooser).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
-  await expect(chooser.locator('#guest-category')).toHaveValue('SOURCE_TAX_DEPOSIT');
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Source Tax Deposit');
+  await expect(chooser.locator('#guest-category')).toHaveCount(0);
   expect(page.url()).toBe(originalUrl);
 
   await page.goto('/');

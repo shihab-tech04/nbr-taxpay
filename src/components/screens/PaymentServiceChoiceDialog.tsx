@@ -31,6 +31,7 @@ export function PaymentServiceChoiceDialog() {
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
   const stages = [tr('Service', 'সেবা'), tr('Payment details', 'পেমেন্টের তথ্য'), tr('Review & pay', 'পর্যালোচনা ও পরিশোধ'), tr('Confirmation', 'নিশ্চিতকরণ')];
+  const shortStages = [tr('Service', 'সেবা'), tr('Details', 'তথ্য'), tr('Review', 'যাচাই'), tr('Done', 'শেষ')];
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const advanceToDetails = () => { if (selected) setStage(2); };
   const reportStage = useCallback((next: 2 | 3 | 4) => setStage(next), []);
@@ -49,11 +50,11 @@ export function PaymentServiceChoiceDialog() {
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
-          <button type="button" className="tax-service-choice__cancel" onClick={stage === 1 ? close : () => setStage(1)}>
-            {stage === 1 ? tr('Cancel', 'বাতিল') : <><ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}</>}
-          </button>
           {stage === 1 && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToDetails}>
             {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
+          </button>}
+          {stage > 1 && selected === 'TRAVEL_TAX' && <button type="button" className="tax-service-choice__cancel" onClick={() => setStage(1)}>
+            <ArrowLeft size={17} aria-hidden="true" />{tr('Back to services', 'সেবা বাছাইয়ে ফিরুন')}
           </button>}
         </div>
       )}
@@ -64,8 +65,10 @@ export function PaymentServiceChoiceDialog() {
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => (
               <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : ''}
-                aria-current={index + 1 === stage ? 'step' : undefined}>
-                <span>{index + 1 < stage ? <Check size={14} aria-hidden="true" /> : index + 1}</span>{name}
+                aria-label={`${index + 1}. ${name}`} aria-current={index + 1 === stage ? 'step' : undefined}>
+                <span className="tax-service-choice__stage-number">{index + 1 < stage ? <Check size={14} aria-hidden="true" /> : index + 1}</span>
+                <span className="tax-service-choice__stage-label tax-service-choice__stage-label--full" aria-hidden="true">{name}</span>
+                <span className="tax-service-choice__stage-label tax-service-choice__stage-label--short" aria-hidden="true">{shortStages[index]}</span>
               </li>
             ))}
           </ol>
