@@ -13,6 +13,8 @@ test('hero provides five bilingual service slides with the original opening bann
     .toHaveText('Choose the right tax service, check payment status and find receipts in one place.');
   await expect(page.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
+  await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
+    .toHaveAttribute('src', /taxpay-hero-payment-v3/);
   await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(0);
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
 
@@ -89,9 +91,9 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     .evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
-    return: 'taxpay-hero-return',
-    advance: 'taxpay-hero-advance',
-    withholding: 'taxpay-hero-withholding',
+    return: 'taxpay-hero-return-v3',
+    advance: 'taxpay-hero-advance-v3',
+    withholding: 'taxpay-hero-withholding-v3',
     travel: 'taxpay-hero-travel-v6',
   };
   for (const [service, assetName] of Object.entries(expectedImages)) {
