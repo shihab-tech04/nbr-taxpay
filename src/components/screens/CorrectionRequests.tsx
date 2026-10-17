@@ -33,7 +33,7 @@ export const CorrectionRequests: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedChallanNo || !visibleReceipts.some(r=>r.challanNo===selectedChallanNo) || !reason.trim()) {
-      setError('Select a payment reference belonging to this preview and provide an explanation.');
+      setError('Select a payment reference and provide an explanation.');
       return;
     }
     if (currentAY === proposedAY && currentCircle === proposedCircle && currentHeadCode === proposedHead) {
@@ -75,7 +75,7 @@ export const CorrectionRequests: React.FC = () => {
               Tax Payment Challan Correction Requests
             </h1>
             <p className="text-xs text-slate-500">
-              Review a sample request to correct a payment year, circle or head. No official petition is submitted from this screen.
+              Request a change to the assessment year, tax circle or payment head.
             </p>
           </div>
         </div>
@@ -84,10 +84,10 @@ export const CorrectionRequests: React.FC = () => {
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Sample correction request saved: {submittedTicket}</span>
+              <span>Request saved locally: {submittedTicket}</span>
             </div>
             <p className="text-xs text-emerald-700">
-              This request remains in the local preview. It has not entered an official review queue.
+              Not submitted to NBR or an official review queue.
             </p>
           </div>
         )}
@@ -193,7 +193,7 @@ export const CorrectionRequests: React.FC = () => {
 
             <div>
               <label htmlFor="correction-current-head" className="block font-semibold text-slate-700 mb-1">
-                Current payment head (sample reference)
+                Current payment head
               </label>
               <input id="correction-current-head" value={currentHeadCode} readOnly
                 className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-mono-plex" />
@@ -232,16 +232,16 @@ export const CorrectionRequests: React.FC = () => {
               className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Send className="w-4 h-4" />
-              <span>Save Sample Correction Request</span>
+              <span>Save request locally</span>
             </button>
           </div>
-        </form> : <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No payment record is available for a sample correction in this account view.</p>}
+        </form> : <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No payment records are available for correction.</p>}
       </div>
 
       {/* Existing Correction Requests Status */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
         <h3 className="font-serif-fraunces font-bold text-lg text-slate-900">
-          Sample correction requests
+          Saved correction requests
         </h3>
 
         <div className="space-y-3 text-xs">
@@ -280,14 +280,14 @@ export const CorrectionRequests: React.FC = () => {
 
               {corr.approverRemarks && (
                 <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-taxpay-dark">
-                  <strong>Sample review note:</strong> {corr.approverRemarks}
+                  <strong>Review note:</strong> {corr.approverRemarks}
                 </div>
               )}
             </div>
           ))}
           {!visibleCorrections.length && (
             <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-600">
-              No sample correction requests are available for this preview.
+              No correction requests saved yet.
             </p>
           )}
         </div>

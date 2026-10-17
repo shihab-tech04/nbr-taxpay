@@ -102,7 +102,7 @@ export const TaxLedger: React.FC = () => {
         {/* Ledger Entries Table */}
         {!hasEntries && (
           <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-            {bn ? 'এই অ্যাকাউন্টের যাচাইকৃত কর লেজার এখনো সংযুক্ত হয়নি।' : 'No verified, account-bound tax ledger is connected.'}
+            {bn ? 'এই অ্যাকাউন্টে এখনো কোনো লেজার রেকর্ড নেই।' : 'No ledger records are available for this account yet.'}
           </p>
         )}
         <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">

@@ -107,14 +107,13 @@ export const DemoPaymentActivity:React.FC=()=>{
   if(privateMode&&!id)return <main className="mx-auto max-w-5xl space-y-3 p-6">
     <h1 className="text-xl font-semibold text-taxpay-text">Protected payment account</h1>
     <p role="status">{bindingError||'Checking your verified account assignment…'}</p>
-    <p className="text-sm text-taxpay-muted">An authorized Approver must assign one fictional user1–user10 profile to this authenticated account. No other profile can be selected by URL.</p>
+    <p className="text-sm text-taxpay-muted">Ask your account administrator to assign a taxpayer profile.</p>
   </main>;
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-      <p className="text-sm font-semibold text-taxpay-dark">{id} · {txt('Connected workspace','সংযুক্ত ওয়ার্কস্পেস')}</p>
+      <p className="text-sm font-semibold text-taxpay-dark">{txt('User ID','ইউজার আইডি')}: {id}</p>
       <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
-      {privateMode&&<p className="mt-2 text-sm text-taxpay-muted">{txt('Account activity is synchronized with Office Management.','অ্যাকাউন্টের কার্যক্রম অফিস ম্যানেজমেন্টের সঙ্গে সমন্বিত।')}</p>}
     </header>
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
@@ -200,7 +199,7 @@ export const DemoPaymentActivity:React.FC=()=>{
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
       </button>)}
     </nav>
-    <section className="space-y-3" aria-label={txt('Shared SQL transaction history','SQL লেনদেনের ইতিহাস')}>
+    <section className="space-y-3" aria-label={txt('Transaction history','লেনদেনের ইতিহাস')}>
       {loading?<p role="status">{txt('Loading shared transactions…','সংযুক্ত লেনদেন লোড হচ্ছে…')}</p>:loadError?<p role="alert">{txt('Could not synchronize transaction history: ','লেনদেনের তথ্য সমন্বয় করা যায়নি: ')}{loadError}</p>:
         rows.length===0?<section className="rounded-xl border border-taxpay-border bg-white p-5"><h2 className="font-bold">{txt('No transactions yet','এখনো কোনো লেনদেন নেই')}</h2><p className="mt-2 text-sm text-taxpay-muted">{txt('Save a payment record to see it here and in the office ledger.','পেমেন্ট রেকর্ড সংরক্ষণ করলে এখানে ও অফিস লেজারে দেখা যাবে।')}</p></section>:
         rows.map(tx=><article key={tx.transactionId} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">

@@ -28,7 +28,7 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Recognized TDS / AIT')).toBeVisible();
-  await expect(page.getByText('Recorded activity · verified liability and tax credit not connected')).toBeVisible();
+  await expect(page.getByText(/verified liability and tax credit not connected/i)).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
@@ -41,7 +41,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByText(/স্বীকৃত টিডিএস \/ এআইটি/)).toBeVisible();
-  await expect(page.getByText('নথিভুক্ত লেনদেন · যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়')).toBeVisible();
+  await expect(page.getByText(/যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়/)).toHaveCount(0);
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(322);
   await page.getByRole('button',{name:'লেনদেনের ইতিহাস খুলুন'}).click();

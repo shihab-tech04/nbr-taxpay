@@ -62,7 +62,7 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  }
  const taxpayer=await visit(payer,'http://127.0.0.1:4173/?action=history');
  await expect(taxpayer.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:16000});
- await expect(taxpayer.page.getByText('user8 · Connected workspace')).toBeVisible();
+ await expect(taxpayer.page.getByText('User ID: user8')).toBeVisible();
  await expect(taxpayer.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
  await taxpayer.page.getByRole('button',{name:/TAX WITH RETURN/i}).click();
  await expect(taxpayer.page.getByRole('heading',{name:'Information before payment'})).toBeVisible();

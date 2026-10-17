@@ -56,7 +56,7 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  };
  const one=await visit(payer,'history',{width:375,height:812});
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
- await expect(one.page.getByText('user6 · Connected workspace')).toBeVisible();
+ await expect(one.page.getByText('User ID: user6')).toBeVisible();
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
  await one.page.getByRole('button',{name:/TAX WITH RETURN/i}).click();
  await expect(one.page.getByRole('heading',{name:'Information before payment'})).toBeVisible();

@@ -21,7 +21,7 @@ test('ordinary taxpayer dashboard leads with recorded category totals, not inven
   await expect(metrics).toContainText('Recorded source tax');
   await expect(metrics).toContainText('Recorded travel tax');
   await expect(metrics).toContainText('Payment records');
-  await expect(page.getByText('Recorded activity · verified liability and tax credit not connected')).toBeVisible();
+  await expect(page.getByText(/verified liability and tax credit not connected/i)).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
   await page.locator('main').getByRole('button', { name: 'Tax Ledger', exact: true }).click();
   await expect(page).toHaveURL(/action=ledger/);

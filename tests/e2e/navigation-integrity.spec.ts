@@ -191,7 +191,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'সনদ',exact:true}).click();
   await expect(page).toHaveURL(/action=certificates/);
-  await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ',level:1,exact:true})).toBeVisible();
 });
 
 test('every taxpayer mobile service-menu destination matches its visible label',async({page},info)=>{
