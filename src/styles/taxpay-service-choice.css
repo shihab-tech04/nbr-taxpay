@@ -175,6 +175,47 @@
   font-weight: 700;
   line-height: 1.55;
 }
+.tax-service-choice__access-routes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  margin: -.25rem 0 1.25rem;
+}
+.tax-service-choice__access-route {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .35rem;
+  min-height: 86px;
+  padding: .75rem .95rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: 12px;
+  background: var(--citizen-surface);
+  color: var(--citizen-muted);
+  font: inherit;
+  font-size: .79rem;
+  line-height: 1.4;
+  text-align: start;
+  cursor: pointer;
+}
+.tax-service-choice__access-route[aria-pressed="true"] {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary-light);
+  box-shadow: inset 3px 0 0 var(--citizen-primary);
+}
+.tax-service-choice__access-route:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+.tax-service-choice__access-route-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: var(--citizen-text);
+  font-size: .88rem;
+}
+.tax-service-choice__access-route-title svg { flex-shrink: 0; color: var(--citizen-primary-dark); }
+.tax-service-choice__access-route-title strong { font-weight: 750; }
 .tax-service-choice__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -387,6 +428,8 @@
   .tax-service-choice__stage-label--full { display: none; }
   .tax-service-choice__stage-label--short { display: block; }
   .tax-service-choice__grid { gap: .75rem; }
+  .tax-service-choice__access-routes { grid-template-columns: 1fr; gap: .55rem; }
+  .tax-service-choice__access-route { min-height: 70px; padding: .65rem .8rem; }
   .tax-service-choice__card { min-height: 84px; padding: .8rem .85rem; gap: .8rem; }
   .tax-service-choice__icon { flex-basis: 42px; width:42px; height:42px; }
   .tax-service-choice__card strong { font-size: .9rem; }
