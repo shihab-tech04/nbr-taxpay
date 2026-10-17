@@ -116,7 +116,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment summary', { exact: true })).toBeVisible();
-  await expect(chooser.locator('.payment-review__total-figure')).toHaveText('BDT 12,000');
+  await expect(chooser.locator('.payment-form-summary__total')).toHaveText('BDT 12,000');
   await chooser.getByRole('button', { name: 'Pay online' }).click();
   await chooser.getByRole('radio', { name: 'bKash' }).check();
   await chooser.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
