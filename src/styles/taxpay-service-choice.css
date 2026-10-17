@@ -216,6 +216,8 @@
 }
 .tax-service-choice__access-route-title svg { flex-shrink: 0; color: var(--citizen-primary-dark); }
 .tax-service-choice__access-route-title strong { font-weight: 750; }
+.tax-service-choice__access-label--compact,
+.tax-service-choice__access-mobile-note { display: none; }
 .tax-service-choice__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -428,8 +430,19 @@
   .tax-service-choice__stage-label--full { display: none; }
   .tax-service-choice__stage-label--short { display: block; }
   .tax-service-choice__grid { gap: .75rem; }
-  .tax-service-choice__access-routes { grid-template-columns: 1fr; gap: .55rem; }
-  .tax-service-choice__access-route { min-height: 70px; padding: .65rem .8rem; }
+  .tax-service-choice__access-routes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-bottom: .7rem; }
+  .tax-service-choice__access-route { min-height: 54px; padding: .5rem .65rem; }
+  .tax-service-choice__access-route-title { font-size: .81rem; gap: .35rem; }
+  .tax-service-choice__access-route-detail,
+  .tax-service-choice__access-label--full { display: none; }
+  .tax-service-choice__access-label--compact { display: inline; }
+  .tax-service-choice__access-mobile-note {
+    display: block;
+    margin: -.35rem 0 .75rem;
+    color: var(--citizen-muted);
+    font-size: .74rem;
+    line-height: 1.4;
+  }
   .tax-service-choice__card { min-height: 84px; padding: .8rem .85rem; gap: .8rem; }
   .tax-service-choice__icon { flex-basis: 42px; width:42px; height:42px; }
   .tax-service-choice__card strong { font-size: .9rem; }
