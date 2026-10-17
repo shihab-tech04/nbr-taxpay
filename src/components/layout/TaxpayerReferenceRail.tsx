@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, FileCheck2, FilePenLine, FolderOpen, Home, LogOut, ReceiptText, Settings2 } from 'lucide-react';
+import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, Home, LogOut } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-taka-20261017.png';
@@ -13,16 +13,12 @@ const links: RailLink[] = [
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell }
 ];
 
-// Keep specialist workflows available without making them permanent desktop navigation items.
+// Keep the fixed rail; specialist workflows live in Activity, Profile and Pay Tax.
 const menuLinks: RailLink[] = [
   { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল', Icon: CircleUserRound },
-  { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস', Icon: Settings2 },
-  { route: 'secure_workspace', en: 'Saved drafts', bn: 'সংরক্ষিত খসড়া', Icon: FolderOpen },
-  { route: 'certificates', en: 'Certificates', bn: 'সনদপত্র', Icon: FileCheck2 },
-  { route: 'corrections', en: 'Corrections', bn: 'সংশোধন', Icon: FilePenLine },
-  { route: 'verify', en: 'Payment status', bn: 'পেমেন্টের অবস্থা', Icon: ReceiptText },
   { route: 'user_guide', en: 'Help', bn: 'সহায়তা', Icon: CircleHelp }
 ];
+const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
@@ -65,7 +61,7 @@ export function TaxpayerReferenceRail() {
         </button>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (
-            <button key={route} type="button" aria-current={(currentRoute === route || (route === 'taxpayer_home' && currentRoute === 'dashboard')) ? 'page' : undefined}
+            <button key={route} type="button" aria-current={(currentRoute === route || (route === 'taxpayer_home' && currentRoute === 'dashboard') || (route === 'history' && activityRoutes.has(currentRoute))) ? 'page' : undefined}
               onClick={() => navigate(route)}>
               <Icon size={20} aria-hidden={true} />
               <span>{bn ? bnLabel : en}</span>
@@ -76,7 +72,7 @@ export function TaxpayerReferenceRail() {
             <summary><CircleUserRound size={20} aria-hidden={true}/><span>{bn ? 'মেনু' : 'Menu'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
             <div className="taxpayer-reference-account__links">
               {menuLinks.map(({route,en,bn:bnLabel,Icon}) => (
-                <button key={route} type="button" onClick={() => navigate(route, route === 'user_guide' ? {category:'security'} : {})}
+                <button key={route} type="button" onClick={() => navigate(route)}
                   aria-current={currentRoute === route ? 'page' : undefined}>
                   <Icon size={17} aria-hidden={true}/><span>{bn ? bnLabel : en}</span>
                 </button>
