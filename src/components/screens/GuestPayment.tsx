@@ -10,7 +10,8 @@ import {
   CheckCircle, 
   AlertCircle, 
   Info, 
-  Lock
+  Lock,
+  Search
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
@@ -61,7 +62,7 @@ const GUEST_COPY = {
     requiredDeductee: 'Enter the deductee (supplier or beneficiary) TIN for this source-tax payment.',
     requiredHead: 'Select an available payment head.',
     blockedHead: (id: number) => `Payment head #${id} is blocked for owner review and cannot be selected for this payment flow.`,
-    positiveAmount: 'Enter a total amount greater than zero.',
+    positiveAmount: 'Enter an amount greater than zero for each selected payment head.',
   },
   bn: {
     withholdingMode: 'উৎসে কর কর্তনকারীর মোড', publicPortal: 'পাবলিক অতিথি পোর্টাল',
@@ -98,12 +99,13 @@ const GUEST_COPY = {
     requiredDeductee: 'এই উৎসে কর জমার জন্য কর কর্তনগ্রহীতা (সরবরাহকারী বা সুবিধাভোগী)-এর টিআইএন দিন।',
     requiredHead: 'নির্বাচনযোগ্য একটি পেমেন্ট খাত নির্বাচন করুন।',
     blockedHead: (id: number) => `পেমেন্ট খাত #${id} পর্যালোচনাধীন; এখন এটি নির্বাচন করা যাবে না।`,
-    positiveAmount: 'শূন্যের বেশি মোট অর্থ দিন।',
+    positiveAmount: 'প্রতিটি নির্বাচিত খাতের জন্য শূন্যের বেশি অর্থ দিন।',
   },
 } as const;
 
 type GuestErrorField = 'tin' | 'payerName' | 'phone' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
+const initialHead = (category: PaymentCategory) => V11_PAYMENT_OPTIONS.find(head => head.category === category && head.status === 'ACTIVE')?.id;
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
 type PaymentPhase = 'review' | 'processing' | 'pending-bank' | 'failed' | 'settled';
@@ -165,13 +167,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
-  const [selectedHeadId, setSelectedHeadId] = useState<number>(() =>
-    V11_PAYMENT_OPTIONS.find(h => h.category === category && h.status === 'ACTIVE')?.id || 1
-  );
+  const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>(() => initialHead(category) ? [initialHead(category)!] : []);
   const [headSearch, setHeadSearch] = useState('');
+  const [headSearchDraft, setHeadSearchDraft] = useState('');
 
-  // Amounts
-  const [amountInput, setAmountInput] = useState('');
+  // Preserve the exact amount allocated to each selected head, including when a search hides it.
+  const [amountInputs, setAmountInputs] = useState<Record<number, string>>({});
 
   // Payment gateway choice
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
@@ -246,7 +247,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (isWithholdingMode) {
       setCategory('SOURCE_TAX_DEPOSIT');
-      setSelectedHeadId(V11_PAYMENT_OPTIONS.find(h => h.category === 'SOURCE_TAX_DEPOSIT' && h.status === 'ACTIVE')?.id || 8);
+      setSelectedHeadIds([initialHead('SOURCE_TAX_DEPOSIT') || 8]);
     }
   }, [isWithholdingMode]);
 
@@ -256,7 +257,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const next = requestedCategory as PaymentCategory;
       setCategory(next);
       const firstHead = V11_PAYMENT_OPTIONS.find(h => h.category === next && h.status === 'ACTIVE');
-      if (firstHead) setSelectedHeadId(firstHead.id);
+      if (firstHead) setSelectedHeadIds([firstHead.id]);
     }
   }, [routeParams, initialCategory, isWithholdingMode]);
 
@@ -272,16 +273,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return matchQuery;
   });
 
-  // Searching only filters the displayed choices; it must not silently change the payable head.
-  const selectedHead = V11_PAYMENT_OPTIONS.find(h => h.category === category && h.id === selectedHeadId);
-
-  const parsedAmount = parseGuestAmount(amountInput);
-  const totalAmount = parsedAmount ?? 0;
-  const taxAmount = category === 'PENALTY' ? 0 : totalAmount;
-  const penaltyAmount = category === 'PENALTY' ? totalAmount : 0;
-  const surchargeAmount = 0;
-  const interestAmount = 0;
+  // Searching filters the list only. Each selected head remains in the payment and calculation.
+  const selectedHeads = V11_PAYMENT_OPTIONS.filter(head => head.category === category && selectedHeadIds.includes(head.id));
+  const selectedHead = selectedHeads[0];
+  const headAmount = (headId: number) => parseGuestAmount(amountInputs[headId] || '') ?? 0;
+  const amountsValid = selectedHeads.length > 0 && selectedHeads.every(head => parseGuestAmount(amountInputs[head.id] || '') !== null);
+  const totalAmount = selectedHeads.reduce((sum, head) => sum + headAmount(head.id), 0);
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
+  const paymentCalculation = <PaymentLiveSummary language={language}
+    category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
+    categoryCode={category} tin={tin} year={assessmentYear}
+    head={selectedHeads.length === 1 ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}` : undefined}
+    amount={totalAmount}
+    breakdown={selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: headAmount(head.id) })) : undefined} />;
 
   const validateIdentity = () => {
     if (!/^\d{12}$/.test(tin)) {
@@ -314,15 +318,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন।' : 'Choose the income tax type.', 'incomeTaxType');
       return;
     }
-    if (!selectedHead) {
+    if (!selectedHeads.length) {
       setValidationError(copy.requiredHead, 'headId');
       return;
     }
-    if (selectedHead.status !== 'ACTIVE' || BLOCKED_HEAD_IDS.includes(selectedHead.id)) {
-      setValidationError(copy.blockedHead(selectedHead.id), 'headId');
+    const blocked = selectedHeads.find(head => head.status !== 'ACTIVE' || BLOCKED_HEAD_IDS.includes(head.id));
+    if (blocked) {
+      setValidationError(copy.blockedHead(blocked.id), 'headId');
       return;
     }
-    if (parsedAmount === null) {
+    if (!amountsValid) {
       setValidationError(copy.positiveAmount, 'taxAmount');
       return;
     }
@@ -356,7 +361,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleExecutePayment = () => {
-    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !selectedHead || !(totalAmount > 0)) return;
+    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !amountsValid || !(totalAmount > 0)) return;
     setIsProcessing(true);
     setPaymentPhase('processing');
     setLifecycleStages([]);
@@ -367,17 +372,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const randToken = Math.floor(100000 + Math.random() * 900000);
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-      const lineItem: PaymentLineItem = {
-        headId: selectedHead.id,
-        economicCode: selectedHead.economicCode,
-        headNameEn: selectedHead.nameEn,
-        taxAmount: Number(taxAmount),
-        penaltyAmount: Number(penaltyAmount),
-        surchargeAmount: Number(surchargeAmount),
-        interestAmount: Number(interestAmount),
-        totalAmount,
-        note: [noticeReference && `NBR reference: ${noticeReference.trim()}`, !isWithholdingMode && `Income tax type: ${incomeTaxType}`].filter(Boolean).join(' · ') || undefined
-      };
+      const lineItems: PaymentLineItem[] = selectedHeads.map(head => {
+        const amount = headAmount(head.id);
+        return {
+          headId: head.id,
+          economicCode: head.economicCode,
+          headNameEn: head.nameEn,
+          taxAmount: category === 'PENALTY' ? 0 : amount,
+          penaltyAmount: category === 'PENALTY' ? amount : 0,
+          surchargeAmount: 0,
+          interestAmount: 0,
+          totalAmount: amount,
+          note: [noticeReference && `NBR reference: ${noticeReference.trim()}`, !isWithholdingMode && `Income tax type: ${incomeTaxType}`].filter(Boolean).join(' · ') || undefined
+        };
+      });
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-${Date.now()}`,
@@ -399,7 +407,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         isWithholding: isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT',
         deducteeTin: undefined,
         deducteeName: undefined,
-        items: [lineItem],
+        items: lineItems,
         totalAmount,
         paymentMethod,
         gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
@@ -443,6 +451,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const referenceReady = lifecycleStages.includes('ACS_REFERENCE_CREATED');
     return (
       <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
+        <div className={embedded ? 'payment-flow-embedded__receipt-layout' : 'payment-form-layout'}>
         <section className="payment-lifecycle" aria-labelledby="payment-lifecycle-title">
           <div className={`payment-lifecycle__heading payment-lifecycle__heading--${declined ? 'failed' : bankPending ? 'pending' : completed ? 'complete' : 'running'}`}>
             <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
@@ -485,6 +494,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           </div>
         </section>
         {createdReceipt && <div lang={language}><ReceiptView receipt={createdReceipt} embedded={embedded} onBack={embedded ? onBackToService : () => navigate('landing')} /></div>}
+        {paymentCalculation}
+        </div>
         {embedded && modalFooterTarget && createPortal(
           <div className="payment-flow-embedded__footer-actions">
             {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
@@ -614,7 +625,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            {!embedded && <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={tin} year={assessmentYear} amount={totalAmount} note={language === 'bn' ? 'পরের ধাপে খাত ও পরিমাণ ঠিক করুন।' : 'Confirm the payment head and amount in the next section.'} />}
+            {paymentCalculation}
           </div>
         )}
 
@@ -644,7 +655,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   const newCat = e.target.value as PaymentCategory;
                   setCategory(newCat);
                   const firstInCat = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
-                  if (firstInCat) setSelectedHeadId(firstInCat.id);
+                  setSelectedHeadIds(firstInCat ? [firstInCat.id] : []);
+                  setHeadSearch('');
+                  setHeadSearchDraft('');
                 }}
                 className="taxpay-service-select min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
               >
@@ -666,31 +679,29 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <legend className="block text-xs font-semibold text-slate-700 self-center">
                 {language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}
               </legend>
-              {categoryHeads.length > 3 && <input
-                  id="guest-head-search"
-                  type="text"
-                  aria-label={copy.searchHead}
-                  placeholder={copy.searchHead}
-                  value={headSearch}
-                  onChange={(e) => setHeadSearch(e.target.value)}
-                  className="min-h-11 px-2.5 py-1 text-xs rounded border border-slate-300 w-full sm:w-56"
-                />}
+              <form className="payment-head-search" role="search" onSubmit={event => { event.preventDefault(); setHeadSearch(headSearchDraft.trim()); }}>
+                <label htmlFor="guest-head-search" className="sr-only">{copy.searchHead}</label>
+                <input id="guest-head-search" type="search" placeholder={copy.searchHead}
+                  value={headSearchDraft} onChange={event => setHeadSearchDraft(event.target.value)}
+                  className="min-h-11 px-3 py-2 text-sm rounded-lg border border-slate-300 w-full" />
+                <button type="submit" className="payment-head-search__button"><Search size={16} aria-hidden="true" />{language === 'bn' ? 'খুঁজুন' : 'Search'}</button>
+              </form>
 
-              <div role="radiogroup" aria-label={language === 'bn' ? 'মাস্টার পেমেন্ট খাত' : 'Master payment head'} aria-describedby={errorDescription('headId')} className="payment-head-options col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+              <div role="group" aria-label={language === 'bn' ? 'পেমেন্ট খাত (একাধিক বাছাই করা যায়)' : 'Payment heads (select multiple)'} aria-describedby={errorDescription('headId')} className="payment-head-options col-span-full max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
                 {availableHeads.length === 0 && <p className="p-4 text-sm text-slate-600">{language === 'bn' ? 'কোনো মিল থাকা পেমেন্ট খাত পাওয়া যায়নি।' : 'No matching payment heads. Try another search.'}</p>}
                 {availableHeads.map(head => {
                   const isBlocked = head.status !== 'ACTIVE';
-                  const isSelected = selectedHead?.id === head.id;
+                  const isSelected = selectedHeadIds.includes(head.id);
                   return (
                     <label
                       key={head.id}
                       htmlFor={`guest-head-${head.id}`}
-                      className={`payment-head-option min-h-11 p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
+                      className={`payment-head-option min-h-11 border-l-4 p-3 text-xs flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-blue-50 border-l-4 border-taxpay-primary'
+                          ? 'bg-blue-50 border-taxpay-primary'
                           : isBlocked
-                          ? 'bg-rose-50/60 opacity-70 cursor-not-allowed'
-                          : 'hover:bg-white'
+                          ? 'border-transparent bg-rose-50/60 opacity-70 cursor-not-allowed'
+                          : 'border-transparent hover:bg-white'
                       }`}
                     >
                       <div className="space-y-1">
@@ -724,12 +735,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                       </div>
                       <input
                         id={`guest-head-${head.id}`}
-                        type="radio"
+                        type="checkbox"
                         name="guest-payment-head"
                         value={head.id}
                         checked={isSelected}
                         disabled={isBlocked}
-                        onChange={() => !isBlocked && setSelectedHeadId(head.id)}
+                        onChange={() => !isBlocked && setSelectedHeadIds(previous => previous.includes(head.id) ? previous.filter(id => id !== head.id) : [...previous, head.id])}
                         aria-invalid={isFieldInvalid('headId') || undefined}
                         aria-describedby={errorDescription('headId')}
                         className="payment-head-option__radio mt-1 shrink-0 accent-blue-700"
@@ -738,7 +749,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   );
                 })}
               </div>
-              {categoryHeads.length > 3 && selectedHead && <p className="payment-head-selected">{language === 'bn' ? 'নির্বাচিত:' : 'Selected:'} {selectedHead.economicCode} — {language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}</p>}
+              <p className="payment-head-selected" role="status">{language === 'bn' ? `নির্বাচিত খাত: ${selectedHeads.length}` : `${selectedHeads.length} payment head${selectedHeads.length === 1 ? '' : 's'} selected`}</p>
             </fieldset>}
             {fieldError('headId')}
             </PaymentFormSection>
@@ -752,15 +763,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   {['2027-28', '2026-27', '2025-26', '2024-25'].map(year => <option value={year} key={year}>{year}</option>)}
                 </select>
               </div>
-              <div>
-                <label htmlFor="guest-tax-amount" className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
-                <input id="guest-tax-amount" type="text" inputMode="decimal" required autoComplete="off" maxLength={14}
-                  placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') || undefined} aria-describedby={errorDescription('taxAmount')}
-                  value={amountInput} onChange={event => setAmountInput(event.target.value)}
-                  className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
-                {fieldError('taxAmount')}
-              </div>
             </div>
+            {selectedHeads.length === 0 && <p className="payment-form-field-error">{copy.requiredHead}</p>}
+            {selectedHeads.map((head, index) => <div className="payment-head-amount" key={head.id}>
+              {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
+              <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
+              <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required autoComplete="off" maxLength={14}
+                placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') || undefined} aria-describedby={index === 0 ? errorDescription('taxAmount') : undefined}
+                value={amountInputs[head.id] || ''} onChange={event => setAmountInputs(previous => ({ ...previous, [head.id]: event.target.value }))}
+                className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
+              {index === 0 && fieldError('taxAmount')}
+            </div>)}
             </PaymentFormSection>
 
             {!embedded && <div className="flex flex-wrap justify-between gap-2 pt-3">
@@ -786,7 +799,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            <PaymentLiveSummary language={language} category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={tin} year={assessmentYear} head={selectedHead ? `${selectedHead.economicCode} — ${language === 'bn' ? selectedHead.nameBn : selectedHead.nameEn}` : undefined} amount={totalAmount} />
+            {paymentCalculation}
           </div>
         )}
 
@@ -815,7 +828,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   <div><dt>{language === 'bn' ? 'যাঁর কর পরিশোধ হচ্ছে' : 'Taxpayer TIN'}</dt><dd className="font-mono-plex">{tin}</dd></div>
                   <div><dt>{language === 'bn' ? 'পরিশোধকারী' : 'Payer'}</dt><dd>{forSelf ? (language === 'bn' ? 'করদাতা নিজে' : 'Taxpayer (self)') : (payerName || copy.unspecified)}</dd></div>
                   <div><dt>{language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'}</dt><dd className="taxpay-service-value" data-payment-service={category}>{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</dd></div>
-                  <div><dt>{language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}</dt><dd>{selectedHead?.economicCode} — {language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}</dd></div>
+                  <div><dt>{language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}</dt><dd>{selectedHeads.map(head => `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`).join(', ')}</dd></div>
                   {category !== 'SOURCE_TAX_DEPOSIT' && <div><dt>{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'}</dt><dd>{incomeTaxType === 'COMPANY' ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'কোম্পানি ব্যতীত ব্যক্তি' : 'Person other than company')}</dd></div>}
                   <div><dt>{commonCopy.assessmentYear}</dt><dd>{assessmentYear}</dd></div>
                   {noticeReference.trim() && <div><dt>{language === 'bn' ? 'NBR রেফারেন্স' : 'NBR reference'}</dt><dd>{noticeReference}</dd></div>}
@@ -825,18 +838,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </section>
             </div>
             <aside className="payment-review__aside" aria-label={language === 'bn' ? 'মোট পেমেন্ট ও নিশ্চিতকরণ' : 'Payment total and confirmation'}>
-              <div className="payment-review__total-card">
-                <p className="payment-review__total-label">{language === 'bn' ? 'মোট পরিশোধের পরিমাণ' : 'Payment Amount'}</p>
-                <strong className="payment-review__total-figure">{formatCurrency(totalAmount, language)}</strong>
-                <dl className="payment-review__breakdown">
-                  <div><dt>{language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
-                  <div className="payment-review__breakdown-fee"><dt>{language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge'}</dt><dd>{formatCurrency(0, language)}</dd></div>
-                </dl>
-              </div>
+              {paymentCalculation}
               <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ ঠিক আছে; eTDS-এ বরাদ্দ না হওয়া পর্যন্ত কর্তিত করদাতারা ক্রেডিট পাবেন না।' : 'I have checked the agent TIN, deduction head, year and amount. Deductees get credit only after allocation in eTDS.') : (language === 'bn' ? 'আমি টিআইএন, পরিশোধের উদ্দেশ্য ও খাত, আয়করের ধরন, করবর্ষ ও পরিমাণ যাচাই করেছি; ক্রেডিট করদাতার হিসাবে যাবে।' : 'I have checked the TIN, purpose and head, income tax type, assessment year and amount. Credit goes to the taxpayer, not the payer.')}</span></label>
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
-              <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{copy.backToHead}</button>
+              <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
               <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
@@ -846,8 +852,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         <div className="payment-flow-embedded__footer-actions">
           {step === 1 ? (
             <>
-              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService} aria-label={language === 'bn' ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}>
-                <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{commonCopy.btnBack}</span>
+              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
+                <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
               </button>
               <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
