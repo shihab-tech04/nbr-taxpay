@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('Service selector uses two columns on desktop, one on mobile, unique accent colors, and clear selection states', async ({ page }) => {
+test('Service selector keeps unique icon colors with neutral idle cards and accented selection', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
 
@@ -26,15 +26,27 @@ test('Service selector uses two columns on desktop, one on mobile, unique accent
   ));
   expect(new Set(iconColors).size).toBe(8);
 
+  const idleBorders = await cards.evaluateAll(rows => rows.map(row => {
+    const style = getComputedStyle(row);
+    return { color: style.borderTopColor, leftWidth: style.borderLeftWidth };
+  }));
+  expect(new Set(idleBorders.map(border => border.color)).size).toBe(1);
+  expect(idleBorders.every(border => border.leftWidth === '1px')).toBe(true);
+
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
   await returnService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'true');
+  await expect(returnService).toHaveCSS('border-left-width', '3px');
   await expect(returnService).toHaveCSS('background-color', 'rgb(238, 244, 255)');
+  expect(await returnService.evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(idleBorders[0].color);
   await advanceService.click();
   await expect(returnService).toHaveAttribute('aria-pressed', 'false');
+  await expect(returnService).toHaveCSS('border-left-width', '1px');
+  await expect(returnService).toHaveCSS('border-top-color', idleBorders[0].color);
   await expect(returnService).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(advanceService).toHaveAttribute('aria-pressed', 'true');
+  await expect(advanceService).toHaveCSS('border-left-width', '3px');
   await expect(advanceService.locator('.tax-service-choice__radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 });
 
