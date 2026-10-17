@@ -621,6 +621,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </label>
               <select
                 id="guest-category"
+                data-payment-service={category}
                 disabled={isWithholdingMode}
                 value={category}
                 onChange={(e) => {
@@ -629,7 +630,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   const firstInCat = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
                   if (firstInCat) setSelectedHeadId(firstInCat.id);
                 }}
-                className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
+                className="taxpay-service-select min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-medium"
               >
                 {Object.entries(CATEGORY_LABELS).map(([catKey, label]) => (
                   <option key={catKey} value={catKey}>
