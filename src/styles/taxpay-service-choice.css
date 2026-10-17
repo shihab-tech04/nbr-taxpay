@@ -204,28 +204,17 @@
   cursor: pointer;
   transition: border-color .15s ease, background-color .15s ease;
 }
-.tax-service-choice__card::before {
-  content: '';
-  position: absolute;
-  /* Flush with the left border: one continuous 3px accent, no pale seam. */
-  inset-block: 0;
-  inset-inline-start: 0;
-  width: 2px;
-  border-radius: 12px 0 0 12px;
-  background: transparent;
-  pointer-events: none;
-}
 .tax-service-choice__card:hover {
   background: var(--color-taxpay-surface-subtle);
 }
 .tax-service-choice__card[aria-pressed="true"] {
-  /* The far/right edge is a quiet service tint; the left keeps its 3px accent. */
+  /* The 1px border + clipped 2px inset stroke make a 3px left accent.
+     Unlike a positioned pseudo-element, the inset stroke cannot protrude
+     beyond the card's rounded top/bottom corners. */
   border-color: var(--choice-border);
   border-inline-start-color: var(--choice-primary);
   background: var(--choice-bg);
-}
-.tax-service-choice__card[aria-pressed="true"]::before {
-  background: var(--choice-primary);
+  box-shadow: inset 2px 0 0 var(--choice-primary);
 }
 .tax-service-choice__card:focus-visible {
   outline: 3px solid var(--choice-primary);
