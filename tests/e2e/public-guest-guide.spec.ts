@@ -23,7 +23,7 @@ test('public hero opens receipt lookup while travel tax remains available below 
  await expect(travel.getByRole('heading',{name:'Travel tax',level:2})).toBeVisible();
  await expect(travel.locator('.public-service-dialog__notice')).toHaveCount(0);
  await expect(travel.getByText('Rates and exemptions are not verified.',{exact:false})).toHaveCount(0);
- await expect(travel.getByRole('heading',{name:'Payment summary'})).toBeVisible();
+ await expect(travel.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
  await travel.getByRole('button',{name:'Continue to passenger details'}).click();
  await travel.getByLabel('Passenger name (as in passport)').fill('TEST PASSENGER');
  await travel.getByLabel('Passport reference').fill('DEMO1234');
@@ -368,7 +368,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await expect(modal.locator('.taxpay-modal__header')).toHaveCSS('border-bottom-style','solid');
   await expect(modal.locator('.taxpay-modal__footer')).toHaveCSS('border-top-style','solid');
   await expect(modal.getByRole('navigation',{name:'Travel tax steps'})).toBeVisible();
-  await expect(modal.getByRole('heading',{name:'Payment summary'})).toBeVisible();
+  await expect(modal.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
   await expect(modal.getByLabel('Passenger name (as in passport)')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer').getByRole('button',{name:'Close',exact:true})).toBeVisible();
@@ -386,7 +386,7 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  const side=modal.locator('.travel-flow__summary');
  await expect(modal.locator('.public-service-dialog__notice')).toHaveCount(0);
  await expect(modal.getByRole('navigation',{name:'Travel tax steps'})).toBeVisible();
- await expect(side.getByRole('heading',{name:'Payment summary'})).toBeVisible();
+ await expect(side.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Continue to passenger details'})).toBeVisible();
  const position=await modal.evaluate(el=>{
    const rect=(name:string)=>el.querySelector(name)!.getBoundingClientRect();
