@@ -16,7 +16,7 @@ export const PublicLanding: React.FC = () => {
   const stages = [
     {
       Icon: UserRound,
-      title: t('Taxpayer details', 'করদাতার তথ্য'),
+      title: t('Input taxpayer details', 'করদাতার তথ্য দিন'),
       description: t('Provide or confirm who the payment is for.', 'কার জন্য কর পরিশোধ করছেন, তা দিন বা নিশ্চিত করুন।'),
     },
     {
@@ -90,9 +90,8 @@ export const PublicLanding: React.FC = () => {
         {stages.map((stage, index) => <li key={stage.title}>
           <div className="public-payment-path__step-head">
             <span className="public-payment-path__symbol" aria-hidden="true"><stage.Icon size={23} strokeWidth={1.9}/></span>
-            <span className="public-payment-path__number" aria-hidden="true">{String(index + 1).padStart(2, '0')} / 04</span>
+            <h3>{t(`Step ${index + 1}. `, `ধাপ ${['১', '২', '৩', '৪'][index]}. `)}{stage.title}</h3>
           </div>
-          <h3>{stage.title}</h3>
           <p>{stage.description}</p>
         </li>)}
       </ol>
