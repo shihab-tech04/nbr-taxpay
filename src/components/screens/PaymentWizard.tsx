@@ -16,6 +16,7 @@ import { ReceiptView } from '../common/ReceiptView';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 
 const COPY = {
   en: {
@@ -78,6 +79,7 @@ export const PaymentWizard: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [paymentNonce,setPaymentNonce]=useState(()=>crypto.randomUUID());
 
   useEffect(() => {
     if (routeParams?.initialCategory && CATEGORY_LABELS[routeParams.initialCategory]) {
@@ -128,7 +130,7 @@ export const PaymentWizard: React.FC = () => {
     setIsProcessing(true);
     setErrorMessage('');
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const year = new Date().getFullYear();
       const randChallan = Math.floor(10000000 + Math.random() * 90000000);
       const randToken = Math.floor(100000 + Math.random() * 900000);
@@ -171,10 +173,26 @@ export const PaymentWizard: React.FC = () => {
         isSimulatedDemo: true
       };
 
-      addPaymentReceipt(newReceipt);
-      setCreatedReceipt(newReceipt);
-      setIsProcessing(false);
-      setStep(4);
+      try {
+        let receipt=newReceipt;
+        if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
+          const ack=await persistSimulatedPayment({
+            idempotencyKey:paymentNonce,sessionId:getStorySessionId(),
+            service:category,amountMinor:Math.round(totalAmount*100),
+            details:{payerName:taxpayerProfile.nameEn,taxpayerTin:taxpayerProfile.tin,
+              assessmentYear,taxZone:taxpayerProfile.taxZone,taxCircle:taxpayerProfile.taxCircle,
+              paymentMethod,paymentChannel:'NOW',receiptReference:newReceipt.challanNo,
+              lines:[lineItem],note},
+          });
+          receipt={...newReceipt,paymentTransactionId:ack.id};
+        }
+        addPaymentReceipt(receipt);
+        setCreatedReceipt(receipt);
+        setPaymentNonce(crypto.randomUUID());
+        setStep(4);
+      }catch {
+        setErrorMessage(bn?'অফিসে লেনদেন সংরক্ষিত হয়নি। একই অনুরোধ আবার চেষ্টা করুন।':'Office payment synchronization pending. Retry this payment.');
+      }finally {setIsProcessing(false);}
     }, 1200);
   };
 
