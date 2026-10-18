@@ -139,7 +139,7 @@ test('multiple payment heads have searchable selection, separate amounts and one
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
+  await chooser.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
 
   const choices = chooser.locator('.payment-head-options input[type="checkbox"]');
   expect(await choices.count()).toBeGreaterThanOrEqual(2);

@@ -371,6 +371,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await expect(modal.locator('.taxpay-modal__footer')).toHaveCSS('border-top-style','solid');
   await expect(modal.getByRole('navigation',{name:'Travel tax steps'})).toBeVisible();
   await expect(modal.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await modal.locator('#travel-tax-route-0').check();
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
   await expect(modal.getByLabel('Passenger name')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer').getByRole('button',{name:'Close',exact:true})).toBeVisible();
