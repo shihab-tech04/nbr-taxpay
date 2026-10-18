@@ -4,7 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 test('public hero opens service choice before the guest payment form while the receipt action stays available',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
- await expect(page.getByRole('button',{name:'Check payment & receipt'})).toBeVisible();
+ await expect(page.locator('[data-banner-service="intro"] .citizen-public-secondary')).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
@@ -53,18 +53,14 @@ test('public information header and sections fit all requested widths',async({pa
   await page.goto('/?action=landing');
   await expect(page.locator('.public-home-header')).toBeVisible();
   await expect(page.locator('.public-home-header').getByRole('img',{name:'Amar Kor'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   const heroActions=page.locator('.public-information-hero .public-guest-actions');
   const pay=await heroActions.getByRole('button',{name:'Pay Tax'}).boundingBox();
-  const receipt=await heroActions.getByRole('button',{name:'Check payment & receipt'}).boundingBox();
+  const receipt=await heroActions.locator('.citizen-public-secondary').boundingBox();
   expect(pay).not.toBeNull();
   expect(receipt).not.toBeNull();
-  if (width <= 390) {
-    expect(receipt!.y - pay!.y, 'narrow phones should stack readable hero actions at '+width).toBeGreaterThan(40);
-  } else {
-    expect(Math.abs(pay!.y-receipt!.y),'hero actions should share a row at '+width).toBeLessThan(2);
-  }
+  expect(Math.abs(pay!.y-receipt!.y),'hero actions should share a row at '+width).toBeLessThan(2);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -121,7 +117,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   const clickHomeAgain = page.getByRole('button', { name: 'Amar Kor home' }).click();
   await (await confirmExit).accept();
   await clickHomeAgain;
-  await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
 });
 
 

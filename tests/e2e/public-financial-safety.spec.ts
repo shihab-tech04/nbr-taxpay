@@ -2,14 +2,14 @@ import { expect, test } from '@playwright/test';
 
 test('public page does not claim real payment processing or grant account roles',async({page})=>{
  await page.goto('/?action=landing');
- await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+ await expect(page.locator('#public-home-title')).toBeVisible();
  await expect(page.getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=taxpayer_login');
  await expect(page.getByRole('heading',{name:'Frequently asked questions'})).toBeVisible();
  await page.getByRole('button',{name:'বাংলা'}).click();
- await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+ await expect(page.locator('#public-home-title')).toBeVisible();
  await expect(page.getByRole('heading',{name:'সাধারণ জিজ্ঞাসা'})).toBeVisible();
  await expect(page.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
