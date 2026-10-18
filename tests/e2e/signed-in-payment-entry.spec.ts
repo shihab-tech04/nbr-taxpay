@@ -8,6 +8,8 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
 
+  // Sign-in lands in the taxpayer dashboard; the payment service chooser is on Home.
+  await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.getByRole('button', { name: /Advance Tax/ }).click();
