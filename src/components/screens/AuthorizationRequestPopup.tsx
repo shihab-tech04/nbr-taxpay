@@ -25,7 +25,9 @@ export function AuthorizationRequestPopup(){
     const poll=async()=>{
       try{
         const all=await getHostedAuthorizations(actor);
-        const first=all.find(r=>r.taxpayerId===actor&&r.status==='PENDING'&&!dismissed.includes(r.id));
+        const first=all.find(r=>r.taxpayerId===actor &&
+          (r.status==='PENDING'||(r.status==='CODE_ISSUED'&&(r.codeResends??0)>0)) &&
+          !dismissed.includes(`${r.id}:${r.codeResends??0}`));
         if(active&&!code)setIncoming(first??null);
       }catch{/* Manage Authorization shows read errors; do not disrupt other pages */}
     };
@@ -34,7 +36,8 @@ export function AuthorizationRequestPopup(){
   },[actor,dismissed,code]);
   if(!actor||!incoming)return null;
   const requester=DEMO_USERS[incoming.payerId];
-  const dismiss=()=>{setDismissed(before=>[...before,incoming.id]);setIncoming(null);setCode(null);};
+  const displayedCode=code??(incoming.status==='CODE_ISSUED'?incoming.consentCode:null);
+  const dismiss=()=>{setDismissed(before=>[...before,`${incoming.id}:${incoming.codeResends??0}`]);setIncoming(null);setCode(null);};
   const act=async(choice:'accept'|'decline')=>{
     if(busy)return;
     setBusy(true);setError('');
@@ -53,9 +56,11 @@ export function AuthorizationRequestPopup(){
           <h2 id="auth-popup-title" className="text-lg font-bold">{bn?'পেমেন্ট অনুমোদনের অনুরোধ':'Payment authorization request'}</h2></div>
         <button type="button" aria-label={bn?'বন্ধ':'Close'} onClick={dismiss} className="rounded-lg p-2 text-slate-600"><X size={20}/></button>
       </div>
-      {code?<div className="mt-4 space-y-3">
-        <p className="text-sm text-slate-700">{bn?'অনুরোধ গ্রহণ করা হয়েছে। এই কোডটি অনুরোধকারীকে দিন।':'Request accepted. Share this code with the requester.'}</p>
-        <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center font-mono text-3xl font-bold tracking-[0.3em] text-blue-900">{code}</p>
+      {displayedCode?<div className="mt-4 space-y-3">
+        <p className="text-sm text-slate-700">{incoming.status==='CODE_ISSUED'
+          ?(bn?'নতুন কোড এসেছে। আগের কোড বাতিল হয়েছে। সর্বশেষ কোডটি অনুরোধকারীকে দিন।':'New code received. The previous code is invalid. Share this latest code with the requester.')
+          :(bn?'অনুরোধ গ্রহণ করা হয়েছে। এই কোডটি অনুরোধকারীকে দিন।':'Request accepted. Share this code with the requester.')}</p>
+        <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center font-mono text-3xl font-bold tracking-[0.3em] text-blue-900">{displayedCode}</p>
         <p className="text-xs text-slate-600">{bn?'কোডটি ১৫ মিনিট কার্যকর। অনুরোধকারী কোড লিখলে অনুমোদন সম্পূর্ণ হবে।':'This four-digit code expires in 15 minutes. Authorization completes when the requester enters it.'}</p>
         <button type="button" className="w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white" onClick={()=>{
           try{sessionStorage.setItem('taxpay-authorization-open-tab','incoming');}catch{/* optional navigation hint */}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Clock3, Plus, ShieldCheck, ShieldX, UsersRound, X } from 'lucide-react';
+import { Clock3, Plus, RefreshCw, ShieldCheck, ShieldX, Trash2, UsersRound, X } from 'lucide-react';
 import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
@@ -27,6 +27,8 @@ export function ManageAuthorization() {
   const [tin, setTin] = useState('');
   const [codes, setCodes] = useState<Record<string, string>>({});
   const [removeId, setRemoveId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [feedback, setFeedback] = useState<{ error: boolean; message: string } | null>(null);
   useEffect(()=>{
     try{
@@ -35,6 +37,10 @@ export function ManageAuthorization() {
       }
     }catch{/* optional navigation hint */}
   },[]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const refresh = async (user:DemoUserId) => {
     const next=await getHostedAuthorizations(user);
@@ -52,7 +58,7 @@ export function ManageAuthorization() {
     void poll();const timer=window.setInterval(()=>void poll(),5000);
     return()=>{active=false;window.clearInterval(timer);};
   },[actor]);
-  useEffect(() => { setFeedback(null); setAdding(false); setTin(''); setCodes({}); setRemoveId(null);setSyncPending(null); }, [actor]);
+  useEffect(() => { setFeedback(null); setAdding(false); setTin(''); setCodes({}); setRemoveId(null);setDeleteId(null);setSyncPending(null); }, [actor]);
 
   const runAction=async(action:()=>Promise<unknown>,success:string)=>{
     if(!actor||busy)return;
@@ -100,9 +106,23 @@ export function ManageAuthorization() {
       operation==='accept'?tr('Accepted. Share your four-digit code with the requester.','গৃহীত। অনুরোধকারীকে চার সংখ্যার কোড দিন।'):
       tr('Request declined.','অনুরোধ প্রত্যাখ্যান করা হয়েছে।'));
   };
+  const resendCode = (record: HostedAuthorization) => {
+    if (!actor) return;
+    void runAction(async () => {
+      await performHostedAuthorization(actor, 'resend', { id: record.id });
+      setCodes(before => ({ ...before, [record.id]: '' }));
+    }, tr('New code sent to the taxpayer. The previous code is no longer valid.', 'করদাতাকে নতুন কোড পাঠানো হয়েছে। আগের কোড আর কার্যকর নয়।'));
+  };
+  const deleteAuthorization = (record: HostedAuthorization) => {
+    if (!actor) return;
+    void runAction(async () => {
+      await performHostedAuthorization(actor, 'delete', { id: record.id });
+      setDeleteId(null);setRemoveId(null);
+    }, tr('Authorization removed from your list. The audit record is preserved.', 'তালিকা থেকে অনুমোদন সরানো হয়েছে। নিরীক্ষার রেকর্ড সংরক্ষিত আছে।'));
+  };
   const statusLabel = (status: HostedAuthorizationStatus) => ({
     ACTIVE: tr('Active', 'সক্রিয়'), PENDING: tr('Pending', 'অপেক্ষমাণ'), CODE_ISSUED:tr('Awaiting code','কোডের অপেক্ষায়'), EXPIRED: tr('Expired', 'মেয়াদোত্তীর্ণ'),
-    REVOKED: tr('Revoked', 'বাতিল'), DENIED: tr('Declined', 'প্রত্যাখ্যাত'),
+    REVOKED: tr('Revoked', 'বাতিল'), DENIED: tr('Declined', 'প্রত্যাখ্যাত'), CANCELLED: tr('Cancelled', 'বাতিল করা হয়েছে'),
   })[status];
   const timeLabel = (record: HostedAuthorization) => {
     const status = record.status;
@@ -113,6 +133,7 @@ export function ManageAuthorization() {
     }
     if (status === 'REVOKED') return tr('Access removed', 'অনুমতি বাতিল করা হয়েছে');
     if (status === 'DENIED') return tr('Request declined', 'অনুরোধ প্রত্যাখ্যাত');
+    if (status === 'CANCELLED') return tr('Request cancelled', 'অনুরোধ বাতিল করা হয়েছে');
     return tr('Authorization expired', 'অনুমোদনের মেয়াদ শেষ');
   };
   const shown = records.filter(record => actor && (tab === 'outgoing' ? record.payerId === actor : record.taxpayerId === actor));
@@ -125,7 +146,7 @@ export function ManageAuthorization() {
       <button type="button" aria-current={tab === 'outgoing' ? 'page' : undefined} onClick={() => { setTab('outgoing'); setFeedback(null); setAdding(false); }}>
         <UsersRound size={17} aria-hidden="true"/>{tr('I can pay for', 'আমি যাঁদের জন্য দিতে পারি')}
       </button>
-      <button type="button" aria-current={tab === 'incoming' ? 'page' : undefined} onClick={() => { setTab('incoming'); setFeedback(null); setRemoveId(null); }}>
+      <button type="button" aria-current={tab === 'incoming' ? 'page' : undefined} onClick={() => { setTab('incoming'); setFeedback(null); setRemoveId(null); setDeleteId(null); }}>
         <ShieldCheck size={17} aria-hidden="true"/>{tr('Can pay for me', 'আমার হয়ে যাঁরা দিতে পারেন')}
       </button>
     </nav>
@@ -196,6 +217,7 @@ export function ManageAuthorization() {
             </div>}
             {tab === 'incoming' && status === 'CODE_ISSUED' && <div className="taxpay-auth-approval">
               <p>{tr('Your four-digit confirmation code:', 'আপনার চার সংখ্যার নিশ্চিতকরণ কোড:')} <strong className="taxpay-auth-tin">{record.consentCode}</strong></p>
+              {(record.codeResends??0)>0 && <p role="status">{tr('A new code was requested. Use this latest code; older codes are invalid.', 'নতুন কোড চাওয়া হয়েছে। সর্বশেষ কোডটি ব্যবহার করুন; আগেরগুলো কার্যকর নয়।')}</p>}
               <p>{tr('Share it with the requester. The code expires in 15 minutes.', 'অনুরোধকারীকে কোডটি দিন। ১৫ মিনিট পরে কোডের মেয়াদ শেষ হবে।')}</p>
               <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline instead', 'পরিবর্তে প্রত্যাখ্যান করুন')}</button>
             </div>}
@@ -208,6 +230,12 @@ export function ManageAuthorization() {
                 <button type="button" className="taxpay-auth-primary" disabled={busy||(codes[record.id]??'').length!==4}
                   onClick={()=>confirmCode(record)}>{tr('Complete authorization','অনুমোদন সম্পূর্ণ করুন')}</button>
               </div>
+              <div className="taxpay-auth-actions">
+                <button type="button" className="taxpay-auth-outline" disabled={busy || (record.codeResends??0)>=3 || (record.codeSentAt!=null && now-record.codeSentAt<60000)}
+                  onClick={() => resendCode(record)}><RefreshCw size={15} aria-hidden="true" />{tr('Resend code', 'কোড আবার পাঠান')}</button>
+                {(record.codeResends??0)>=3 ? <p className="taxpay-auth-note">{tr('Resend limit reached (3). Start a new request if this one expires.', 'তিনবার কোড পাঠানোর সীমা শেষ। মেয়াদ শেষ হলে নতুন অনুরোধ করুন।')}</p>
+                  : record.codeSentAt!=null && now-record.codeSentAt<60000 ? <p className="taxpay-auth-note">{tr(`Available in ${Math.ceil((60000-(now-record.codeSentAt))/1000)} seconds`, `${Math.ceil((60000-(now-record.codeSentAt))/1000)} সেকেন্ড পরে আবার পাঠাতে পারবেন`)}</p> : null}
+              </div>
             </div>}
             {tab === 'incoming' && status === 'ACTIVE' && <div className="taxpay-auth-actions">
               {removeId !== record.id ? <button type="button" className="taxpay-auth-danger" onClick={() => setRemoveId(record.id)}>{tr('Remove authorization', 'অনুমোদন বাতিল করুন')}</button>
@@ -219,6 +247,19 @@ export function ManageAuthorization() {
                   </div>
                 </div>}
             </div>}
+            <div className="taxpay-auth-actions">
+              {deleteId !== record.id ? <button type="button" className="taxpay-auth-outline" disabled={busy}
+                onClick={() => { setDeleteId(record.id); setRemoveId(null); }}><Trash2 size={15} aria-hidden="true" />{tr('Delete', 'মুছুন')}</button>
+                : <div className="taxpay-auth-confirm">
+                  <p>{status === 'ACTIVE' ? tr('Deleting will immediately revoke this payment permission for both people. The payment and audit history will remain.', 'মুছলে উভয়ের জন্য পরিশোধের অনুমতি বাতিল হবে। পেমেন্ট ও নিরীক্ষার ইতিহাস থাকবে।')
+                    : status === 'PENDING' || status === 'CODE_ISSUED' ? tr('Deleting will cancel this pending request for both people and hide it from your list. The audit record will remain.', 'মুছলে অনুরোধটি উভয়ের জন্য বাতিল হবে এবং আপনার তালিকা থেকে সরে যাবে। নিরীক্ষার রেকর্ড থাকবে।')
+                    : tr('Remove this item from your list? The audit history will remain available to Office.', 'তালিকা থেকে সরাবেন? নিরীক্ষার ইতিহাস অফিসে থাকবে।')}</p>
+                  <div className="taxpay-auth-inline">
+                    <button type="button" className="taxpay-auth-danger" disabled={busy} onClick={() => deleteAuthorization(record)}>{tr('Confirm delete', 'মুছতে নিশ্চিত করুন')}</button>
+                    <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => setDeleteId(null)}>{tr('Cancel', 'ফিরে যান')}</button>
+                  </div>
+                </div>}
+            </div>
           </li>;
         })}
       </ul>}

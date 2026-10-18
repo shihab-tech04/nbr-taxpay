@@ -33,7 +33,8 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await travel.getByLabel('Travel date').fill('2026-10-25');
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review travel details'})).toBeVisible();
- await travel.getByRole('radio',{name:'Pay online'}).check();
+  await travel.getByRole('button',{name:'Pay online'}).click();
+  await travel.getByRole('button',{name:'Mobile banking'}).click();
  await travel.getByRole('radio',{name:'bKash'}).check();
  await travel.locator('.travel-flow__channel input[type="checkbox"]').check();
  await travel.getByRole('button',{name:'Continue payment'}).click();
@@ -423,7 +424,8 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await expect(modal.getByText('Preview ready',{exact:true})).toHaveCount(0);
  await expect(side.getByText('Total amount')).toBeVisible();
  await expect(modal.getByRole('button',{name:'Continue payment'})).toBeVisible();
- await modal.getByRole('radio',{name:'Pay online'}).check();
+ await modal.getByRole('button',{name:'Pay online'}).click();
+ await modal.getByRole('button',{name:'Mobile banking'}).click();
  await modal.getByRole('radio',{name:'bKash'}).check();
  await modal.locator('.travel-flow__channel input[type="checkbox"]').check();
  await modal.getByRole('button',{name:'Continue payment'}).click();
@@ -495,7 +497,8 @@ test('Travel Tax primary action lives in fixed modal footer across all steps',as
  await actions.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await expect(actions.getByRole('button',{name:'Continue payment'})).toBeVisible();
- await modal.getByRole('radio',{name:'Pay online'}).check();
+ await modal.getByRole('button',{name:'Pay online'}).click();
+ await modal.getByRole('button',{name:'Mobile banking'}).click();
  await modal.getByRole('radio',{name:'bKash'}).check();
  await modal.locator('.travel-flow__channel input[type="checkbox"]').check();
  await actions.getByRole('button',{name:'Continue payment'}).click();

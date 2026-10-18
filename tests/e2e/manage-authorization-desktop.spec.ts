@@ -15,13 +15,14 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
     id:string;payerId:'user1';taxpayerId:'user2';status:string;requestedAt:number;
     codeExpiresAt:number;consentCode:string|null;confirmedAt:number|null;
     activeUntil:null;attempts:number;revokedAt:number|null;
+    codeResends:number;codeSentAt:number|null;deletedBy?:string[];
   }> = [];
   // Isolated API fixture: CI never modifies the live demo databases.
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations**', async route => {
     const request=route.request(),url=new URL(request.url());
     if(request.method()==='GET'){
       const actor=url.searchParams.get('actor');
-      const rows=requests.filter(r=>r.payerId===actor||r.taxpayerId===actor).map(r=>({
+      const rows=requests.filter(r=>(r.payerId===actor||r.taxpayerId===actor)&&!r.deletedBy?.includes(actor??'')).map(r=>({
         ...r,consentCode:r.taxpayerId===actor?r.consentCode:null
       }));
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:rows})});
@@ -32,14 +33,20 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
     if(input.action==='request'&&input.actor==='user1'&&input.tin==='2222222222222'){
       row={id:'9e13df95-85ec-4548-8363-467a6d6e95f0',payerId:'user1',taxpayerId:'user2',
         status:'PENDING',requestedAt:Date.now(),codeExpiresAt:Date.now()+900000,consentCode:null,
-        confirmedAt:null,activeUntil:null,attempts:0,revokedAt:null};
+        confirmedAt:null,activeUntil:null,attempts:0,revokedAt:null,codeResends:0,codeSentAt:null};
       requests.push(row);
     }else if(row&&input.action==='accept'&&input.actor==='user2'){
-      row.status='CODE_ISSUED';row.consentCode='4826';
-    }else if(row&&input.action==='confirm'&&input.actor==='user1'&&input.code==='4826'){
+      row.status='CODE_ISSUED';row.consentCode='4826';row.codeSentAt=Date.now()-61000;
+    }else if(row&&input.action==='resend'&&input.actor==='user1'&&row.status==='CODE_ISSUED'){
+      row.codeResends++;row.consentCode='7139';row.codeSentAt=Date.now();
+    }else if(row&&input.action==='confirm'&&input.actor==='user1'&&input.code===row.consentCode){
       row.status='ACTIVE';row.confirmedAt=Date.now();row.consentCode=null;
     }else if(row&&input.action==='revoke'&&input.actor==='user2'){
       row.status='REVOKED';row.revokedAt=Date.now();
+    }else if(row&&input.action==='delete'&&(input.actor==='user1'||input.actor==='user2')){
+      row.deletedBy=[...(row.deletedBy??[]),input.actor];
+      if(row.status==='ACTIVE'){row.status='REVOKED';row.revokedAt=Date.now();}
+      else if(row.status==='PENDING'||row.status==='CODE_ISSUED')row.status='CANCELLED';
     }else{await route.fulfill({status:409,contentType:'application/json',body:'{"success":false,"error":"INVALID_ACTION"}'});return;}
     await route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({success:true,mirrored:true,data:{id:row.id,status:row.status,consentCode:row.consentCode,attempts:row.attempts}})});
@@ -65,7 +72,21 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
 
   await signIn(page,'user1');
   await expect(authorization.getByText('Awaiting code')).toBeVisible();
-  await authorization.getByRole('textbox',{name:'Four-digit confirmation code'}).fill('4826');
+  await expect(authorization.getByRole('button',{name:'Resend code'})).toBeEnabled();
+  await authorization.getByRole('button',{name:'Resend code'}).click();
+  await expect(authorization.getByRole('status')).toContainText('New code sent');
+  await expect(authorization.getByRole('button',{name:'Resend code'})).toBeDisabled();
+  await page.getByRole('button',{name:'Sign out'}).click();
+
+  await signIn(page,'user2');
+  const resent=page.getByRole('dialog',{name:'Payment authorization request'});
+  await expect(resent).toBeVisible();
+  await expect(resent.getByText('7139')).toBeVisible();
+  await resent.getByRole('button',{name:'Close'}).click();
+  await page.getByRole('button',{name:'Sign out'}).click();
+
+  await signIn(page,'user1');
+  await authorization.getByRole('textbox',{name:'Four-digit confirmation code'}).fill('7139');
   await authorization.getByRole('button',{name:'Complete authorization'}).click();
   await expect(authorization.getByText('Active',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Sign out'}).click();
@@ -76,4 +97,8 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await authorization.getByRole('button',{name:'Remove authorization'}).click();
   await authorization.getByRole('button',{name:'Confirm removal'}).click();
   await expect(authorization.getByText('Revoked',{exact:true})).toBeVisible();
+  await authorization.getByRole('button',{name:'Delete'}).click();
+  await expect(authorization.getByText('The audit history will remain available to Office.')).toBeVisible();
+  await authorization.getByRole('button',{name:'Confirm delete'}).click();
+  await expect(authorization.getByText('No one is authorized yet')).toBeVisible();
 });

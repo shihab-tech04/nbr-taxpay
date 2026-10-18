@@ -26,7 +26,9 @@ test('other URL-selected fictional accounts do not inherit shared financial bala
   await expect(page.getByRole('heading',{name:'Sign in to manage payments'})).toBeVisible();
   await page.goto('/?action=certificates&demoUser=user2');
   await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
-  await expect(page.getByText('Not available',{exact:true}).first()).toBeVisible();
+  // A connected empty SQL history now shows a zero-valued certificate summary.
+  await expect(page.getByText('BDT 0',{exact:false}).first()).toBeVisible();
+  await expect(page.getByText('BDT 1,49,500')).toHaveCount(0);
   await page.goto('/?action=corrections&demoUser=user2');
   await expect(page.getByText('No payment records are available for correction.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Save request locally'})).toHaveCount(0);

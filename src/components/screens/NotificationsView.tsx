@@ -83,9 +83,14 @@ export const NotificationsView:React.FC=()=>{
       {!authorizationNotices.length?<p className="text-taxpay-muted">{label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
       <ul className="divide-y divide-taxpay-border">{authorizationNotices.map(r=><li key={r.id} className="py-4">
         <h2 className="font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
-          ?label(`${r.payerId} requested permission to pay for you`,`${r.payerId} আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন`)
+          ? r.status==='CODE_ISSUED' && (r.codeResends??0)>0
+            ?label(`New authorization code requested by ${r.payerId}`,`${r.payerId} নতুন অনুমোদন কোড চেয়েছেন`)
+            :label(`${r.payerId} requested permission to pay for you`,`${r.payerId} আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন`)
           :label(`Authorization for ${r.taxpayerId}`,`${r.taxpayerId}-এর অনুমোদন`)}</h2>
         <p className="mt-1 text-sm text-taxpay-muted">{label('Status','অবস্থা')}: {r.status.replaceAll('_',' ')} · {new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</p>
+        {r.taxpayerId===previewAccount.id && r.status==='CODE_ISSUED' && r.consentCode &&
+          <p className="mt-2 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
+            {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
         <button type="button" className="mt-2 rounded-lg border border-blue-300 px-3 py-2 font-semibold text-blue-800"
           onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
       </li>)}</ul>}

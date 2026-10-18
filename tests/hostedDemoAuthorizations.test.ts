@@ -41,6 +41,25 @@ test('request and recipient inbox use the shared SQL endpoint and hide caller-co
   }finally{globalThis.fetch=original;}
 });
 
+test('resend and delete actions keep the request identity and actor on the SQL API',async()=>{
+  const original=globalThis.fetch;
+  const actions:Array<Record<string,unknown>>=[];
+  globalThis.fetch=(async(_input:RequestInfo|URL,options?:RequestInit)=>{
+    actions.push(JSON.parse(String(options?.body)) as Record<string,unknown>);
+    return new Response(JSON.stringify({success:true,mirrored:true,
+      data:{id:'req-2',status:'CODE_ISSUED',attempts:0,codeResends:1,consentCode:null}}),
+    {status:200,headers:{'Content-Type':'application/json'}});
+  }) as typeof fetch;
+  try{
+    await performHostedAuthorization('user1','resend',{id:'req-2'});
+    await performHostedAuthorization('user1','delete',{id:'req-2'});
+    assert.deepEqual(actions,[
+      {actor:'user1',action:'resend',id:'req-2'},
+      {actor:'user1',action:'delete',id:'req-2'},
+    ]);
+  }finally{globalThis.fetch=original;}
+});
+
 test('reports partial TaxPay to Office writes as retryable synchronization errors',async()=>{
   const original=globalThis.fetch;
   globalThis.fetch=(async()=>new Response(JSON.stringify({
