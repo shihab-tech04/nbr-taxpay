@@ -66,6 +66,7 @@ test('desktop taxpayer rail keeps profile and language above its final sign-out 
 
 test('a signed-in account returning to public home sees notification and profile controls, then signs out',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One desktop journey covers the shared session transition');
+  await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_login');
   await page.getByLabel('User ID').fill('user1');
   await page.getByLabel('Password',{exact:true}).fill('user1');
