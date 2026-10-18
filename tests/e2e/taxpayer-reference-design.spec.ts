@@ -147,7 +147,7 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     }
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link');
-    await expect(items).toHaveCount(10);
+    await expect(items).toHaveCount(11);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
@@ -160,6 +160,7 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     }
     await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
     await expect(nav.getByRole('button',{name:'Notifications'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Manage Authorization'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Payment services'})).toBeVisible();
     await dialog.getByRole('button',{name:'বাংলা'}).click();
     const bengaliDialog = page.getByRole('dialog',{name:'সেবা ও মেনু'});
