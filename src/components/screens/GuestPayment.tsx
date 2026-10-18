@@ -26,6 +26,7 @@ import { PaymentMethodSelector } from '../ui/PaymentMethodSelector';
 import { PaymentJourneyFooter } from '../ui/PaymentJourneyFooter';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
+import { paymentAmountRowColumns } from '../../services/paymentAmountLayout';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
 import { useAccountIdentity } from '../../services/accountIdentity';
@@ -326,6 +327,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     ? categoryHeads.filter(head => head.status === 'ACTIVE' && !BLOCKED_HEAD_IDS.includes(head.id))
     : categoryHeads.filter(head => selectedHeadIds.includes(head.id));
   const selectedHead = selectedHeads[0];
+  const amountRowColumns = paymentAmountRowColumns(selectedHeads.length);
   const amountRawForHead = (headId: number) => verifiedReference ? String(verifiedReference.amount) : amountInputs[headId] || '';
   const headAmount = (headId: number) => parseGuestAmount(amountRawForHead(headId)) ?? 0;
   const validAmountInputs = selectedHeads.map(head => amountRawForHead(head.id)).filter(raw => parseGuestAmount(raw) !== null);
@@ -943,7 +945,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>
             </div>
             <div className="payment-head-amount-grid">
-            {selectedHeads.map((head, index) => <div className="payment-head-amount" key={head.id}>
+            {selectedHeads.map((head, index) => <div className="payment-head-amount" data-columns={amountRowColumns[index]} key={head.id}>
               {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
               <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
               <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required readOnly={!!verifiedReference} autoComplete="off" maxLength={17}

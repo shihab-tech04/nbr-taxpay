@@ -184,6 +184,47 @@ test('single-head tax service exposes its amount and multiple amounts divide the
   expect(Math.max(...boxesThree.map(box => box.y)) - Math.min(...boxesThree.map(box => box.y))).toBeLessThan(2);
 });
 
+test('four and five selected heads form balanced rows on desktop and stack on mobile', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.getByRole('button', { name: /Penalty/ }).click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await dialog.getByRole('radio', { name: 'My own tax' }).check();
+  await dialog.locator('#guest-tin').fill('444444444444');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const heads = dialog.locator('.payment-head-options input[type="checkbox"]:not(:disabled)');
+  for (let index = 0; index < 4; index += 1) await heads.nth(index).check();
+  const rects = () => dialog.locator('.payment-head-amount').evaluateAll(elements => elements.map(element => {
+    const { x, y, width } = element.getBoundingClientRect();
+    return { x, y, width };
+  }));
+  const four = await rects();
+  expect(four).toHaveLength(4);
+  if ((page.viewportSize()?.width ?? 0) > 700) {
+    expect(Math.abs(four[0].y - four[1].y)).toBeLessThan(2);
+    expect(Math.abs(four[2].y - four[3].y)).toBeLessThan(2);
+    expect(four[2].y).toBeGreaterThan(four[0].y);
+    expect(Math.abs(four[0].width - four[3].width)).toBeLessThan(2);
+  }
+
+  await heads.nth(4).check();
+  const five = await rects();
+  expect(five).toHaveLength(5);
+  if ((page.viewportSize()?.width ?? 0) > 700) {
+    expect(Math.max(...five.slice(0, 3).map(rect => rect.y)) - Math.min(...five.slice(0, 3).map(rect => rect.y))).toBeLessThan(2);
+    expect(Math.abs(five[3].y - five[4].y)).toBeLessThan(2);
+    expect(five[3].y).toBeGreaterThan(five[0].y);
+    expect(five[3].width).toBeGreaterThan(five[0].width);
+  } else {
+    expect(five.every((rect, index) => index === 0 || rect.y > five[index - 1].y)).toBe(true);
+    expect(Math.max(...five.map(rect => rect.width)) - Math.min(...five.map(rect => rect.width))).toBeLessThan(2);
+  }
+});
+
 test('multiple payment heads have searchable selection, separate amounts and one accurate receipt', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
   await page.goto('/');
