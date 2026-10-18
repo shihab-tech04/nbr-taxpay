@@ -24,7 +24,7 @@ test('guest fields start unselected and require a payer relationship and a head'
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.locator('.payment-head-options input:checked')).toHaveCount(0);
-  await dialog.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
+  await dialog.getByRole('radio', { name: /Person other than company/ }).check();
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Select an available payment head');
 });

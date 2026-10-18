@@ -131,6 +131,8 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
   await expect(page.getByLabel('Taxpayer’s TIN')).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'My own tax' })).not.toBeChecked();
+  await page.getByRole('radio', { name: 'My own tax' }).check();
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
   await expect(pageWidth(page)).resolves.toBeLessThanOrEqual(info.project.name === 'mobile-320' ? 322 : info.project.name === 'mobile-375' ? 377 : 1282);
@@ -141,7 +143,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.locator('.payment-head-single')).toBeVisible();
   await page.locator('.payment-head-single input[type="checkbox"]').check();
-  await page.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
+  await page.getByRole('radio', { name: /Person other than company/ }).check();
 
   await page.getByLabel('Payment amount (৳)').fill('0');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
@@ -170,10 +172,12 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByRole('button', { name: 'অনলাইনে পরিশোধ' })).toBeVisible();
   await expect(page.getByText(/অর্থ স্থানান্তর বা সরকারি চালান ইস্যু হয় না/)).toHaveCount(0);
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
+  await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();
   await page.getByRole('radio', { name: 'bKash' }).check();
-  await page.getByRole('checkbox', { name: /আমি টিআইএন, পরিশোধের উদ্দেশ্য/ }).check();
+  await page.getByRole('checkbox', { name: /টিআইএন, খাত/ }).check();
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট প্রক্রিয়া সম্পন্ন' })).toBeVisible({ timeout: 12000 });
+  await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
@@ -207,6 +211,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: /Tax with Return/ }).click();
   await services.getByRole('button', { name: 'Continue' }).click();
   await services.getByRole('button', { name: 'Continue without signing in' }).click();
+  await services.getByRole('radio', { name: 'My own tax' }).check();
   await expect(services.locator('.payment-form-section')).toHaveCount(2);
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
@@ -217,7 +222,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
   await services.locator('.payment-head-single input[type="checkbox"]').check();
-  await services.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
+  await services.getByRole('radio', { name: /Person other than company/ }).check();
   await services.locator('#guest-tax-amount').fill('0');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(services.getByRole('alert')).toContainText('greater than zero');
@@ -226,10 +231,12 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.getByText('Step 3 of 4')).toBeVisible();
   await expect(services.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await services.getByRole('button', { name: 'Pay online' }).click();
+  await services.getByRole('button', { name: 'Mobile banking' }).click();
   await services.getByRole('radio', { name: 'Nagad' }).check();
-  await services.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await services.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
   await expect(services.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await services.getByRole('button', { name: 'Receipt details' }).click();
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);
 
