@@ -275,7 +275,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const id: Record<GuestErrorField, string> = {
       payerChoice: 'guest-payer-self', tin: 'guest-tin', payerName: 'guest-payer-name', phone: 'guest-phone',
       noticeReference: 'guest-notice-ref', incomeTaxType: 'guest-income-type-NON_COMPANY',
-      headId: 'guest-head-static', taxAmount: errorHeadId && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
+      headId: 'guest-head-static', taxAmount: errorHeadId && selectedHeadIds.length > 0 && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
     };
     const control = document.getElementById(id[errorField]) ||
       (errorField === 'headId' ? document.querySelector<HTMLElement>('#guest-head-search, .payment-head-options input') : null);
@@ -333,7 +333,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   });
 
   // Searching filters the list only. Each selected head remains in the payment and calculation.
-  const selectedHeads = V11_PAYMENT_OPTIONS.filter(head => head.category === category && selectedHeadIds.includes(head.id));
+  // The sole eligible head is implicit in the selected service. This keeps
+  // its amount input visible even after editing a reference or taxpayer TIN.
+  const selectedHeads = categoryHeads.length === 1
+    ? categoryHeads.filter(head => head.status === 'ACTIVE' && !BLOCKED_HEAD_IDS.includes(head.id))
+    : categoryHeads.filter(head => selectedHeadIds.includes(head.id));
   const selectedHead = selectedHeads[0];
   const amountRawForHead = (headId: number) => verifiedReference ? String(verifiedReference.amount) : amountInputs[headId] || '';
   const headAmount = (headId: number) => parseGuestAmount(amountRawForHead(headId)) ?? 0;
@@ -712,7 +716,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('payerChoice')}
               </fieldset>
             </PaymentFormSection>
-            <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference'}>
+            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference'}>
             {ownAccountTax && <p role="status" className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
               {ownProfile
                 ? language === 'bn' ? 'অ্যাকাউন্টের করদাতার তথ্য পূরণ করা হয়েছে। এই তথ্য পরিবর্তন করা যাবে না।' : 'Your account taxpayer details are prefilled and read-only.'
@@ -793,7 +797,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('noticeReference')}
               </div>}
             </div>
-            </PaymentFormSection>
+            </PaymentFormSection>}
 
             {!embedded && <div className="flex justify-end pt-3">
               <button
@@ -857,8 +861,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
             {categoryHeads.length === 1 ? (
               <label id="guest-head-static" htmlFor={`guest-head-${categoryHeads[0].id}`} className="payment-head-single" tabIndex={-1}>
-                <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{selectedHeadIds.includes(categoryHeads[0].id) ? (language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head') : (language === 'bn' ? 'পেমেন্ট খাত নির্বাচন করুন' : 'Select payment head')}</small></div>
-                <input id={`guest-head-${categoryHeads[0].id}`} type="checkbox" name="guest-payment-head" disabled={categoryHeads[0].status !== 'ACTIVE'} checked={selectedHeadIds.includes(categoryHeads[0].id)} onChange={() => setSelectedHeadIds(previous => previous.includes(categoryHeads[0].id) ? [] : [categoryHeads[0].id])} />
+                <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{selectedHeads.length ? (language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head') : (language === 'bn' ? 'পেমেন্ট খাত উপলব্ধ নয়' : 'Payment head unavailable')}</small></div>
+                <input id={`guest-head-${categoryHeads[0].id}`} type="checkbox" name="guest-payment-head" disabled checked={selectedHeads.length > 0} readOnly />
               </label>
             ) : <fieldset className="payment-head-fieldset grid grid-cols-1 gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
               <legend className="block text-xs font-semibold text-slate-700 self-center">
@@ -949,6 +953,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 </select>
               </div>
             </div>
+            <div className="payment-head-amount-grid">
             {selectedHeads.map((head, index) => <div className="payment-head-amount" key={head.id}>
               {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
               <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
@@ -958,6 +963,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
               {isFieldInvalid('taxAmount') && errorHeadId === head.id && fieldError('taxAmount')}
             </div>)}
+            </div>
             {isFieldInvalid('taxAmount') && errorHeadId === null && fieldError('taxAmount')}
             </PaymentFormSection>
 

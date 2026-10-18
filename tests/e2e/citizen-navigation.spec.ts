@@ -19,7 +19,7 @@ test('public hero opens service choice before the guest payment form while the r
  await expect(services.getByRole('heading',{name:'How would you like to continue?'})).toBeVisible();
  await services.getByRole('button',{name:'Continue without signing in'}).click();
  await expect(page).toHaveURL(/action=landing/);
- await expect(services.locator('.payment-form-section')).toHaveCount(2);
+ await expect(services.locator('.payment-form-section')).toHaveCount(1);
  await expect(services.getByText('Step 1 of 4',{exact:false})).toBeVisible();
 });
 

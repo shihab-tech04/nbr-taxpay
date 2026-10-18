@@ -386,8 +386,10 @@
 .payment-head-search input {flex:1;min-width:0;}
 .payment-head-search__button {display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 15px;border-radius:8px;border:1px solid var(--citizen-primary);color:white;background:var(--citizen-primary);font-size:.82rem;font-weight:700;cursor:pointer;}
 .payment-head-search__button:hover {background:var(--citizen-primary-dark);}
-.payment-head-amount {margin-top:14px;min-width:0;max-width:410px;}
+.payment-head-amount-grid {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;min-width:0;}
+.payment-head-amount {margin-top:14px;min-width:0;}
 .payment-head-amount__label {font-size:.8rem;font-weight:700;color:var(--citizen-text);margin:0 0 8px;line-height:1.45;}
+@media(max-width:700px){.payment-head-amount-grid{grid-auto-flow:row;grid-template-columns:minmax(0,1fr);}}
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer { justify-content:space-between; }
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer-actions { flex:1 1 auto; }
 .payment-flow-embedded--receipt .receipt-view--embedded { max-width:100%; }

@@ -144,7 +144,7 @@ test('Pay Tax opens the eight HTML-defined services and carries the chosen categ
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
   await expect(chooser.locator('.tax-service-choice__stage--current svg')).toHaveCount(1);
-  await expect(chooser.locator('.payment-form-section')).toHaveCount(2);
+  await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
   await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
   expect(page.url()).toBe(originalUrl);
 });

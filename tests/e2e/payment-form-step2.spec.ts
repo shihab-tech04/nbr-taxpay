@@ -24,11 +24,12 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(progress.locator('.tax-service-choice__stage-label--short').first()).toBeVisible();
   await expect(chooser.getByRole('radio', { name: 'My own tax' })).not.toBeChecked();
   await expect(chooser.getByRole('radio', { name: "Someone else's tax" })).not.toBeChecked();
-  await expect(chooser.locator('.payment-form-section')).toHaveCount(2);
+  await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
   await expect(chooser.locator('#guest-category')).toHaveCount(0);
-  await expect(chooser.locator('.payment-form-section').last()).toContainText('Taxpayer identification');
+  await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toHaveCount(0);
   await expect(chooser.getByRole('radio', { name: 'My own tax' })).not.toBeChecked();
   await chooser.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   const buttons = footer.getByRole('button');
@@ -140,6 +141,49 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   expect(page.url()).toBe(originalUrl);
 });
 
+test('single-head tax service exposes its amount and multiple amounts divide the row evenly', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop amount allocation layout');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.getByRole('button', { name: /Tax with Return/ }).click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Taxpayer identification' })).toHaveCount(0);
+  await dialog.getByRole('radio', { name: "Someone else's tax" }).check();
+  await expect(dialog.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
+  await dialog.locator('#guest-tin').fill('444444444444');
+  await dialog.locator('#guest-payer-name').fill('Test Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
+  await expect(dialog.locator('.payment-head-amount')).toHaveCount(1);
+  await dialog.locator('#guest-tax-amount').fill('1000');
+  await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
+
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.getByRole('button', { name: /Advance Tax/ }).click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await dialog.getByRole('radio', { name: 'My own tax' }).check();
+  await dialog.locator('#guest-tin').fill('444444444444');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const heads = dialog.locator('.payment-head-options input[type="checkbox"]');
+  await heads.nth(0).check();
+  await heads.nth(1).check();
+  const widthsTwo = await dialog.locator('.payment-head-amount').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().width));
+  expect(widthsTwo).toHaveLength(2);
+  expect(Math.abs(widthsTwo[0] - widthsTwo[1])).toBeLessThan(2);
+  await heads.nth(2).check();
+  const boxesThree = await dialog.locator('.payment-head-amount').evaluateAll(elements => elements.map(el => ({ x: el.getBoundingClientRect().x, y: el.getBoundingClientRect().y, width: el.getBoundingClientRect().width })));
+  expect(boxesThree).toHaveLength(3);
+  expect(Math.max(...boxesThree.map(box => box.width)) - Math.min(...boxesThree.map(box => box.width))).toBeLessThan(2);
+  expect(Math.max(...boxesThree.map(box => box.y)) - Math.min(...boxesThree.map(box => box.y))).toBeLessThan(2);
+});
+
 test('multiple payment heads have searchable selection, separate amounts and one accurate receipt', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
   await page.goto('/');
@@ -212,7 +256,7 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await expect(payment.getByRole('alert')).toContainText('Choose the income tax type');
   await expect(payment.getByRole('radio', { name: /Person other than company/ })).toBeFocused();
   await payment.getByRole('radio', { name: /Person other than company/ }).check();
-  await payment.locator('.payment-head-single input[type="checkbox"]').check();
+  await expect(payment.locator('.payment-head-single input[type="checkbox"]')).toBeChecked();
   await payment.locator('#guest-tax-amount').fill('-5');
   await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(payment.getByRole('alert')).toContainText('greater than zero');

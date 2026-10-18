@@ -58,7 +58,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
-  await expect(services.locator('.payment-form-section')).toHaveCount(2);
+  await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await page.goto('/?action=landing');
   await openTravelTaxFromBanner(page);
   await expect(page.getByRole('dialog',{name:/Travel tax/})).toBeVisible();
@@ -150,7 +150,7 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await services.getByRole('button',{name:'Continue'}).click();
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(services.locator('.payment-form-section')).toHaveCount(2);
+  await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(rail).toBeVisible();
   // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
@@ -188,7 +188,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   // Payment services remain reachable through the Pay action without adding duplicate menu items.
   await expect(page).toHaveURL(/action=ledger/);
-  await expect(services.locator('.payment-form-section')).toHaveCount(2);
+  await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await open();
