@@ -24,23 +24,23 @@ import { PaymentFormSection } from '../ui/PaymentFormLayout';
 const COPY = {
   en: {
     title: 'Travel tax', intro: 'Enter your travel details.',
-    destination: 'Destination and travel mode', passenger: 'Passenger name (as in passport)', passengerPlaceholder: 'Example: MOHAMMED RAHMAN', passport: 'Passport reference', passportPlaceholder: 'Enter a test reference',
+    destination: 'Destination and travel mode', passenger: 'Passenger name', passengerPlaceholder: 'Example: MOHAMMED RAHMAN', passport: 'Passport number', passportPlaceholder: 'Enter passport number',
     count: 'Outbound passenger count', countHint: 'Exemptions are not calculated.',
     mobile: 'Mobile number (optional)', phonePlaceholder: 'Contact number',
-    port: 'Departure port', date: 'Departure date', total: 'Total', perPassenger: 'per passenger',
+    port: 'Departure port', date: 'Travel date', total: 'Total', perPassenger: 'per passenger',
     run: 'Continue payment', running: 'Processing…',
     complete: 'Travel tax details ready', ref: 'Payment reference', again: 'Start another payment',
-    requiredName: 'Enter the passenger name shown on the passport.', requiredPassport: 'Enter a test passport reference of at least 6 characters.'
+    requiredName: 'Enter the passenger name shown on the passport.', requiredPassport: 'Enter a passport number of at least 6 characters.'
   },
   bn: {
     title: 'ভ্রমণ কর', intro: 'যাত্রার তথ্য দিন।',
-    destination: 'গন্তব্য ও ভ্রমণের ধরন', passenger: 'পাসপোর্ট অনুযায়ী যাত্রীর নাম', passengerPlaceholder: 'উদাহরণ: MOHAMMED RAHMAN', passport: 'পাসপোর্ট রেফারেন্স', passportPlaceholder: 'পরীক্ষামূলক রেফারেন্স লিখুন',
+    destination: 'গন্তব্য ও ভ্রমণের ধরন', passenger: 'যাত্রীর নাম', passengerPlaceholder: 'উদাহরণ: MOHAMMED RAHMAN', passport: 'পাসপোর্ট নম্বর', passportPlaceholder: 'পাসপোর্ট নম্বর লিখুন',
     count: 'বহির্গামী যাত্রীর সংখ্যা', countHint: 'অব্যাহতি হিসাব করা হয় না।',
     mobile: 'মোবাইল নম্বর (ঐচ্ছিক)', phonePlaceholder: 'যোগাযোগ নম্বর',
-    port: 'যাত্রা শুরুর বন্দর', date: 'যাত্রার তারিখ', total: 'মোট অর্থ', perPassenger: 'প্রতি যাত্রী',
+    port: 'যাত্রা শুরুর বন্দর', date: 'ভ্রমণের তারিখ', total: 'মোট অর্থ', perPassenger: 'প্রতি যাত্রী',
     run: 'পেমেন্টে এগিয়ে যান', running: 'প্রক্রিয়াধীন…',
     complete: 'ভ্রমণ করের তথ্য প্রস্তুত', ref: 'পেমেন্ট রেফারেন্স', again: 'আরেকটি পেমেন্ট শুরু করুন',
-    requiredName: 'পাসপোর্টে থাকা যাত্রীর নাম লিখুন।', requiredPassport: 'কমপক্ষে ৬ অক্ষরের পরীক্ষামূলক পাসপোর্ট রেফারেন্স দিন।'
+    requiredName: 'যাত্রীর নাম লিখুন।', requiredPassport: 'কমপক্ষে ৬ অক্ষরের পাসপোর্ট নম্বর লিখুন।'
   }
 } as const;
 
@@ -60,24 +60,27 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
 
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [furthestStep, setFurthestStep] = useState<0 | 1 | 2 | 3>(0);
-  const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
+  const [selectedRouteIdx, setSelectedRouteIdx] = useState(-1);
   const [routeSearch, setRouteSearch] = useState('');
   const [ageBand, setAgeBand] = useState<'ADULT' | 'CHILD' | 'UNDER5'>('ADULT');
   const [passengerName, setPassengerName] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
   const [phone, setPhone] = useState('');
-  const [travelDate, setTravelDate] = useState('2026-10-25');
+  const [travelDate, setTravelDate] = useState('');
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
+  const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [bankSlipPending, setBankSlipPending] = useState(false);
 
   useEffect(() => {
     if (fourStepJourney) onStageChange?.((step + 1) as 1 | 2 | 3 | 4);
   }, [fourStepJourney, onStageChange, step]);
 
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
-  const unitRate = route.amount;
+  const unitRate = route?.amount ?? 0;
   const totalAmount = ageBand === 'UNDER5' ? 0 : ageBand === 'CHILD' ? unitRate / 2 : unitRate;
   const isDomestic = selectedRouteIdx === 3;
 
@@ -85,8 +88,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     e.preventDefault();
     // Submitting a field with Enter must not skip the amount or channel steps.
     if (step !== 2) return;
-    if (fourStepJourney && !paymentMethod) {
+    if (!route) { setError(bn ? 'যাত্রাপথ নির্বাচন করুন।' : 'Choose a journey.'); return; }
+    if (fourStepJourney && (!paymentChannel || !paymentMethod)) {
       setError(bn ? 'পেমেন্ট পদ্ধতি নির্বাচন করুন।' : 'Choose a payment method to continue.');
+      return;
+    }
+    if (fourStepJourney && !acknowledged) {
+      setError(bn ? 'ভ্রমণ, যাত্রীর তথ্য ও পরিমাণ নিশ্চিত করুন।' : 'Confirm that the journey, passenger details and amount are correct.');
       return;
     }
     if (!passengerName.trim()) {
@@ -109,11 +117,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       const randChallan = Math.floor(10000000 + Math.random() * 90000000);
       const randToken = Math.floor(100000 + Math.random() * 900000);
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const pendingBank = fourStepJourney && paymentChannel === 'OTC';
+      const paymentReference = `PT-${year}-${randToken}`;
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-trv-${Date.now()}`,
-        challanNo: `AC-${year}-TRV-${randChallan}`,
-        tokenNumber: `TRV-${randToken}`,
+        taxEventId: `TE-${year}-${Math.floor(100000 + Math.random() * 900000)}`,
+        paymentTransactionId: paymentReference,
+        challanNo: `ACS-${year}-${randChallan}`,
+        tokenNumber: paymentReference,
         paymentCategory: 'OTHER_TAX_PAYMENT',
         assessmentYear: '2026-27',
         payerName: `${passengerName} (Passport: ${passportNumber})`,
@@ -138,17 +150,18 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         totalAmount,
         paymentMethod: fourStepJourney ? (paymentMethod || 'BKASH') : 'BKASH',
         gatewayTransactionId: `BKSH-TRV-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: embedded ? undefined : `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
-        treasuryDate: embedded ? undefined : now,
-        treasuryStatus: embedded ? 'INITIATED' : 'TREASURY_SCROLLED',
+        treasuryScrollNo: pendingBank ? undefined : `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
+        treasuryDate: pendingBank ? undefined : now,
+        treasuryStatus: pendingBank ? 'INITIATED' : 'TREASURY_SCROLLED',
         taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
-        completedAt: now,
+        completedAt: pendingBank ? undefined : now,
         isSimulatedDemo: true
       };
 
-      if (!embedded) addPaymentReceipt(newReceipt);
+      if (!pendingBank) addPaymentReceipt(newReceipt);
       setCreatedReceipt(newReceipt);
+      setBankSlipPending(pendingBank);
       if (fourStepJourney) goStep(3);
       setIsProcessing(false);
     }, 1000);
@@ -174,7 +187,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         estimate: 'মোট অর্থ', waiting: 'পর্যালোচনার অপেক্ষায়',
         ready: 'রেকর্ড প্রস্তুত', newPreview: 'নতুন পেমেন্ট',
         missing: 'যাত্রীর নাম, মোবাইল নম্বর ও পাসপোর্ট রেফারেন্স দিন।',
-        hint: 'পাসপোর্ট রেফারেন্স হিসেবে পরীক্ষামূলক তথ্য ব্যবহার করুন।' }
+        hint: 'যাত্রীর নাম, পাসপোর্ট নম্বর, তারিখ ও রসিদের মোবাইল দিন।' }
     : { steps: ['Travel route', 'Passenger details', 'Review'], select: 'Choose destination & travel mode',
         passenger: 'Passenger information', review: 'Review travel details', summary: 'Payment calculation',
         rate: 'Rate per passenger', people: 'Passengers', route: 'Travel route', status: 'Status',
@@ -182,7 +195,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         estimate: 'Total amount', waiting: 'Awaiting review',
         ready: 'Record ready', newPreview: 'Start a new payment',
         missing: 'Enter a passenger name, mobile number and passport reference.',
-        hint: 'Use a test passport reference.' };
+        hint: 'Provide the passenger name, passport number, travel date and receipt mobile.' };
 
   const goStep = (target: 0 | 1 | 2 | 3) => {
     setError('');
@@ -191,8 +204,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   const continueStep = () => {
+    if (step === 0 && !fourStepJourney && !route) { setError(bn ? 'যাত্রাপথ নির্বাচন করুন।' : 'Choose a journey.'); return; }
     if (step === 0 && !fourStepJourney) { goStep(1); return; }
     if (fourStepJourney && step === 1) {
+      if (!route) { setError(bn ? 'যাত্রাপথ নির্বাচন করুন।' : 'Choose a journey.'); return; }
       if (!isDomestic && passportNumber.trim().length < 6) { setError(t.requiredPassport); return; }
       goStep(2); return;
     }
@@ -205,10 +220,27 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   };
   const reset = () => {
     setCreatedReceipt(null); setStep(0); setFurthestStep(0);
-    setPassengerName(''); setPassportNumber(''); setPhone('');
-    setAgeBand('ADULT'); setSelectedRouteIdx(0); setError('');
+    setPassengerName(''); setPassportNumber(''); setPhone(''); setTravelDate('');
+    setAgeBand('ADULT'); setSelectedRouteIdx(-1); setRouteSearch(''); setError('');
     setPaymentMethod(null);
+    setPaymentChannel(null);
+    setAcknowledged(false);
+    setBankSlipPending(false);
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
+  };
+  const settleBankSlip = () => {
+    if (!createdReceipt || !bankSlipPending || isProcessing) return;
+    const at = new Date().toISOString();
+    const receipt: ChallanReceipt = {
+      ...createdReceipt,
+      treasuryStatus: 'TREASURY_SCROLLED',
+      treasuryScrollNo: `DEMO-BANK-${Date.now()}`,
+      treasuryDate: at,
+      completedAt: at,
+    };
+    addPaymentReceipt(receipt);
+    setCreatedReceipt(receipt);
+    setBankSlipPending(false);
   };
   // One state-controlled action, rendered in the modal footer (or alongside
   // the summary only on the standalone Travel Tax route).
@@ -216,6 +248,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   const primaryAction = !createdReceipt && readyToPay && ageBand === 'UNDER5' ? (
     <button type="button" className="travel-flow__primary" onClick={reset}>
       {bn ? 'অন্য যাত্রীর জন্য শুরু করুন' : 'Start for another passenger'}
+    </button>
+  ) : bankSlipPending ? (
+    <button type="button" className="travel-flow__primary" onClick={settleBankSlip}>
+      <Building2 size={17} aria-hidden="true" />{bn ? 'ব্যাংক পরিশোধ নিশ্চিত করুন' : 'Confirm bank payment'}
     </button>
   ) : createdReceipt ? (
     <button type="button" className="travel-flow__primary" onClick={reset}>
@@ -227,7 +263,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         const form = document.getElementById('travel-tax-form');
         if (form instanceof HTMLFormElement) form.requestSubmit();
       }}
-      disabled={isProcessing || (fourStepJourney && !paymentMethod)} aria-busy={isProcessing}>
+      disabled={isProcessing || (fourStepJourney && (!paymentChannel || !paymentMethod || !acknowledged))} aria-busy={isProcessing}>
       <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : (fourStepJourney ? (bn ? 'পেমেন্ট নিশ্চিত করুন' : 'Confirm payment') : t.run)}
     </button>
   ) : (
@@ -341,7 +377,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                   placeholder="01XXXXXXXXX" onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} />
               </div>
               <div className="travel-flow__field">
-                <label htmlFor="travel-departure-date">{t.date}</label>
+                <label htmlFor="travel-departure-date">{t.date} *</label>
                 <input id="travel-departure-date" type="date" value={travelDate}
                   onChange={e => setTravelDate(e.target.value)} />
               </div>
@@ -354,14 +390,22 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               <h3 id="travel-review-heading">{createdReceipt ? t.complete : workflow.review}</h3>
               {ageBand === 'UNDER5' && !createdReceipt && <p>{bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট প্রয়োজন নেই।' : 'This passenger is exempt — no payment is required.'}</p>}
             </header>
-            {createdReceipt ? <div className="travel-flow__receipt">
+            {createdReceipt && bankSlipPending ? <div className="travel-flow__receipt" role="status">
+              <p className="travel-flow__receipt-label"><Building2 size={18} aria-hidden="true" />{bn ? 'ব্যাংকে পরিশোধের অপেক্ষায় — এখনো কর পরিশোধিত নয়' : 'Awaiting bank payment — tax is not paid yet'}</p>
+              <dl className="travel-flow__review">
+                <div><dt>{bn ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</dt><dd>{createdReceipt.paymentTransactionId}</dd></div>
+                <div><dt>{bn ? 'চালান রেফারেন্স' : 'Challan reference'}</dt><dd>{createdReceipt.challanNo}</dd></div>
+                <div><dt>{bn ? 'পরিমাণ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
+              </dl>
+              <p>{bn ? 'তফসিলি ব্যাংকে স্লিপের রেফারেন্স দিয়ে পরিশোধ করুন। ব্যাংকে জমা নিশ্চিত হলে রসিদ তৈরি হবে।' : 'Take this payment-slip reference to a scheduled bank branch. The receipt becomes available after bank settlement.'}</p>
+            </div> : createdReceipt ? <div className="travel-flow__receipt">
               <p className="travel-flow__receipt-label" role="status">
                 <CheckCircle size={18} aria-hidden="true" />{workflow.ready} · {t.ref}: {createdReceipt.tokenNumber}
               </p>
               <ReceiptView receipt={createdReceipt} embedded={embedded}
                 onBack={() => navigate('landing')} />
             </div> : <dl className="travel-flow__review">
-              <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
+              <div><dt>{workflow.route}</dt><dd>{route ? (bn ? route.routeBn : route.route) : '—'}</dd></div>
               <div><dt>{t.passenger}</dt><dd>{passengerName}</dd></div>
               {!isDomestic && <div><dt>{t.passport}</dt><dd>{passportNumber}</dd></div>}
               <div><dt>{bn ? 'বয়সের ধরন' : 'Age band'}</dt><dd>{ageBand === 'ADULT' ? (bn ? 'পূর্ণ হার' : 'Full rate') : ageBand === 'CHILD' ? (bn ? 'অর্ধেক হার' : 'Half rate') : (bn ? 'করমুক্ত' : 'Exempt')}</dd></div>
@@ -371,10 +415,27 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
           </section>}
           {fourStepJourney && step === 2 && <section className="travel-flow__panel travel-flow__channel" aria-labelledby="travel-channel-heading">
             <header className="travel-flow__section-header"><h3 id="travel-channel-heading">{bn ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h3><p>{bn ? 'পেমেন্টের পদ্ধতি নির্বাচন করুন, তারপর নিশ্চিত করুন।' : 'Select a payment method before confirming.'}</p></header>
-            <fieldset className="travel-flow__channel-options"><legend className="sr-only">{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</legend>
-              {([['BKASH','bKash'],['NAGAD','Nagad'],['ROCKET','Rocket'],['INTERNET_BANKING',bn ? 'ইন্টারনেট ব্যাংকিং' : 'Internet banking'],['VISA','Visa'],['MASTERCARD','Mastercard']] as const).map(([method,label]) => <label key={method} className="travel-flow__channel-option"><input type="radio" name="travel-payment-method" checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} /><span>{label}</span></label>)}
+            <fieldset className="travel-flow__channel-options">
+              <legend>{bn ? 'কীভাবে পরিশোধ করবেন?' : 'How do you want to pay?'}</legend>
+              <label className="travel-flow__channel-option"><input type="radio" name="travel-payment-channel" checked={paymentChannel === 'NOW'} onChange={() => { setPaymentChannel('NOW'); setPaymentMethod(null); setAcknowledged(false); }} />{bn ? 'অনলাইনে পরিশোধ' : 'Pay online'}</label>
+              <label className="travel-flow__channel-option"><input type="radio" name="travel-payment-channel" checked={paymentChannel === 'OTC'} onChange={() => { setPaymentChannel('OTC'); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }} />{bn ? 'ব্যাংক শাখায় পরিশোধ (চালান স্লিপ)' : 'Pay at a bank branch (payment slip)'}</label>
             </fieldset>
+            {paymentChannel !== 'OTC' && <>
+            <fieldset className="travel-flow__channel-options"><legend className="sr-only">{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</legend>
+              {([['BKASH','bKash'],['NAGAD','Nagad'],['ROCKET','Rocket'],['INTERNET_BANKING',bn ? 'ইন্টারনেট ব্যাংকিং' : 'Internet banking'],['VISA','Visa'],['MASTERCARD','Mastercard']] as const).map(([method,label]) => <label key={method} className="travel-flow__channel-option"><input type="radio" name="travel-payment-method" checked={paymentMethod === method} onChange={() => { setPaymentChannel('NOW'); setPaymentMethod(method); setAcknowledged(false); }} /><span>{label}</span></label>)}
+            </fieldset>
+            </>}
+            <dl className="travel-flow__review" aria-label={bn ? 'পেমেন্ট যাচাই' : 'Payment review'}>
+              <div><dt>{bn ? 'যাত্রাপথ' : 'Journey'}</dt><dd>{route ? (bn ? route.routeBn : route.route) : '—'}</dd></div>
+              <div><dt>{bn ? 'যাত্রী' : 'Passenger'}</dt><dd>{passengerName}</dd></div>
+              {!isDomestic && <div><dt>{bn ? 'পাসপোর্ট নম্বর' : 'Passport number'}</dt><dd>{passportNumber.replace(/.(?=.{3})/g, '•')}</dd></div>}
+              <div><dt>{bn ? 'ভ্রমণের তারিখ' : 'Travel date'}</dt><dd>{travelDate}</dd></div>
+              <div><dt>{bn ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd>{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
+              <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentChannel === 'OTC' ? (bn ? 'ব্যাংক শাখা' : 'Bank branch') : paymentMethod ? ({ BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard' } as Record<string, string>)[paymentMethod] : '—'}</dd></div>
+              <div><dt>{bn ? 'চার্জ' : 'Charge'}</dt><dd>{formatCurrency(0, language)}</dd></div>
+            </dl>
             <p className="travel-flow__purpose-total">{bn ? 'সর্বমোট' : 'Total payable'}: <strong>{formatCurrency(totalAmount, language)}</strong></p>
+            <label className="travel-flow__channel-option"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />{bn ? 'ভ্রমণ, যাত্রীর তথ্য ও পরিমাণ সঠিক।' : 'The journey, passenger details and amount are correct.'}</label>
           </section>}
           {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
             onClick={() => goStep((step - 1) as 0 | 1 | 2 | 3)}>
@@ -392,7 +453,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         <dl className="travel-flow__summary-list">
           <div><dt>{workflow.rate}</dt><dd>{formatCurrency(unitRate, language)}</dd></div>
           <div><dt>{bn ? 'বয়স অনুযায়ী হার' : 'Age rate'}</dt><dd>{ageBand === 'CHILD' ? '50%' : ageBand === 'UNDER5' ? (bn ? 'করমুক্ত' : 'Exempt') : '100%'}</dd></div>
-          <div><dt>{workflow.route}</dt><dd>{bn ? route.routeBn : route.route}</dd></div>
+          <div><dt>{workflow.route}</dt><dd>{route ? (bn ? route.routeBn : route.route) : '—'}</dd></div>
           {createdReceipt && <div><dt>{t.ref}</dt><dd>{createdReceipt.tokenNumber}</dd></div>}
           <div><dt>{workflow.status}</dt><dd>{createdReceipt ? workflow.ready : workflow.waiting}</dd></div>
         </dl>

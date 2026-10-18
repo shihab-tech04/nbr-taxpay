@@ -59,7 +59,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   const bodyOverflow = await chooser.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth);
   expect(bodyOverflow).toBeLessThanOrEqual(1);
 
-  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
+  await chooser.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await chooser.locator('#guest-tax-amount').fill('2100');
   await expect(chooser.locator('.payment-form-summary__total')).toContainText('2,100');
   await buttons.last().click();
@@ -108,7 +108,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   const paymentPurpose = sections.first();
   await expect(paymentPurpose.getByRole('heading', { name: 'Payment purpose & head' })).toBeVisible();
   await expect(paymentPurpose.locator('summary')).toHaveCount(0);
-  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
+  await chooser.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await page.locator('#guest-tax-amount').fill('21875');
   await expect(page.locator('.payment-form-summary__total')).toContainText('21,875');
   await page.locator('#guest-tax-amount').fill('12000');
@@ -139,7 +139,7 @@ test('multiple payment heads have searchable selection, separate amounts and one
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await chooser.getByRole('radio', { name: 'Person other than company' }).check();
+  await chooser.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
 
   const choices = chooser.locator('.payment-head-options input[type="checkbox"]');
   expect(await choices.count()).toBeGreaterThanOrEqual(2);
@@ -190,8 +190,8 @@ test('mobile return payment uses one fixed head and focuses inline validation er
 
   await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(payment.getByRole('alert')).toContainText('Choose the income tax type');
-  await expect(payment.getByRole('radio', { name: 'Person other than company' })).toBeFocused();
-  await payment.getByRole('radio', { name: 'Person other than company' }).check();
+  await expect(payment.getByRole('radio', { name: /Income tax payable by persons other than companies/ })).toBeFocused();
+  await payment.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await payment.locator('#guest-tax-amount').fill('-5');
   await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(payment.getByRole('alert')).toContainText('greater than zero');
@@ -217,9 +217,10 @@ test('Travel tax form applies exact v11 journey rates and age bands', async ({ p
   await expect(summary).toContainText('0');
   await travel.getByLabel('Passenger age').selectOption('ADULT');
   await expect(summary).toContainText('2,000');
-  await travel.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport reference').fill('FAKE002');
+  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await travel.getByLabel('Passport number').fill('FAKE002');
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
+  await travel.getByLabel('Travel date').fill('2026-10-25');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await expect(travel.getByRole('heading', { name: 'Review travel details' })).toBeVisible();
 });

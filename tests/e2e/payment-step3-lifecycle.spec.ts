@@ -11,7 +11,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  if (category !== 'Source Tax Deposit') await dialog.getByRole('radio', { name: 'Person other than company' }).check();
+  if (category !== 'Source Tax Deposit') await dialog.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await dialog.locator('#guest-tax-amount').fill('12500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
