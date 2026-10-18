@@ -23,19 +23,23 @@ assert.equal(submitted.status,'SIMULATED_SUCCESS');
 const detail=await read(tax+'/payments/'+submitted.id+'?sessionId='+sessionId);
 assert.equal(detail.data.service,'ADVANCE_TAX');
 assert.equal(detail.data.amountMinor,125000);
-const officeItems=await read(office+'/payments');
-const mirrored=officeItems.find(p=>p.id===submitted.id);
-assert.ok(mirrored,'Office SQL mirror missing');
-assert.equal(mirrored.amountMinor,body.amountMinor);
-assert.equal(mirrored.details.payerName,body.details.payerName);
+// The POST acknowledgement proves Office SQL confirmed the TaxPay record.
+// QA-origin submissions must not appear as user-submitted Admin transactions.
+assert.equal(submitted.mirrored,true,'Office SQL did not acknowledge write');
+const officePage=await read(office+'/payments?page=1&perPage=100');
+assert.ok(Array.isArray(officePage.items),'Paginated Office list required');
+assert.equal(officePage.items.some(p=>p.id===submitted.id),false,
+  'Automated QA payment leaked into user transaction table');
 const officeNotices=await read(office+'/notifications');
-assert.ok(officeNotices.some(n=>n.paymentId===submitted.id),'Office notification missing');
+assert.equal(officeNotices.some(n=>n.paymentId===submitted.id),false,
+  'Automated QA notification leaked into Office activity');
 const taxpayerNotices=await read(tax+'/notifications?sessionId='+sessionId);
 assert.ok(taxpayerNotices.some(n=>n.paymentId===submitted.id),'TaxPay notification missing');
 const replay=await read(tax+'/payments',{
  method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
 assert.equal(replay.id,submitted.id);
 assert.equal(replay.replayed,true);
-const officeAfter=await read(office+'/payments');
-assert.equal(officeAfter.filter(p=>p.id===submitted.id).length,1,'Duplicate Office mirror');
+const officeAfter=await read(office+'/payments?page=1&perPage=100');
+assert.equal(officeAfter.items.filter(p=>p.id===submitted.id).length,0,
+  'QA payment must stay outside live transaction list');
 console.log('PASS: simulated payment persisted, mirrored, notified, idempotent');
