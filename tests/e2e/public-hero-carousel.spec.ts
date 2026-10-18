@@ -158,7 +158,9 @@ test('service banners share the exact selected-card palette, including text and 
   }
 
   // Color names come from the same source as the selected payment cards.
-  await carousel.getByRole('button', { name: /^Show banner 1 of 5:/ }).click();
+  // Return from the fifth banner without reintroducing a visible dot strip.
+  for (let index = 0; index < 4; index++) await page.keyboard.press('ArrowLeft');
+  await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const cards = page.locator('.tax-service-choice__card[data-payment-service]');
   await expect(cards).toHaveCount(8);
@@ -246,22 +248,19 @@ test('autoplay allows eight seconds to read, while reduced motion and manual sel
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
 });
 
-test('all five banners can be selected manually with visible controls even with reduced motion', async ({ page }) => {
+test('all five banners remain keyboard accessible without indicator or playback controls', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
-  const indicators = carousel.locator('.public-hero-carousel__indicator');
-  await expect(indicators).toHaveCount(5);
-  for (let index = 0; index < 5; index++) {
-    await indicators.nth(index).click();
+  await expect(carousel.locator('.public-hero-carousel__controls')).toHaveCount(0);
+  await expect(carousel.locator('.public-hero-carousel__indicator')).toHaveCount(0);
+  await carousel.focus();
+  for (let index = 1; index < 5; index++) {
+    await page.keyboard.press('ArrowRight');
     await expect(carousel).toHaveAttribute('data-active-slide', String(index));
-    await expect(indicators.nth(index)).toHaveAttribute('aria-pressed', 'true');
   }
-  await expect(carousel).toHaveAttribute('data-user-paused', 'true');
-  await expect(carousel.getByRole('button', { name: 'Resume banner rotation' })).toHaveCount(0);
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await carousel.getByRole('button', { name: 'Resume banner rotation' }).click();
-  await expect(carousel).toHaveAttribute('data-user-paused', 'false');
+  await page.keyboard.press('ArrowRight');
+  await expect(carousel).toHaveAttribute('data-active-slide', '0');
 });
 
 test('each service-specific banner action skips repeated service selection', async ({ page }) => {
@@ -275,8 +274,9 @@ test('each service-specific banner action skips repeated service selection', asy
     ['travel', 'TRAVEL_TAX', 'Pay Travel Tax'],
   ] as const;
 
-  for (const [index, [banner, code, action]] of services.entries()) {
-    await carousel.locator('.public-hero-carousel__indicator').nth(index + 1).click();
+  for (const [banner, code, action] of services) {
+    await carousel.focus();
+    await page.keyboard.press('ArrowRight');
     await carousel.getByRole('button', { name: action, exact: true }).click();
     const dialog = page.getByRole('dialog', { name: banner === 'travel' ? 'Travel tax' : 'Pay Tax' });
     await expect(dialog).toBeVisible();
@@ -294,12 +294,31 @@ test('each service-specific banner action skips repeated service selection', asy
 
 test('mobile banner buttons and artwork remain readable at narrow widths', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/?action=landing');
-  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
-  const media = carousel.locator('[data-banner-service="intro"] .public-information-hero__media');
-  await expect.poll(() => media.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(150);
-  await expect(carousel.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
-  await expect(carousel.getByRole('button', { name: /^Show banner 5 of 5:/ })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  for (const width of [320, 375, 390, 600]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto('/?action=landing');
+    const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+    const intro = carousel.locator('[data-banner-service="intro"]');
+    const dimensions = await intro.evaluate(slide => {
+      const media = slide.querySelector<HTMLElement>('.public-information-hero__media')!;
+      const image = slide.querySelector<HTMLImageElement>('.public-information-hero__image')!;
+      const title = slide.querySelector<HTMLElement>('h1')!;
+      const description = slide.querySelector<HTMLElement>('.citizen-public-hero__copy > p')!;
+      return {
+        mediaHeight: media.getBoundingClientRect().height,
+        verticalZoom: image.getBoundingClientRect().height / media.getBoundingClientRect().height,
+        titleSize: parseFloat(getComputedStyle(title).fontSize),
+        descriptionSize: parseFloat(getComputedStyle(description).fontSize),
+        imageFit: getComputedStyle(image).objectFit,
+      };
+    });
+    expect(dimensions.mediaHeight).toBeGreaterThanOrEqual(184);
+    expect(dimensions.verticalZoom).toBeGreaterThan(1.25);
+    expect(dimensions.titleSize).toBeLessThanOrEqual(width <= 360 ? 22 : 23);
+    expect(dimensions.descriptionSize).toBeLessThanOrEqual(14.1);
+    expect(dimensions.imageFit).toBe('cover');
+    await expect(carousel.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
+    await expect(carousel.locator('.public-hero-carousel__controls')).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
 });

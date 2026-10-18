@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pause, Play, Search, WalletCards } from 'lucide-react';
+import { Search, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment-v3.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return-v3.webp';
@@ -88,7 +88,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const [isSwiping, setIsSwiping] = useState(false);
   const [isDocumentVisible, setIsDocumentVisible] = useState(true);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [isPausedByUser, setIsPausedByUser] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -96,10 +95,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % slides.length), []);
   const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % slides.length), []);
-  const goToSlide = (index: number) => {
-    setActiveIndex(index);
-    setIsPausedByUser(true);
-  };
 
   useEffect(() => {
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -117,10 +112,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   }, []);
 
   useEffect(() => {
-    if (paused || isPausedByUser || prefersReducedMotion || isHovered || hasFocus || isSwiping || !isDocumentVisible) return;
+    if (paused || prefersReducedMotion || isHovered || hasFocus || isSwiping || !isDocumentVisible) return;
     const timer = window.setTimeout(goNext, AUTOPLAY_INTERVAL_MS);
     return () => window.clearTimeout(timer);
-  }, [activeIndex, goNext, hasFocus, isDocumentVisible, isHovered, isSwiping, paused, isPausedByUser, prefersReducedMotion]);
+  }, [activeIndex, goNext, hasFocus, isDocumentVisible, isHovered, isSwiping, paused, prefersReducedMotion]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -128,11 +123,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
       goPrevious();
-      setIsPausedByUser(true);
     } else if (event.key === 'ArrowRight') {
       event.preventDefault();
       goNext();
-      setIsPausedByUser(true);
     }
   };
 
@@ -155,7 +148,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       if (Math.abs(dx) > SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE_RATIO) {
         if (dx < 0) goNext();
         else goPrevious();
-        setIsPausedByUser(true);
       }
     }
     touchStartRef.current = null;
@@ -183,9 +175,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
+        aria-description={bn ? 'অন্য সেবা দেখতে ডানে বা বামে সোয়াইপ করুন অথবা তীরচিহ্ন কী ব্যবহার করুন।' : 'Swipe or use the left and right arrow keys to see other services.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
-        data-user-paused={isPausedByUser}
         data-payment-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
@@ -235,28 +227,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             );
           })}
         </div>
-        <nav className="public-hero-carousel__controls" aria-label={bn ? 'ব্যানার নিয়ন্ত্রণ' : 'Banner controls'}>
-          {slides.map((slide, index) => (
-            <button
-              key={slide.id}
-              className="public-hero-carousel__indicator"
-              type="button"
-              aria-label={bn ? `ব্যানার ${index + 1} / ${slides.length}: ${slide.headingBn}` : `Show banner ${index + 1} of ${slides.length}: ${slide.headingEn}`}
-              aria-pressed={activeIndex === index}
-              onClick={() => goToSlide(index)}
-            ><span aria-hidden="true" /></button>
-          ))}
-          {!prefersReducedMotion && <>
-            <span className="public-hero-carousel__controls-separator" aria-hidden="true" />
-            <button
-              type="button"
-              className="public-hero-carousel__playback"
-              onClick={() => setIsPausedByUser(value => !value)}
-              aria-label={bn ? (isPausedByUser ? 'ব্যানার আবার চালু করুন' : 'ব্যানার থামান') : (isPausedByUser ? 'Resume banner rotation' : 'Pause banner rotation')}
-              aria-pressed={isPausedByUser}
-            >{isPausedByUser ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}</button>
-          </>}
-        </nav>
       </section>
     </div>
   );
