@@ -5,10 +5,10 @@ create table if not exists public.taxpay_site_banners (
   service_code text check (service_code is null or service_code in ('TAX_WITH_RETURN','ADVANCE_TAX','SOURCE_TAX_DEPOSIT','TRAVEL_TAX')),
   heading_en text not null, heading_bn text not null,
   description_en text not null, description_bn text not null,
-  mobile_heading_en text not null check (char_length(mobile_heading_en) <= 36),
-  mobile_heading_bn text not null check (char_length(mobile_heading_bn) <= 36),
-  mobile_description_en text not null check (char_length(mobile_description_en) <= 72),
-  mobile_description_bn text not null check (char_length(mobile_description_bn) <= 72),
+  mobile_heading_en text not null check (char_length(mobile_heading_en) <= 24),
+  mobile_heading_bn text not null check (char_length(mobile_heading_bn) <= 24),
+  mobile_description_en text not null check (char_length(mobile_description_en) <= 34),
+  mobile_description_bn text not null check (char_length(mobile_description_bn) <= 34),
   action_en text not null, action_bn text not null,
   desktop_image_path text,
   mobile_image_path text,
@@ -18,6 +18,17 @@ create table if not exists public.taxpay_site_banners (
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users(id)
 );
+
+-- Also tighten an existing schema if this migration was introduced through SQL first.
+alter table public.taxpay_site_banners
+  drop constraint if exists taxpay_site_banners_mobile_heading_en_check,
+  add constraint taxpay_site_banners_mobile_heading_en_check check (char_length(mobile_heading_en) <= 24),
+  drop constraint if exists taxpay_site_banners_mobile_heading_bn_check,
+  add constraint taxpay_site_banners_mobile_heading_bn_check check (char_length(mobile_heading_bn) <= 24),
+  drop constraint if exists taxpay_site_banners_mobile_description_en_check,
+  add constraint taxpay_site_banners_mobile_description_en_check check (char_length(mobile_description_en) <= 34),
+  drop constraint if exists taxpay_site_banners_mobile_description_bn_check,
+  add constraint taxpay_site_banners_mobile_description_bn_check check (char_length(mobile_description_bn) <= 34);
 
 alter table public.taxpay_site_banners enable row level security;
 grant select on public.taxpay_site_banners to anon, authenticated;
