@@ -58,7 +58,7 @@ test('homepage guidance opens topic guide with responsive search, FAQs and langu
  await page.getByText('What if my payment details do not match?').click();
  await page.getByRole('button',{name:'Read records & corrections guidance'}).click();
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
- await expect(page.getByRole('button',{name:'Receipts & corrections'})).toHaveAttribute('aria-current','true');
+ await expect(page.locator('.public-guide-topics').getByRole('button',{name:'Receipts & corrections'})).toHaveAttribute('aria-current','true');
  await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
