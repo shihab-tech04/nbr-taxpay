@@ -4,6 +4,7 @@ import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { 
   Plane, 
   ArrowRight, 
+  ArrowLeft,
   CheckCircle, 
   AlertCircle, 
   FileText, 
@@ -167,15 +168,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
 
   const workflow = bn
     ? { steps: ['যাত্রাপথ', 'যাত্রীর তথ্য', 'পর্যালোচনা'], select: 'গন্তব্য ও যাতায়াতের ধরন নির্বাচন',
-        passenger: 'যাত্রীর তথ্য', review: 'তথ্য পর্যালোচনা', summary: 'পেমেন্ট সারাংশ',
+        passenger: 'যাত্রীর তথ্য', review: 'তথ্য পর্যালোচনা', summary: 'পেমেন্টের হিসাব',
         rate: 'প্রতি যাত্রীর হার', people: 'যাত্রী', route: 'যাত্রাপথ', status: 'অবস্থা',
-        continue: 'যাত্রীর তথ্য দিন', reviewNext: 'পর্যালোচনায় যান', back: 'পূর্ববর্তী',
+        continue: 'যাত্রীর তথ্য দিন', reviewNext: 'পর্যালোচনায় যান', back: 'ফিরুন',
         estimate: 'মোট অর্থ', waiting: 'পর্যালোচনার অপেক্ষায়',
         ready: 'রেকর্ড প্রস্তুত', newPreview: 'নতুন পেমেন্ট',
         missing: 'যাত্রীর নাম, মোবাইল নম্বর ও পাসপোর্ট রেফারেন্স দিন।',
         hint: 'পাসপোর্ট রেফারেন্স হিসেবে পরীক্ষামূলক তথ্য ব্যবহার করুন।' }
     : { steps: ['Travel route', 'Passenger details', 'Review'], select: 'Choose destination & travel mode',
-        passenger: 'Passenger information', review: 'Review travel details', summary: 'Payment summary',
+        passenger: 'Passenger information', review: 'Review travel details', summary: 'Payment calculation',
         rate: 'Rate per passenger', people: 'Passengers', route: 'Travel route', status: 'Status',
         continue: 'Continue to passenger details', reviewNext: 'Continue to review', back: 'Back',
         estimate: 'Total amount', waiting: 'Awaiting review',
@@ -191,9 +192,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   };
   const continueStep = () => {
     if (step === 0 && !fourStepJourney) { goStep(1); return; }
-    if (fourStepJourney && step === 1) { goStep(2); return; }
+    if (fourStepJourney && step === 1) {
+      if (!isDomestic && passportNumber.trim().length < 6) { setError(t.requiredPassport); return; }
+      goStep(2); return;
+    }
     if (!passengerName.trim()) { setError(t.requiredName); return; }
-    if (!isDomestic && passportNumber.trim().length < 6) { setError(t.requiredPassport); return; }
+    if (!fourStepJourney && !isDomestic && passportNumber.trim().length < 6) { setError(t.requiredPassport); return; }
     if (!travelDate || !/^01\d{9}$/.test(phone)) {
       setError(workflow.missing); return;
     }
@@ -247,7 +251,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         </nav>}
         <form id="travel-tax-form" onSubmit={handlePayTravelTax} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
-          {step === 0 && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
+          {((step === 0 && !fourStepJourney) || (step === 1 && fourStepJourney)) && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
             <PaymentFormSection number={1} title={workflow.select}>
             <header className="travel-flow__section-header">
               <h3 id="travel-route-heading">{workflow.select}</h3>
@@ -294,6 +298,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                 </div>
               )}
             </fieldset>
+            {fourStepJourney && !isDomestic && <div className="travel-flow__field travel-flow__passport-at-route">
+              <label htmlFor="travel-passport">{t.passport} *</label>
+              <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
+                placeholder={t.passportPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
+                onChange={event => setPassportNumber(event.target.value.toUpperCase().replace(/\s+/g, ''))} />
+            </div>}
             </PaymentFormSection>
           </section>}
 
@@ -319,7 +329,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                   placeholder={t.passengerPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
                   onChange={e => setPassengerName(e.target.value.toUpperCase())} />
               </div>
-              {!isDomestic && <div className="travel-flow__field">
+              {!fourStepJourney && !isDomestic && <div className="travel-flow__field">
                 <label htmlFor="travel-passport">{t.passport} *</label>
                 <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
                   placeholder={t.passportPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
@@ -366,9 +376,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
             </fieldset>
             <p className="travel-flow__purpose-total">{bn ? 'সর্বমোট' : 'Total payable'}: <strong>{formatCurrency(totalAmount, language)}</strong></p>
           </section>}
-          {!createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
+          {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
             onClick={() => goStep((step - 1) as 0 | 1 | 2 | 3)}>
-            <ArrowRight className="travel-flow__back-icon" size={16} aria-hidden="true" />{workflow.back}
+            <ArrowLeft size={16} aria-hidden="true" />{workflow.back}
           </button>}
         </form>
       </div>
@@ -389,7 +399,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         {!embedded && primaryAction}
       </aside>
       {embedded && modalFooterTarget && createPortal(<div className="travel-flow__footer-actions">
-        {fourStepJourney && step === 0 && <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}><ArrowRight className="travel-flow__back-icon" size={16} aria-hidden="true" />{bn ? 'পেমেন্ট অপশনে ফিরুন' : 'Back to payment options'}</button>}
+        {fourStepJourney && <button type="button" className="tax-service-choice__cancel" onClick={step === 0 || step === 3 ? onBackToService : () => goStep((step - 1) as 0 | 1 | 2 | 3)}><ArrowLeft size={16} aria-hidden="true" />{workflow.back}</button>}
         {primaryAction}
       </div>, modalFooterTarget)}
     </div>
