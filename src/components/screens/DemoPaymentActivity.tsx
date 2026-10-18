@@ -103,7 +103,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           details: {
             payerName: id,
             taxpayerTin: String(id).startsWith('user')?
-              String(Number(String(id).replace('user','')) || 1).repeat(13):'',
+              String(Number(String(id).replace('user','')) || 1).repeat(13).slice(0,13):'',
             assessmentYear: checked[0]?.assessmentYear ?? '2026-27',
             paymentMethod: 'SIMULATED',
             paymentChannel: 'NOW',
