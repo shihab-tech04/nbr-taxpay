@@ -202,7 +202,7 @@ test('Source tax and travel tax stay inside the same modal with their category-s
   await expect(chooser).toBeVisible();
   await expect(chooser.locator('.travel-flow')).toBeVisible();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.getByLabel('Passenger name (as in passport)')).toBeVisible();
+  await expect(chooser.getByLabel('Passenger name')).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });
 
@@ -238,8 +238,9 @@ test('Travel Tax keeps Back left, Continue right and route calculation available
   const summary = dialog.locator('.travel-flow__summary');
   await expect(summary).toContainText('Payment calculation');
   await expect(footer.getByRole('button').first()).toHaveText('Back');
-  await dialog.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
+  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
+  await dialog.getByLabel('Travel date').fill('2026-10-25');
   await footer.getByRole('button').last().click();
   await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
   await expect(dialog.locator('#travel-tax-route-results')).toBeVisible();
@@ -250,13 +251,13 @@ test('Travel Tax keeps Back left, Continue right and route calculation available
   expect(back).not.toBeNull();
   expect(next).not.toBeNull();
   expect(back!.x + back!.width).toBeLessThan(next!.x);
-  await dialog.getByLabel('Passport reference').fill('TRAVEL123');
+  await dialog.getByLabel('Passport number').fill('TRAVEL123');
   await footer.getByRole('button').last().click();
   await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
   await expect(summary).toContainText('Payment calculation');
 });
 
-test('Other Tax Payment asks for its policy-required NBR reference before purpose and amount', async ({ page }) => {
+test('Other Tax Payment uses the v11 optional guest NBR reference', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -265,9 +266,6 @@ test('Other Tax Payment asks for its policy-required NBR reference before purpos
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
-  await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(chooser.getByRole('alert')).toContainText('NBR reference');
-  await chooser.locator('#guest-notice-ref').fill('NBR-TEST-2026-01');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
 });
@@ -280,18 +278,21 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await chooser.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
+  await chooser.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await chooser.getByLabel('Mobile number for receipt').fill('01712345678');
+  await chooser.getByLabel('Travel date').fill('2026-10-25');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
-  await chooser.getByLabel('Passport reference').fill('FAKE0001');
+  await chooser.locator('#travel-tax-route-0').check();
+  await chooser.getByLabel('Passport number').fill('FAKE0001');
   await expect(chooser.getByText('Payment purpose: Travel Tax')).toBeVisible();
   await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Choose payment channel' })).toBeVisible();
   await expect(chooser.getByRole('button', { name: 'Confirm payment' })).toBeDisabled();
   await chooser.getByRole('radio', { name: 'Nagad' }).check();
+  await chooser.getByLabel('The journey, passenger details and amount are correct.').check();
   await chooser.getByRole('button', { name: 'Confirm payment' }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByText('Travel tax details ready')).toBeVisible();
