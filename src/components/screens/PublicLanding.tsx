@@ -17,22 +17,22 @@ export const PublicLanding: React.FC = () => {
     {
       Icon: UserRound,
       title: t('Input taxpayer details', 'করদাতার তথ্য দিন'),
-      description: t('Provide or confirm who the payment is for.', 'কার জন্য কর পরিশোধ করছেন, তা দিন বা নিশ্চিত করুন।'),
+      description: t('Enter or confirm the taxpayer’s details.', 'যার কর পরিশোধ করছেন, তার তথ্য দিন বা নিশ্চিত করুন।'),
     },
     {
       Icon: ListChecks,
-      title: t('Purpose & amount', 'খাত ও পরিমাণ'),
-      description: t('Choose the payment heads and review the amount.', 'কর পরিশোধের খাত বেছে নিয়ে পরিমাণ যাচাই করুন।'),
+      title: t('Select purpose & amount', 'খাত ও পরিমাণ নির্বাচন করুন'),
+      description: t('Choose the payment head and enter the amount.', 'কর পরিশোধের খাত বেছে নিয়ে পরিমাণ লিখুন।'),
     },
     {
       Icon: WalletCards,
-      title: t('Payment channel', 'পেমেন্ট চ্যানেল'),
-      description: t('Select an available payment method.', 'উপলব্ধ পেমেন্ট পদ্ধতি বেছে নিন।'),
+      title: t('Choose payment method', 'পেমেন্ট পদ্ধতি বেছে নিন'),
+      description: t('Choose to pay online or at a bank branch.', 'অনলাইন বা ব্যাংক শাখায় পরিশোধের পদ্ধতি বেছে নিন।'),
     },
     {
       Icon: ReceiptText,
-      title: t('Confirmation', 'নিশ্চিতকরণ'),
-      description: t('Review the result and keep your reference.', 'ফলাফল দেখুন এবং পেমেন্ট রেফারেন্স সংরক্ষণ করুন।'),
+      title: t('Review & confirm payment', 'যাচাই করে নিশ্চিত করুন'),
+      description: t('Review the details and keep your payment reference.', 'পেমেন্টের তথ্য যাচাই করুন ও রেফারেন্স সংরক্ষণ করুন।'),
     },
   ];
 
@@ -90,8 +90,9 @@ export const PublicLanding: React.FC = () => {
         {stages.map((stage, index) => <li key={stage.title}>
           <div className="public-payment-path__step-head">
             <span className="public-payment-path__symbol" aria-hidden="true"><stage.Icon size={23} strokeWidth={1.9}/></span>
-            <h3>{t(`Step ${index + 1}. `, `ধাপ ${['১', '২', '৩', '৪'][index]}. `)}{stage.title}</h3>
+            <span className="public-payment-path__step-label">{t(`Step ${index + 1}`, `ধাপ ${['১', '২', '৩', '৪'][index]}`)}</span>
           </div>
+          <h3>{stage.title}</h3>
           <p>{stage.description}</p>
         </li>)}
       </ol>
