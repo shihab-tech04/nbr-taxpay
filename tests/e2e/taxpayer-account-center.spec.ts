@@ -37,25 +37,85 @@ test('profile and notification routes protect private data; legacy Office links 
   await expect(page.locator('.taxpayer-account-center')).toHaveCount(0);
 });
 
-test('desktop taxpayer rail includes profile, notifications, settings and safe exit',async({page},info)=>{
+test('desktop taxpayer rail keeps profile and language above its final sign-out control',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop rail tested on 1600px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  const accountGroup=rail.locator('.taxpayer-reference-account');
-  await expect(accountGroup.locator('summary')).toBeVisible();
-  await accountGroup.locator('summary').focus();
-  await page.keyboard.press('Enter');
-  await expect(accountGroup).toHaveAttribute('open','');
-  for(const label of ['Profile','Help'])await expect(accountGroup.getByRole('button',{name:label,exact:true})).toBeVisible();
-  await expect(accountGroup.getByRole('button')).toHaveCount(2);
+  const bottom=rail.locator('.taxpayer-reference-rail-bottom');
+  await expect(bottom.getByRole('button')).toHaveCount(3);
+  await expect(bottom.getByRole('button').nth(0)).toHaveText('Profile');
+  await expect(bottom.getByRole('button').nth(1)).toContainText('Language');
+  await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
+  await expect(rail.getByRole('button',{name:'Help'})).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Notifications',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
+  await rail.locator('.taxpayer-reference-brand').click();
+  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  // An exploratory sample role is not a signed-in account.
+  await expect(page.locator('.public-home-header').getByRole('link',{name:'Login'})).toBeVisible();
+  await expect(page.locator('.public-home-header').getByRole('button',{name:'Profile menu'})).toHaveCount(0);
+  await page.goBack();
+  await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Exit workspace'}).click();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+});
+
+test('a signed-in account returning to public home sees notification and profile controls, then signs out',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One desktop journey covers the shared session transition');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=taxpayer_login');
+  await page.getByLabel('User ID').fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await page.locator('.taxpayer-reference-brand').click();
+  await expect(page).toHaveURL(/action=landing/);
+  const header=page.locator('.public-home-header');
+  await expect(header.getByRole('link',{name:'Login'})).toHaveCount(0);
+  await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
+  await expect(header.getByRole('button',{name:'Profile menu'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Help'})).toHaveCount(0);
+  await header.getByRole('button',{name:'Profile menu'}).click();
+  const profileMenu=header.getByRole('navigation',{name:'Profile menu'});
+  await expect(profileMenu.getByRole('button')).toHaveCount(4);
+  await expect(profileMenu.getByRole('button').last()).toHaveText('Sign out');
+  await profileMenu.getByRole('button',{name:'Profile',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Taxpayer profile',level:1,exact:true})).toBeVisible();
+
+  await page.goto('/?action=landing');
+  await header.getByRole('button',{name:'Profile menu'}).click();
+  await profileMenu.getByRole('button',{name:'Sign out'}).click();
+  await expect(header.getByRole('link',{name:'Login'})).toBeVisible();
+  await expect(header.getByRole('button',{name:'Profile menu'})).toHaveCount(0);
+});
+
+test('the signed-in public header fits mobile and keeps account controls operable in Bangla',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-320','One runner tests the tightest mobile layout');
+  await page.goto('/?action=taxpayer_login');
+  await page.getByLabel('User ID').fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
+  await page.locator('.citizen-brand').click();
+  await expect(page).toHaveURL(/action=landing/);
+  for(const width of [320,360,375,390]) {
+    await page.setViewportSize({width,height:812});
+    await page.goto('/?action=landing');
+    const header=page.locator('.public-home-header');
+    await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
+    await expect(header.getByRole('button',{name:'Profile menu'})).toBeVisible();
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  }
+  await page.getByRole('button',{name:'বাংলা'}).click();
+  const header=page.locator('.public-home-header');
+  await header.getByRole('button',{name:'প্রোফাইল মেনু'}).click();
+  await expect(header.getByRole('navigation',{name:'প্রোফাইল মেনু'}).getByRole('button',{name:'সাইন আউট'})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(header.getByRole('navigation',{name:'প্রোফাইল মেনু'})).toHaveCount(0);
 });
 
 test('account UI retains no horizontal overflow at six mobile and desktop widths',async({page},info)=>{

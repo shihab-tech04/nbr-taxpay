@@ -27,10 +27,6 @@ const accountLinks: CitizenAction[] = [
   { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল' },
   { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' }
 ];
-const supportLinks: CitizenAction[] = [
-  { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' },
-  { route: 'user_guide', category:'payments', en: 'Payment guide', bn: 'পেমেন্ট নির্দেশিকা' }
-];
 const guestServiceLinks: CitizenAction[] = [
   { route:'incident',en:'Security reporting',bn:'নিরাপত্তা অভিযোগ' },
   { route:'head_catalogue',en:'Payment head catalogue',bn:'কর খাতের তালিকা' }
@@ -87,7 +83,7 @@ export function CitizenNavigation() {
     if (inTransaction && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
-    go(home);
+    go('landing');
   };
   useEffect(() => {
     setCompact(false);
@@ -194,7 +190,6 @@ export function CitizenNavigation() {
           <button type="button" className="citizen-brand" onClick={goHome}
             aria-label={bn ? 'আমার কর মূল পাতা' : 'Amar Kor home'}>
             <img className="citizen-brand__wordmark" src={amarKorWordmark} alt="" aria-hidden="true" />
-            <span><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
           </button>
           {inTransaction ? (
             <div className="citizen-flow-actions">
@@ -269,8 +264,6 @@ export function CitizenNavigation() {
                   {isTaxpayer && <>
                     <p className="citizen-dialog__section-label">{bn ? 'অ্যাকাউন্ট' : 'Account'}</p>
                     <div className="citizen-dialog__links">{accountLinks.map(menuAction)}</div>
-                    <p className="citizen-dialog__section-label">{bn ? 'সহায়তা' : 'Support'}</p>
-                    <div className="citizen-dialog__links">{supportLinks.map(menuAction)}</div>
                   </>}
                 </nav>
                 <section className="citizen-dialog__account" aria-label={bn ? 'ভাষা ও অ্যাকাউন্ট' : 'Language and account'}>
