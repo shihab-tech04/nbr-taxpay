@@ -1,0 +1,53 @@
+name: TaxPay banner CMS release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/banner-cms-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taxpay-banner-cms-release
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run test:domain
+      - uses: actions/configure-pages@v6
+      - name: Build live SQL-backed TaxPay
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+        run: npm run build
+      - name: Confirm banner client is built
+        run: |
+          test -s dist/index.html
+          grep -RFq 'taxpay_site_banners' dist/assets
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1
