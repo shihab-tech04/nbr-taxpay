@@ -39,3 +39,17 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     throw new Error(body.error || 'OFFICE_SYNC_PENDING');
   return body as StoryPaymentAcknowledgement;
 }
+
+export type StoryPaymentNotice = {
+  id: number;
+  paymentId: string;
+  type: string;
+  createdAt: string;
+};
+export async function getStoryNotices(): Promise<StoryPaymentNotice[]> {
+  const result = await fetch(API + '/notifications?sessionId=' + encodeURIComponent(getStorySessionId()));
+  if (!result.ok) throw new Error('Notification service unavailable');
+  const payload = await result.json() as {success:boolean;data:StoryPaymentNotice[]};
+  if (!payload.success || !Array.isArray(payload.data)) throw new Error('Notification service unavailable');
+  return payload.data;
+}
