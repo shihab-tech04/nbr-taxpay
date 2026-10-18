@@ -22,7 +22,8 @@ export type PaymentCategory =
   | 'PENALTY'              // S.266/267 Late filing / concealment
   | 'SOURCE_TAX_DEPOSIT'   // Withholding TDS / TCS (Chapter VII)
   | 'APPELLATE_TRIBUNAL'   // S.300 Dispute / appeal deposit
-  | 'OTHER_TAX_PAYMENT';   // Miscellaneous / Surcharge / Environment
+  | 'OTHER_TAX_PAYMENT'    // Miscellaneous / Surcharge / Environment
+  | 'TRAVEL_TAX';
 
 export interface MasterPaymentHead {
   id: number;

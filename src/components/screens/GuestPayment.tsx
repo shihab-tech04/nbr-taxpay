@@ -493,7 +493,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         tokenNumber: `TKN-${randToken}`,
         paymentCategory: category,
         assessmentYear,
-        payerName: forSelf ? accountName || 'Taxpayer / withholding agent' : payerName.trim(),
+        payerName: forSelf ? accountName || '—' : payerName.trim(),
         payerTin: ownAccountTax ? taxpayerTin : 'GUEST',
         taxpayerTin,
         receiptMobile: receiptPhone,

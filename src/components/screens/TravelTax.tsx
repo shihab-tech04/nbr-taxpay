@@ -141,7 +141,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         paymentTransactionId: paymentReference,
         challanNo: `ACS-${year}-${randChallan}`,
         tokenNumber: paymentReference,
-        paymentCategory: 'OTHER_TAX_PAYMENT',
+        paymentCategory: 'TRAVEL_TAX',
         assessmentYear: '2026-27',
         payerName: `${passengerName} (Passport: ${passportNumber})`,
         payerTin: 'NON-TIN-PASSENGER',
