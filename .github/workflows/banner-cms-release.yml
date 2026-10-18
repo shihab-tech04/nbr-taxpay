@@ -1,10 +1,15 @@
-name: TaxPay banner CMS release
+name: TaxPay content CMS release
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/banner-cms-release.yml'
+      - 'src/components/layout/SiteLogo.tsx'
+      - 'src/components/layout/PublicHomeHeader.tsx'
+      - 'src/components/layout/CitizenFooter.tsx'
+      - 'src/components/layout/CitizenNavigation.tsx'
+      - 'src/components/layout/TaxpayerReferenceRail.tsx'
       - 'src/components/screens/PublicHeroCarousel.tsx'
       - 'src/components/screens/GuestPayment.tsx'
       - 'src/components/screens/TravelTax.tsx'
@@ -12,6 +17,7 @@ on:
       - 'src/components/ui/PaymentJourneyFooter.tsx'
       - 'src/styles/taxpay-service-choice.css'
       - 'supabase/migrations/*banner*.sql'
+      - 'supabase/migrations/*site_logo*.sql'
   workflow_dispatch:
 
 permissions:
@@ -19,7 +25,7 @@ permissions:
 
 
 concurrency:
-  group: taxpay-banner-cms-release
+  group: taxpay-content-cms-release
   cancel-in-progress: true
 
 jobs:
@@ -49,10 +55,11 @@ jobs:
           VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
-      - name: Confirm banner client is built
+      - name: Confirm both content clients are built
         run: |
           test -s dist/index.html
           grep -RFq 'taxpay_site_banners' dist/assets
+          grep -RFq 'taxpay_site_logo' dist/assets
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
