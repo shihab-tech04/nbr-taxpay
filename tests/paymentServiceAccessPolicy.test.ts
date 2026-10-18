@@ -8,7 +8,7 @@ test('all eight v11 payment services permit the public payment path', () => {
     const decision = resolvePaymentServiceAccess(service, 'MAKE_PAYMENT');
     assert.equal(decision.kind, 'PUBLIC', service);
     assert.equal(decision.requiresTin, service !== 'TRAVEL_TAX', service);
-    assert.equal(decision.requiresNBRReference, service === 'OTHER_TAX_PAYMENT', service);
+    assert.equal(decision.requiresNBRReference, false, service);
   }
 });
 
@@ -27,7 +27,9 @@ test('eTDS allocation is protected and applies only to withholding deposits', ()
 
 test('private income-tax drafts require sign-in; travel tax is a separate guest journey', () => {
   for (const service of PAYMENT_SERVICE_IDS) {
-    assert.equal(resolvePaymentServiceAccess(service, 'SAVE_PRIVATE_DRAFT').kind,
+    const decision = resolvePaymentServiceAccess(service, 'SAVE_PRIVATE_DRAFT');
+    assert.equal(decision.kind,
       service === 'TRAVEL_TAX' ? 'NOT_APPLICABLE' : 'SIGN_IN_REQUIRED');
+    assert.equal(decision.requiresNBRReference, service === 'OTHER_TAX_PAYMENT');
   }
 });

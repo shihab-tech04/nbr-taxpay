@@ -105,7 +105,7 @@ test('public guidance links stay on-page without authorizing account access',asy
 
 test('leaving an active payment through the logo confirms before discarding entered details', async ({page}) => {
   await page.goto('/?action=guest');
-  await page.getByLabel('Taxpayer Identification Number (e-TIN)').fill('123456789012');
+  await page.getByLabel('Taxpayer’s TIN').fill('123456789012');
   const prompt = page.waitForEvent('dialog');
   const clickHome = page.getByRole('button', { name: 'Amar Kor home' }).click();
   const dialog = await prompt;
@@ -114,7 +114,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   await dialog.dismiss();
   await clickHome;
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
-  await expect(page.getByLabel('Taxpayer Identification Number (e-TIN)')).toHaveValue('123456789012');
+  await expect(page.getByLabel('Taxpayer’s TIN')).toHaveValue('123456789012');
 
   const confirmExit = page.waitForEvent('dialog');
   const clickHomeAgain = page.getByRole('button', { name: 'Amar Kor home' }).click();
