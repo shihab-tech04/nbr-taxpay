@@ -118,10 +118,11 @@ test('certificate previews stay non-official, match the selected type and locali
 });
 
 
-test('home payment categories inform visitors rather than initiating transactions',async({page})=>{
+test('home explains the payment journey without initiating a transaction',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'Advance income tax'})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Withholding tax'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+ await expect(page.getByText('First, choose your tax service')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Purpose & amount'})).toBeVisible();
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
  await page.goto('/?action=guest');
