@@ -202,7 +202,7 @@ test('Source tax and travel tax stay inside the same modal with their category-s
   await expect(chooser).toBeVisible();
   await expect(chooser.locator('.travel-flow')).toBeVisible();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.getByLabel('Passenger name (as in passport)')).toBeVisible();
+  await expect(chooser.getByLabel('Passenger name')).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });
 
@@ -226,7 +226,7 @@ test('All eight services offer the policy-approved guest payment path before Ste
   }
 });
 
-test('Other Tax Payment asks for its policy-required NBR reference before purpose and amount', async ({ page }) => {
+test('Other Tax Payment uses the v11 optional guest NBR reference', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -235,9 +235,6 @@ test('Other Tax Payment asks for its policy-required NBR reference before purpos
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
-  await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(chooser.getByRole('alert')).toContainText('NBR reference');
-  await chooser.locator('#guest-notice-ref').fill('NBR-TEST-2026-01');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
 });
@@ -251,9 +248,11 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
-  await chooser.getByLabel('Passenger name (as in passport)').fill('SAMPLE TRAVELLER');
-  await chooser.getByLabel('Passport reference').fill('FAKE0001');
+  await chooser.locator('#travel-tax-route-0').check();
+  await chooser.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await chooser.getByLabel('Passport number').fill('FAKE0001');
   await chooser.getByLabel('Mobile number for receipt').fill('01712345678');
+  await chooser.getByLabel('Travel date').fill('2026-10-25');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
   await expect(chooser.getByText('Payment purpose: Travel Tax')).toBeVisible();
@@ -262,6 +261,7 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await expect(chooser.getByRole('heading', { name: 'Choose payment channel' })).toBeVisible();
   await expect(chooser.getByRole('button', { name: 'Confirm payment' })).toBeDisabled();
   await chooser.getByRole('radio', { name: 'Nagad' }).check();
+  await chooser.getByLabel('The journey, passenger details and amount are correct.').check();
   await chooser.getByRole('button', { name: 'Confirm payment' }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByText('Travel tax details ready')).toBeVisible();

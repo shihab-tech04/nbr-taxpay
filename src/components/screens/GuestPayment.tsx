@@ -119,6 +119,27 @@ const ONLINE_METHODS: { id: ChallanReceipt['paymentMethod']; name: string; group
   { id: 'MASTERCARD', name: 'Mastercard', group: 'card' }
 ];
 
+// v11 IT_TYPES: descriptions and government accounting codes are independent
+// of the legacy payment-head codes in the 170-row NBR law master.
+const INCOME_TAX_TYPES = [
+  {
+    id: 'NON_COMPANY' as const,
+    en: 'Income tax payable by persons other than companies (old code: 0111; new code: 1111101)',
+    bn: 'কোম্পানি ব্যতীত অন্য ব্যক্তি (person) কর্তৃক দেয় আয়কর (পুরাতন কোড: ০১১১; নতুন কোড: ১১১১১০১)',
+  },
+  {
+    id: 'COMPANY' as const,
+    en: 'Income tax payable by companies (old code: 0101; new code: 1112101)',
+    bn: 'কোম্পানিসমূহ কর্তৃক দেয় আয়কর (পুরাতন কোড: ০১০১; নতুন কোড: ১১১২১০১)',
+  },
+] as const;
+
+const governmentAccountingCode = (category: PaymentCategory, taxType: 'NON_COMPANY' | 'COMPANY' | null) => {
+  if (!taxType) return null;
+  if (category === 'ADVANCE_TAX') return taxType === 'COMPANY' ? '1112102' : '1111102';
+  return taxType === 'COMPANY' ? '1112101' : '1111101';
+};
+
 const statusLabels: Record<LifecycleStage, { en: string; bn: string }> = {
   INITIATED: { en: 'Payment initiated', bn: 'পরিশোধ শুরু হয়েছে' },
   AUTHORIZED: { en: 'Payment authorized', bn: 'পরিশোধ অনুমোদিত' },
@@ -545,7 +566,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
-                  {commonCopy.tin} *
+                  {isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : (language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer’s TIN')} *
                 </label>
                 <input
                   id="guest-tin"
@@ -626,7 +647,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {!isWithholdingMode && <fieldset className="space-y-2">
               <legend className="text-xs font-semibold text-slate-700">{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'} *</legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[{ id: 'NON_COMPANY' as const, en: 'Person other than company', bn: 'কোম্পানি ব্যতীত ব্যক্তি' }, { id: 'COMPANY' as const, en: 'Company', bn: 'কোম্পানি' }].map(type => <label key={type.id} className={`flex gap-2 items-center border rounded-lg p-3 cursor-pointer text-xs font-semibold ${incomeTaxType === type.id ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200'}`}><input id={`guest-income-type-${type.id}`} type="radio" name="guest-income-type" value={type.id} required checked={incomeTaxType === type.id} onChange={() => setIncomeTaxType(type.id)} aria-invalid={isFieldInvalid('incomeTaxType') || undefined} />{language === 'bn' ? type.bn : type.en}</label>)}
+                {INCOME_TAX_TYPES.map(type => <label key={type.id} className={`flex gap-2 items-center border rounded-lg p-3 cursor-pointer text-xs font-semibold ${incomeTaxType === type.id ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200'}`}><input id={`guest-income-type-${type.id}`} type="radio" name="guest-income-type" value={type.id} required checked={incomeTaxType === type.id} onChange={() => setIncomeTaxType(type.id)} aria-invalid={isFieldInvalid('incomeTaxType') || undefined} />{language === 'bn' ? type.bn : type.en}</label>)}
               </div>
               {fieldError('incomeTaxType')}
             </fieldset>}
@@ -812,13 +833,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <section className="payment-review__panel" aria-labelledby="guest-payment-summary-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">02</span><div><h2 id="guest-payment-summary-title">{copy.reviewTitle}</h2><p>{language === 'bn' ? 'চূড়ান্ত করার আগে করদাতা, খাত ও পরিমাণ যাচাই করুন' : 'Check the taxpayer, payment head and amount before submitting'}</p></div></div>
                 <dl className="payment-review__rows">
-                  <div><dt>{language === 'bn' ? 'যাঁর কর পরিশোধ হচ্ছে' : 'Taxpayer TIN'}</dt><dd className="font-mono-plex">{tin}</dd></div>
+                  <div><dt>{isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent TIN') : (language === 'bn' ? 'যাঁর কর পরিশোধ হচ্ছে' : 'Taxpayer TIN')}</dt><dd className="font-mono-plex">{tin}</dd></div>
                   <div><dt>{language === 'bn' ? 'পরিশোধকারী' : 'Payer'}</dt><dd>{forSelf ? (language === 'bn' ? 'করদাতা নিজে' : 'Taxpayer (self)') : (payerName || copy.unspecified)}</dd></div>
                   <div><dt>{language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'}</dt><dd className="taxpay-service-value" data-payment-service={category}>{language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}</dd></div>
                   <div><dt>{language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}</dt><dd>{selectedHead?.economicCode} — {language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}</dd></div>
-                  {category !== 'SOURCE_TAX_DEPOSIT' && <div><dt>{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'}</dt><dd>{incomeTaxType === 'COMPANY' ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'কোম্পানি ব্যতীত ব্যক্তি' : 'Person other than company')}</dd></div>}
+                  {category !== 'SOURCE_TAX_DEPOSIT' && <>
+                    <div><dt>{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'}</dt><dd>{INCOME_TAX_TYPES.find(type => type.id === incomeTaxType)?.[language] || '—'}</dd></div>
+                    <div><dt>{language === 'bn' ? 'সরকারি হিসাবের কোড' : 'Government accounting code'}</dt><dd className="font-mono-plex">{governmentAccountingCode(category, incomeTaxType)}</dd></div>
+                  </>}
                   <div><dt>{commonCopy.assessmentYear}</dt><dd>{assessmentYear}</dd></div>
                   {noticeReference.trim() && <div><dt>{language === 'bn' ? 'NBR রেফারেন্স' : 'NBR reference'}</dt><dd>{noticeReference}</dd></div>}
+                  <div><dt>{language === 'bn' ? 'পরিমাণ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
                   <div><dt>{language === 'bn' ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd className="font-mono-plex">{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
                   <div><dt>{language === 'bn' ? 'ক্রেডিট হবে' : 'Credited to'}</dt><dd>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'eTDS-এ বরাদ্দের পর কর্তিত ব্যক্তিদের, এজেন্টের নয়' : 'Deductees after allocation in eTDS, never the agent') : (language === 'bn' ? 'উল্লেখিত টিআইএন-এর করদাতার হিসাবে' : 'The taxpayer with the stated TIN, not the payer')}</dd></div>
                 </dl>

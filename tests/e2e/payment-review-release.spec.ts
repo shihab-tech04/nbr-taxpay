@@ -139,7 +139,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.locator('.payment-head-single')).toBeVisible();
-  await page.getByRole('radio', { name: 'Person other than company' }).check();
+  await page.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
 
   await page.getByLabel('Payment amount (৳)').fill('0');
   await page.getByRole('button', { name: 'Continue to Review' }).click();
@@ -213,7 +213,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
-  await services.getByRole('radio', { name: 'Person other than company' }).check();
+  await services.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await services.locator('#guest-tax-amount').fill('0');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(services.getByRole('alert')).toContainText('greater than zero');
@@ -243,11 +243,13 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
   await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
-  await expect(page.getByRole('radio', { name: /By air to the Americas/ }).first()).toBeVisible();
+  await expect(page.getByRole('radio', { name: /By air to North America, South America/ }).first()).toBeVisible();
+  await page.locator('#travel-tax-route-0').check();
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await page.getByLabel('Passenger name (as in passport)').fill('SAMPLE PASSENGER');
-  await page.getByLabel('Passport reference').fill('SAMPLE123');
+  await page.getByLabel('Passenger name').fill('SAMPLE PASSENGER');
+  await page.getByLabel('Passport number').fill('SAMPLE123');
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
+  await page.getByLabel('Travel date').fill('2026-10-25');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
   await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toHaveCount(0);
