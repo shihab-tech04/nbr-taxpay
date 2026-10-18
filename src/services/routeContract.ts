@@ -19,7 +19,7 @@ export const validRoute = (value: string | null | undefined): string =>
   value && registered.has(value) && !officeManagementAliases.has(value) ? value : 'landing';
 
 /** Only navigation context and public synthetic fixture selectors belong in the URL. */
-const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt'] as const;
+const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt', 'transactionId', 'docAction'] as const;
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
 const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home']);
 
@@ -38,7 +38,13 @@ export function routeContextFromUrl(route: string, search: URLSearchParams): Rec
   if (route === 'secure_workspace' && search.has('draftCategory')) return {draftCategory: search.get('draftCategory')};
   if (route === 'payment_details') {
     const demoReceipt = publicDemoReceiptId(search.get('demoReceipt'));
-    return {returnTo: receiptReturnRoute(search.get('returnTo')), ...(demoReceipt ? {demoReceipt} : {})};
+    const transactionId=search.get('transactionId');
+    const validId=typeof transactionId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(transactionId);
+    const docAction=search.get('docAction');
+    return {returnTo:receiptReturnRoute(search.get('returnTo')),
+      ...(demoReceipt?{demoReceipt}:{}),
+      ...(validId?{transactionId}:{}),
+      ...(validId&&(docAction==='print'||docAction==='download')?{docAction}:{})};
   }
   if (route !== 'history') return {};
   const result: Record<string, unknown> = {};
@@ -60,6 +66,11 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
     put('returnTo', receiptReturnRoute(params.returnTo));
     const demoReceipt = publicDemoReceiptId(params.demoReceipt);
     if (demoReceipt) put('demoReceipt', demoReceipt);
+    if(typeof params.transactionId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.transactionId)){
+      put('transactionId',params.transactionId);
+      if(params.docAction==='print'||params.docAction==='download')
+        put('docAction',params.docAction);
+    }
   }
   if (route === 'history') {
     put('categoryFilter', params.categoryFilter);

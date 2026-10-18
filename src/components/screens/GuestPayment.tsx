@@ -419,9 +419,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const settledReceipt: ChallanReceipt = {
         ...receipt,
         paymentTransactionId: confirmed.id,
-        treasuryStatus: 'TREASURY_SCROLLED',
-        treasuryScrollNo: `DEMO-SCRL-${Date.now()}`,
-        treasuryDate: new Date().toISOString(),
+        treasuryStatus: 'GATEWAY_SUCCESS',
+        treasuryScrollNo: undefined,
+        treasuryDate: undefined,
         completedAt: new Date().toISOString()
       };
       setLifecycleStages(previous => [...previous, 'CREDITED']);
@@ -538,7 +538,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             paymentChannel, paymentMethod,
             lines: lineItems,
             totalAmount,
-            taxCreditStatus: newReceipt.taxCreditStatus
+            taxCreditStatus: newReceipt.taxCreditStatus,
+            receiptSnapshot: {...newReceipt,treasuryStatus:'GATEWAY_SUCCESS'}
           },
         },
       };

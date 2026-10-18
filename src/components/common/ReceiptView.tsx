@@ -13,6 +13,7 @@ import { ChallanReceipt } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
+import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
 
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
@@ -25,7 +26,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const bn = language === 'bn';
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
-    back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
+    back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'ডাউনলোড',
     title: 'আমার কর — রসিদের বিবরণ',
     challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ', service: 'পেমেন্টের ধরন',
@@ -36,12 +37,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     noAgentCredit: 'এই রেকর্ডে কর কর্তনকারীর ব্যক্তিগত কর ক্রেডিট প্রতিষ্ঠিত হয় না।',
     breakdown: 'পেমেন্টের বিবরণ ও খাত', headCode: 'অর্থনৈতিক খাত কোড', description: 'খাতের বিবরণ',
     tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'মোট অর্থ:',
-    treasuryStatus: 'ট্রেজারি অবস্থা',
+    treasuryStatus: 'পেমেন্টের অবস্থা',
     credit: 'কর ক্রেডিট স্বীকৃতি', notApplicable: 'প্রযোজ্য নয়', pending: 'সমন্বয়ের অপেক্ষায়',
     credited: 'লেজার ক্রেডিট যাচাইয়ের অপেক্ষায়', claimed: 'রিটার্নের দাবি যাচাইয়ের অপেক্ষায়', disputed: 'বিরোধপূর্ণ',
     noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।'
   } : {
-    back: 'Back to records', print: 'Print receipt', export: 'Export JSON',
+    back: 'Back to records', print: 'Print receipt', export: 'Download',
     title: 'Amar Kor — Receipt details',
     challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year', service: 'Payment service',
@@ -52,7 +53,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
     breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
     tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Total amount:',
-    treasuryStatus: 'Treasury status',
+    treasuryStatus: 'Payment status',
     credit: 'Tax credit recognition', notApplicable: 'NOT APPLICABLE', pending: 'PENDING RECONCILIATION',
     credited: 'LEDGER CREDIT UNVERIFIED', claimed: 'RETURN CLAIM UNVERIFIED', disputed: 'DISPUTED',
     noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.'
@@ -67,7 +68,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const treasuryStatusLabels = {
     INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
     GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
-    GATEWAY_SUCCESS: bn ? 'গেটওয়েতে সফল' : 'GATEWAY_SUCCESS',
+    GATEWAY_SUCCESS: bn ? 'সিমুলেটেড পেমেন্ট সফল' : 'Simulated payment successful',
     TREASURY_SCROLLED: bn ? 'ট্রেজারিতে নথিভুক্ত' : 'TREASURY_SCROLLED',
     FAILED: bn ? 'ব্যর্থ' : 'FAILED',
     EXPIRED: bn ? 'মেয়াদ শেষ' : 'EXPIRED',
@@ -76,7 +77,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const paymentMethodLabels = {
     BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', SONALI_E_SHEBA: 'Sonali e-Sheba',
     A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS',
-    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch'
+    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch', SIMULATED: 'Simulated payment'
   }[receipt.paymentMethod];
 
   const handleCopy = (text: string) => {
@@ -108,19 +109,11 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <span>{labels.print}</span>
           </button>
           <button
-            onClick={() => {
-              const element = document.createElement('a');
-              const file = new Blob([JSON.stringify(receipt, null, 2)], { type: 'application/json' });
-              element.href = URL.createObjectURL(file);
-              element.download = `${receipt.challanNo}.json`;
-              document.body.appendChild(element);
-              element.click();
-              document.body.removeChild(element);
-            }}
+            onClick={() => downloadDisplayedCertificate(receipt)}
             className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded cursor-pointer border border-slate-300"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{embedded ? (bn ? 'JSON ডাউনলোড' : 'Download JSON') : labels.export}</span>
+            <span>{embedded ? (bn ? 'ডাউনলোড' : 'Download') : labels.export}</span>
           </button>
         </div>
       </div>

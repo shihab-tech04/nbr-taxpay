@@ -197,6 +197,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                 // transaction projection exposes only the masked reference.
                 passportNumber:isDomestic ? null : passportNumber.trim(),
                 lines:newReceipt.items,
+                receiptSnapshot:newReceipt,
               }
             });
             settled={...newReceipt,paymentTransactionId:ack.id};

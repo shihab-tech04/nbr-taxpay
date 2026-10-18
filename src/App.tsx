@@ -38,6 +38,7 @@ import { GlossaryView } from './components/screens/GlossaryView';
 import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
+import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
 
 const previewReadOnlyRoutes = new Set([
   'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
@@ -54,7 +55,12 @@ const MainRouter: React.FC = () => {
   const priorCitizenRouteRef = useRef<string | null>(null);
   const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
   const previewAccess = Boolean(previewAccount && previewReadOnlyRoutes.has(currentRoute));
-  const privateSampleGate = !previewAccess && requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
+  // A UUID linked to a mirrored simulated transaction is a public, read-only
+  // receipt view. It grants no access to the taxpayer's private workspace.
+  const publicConfirmedReceipt = currentRoute==='payment_details' &&
+    validCertificateTransactionId(routeParams.transactionId);
+  const privateSampleGate = !publicConfirmedReceipt && !previewAccess &&
+    requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login';
   const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||

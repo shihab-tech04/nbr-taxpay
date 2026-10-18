@@ -112,7 +112,7 @@ export interface ChallanReceipt {
   deducteeName?: string;
   items: PaymentLineItem[];
   totalAmount: number;
-  paymentMethod: 'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD' | 'BEFTN_RTGS' | 'INTERNET_BANKING' | 'VISA' | 'MASTERCARD' | 'BANK_BRANCH';
+  paymentMethod: 'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD' | 'BEFTN_RTGS' | 'INTERNET_BANKING' | 'VISA' | 'MASTERCARD' | 'BANK_BRANCH' | 'SIMULATED';
   gatewayTransactionId: string;
   treasuryScrollNo?: string;
   treasuryDate?: string;

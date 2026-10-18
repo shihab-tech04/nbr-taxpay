@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTaxState } from '../../services/taxState';
 import { ReceiptView } from '../common/ReceiptView';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
@@ -6,9 +6,44 @@ import { receiptReturnRoute } from '../../services/routeContract';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
+import type { ChallanReceipt } from '../../types/tax';
+import { getConfirmedReceipt, validCertificateTransactionId } from '../../services/confirmedPaymentCertificate';
+import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
+
+function SyncedCertificate({transactionId,docAction}:{transactionId:string;docAction?:string}){
+  const [receipt,setReceipt]=useState<ChallanReceipt|null>(null);
+  const [error,setError]=useState('');
+  const [actionError,setActionError]=useState('');
+  useEffect(()=>{
+    let active=true;setReceipt(null);setError('');setActionError('');
+    void getConfirmedReceipt(transactionId)
+      .then(value=>{if(active)setReceipt(value);})
+      .catch(err=>{if(active)setError(err instanceof Error?err.message:'Unable to load payment certificate');});
+    return()=>{active=false;};
+  },[transactionId]);
+  useEffect(()=>{
+    if(!receipt||!docAction)return;
+    // Render ReceiptView first, then execute the requested document action.
+    const timer=window.setTimeout(()=>{
+      try{
+        if(docAction==='print')window.print();
+        if(docAction==='download')downloadDisplayedCertificate(receipt);
+      }catch(err){setActionError(err instanceof Error?err.message:'Certificate action failed');}
+    },450);
+    return()=>window.clearTimeout(timer);
+  },[receipt,docAction]);
+  if(error)return <main className="mx-auto max-w-3xl p-6" role="alert"><h1>Payment certificate unavailable</h1><p>{error}</p></main>;
+  if(!receipt)return <main className="mx-auto max-w-3xl p-6" role="status">Loading payment certificate…</main>;
+  return <main className="mx-auto max-w-5xl pb-10">
+    {actionError&&<p role="alert">{actionError}</p>}
+    <ReceiptView receipt={receipt} onBack={()=>window.close()}/>
+  </main>;
+}
+
 
 export const PaymentDetailView: React.FC = () => {
   const { selectedReceipt, receipts, taxpayerProfile, userRole, demoUser, routeParams, navigate } = useTaxState();
+  const confirmedId=routeParams.transactionId;
   const { user: authenticatedUser } = useAccountIdentity();
   const returnTo = receiptReturnRoute(routeParams.returnTo);
   const officerContext = returnTo === 'payment_search' || returnTo === 'taxpayer_360';
@@ -19,6 +54,9 @@ export const PaymentDetailView: React.FC = () => {
   const backLabel = returnTo === 'payment_search' ? 'Back to Payment Search' :
     returnTo === 'taxpayer_360' ? 'Back to Taxpayer 360' :
     returnTo === 'dashboard' || returnTo === 'taxpayer_home' ? 'Back to Dashboard' : 'Back to Payment History';
+
+  if(validCertificateTransactionId(confirmedId))
+    return <SyncedCertificate transactionId={confirmedId} docAction={routeParams.docAction}/>;
 
   if (!availableReceipt) {
     return (
