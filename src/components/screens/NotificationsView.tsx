@@ -62,6 +62,14 @@ export const NotificationsView:React.FC=()=>{
     finally{setBusyNotice(null);}
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
+  // Keep the existing pre-payment account entry; successful guest payments
+  // use their own session-scoped SQL notification feed without logging in.
+  const hasGuestPayment=guestNotices.length>0 || (()=>{try{return sessionStorage.getItem('taxpay-guest-story-payment')==='true';}catch{return false;}})();
+  if(!authenticatedUser&&!hasGuestPayment)return <main className="mx-auto max-w-4xl space-y-3 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
+    <h1 className="text-2xl font-bold text-taxpay-text">{label('Sign in to view payment notifications','পেমেন্ট বিজ্ঞপ্তি দেখতে সাইন ইন করুন')}</h1>
+    <p className="text-sm text-taxpay-muted">{label('Sign in with your assigned account to view notifications.','বিজ্ঞপ্তি দেখতে নির্ধারিত অ্যাকাউন্টে সাইন ইন করুন।')}</p>
+    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{label('Open sign-in','সাইন ইন খুলুন')}</button>
+  </main>;
   if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
