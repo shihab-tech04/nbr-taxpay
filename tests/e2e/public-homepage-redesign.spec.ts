@@ -9,7 +9,7 @@ test('public homepage explains the payment path without duplicating service cate
   await expect(page.getByRole('heading', { name: 'How your payment works' })).toBeVisible();
   await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
   await expect(page.locator('.public-payment-path__steps > li .public-payment-path__symbol svg')).toHaveCount(4);
-  for (const [index, stage] of ['Taxpayer details', 'Purpose & amount', 'Payment channel', 'Confirmation'].entries()) {
+  for (const [index, stage] of ['Input taxpayer details', 'Select purpose & amount', 'Choose payment method', 'Review & confirm payment'].entries()) {
     await expect(page.locator('.public-payment-path__steps > li').nth(index)).toContainText(stage);
   }
   await expect(page.locator('.public-info-topic')).toHaveCount(0);

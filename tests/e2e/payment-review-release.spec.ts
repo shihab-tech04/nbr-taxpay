@@ -271,7 +271,7 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();
   await page.getByRole('radio', { name: 'Nagad' }).check();
-  await page.locator('.travel-flow__channel input[type="checkbox"]').check();
+  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' }).click();
   await expect(page.getByText('ভ্রমণ করের তথ্য প্রস্তুত')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();

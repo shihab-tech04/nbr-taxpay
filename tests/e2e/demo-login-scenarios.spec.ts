@@ -3,7 +3,16 @@ import { expect, test } from '@playwright/test';
 test('all ten matching User ID and password pairs open their own account views',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','One complete user-ID routing matrix');
  const backendCalls:string[]=[];
+ const authorizationActors=new Set<string>();
  page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co'))backendCalls.push(request.url());});
+ // The signed-in authorization notification polls by actor. Intercept its reads so
+ // this disconnected-preview test never contacts the live fictional database.
+ await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',async route=>{
+   const request=route.request();
+   expect(request.method()).toBe('GET');
+   authorizationActors.add(new URL(request.url()).searchParams.get('actor')??'');
+   await route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[]}'});
+ });
  for(let n=1;n<=10;n++){
    await page.goto('/?action=taxpayer_login');
    await page.getByRole('textbox',{name:'User ID'}).fill('user'+n);
@@ -15,7 +24,8 @@ test('all ten matching User ID and password pairs open their own account views',
    await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
    expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user'+n);
  }
- expect(backendCalls).toEqual([]);
+ expect([...authorizationActors].sort()).toEqual(Array.from({length:10},(_,i)=>`user${i+1}`).sort());
+ expect(backendCalls.every(url=>new URL(url).pathname==='/functions/v1/demo-story1-taxpay/authorizations')).toBe(true);
 });
 
 test('legacy scenario URLs never reveal fictitious accounts or trigger hosted services',async({page},info)=>{
