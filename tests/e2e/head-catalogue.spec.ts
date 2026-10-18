@@ -72,7 +72,7 @@ test('public information home has bilingual safety copy and no prototype status'
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
  await expect(page.locator('#public-home-title')).toBeVisible();
- await expect(page.getByRole('heading',{name:'কর পরিশোধের ধরন জানুন'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'যেভাবে কর পরিশোধ করবেন'})).toBeVisible();
  await expect(page.locator('footer').getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
  await expect(page.getByText('Prototype status')).toHaveCount(0);
  const bounds=await page.locator('main').boundingBox();

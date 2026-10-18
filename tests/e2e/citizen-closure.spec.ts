@@ -20,7 +20,7 @@ test('root is a public information hub with a header Login and no payment action
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.office-auth')).toHaveCount(0);
- await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
 });
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{

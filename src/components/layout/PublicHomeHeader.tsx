@@ -26,6 +26,7 @@ export function PublicHomeHeader() {
   const profileRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const bn = language==='bn';
+  const activeRoute = currentRoute === 'guidance' ? 'user_guide' : currentRoute;
   useEffect(()=>{setMenuOpen(false);setProfileOpen(false);},[currentRoute]);
   useEffect(()=>{
     if(!profileOpen) return;
@@ -73,7 +74,7 @@ export function PublicHomeHeader() {
   };
   const routeLink=(item:typeof LINKS[number])=>
     <a key={item.route} href={item.route==='landing' ? import.meta.env.BASE_URL + (bn ? '?lang=bn' : '') : '?action='+item.route+(bn?'&lang=bn':'')}
-      aria-current={currentRoute===item.route?'page':undefined}
+      aria-current={activeRoute===item.route?'page':undefined}
       onClick={event=>{
         if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
         event.preventDefault();go(item.route);

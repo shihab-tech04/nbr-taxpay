@@ -9,7 +9,7 @@ test('public hero opens service choice before the guest payment form while the r
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
- await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
  await page.getByRole('button',{name:'Pay Tax'}).click();
  const services=page.getByRole('dialog',{name:'Pay Tax'});
  await expect(services).toBeVisible();

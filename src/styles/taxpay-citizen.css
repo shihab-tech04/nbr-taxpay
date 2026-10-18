@@ -1782,3 +1782,106 @@
   text-decoration:underline;
   text-underline-offset:.18rem;
 }
+
+/* Approved public navigation: a softly filled blue pill, never an underline. */
+.public-home-header .public-home-nav a:not(.public-home-login-link) {
+  padding:.6rem .85rem;
+  border-radius:.65rem;
+}
+.public-home-header .public-home-nav a[aria-current="page"],
+.public-home-header .public-home-nav a[aria-current="location"] {
+  background:var(--citizen-primary-light);
+  color:var(--citizen-primary);
+  box-shadow:none;
+  text-decoration:none;
+}
+.public-home-header .public-home-nav a[aria-current="page"]:hover,
+.public-home-header .public-home-nav a[aria-current="location"]:hover {
+  background:var(--citizen-primary-light);
+  color:var(--citizen-primary);
+}
+
+/* Public homepage: service choice occurs outside the four payment stages. */
+.public-payment-path__starter {
+  display:flex;align-items:center;gap:.85rem;margin-bottom:1.3rem;padding:.9rem 1rem;
+  border:1px solid color-mix(in srgb,var(--citizen-primary) 18%,var(--citizen-border));
+  border-radius:.8rem;background:var(--citizen-primary-light);
+}
+.public-payment-path__starter-icon {
+  display:grid;place-items:center;flex:none;width:38px;height:38px;
+  border-radius:.65rem;background:var(--citizen-primary);color:white;
+}
+.public-payment-path__starter strong {
+  display:block;color:var(--citizen-primary-dark);font-size:.9rem;font-weight:700;line-height:1.45;
+}
+.public-payment-path__starter p {
+  margin:.15rem 0 0;color:var(--citizen-muted);font-size:.875rem;line-height:1.6;
+}
+.public-payment-path__steps {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;
+  margin:0;padding:0;list-style:none;
+}
+.public-payment-path__steps li {
+  min-width:0;padding:1.1rem;border:1px solid var(--citizen-border);
+  border-radius:.85rem;background:var(--citizen-surface);
+}
+.public-payment-path__number {
+  display:grid;place-items:center;width:34px;height:34px;margin-bottom:.95rem;
+  border-radius:.6rem;background:var(--citizen-primary-light);
+  color:var(--citizen-primary);font-size:.875rem;font-weight:700;
+}
+.public-payment-path__steps h3 {
+  margin:0 0 .45rem;color:var(--citizen-text);
+  font-size:1rem;font-weight:700;line-height:1.4;
+}
+.public-payment-path__steps p {
+  margin:0;color:var(--citizen-muted);font-size:.875rem;line-height:1.65;
+}
+.public-payment-path__note {
+  display:flex;align-items:flex-start;gap:.6rem;margin:1.15rem 0 0;
+  color:var(--citizen-muted);font-size:.875rem;line-height:1.7;
+}
+.public-payment-path__note svg {flex:none;margin-top:.18rem;color:var(--citizen-primary);}
+
+/* FAQ resolves open decisions rather than repeating the payment steps. */
+.public-information-hub .public-faq-layout {
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.65fr);
+  gap:clamp(1.5rem,4vw,4rem);align-items:start;
+}
+.public-faq-layout__heading h2 {
+  display:flex;align-items:flex-start;gap:.5rem;max-width:26ch;
+  font-size:1.35rem;line-height:1.45;letter-spacing:-.02em;
+}
+.public-faq-layout__heading h2 svg {flex:none;margin-top:.16rem;}
+.public-faq-layout__heading p {
+  margin:.7rem 0 0;color:var(--citizen-muted);font-size:.875rem;line-height:1.7;
+}
+.public-faq-layout .public-info-faq {gap:0;}
+.public-faq-layout .public-info-faq details {
+  border:0;border-bottom:1px solid var(--citizen-border);border-radius:0;padding:0;
+}
+.public-faq-layout .public-info-faq details:first-child {border-top:1px solid var(--citizen-border);}
+.public-faq-layout .public-info-faq details[open] {border-color:var(--citizen-border);}
+.public-faq-layout .public-info-faq summary {font-size:.9375rem;font-weight:650;padding:1rem 0;}
+.public-faq-layout .public-info-faq details p {
+  font-size:.875rem;line-height:1.7;padding:0 2.5rem .9rem 0;
+}
+.public-faq-layout__guide-link {
+  display:inline-flex;align-items:center;gap:.4rem;min-height:44px;margin:0 0 .7rem;
+  color:var(--citizen-primary-dark);font-size:.875rem;font-weight:700;
+  text-decoration:underline;text-underline-offset:.2rem;
+}
+.public-faq-layout__guide-link:hover {color:var(--citizen-primary);}
+
+@media(max-width:900px) {
+  .public-payment-path__steps {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .public-information-hub .public-faq-layout {grid-template-columns:minmax(0,1fr);gap:1.2rem;}
+  .public-faq-layout__heading h2 {max-width:none;}
+}
+@media(max-width:600px) {
+  .public-payment-path__steps {grid-template-columns:minmax(0,1fr);gap:.65rem;}
+  .public-payment-path__steps li {padding:1rem;}
+  .public-payment-path__number {margin-bottom:.65rem;}
+  .public-faq-layout .public-info-faq summary {font-size:.9rem;}
+  .public-faq-layout .public-info-faq details p {padding-right:.5rem;}
+}

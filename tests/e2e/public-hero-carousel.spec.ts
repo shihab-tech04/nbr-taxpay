@@ -9,9 +9,9 @@ test('hero provides five bilingual service slides with the original desktop open
   const slides = carousel.getByRole('group', { includeHidden: true });
   await expect(slides).toHaveCount(5);
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
-  await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Understand tax payments. Stay in control.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion.' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-    .toHaveText('Choose the right tax service, check payment status and find receipts in one place.');
+    .toHaveText('Unsure what tax to pay or where your receipt went? Choose the right service, follow clear steps, and find payment records in one place.');
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))

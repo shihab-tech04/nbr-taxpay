@@ -249,10 +249,10 @@ test('citizen numeric typography is IBM Plex Mono while regular text uses Poppin
 test('Public homepage uses heading and description without duplicate eyebrow labels',async({page})=>{
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
-  await expect(page.getByText('Choose a payment category.')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'How it works'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Payment guidance'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+  await expect(page.getByText("Pick what you're paying. Then we'll guide you through four clear steps.")).toBeVisible();
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
+  await expect(page.getByRole('heading',{name:'Questions worth answering before you start'})).toBeVisible();
 });
 test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',async({page})=>{
   await page.goto('/?action=landing');
@@ -269,7 +269,8 @@ test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',a
 });
 test('citizen SPA navigation moves focus to main without making static content tabbable',async({page})=>{
   await page.goto('/?action=landing');
-  await page.locator('#public-faq .public-more-link').click();
+  await page.locator('#public-faq details').last().locator('summary').click();
+  await page.locator('#public-faq .public-faq-layout__guide-link').click();
   await expect(page.locator('main#main-content')).toBeFocused();
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
