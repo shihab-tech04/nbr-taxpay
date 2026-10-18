@@ -7,6 +7,7 @@ import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ServiceCategoryTag, type ServiceCategoryCode } from '../ui/ServiceCategoryTag';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -63,18 +64,14 @@ export const TaxpayerDashboard: React.FC = () => {
     const a=document.createElement('a');a.href=url;a.download='TaxPay_example_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
   return <div className={`mx-auto max-w-[1150px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
-    <header className={card+' taxpayer-dashboard-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-800 sm:text-[28px]">{tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}</h1>
-        {previewAccount && <p className="mt-1 text-sm text-slate-500">{tr('User ID','ইউজার আইডি')}: {previewAccount.id}</p>}
-      </div>
-      <div className="flex flex-wrap items-end gap-2">
+    <TaxpayerPageHeading className="taxpayer-dashboard-header" title={tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}
+      description={previewAccount ? `${tr('User ID','ইউজার আইডি')}: ${previewAccount.id}` : undefined}
+      actions={<div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
           <select value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800">{ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select>
         </label>
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
-      </div>
-    </header>
+      </div>} />
     {previewAccount && demoUser && !user && <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>

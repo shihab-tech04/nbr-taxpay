@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Printer } from 'lucide-react';
+import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
 import { useAccountIdentity } from '../../services/accountIdentity';
@@ -13,7 +14,7 @@ const previewOptions: { id: CertificatePreview; en: string; bn: string }[] = [
   { id: 'TRAVEL_CLEARANCE', en: 'Travel tax payment summary', bn: 'ভ্রমণ কর পেমেন্টের সারসংক্ষেপ' }
 ];
 
-export const CertificatesView: React.FC = () => {
+export const CertificatesView: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
   const { taxpayerProfile, receipts, language, userRole, demoUser } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const [selectedPreview, setSelectedPreview] = useState<CertificatePreview>('ANNUAL_PAYMENT');
@@ -49,29 +50,18 @@ export const CertificatesView: React.FC = () => {
 
   return (
     <div className={`mx-auto max-w-4xl space-y-4 pb-12 ${bn ? 'font-bengali' : ''}`}>
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="certificate-preview-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-taxpay-light text-taxpay-dark">
-              <FileText size={20} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <h1 id="certificate-preview-title" className="mt-1 text-xl font-bold leading-snug text-taxpay-text sm:text-2xl">
-                {label('Certificate summaries', 'সনদের সারসংক্ষেপ')}
-              </h1>
-            </div>
-          </div>
-          <button
+      <TaxpayerPageHeading id="certificate-preview-title" title={label('Certificate summaries', 'সনদের সারসংক্ষেপ')} actions={
+        <button
             type="button"
             onClick={() => window.print()}
             className="no-print inline-flex min-h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:bg-taxpay-dark"
           >
             <Printer size={17} aria-hidden="true" />
             {label('Print summary', 'সারসংক্ষেপ প্রিন্ট')}
-          </button>
-        </div>
-
-        <div className="mt-5 border-t border-taxpay-border pt-4">
+          </button>} />
+      {activityTabs && <TaxpayerActivityTabs />}
+      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="certificate-preview-title">
+        <div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a summary', 'সারসংক্ষেপ বাছুন')}>
             {previewOptions.map(option => (
               <button

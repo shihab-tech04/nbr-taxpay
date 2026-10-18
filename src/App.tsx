@@ -43,12 +43,7 @@ const previewReadOnlyRoutes = new Set([
   'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services', 'manage_authorization'
 ]);
 
-const activitySections = [
-  { route: 'history', en: 'Transactions', bn: 'লেনদেনসমূহ' },
-  { route: 'verify', en: 'Track payment', bn: 'পেমেন্ট অনুসন্ধান' },
-  { route: 'corrections', en: 'Issues & corrections', bn: 'সমস্যা ও সংশোধন' },
-  { route: 'certificates', en: 'Receipts & certificates', bn: 'রসিদ ও সনদপত্র' }
-] as const;
+const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
@@ -68,8 +63,7 @@ const MainRouter: React.FC = () => {
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
   const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace';
-  const showActivitySections = taxpayerSession && !privateSampleGate &&
-    activitySections.some(section => section.route === currentRoute);
+  const showActivitySections = taxpayerSession && !privateSampleGate && activityRoutes.has(currentRoute);
 
   // Listen to browser URL search params for direct action links (?action=...)
   useEffect(() => {
@@ -99,7 +93,7 @@ const MainRouter: React.FC = () => {
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
     if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
-      return <User1DemoExperience route={currentRoute} />;
+      return <User1DemoExperience route={currentRoute} activityTabs={showActivitySections} />;
     }
     switch (currentRoute) {
       // Public Screens
@@ -121,7 +115,7 @@ const MainRouter: React.FC = () => {
       case 'travel':
         return <TravelTax />;
       case 'verify':
-        return <ReceiptLookup />;
+        return <ReceiptLookup activityTabs={showActivitySections} />;
       case 'incident':
         return <PublicReport />;
       case 'architecture':
@@ -135,7 +129,7 @@ const MainRouter: React.FC = () => {
       case 'wizard':
         return <PaymentWizard />;
       case 'history':
-        return <PaymentHistory />;
+        return <PaymentHistory activityTabs={showActivitySections} />;
       case 'payment_details':
         return <PaymentDetailView />;
       case 'ledger':
@@ -143,9 +137,9 @@ const MainRouter: React.FC = () => {
       case 'journey':
         return <TaxJourney />;
       case 'certificates':
-        return <CertificatesView />;
+        return <CertificatesView activityTabs={showActivitySections} />;
       case 'corrections':
-        return <CorrectionRequests />;
+        return <CorrectionRequests activityTabs={showActivitySections} />;
       case 'notifications':
         return <NotificationsView />;
       case 'account_notifications':
@@ -188,14 +182,6 @@ const MainRouter: React.FC = () => {
               <button type="button" onClick={() => navigate('taxpayer_login')}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</button>}
           </section>
         ) : <>
-          {showActivitySections && <nav className="taxpayer-activity-sections" aria-label={language === 'bn' ? 'লেনদেনের বিভাগ' : 'Activity sections'}>
-            {activitySections.map(section => (
-              <button type="button" key={section.route} onClick={() => navigate(section.route)}
-                aria-current={currentRoute === section.route ? 'page' : undefined}>
-                {language === 'bn' ? section.bn : section.en}
-              </button>
-            ))}
-          </nav>}
           {renderActiveScreen()}
         </>}
       </main>

@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { PAYMENT_SERVICE_CHOICES } from './PaymentServiceChoiceDialog';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 
 /** A directory of actual payment categories, not the retired connection-status mockup. */
 export const PaymentServicesPage: React.FC = () => {
@@ -10,16 +11,11 @@ export const PaymentServicesPage: React.FC = () => {
   const tr = (en: string, bangla: string) => bn ? bangla : en;
 
   return <div className="taxpayer-payment-services mx-auto max-w-6xl space-y-4 pb-12">
-    <header className="taxpayer-service-directory__header">
-      <div>
-        <p className="taxpayer-service-directory__eyebrow">{tr('Payment services', 'কর পরিশোধ সেবা')}</p>
-        <h1>{tr('Choose a tax payment service', 'কর পরিশোধের সেবা নির্বাচন করুন')}</h1>
-        <p>{tr('Eight payment types are available in the service selector. Select the type that matches your payment purpose.', 'সেবা নির্বাচনে আট ধরনের কর পরিশোধ রয়েছে। আপনার পরিশোধের উদ্দেশ্যের সঙ্গে মিলিয়ে সেবাটি নির্বাচন করুন।')}</p>
-      </div>
-      <button type="button" className="taxpayer-service-directory__primary" onClick={() => setPaymentServiceChoiceOpen(true)}>
+    <TaxpayerPageHeading title={tr('Choose a tax payment service', 'কর পরিশোধের সেবা নির্বাচন করুন')}
+      description={tr('Eight payment types are available in the service selector. Select the type that matches your payment purpose.', 'সেবা নির্বাচনে আট ধরনের কর পরিশোধ রয়েছে। আপনার পরিশোধের উদ্দেশ্যের সঙ্গে মিলিয়ে সেবাটি নির্বাচন করুন।')}
+      actions={<button type="button" className="taxpayer-service-directory__primary" onClick={() => setPaymentServiceChoiceOpen(true)}>
         {tr('Select a service', 'সেবা নির্বাচন করুন')} <ArrowRight size={18} aria-hidden="true" />
-      </button>
-    </header>
+      </button>} />
     <section className="taxpayer-service-directory__grid" aria-label={tr('Eight tax payment types', 'আট ধরনের কর পরিশোধ')}>
       {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }, index) => (
         <article className="taxpayer-service-directory__card" data-payment-service={id} key={id}>

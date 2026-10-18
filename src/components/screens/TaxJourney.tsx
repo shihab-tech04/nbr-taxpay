@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, BookOpen, CircleUserRound, FileCheck2, FilePenLine, Receipt, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 
 const destinations = [
   { route: 'account_profile', title: { en: 'Profile', bn: 'প্রোফাইল' }, Icon: CircleUserRound },
@@ -18,14 +19,10 @@ export const TaxJourney: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-12">
+      <TaxpayerPageHeading id="taxpay-journey-title" title={bn ? 'আমার কর কার্যক্রম' : 'My tax journey'}
+        description={bn ? 'আপনার করসেবাগুলো এক জায়গায় দেখুন।' : 'Access your tax services in one place.'} />
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="taxpay-journey-title">
-        <h1 id="taxpay-journey-title" className="text-2xl font-bold text-taxpay-text">
-          {bn ? 'আমার কর কার্যক্রম' : 'My tax journey'}
-        </h1>
-        <p className="mt-2 text-sm text-taxpay-muted">
-          {bn ? 'আপনার করসেবাগুলো এক জায়গায় দেখুন।' : 'Access your tax services in one place.'}
-        </p>
-        <nav aria-label={bn ? 'করসেবা' : 'Tax services'} className="mt-5 grid gap-3 sm:grid-cols-2">
+        <nav aria-label={bn ? 'করসেবা' : 'Tax services'} className="grid gap-3 sm:grid-cols-2">
           {destinations.map(({ route, title, Icon }) => (
             <button key={route} type="button" onClick={() => navigate(route)}
               className="flex min-h-14 items-center gap-3 rounded-xl border border-taxpay-border bg-white p-4 text-left text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">

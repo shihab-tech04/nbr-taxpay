@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  FileEdit, 
-  Send, 
+import {
+  Send,
   CheckCircle2
 } from 'lucide-react';
+import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { useTaxState } from '../../services/taxState';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 
-export const CorrectionRequests: React.FC = () => {
+export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
   const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const visibleReceipts = taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser));
@@ -65,21 +65,10 @@ export const CorrectionRequests: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
+        description="Request a change to the assessment year, tax circle or payment head." />
+      {activityTabs && <TaxpayerActivityTabs />}
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-4 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center">
-            <FileEdit className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              Tax Payment Challan Correction Requests
-            </h1>
-            <p className="text-xs text-slate-500">
-              Request a change to the assessment year, tax circle or payment head.
-            </p>
-          </div>
-        </div>
-
         {submittedTicket && (
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">

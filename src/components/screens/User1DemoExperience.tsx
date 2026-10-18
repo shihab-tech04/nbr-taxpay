@@ -3,6 +3,7 @@ import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditC
 import {useTaxState} from '../../services/taxState';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {DEMO_USERS} from '../../data/demoUsers';
+import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 
 /**
  * Public synthetic storybook dataset for fictional "user1" only.
@@ -77,7 +78,7 @@ const panel='rounded-2xl border border-taxpay-border bg-taxpay-surface p-4 shado
 const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface px-3 text-sm font-medium text-taxpay-dark transition hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary';
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
 export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
-export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
+export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=({route,activityTabs=false})=>{
   const {navigate,language,setLanguage,routeParams}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -166,16 +167,8 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   </div>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
-  const header=<header className={panel+' taxpayer-dashboard-header'}>
-    <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-5">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight text-taxpay-text sm:text-3xl">{pageTitle}</h1>
-        </div>
-      </div>
-      {!['account_profile','account_settings'].includes(route) && years}
-    </div>
-  </header>;
+  const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
+    actions={!['account_profile','account_settings'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
@@ -349,7 +342,9 @@ export const User1DemoExperience:React.FC<{route:string}>=({route})=>{
   </section>;
   const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}</>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
-    {header}{content}
+    {header}
+    {activityTabs && <TaxpayerActivityTabs />}
+    {content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
       <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
