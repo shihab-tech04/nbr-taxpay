@@ -53,6 +53,12 @@ test('desktop taxpayer rail keeps profile and language above its final sign-out 
   await rail.getByRole('button',{name:'Notifications'}).click();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
+  await rail.locator('.taxpayer-reference-brand').click();
+  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('.public-home-header').getByRole('link',{name:'Login'})).toHaveCount(0);
+  await expect(page.locator('.public-home-header').getByRole('button',{name:'Profile menu'})).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Exit workspace'}).click();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
 });
@@ -64,8 +70,8 @@ test('a signed-in account returning to public home sees notification and profile
   await page.getByLabel('Password').fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
-
-  await page.goto('/?action=landing');
+  await page.locator('.taxpayer-reference-brand').click();
+  await expect(page).toHaveURL(/action=landing/);
   const header=page.locator('.public-home-header');
   await expect(header.getByRole('link',{name:'Login'})).toHaveCount(0);
   await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
@@ -91,6 +97,8 @@ test('the signed-in public header fits mobile and keeps account controls operabl
   await page.getByLabel('User ID').fill('user1');
   await page.getByLabel('Password').fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
+  await page.locator('.citizen-brand').click();
+  await expect(page).toHaveURL(/action=landing/);
   for(const width of [320,360,375,390]) {
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=landing');

@@ -83,7 +83,7 @@ export function CitizenNavigation() {
     if (inTransaction && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
-    go(home);
+    go('landing');
   };
   useEffect(() => {
     setCompact(false);
@@ -190,7 +190,6 @@ export function CitizenNavigation() {
           <button type="button" className="citizen-brand" onClick={goHome}
             aria-label={bn ? 'আমার কর মূল পাতা' : 'Amar Kor home'}>
             <img className="citizen-brand__wordmark" src={amarKorWordmark} alt="" aria-hidden="true" />
-            <span><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
           </button>
           {inTransaction ? (
             <div className="citizen-flow-actions">

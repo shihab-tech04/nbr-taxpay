@@ -43,9 +43,8 @@ export function TaxpayerReferenceRail() {
   return (
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
       <div>
-        <button className="taxpayer-reference-brand" type="button" onClick={() => navigate(user || sampleProfile ? 'taxpayer_home' : 'landing')}>
+        <button className="taxpayer-reference-brand" type="button" onClick={() => navigate('landing')}>
           <img className="taxpayer-reference-wordmark" src={amarKorWordmark} alt={bn ? 'আমার কর' : 'Amar Kor'} />
-          <span><small>{bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}</small></span>
         </button>
         {(user || sampleProfile) && currentRoute !== 'wizard' && !isPaymentServiceChoiceOpen && <button type="button" className="taxpayer-reference-main-action" onClick={() => setPaymentServiceChoiceOpen(true)}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
