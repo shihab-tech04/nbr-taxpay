@@ -30,6 +30,7 @@ import { CertificatesView } from './components/screens/CertificatesView';
 import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
+import { ManageAuthorization } from './components/screens/ManageAuthorization';
 import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
 import { OntologyView } from './components/screens/OntologyView';
 import { GlossaryView } from './components/screens/GlossaryView';
@@ -39,7 +40,7 @@ import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/priva
 
 const previewReadOnlyRoutes = new Set([
   'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
-  'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services'
+  'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services', 'manage_authorization'
 ]);
 
 const activitySections = [
@@ -152,6 +153,8 @@ const MainRouter: React.FC = () => {
         return <AccountCenter page="profile" />;
       case 'account_settings':
         return <AccountCenter page="settings" />;
+      case 'manage_authorization':
+        return <ManageAuthorization />;
       case 'services':
         return <PaymentServicesPage />;
 

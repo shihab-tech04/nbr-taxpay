@@ -563,6 +563,88 @@
   padding:4px 9px;border:1px solid var(--color-taxpay-border);border-radius:99px;
   background:var(--color-taxpay-background);font-size:12px;color:var(--color-taxpay-primary);
 }
+
+/* Manage Authorization reuses the taxpayer account panel and tab system. */
+.taxpay-taxpayer-reference .taxpay-authorization .taxpayer-account-panel { min-height: 230px; }
+.taxpay-taxpayer-reference .taxpay-auth-heading-row {
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+.taxpay-taxpayer-reference .taxpay-auth-heading-row h2 { margin-bottom:4px; }
+.taxpay-taxpayer-reference .taxpay-auth-heading-row p,
+.taxpay-taxpayer-reference .taxpay-auth-add p,
+.taxpay-taxpayer-reference .taxpay-auth-empty p,
+.taxpay-taxpayer-reference .taxpay-auth-note {
+  color:var(--color-taxpay-muted);font-size:13px;line-height:1.65;
+}
+.taxpay-taxpayer-reference .taxpay-auth-primary,
+.taxpay-taxpayer-reference .taxpay-auth-outline,
+.taxpay-taxpayer-reference .taxpay-auth-danger {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;
+  padding:9px 15px;border-radius:9px;font-size:14px;font-weight:650;cursor:pointer;
+}
+.taxpay-taxpayer-reference .taxpay-auth-primary {
+  border:1px solid var(--color-taxpay-primary);background:var(--color-taxpay-primary);color:white;
+}
+.taxpay-taxpayer-reference .taxpay-auth-outline {
+  border:1px solid var(--color-taxpay-border);background:var(--color-taxpay-surface);color:var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpay-auth-danger {
+  border:1px solid #ba3643;background:white;color:#a62834;
+}
+.taxpay-taxpayer-reference .taxpay-auth-primary:disabled { opacity:.48;cursor:not-allowed; }
+.taxpay-taxpayer-reference .taxpay-auth-add {
+  display:grid;gap:8px;margin-top:18px;padding:16px;border:1px solid var(--color-taxpay-border);
+  border-radius:12px;background:var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference .taxpay-auth-add label { font-size:14px;font-weight:650; }
+.taxpay-taxpayer-reference .taxpay-auth-inline { display:flex;flex-wrap:wrap;align-items:center;gap:10px; }
+.taxpay-taxpayer-reference .taxpay-auth-inline input {
+  flex:1 1 180px;min-width:0;min-height:44px;border:1px solid var(--color-taxpay-border);
+  border-radius:9px;padding:10px 12px;font:inherit;color:var(--color-taxpay-text);background:white;
+}
+.taxpay-taxpayer-reference .taxpay-auth-feedback {
+  margin-top:16px;padding:11px 14px;border:1px solid #bfd4e9;border-radius:9px;
+  background:#eef5fc;color:var(--color-taxpay-dark);font-size:13px;
+}
+.taxpay-taxpayer-reference .taxpay-auth-feedback--error {
+  border-color:#e2b8bd;background:#fff2f3;color:#a62834;
+}
+.taxpay-taxpayer-reference .taxpay-auth-list {list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px;}
+.taxpay-taxpayer-reference .taxpay-auth-row {padding:16px;border:1px solid var(--color-taxpay-border);border-radius:11px;}
+.taxpay-taxpayer-reference .taxpay-auth-person {
+  display:flex;align-items:start;justify-content:space-between;gap:12px;
+}
+.taxpay-taxpayer-reference .taxpay-auth-person h3 {font-size:16px;font-weight:700;margin:0;color:var(--color-taxpay-text);}
+.taxpay-taxpayer-reference .taxpay-auth-person p {font-size:13px;color:var(--color-taxpay-muted);margin-top:4px;}
+.taxpay-taxpayer-reference .taxpay-auth-tin {font-family:var(--font-numeric),monospace;letter-spacing:.02em;}
+.taxpay-taxpayer-reference .taxpay-auth-status {
+  flex:none;white-space:nowrap;padding:4px 9px;border:1px solid var(--color-taxpay-border);
+  border-radius:99px;background:var(--color-taxpay-background);color:var(--color-taxpay-muted);font-size:12px;font-weight:650;
+}
+.taxpay-taxpayer-reference .taxpay-auth-status--active {background:#eaf2fc;border-color:#b8d1ed;color:#164a80;}
+.taxpay-taxpayer-reference .taxpay-auth-status--pending {background:#fff5dc;border-color:#edd391;color:#7b5613;}
+.taxpay-taxpayer-reference .taxpay-auth-expiry {display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--color-taxpay-muted);}
+.taxpay-taxpayer-reference .taxpay-auth-note {margin-top:10px;}
+.taxpay-taxpayer-reference .taxpay-auth-approval,
+.taxpay-taxpayer-reference .taxpay-auth-confirm {
+  display:grid;gap:10px;margin-top:14px;padding:14px;border-radius:9px;
+  border:1px solid var(--color-taxpay-border);background:var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference .taxpay-auth-approval p,
+.taxpay-taxpayer-reference .taxpay-auth-confirm p {font-size:13px;color:var(--color-taxpay-text);line-height:1.6;}
+.taxpay-taxpayer-reference .taxpay-auth-actions {margin-top:14px;}
+.taxpay-taxpayer-reference .taxpay-auth-empty {
+  display:grid;justify-items:center;text-align:center;gap:10px;padding:36px 16px;color:var(--color-taxpay-muted);
+}
+.taxpay-taxpayer-reference .taxpay-auth-empty h2,
+.taxpay-taxpayer-reference .taxpay-auth-empty h3 {font-size:17px;color:var(--color-taxpay-text);margin:0;}
+.taxpay-taxpayer-reference .taxpay-auth-empty p {max-width:430px;}
+@media (max-width: 600px) {
+  .taxpay-taxpayer-reference .taxpay-auth-heading-row {align-items:stretch;}
+  .taxpay-taxpayer-reference .taxpay-auth-heading-row > button {width:100%;}
+  .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline > button {width:100%;}
+  .taxpay-taxpayer-reference .taxpay-auth-approval .taxpay-auth-inline > button {flex:1 1 100px;}
+}
 .taxpay-taxpayer-reference .taxpayer-account-notices p {margin-top:7px;color:var(--color-taxpay-muted);font-size:12px;}
 .taxpay-taxpayer-reference .citizen-dialog-signout {
   width:100%;min-height:44px;margin:6px 0 12px;padding:9px 12px;

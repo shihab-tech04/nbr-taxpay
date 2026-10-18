@@ -208,16 +208,17 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 {previewAccount && demoSql.status === 'ready' && !demoSql.profile && <p role="status">{language === 'bn' ? 'এই অ্যাকাউন্টের প্রোফাইল পাওয়া যায়নি।' : 'No profile found for this account.'}</p>}
                 <dl className="taxpayer-account-facts">
                   {previewAccount && <div><dt>{language === 'bn' ? 'ইউজার আইডি' : 'User ID'}</dt><dd>{previewAccount.id}</dd></div>}
-                  {(!previewAccount || (demoSql.status === 'ready' && demoSql.profile)) && <>
-                    <div><dt>{t.name}</dt><dd>{demoSql.profile ? ((language === 'bn' ? demoSql.profile.nameBn : demoSql.profile.nameEn) ?? '—') : (language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn)}</dd></div>
-                    <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
-                    {demoSql.profile && <>
-                      <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{(language === 'bn' ? demoSql.profile.focusBn : demoSql.profile.focusEn) ?? '—'}</dd></div>
-                      <div><dt>{language === 'bn' ? 'টিআইএন রেফারেন্স' : 'TIN reference'}</dt><dd>{demoSql.profile.tinStub ?? '—'}</dd></div>
-                      <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{demoSql.profile.jurisdictionLabel ?? '—'}</dd></div>
+                    <div><dt>{t.name}</dt><dd>{previewAccount ? (language === 'bn' ? previewAccount.nameBn : previewAccount.nameEn) : demoSql.profile ? ((language === 'bn' ? demoSql.profile.nameBn : demoSql.profile.nameEn) ?? '—') : (language === 'bn' ? taxpayerProfile.nameBn : taxpayerProfile.nameEn)}</dd></div>
+                    <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{previewAccount?.role ?? demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
+                    {(previewAccount || demoSql.profile) && <>
+                      <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{previewAccount ? (language === 'bn' ? previewAccount.focusBn : previewAccount.focusEn) : ((language === 'bn' ? demoSql.profile?.focusBn : demoSql.profile?.focusEn) ?? '—')}</dd></div>
+                      <div><dt>{language === 'bn' ? 'পরীক্ষামূলক টিআইএন' : 'Test TIN'}</dt><dd>{previewAccount?.tin ?? demoSql.profile?.tinStub ?? '—'}</dd></div>
+                      <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
-                  </>}
                 </dl>
+                {previewAccount && <div className="taxpayer-account-actions">
+                  <button type="button" onClick={() => navigate('manage_authorization')}>{language === 'bn' ? 'অনুমোদন পরিচালনা' : 'Manage Authorization'}</button>
+                </div>}
               </>
             )}
             {sampleOnly && page === 'settings' && (
