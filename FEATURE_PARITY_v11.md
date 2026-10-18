@@ -29,6 +29,7 @@
 | account_notifications | src/components/screens/AccountCenter.tsx |
 | account_profile | src/components/screens/AccountCenter.tsx |
 | account_settings | src/components/screens/AccountCenter.tsx |
+| manage_authorization | src/components/screens/ManageAuthorization.tsx |
 | services | src/components/screens/PaymentServicesPage.tsx |
 | office_login | src/components/screens/TaxpayerLoginDialog.tsx |
 | taxpayer_login | src/components/screens/TaxpayerLoginDialog.tsx |

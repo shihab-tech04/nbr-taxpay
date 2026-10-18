@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, FileText, Globe2, Home, List, Menu, Plus, Receipt, RotateCcw, Route, Settings2, ShieldAlert, UserRound, X } from 'lucide-react';
+import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, FileText, Globe2, Home, List, Menu, Plus, Receipt, RotateCcw, Route, Settings2, ShieldAlert, ShieldCheck, UserRound, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
@@ -23,6 +23,7 @@ const serviceLinks: CitizenAction[] = [
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' }
 ];
 const accountLinks: CitizenAction[] = [
+  { route: 'manage_authorization', en: 'Manage Authorization', bn: 'অনুমোদন পরিচালনা' },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' },
   { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল' },
   { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' }
@@ -168,6 +169,7 @@ export function CitizenNavigation() {
       : item.route === 'certificates' ? FileCheck2 : item.route === 'corrections' ? RotateCcw
       : item.route === 'journey' ? Route : item.route === 'account_notifications' ? Bell
       : item.route === 'account_profile' ? UserRound : item.route === 'account_settings' ? Settings2
+      : item.route === 'manage_authorization' ? ShieldCheck
       : item.route === 'head_catalogue' ? List : item.route === 'incident' ? ShieldAlert
       : item.category === 'payments' ? FileText : CircleHelp;
     return <button key={item.route+':'+(item.category??'')} type="button"

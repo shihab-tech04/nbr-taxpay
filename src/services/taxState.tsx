@@ -136,15 +136,15 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       : userRole === 'WITHHOLDING_AGENT'
       ? DEMO_TAXPAYERS['WITHHOLDING_DEDUCTOR']
       : DEMO_TAXPAYERS['INDIVIDUAL_REGULAR'];
-  // No inherited identity, contact or tax-circle fields for first-time scenarios.
+  // First-time scenarios retain empty financial records but have named test identities.
   const firstTimeDemo = Boolean(demoUser && ['user7','user8','user9','user10'].includes(demoUser.id));
   const taxpayerProfile: TaxpayerProfile = firstTimeDemo
-    ? {tin:'',nameEn:'',nameBn:'',type:'INDIVIDUAL',taxZone:'',taxCircle:'',
+    ? {tin:demoUser!.tin,nameEn:demoUser!.nameEn,nameBn:demoUser!.nameBn,type:'INDIVIDUAL',taxZone:'',taxCircle:demoUser!.taxCircle,
        phone:'',email:'',address:'',isWithholdingEntity:false,
        representativeScope:{isAuthorized:false}}
     : demoUser
-      ? {...baseTaxpayerProfile,tin:`DEMO-TIN-${demoUser.id.slice(4).padStart(3,'0')}`,
-          nameEn:demoUser.id,nameBn:`নমুনা ${demoUser.id}`,
+      ? {...baseTaxpayerProfile,tin:demoUser.tin,taxCircle:demoUser.taxCircle,
+          nameEn:demoUser.nameEn,nameBn:demoUser.nameBn,
           email:'demo@example.invalid',phone:'Not provided (demo)',
           representativeScope:{isAuthorized:false}}
       : baseTaxpayerProfile;

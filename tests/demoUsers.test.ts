@@ -9,6 +9,8 @@ test('ten explicitly identified synthetic scenarios remain distinct and non-auth
   assert.ok(user);
   assert.equal(user.id,'user'+i);
   assert.ok(user.nameEn && user.nameBn && user.focusEn && user.focusBn);
+  assert.match(user.tin, /^\d{12}$/);
+  assert.equal(user.taxCircle, `circle-${i}`);
  }
  assert.equal(getDemoUser('user1')?.role,'TAXPAYER_INDIVIDUAL');
  assert.equal(getDemoUser('user2')?.role,'TAXPAYER_CORPORATE');

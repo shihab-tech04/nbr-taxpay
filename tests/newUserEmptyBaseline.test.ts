@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEMO_USERS, getDemoUser } from '../src/data/demoUsers';
 
-test('user7 through user10 are retained as generic first-time taxpayer identities', () => {
+test('user7 through user10 retain first-time financial scenarios with named test identities', () => {
   for (const n of [7,8,9,10]) {
     const id = `user${n}` as keyof typeof DEMO_USERS;
     const u = getDemoUser(id);
     assert.equal(u?.id,id);
     assert.equal(u?.role,'TAXPAYER_INDIVIDUAL');
-    assert.match(u?.nameEn ?? '',/^New taxpayer/);
+    assert.ok(u?.nameEn && u?.nameBn);
+    assert.match(u?.tin ?? '',/^\d{12}$/);
     assert.equal(u?.focusEn,'First-time payment');
     assert.doesNotMatch(u?.focusEn ?? '',/refund|withholding|correction|reversal/i);
   }
