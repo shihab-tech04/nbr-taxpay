@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test';
+import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 
 test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
   await page.goto('/?action=landing');
@@ -59,11 +60,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(services.locator('.payment-form-section')).toHaveCount(2);
   await page.goto('/?action=landing');
-  const travelBanner=page.getByRole('region',{name:'Tax payment service banners'});
-  await travelBanner.focus();
-  await page.keyboard.press('ArrowLeft');
-  await expect(travelBanner).toHaveAttribute('data-active-slide','4');
-  await travelBanner.getByRole('button',{name:'Pay Travel Tax'}).click();
+  await openTravelTaxFromBanner(page);
   await expect(page.getByRole('dialog',{name:/Travel tax/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
 

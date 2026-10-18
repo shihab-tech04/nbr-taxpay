@@ -1,16 +1,8 @@
-import {expect,test,type Page} from '@playwright/test';
+import {expect,test} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 
-async function openTravelTaxFromHero(page:Page,bn=false){
- const banner=page.getByRole('region',{name:bn?'কর পরিশোধের সেবা ব্যানার':'Tax payment service banners'});
- await banner.focus();
- // The travel-tax banner follows the introduction in the circular carousel.
- await page.keyboard.press('ArrowLeft');
- await expect(banner).toHaveAttribute('data-active-slide','4');
- await banner.getByRole('button',{name:bn?'ভ্রমণ কর পরিশোধ':'Pay Travel Tax'}).click();
-}
-
-test('public hero opens receipt lookup while travel tax remains available below the hero',async({page},info)=>{
+test('public hero opens receipt lookup and its Travel Tax banner starts the journey',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','Full guest modal journey in desktop suite');
  const hosted:string[]=[];
  page.on('request',r=>{if(new URL(r.url()).hostname.endsWith('.supabase.co'))hosted.push(r.url());});
@@ -27,7 +19,7 @@ test('public hero opens receipt lookup while travel tax remains available below 
  await expect(status.getByText('No matching record')).toBeVisible();
  await page.keyboard.press('Escape');
  await expect(status).toHaveCount(0);
- await openTravelTaxFromHero(page);
+ await openTravelTaxFromBanner(page);
  const travel=page.getByRole('dialog',{name:'Travel tax'});
  await expect(travel.getByRole('heading',{name:'Travel tax',level:2})).toBeVisible();
  await expect(travel.locator('.public-service-dialog__notice')).toHaveCount(0);
@@ -52,13 +44,11 @@ test('public hero opens receipt lookup while travel tax remains available below 
  expect(hosted).toEqual([]);
 });
 
-test('homepage guidance opens topic guide with responsive search, FAQs and languages',async({page},info)=>{
+test('user guide supports responsive search, FAQs and languages',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','Guide journey on mobile');
- await page.goto('/?action=landing');
- await page.getByText('What if my payment details do not match?').click();
- await page.getByRole('button',{name:'Read records & corrections guidance'}).click();
+ await page.goto('/?action=user_guide');
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
- await expect(page.locator('.public-guide-topics').getByRole('button',{name:'Receipts & corrections'})).toHaveAttribute('aria-current','true');
+ await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
  await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
@@ -377,7 +367,7 @@ test('shared modal uses left title, close icon, header divider, content and fixe
 
 test('travel tax uses same modal header/body/footer without changing its flow',async({page})=>{
   await page.goto('/?action=landing');
-  await openTravelTaxFromHero(page);
+  await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   await expect(modal.getByRole('heading',{name:'Travel tax',level:2})).toBeVisible();
   await expect(modal.locator('.taxpay-modal__header')).toHaveCSS('border-bottom-style','solid');
@@ -396,7 +386,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
 test('travel tax desktop stepper scrolls left while payment summary stays anchored right',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','Desktop split-view geometry');
  await page.goto('/?action=landing');
- await openTravelTaxFromHero(page);
+ await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'Travel tax'});
  const left=modal.locator('.travel-flow__main');
  const side=modal.locator('.travel-flow__summary');
@@ -444,7 +434,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  test.skip(info.project.name!=='mobile-320','Smallest viewport EN/BN stepper');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
- await openTravelTaxFromHero(page,true);
+ await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
  await expect(modal.getByRole('navigation',{name:'ভ্রমণ করের ধাপ'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'যাত্রীর তথ্য দিন'})).toBeVisible();
@@ -467,7 +457,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
 
 test('Travel Tax primary action lives in fixed modal footer across all steps',async({page})=>{
  await page.goto('/?action=landing');
- await openTravelTaxFromHero(page);
+ await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'Travel tax'});
  const footer=modal.locator('.taxpay-modal__footer');
  const actions=footer.locator('.taxpay-modal__footer-actions');
@@ -518,7 +508,7 @@ test('Travel Tax primary action lives in fixed modal footer across all steps',as
 
 test('Travel Tax route search filters English and Bangla and preserves selected payment amount',async({page})=>{
  await page.goto('/?action=landing');
- await openTravelTaxFromHero(page);
+ await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'Travel tax'});
  const search=modal.getByRole('searchbox',{name:'Search destination or travel mode'});
  const routes=modal.locator('#travel-tax-route-results');
@@ -558,7 +548,7 @@ test('Travel Tax Bangla route search is accessible and fits mobile viewport',asy
  test.skip(info.project.name!=='mobile-320','Small mobile search and Bangla names');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
- await openTravelTaxFromHero(page,true);
+ await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
  const search=modal.getByRole('searchbox',{name:'গন্তব্য বা যাতায়াতের ধরন খুঁজুন'});
  const routes=modal.locator('#travel-tax-route-results');
