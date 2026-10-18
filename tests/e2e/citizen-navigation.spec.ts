@@ -230,7 +230,7 @@ test('taxpayer mobile header, compact corners and two-tier full-width menu are a
  await expect(dialog).toBeVisible();
  await expect(dialog.getByRole('navigation',{name:'Services navigation'})).toBeVisible();
  await expect(dialog.getByRole('region',{name:'Language and account'})).toBeVisible();
- await expect(dialog.getByRole('button',{name:'Sign in'})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Exit workspace'})).toBeVisible();
  const edge=await dialog.boundingBox();
  expect(edge).not.toBeNull();
  expect(Math.abs(edge!.x)).toBeLessThanOrEqual(1);
