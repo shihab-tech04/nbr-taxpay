@@ -55,10 +55,15 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const bottom = rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Manage Authorization');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
+  await rail.getByRole('button',{name:'Manage Authorization',exact:true}).click();
+  await expect(rail.getByRole('button',{name:'Manage Authorization',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('heading',{name:'Manage Authorization',exact:true})).toBeVisible();
+  await rail.getByRole('button',{name:'Home',exact:true}).click();
   const main = page.locator('main');
   expect(await main.evaluate(el => Math.round(el.getBoundingClientRect().left))).toBe(250);
   await page.screenshot({path:'test-results/screenshots/taxpayer-reference-desktop-1600.png',fullPage:false});
