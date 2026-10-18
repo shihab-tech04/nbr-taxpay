@@ -112,13 +112,14 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Manage Authorization');
   const bottom=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button')).toHaveCount(3);
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
   for(const [label,route] of [
-    ['Activity','history'],['Tax ledger','ledger'],['Notifications','account_notifications']
+    ['Manage Authorization','manage_authorization'],['Activity','history'],['Tax ledger','ledger'],['Notifications','account_notifications']
   ] as const){
     await rail.getByRole('button',{name:label,exact:true}).click();
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
