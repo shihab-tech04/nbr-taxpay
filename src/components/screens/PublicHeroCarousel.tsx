@@ -162,7 +162,20 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     refresh();
     const channel = supabase?.channel('published-taxpay-banners')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh).subscribe();
-    return () => { active = false; if (channel && supabase) void supabase.removeChannel(channel); };
+    // Reconcile missed Realtime messages after inactive tabs or intermittent networks.
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    const poll = window.setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(poll);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+      if (channel && supabase) void supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
