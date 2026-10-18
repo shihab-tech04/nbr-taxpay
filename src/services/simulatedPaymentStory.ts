@@ -32,7 +32,7 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
   const response = await fetch(API + '/payments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...input, origin: 'TAXPAY_UI' }),
+    body: JSON.stringify({ ...input, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
   const body = await response.json() as Partial<StoryPaymentAcknowledgement> & { error?: string };
   if (!response.ok || body.success !== true || body.mirrored !== true || !body.id)
