@@ -5,10 +5,11 @@ import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadSimulationNotices,getBoundSimulationUser,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
+import {getHostedAuthorizations,type HostedAuthorization} from '../../services/hostedDemoAuthorizations';
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
 export const NotificationsView:React.FC=()=>{
-  const {demoUser,language,navigate}=useTaxState();
+  const {demoUser,previewAccount,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
@@ -20,8 +21,21 @@ export const NotificationsView:React.FC=()=>{
   const [guestError,setGuestError]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
+  const [authorizationNotices,setAuthorizationNotices]=useState<HostedAuthorization[]>([]);
+  const [authorizationError,setAuthorizationError]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
+  useEffect(()=>{
+    if(!previewAccount){setAuthorizationNotices([]);return;}
+    let active=true;
+    const refresh=async()=>{
+      try{const records=await getHostedAuthorizations(previewAccount.id);
+        if(active){setAuthorizationNotices(records);setAuthorizationError('');}}
+      catch(e){if(active)setAuthorizationError(e instanceof Error?e.message:'Could not load authorization notices');}
+    };
+    void refresh();const timer=window.setInterval(()=>void refresh(),5000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[previewAccount?.id]);
   useEffect(()=>{
     if(authenticatedUser)return;
     let active=true;
@@ -62,6 +76,21 @@ export const NotificationsView:React.FC=()=>{
     finally{setBusyNotice(null);}
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
+  if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
+    <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')}/>
+    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
+      {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
+      {!authorizationNotices.length?<p className="text-taxpay-muted">{label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
+      <ul className="divide-y divide-taxpay-border">{authorizationNotices.map(r=><li key={r.id} className="py-4">
+        <h2 className="font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
+          ?label(`${r.payerId} requested permission to pay for you`,`${r.payerId} আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন`)
+          :label(`Authorization for ${r.taxpayerId}`,`${r.taxpayerId}-এর অনুমোদন`)}</h2>
+        <p className="mt-1 text-sm text-taxpay-muted">{label('Status','অবস্থা')}: {r.status.replaceAll('_',' ')} · {new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</p>
+        <button type="button" className="mt-2 rounded-lg border border-blue-300 px-3 py-2 font-semibold text-blue-800"
+          onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
+      </li>)}</ul>}
+    </section>
+  </main>;
   // Keep the existing pre-payment account entry; successful guest payments
   // use their own session-scoped SQL notification feed without logging in.
   const hasGuestPayment=guestNotices.length>0 || (()=>{try{return sessionStorage.getItem('taxpay-guest-story-payment')==='true';}catch{return false;}})();

@@ -31,6 +31,7 @@ import { CorrectionRequests } from './components/screens/CorrectionRequests';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
 import { ManageAuthorization } from './components/screens/ManageAuthorization';
+import { AuthorizationRequestPopup } from './components/screens/AuthorizationRequestPopup';
 import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
 import { OntologyView } from './components/screens/OntologyView';
 import { GlossaryView } from './components/screens/GlossaryView';
@@ -40,7 +41,8 @@ import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/priva
 
 const previewReadOnlyRoutes = new Set([
   'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
-  'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services', 'manage_authorization'
+  'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services', 'manage_authorization',
+  'wizard', 'payment_details'
 ]);
 
 const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
@@ -90,6 +92,10 @@ const MainRouter: React.FC = () => {
   }, [currentRoute]);
 
   const renderActiveScreen = () => {
+    // Demo account notifications share the SQL authorization inbox used by the popup.
+    if(previewAccount&&currentRoute==='account_notifications'&&!verifiedApplicationUser){
+      return <NotificationsView />;
+    }
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
     if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
@@ -190,6 +196,7 @@ const MainRouter: React.FC = () => {
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
       {loginOverlay && <TaxpayerLoginDialog />}
+      <AuthorizationRequestPopup />
     </div>
   );
 };

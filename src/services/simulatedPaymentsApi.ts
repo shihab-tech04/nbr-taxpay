@@ -24,6 +24,13 @@ export const loadSimulationNotices=(user:SimulationUser)=>
  rpc<SimulationNotice[]>('sim_payment_notices',{p_user_id:user});
 export const submitSimulatedPayment=(payer:SimulationUser,lines:SimulationLine[],key:string)=>
  rpc<SimSubmission>('sim_submit_payment',{p_payer_id:payer,p_lines:lines,p_idempotency_key:key});
+/** Story1 rows are shared with Office SQL, unlike the authenticated simulator ledger. */
+export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'beneficiary'|'payer')=>{
+ const rows=await rpc<SimulationTransaction[]>('demo_story1_demo_history',{p_actor:user,p_view:view});
+ return rows.map(tx=>({...tx,allocations:tx.allocations.map((a,index)=>({
+   ...a,id:a.id??`${tx.transactionId}-${index+1}`,lineNo:a.lineNo??index+1
+ }))}));
+};
 /** Decimal money input is converted to integer paisa without floating-point rounding. */
 export function parseSimulatedAmount(value:string):number {
  const s=value.trim();
