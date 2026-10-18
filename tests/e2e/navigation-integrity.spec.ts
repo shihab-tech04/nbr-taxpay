@@ -175,46 +175,52 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const open=()=>page.getByRole('button',{name:'Open menu'}).first().click();
   await open();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Payment services'}).click();
-  await expect(page).toHaveURL(/action=services/);
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
   await open();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Journey'}).click();
-  await expect(page).toHaveURL(/action=journey/);
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Ledger'}).click();
+  await expect(page).toHaveURL(/action=ledger/);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
   await services.getByRole('button',{name:'Continue without signing in'}).click();
-  // The payment workflow is modal-based and does not navigate away from Tax Journey.
-  await expect(page).toHaveURL(/action=journey/);
+  // Payment services remain reachable through the Pay action without adding duplicate menu items.
+  await expect(page).toHaveURL(/action=ledger/);
   await expect(services.locator('.payment-form-section')).toHaveCount(2);
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await open();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
-  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'সনদ',exact:true}).click();
-  await expect(page).toHaveURL(/action=certificates/);
-  await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ',level:1,exact:true})).toBeVisible();
+  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বিজ্ঞপ্তি',exact:true}).click();
+  await expect(page).toHaveURL(/action=account_notifications/);
+  await expect(page.locator('main h1').first()).toContainText('বিজ্ঞপ্তি');
 });
 
-test('every taxpayer mobile service-menu destination matches its visible label',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-375','Full taxpayer menu is exercised at 375px');
+test('taxpayer mobile menu matches the compact desktop destinations and keeps exit last',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','Compact taxpayer menu is exercised at 375px');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const destinations=[
     ['Home','taxpayer_home'],['Activity','history'],['Tax Ledger','ledger'],
-    ['Certificates','certificates'],['Corrections','corrections'],
-    ['Tax Journey','journey'],['Payment services','services'],
-    ['Notifications','account_notifications'],['Profile','account_profile'],
-    ['Profile settings','account_settings']
+    ['Notifications','account_notifications'],['Profile','account_profile']
   ] as const;
   for(const [label,route] of destinations){
     await page.getByRole('button',{name:'Open menu'}).first().click();
     const dialog=page.getByRole('dialog',{name:'Services & menu'});
+    await expect(dialog.locator('.citizen-dialog__link:visible')).toHaveCount(5);
+    await expect(dialog.getByRole('button',{name:'Payment services'})).toHaveCount(0);
+    await expect(dialog.getByRole('button',{name:'Help'})).toHaveCount(0);
+    await expect(dialog.getByRole('button',{name:'Profile settings'})).toHaveCount(0);
     await dialog.getByRole('button',{name:label,exact:true}).first().click();
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
     await expect(page.locator('main h1').first()).toBeVisible();
   }
+  await page.getByRole('button',{name:'Open menu'}).first().click();
+  const dialog=page.getByRole('dialog',{name:'Services & menu'});
+  await expect(dialog.locator('.citizen-dialog__account button').last()).toHaveText('Exit workspace');
+  await dialog.getByRole('button',{name:'Exit workspace'}).click();
+  await expect(page).toHaveURL(/action=landing/);
 });
 
 test('unknown destination falls back to Home without leaving an incorrect URL',async({page})=>{

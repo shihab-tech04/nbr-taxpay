@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, FileText, Globe2, Home, List, Menu, Plus, Receipt, RotateCcw, Route, Settings2, ShieldAlert, UserRound, X } from 'lucide-react';
+import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, Globe2, Home, List, LogOut, Menu, Plus, Receipt, RotateCcw, Route, Settings2, ShieldAlert, UserRound, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
@@ -16,6 +16,10 @@ const taxpayerLinks: CitizenAction[] = [
   { route: 'history', en: 'Activity', bn: 'লেনদেন' },
   { route: 'ledger', en: 'Tax Ledger', bn: 'কর লেজার' }
 ];
+const taxpayerMenuLinks: CitizenAction[] = [
+  ...taxpayerLinks,
+  { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' }
+];
 const serviceLinks: CitizenAction[] = [
   { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
   { route: 'certificates', en: 'Certificates', bn: 'সনদ' },
@@ -23,7 +27,6 @@ const serviceLinks: CitizenAction[] = [
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' }
 ];
 const accountLinks: CitizenAction[] = [
-  { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' },
   { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল' },
   { route: 'account_settings', en: 'Profile settings', bn: 'প্রোফাইল সেটিংস' }
 ];
@@ -35,7 +38,7 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -43,6 +46,12 @@ export function CitizenNavigation() {
     if (previewAccount && !applicationUser) {
       setMenuOpen(false);
       logoutPreviewAccount();
+      return;
+    }
+    if (!applicationUser && !demoUser && taxpayerRoles.includes(userRole)) {
+      setMenuOpen(false);
+      setUserRole('GUEST');
+      navigate('landing');
       return;
     }
     setSignOutError('');
@@ -168,12 +177,11 @@ export function CitizenNavigation() {
       : item.route === 'certificates' ? FileCheck2 : item.route === 'corrections' ? RotateCcw
       : item.route === 'journey' ? Route : item.route === 'account_notifications' ? Bell
       : item.route === 'account_profile' ? UserRound : item.route === 'account_settings' ? Settings2
-      : item.route === 'head_catalogue' ? List : item.route === 'incident' ? ShieldAlert
-      : item.category === 'payments' ? FileText : CircleHelp;
+      : item.route === 'head_catalogue' ? List : item.route === 'incident' ? ShieldAlert : CircleHelp;
     return <button key={item.route+':'+(item.category??'')} type="button"
       onClick={() => go(item.route, item.category ? {category:item.category} : {})}
       aria-current={currentRoute === item.route && (!item.category || routeParams.category === item.category) ? 'page' : undefined}
-      className="citizen-dialog__link">
+      className={item.route === 'account_settings' ? 'citizen-dialog__link citizen-dialog__desktop-only' : 'citizen-dialog__link'}>
       <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
       <span>{label(item)}</span>
     </button>;
@@ -258,9 +266,14 @@ export function CitizenNavigation() {
             <>
                 <nav className="citizen-dialog__navigation" aria-label={bn ? 'সেবার নেভিগেশন' : 'Services navigation'}>
                   <p className="citizen-dialog__section-label">{bn ? 'প্রধান নেভিগেশন' : 'Navigation'}</p>
-                  <div className="citizen-dialog__links">{links.map(menuAction)}</div>
-                  <p className="citizen-dialog__section-label">{bn ? 'সেবা' : 'Services'}</p>
-                  <div className="citizen-dialog__links">{(isTaxpayer ? serviceLinks : guestServiceLinks).map(menuAction)}</div>
+                  <div className="citizen-dialog__links">{(isTaxpayer ? taxpayerMenuLinks : guestLinks).map(menuAction)}</div>
+                  {isTaxpayer ? <div className="citizen-dialog__desktop-only">
+                    <p className="citizen-dialog__section-label">{bn ? 'সেবা' : 'Services'}</p>
+                    <div className="citizen-dialog__links">{serviceLinks.map(menuAction)}</div>
+                  </div> : <>
+                    <p className="citizen-dialog__section-label">{bn ? 'সেবা' : 'Services'}</p>
+                    <div className="citizen-dialog__links">{guestServiceLinks.map(menuAction)}</div>
+                  </>}
                   {isTaxpayer && <>
                     <p className="citizen-dialog__section-label">{bn ? 'অ্যাকাউন্ট' : 'Account'}</p>
                     <div className="citizen-dialog__links">{accountLinks.map(menuAction)}</div>
@@ -273,8 +286,11 @@ export function CitizenNavigation() {
                       <Globe2 size={18} aria-hidden="true"/>{bn ? 'English' : 'বাংলা'}
                     </button>
                   </div>
-                  {applicationUser || previewAccount ? (
-                    <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>{bn ? 'সাইন আউট' : 'Sign out'}</button>
+                  {applicationUser || previewAccount || (isTaxpayer && !demoUser) ? (
+                    <button type="button" className="citizen-dialog-signout" onClick={logOut} disabled={signingOut}>
+                      <LogOut size={18} aria-hidden="true" />
+                      {applicationUser || previewAccount ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}
+                    </button>
                   ) : (
                     <button type="button" className="citizen-dialog-signout" onClick={() => go('taxpayer_login')}>{bn ? 'সাইন ইন' : 'Sign in'}</button>
                   )}

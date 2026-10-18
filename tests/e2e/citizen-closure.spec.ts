@@ -92,8 +92,8 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Open menu'}).click();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
+  await page.getByRole('button',{name:'Open transaction history'}).click();
+  await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
 
   await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();
