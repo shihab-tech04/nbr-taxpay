@@ -538,7 +538,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             paymentChannel, paymentMethod,
             lines: lineItems,
             totalAmount,
-            taxCreditStatus: newReceipt.taxCreditStatus
+            taxCreditStatus: newReceipt.taxCreditStatus,
+            receiptSnapshot: {...newReceipt,treasuryStatus:'GATEWAY_SUCCESS'}
           },
         },
       };
