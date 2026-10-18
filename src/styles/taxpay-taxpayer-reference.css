@@ -907,8 +907,10 @@
 .taxpay-taxpayer-reference .public-guide-content { box-shadow:var(--taxpay-shadow-card); }
 .taxpay-taxpayer-reference .receipt-lookup--page { width:100%; max-width:1150px; }
 .taxpay-taxpayer-reference .receipt-lookup--page .receipt-lookup__content {
+  padding:clamp(16px,2vw,20px);
   border:1px solid var(--color-taxpay-border); border-radius:16px; box-shadow:var(--taxpay-shadow-card);
 }
+.taxpay-taxpayer-reference .receipt-lookup--page .receipt-lookup__form {gap:16px;}
 .taxpay-taxpayer-reference .receipt-lookup--page .receipt-lookup__page-header h1 {
   font-family:inherit; font-size:clamp(1.5rem,2vw,1.75rem); font-weight:650;
 }
@@ -940,7 +942,7 @@
 
 /* Specialist activity tabs follow, never precede, the page heading. */
 .taxpay-taxpayer-reference .taxpayer-activity-sections {
-  display:flex; flex-wrap:wrap; gap:8px; margin:0; padding:8px;
+  display:flex; flex-wrap:wrap; gap:8px; padding:8px;
   border:1px solid var(--color-taxpay-border); border-radius:14px; background:var(--color-taxpay-surface);
 }
 .taxpay-taxpayer-reference .taxpayer-activity-sections button {
