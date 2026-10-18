@@ -288,7 +288,10 @@
   /* The generated artwork already frames the people and confirmation cards.
    * A 132%-tall zoom was cutting off heads, luggage and feet on phones. */
   .public-hero-carousel__slide .public-information-hero__image {
-    position: static;
+    /* Fill the definite media frame instead of sizing from intrinsic image
+     * dimensions (which left a 143px image inside a 184px phone banner). */
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     max-width: 100%;
