@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
@@ -108,6 +108,19 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
   const [selected,setSelected]=useState<RecordItem|null>(null);
+  const detailCloseRef=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!selected)return;
+    const trigger=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    detailCloseRef.current?.focus();
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setSelected(null);}
+      // Close is the only interactive element in this detail dialog.
+      if(event.key==='Tab'){event.preventDefault();detailCloseRef.current?.focus();}
+    };
+    document.addEventListener('keydown',onKeyDown);
+    return()=>{document.removeEventListener('keydown',onKeyDown);if(trigger?.isConnected)trigger.focus();};
+  },[selected]);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(!reviewFilter||reviewFilter.includes(x.state))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,query]);
@@ -130,6 +143,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <p className="mt-3 break-words text-2xl font-semibold tabular-nums text-taxpay-text">{value}</p>
   </article>;
   const money=(x:number)=>amount(x,bn);
+  const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
+    day:'numeric',month:'short',year:'numeric',timeZone:'UTC'
+  }).format(new Date(date+'T00:00:00Z'));
   const csv=()=>{
     const clean=(v:string|number)=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const lines=[['SYNTHETIC EXAMPLE ONLY','Reference','Assessment year','Kind','Amount BDT','Status','Event date','Challan sample'],
@@ -140,31 +156,37 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
     <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
   </label>;
-  const transactionList=<div className={panel}>
-    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-      <div><h2 className="text-base font-semibold">{tr('Transaction history','লেনদেনের ইতিহাস')}</h2>{sub('Search and filter your payment activity','লেনদেন খুঁজুন ও ফিল্টার করুন')}</div>
+  const transactionList=<section className={panel+' taxpayer-transaction-panel'} aria-labelledby="taxpayer-transaction-heading">
+    <div className="taxpayer-transaction-panel__heading">
+      <div><h2 id="taxpayer-transaction-heading" className="text-base font-semibold">{tr('Transaction history','লেনদেনের ইতিহাস')}</h2>{sub('Search and filter your payment activity','লেনদেন খুঁজুন ও ফিল্টার করুন')}</div>
       <button type="button" onClick={csv} className={action}><Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>
     </div>
-    <div className="mt-4 grid gap-2 sm:grid-cols-3">
-      <label className="relative"><Search size={17} aria-hidden="true" className="absolute left-3 top-3 text-slate-400"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" className="min-h-11 w-full rounded-lg border border-slate-200 pl-10 pr-3 text-sm" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></label>
-      <select aria-label={tr('Transaction category','লেনদেনের ধরন')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
+    <div className="taxpayer-transaction-filters">
+      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
+      <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
-      </select>
-      <select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={status} onChange={e=>{setReviewFilter(null);setStatus(e.target.value as State|'all');}}>
+      </select></label>
+      <label className="taxpayer-transaction-filter"><span>{tr('Status','অবস্থা')}</span><select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} value={status} onChange={e=>{setReviewFilter(null);setStatus(e.target.value as State|'all');}}>
         <option value="all">{tr('All statuses','সব অবস্থা')}</option>{(Object.keys(stateLabels) as State[]).map(s=><option key={s} value={s}>{tr(...stateLabels[s])}</option>)}
-      </select>
+      </select></label>
     </div>
-    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-      <p className="text-xs text-slate-500" aria-live="polite">{tr('Records','রেকর্ড')}: {filtered.length}</p>
+    <div className="taxpayer-transaction-count">
+      <p className="text-xs text-slate-500" aria-live="polite">{tr('Records','রেকর্ড')}: {filtered.length} <span className="text-slate-400">/ {scoped.length}</span></p>
       {reviewFilter&&<button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>}
     </div>
-    {filtered.length ? <div className="mt-2 space-y-2">{filtered.map(item=><article key={item.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0"><p className="text-sm font-semibold text-slate-800">{item.title}</p><p className="mt-0.5 break-all text-xs text-slate-500">{item.ref} · {item.date}</p><p className="mt-1 text-xs text-slate-600">{tr(...labels[item.kind])}</p></div>
-      <div className="flex flex-wrap items-center gap-3 sm:justify-end"><p className="text-sm font-semibold tabular-nums">{money(item.amount)}</p>{tag(item.state)}
-        <button type="button" onClick={()=>setSelected(item)} className={action}>{tr('Details','বিস্তারিত')}</button></div>
-    </article>)}</div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
-  </div>;
+    {filtered.length ? <div className="taxpayer-transaction-list">
+      <div className="taxpayer-transaction-list__columns" aria-hidden="true"><span>{tr('Payment','পেমেন্ট')}</span><span>{tr('Amount','পরিমাণ')}</span><span>{tr('Status','অবস্থা')}</span><span /></div>
+      <ul>{filtered.map(item=><li key={item.id} className="taxpayer-transaction-row">
+        <div className="taxpayer-transaction-row__identity"><p className="taxpayer-transaction-row__title">{item.title}</p>
+          <p className="taxpayer-transaction-row__meta"><span>{tr(...labels[item.kind])}</span><span aria-hidden="true">·</span><time dateTime={item.date}>{formatDate(item.date)}</time></p>
+          <p className="taxpayer-transaction-row__ref">{item.ref}</p></div>
+        <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>
+        <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
+        <button type="button" onClick={()=>setSelected(item)} className={action+' taxpayer-transaction-row__action'} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+      </li>)}</ul>
+    </div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
+  </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
@@ -340,19 +362,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
-  const content=route==='ledger'?ledger:route==='history'?<>{card('Payment & activity count','লেনদেন সংখ্যা',String(scoped.length),'All states retained with independent evidence','সব অবস্থা আলাদা দেখানো হয়েছে')}{transactionList}</>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
-      <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-        <div className="flex items-start justify-between gap-3"><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2><button type="button" className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
-        <dl className="mt-4 space-y-3">{[
-          ['Reference',selected.ref],['Assessment year',selected.year],['Date',selected.date],['Category',tr(...labels[selected.kind])],['Amount',money(selected.amount)],
-          ['Status',tr(...stateLabels[selected.state])],['Channel',selected.channel],['Challan reference',selected.challan||'Unavailable'],['Meaning',selected.detail]
-        ].map(x=><div className="border-b border-slate-100 pb-2" key={x[0]}><dt className="text-xs text-slate-500">{x[0]}</dt><dd className="mt-1 break-words text-sm font-semibold">{x[1]}</dd></div>)}</dl>
+      <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="taxpayer-transaction-detail max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+        <div className="taxpayer-transaction-detail__heading"><div><p className="text-xs text-taxpay-muted">{tr('Transaction details','লেনদেনের বিস্তারিত')}</p><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2></div><button type="button" ref={detailCloseRef} className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
+        <div className="taxpayer-transaction-detail__summary"><p className="text-xl font-semibold tabular-nums text-taxpay-text">{money(selected.amount)}</p>{tag(selected.state)}</div>
+        <dl className="taxpayer-transaction-detail__facts">{[
+          [tr('Reference','রেফারেন্স'),selected.ref],[tr('Assessment year','করবর্ষ'),selected.year],[tr('Date','তারিখ'),formatDate(selected.date)],[tr('Category','ধরন'),tr(...labels[selected.kind])],
+          [tr('Channel','মাধ্যম'),selected.channel],[tr('Challan reference','চালান রেফারেন্স'),selected.challan||tr('Unavailable','পাওয়া যায়নি')],[tr('Meaning','বিবরণ'),selected.detail]
+        ].map(x=><div key={x[0]}><dt>{x[0]}</dt><dd>{x[1]}</dd></div>)}</dl>
       </section>
     </div>}
   </div>;
