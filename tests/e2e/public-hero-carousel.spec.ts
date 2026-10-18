@@ -306,14 +306,14 @@ test('mobile banner buttons and artwork remain readable at narrow widths', async
       const description = slide.querySelector<HTMLElement>('.citizen-public-hero__copy > p')!;
       return {
         mediaHeight: media.getBoundingClientRect().height,
-        zoom: image.getBoundingClientRect().width / media.getBoundingClientRect().width,
+        verticalZoom: image.getBoundingClientRect().height / media.getBoundingClientRect().height,
         titleSize: parseFloat(getComputedStyle(title).fontSize),
         descriptionSize: parseFloat(getComputedStyle(description).fontSize),
         imageFit: getComputedStyle(image).objectFit,
       };
     });
     expect(dimensions.mediaHeight).toBeGreaterThanOrEqual(184);
-    expect(dimensions.zoom).toBeGreaterThan(1.25);
+    expect(dimensions.verticalZoom).toBeGreaterThan(1.25);
     expect(dimensions.titleSize).toBeLessThanOrEqual(width <= 360 ? 22 : 23);
     expect(dimensions.descriptionSize).toBeLessThanOrEqual(14.1);
     expect(dimensions.imageFit).toBe('cover');
