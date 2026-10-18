@@ -36,7 +36,14 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
   test.skip(info.project.name!=='desktop-1280','Complete ID matrix on desktop');
   await page.setViewportSize({width:1600,height:900});
   const hostedCalls:string[]=[];
+  const authorizationActors=new Set<string>();
   page.on('request',req=>{if(new URL(req.url()).hostname.endsWith('.supabase.co'))hostedCalls.push(req.url());});
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',async route=>{
+    const request=route.request();
+    expect(request.method()).toBe('GET');
+    authorizationActors.add(new URL(request.url()).searchParams.get('actor')??'');
+    await route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[]}'});
+  });
   for(let id=1;id<=10;id++){
     await page.goto('/?action=taxpayer_login');
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
@@ -52,7 +59,8 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await expect(page.locator('#public-home-title')).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   }
-  expect(hostedCalls).toEqual([]);
+  expect([...authorizationActors].sort()).toEqual(Array.from({length:10},(_,i)=>`user${i+1}`).sort());
+  expect(hostedCalls.every(url=>new URL(url).pathname==='/functions/v1/demo-story1-taxpay/authorizations')).toBe(true);
 });
 
 test('refresh keeps selected preview identity without turning URL into authentication', async ({page}, info) => {

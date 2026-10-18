@@ -38,7 +38,8 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   const tin = payment.getByRole('textbox', { name: 'Taxpayer’s TIN *' });
   await expect(ownTax).not.toBeChecked();
   await expect(otherTax).not.toBeChecked();
-  await expect(tin).toHaveValue('');
+  // Taxpayer identification is shown only after a payer relationship is selected.
+  await expect(tin).toHaveCount(0);
 
   await ownTax.check();
   await expect(tin).toHaveValue('2222222222222');
