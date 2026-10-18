@@ -112,9 +112,9 @@ test('the signed-in public header fits mobile and keeps account controls operabl
     const header=page.locator('.public-home-header');
     await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
     await expect(header.getByRole('button',{name:'Profile menu'})).toBeVisible();
-    await header.getByRole('button',{name:'Menu'}).click();
+    await header.getByRole('button',{name:'Menu',exact:true}).click();
     await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'})).toBeVisible();
-    await header.getByRole('button',{name:'Menu'}).click();
+    await header.getByRole('button',{name:'Menu',exact:true}).click();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }

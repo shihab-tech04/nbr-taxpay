@@ -62,7 +62,8 @@ const MainRouter: React.FC = () => {
   const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login';
   const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
-  const taxpayerSupportRoute = taxpayerSession && ['verify','user_guide','guidance'].includes(currentRoute);
+  // The public guide retains the same public navigation for guests and signed-in visitors.
+  const taxpayerSupportRoute = taxpayerSession && currentRoute === 'verify';
   const publicInformationRoute = ['landing','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
