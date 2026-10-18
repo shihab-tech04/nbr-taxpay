@@ -180,8 +180,10 @@ test('single-head tax service exposes its amount and multiple amounts divide the
   await heads.nth(2).check();
   const boxesThree = await dialog.locator('.payment-head-amount').evaluateAll(elements => elements.map(el => ({ x: el.getBoundingClientRect().x, y: el.getBoundingClientRect().y, width: el.getBoundingClientRect().width })));
   expect(boxesThree).toHaveLength(3);
-  expect(Math.max(...boxesThree.map(box => box.width)) - Math.min(...boxesThree.map(box => box.width))).toBeLessThan(2);
-  expect(Math.max(...boxesThree.map(box => box.y)) - Math.min(...boxesThree.map(box => box.y))).toBeLessThan(2);
+  expect(Math.abs(boxesThree[0].width - boxesThree[1].width)).toBeLessThan(2);
+  expect(Math.abs(boxesThree[0].y - boxesThree[1].y)).toBeLessThan(2);
+  expect(boxesThree[2].y).toBeGreaterThan(boxesThree[0].y);
+  expect(boxesThree[2].width).toBeGreaterThan(boxesThree[0].width);
 });
 
 test('four and five selected heads form balanced rows on desktop and stack on mobile', async ({ page }) => {
@@ -215,10 +217,11 @@ test('four and five selected heads form balanced rows on desktop and stack on mo
   const five = await rects();
   expect(five).toHaveLength(5);
   if ((page.viewportSize()?.width ?? 0) > 700) {
-    expect(Math.max(...five.slice(0, 3).map(rect => rect.y)) - Math.min(...five.slice(0, 3).map(rect => rect.y))).toBeLessThan(2);
-    expect(Math.abs(five[3].y - five[4].y)).toBeLessThan(2);
-    expect(five[3].y).toBeGreaterThan(five[0].y);
-    expect(five[3].width).toBeGreaterThan(five[0].width);
+    expect(Math.abs(five[0].y - five[1].y)).toBeLessThan(2);
+    expect(Math.abs(five[2].y - five[3].y)).toBeLessThan(2);
+    expect(five[2].y).toBeGreaterThan(five[0].y);
+    expect(five[4].y).toBeGreaterThan(five[2].y);
+    expect(five[4].width).toBeGreaterThan(five[0].width);
   } else {
     expect(five.every((rect, index) => index === 0 || rect.y > five[index - 1].y)).toBe(true);
     expect(Math.max(...five.map(rect => rect.width)) - Math.min(...five.map(rect => rect.width))).toBeLessThan(2);
