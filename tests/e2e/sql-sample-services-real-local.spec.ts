@@ -29,7 +29,7 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(page.getByText('Government challan: Not available')).toBeVisible();
   await page.goto('/?action=account_profile');
   await expect(page.getByText('666666666666', { exact: true })).toBeVisible();
-  await expect(page.getByText('Advance-tax instalments')).toBeVisible();
+  await expect(page.getByText('Advance tax and instalment review')).toBeVisible();
 });
 
 test('user8 begins with no saved activity or personal tax profile; user6 data stays isolated', async ({ page }) => {
