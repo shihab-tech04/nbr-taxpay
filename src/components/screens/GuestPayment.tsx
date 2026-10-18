@@ -32,6 +32,7 @@ import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccess
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
+import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 
 const GUEST_COPY = {
   en: {
@@ -232,6 +233,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [attemptReceipt, setAttemptReceipt] = useState<ChallanReceipt | null>(null);
   const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const pendingStoryRef = useRef<{ payload: StoryPaymentInput; receipt: ChallanReceipt } | null>(null);
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
@@ -359,7 +361,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'এই অ্যাকাউন্টের সঙ্গে করদাতার তথ্য যুক্ত নেই।' : 'No taxpayer profile is linked to this account.', 'tin');
       return false;
     }
-    if (!(ownAccountTax ? /^\d{13}$/.test(taxpayerTin) : /^\d{12}$/.test(taxpayerTin))) {
+    if (!/^\d{12,13}$/.test(taxpayerTin)) {
       setValidationError(copy.invalidTin, 'tin');
       return false;
     }
@@ -367,36 +369,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
-    if (!/^01\d{9}$/.test(receiptPhone.replace(/\D/g, ''))) {
-      setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন (01XXXXXXXXX)।' : 'Enter an 11-digit receipt mobile number (01XXXXXXXXX).', 'phone');
-      return false;
-    }
-    if (requiresNBRReference && !noticeReference.trim()) {
-      setValidationError(language === 'bn' ? 'এই সেবার জন্য NBR রেফারেন্স দিন।' : 'Enter the NBR reference for this payment service.', 'noticeReference');
-      return false;
-    }
-    // Validate the TIN's format above. Sample notice references are verified
-    // when provided, but must not restrict taxpayers to demo TIN records.
-    const now = Date.now();
-    tinAttempts.current = tinAttempts.current.filter(at => now - at < 10 * 60_000);
-    if (tinAttempts.current.length >= 5) {
-      setValidationError(language === 'bn' ? 'অনেকবার চেষ্টা করা হয়েছে। কয়েক মিনিট পর আবার চেষ্টা করুন।' : 'Too many attempts. Try again in a few minutes.', 'tin');
-      return false;
-    }
-    tinAttempts.current.push(now);
-    const reference = noticeReference.trim();
-    const matched = reference && !isWithholdingMode && !ownAccountTax ? findV11GuestNotice(taxpayerTin, reference) : null;
-    if (!ownAccountTax && reference && !isWithholdingMode && (!matched || matched.category !== category)) {
-      setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', reference && !isWithholdingMode ? 'noticeReference' : 'tin');
-      return false;
-    }
-    setVerifiedReference(matched || null);
-    if (matched) {
-      setNoticeReference(matched.reference);
-      setAssessmentYear(matched.assessmentYear);
-      setSelectedHeadIds(matched.defaultHeadId ? [matched.defaultHeadId] : []);
-      setAmountInputs({});
-    }
+    // No NBR reference lookup, OTP, identity verification or authenticated account
+    // is needed for this isolated simulated-payment user story.
+    setVerifiedReference(null);
     clearValidationError();
     return true;
   };
@@ -429,27 +404,48 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setStep(3);
   };
 
+  const confirmSimulatedPayment = async (receipt: ChallanReceipt) => {
+    const pending = pendingStoryRef.current;
+    if (!pending) { setPaymentPhase('failed'); setIsProcessing(false); return; }
+    try {
+      const confirmed = await persistSimulatedPayment(pending.payload);
+      const settledReceipt: ChallanReceipt = {
+        ...receipt,
+        paymentTransactionId: confirmed.id,
+        treasuryStatus: 'TREASURY_SCROLLED',
+        treasuryScrollNo: `DEMO-SCRL-${Date.now()}`,
+        treasuryDate: new Date().toISOString(),
+        completedAt: new Date().toISOString()
+      };
+      setLifecycleStages(previous => [...previous, 'CREDITED']);
+      addPaymentReceipt(settledReceipt);
+      setAttemptReceipt(settledReceipt);
+      setCreatedReceipt(settledReceipt);
+      setPaymentPhase('settled');
+      pendingStoryRef.current = null;
+    } catch {
+      // TaxPay SQL may already contain the idempotent record; preserve the
+      // exact request so retry cannot duplicate or lose the Office mirror.
+      setErrorMessage(language === 'bn' ? 'অফিসে তথ্য পৌঁছায়নি। একই পেমেন্ট আবার চেষ্টা করুন।' : 'Office synchronization is pending. Retry this payment.');
+      setPaymentPhase('failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const runLifecycle = (sequence: LifecycleStage[], receipt: ChallanReceipt) => {
     lifecycleTimers.current.forEach(clearTimeout);
     lifecycleTimers.current = sequence.map((status, index) => setTimeout(() => {
-      setLifecycleStages(previous => [...previous, status]);
+      if (status !== 'CREDITED') setLifecycleStages(previous => [...previous, status]);
       if (index !== sequence.length - 1) return;
-      setIsProcessing(false);
       if (status === 'FAILED') {
+        setIsProcessing(false);
         setPaymentPhase('failed');
       } else if (status === 'ACS_REFERENCE_CREATED') {
+        setIsProcessing(false);
         setPaymentPhase('pending-bank');
       } else if (status === 'CREDITED') {
-        const settledReceipt: ChallanReceipt = {
-          ...receipt,
-          treasuryStatus: 'TREASURY_SCROLLED',
-          treasuryScrollNo: `DEMO-SCRL-${Date.now()}`,
-          treasuryDate: new Date().toISOString(),
-          completedAt: new Date().toISOString()
-        };
-        addPaymentReceipt(settledReceipt);
-        setCreatedReceipt(settledReceipt);
-        setPaymentPhase('settled');
+        void confirmSimulatedPayment(receipt);
       }
     }, (index + 1) * 550));
   };
@@ -514,6 +510,31 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         createdAt: now,
         isSimulatedDemo: true
       };
+      pendingStoryRef.current = {
+        receipt: newReceipt,
+        payload: {
+          idempotencyKey: crypto.randomUUID(),
+          sessionId: getStorySessionId(),
+          service: category,
+          amountMinor: Math.round(totalAmount * 100),
+          details: {
+            receiptReference: newReceipt.challanNo,
+            taxpayerTin,
+            payerName: newReceipt.payerName,
+            payerMode: forSelf ? 'SELF' : 'OTHER',
+            assessmentYear,
+            taxZone, taxCircle,
+            receiptMobile: receiptPhone,
+            noticeReference,
+            incomeTaxType,
+            isWithholding: isWithholdingMode,
+            paymentChannel, paymentMethod,
+            lines: lineItems,
+            totalAmount,
+            taxCreditStatus: newReceipt.taxCreditStatus
+          },
+        },
+      };
       setAttemptReceipt(newReceipt);
       setStep(4);
       runLifecycle(paymentChannel === 'OTC' ? BANK_LIFECYCLE : simulateDecline ? [...ONLINE_LIFECYCLE.slice(0, 4), 'FAILED'] : ONLINE_LIFECYCLE, newReceipt);
@@ -527,6 +548,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const retryPayment = () => {
+    if (paymentPhase === 'failed' && pendingStoryRef.current && !simulateDecline) {
+      setIsProcessing(true);
+      setPaymentPhase('processing');
+      void confirmSimulatedPayment(pendingStoryRef.current.receipt);
+      return;
+    }
+    pendingStoryRef.current = null;
     lifecycleTimers.current.forEach(clearTimeout);
     lifecycleTimers.current = [];
     setPaymentPhase('review');
@@ -597,7 +625,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <p>{language === 'bn' ? 'স্লিপটি ১৫ দিন বৈধ। তফসিলি ব্যাংকের শাখায় রেফারেন্সটি নিয়ে যান। ব্যাংকে পরিশোধ ও ট্রেজারি নিষ্পত্তির পর কর ক্রেডিটের ধাপ আসে।' : 'The slip is valid for 15 days. Take its reference to a scheduled bank branch. Tax credit follows bank payment and Treasury settlement.'}</p>
             </div>
           </div>}
-          {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.'}</p></div>}
+          {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{errorMessage || (language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.')}</p></div>}
           {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।' : 'Payment completed successfully.'}</p></div>}
           <div className="payment-lifecycle__actions no-print">
             {bankPending && <><button type="button" className="payment-lifecycle__secondary" onClick={() => window.print()}><FileText size={16} />{language === 'bn' ? 'স্লিপ প্রিন্ট করুন' : 'Print payment slip'}</button>{!embedded && <button type="button" className="payment-lifecycle__primary" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'}</button>}</>}
