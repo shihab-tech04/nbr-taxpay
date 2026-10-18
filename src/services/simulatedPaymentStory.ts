@@ -37,6 +37,7 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
   const body = await response.json() as Partial<StoryPaymentAcknowledgement> & { error?: string };
   if (!response.ok || body.success !== true || body.mirrored !== true || !body.id)
     throw new Error(body.error || 'OFFICE_SYNC_PENDING');
+  try { sessionStorage.setItem('taxpay-guest-story-payment', 'true'); } catch { /* optional navigation hint only */ }
   return body as StoryPaymentAcknowledgement;
 }
 
