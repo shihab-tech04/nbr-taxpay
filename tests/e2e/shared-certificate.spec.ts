@@ -22,7 +22,7 @@ test('transaction-linked certificate uses the real TaxPay ReceiptView document',
  await expect(page.locator('.receipt-view__paper')).toContainText('Md. Arif Rahman');
  await expect(page.locator('.receipt-view__paper')).toContainText('Penalty & Simple Interest');
  await expect(page.locator('.receipt-view__paper')).toContainText('ACS-DEMO-123');
- await expect(page.locator('.receipt-view__paper')).toContainText('2600');
+ await expect(page.locator('.receipt-view__paper')).toContainText('2,600');
  await expect(page.locator('.receipt-view__paper')).toContainText(id);
  await expect(page.locator('.receipt-view__paper')).toContainText('PENDING RECONCILIATION');
 });
