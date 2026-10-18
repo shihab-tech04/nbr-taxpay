@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { ArrowRight, BookOpen, Building2, CalendarDays, CircleHelp, ClipboardCheck, FileCheck2, ReceiptText, ShieldCheck, WalletCards, Plane } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
 import {PublicServiceModal, type PublicService} from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen, previewAccount } = useTaxState();
+  const { user } = useAccountIdentity();
+  const signedIn = Boolean(user || previewAccount);
   const [openService,setOpenService] = useState<PublicService|null>(null);
   const openGuide=(category:string)=>navigate('user_guide',{category});
   const bn = language === 'bn';
@@ -25,7 +28,9 @@ export const PublicLanding: React.FC = () => {
   const questions = [
     { q: t('What information should I check before making a payment?', 'কর পরিশোধের আগে কী তথ্য যাচাই করব?'), a: t('Check taxpayer, purpose, tax year and amount against official guidance.', 'সরকারি নির্দেশনা অনুযায়ী করদাতা, উদ্দেশ্য, করবর্ষ ও পরিমাণ যাচাই করুন।') },
     { q: t('Does a receipt automatically prove a tax credit?', 'রসিদ থাকলেই কি কর ক্রেডিট পাওয়া যায়?'), a: t('No. Credit requires applicable law, ownership and verification.', 'না। আইন, মালিকানা ও যাচাই অনুযায়ী ক্রেডিট নির্ধারিত হয়।') },
-    { q: t('Where can I manage my own transactions?', 'নিজের লেনদেন কোথায় পরিচালনা করব?'), a: t('Use Login to open your transaction workspace.', 'লগইন করে ব্যক্তিগত লেনদেন দেখুন।') },
+    { q: t('Where can I manage my own transactions?', 'নিজের লেনদেন কোথায় পরিচালনা করব?'), a: signedIn
+      ? t('Open your dashboard to manage transactions.', 'লেনদেন পরিচালনা করতে ড্যাশবোর্ড খুলুন।')
+      : t('Use Login to open your transaction workspace.', 'লগইন করে ব্যক্তিগত লেনদেন দেখুন।') },
     { q: t('How can I find authoritative tax guidance?', 'প্রামাণ্য আয়কর নির্দেশনা কোথায় পাব?'), a: t('See current NBR publications and applicable law.', 'বর্তমান এনবিআর প্রকাশনা ও প্রযোজ্য আইন দেখুন।') }
   ];
 

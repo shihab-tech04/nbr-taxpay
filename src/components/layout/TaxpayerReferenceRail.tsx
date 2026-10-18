@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, ChevronDown, CircleHelp, CirclePlus, CircleUserRound, Home, LogOut } from 'lucide-react';
+import { Activity, Bell, BookOpen, CirclePlus, CircleUserRound, Home, LogOut } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import amarKorWordmark from '../../assets/amar-kor-wordmark-taka-20261017.png';
@@ -13,11 +13,6 @@ const links: RailLink[] = [
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell }
 ];
 
-// Keep the fixed rail; specialist workflows live in Activity, Profile and Pay Tax.
-const menuLinks: RailLink[] = [
-  { route: 'account_profile', en: 'Profile', bn: 'প্রোফাইল', Icon: CircleUserRound },
-  { route: 'user_guide', en: 'Help', bn: 'সহায়তা', Icon: CircleHelp }
-];
 const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
@@ -45,8 +40,6 @@ export function TaxpayerReferenceRail() {
   };
   const bn = language === 'bn';
   const sampleProfile = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
-  const isMenuRoute = menuLinks.some(({route}) => route === currentRoute);
-
   return (
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
       <div>
@@ -67,30 +60,23 @@ export function TaxpayerReferenceRail() {
               <span>{bn ? bnLabel : en}</span>
             </button>
           ))}
-          <details className="taxpayer-reference-account" key={isMenuRoute ? 'menu-' + currentRoute : 'menu-closed'}
-            open={isMenuRoute || undefined}>
-            <summary><CircleUserRound size={20} aria-hidden={true}/><span>{bn ? 'মেনু' : 'Menu'}</span><ChevronDown size={16} aria-hidden={true}/></summary>
-            <div className="taxpayer-reference-account__links">
-              {menuLinks.map(({route,en,bn:bnLabel,Icon}) => (
-                <button key={route} type="button" onClick={() => navigate(route)}
-                  aria-current={currentRoute === route ? 'page' : undefined}>
-                  <Icon size={17} aria-hidden={true}/><span>{bn ? bnLabel : en}</span>
-                </button>
-              ))}
-            </div>
-          </details>
         </nav>
       </div>
       <div className="taxpayer-reference-rail-bottom">
+        <button type="button" onClick={() => navigate('account_profile')}
+          aria-current={currentRoute === 'account_profile' ? 'page' : undefined}>
+          <CircleUserRound size={17} aria-hidden={true} />
+          <span>{bn ? 'প্রোফাইল' : 'Profile'}</span>
+        </button>
+        <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>
+          <span>{bn ? 'ভাষা' : 'Language'}</span>
+          <strong>{bn ? 'English' : 'বাংলা'}</strong>
+        </button>
         {(user || sampleProfile) && <button type="button" disabled={signingOut} onClick={logout}>
           <LogOut size={17} aria-hidden={true} />
           <span>{previewAccount || user ? (bn ? 'সাইন আউট' : 'Sign out') : (bn ? 'ওয়ার্কস্পেস থেকে বের হন' : 'Exit workspace')}</span>
         </button>}
         {signOutError && <p role="alert">{signOutError}</p>}
-        <button type="button" onClick={() => setLanguage(bn ? 'en' : 'bn')}>
-          <span>{bn ? 'ভাষা' : 'Language'}</span>
-          <strong>{bn ? 'English' : 'বাংলা'}</strong>
-        </button>
       </div>
     </aside>
   );

@@ -196,7 +196,7 @@ const MainRouter: React.FC = () => {
         </>}
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
-      {publicInformationRoute && <PublicHelpChat />}
+      {publicInformationRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
       {loginOverlay && <TaxpayerLoginDialog />}

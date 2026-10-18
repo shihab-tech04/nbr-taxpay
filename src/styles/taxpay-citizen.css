@@ -623,6 +623,32 @@
 .public-home-header .public-home-login-link:focus-visible {
   outline:3px solid var(--citizen-primary);outline-offset:3px;
 }
+.public-home-account {position:relative;display:flex;align-items:center;}
+.public-home-icon-button,.public-home-avatar-trigger {
+  display:inline-grid;place-items:center;flex:none;width:44px;height:44px;
+  border:1px solid var(--citizen-border);border-radius:50%;
+  background:var(--citizen-surface);color:var(--citizen-primary-dark);
+}
+.public-home-avatar-trigger {background:var(--citizen-primary-light);border-color:var(--citizen-primary);}
+.public-home-icon-button:hover,.public-home-avatar-trigger:hover,
+.public-home-avatar-trigger[aria-expanded="true"] {background:var(--citizen-primary-light);}
+.public-home-icon-button:focus-visible,.public-home-avatar-trigger:focus-visible,
+.public-home-profile-menu button:focus-visible {outline:3px solid var(--citizen-primary);outline-offset:2px;}
+.public-home-profile-menu {
+  position:absolute;right:0;top:calc(100% + .65rem);z-index:65;
+  display:grid;gap:2px;width:220px;padding:.45rem;
+  border:1px solid var(--citizen-border);border-radius:.75rem;
+  background:var(--citizen-surface);box-shadow:var(--taxpay-shadow-raised);
+}
+.public-home-profile-menu button {
+  display:flex;align-items:center;gap:.7rem;width:100%;min-height:44px;
+  padding:.6rem .75rem;border:0;border-radius:.5rem;background:transparent;
+  color:var(--citizen-text);font-size:.84rem;font-weight:600;text-align:left;
+}
+.public-home-profile-menu button:hover {background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
+.public-home-profile-menu button:disabled {opacity:.6;cursor:wait;}
+.public-home-profile-menu__divider {height:1px;margin:.3rem .25rem;background:var(--citizen-border);}
+.public-home-profile-menu p {padding:.5rem .75rem;color:var(--citizen-text);font-size:.77rem;line-height:1.5;}
 .public-home-nav .public-home-login-link--mobile {display:none;}
 @media(max-width:900px) {
   .public-home-header__tools .public-home-login-link--desktop {display:none;}
@@ -634,6 +660,12 @@
   .public-home-header .public-home-nav a[aria-current="location"] {
     box-shadow:inset 3px 0 0 var(--citizen-primary);
   }
+}
+@media(max-width:380px) {
+  .public-home-header__tools {gap:.2rem;}
+  .public-home-header__tools .public-home-language {min-width:44px;padding:.35rem .2rem;}
+  .public-home-icon-button,.public-home-avatar-trigger {width:40px;height:40px;}
+  .public-home-header:has(.public-home-avatar-trigger) .public-home-wordmark {width:94px;max-width:94px;height:38px;}
 }
 
 
