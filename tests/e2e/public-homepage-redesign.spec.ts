@@ -48,6 +48,7 @@ test('public FAQ offers readable answers and the full guide without a large foot
 });
 
 test('Report follows heading then compact content with no redundant warnings', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/?action=incident');
   const report = page.locator('.public-report-page');
   await expect(report.getByRole('heading', { name: 'Report a problem' })).toBeVisible();
@@ -56,13 +57,35 @@ test('Report follows heading then compact content with no redundant warnings', a
   await expect(report.getByText('If money was debited, contact your bank or payment provider.')).toHaveCount(0);
   await expect(report.getByLabel('Issue type')).toBeVisible();
   await expect(report.getByLabel('Short description')).toBeVisible();
-  const pageWidth = await report.boundingBox();
-  const contentWidth = await report.locator('.public-report-card').boundingBox();
-  expect(contentWidth!.width).toBeLessThanOrEqual(pageWidth!.width);
-  if (page.viewportSize()!.width >= 1000) expect(contentWidth!.width).toBeLessThan(pageWidth!.width);
+  const layout = await page.evaluate(() => {
+    const main = document.querySelector('#main-content')!.getBoundingClientRect();
+    const section = document.querySelector('.public-report-page')!.getBoundingClientRect();
+    const card = document.querySelector('.public-report-card')!.getBoundingClientRect();
+    return {
+      cardWidth: card.width,
+      horizontalOffset: Math.abs(card.left + card.width / 2 - main.left - main.width / 2),
+      verticalOffset: Math.abs(section.top + section.height / 2 - main.top - main.height / 2),
+    };
+  });
+  expect(layout.cardWidth).toBeLessThanOrEqual(820);
+  expect(layout.horizontalOffset, 'Report form must be horizontally centered').toBeLessThanOrEqual(2);
+  expect(layout.verticalOffset, 'Report content must be balanced above the footer').toBeLessThanOrEqual(2);
   await report.getByLabel('Short description').fill('A payment reference does not match my record.');
   await report.getByRole('button', { name: 'Review details' }).click();
   await expect(report.getByRole('heading', { name: 'Review your details' })).toBeVisible();
+});
+
+test('Report remains readable without horizontal overflow on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?action=incident');
+  await expect(page.getByRole('heading', { name: 'Report a problem' })).toBeVisible();
+  await expect(page.getByLabel('Short description')).toBeVisible();
+  const geometry = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    cardWidth: document.querySelector('.public-report-card')!.getBoundingClientRect().width,
+  }));
+  expect(geometry.overflow).toBeLessThanOrEqual(2);
+  expect(geometry.cardWidth).toBeLessThanOrEqual(358);
 });
 
 test('top navigation uses the approved blue pill for the current public route', async ({ page }) => {
