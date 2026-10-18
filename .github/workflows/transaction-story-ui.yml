@@ -1,0 +1,28 @@
+name: Transaction Story UI Integrity
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/screens/PaymentWizard.tsx'
+      - 'src/components/screens/DemoPaymentActivity.tsx'
+      - 'src/components/screens/TravelTax.tsx'
+      - 'src/services/simulatedPaymentStory.ts'
+      - '.github/workflows/transaction-story-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24',cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run test:domain
+      - run: npm run build
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
