@@ -1865,24 +1865,20 @@
 .public-payment-path__steps li:first-child {padding-left:0;}
 .public-payment-path__steps li:not(:first-child) {border-left:1px solid var(--citizen-border);}
 .public-payment-path__steps li:last-child {padding-right:0;}
-.public-payment-path__steps li:not(:last-child)::after {
-  content:'';position:absolute;top:1.55rem;right:.85rem;width:1.15rem;height:1px;
-  background:var(--citizen-border);pointer-events:none;
-}
 .public-payment-path__step-head {
-  display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem;
+  display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem;
 }
 .public-payment-path__symbol {
   display:grid;place-items:center;width:38px;height:38px;flex:none;
   border:1px solid var(--citizen-border);border-radius:.6rem;
   background:var(--citizen-surface);color:var(--citizen-primary-dark);
 }
-.public-payment-path__number {
-  color:var(--citizen-muted);font-size:.76rem;font-weight:650;letter-spacing:0;
+.public-payment-path__step-label {
+  color:var(--citizen-primary-dark);font-size:.83rem;font-weight:700;line-height:1.45;
 }
 .public-payment-path__steps h3 {
   margin:0 0 .4rem;color:var(--citizen-text);
-  font-size:.95rem;font-weight:700;line-height:1.45;
+  font-size:1rem;font-weight:700;line-height:1.4;
 }
 .public-payment-path__steps p {
   margin:0;color:var(--citizen-muted);font-size:.83rem;line-height:1.55;
@@ -1945,7 +1941,6 @@
 @media(max-width:900px) {
   .public-payment-path__steps {grid-template-columns:repeat(2,minmax(0,1fr));row-gap:1rem;}
   .public-payment-path__steps li:nth-child(odd) {padding-left:0;border-left:0;}
-  .public-payment-path__steps li:nth-child(2)::after {display:none;}
 }
 @media(max-width:600px) {
   .public-payment-path__starter {display:block;padding-bottom:.85rem;}
@@ -1955,7 +1950,6 @@
     min-height:0;padding:0 0 1rem 0;margin-bottom:1rem;border:0;border-bottom:1px solid var(--citizen-border);
   }
   .public-payment-path__steps li:last-child {padding-bottom:0;margin-bottom:0;border-bottom:0;}
-  .public-payment-path__steps li:not(:last-child)::after {display:none;}
   .public-payment-path__step-head {margin-bottom:.45rem;}
   .public-faq-layout__heading {align-items:flex-start;flex-direction:column;gap:.85rem;}
   .public-faq-layout__all-guides {justify-content:flex-start;}
