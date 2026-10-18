@@ -1847,14 +1847,16 @@
 
 /* Public homepage: service choice occurs outside the four payment stages. */
 .public-payment-path__starter {
-  display:flex;align-items:baseline;flex-wrap:wrap;gap:.3rem .8rem;
-  margin-bottom:1.1rem;padding:0 0 1rem;border-bottom:1px solid var(--citizen-border);
+  display:flex;align-items:center;flex-wrap:wrap;gap:.3rem .8rem;
+  margin-bottom:1.1rem;padding:.8rem 1rem;
+  border:1px solid var(--citizen-border);border-left:3px solid var(--citizen-primary);
+  border-radius:.65rem;background:var(--citizen-primary-light);
 }
 .public-payment-path__starter-label {
-  color:var(--citizen-primary-dark);font-size:.82rem;font-weight:750;line-height:1.5;
+  color:var(--citizen-primary-dark);font-size:.85rem;font-weight:750;line-height:1.5;
 }
 .public-payment-path__starter p {
-  margin:0;color:var(--citizen-muted);font-size:.85rem;line-height:1.6;
+  margin:0;color:var(--citizen-text);font-size:.85rem;font-weight:500;line-height:1.6;
 }
 .public-payment-path__steps {
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
@@ -1945,7 +1947,7 @@
   .public-payment-path__steps li:nth-child(odd) {padding-left:0;border-left:0;}
 }
 @media(max-width:600px) {
-  .public-payment-path__starter {display:block;padding-bottom:.85rem;}
+  .public-payment-path__starter {display:block;}
   .public-payment-path__starter p {margin-top:.15rem;}
   .public-payment-path__steps {grid-template-columns:minmax(0,1fr);gap:0;}
   .public-payment-path__steps li,.public-payment-path__steps li:nth-child(even) {
