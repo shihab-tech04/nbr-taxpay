@@ -164,7 +164,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </div> : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
         ) : selected ? (
-          <GuestPayment key={selected} embedded initialCategory={selected}
+          <GuestPayment key={selected} embedded initialCategory={selected} withAccount={useAccount}
             isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}

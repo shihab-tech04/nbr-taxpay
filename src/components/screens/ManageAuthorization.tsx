@@ -38,8 +38,8 @@ export function ManageAuthorization() {
     event.preventDefault();
     if (!actor) return;
     const target = userIdForDemoTin(tin);
-    if (!/^\d{12}$/.test(tin.trim())) {
-      setFeedback({ error: true, message: tr('Enter a 12-digit taxpayer TIN.', 'করদাতার ১২ সংখ্যার টিআইএন লিখুন।') });
+    if (!/^\d{13}$/.test(tin.trim())) {
+      setFeedback({ error: true, message: tr('Enter a 13-digit test taxpayer TIN.', 'করদাতার ১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন।') });
       return;
     }
     if (!target) {
@@ -135,8 +135,8 @@ export function ManageAuthorization() {
       {adding && tab === 'outgoing' && <form className="taxpay-auth-add" onSubmit={sendRequest}>
         <label htmlFor="new-auth-tin">{tr('Taxpayer TIN', 'করদাতার টিআইএন')}</label>
         <div className="taxpay-auth-inline">
-          <input id="new-auth-tin" value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 12))}
-            inputMode="numeric" autoComplete="off" placeholder={tr('Enter 12-digit TIN', '১২ সংখ্যার টিআইএন লিখুন')} required maxLength={12} />
+          <input id="new-auth-tin" value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 13))}
+            inputMode="numeric" autoComplete="off" placeholder={tr('Enter 13-digit test TIN', '১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন')} required maxLength={13} />
           <button type="submit" className="taxpay-auth-primary">{tr('Request authorization', 'অনুমোদন চান')}</button>
         </div>
         <p>{tr('The taxpayer approves from their own account using a one-time code.', 'করদাতা নিজের অ্যাকাউন্টে এককালীন কোড দিয়ে সম্মতি দেবেন।')}</p>

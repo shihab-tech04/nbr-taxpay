@@ -1,0 +1,66 @@
+import { expect, test } from '@playwright/test';
+
+test('already signed-in user2 pays own tax with prefilled locked account identity', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
+  await login.getByLabel('Password', { exact: true }).fill('user2');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login).toHaveCount(0);
+
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.getByRole('button', { name: /Advance Tax/ }).click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
+
+  await payment.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
+  await expect(payment.locator('#guest-tin')).toHaveValue('2222222222222');
+  await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
+  await expect(payment.locator('#guest-tax-zone')).toHaveValue('Taxes Zone 2');
+  await expect(payment.locator('#guest-tax-circle')).toHaveValue('circle-2');
+  for (const selector of ['#guest-taxpayer-name', '#guest-tin', '#guest-phone', '#guest-tax-zone', '#guest-tax-circle']) {
+    await expect(payment.locator(selector)).toHaveAttribute('readonly');
+  }
+
+  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(payment.getByText('Step 2 of 4')).toBeVisible();
+});
+
+test('changing from my tax to another taxpayer restores editable 12-digit entry', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await page.getByLabel('Password', { exact: true }).fill('user1');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.getByRole('button', { name: /Tax with Return/ }).click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
+  await payment.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
+  await payment.getByRole('radio', { name: "Someone else's tax" }).check();
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
+  await expect(payment.locator('#guest-tin')).not.toHaveAttribute('readonly');
+  await expect(payment.locator('#guest-phone')).not.toHaveAttribute('readonly');
+  await payment.locator('#guest-tin').fill('123456789012');
+  await expect(payment.locator('#guest-tin')).toHaveValue('123456789012');
+  await payment.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
+  await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly');
+});
+
+test('standalone payment form also recognizes an existing account session', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox', { name: 'User ID' }).fill('user3');
+  await page.getByLabel('Password', { exact: true }).fill('user3');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=guest');
+  await page.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(page.locator('#guest-taxpayer-name')).toHaveValue('Rupali Textiles Ltd.');
+  await expect(page.locator('#guest-tin')).toHaveValue('3333333333333');
+  await expect(page.locator('#guest-tin')).toHaveAttribute('readonly');
+});

@@ -9,10 +9,10 @@ import {
 const NOW = 1_800_000_000_000;
 
 test('test user TINs map one-to-one, including the tenth account', () => {
-  assert.equal(userIdForDemoTin('111111111111'), 'user1');
-  assert.equal(userIdForDemoTin('222222222222'), 'user2');
-  assert.equal(userIdForDemoTin('101010101010'), 'user10');
-  assert.equal(userIdForDemoTin('1111111111111'), null);
+  assert.equal(userIdForDemoTin('1111111111111'), 'user1');
+  assert.equal(userIdForDemoTin('2222222222222'), 'user2');
+  assert.equal(userIdForDemoTin('1010101010101'), 'user10');
+  assert.equal(userIdForDemoTin('111111111111'), null);
   assert.equal(userIdForDemoTin('123456789012'), null);
 });
 
