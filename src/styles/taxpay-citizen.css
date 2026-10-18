@@ -1091,7 +1091,7 @@
  .public-guide-topics button,.public-guide-questions summary svg,.public-guide-result-faq summary svg{transition:none;}
 }
 
-.public-report-page {width:100%;max-width:var(--public-content-max);margin:0 auto;}
+.public-report-page {width:100%;max-width:820px;margin:0 auto;}
 .public-report-header {max-width:820px;margin:0 0 1.2rem;}
 .public-report-header h1 {
   margin:0 0 .35rem;color:var(--citizen-text);font-size:clamp(1.65rem,2.5vw,2rem);
@@ -1809,6 +1809,22 @@
 .taxpay-citizen-shell main.public-information-main {
   /* The shared 7rem transaction-safe bottom padding is not needed on public pages. */
   padding-bottom:1.25rem;
+}
+/* A short report form should sit in the center of the available page, not
+   against the left edge with a large empty strip before the footer. */
+.taxpay-citizen-shell main.public-information-main--report {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding-top:2rem;
+  padding-bottom:2rem;
+}
+@media (max-width:767px) {
+  .taxpay-citizen-shell main.public-information-main--report {
+    align-items:flex-start;
+    padding-top:1.5rem;
+    padding-bottom:1.5rem;
+  }
 }
 .public-home-header .public-home-nav a:not(.public-home-login-link) {
   padding:.6rem .85rem;
