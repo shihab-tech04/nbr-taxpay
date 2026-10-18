@@ -78,6 +78,11 @@ test('a signed-in account returning to public home sees notification and profile
   await expect(header.getByRole('link',{name:'Login'})).toHaveCount(0);
   await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
   await expect(header.getByRole('button',{name:'Profile menu'})).toBeVisible();
+  const guideLink=header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'});
+  await expect(guideLink).toBeVisible();
+  await guideLink.click();
+  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+  await header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Home'}).click();
   await expect(page.getByRole('button',{name:'Help'})).toHaveCount(0);
   await header.getByRole('button',{name:'Profile menu'}).click();
   const profileMenu=header.getByRole('navigation',{name:'Profile menu'});
@@ -107,6 +112,9 @@ test('the signed-in public header fits mobile and keeps account controls operabl
     const header=page.locator('.public-home-header');
     await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
     await expect(header.getByRole('button',{name:'Profile menu'})).toBeVisible();
+    await header.getByRole('button',{name:'Menu'}).click();
+    await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'})).toBeVisible();
+    await header.getByRole('button',{name:'Menu'}).click();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }

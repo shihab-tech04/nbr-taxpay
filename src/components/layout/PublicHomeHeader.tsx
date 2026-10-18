@@ -101,7 +101,7 @@ export function PublicHomeHeader() {
         </span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
-        {LINKS.filter(item=>!signedIn || item.route!=='user_guide').map(routeLink)}{!signedIn && !checkingAccount && login(true)}
+        {LINKS.map(routeLink)}{!signedIn && !checkingAccount && login(true)}
       </nav>
       <div className="public-home-header__tools">
         <button type="button" className="public-home-language" onClick={()=>setLanguage(bn?'en':'bn')} aria-label={bn?'Switch to English':'বাংলা'}>

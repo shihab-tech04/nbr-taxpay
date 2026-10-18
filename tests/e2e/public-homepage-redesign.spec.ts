@@ -8,6 +8,7 @@ test('public homepage explains the payment path without duplicating service cate
   await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion.' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'How your payment works' })).toBeVisible();
   await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
+  await expect(page.locator('.public-payment-path__steps > li .public-payment-path__symbol svg')).toHaveCount(4);
   for (const [index, stage] of ['Taxpayer details', 'Purpose & amount', 'Payment channel', 'Confirmation'].entries()) {
     await expect(page.locator('.public-payment-path__steps > li').nth(index)).toContainText(stage);
   }
@@ -17,6 +18,27 @@ test('public homepage explains the payment path without duplicating service cate
 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card')).toHaveCount(8);
+});
+
+test('public FAQ offers readable answers and the full guide without a large footer gap', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/?action=landing');
+  const faq = page.locator('#public-faq');
+  await expect(faq.getByRole('heading', { name: 'Common questions' })).toBeVisible();
+  await expect(faq.locator('details')).toHaveCount(4);
+  const firstQuestion = faq.locator('details').first();
+  await firstQuestion.locator('summary').click();
+  await expect(firstQuestion).toHaveAttribute('open', '');
+  await expect(firstQuestion.getByText('It depends on the service.', { exact: false })).toBeVisible();
+
+  const gap = await page.evaluate(() => {
+    const section = document.querySelector('#public-faq')!;
+    const footer = document.querySelector('.public-footer')!;
+    return footer.getBoundingClientRect().top - section.getBoundingClientRect().bottom;
+  });
+  expect(gap, 'FAQ and footer should have a compact transition').toBeLessThanOrEqual(80);
+  await faq.getByRole('button', { name: 'Open user guide' }).click();
+  await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
 });
 
 test('top navigation uses the approved blue pill for the current public route', async ({ page }) => {
