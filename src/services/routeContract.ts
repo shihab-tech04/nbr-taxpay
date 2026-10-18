@@ -19,7 +19,7 @@ export const validRoute = (value: string | null | undefined): string =>
   value && registered.has(value) && !officeManagementAliases.has(value) ? value : 'landing';
 
 /** Only navigation context and public synthetic fixture selectors belong in the URL. */
-const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt'] as const;
+const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt', 'transactionId', 'docAction'] as const;
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
 const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home']);
 
