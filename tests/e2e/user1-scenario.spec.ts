@@ -54,7 +54,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
-  await expect(page.getByText('DEMO-TIN-001').first()).toBeVisible();
+  await expect(page.getByText('111111111111').first()).toBeVisible();
   await expect(page.getByText('Taxpayer class')).toBeVisible();
   await expect(page.getByText('Individual',{exact:true})).toBeVisible();
 });
