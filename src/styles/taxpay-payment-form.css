@@ -47,7 +47,7 @@
 .payment-radio-card:hover{border-color:#8aabd9}
 .payment-radio-card:focus-within{outline:2px solid #8aabd9;outline-offset:2px}
 .payment-radio-card--selected{border-color:#2c5ead;background:#eef5ff}
-.payment-radio-card input{flex:none;width:18px;height:18px;accent-color:#2c5ead}
+.payment-radio-card input{flex:none;width:18px;height:18px;font-size:16px;accent-color:#2c5ead}
 .payment-radio-card__copy{display:grid;gap:3px;min-width:0}
 .payment-radio-card__copy strong{font-size:13px;font-weight:600;line-height:1.45}
 .payment-radio-card__copy small{font-size:12px;font-weight:400;color:#526681;line-height:1.45}

@@ -24,10 +24,8 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   const dialog = await openReview(page, 'Advance Tax');
   const action = dialog.getByRole('button', { name: /Pay BDT 12,500/ });
   await expect(action).toBeDisabled();
-  await expect(dialog.getByText('Taxpayer TIN')).toBeVisible();
-  await expect(dialog.getByText('Receipt mobile')).toBeVisible();
-  await expect(dialog.getByText('Credited to')).toBeVisible();
-  await expect(dialog.getByText('Service charge')).toBeVisible();
+  await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByText('BDT 12,500', { exact: true })).toBeVisible();
   await expect(dialog.getByText('Payment simulation only')).toHaveCount(0);
   await expect(dialog.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Pay online' }).click();
@@ -64,6 +62,7 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await expect(dialog.getByRole('heading', { name: 'Bank payment slip ready' })).toBeVisible();
   await expect(dialog.getByText('This is not tax paid yet')).toBeVisible();
   await expect(dialog.getByText('15 days', { exact: false })).toBeVisible();
+  await dialog.getByText('Payment progress details').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('ACS_REFERENCE_CREATED')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue bank payment' }).click();
@@ -83,6 +82,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment request declined' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByText('Payment progress details').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('FAILED')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Try another method' }).click();

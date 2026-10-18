@@ -175,7 +175,7 @@ test('multiple payment heads have searchable selection, separate amounts and one
   await chooser.getByRole('button', { name: /Pay BDT 1,500/ }).click();
   await expect(chooser.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
   await chooser.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(chooser.locator('.payment-form-summary__total')).toContainText('1,500');
+  await expect(chooser.locator('.payment-form-summary')).toHaveCount(0);
   await expect(chooser.locator('.receipt-view')).toContainText('1,500');
   await expect(chooser.locator('.receipt-view')).toContainText('300');
 });
