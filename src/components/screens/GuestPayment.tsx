@@ -177,7 +177,9 @@ interface GuestPaymentProps {
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
-  const accountTaxpayer = usePaymentAccountProfile(withAccount ? authenticatedUser?.id ?? null : null, withAccount ? previewAccount : null);
+  // The standalone guest route can also be visited from a signed-in session.
+  const signedInAccount = withAccount || Boolean(authenticatedUser || previewAccount);
+  const accountTaxpayer = usePaymentAccountProfile(signedInAccount ? authenticatedUser?.id ?? null : null, signedInAccount ? previewAccount : null);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
   const copy = GUEST_COPY[language];
@@ -192,7 +194,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   // The later approved UX supersedes v11's preselected "My own tax" default.
   const [forSelf, setForSelf] = useState<boolean | null>(null);
-  const ownAccountTax = withAccount && forSelf === true;
+  const ownAccountTax = signedInAccount && forSelf === true;
   const ownProfile = ownAccountTax ? accountTaxpayer.profile : null;
   const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;

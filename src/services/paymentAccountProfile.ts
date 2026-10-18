@@ -58,15 +58,14 @@ export function usePaymentAccountProfile(authUid: string | null, previewAccount:
       });
       return () => { active = false; };
     }
-    if (previewAccount) {
-      setSnapshot({ userId: previewAccount.id, status: 'ready', profile: toPaymentProfile(previewAccount) });
-    } else {
-      setSnapshot({ userId: null, status: 'idle', profile: null });
-    }
-  }, [authUid, previewAccount]);
+  }, [authUid]);
 
-  const activeId = authUid ?? previewAccount?.id ?? null;
-  return snapshot.userId === activeId ? snapshot : {
-    userId: activeId, status: activeId ? 'loading' : 'idle', profile: null,
+  // Preview profile is immediately available from the signed-in local fixture;
+  // no blank loading frame or asynchronous identity reset is needed.
+  if (!authUid) return previewAccount
+    ? { userId: previewAccount.id, status: 'ready', profile: toPaymentProfile(previewAccount) }
+    : { userId: null, status: 'idle', profile: null };
+  return snapshot.userId === authUid ? snapshot : {
+    userId: authUid, status: 'loading', profile: null,
   };
 }

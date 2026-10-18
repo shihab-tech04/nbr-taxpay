@@ -52,3 +52,15 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
   await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly');
 });
+
+test('standalone payment form also recognizes an existing account session', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox', { name: 'User ID' }).fill('user3');
+  await page.getByLabel('Password', { exact: true }).fill('user3');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=guest');
+  await page.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(page.locator('#guest-taxpayer-name')).toHaveValue('Rupali Textiles Ltd.');
+  await expect(page.locator('#guest-tin')).toHaveValue('3333333333333');
+  await expect(page.locator('#guest-tin')).toHaveAttribute('readonly');
+});
