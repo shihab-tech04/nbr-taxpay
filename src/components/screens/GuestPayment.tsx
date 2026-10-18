@@ -29,7 +29,7 @@ import { PaymentRadioCard } from '../ui/PaymentRadioCard';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
-import { findV11GuestNotice, isV11GuestTin, type V11GuestNotice } from '../../services/v11GuestInput';
+import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 
@@ -375,9 +375,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'এই সেবার জন্য NBR রেফারেন্স দিন।' : 'Enter the NBR reference for this payment service.', 'noticeReference');
       return false;
     }
-    // v11's guest check accepts its six sample TINs and, when entered,
-    // requires a notice belonging to that same TIN. The message intentionally
-    // does not disclose whether the TIN or reference was the mismatch.
+    // Validate the TIN's format above. Sample notice references are verified
+    // when provided, but must not restrict taxpayers to demo TIN records.
     const now = Date.now();
     tinAttempts.current = tinAttempts.current.filter(at => now - at < 10 * 60_000);
     if (tinAttempts.current.length >= 5) {
@@ -387,7 +386,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     tinAttempts.current.push(now);
     const reference = noticeReference.trim();
     const matched = reference && !isWithholdingMode && !ownAccountTax ? findV11GuestNotice(taxpayerTin, reference) : null;
-    if (!ownAccountTax && (!isV11GuestTin(taxpayerTin) || (reference && !isWithholdingMode && (!matched || matched.category !== category)))) {
+    if (!ownAccountTax && reference && !isWithholdingMode && (!matched || matched.category !== category)) {
       setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', reference && !isWithholdingMode ? 'noticeReference' : 'tin');
       return false;
     }
