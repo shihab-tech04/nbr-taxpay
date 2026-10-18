@@ -6,12 +6,13 @@ import returnTaxIllustration from '../../assets/taxpay-hero-return-v3.webp';
 import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v3.webp';
 import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v3.webp';
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v6.webp';
+import { supabase } from '../../services/supabaseClient';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
 const SWIPE_THRESHOLD_PX = 45;
 const SWIPE_DOMINANCE_RATIO = 1.2;
 
-const slides = [
+const defaultSlides = [
   {
     id: 'intro',
     serviceCode: undefined,
@@ -89,6 +90,40 @@ const slides = [
   },
 ] as const;
 
+type BannerSlide = {
+  id: string; serviceCode?: BannerPaymentService; headingEn: string; headingBn: string;
+  mobileHeadingEn: string; mobileHeadingBn: string; descriptionEn: string; descriptionBn: string;
+  mobileDescriptionEn: string; mobileDescriptionBn: string; actionEn: string; actionBn: string;
+  image: string; mobileImage?: string;
+};
+
+const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
+
+function publicBannerImage(path: string | null, fallback: string): string {
+  if (!path || !supabase) return fallback;
+  return supabase.storage.from('taxpay-banners').getPublicUrl(path).data.publicUrl;
+}
+
+async function fetchPublishedBanners(): Promise<BannerSlide[]> {
+  if (!supabase) return fallbackSlides;
+  const { data, error } = await supabase.from('taxpay_site_banners').select('*')
+    .eq('published', true).order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(row => {
+    const original = fallbackSlides.find(slide => slide.id === row.id);
+    return {
+      id: row.id, serviceCode: row.service_code || undefined,
+      headingEn: row.heading_en, headingBn: row.heading_bn,
+      mobileHeadingEn: row.mobile_heading_en, mobileHeadingBn: row.mobile_heading_bn,
+      descriptionEn: row.description_en, descriptionBn: row.description_bn,
+      mobileDescriptionEn: row.mobile_description_en, mobileDescriptionBn: row.mobile_description_bn,
+      actionEn: row.action_en, actionBn: row.action_bn,
+      image: publicBannerImage(row.desktop_image_path, original?.image || heroPaymentIllustration),
+      mobileImage: row.mobile_image_path ? publicBannerImage(row.mobile_image_path, original?.image || heroPaymentIllustration) : undefined,
+    };
+  });
+}
+
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
   onPayTax: (service?: BannerPaymentService) => void;
@@ -103,6 +138,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [slides, setSlides] = useState<BannerSlide[]>(fallbackSlides);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -113,8 +149,21 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const pointerStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
   const bn = language === 'bn';
 
-  const goNext = useCallback(() => setActiveIndex(index => (index + 1) % slides.length), []);
-  const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % slides.length), []);
+  const goNext = useCallback(() => setActiveIndex(index => (index + 1) % Math.max(slides.length, 1)), [slides.length]);
+  const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % Math.max(slides.length, 1)), [slides.length]);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = () => { void fetchPublishedBanners().then(next => {
+      if (!active) return;
+      setSlides(next);
+      setActiveIndex(index => Math.min(index, Math.max(0, next.length - 1)));
+    }).catch(() => { /* Preserve the verified bundled banners during a backend outage. */ }); };
+    refresh();
+    const channel = supabase?.channel('published-taxpay-banners')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh).subscribe();
+    return () => { active = false; if (channel && supabase) void supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => {
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -180,6 +229,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     pointerStartRef.current = null;
     setIsSwiping(false);
   };
+
+  if (!slides.length) return null;
 
   return (
     <div
@@ -256,12 +307,15 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                   </div>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-                  <img
-                    className={`public-information-hero__image${index === 0 ? '' : ' public-hero-carousel__service-image'}`}
-                    src={slide.image}
-                    alt=""
-                    decoding="async"
-                  />
+                  <picture>
+                    {slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+                    <img
+                      className={`public-information-hero__image${slide.id === 'intro' ? '' : ' public-hero-carousel__service-image'}`}
+                      src={slide.image}
+                      alt=""
+                      decoding="async"
+                    />
+                  </picture>
                 </div>
               </article>
             );
