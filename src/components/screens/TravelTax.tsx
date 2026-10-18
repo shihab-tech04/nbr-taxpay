@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { createPortal } from 'react-dom';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { 
@@ -74,6 +75,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
+  const [paymentNonce,setPaymentNonce]=useState(()=>crypto.randomUUID());
 
   useEffect(() => {
     if (fourStepJourney) onStageChange?.((step + 1) as 1 | 2 | 3 | 4);
@@ -116,7 +118,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     setError('');
     setIsProcessing(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const year = new Date().getFullYear();
       const randChallan = Math.floor(10000000 + Math.random() * 90000000);
       const randToken = Math.floor(100000 + Math.random() * 900000);
@@ -164,10 +166,42 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         isSimulatedDemo: true
       };
 
-      if (!pendingBank) addPaymentReceipt(newReceipt);
-      setCreatedReceipt(newReceipt);
-      setBankSlipPending(pendingBank);
-      if (fourStepJourney) goStep(3);
+      // A bank slip is pending, not a successful payment. The simulated
+      // settlement action below is the point where SQL records are written.
+      let paymentSaved=pendingBank;
+      if (!pendingBank) {
+        try {
+          let settled = newReceipt;
+          if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
+            const ack=await persistSimulatedPayment({
+              idempotencyKey:paymentNonce,sessionId:getStorySessionId(),
+              service:'TRAVEL_TAX',amountMinor:Math.round(totalAmount*100),
+              details:{
+                payerName:passengerName.trim(),
+                assessmentYear:'2026-27',
+                paymentMethod,paymentChannel,
+                receiptReference:paymentReference,
+                receiptMobile:phone,
+                travelDate,travelRoute:route.route,ageBand,
+                passengerName:passengerName.trim(),
+                // Never publish passport numbers to an unauthenticated Office list.
+                lines:newReceipt.items,
+              }
+            });
+            settled={...newReceipt,paymentTransactionId:ack.id};
+          }
+          addPaymentReceipt(settled);
+          setCreatedReceipt(settled);
+          setPaymentNonce(crypto.randomUUID());
+          paymentSaved=true;
+        }catch {
+          setError(bn?'অফিসে পেমেন্ট তথ্য পৌঁছায়নি। একই অনুরোধ আবার চেষ্টা করুন।':'Office payment synchronization pending. Retry this payment.');
+        }
+      } else {
+        setCreatedReceipt(newReceipt);
+        setBankSlipPending(true);
+      }
+      if (fourStepJourney && paymentSaved) goStep(3);
       setIsProcessing(false);
     }, 1000);
   };
@@ -231,21 +265,39 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     setPaymentChannel(null);
     setAcknowledged(false);
     setBankSlipPending(false);
+    setPaymentNonce(crypto.randomUUID());
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
-  const settleBankSlip = () => {
+  const settleBankSlip = async () => {
     if (!createdReceipt || !bankSlipPending || isProcessing) return;
-    const at = new Date().toISOString();
-    const receipt: ChallanReceipt = {
-      ...createdReceipt,
-      treasuryStatus: 'TREASURY_SCROLLED',
-      treasuryScrollNo: `DEMO-BANK-${Date.now()}`,
-      treasuryDate: at,
-      completedAt: at,
-    };
-    addPaymentReceipt(receipt);
-    setCreatedReceipt(receipt);
-    setBankSlipPending(false);
+    setIsProcessing(true);
+    try {
+      const at = new Date().toISOString();
+      let receipt: ChallanReceipt = {
+        ...createdReceipt,
+        treasuryStatus: 'TREASURY_SCROLLED',
+        treasuryScrollNo: `DEMO-BANK-${Date.now()}`,
+        treasuryDate: at,
+        completedAt: at,
+      };
+      if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
+        const ack=await persistSimulatedPayment({
+          idempotencyKey:paymentNonce,sessionId:getStorySessionId(),
+          service:'TRAVEL_TAX',amountMinor:Math.round(totalAmount*100),
+          details:{payerName:passengerName.trim(),assessmentYear:'2026-27',
+            paymentMethod,paymentChannel,receiptReference:receipt.tokenNumber,
+            receiptMobile:phone,travelDate,travelRoute:route?.route,ageBand,
+            passengerName:passengerName.trim(),lines:receipt.items},
+        });
+        receipt={...receipt,paymentTransactionId:ack.id};
+      }
+      addPaymentReceipt(receipt);
+      setCreatedReceipt(receipt);
+      setBankSlipPending(false);
+      setPaymentNonce(crypto.randomUUID());
+      setError('');
+    }catch {setError(bn?'অফিসে পেমেন্ট তথ্য পৌঁছায়নি। একই অনুরোধ আবার চেষ্টা করুন।':'Office payment synchronization pending. Retry this payment.');}
+    finally {setIsProcessing(false);}
   };
   // One state-controlled action, rendered in the modal footer (or alongside
   // the summary only on the standalone Travel Tax route).

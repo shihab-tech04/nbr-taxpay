@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {formatCurrency} from '../../services/numberFormat';
 import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
@@ -90,6 +91,29 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
+      // The private simulation ledger and the Office transaction feed are
+      // separate stores. Link them through this stable sourceTransactionId.
+      // Report payment completion only once Office SQL acknowledges receipt.
+      if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
+        const synced=await persistSimulatedPayment({
+          idempotencyKey: nonce,
+          sessionId: getStorySessionId(),
+          service: checked[0]?.category??parentCategory,
+          amountMinor: expected,
+          details: {
+            payerName: id,
+            taxpayerTin: String(id).startsWith('user')?
+              String(Number(String(id).replace('user','')) || 1).repeat(13).slice(0,13):'',
+            assessmentYear: checked[0]?.assessmentYear ?? '2026-27',
+            paymentMethod: 'SIMULATED',
+            paymentChannel: 'NOW',
+            sourceTransactionId: confirmed.transactionId,
+            originalReference: result.reference,
+            lines: checked,
+          }
+        });
+        if(!synced.mirrored)throw new Error('Office payment synchronization pending');
+      }
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
       setCompletedReference(result.reference);setPaymentStage(3);
       setSubmitMessage(txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')+result.reference+(result.replayed?' (previous request)':''));
