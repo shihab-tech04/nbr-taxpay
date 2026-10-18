@@ -182,7 +182,7 @@ export const PaymentWizard: React.FC = () => {
             details:{payerName:taxpayerProfile.nameEn,taxpayerTin:taxpayerProfile.tin,
               assessmentYear,taxZone:taxpayerProfile.taxZone,taxCircle:taxpayerProfile.taxCircle,
               paymentMethod,paymentChannel:'NOW',receiptReference:newReceipt.challanNo,
-              lines:[lineItem],note},
+              lines:[lineItem],note,receiptSnapshot:newReceipt},
           });
           receipt={...newReceipt,paymentTransactionId:ack.id};
         }
