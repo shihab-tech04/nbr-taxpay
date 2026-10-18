@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, CircleHelp, Info } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, CircleHelp, Info, ListChecks, MousePointerClick, ReceiptText, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -15,18 +15,22 @@ export const PublicLanding: React.FC = () => {
 
   const stages = [
     {
+      Icon: UserRound,
       title: t('Taxpayer details', 'করদাতার তথ্য'),
       description: t('Provide or confirm who the payment is for.', 'কার জন্য কর পরিশোধ করছেন, তা দিন বা নিশ্চিত করুন।'),
     },
     {
+      Icon: ListChecks,
       title: t('Purpose & amount', 'খাত ও পরিমাণ'),
       description: t('Choose the payment heads and review the amount.', 'কর পরিশোধের খাত বেছে নিয়ে পরিমাণ যাচাই করুন।'),
     },
     {
+      Icon: WalletCards,
       title: t('Payment channel', 'পেমেন্ট চ্যানেল'),
       description: t('Select an available payment method.', 'উপলব্ধ পেমেন্ট পদ্ধতি বেছে নিন।'),
     },
     {
+      Icon: ReceiptText,
       title: t('Confirmation', 'নিশ্চিতকরণ'),
       description: t('Review the result and keep your reference.', 'ফলাফল দেখুন এবং পেমেন্ট রেফারেন্স সংরক্ষণ করুন।'),
     },
@@ -63,7 +67,7 @@ export const PublicLanding: React.FC = () => {
     },
   ];
 
-  return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6 pb-12' + (bn ? ' font-bengali' : '')}>
+  return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
@@ -75,19 +79,22 @@ export const PublicLanding: React.FC = () => {
       <div className="citizen-hub-section__heading">
         <div>
           <h2 id="steps-title">{t('How your payment works', 'যেভাবে কর পরিশোধ করবেন')}</h2>
-          <p>{t('Know what happens next and what information you need.', 'পরবর্তী ধাপে কী হবে এবং কী তথ্য লাগবে, তা আগে থেকেই জানুন।')}</p>
+          <p>{t('A clear route from taxpayer details to your payment record.', 'করদাতার তথ্য থেকে পেমেন্ট রেকর্ড পর্যন্ত প্রতিটি ধাপ পরিষ্কারভাবে দেখুন।')}</p>
         </div>
       </div>
       <div className="public-payment-path__starter">
-        <span className="public-payment-path__starter-icon"><CheckCircle2 size={20} aria-hidden="true" /></span>
+        <span className="public-payment-path__starter-icon"><MousePointerClick size={21} aria-hidden="true" /></span>
         <div>
           <strong>{t('First, choose your tax service', 'প্রথমে করসেবা বেছে নিন')}</strong>
-          <p>{t("Pick what you're paying. Then we'll guide you through four clear steps.", 'কোন কর দিচ্ছেন তা বেছে নিন। এরপর চারটি সহজ ধাপে এগিয়ে যান।')}</p>
+          <p>{t('Select a service from the banners above. Then follow the steps below.', 'উপরের ব্যানার থেকে সেবা বেছে নিন। এরপর নিচের ধাপগুলো অনুসরণ করুন।')}</p>
         </div>
       </div>
       <ol className="public-payment-path__steps">
         {stages.map((stage, index) => <li key={stage.title}>
-          <span className="public-payment-path__number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          <div className="public-payment-path__step-head">
+            <span className="public-payment-path__symbol" aria-hidden="true"><stage.Icon size={23} strokeWidth={1.9}/></span>
+            <span className="public-payment-path__number" aria-hidden="true">{String(index + 1).padStart(2, '0')} / 04</span>
+          </div>
           <h3>{stage.title}</h3>
           <p>{stage.description}</p>
         </li>)}
@@ -102,17 +109,24 @@ export const PublicLanding: React.FC = () => {
 
     <section id="public-faq" className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
       <div className="public-faq-layout__heading">
-        <h2 id="faq-title"><CircleHelp size={22} aria-hidden="true" /> {t('Questions worth answering before you start', 'শুরু করার আগে কয়েকটি গুরুত্বপূর্ণ প্রশ্ন')}</h2>
-        <p>{t('Answers to the uncertainties that come up around tax payments.', 'কর পরিশোধ নিয়ে সাধারণ অনিশ্চয়তার উত্তর।')}</p>
+        <div>
+          <h2 id="faq-title"><CircleHelp size={23} aria-hidden="true" /> {t('Common questions', 'সাধারণ প্রশ্ন')}</h2>
+          <p>{t('The answers you may need before making a payment.', 'কর পরিশোধের আগে আপনার প্রয়োজনীয় কিছু উত্তর।')}</p>
+        </div>
+        <button type="button" className="public-faq-layout__all-guides" onClick={() => navigate('user_guide')}>
+          <BookOpen size={18} aria-hidden="true" /> {t('Open user guide', 'ব্যবহার নির্দেশিকা দেখুন')} <ArrowRight size={17} aria-hidden="true" />
+        </button>
       </div>
       <div className="public-info-faq">
         {questions.map(item => <details key={item.question}>
-          <summary>{item.question}</summary>
-          <p>{item.answer}</p>
-          {item.guide && <button type="button" className="public-faq-layout__guide-link" onClick={() => navigate('user_guide', { category: 'records' })}>
-            {t('Read records & corrections guidance', 'রেকর্ড ও সংশোধনের নির্দেশনা পড়ুন')}
-            <ArrowRight size={15} aria-hidden="true" />
-          </button>}
+          <summary><span>{item.question}</span><ChevronDown size={20} aria-hidden="true" /></summary>
+          <div className="public-faq-layout__answer">
+            <p>{item.answer}</p>
+            {item.guide && <button type="button" className="public-faq-layout__guide-link" onClick={() => navigate('user_guide', { category: 'records' })}>
+              {t('Read records & corrections guidance', 'রেকর্ড ও সংশোধনের নির্দেশনা পড়ুন')}
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>}
+          </div>
         </details>)}
       </div>
     </section>
