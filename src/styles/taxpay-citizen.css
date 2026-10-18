@@ -1812,18 +1812,18 @@
   /* The shared 7rem transaction-safe bottom padding is not needed on public pages. */
   padding-bottom:1.25rem;
 }
-/* A short report form should sit in the center of the available page, not
-   against the left edge with a large empty strip before the footer. */
+/* The report follows the same heading -> content rhythm as other public pages.
+   Keep the footer close to the short form, even on tall desktop screens. */
 .taxpay-citizen-shell main.public-information-main--report {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding-top:2rem;
+  flex:0 0 auto;
+  padding-top:clamp(1.5rem,3vw,2.5rem);
   padding-bottom:2rem;
+}
+.taxpay-citizen-shell main.public-information-main--report + .public-footer {
+  flex-grow:1;
 }
 @media (max-width:767px) {
   .taxpay-citizen-shell main.public-information-main--report {
-    align-items:flex-start;
     padding-top:1.5rem;
     padding-bottom:1.5rem;
   }
