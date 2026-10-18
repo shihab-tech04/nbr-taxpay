@@ -4,6 +4,7 @@ import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -182,10 +183,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const sampleOnly = !user && sample;
   return (
     <section className="taxpayer-account-center" lang={language} aria-labelledby="taxpay-account-title">
-      <header className="taxpayer-account-heading">
-        <h1 id="taxpay-account-title">{title}</h1>
-        <p>{t.intro}</p>
-      </header>
+      <TaxpayerPageHeading id="taxpay-account-title" className="taxpayer-account-heading"
+        title={title} description={t.intro} />
       <nav className="taxpayer-account-tabs" aria-label={language === 'bn' ? 'অ্যাকাউন্ট পৃষ্ঠা' : 'Account pages'}>
         {(['profile','notifications','settings'] as const).map(route => (
           <button type="button" key={route} aria-current={page === route ? 'page' : undefined}

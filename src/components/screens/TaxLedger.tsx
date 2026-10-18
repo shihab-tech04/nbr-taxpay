@@ -1,5 +1,6 @@
 import React from 'react';
-import { BookOpen, Download, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
+import { Download, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { useTaxState } from '../../services/taxState';
 import { hasVerifiedTaxLedgerSource } from '../../services/taxpayerEvidence';
 import { formatCurrency } from '../../services/numberFormat';
@@ -16,23 +17,7 @@ export const TaxLedger: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-taxpay-light text-taxpay-dark flex items-center justify-center">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="font-sans text-2xl font-bold text-slate-900">
-                {bn ? 'কর লেজার' : 'Tax ledger'}
-              </h1>
-              <p className="text-xs text-slate-500">
-                {bn ? 'লেজার তথ্য' : 'Ledger information'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
+      <TaxpayerPageHeading title={bn ? 'কর লেজার' : 'Tax ledger'} actions={
             <button
               type="button"
               disabled={!hasEntries}
@@ -51,9 +36,8 @@ export const TaxLedger: React.FC = () => {
               <Download className="w-3.5 h-3.5" />
               <span>{bn ? 'লেজার তথ্য নিন' : 'Export ledger data'}</span>
             </button>
-
-          </div>
-        </div>
+      } />
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
 
         {/* Ledger Balance Highlights */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-xs">

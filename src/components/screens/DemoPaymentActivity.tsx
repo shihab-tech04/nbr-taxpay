@@ -3,6 +3,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {formatCurrency} from '../../services/numberFormat';
 import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
+import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {
   simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
@@ -12,7 +13,7 @@ import {
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
-export const DemoPaymentActivity:React.FC=()=>{
+export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
   const {demoUser,language,navigate,routeParams}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
@@ -111,10 +112,9 @@ export const DemoPaymentActivity:React.FC=()=>{
   </main>;
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
-    <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-      <p className="text-sm font-semibold text-taxpay-dark">{txt('User ID','ইউজার আইডি')}: {id}</p>
-      <h1 className="mt-2 text-2xl font-bold text-taxpay-text">{txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}</h1>
-    </header>
+    <TaxpayerPageHeading title={txt('Payments & activity','পেমেন্ট ও লেনদেন')}
+      description={`${txt('User ID','ইউজার আইডি')}: ${id}`} />
+    {activityTabs && <TaxpayerActivityTabs />}
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
       <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-5">

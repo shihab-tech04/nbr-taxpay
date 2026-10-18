@@ -3,10 +3,11 @@ import { Search, AlertCircle } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
+import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 
-type ReceiptLookupProps = { embedded?: boolean };
+type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean };
 
-export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }) => {
+export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false }) => {
   const { language, lookupReceipt, receipts, navigate } = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
@@ -26,13 +27,16 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false }
 
   return (
     <section className={embedded ? 'receipt-lookup receipt-lookup--embedded' : 'receipt-lookup receipt-lookup--page'}>
+      {!embedded && activityTabs && <>
+        <TaxpayerPageHeading title={t('Receipt lookup', 'রসিদ অনুসন্ধান')}
+          description={t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')} />
+        <TaxpayerActivityTabs />
+      </>}
       <div className="receipt-lookup__content">
-        {!embedded && (
-          <header className="receipt-lookup__page-header">
-            <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
-            <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
-          </header>
-        )}
+        {!embedded && !activityTabs && <header className="receipt-lookup__page-header">
+          <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
+          <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
+        </header>}
         <form className="receipt-lookup__form" onSubmit={handleSearch} role="search">
           <div className="receipt-lookup__field">
             <label htmlFor="receipt-lookup-reference">

@@ -9,6 +9,7 @@ import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { formatCurrency } from '../../services/numberFormat';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import type { ChallanReceipt, PaymentCategory } from '../../types/tax';
+import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 
 const statusText: Record<string, {en:string; bn:string}> = {
   INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
@@ -31,7 +32,7 @@ const escapeCsv = (value: unknown) => {
   return '"' + raw.replace(/"/g, '""') + '"';
 };
 
-export const PaymentHistory: React.FC = () => {
+export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
   const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
@@ -59,14 +60,13 @@ export const PaymentHistory: React.FC = () => {
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 
-  if (demoUser||authenticatedUser) return <DemoPaymentActivity />;
+  if (demoUser||authenticatedUser) return <DemoPaymentActivity activityTabs={activityTabs} />;
 
   return (
     <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
-      <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-        <p className="text-xs font-semibold text-taxpay-dark">{label('Activity overview','লেনদেনের সারসংক্ষেপ')}</p>
-        <h1 className="mt-1 text-2xl font-bold text-taxpay-text">{label('Payments & activity','পেমেন্ট ও লেনদেন')}</h1>
-      </header>
+      <TaxpayerPageHeading title={label('Payments & activity','পেমেন্ট ও লেনদেন')}
+        description={label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
+      {activityTabs && <TaxpayerActivityTabs />}
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>

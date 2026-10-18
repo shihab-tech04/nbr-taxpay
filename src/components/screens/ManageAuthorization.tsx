@@ -3,6 +3,7 @@ import { Clock3, Plus, ShieldCheck, ShieldX, UsersRound, X } from 'lucide-react'
 import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {
   approveDemoAuthorization, declineDemoAuthorization, effectiveAuthorizationStatus,
   generateDemoOtp, loadDemoAuthorizations, requestDemoAuthorization,
@@ -98,10 +99,9 @@ export function ManageAuthorization() {
   const shown = records.filter(record => actor && (tab === 'outgoing' ? record.payerId === actor : record.taxpayerId === actor));
 
   return <section className="taxpayer-account-center taxpay-authorization" lang={language} aria-labelledby="manage-auth-title" data-testid="manage-authorization">
-    <header className="taxpayer-account-heading">
-      <h1 id="manage-auth-title">{tr('Manage Authorization', 'অনুমোদন পরিচালনা')}</h1>
-      <p>{tr('Choose who may facilitate income-tax payments for whom.', 'কে কার হয়ে আয়কর পরিশোধে সহায়তা করতে পারবেন, তা পরিচালনা করুন।')}</p>
-    </header>
+    <TaxpayerPageHeading id="manage-auth-title" className="taxpayer-account-heading"
+      title={tr('Manage Authorization', 'অনুমোদন পরিচালনা')}
+      description={tr('Choose who may facilitate income-tax payments for whom.', 'কে কার হয়ে আয়কর পরিশোধে সহায়তা করতে পারবেন, তা পরিচালনা করুন।')} />
     <nav className="taxpayer-account-tabs" aria-label={tr('Authorization direction', 'অনুমোদনের ধরন')}>
       <button type="button" aria-current={tab === 'outgoing' ? 'page' : undefined} onClick={() => { setTab('outgoing'); setFeedback(null); setAdding(false); }}>
         <UsersRound size={17} aria-hidden="true"/>{tr('I can pay for', 'আমি যাঁদের জন্য দিতে পারি')}

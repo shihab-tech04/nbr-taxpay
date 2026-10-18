@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
+import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadSimulationNotices,getBoundSimulationUser,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
@@ -55,9 +56,7 @@ export const NotificationsView:React.FC=()=>{
   if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
   if(!id)return <AccountCenter page="notifications"/>;
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
-    <header className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
-      <h1 className="text-2xl font-bold text-taxpay-text">{label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}</h1>
-    </header>
+    <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !notices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
