@@ -431,7 +431,7 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await modal.getByRole('button',{name:'Continue payment'}).click();
  await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
- await expect(modal.getByRole('button',{name:'Download JSON'})).toBeVisible();
+ await expect(modal.getByRole('button',{name:'Download',exact:true})).toBeVisible();
  await expect(side.getByText('Record ready')).toBeVisible();
 });
 
