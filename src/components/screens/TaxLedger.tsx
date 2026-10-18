@@ -17,7 +17,8 @@ export const TaxLedger: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <TaxpayerPageHeading title={bn ? 'কর লেজার' : 'Tax ledger'} actions={
+      <TaxpayerPageHeading title={bn ? 'কর লেজার' : 'Tax ledger'}
+        description={bn ? 'লেজার তথ্য' : 'Ledger information'} actions={
             <button
               type="button"
               disabled={!hasEntries}
