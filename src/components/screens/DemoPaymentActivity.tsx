@@ -2,12 +2,14 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
+import {DEMO_USERS} from '../../data/demoUsers';
+import {activeAuthorizationFor,getHostedAuthorizations} from '../../services/hostedDemoAuthorizations';
 import {formatCurrency} from '../../services/numberFormat';
 import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {
   simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
-  parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,
+  parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,getDemoStoryPaymentHistory,
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
 
@@ -15,12 +17,13 @@ type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assess
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
 export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
-  const {demoUser,language,navigate,routeParams}=useTaxState();
+  const {demoUser,previewAccount,language,navigate,routeParams}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
   const privateMode=Boolean(authenticatedUser);
-  const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
+  const previewMode=Boolean(previewAccount&&!authenticatedUser);
+  const id=(privateMode?boundId:previewAccount?.id) as SimulationUser|undefined;
   const bn=language==='bn';
   const txt=(en:string,bengali:string)=>bn?bengali:en;
   const [view,setView]=useState<'beneficiary'|'payer'>('beneficiary');
@@ -32,6 +35,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [nonce,setNonce]=useState(()=>crypto.randomUUID());
   const [saving,setSaving]=useState(false);
   const [submitMessage,setSubmitMessage]=useState('');
+  const [permittedBeneficiaries,setPermittedBeneficiaries]=useState<SimulationUser[]>([]);
   const [paymentStage,setPaymentStage]=useState<0|1|2|3>(0);
   const [parentCategory,setParentCategory]=useState<SimulationCategory>('TAX_WITH_RETURN');
   const [completedReference,setCompletedReference]=useState('');
@@ -71,6 +75,21 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     const timer=window.setInterval(()=>void run(),7000);
     return()=>{active=false;window.clearInterval(timer);};
   },[id,view,revision,privateMode]);
+  useEffect(()=>{
+    if(!id||!previewMode)return;
+    let active=true;
+    setRows([]);setLoading(true);setLoadError('');
+    const run=async()=>{
+      try{
+        const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(id,view),getHostedAuthorizations(id)]);
+        if(active){setRows(next);setPermittedBeneficiaries(
+          authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
+          setLoadError('');setLoading(false);}
+      }catch(e){if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}}
+    };
+    void run();const timer=window.setInterval(()=>void run(),7000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[id,view,revision,previewMode]);
 
   const modify=(index:number,field:keyof EditableLine,value:string)=>{
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
@@ -86,10 +105,39 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
       }));
+      const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
+      if(previewMode){
+        // Every third-party allocation carries the confirmed consent ID. TaxPay
+        // SQL checks it again inside the payment INSERT trigger before Office mirroring.
+        const authorizationRecords=await getHostedAuthorizations(id);
+        const auditedLines=checked.map(line=>{
+          if(line.beneficiary===id)return line;
+          const consent=activeAuthorizationFor(authorizationRecords,id,line.beneficiary);
+          if(!consent)throw Error(`Authorization for ${line.beneficiary} is not active. Go to Manage Authorization first.`);
+          return {...line,authorizationId:consent.id};
+        });
+        const synced=await persistSimulatedPayment({
+          idempotencyKey:nonce,sessionId:getStorySessionId(),service:checked[0]?.category??parentCategory,
+          amountMinor:expected,details:{
+            payerId:id,payerName:id,taxpayerTin:auditedLines.length===1?
+              DEMO_USERS[auditedLines[0].beneficiary].tin:'MULTIPLE_BENEFICIARIES',
+            assessmentYear:checked[0]?.assessmentYear??'2026-27',
+            paymentMethod:'SIMULATED',paymentChannel:'NOW',lines:auditedLines,
+          }
+        });
+        if(!synced.mirrored)throw Error('Office payment synchronization pending');
+        const checkedRows=await getDemoStoryPaymentHistory(id,'payer');
+        const confirmed=checkedRows.find(t=>t.transactionId===synced.id);
+        if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)
+          throw Error('Payment SQL read-back did not match. Retry the same payment.');
+        setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
+        setCompletedReference(confirmed.id);setPaymentStage(3);
+        setSubmitMessage(txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')+confirmed.id);
+        return;
+      }
       const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
       const readback=privateMode?await getPrivateSimulationHistory('payer'):await loadSimulationHistory(id,'payer');
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
-      const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
       // The private simulation ledger and the Office transaction feed are
       // separate stores. Link them through this stable sourceTransactionId.
@@ -119,12 +167,12 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       setSubmitMessage(txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')+result.reference+(result.replayed?' (previous request)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
-  },[id,lines,nonce,saving,language,privateMode]);
+  },[id,lines,nonce,saving,language,privateMode,previewMode,parentCategory]);
 
   if(authLoading)return <main className="mx-auto max-w-5xl p-6"><p role="status">Checking protected account…</p></main>;
   // Anonymous simulator RPCs were revoked. Fail closed with an explicit sign-in
   // journey, rather than attempting a permanently rejected public transaction.
-  if(!authenticatedUser)return <main className="mx-auto max-w-5xl space-y-4 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
+  if(!authenticatedUser&&!previewMode)return <main className="mx-auto max-w-5xl space-y-4 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
     <h1 className="text-2xl font-bold text-taxpay-text">{txt('Sign in to manage payments','পেমেন্ট পরিচালনা করতে সাইন ইন করুন')}</h1>
     <p className="text-sm text-taxpay-muted">{txt('Sign in with your assigned account to view payment records.','পেমেন্ট রেকর্ড দেখতে নির্ধারিত অ্যাকাউন্টে সাইন ইন করুন।')}</p>
     <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{txt('Open sign-in','সাইন ইন খুলুন')}</button>
@@ -184,9 +232,13 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Pay for','যার জন্য পেমেন্ট')}
               <select className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.beneficiary} onChange={e=>modify(index,'beneficiary',e.target.value)}>
-                {simulationUsers.map(u=><option key={u} value={u}>{u}{u===id?txt(' (self)',' (নিজের)'):''}</option>)}
+                {simulationUsers.filter(u=>!previewMode||u===id||permittedBeneficiaries.includes(u)).map(u=>
+                  <option key={u} value={u}>{u}{u===id?txt(' (self)',' (নিজের)'):` · TIN ${DEMO_USERS[u].tin}`}</option>)}
               </select>
             </label>
+            {previewMode&&<p className="text-xs text-slate-600 sm:col-span-2">
+              {txt('Other taxpayers appear after four-digit authorization is complete.','চার সংখ্যার কোড দিয়ে অনুমোদন সম্পন্ন হলে অন্য করদাতা তালিকায় আসবেন।')}
+            </p>}
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Payment category','পেমেন্টের খাত')}
               <select className="taxpay-service-select mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" data-payment-service={line.category} value={line.category} onChange={e=>modify(index,'category',e.target.value)}>
                 {simulationCategories.map(c=><option value={c} key={c}>{c.replace(/_/g,' ')}</option>)}

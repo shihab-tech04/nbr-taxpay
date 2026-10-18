@@ -3,6 +3,13 @@ const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const uuid=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
+const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
+async function mirrorAuthorization(id:string){
+ const res=await fetch(officeAuthorization,{method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({id}),signal:AbortSignal.timeout(10000)});
+ const receipt=await res.json();
+ return res.ok&&receipt.success&&receipt.data?.id===id;
+}
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
  const u=new URL(req.url),path=u.pathname.replace(/^\/demo-story1-taxpay/,"");
@@ -10,6 +17,46 @@ Deno.serve(async(req)=>{
  if(!key||!url)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
+  if(req.method==="GET"&&path==="/authorizations"){
+   const actor=u.searchParams.get("actor");
+   if(!actor||!/^user([1-9]|10)$/.test(actor))return respond({success:false,error:"INVALID_DEMO_USER"},400);
+   const {data,error}=await db.rpc("demo_auth_list",{p_actor:actor});
+   if(error)return respond({success:false,error:"AUTHORIZATION_READ_FAILED"},503);
+   return respond({success:true,data,simulationOnly:true});
+  }
+  const snapshotPath=path.match(new RegExp("^/authorizations/([0-9a-fA-F-]{36})/snapshot$"));
+  if(req.method==="GET"&&snapshotPath&&uuid.test(snapshotPath[1])){
+   const {data,error}=await db.rpc("demo_auth_public_snapshot",{p_request:snapshotPath[1]});
+   if(error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
+   return respond({success:true,data,simulationOnly:true});
+  }
+  if(req.method==="POST"&&(path==="/authorizations"||path==="/authorizations/sync")){
+   const raw=await req.text();if(raw.length>1000)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
+   const input=JSON.parse(raw),action=path.endsWith("/sync")?"sync":input.action;
+   let result:{id:string;status:string;consentCode?:string|null;attempts?:number};
+   if(action==="sync"){
+    if(!uuid.test(input.id))return respond({success:false,error:"INVALID_ID"},400);
+    const check=await db.rpc("demo_auth_public_snapshot",{p_request:input.id});
+    if(check.error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
+    result=check.data;
+   }else{
+    if(!["request","accept","confirm","decline","revoke"].includes(action)||
+       !/^user([1-9]|10)$/.test(input.actor??""))
+      return respond({success:false,error:"INVALID_AUTHORIZATION_ACTION"},400);
+    const {data,error}=await db.rpc("demo_auth_transition",{
+     p_action:action,p_actor:input.actor,p_request:input.id??null,
+     p_target_tin:input.tin??null,p_code:input.code??null
+    });
+    if(error)return respond({success:false,error:error.message},409);
+    result=data;
+   }
+   try{if(!await mirrorAuthorization(result.id))throw Error("OFFICE_AUTHORIZATION_MIRROR_FAILED");}
+   catch(e){
+    console.error("Authorization mirror pending",e);
+    return respond({success:false,error:"OFFICE_SYNC_PENDING",requestId:result.id,retryable:true},503);
+   }
+   return respond({success:true,data:result,mirrored:true,simulationOnly:true});
+  }
   if(req.method==="POST"&&path==="/payments"){
     const raw=await req.text();if(raw.length>12000)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const body=JSON.parse(raw);

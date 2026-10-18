@@ -5,11 +5,10 @@ import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {
-  approveDemoAuthorization, declineDemoAuthorization, effectiveAuthorizationStatus,
-  generateDemoOtp, loadDemoAuthorizations, requestDemoAuthorization,
-  revokeDemoAuthorization, saveDemoAuthorizations, subscribeDemoAuthorizations,
-  userIdForDemoTin, type DemoAuthorization,
-} from '../../services/demoAuthorizations';
+  AuthorizationSyncError, getHostedAuthorizations, performHostedAuthorization,
+  retryHostedAuthorizationSync, userIdForHostedTin, type HostedAuthorization,
+  type HostedAuthorizationStatus,
+} from '../../services/hostedDemoAuthorizations';
 
 type Tab = 'outgoing' | 'incoming';
 
@@ -20,25 +19,57 @@ export function ManageAuthorization() {
   const tr = (en: string, bengali: string) => bn ? bengali : en;
   const actor = previewAccount?.id ?? (sampleJourneysEnabled ? demoUser?.id : undefined);
   const [tab, setTab] = useState<Tab>('outgoing');
-  const [records, setRecords] = useState<DemoAuthorization[]>(loadDemoAuthorizations);
-  const [now, setNow] = useState(Date.now());
+  const [records, setRecords] = useState<HostedAuthorization[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [syncPending, setSyncPending] = useState<string|null>(null);
   const [adding, setAdding] = useState(false);
   const [tin, setTin] = useState('');
   const [codes, setCodes] = useState<Record<string, string>>({});
   const [removeId, setRemoveId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ error: boolean; message: string } | null>(null);
+  useEffect(()=>{
+    try{
+      if(sessionStorage.getItem('taxpay-authorization-open-tab')==='incoming'){
+        setTab('incoming');sessionStorage.removeItem('taxpay-authorization-open-tab');
+      }
+    }catch{/* optional navigation hint */}
+  },[]);
 
-  useEffect(() => subscribeDemoAuthorizations(() => { setRecords(loadDemoAuthorizations()); setNow(Date.now()); }), []);
+  const refresh = async (user:DemoUserId) => {
+    const next=await getHostedAuthorizations(user);
+    setRecords(next);
+  };
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 10000);
-    return () => window.clearInterval(timer);
-  }, []);
-  useEffect(() => { setFeedback(null); setAdding(false); setTin(''); setCodes({}); setRemoveId(null); }, [actor]);
+    if(!actor){setRecords([]);return;}
+    let active=true;
+    setRecords([]);setLoading(true);
+    const poll=async()=>{
+      try{const data=await getHostedAuthorizations(actor);if(active){setRecords(data);setFeedback(prev=>prev?.error?prev:null);}}
+      catch(error){if(active)setFeedback({error:true,message:error instanceof Error?error.message:'Authorization service unavailable'});}
+      finally{if(active)setLoading(false);}
+    };
+    void poll();const timer=window.setInterval(()=>void poll(),5000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[actor]);
+  useEffect(() => { setFeedback(null); setAdding(false); setTin(''); setCodes({}); setRemoveId(null);setSyncPending(null); }, [actor]);
 
-  const sendRequest = (event: React.FormEvent) => {
+  const runAction=async(action:()=>Promise<unknown>,success:string)=>{
+    if(!actor||busy)return;
+    setBusy(true);setFeedback(null);
+    try{
+      await action();await refresh(actor);
+      setFeedback({error:false,message:success});
+    }catch(error){
+      if(error instanceof AuthorizationSyncError)setSyncPending(error.requestId);
+      setFeedback({error:true,message:error instanceof Error?error.message:'Authorization service unavailable'});
+      if(actor)try{await refresh(actor);}catch{/* keep first error */}
+    }finally{setBusy(false);}
+  };
+  const sendRequest = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!actor) return;
-    const target = userIdForDemoTin(tin);
+    const target = userIdForHostedTin(tin);
     if (!/^\d{13}$/.test(tin.trim())) {
       setFeedback({ error: true, message: tr('Enter a 13-digit test taxpayer TIN.', 'করদাতার ১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন।') });
       return;
@@ -47,50 +78,38 @@ export function ManageAuthorization() {
       setFeedback({ error: true, message: tr('No test taxpayer matches this TIN.', 'এই টিআইএন-এ কোনো পরীক্ষামূলক করদাতা নেই।') });
       return;
     }
-    try {
-      const next = requestDemoAuthorization(loadDemoAuthorizations(), actor, target, generateDemoOtp());
-      saveDemoAuthorizations(next);
-      setTin(''); setAdding(false);
-      setFeedback({ error: false, message: tr('Request created. The taxpayer can approve it from their own account.', 'অনুরোধ তৈরি হয়েছে। করদাতা নিজ অ্যাকাউন্ট থেকে অনুমোদন করতে পারবেন।') });
-    } catch (error) {
-      setFeedback({ error: true, message: error instanceof Error ? error.message : tr('Could not create request.', 'অনুরোধ তৈরি করা যায়নি।') });
-    }
+    await runAction(async()=>{
+      await performHostedAuthorization(actor,'request',{tin});
+      setTin('');setAdding(false);
+    },tr('Request sent. The taxpayer will receive a notification and approval prompt.','অনুরোধ পাঠানো হয়েছে। করদাতা বিজ্ঞপ্তি ও অনুমোদনের বার্তা পাবেন।'));
   };
-  const confirmCode = (record: DemoAuthorization) => {
+  const confirmCode = (record: HostedAuthorization) => {
     if (!actor) return;
-    try {
-      const next = approveDemoAuthorization(loadDemoAuthorizations(), actor, record.id, codes[record.id] ?? '');
-      saveDemoAuthorizations(next);
-      setCodes(before => ({ ...before, [record.id]: '' }));
-      const approved = next.find(r => r.id === record.id)?.status === 'ACTIVE';
-      setFeedback({ error: !approved, message: approved
-        ? tr('Authorization granted for 15 minutes.', '১৫ মিনিটের জন্য অনুমোদন দেওয়া হয়েছে।')
-        : tr('Incorrect code. Three unsuccessful attempts decline the request.', 'ভুল কোড। তিনবার ভুল হলে অনুরোধ বাতিল হবে।') });
-    } catch (error) { setFeedback({ error: true, message: error instanceof Error ? error.message : 'Verification failed.' }); }
+    void runAction(async()=>{
+      const outcome=await performHostedAuthorization(actor,'confirm',{id:record.id,code:codes[record.id]??''});
+      setCodes(before=>({...before,[record.id]:''}));
+      if(outcome.status!=='ACTIVE')throw Error(tr('Incorrect code. Three attempts will decline the request.','ভুল কোড। তিনবার চেষ্টা করলে অনুরোধ বাতিল হবে।'));
+    },tr('Authorization is active. You can now pay for this taxpayer.','অনুমোদন সক্রিয়। এখন এই করদাতার হয়ে পরিশোধ করতে পারবেন।'));
   };
-  const changeStatus = (record: DemoAuthorization, operation: 'revoke' | 'decline') => {
+  const changeStatus = (record: HostedAuthorization, operation: 'revoke' | 'decline' | 'accept') => {
     if (!actor) return;
-    try {
-      const next = operation === 'revoke'
-        ? revokeDemoAuthorization(loadDemoAuthorizations(), actor, record.id)
-        : declineDemoAuthorization(loadDemoAuthorizations(), actor, record.id);
-      saveDemoAuthorizations(next);
+    void runAction(async()=>{
+      await performHostedAuthorization(actor,operation,{id:record.id});
       setRemoveId(null);
-      setFeedback({ error: false, message: operation === 'revoke'
-        ? tr('Authorization removed.', 'অনুমোদন বাতিল করা হয়েছে।')
-        : tr('Request declined.', 'অনুরোধ প্রত্যাখ্যান করা হয়েছে।') });
-    } catch (error) { setFeedback({ error: true, message: error instanceof Error ? error.message : 'Action failed.' }); }
+    },operation==='revoke'?tr('Authorization removed.','অনুমোদন বাতিল করা হয়েছে।'):
+      operation==='accept'?tr('Accepted. Share your four-digit code with the requester.','গৃহীত। অনুরোধকারীকে চার সংখ্যার কোড দিন।'):
+      tr('Request declined.','অনুরোধ প্রত্যাখ্যান করা হয়েছে।'));
   };
-  const statusLabel = (status: ReturnType<typeof effectiveAuthorizationStatus>) => ({
-    ACTIVE: tr('Active', 'সক্রিয়'), PENDING: tr('Pending', 'অপেক্ষমাণ'), EXPIRED: tr('Expired', 'মেয়াদোত্তীর্ণ'),
+  const statusLabel = (status: HostedAuthorizationStatus) => ({
+    ACTIVE: tr('Active', 'সক্রিয়'), PENDING: tr('Pending', 'অপেক্ষমাণ'), CODE_ISSUED:tr('Awaiting code','কোডের অপেক্ষায়'), EXPIRED: tr('Expired', 'মেয়াদোত্তীর্ণ'),
     REVOKED: tr('Revoked', 'বাতিল'), DENIED: tr('Declined', 'প্রত্যাখ্যাত'),
   })[status];
-  const timeLabel = (record: DemoAuthorization) => {
-    const status = effectiveAuthorizationStatus(record, now);
+  const timeLabel = (record: HostedAuthorization) => {
+    const status = record.status;
     if (status === 'PENDING') return tr('Waiting for taxpayer consent', 'করদাতার সম্মতির অপেক্ষায়');
+    if (status === 'CODE_ISSUED') return tr('Taxpayer accepted · waiting for four-digit confirmation', 'করদাতা গ্রহণ করেছেন · চার সংখ্যার নিশ্চিতকরণের অপেক্ষায়');
     if (status === 'ACTIVE') {
-      const minutes = Math.max(1, Math.ceil(((record.activeUntil ?? now) - now) / 60000));
-      return tr(`${minutes} minute${minutes === 1 ? '' : 's'} remaining`, `আর ${minutes} মিনিট`);
+      return tr('Authorized until the taxpayer revokes access', 'করদাতা বাতিল না করা পর্যন্ত অনুমোদিত');
     }
     if (status === 'REVOKED') return tr('Access removed', 'অনুমতি বাতিল করা হয়েছে');
     if (status === 'DENIED') return tr('Request declined', 'অনুরোধ প্রত্যাখ্যাত');
@@ -132,17 +151,20 @@ export function ManageAuthorization() {
         </button>}
       </div>
 
-      {adding && tab === 'outgoing' && <form className="taxpay-auth-add" onSubmit={sendRequest}>
+      {adding && tab === 'outgoing' && <form className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
         <label htmlFor="new-auth-tin">{tr('Taxpayer TIN', 'করদাতার টিআইএন')}</label>
         <div className="taxpay-auth-inline">
           <input id="new-auth-tin" value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 13))}
             inputMode="numeric" autoComplete="off" placeholder={tr('Enter 13-digit test TIN', '১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন')} required maxLength={13} />
-          <button type="submit" className="taxpay-auth-primary">{tr('Request authorization', 'অনুমোদন চান')}</button>
+          <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization', 'অনুমোদন চান')}</button>
         </div>
-        <p>{tr('The taxpayer approves from their own account using a one-time code.', 'করদাতা নিজের অ্যাকাউন্টে এককালীন কোড দিয়ে সম্মতি দেবেন।')}</p>
+        <p>{tr('The taxpayer accepts from their account, then shares a four-digit code with you to confirm.', 'করদাতা নিজের অ্যাকাউন্ট থেকে গ্রহণ করে আপনার সঙ্গে চার সংখ্যার কোড শেয়ার করবেন।')}</p>
       </form>}
 
       {feedback && <p className={`taxpay-auth-feedback ${feedback.error ? 'taxpay-auth-feedback--error' : ''}`} role="status">{feedback.message}</p>}
+      {syncPending && <button type="button" className="taxpay-auth-outline" disabled={busy}
+        onClick={()=>void runAction(async()=>{await retryHostedAuthorizationSync(syncPending);setSyncPending(null);},tr('Office synchronization confirmed.','অফিস সিঙ্ক নিশ্চিত হয়েছে।'))}>{tr('Retry Office synchronization','অফিস সিঙ্ক আবার চেষ্টা করুন')}</button>}
+      {loading && <p role="status">{tr('Loading shared authorizations…','অনুমোদন লোড হচ্ছে…')}</p>}
       {!shown.length ? <div className="taxpay-auth-empty">
         <UsersRound size={30} strokeWidth={1.6} aria-hidden="true" />
         <h3>{tab === 'outgoing' ? tr('No authorizations yet', 'এখনো কোনো অনুমোদন নেই') : tr('No one is authorized yet', 'এখনো কেউ অনুমোদিত নন')}</h3>
@@ -153,7 +175,7 @@ export function ManageAuthorization() {
         {shown.map(record => {
           const counterpart: DemoUserId = tab === 'outgoing' ? record.taxpayerId : record.payerId;
           const person = DEMO_USERS[counterpart];
-          const status = effectiveAuthorizationStatus(record, now);
+          const status = record.status;
           return <li key={record.id} className="taxpay-auth-row" data-authorization-status={status}>
             <div className="taxpay-auth-person">
               <div>
@@ -164,15 +186,27 @@ export function ManageAuthorization() {
             </div>
             <p className="taxpay-auth-expiry"><Clock3 size={15} aria-hidden="true"/>{timeLabel(record)}</p>
             {tab === 'outgoing' && status === 'PENDING' &&
-              <p className="taxpay-auth-note">{tr('The other taxpayer must enter the code in their own account. You cannot approve this request.', 'অন্য করদাতাকে নিজের অ্যাকাউন্টে কোড লিখতে হবে। আপনি নিজে অনুমোদন দিতে পারবেন না।')}</p>}
+              <p className="taxpay-auth-note">{tr('Waiting for the taxpayer to accept. They will receive the four-digit code.', 'করদাতার সম্মতির অপেক্ষায়। তিনি চার সংখ্যার কোড পাবেন।')}</p>}
             {tab === 'incoming' && status === 'PENDING' && <div className="taxpay-auth-approval">
-              <p>{tr('One-time code for your test account:', 'আপনার টেস্ট অ্যাকাউন্টের এককালীন কোড:')} <strong className="taxpay-auth-tin">{record.consentCode}</strong></p>
+              <p>{tr('This person wants permission to pay your tax. Accept to receive your private code.', 'এই ব্যক্তি আপনার কর পরিশোধের অনুমতি চাইছেন। কোড পেতে গ্রহণ করুন।')}</p>
               <div className="taxpay-auth-inline">
-                <input aria-label={tr('Enter one-time code', 'এককালীন কোড লিখুন')} inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-                  value={codes[record.id] ?? ''} onChange={e => setCodes(old => ({ ...old, [record.id]: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
-                  placeholder={tr('6-digit code', '৬ সংখ্যার কোড')} />
-                <button type="button" className="taxpay-auth-primary" onClick={() => confirmCode(record)} disabled={(codes[record.id] ?? '').length !== 6}>{tr('Authorize', 'অনুমোদন দিন')}</button>
-                <button type="button" className="taxpay-auth-outline" onClick={() => changeStatus(record, 'decline')}>{tr('Decline', 'প্রত্যাখ্যান')}</button>
+                <button type="button" className="taxpay-auth-primary" disabled={busy} onClick={() => changeStatus(record, 'accept')}>{tr('Accept request', 'অনুরোধ গ্রহণ করুন')}</button>
+                <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline', 'প্রত্যাখ্যান')}</button>
+              </div>
+            </div>}
+            {tab === 'incoming' && status === 'CODE_ISSUED' && <div className="taxpay-auth-approval">
+              <p>{tr('Your four-digit confirmation code:', 'আপনার চার সংখ্যার নিশ্চিতকরণ কোড:')} <strong className="taxpay-auth-tin">{record.consentCode}</strong></p>
+              <p>{tr('Share it with the requester. The code expires in 15 minutes.', 'অনুরোধকারীকে কোডটি দিন। ১৫ মিনিট পরে কোডের মেয়াদ শেষ হবে।')}</p>
+              <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => changeStatus(record, 'decline')}>{tr('Decline instead', 'পরিবর্তে প্রত্যাখ্যান করুন')}</button>
+            </div>}
+            {tab === 'outgoing' && status === 'CODE_ISSUED' && <div className="taxpay-auth-approval">
+              <p>{tr('The taxpayer accepted. Enter the four-digit code they shared with you:', 'করদাতা গ্রহণ করেছেন। তাঁর দেওয়া চার সংখ্যার কোড লিখুন:')}</p>
+              <div className="taxpay-auth-inline">
+                <input aria-label={tr('Four-digit confirmation code', 'চার সংখ্যার নিশ্চিতকরণ কোড')} inputMode="numeric" autoComplete="one-time-code" maxLength={4}
+                  value={codes[record.id]??''} onChange={e=>setCodes(old=>({...old,[record.id]:e.target.value.replace(/\D/g,'').slice(0,4)}))}
+                  placeholder={tr('4-digit code','৪ সংখ্যার কোড')}/>
+                <button type="button" className="taxpay-auth-primary" disabled={busy||(codes[record.id]??'').length!==4}
+                  onClick={()=>confirmCode(record)}>{tr('Complete authorization','অনুমোদন সম্পূর্ণ করুন')}</button>
               </div>
             </div>}
             {tab === 'incoming' && status === 'ACTIVE' && <div className="taxpay-auth-actions">
