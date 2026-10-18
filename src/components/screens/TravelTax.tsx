@@ -430,7 +430,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               <label className="travel-flow__channel-option"><input type="radio" name="travel-payment-channel" checked={paymentChannel === 'NOW'} onChange={() => { setPaymentChannel('NOW'); setPaymentMethod(null); setAcknowledged(false); }} />{bn ? 'অনলাইনে পরিশোধ' : 'Pay online'}</label>
               <label className="travel-flow__channel-option"><input type="radio" name="travel-payment-channel" checked={paymentChannel === 'OTC'} onChange={() => { setPaymentChannel('OTC'); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }} />{bn ? 'ব্যাংক শাখায় পরিশোধ (চালান স্লিপ)' : 'Pay at a bank branch (payment slip)'}</label>
             </fieldset>
-            {paymentChannel === 'NOW' && <>
+            {paymentChannel !== 'OTC' && <>
             <fieldset className="travel-flow__channel-options"><legend className="sr-only">{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</legend>
               {([['BKASH','bKash'],['NAGAD','Nagad'],['ROCKET','Rocket'],['INTERNET_BANKING',bn ? 'ইন্টারনেট ব্যাংকিং' : 'Internet banking'],['VISA','Visa'],['MASTERCARD','Mastercard']] as const).map(([method,label]) => <label key={method} className="travel-flow__channel-option"><input type="radio" name="travel-payment-method" checked={paymentMethod === method} onChange={() => { setPaymentChannel('NOW'); setPaymentMethod(method); setAcknowledged(false); }} /><span>{label}</span></label>)}
             </fieldset>
