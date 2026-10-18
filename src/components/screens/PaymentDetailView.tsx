@@ -8,26 +8,7 @@ import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
 import type { ChallanReceipt } from '../../types/tax';
 import { getConfirmedReceipt, validCertificateTransactionId } from '../../services/confirmedPaymentCertificate';
-
-function downloadDisplayedCertificate(receipt:ChallanReceipt){
-  // The exported document reuses the exact receipt DOM and deployed TaxPay
-  // stylesheet; it is not a separately drawn Office approximation.
-  const paper=document.querySelector('.receipt-view__paper');
-  if(!paper)throw new Error('Certificate layout not available');
-  const stylesheetLinks=Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
-    .map(link=>'<link rel="stylesheet" href="'+link.href.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'">').join('');
-  const html='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
-    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
-    '<title>Payment certificate - '+receipt.paymentTransactionId+'</title>'+stylesheetLinks+
-    '<style>@page{size:A4;margin:12mm}body{margin:0;padding:12mm;background:#fff}' +
-    '.no-print,button{display:none!important}.receipt-view__paper{box-shadow:none!important;border:none!important}' +
-    '</style></head><body><main class="receipt-view receipt-view--page">'+paper.outerHTML+'</main></body></html>';
-  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  const link=document.createElement('a');link.href=url;
-  link.download='Payment-certificate-'+receipt.paymentTransactionId+'.html';
-  document.body.appendChild(link);link.click();link.remove();
-  window.setTimeout(()=>URL.revokeObjectURL(url),3000);
-}
+import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
 
 function SyncedCertificate({transactionId,docAction}:{transactionId:string;docAction?:string}){
   const [receipt,setReceipt]=useState<ChallanReceipt|null>(null);
