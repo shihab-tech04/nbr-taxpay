@@ -8,10 +8,11 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.getByRole('button', { name: new RegExp(category) }).click();
   await dialog.getByRole('button', { name: /Continue/ }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await dialog.getByRole('radio', { name: 'My own tax' }).check();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  if (category !== 'Source Tax Deposit') await dialog.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
+  if (category !== 'Source Tax Deposit') await dialog.getByRole('radio', { name: /Person other than company/ }).check();
   await dialog.locator('#guest-tax-amount').fill('12500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
@@ -31,21 +32,26 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(dialog.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await expect(action).toBeDisabled();
-  await expect(dialog.getByRole('radio', { name: 'Internet Banking' })).toBeVisible();
+  await expect(dialog.getByRole('radio', { name: 'Internet Banking' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Cards' }).click();
   await expect(dialog.getByRole('radio', { name: 'Visa' })).toBeVisible();
   await expect(dialog.getByRole('radio', { name: 'Mastercard' })).toBeVisible();
   await dialog.getByRole('radio', { name: 'Visa' }).check();
   await expect(action).toBeDisabled();
-  await dialog.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await expect(action).toBeEnabled();
   await action.click();
   await expect(dialog.getByText('Step 4 of 4')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByText('Payment progress details').click();
   const timeline = dialog.getByTestId('payment-lifecycle');
   for (const stage of ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED', 'PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED']) {
     await expect(timeline.getByText(stage, { exact: true })).toBeVisible();
   }
+  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
   await expect(dialog.getByText('Simulation only. No actual money transfer, government challan or tax credit has occurred.')).toHaveCount(0);
 });
@@ -53,7 +59,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
 test('bank branch creates an unpaid challan first, then a receipt after simulated settlement', async ({ page }) => {
   const dialog = await openReview(page);
   await dialog.getByRole('button', { name: 'Pay at a bank branch' }).click();
-  await dialog.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await dialog.getByRole('button', { name: 'Get payment slip' }).click();
   await expect(dialog.getByRole('heading', { name: 'Bank payment slip ready' })).toBeVisible();
   await expect(dialog.getByText('This is not tax paid yet')).toBeVisible();
@@ -62,16 +68,19 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue bank payment' }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByText('Payment progress details').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('TREASURY_SETTLED')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });
 
 test('declined online authorization issues no receipt and allows a new method', async ({ page }) => {
   const dialog = await openReview(page);
   await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
-  await dialog.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment request declined' })).toBeVisible({ timeout: 12000 });
   await expect(dialog.getByTestId('payment-lifecycle').getByText('FAILED')).toBeVisible();
@@ -80,9 +89,11 @@ test('declined online authorization issues no receipt and allows a new method', 
   await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Pay BDT 12,500/ })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'Nagad' }).check();
-  await dialog.getByRole('checkbox', { name: /I have checked the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });

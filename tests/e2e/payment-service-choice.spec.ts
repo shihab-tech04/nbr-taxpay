@@ -143,6 +143,7 @@ test('Pay Tax opens the eight HTML-defined services and carries the chosen categ
   await expect(chooser.locator('.tax-service-choice__progress')).toHaveCount(0);
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
+  await expect(chooser.locator('.tax-service-choice__stage--current svg')).toHaveCount(1);
   await expect(chooser.locator('.payment-form-section')).toHaveCount(2);
   await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
   expect(page.url()).toBe(originalUrl);
@@ -264,6 +265,7 @@ test('Other Tax Payment uses the v11 optional guest NBR reference', async ({ pag
   await chooser.getByRole('button', { name: /Other Tax Payment/ }).click();
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
+  await chooser.getByRole('radio', { name: 'My own tax' }).check();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
