@@ -19,6 +19,10 @@ test('account sign-in at the breakpoint retains the selected service and starts 
   await expect(payment).toBeVisible();
   await expect(selectedService).toHaveText('Assessed Demand');
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.locator('#guest-tin')).toHaveCount(0);
+  const ownTaxChoice = payment.getByRole('radio', { name: 'My own tax' });
+  await expect(ownTaxChoice).not.toBeChecked();
+  await ownTaxChoice.check();
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
@@ -33,6 +37,10 @@ test('guest payment continues directly from the breakpoint without opening accou
   await payment.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(payment).toBeVisible();
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.locator('#guest-tin')).toHaveCount(0);
+  const otherTaxChoice = payment.getByRole('radio', { name: 'Paying for the agent' });
+  await expect(otherTaxChoice).not.toBeChecked();
+  await otherTaxChoice.check();
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
