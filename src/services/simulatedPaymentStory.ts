@@ -54,3 +54,15 @@ export async function getStoryNotices(): Promise<StoryPaymentNotice[]> {
   if (!payload.success || !Array.isArray(payload.data)) throw new Error('Notification service unavailable');
   return payload.data;
 }
+
+/** Session-scoped SQL records; not taxpayer identity or tax-ledger entitlement. */
+export type StorySessionPayment={
+ id:string;service:string;amountMinor:number;status:string;createdAt:string;
+};
+export async function getStorySessionPayments():Promise<StorySessionPayment[]>{
+ const response=await fetch(API+'/payments?sessionId='+encodeURIComponent(getStorySessionId()),{cache:'no-store'});
+ if(!response.ok)throw new Error('Payment history unavailable');
+ const payload=await response.json() as {success:boolean;data:StorySessionPayment[]};
+ if(!payload.success||!Array.isArray(payload.data))throw new Error('Invalid payment history');
+ return payload.data;
+}
