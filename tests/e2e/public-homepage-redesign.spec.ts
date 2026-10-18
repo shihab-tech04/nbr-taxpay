@@ -48,7 +48,7 @@ test('public FAQ offers readable answers and the full guide without a large foot
 });
 
 test('Report follows heading then compact content with no redundant warnings', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.setViewportSize({ width: 1792, height: 1400 });
   await page.goto('/?action=incident');
   const report = page.locator('.public-report-page');
   await expect(report.getByRole('heading', { name: 'Report a problem' })).toBeVisible();
@@ -61,15 +61,19 @@ test('Report follows heading then compact content with no redundant warnings', a
     const main = document.querySelector('#main-content')!.getBoundingClientRect();
     const section = document.querySelector('.public-report-page')!.getBoundingClientRect();
     const card = document.querySelector('.public-report-card')!.getBoundingClientRect();
+    const footer = document.querySelector('.public-footer')!.getBoundingClientRect();
     return {
       cardWidth: card.width,
       horizontalOffset: Math.abs(card.left + card.width / 2 - main.left - main.width / 2),
-      verticalOffset: Math.abs(section.top + section.height / 2 - main.top - main.height / 2),
+      topGap: section.top - main.top,
+      footerGap: footer.top - card.bottom,
     };
   });
   expect(layout.cardWidth).toBeLessThanOrEqual(820);
   expect(layout.horizontalOffset, 'Report form must be horizontally centered').toBeLessThanOrEqual(2);
-  expect(layout.verticalOffset, 'Report content must be balanced above the footer').toBeLessThanOrEqual(2);
+  expect(layout.topGap, 'Report heading must start near the top of the page').toBeGreaterThanOrEqual(24);
+  expect(layout.topGap, 'Report must not be vertically centered on tall screens').toBeLessThanOrEqual(48);
+  expect(layout.footerGap, 'Footer must follow the report form without a large empty strip').toBeLessThanOrEqual(48);
   await report.getByLabel('Short description').fill('A payment reference does not match my record.');
   await report.getByRole('button', { name: 'Review details' }).click();
   await expect(report.getByRole('heading', { name: 'Review your details' })).toBeVisible();
