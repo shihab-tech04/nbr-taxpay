@@ -32,3 +32,16 @@ Reference: `NBR_Integrated_Income_Tax_Payment_Portal_Upgraded-v11(6).html`, supp
 - `npm run build`
 - `git diff --check`
 - Next gate: GitHub Actions responsive Playwright suite after publication. Do not mark production parity until that run and deployment are confirmed.
+
+## Follow-up form-input corrections — 18 October 2026
+
+The earlier "remaining differences" list describes the state **at the end of the original 17 October audit**. This follow-up makes form-only corrections without altering the approved service chooser, access breakpoint, four modal steps, footer or payment preview.
+
+- The later approved UX decision overrides v11's `forSelf:true` initial value: neither payer relationship starts selected. Both choices now use the same native radio-input pattern as income-tax type.
+- Payment heads, including the one-head Return category, require deliberate selection. The newer, approved multi-head/per-head amount extension remains available where no reference fixes the amount.
+- Guest TIN checks now use the original six **fictional** v11 taxpayer fixtures, including the prototype's capped attempts and generic unconfirmed-identity message. This is not an NBR identity service.
+- The three v11 seeded notice/reference combinations now require the matching sample TIN, and prefill/lock their original recommendation amount and assessment year (including accrued interest on `DN-2026-001187`). The selected service remains unchanged; a reference belonging to another service is rejected instead of silently changing the flow.
+- The standalone Travel Tax form now requires the same explicit online/bank-branch method and confirmation checkbox as the service modal; it cannot silently default to bKash. It also validates travel date/mobile at submission and preserves the entered receipt mobile in the payment record.
+- The guest head names/codes, two income-tax types, four years, six Travel Tax routes/rates and six online payment choices remain unchanged.
+
+**Not covered by this form-only follow-up:** the authenticated taxpayer's private recommendations, mandate/OTP authorization, eTDS allocation and all ledger/correction screens; backend legal or official taxpayer verification; pixel-by-pixel visual certification. User-approved differences in stage placement and multi-head selection are preserved, so do not label the full application a literal v11 clone.

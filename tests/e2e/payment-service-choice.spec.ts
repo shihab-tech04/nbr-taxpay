@@ -264,6 +264,7 @@ test('Other Tax Payment uses the v11 optional guest NBR reference', async ({ pag
   await chooser.getByRole('button', { name: /Other Tax Payment/ }).click();
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
+  await chooser.getByRole('radio', { name: 'My own tax' }).check();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
