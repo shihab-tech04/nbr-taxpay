@@ -1,6 +1,6 @@
 import React from 'react';
 import {ArrowUpRight} from 'lucide-react';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-no-wave-20261018.png';
+import { SiteLogo } from './SiteLogo';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
@@ -17,7 +17,7 @@ export function CitizenFooter(){
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'আমার কর ফুটার':'Amar Kor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
-        <img className="public-footer__wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)}/>
+        <SiteLogo className="public-footer__wordmark" alt={taxpayerBrandName(language)}/>
         <p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p>
       </div>
       <nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>
@@ -40,7 +40,7 @@ export function CitizenFooter(){
   return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'আমার কর সহায়তা ও তথ্য':'Amar Kor support and information'}>
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
-        <div><img className="citizen-footer__wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)}/><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
+        <div><SiteLogo className="citizen-footer__wordmark" alt={taxpayerBrandName(language)}/><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
       </div>
       <nav className="citizen-footer__links" aria-label={bn?'সহায়তা লিংক':'Support links'}>
         {links.filter(item=>!signedIn || item.route!=='user_guide').map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}>

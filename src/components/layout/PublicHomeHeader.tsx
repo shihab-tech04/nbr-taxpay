@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Bell, CircleHelp, Globe2, House, LayoutDashboard, LogOut, Menu, Settings2, ShieldAlert, UserRound, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { signOutApplicationAccount, useAccountIdentity } from '../../services/accountIdentity';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-no-wave-20261018.png';
+import { SiteLogo } from './SiteLogo';
 import { taxpayerBrandName } from '../../config/brand';
 
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
@@ -20,7 +20,6 @@ export function PublicHomeHeader() {
   const [profileOpen,setProfileOpen] = useState(false);
   const [signingOut,setSigningOut] = useState(false);
   const [signOutError,setSignOutError] = useState('');
-  const [logoFailed,setLogoFailed] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const menuNavRef = useRef<HTMLElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -97,7 +96,7 @@ export function PublicHomeHeader() {
         event.preventDefault();go('landing');
       }}>
         <span className="public-home-brand__copy">
-          {logoFailed ? <strong>{taxpayerBrandName(language)}</strong> : <img className="public-home-wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)} onError={()=>setLogoFailed(true)}/>}
+          <SiteLogo className="public-home-wordmark" alt={taxpayerBrandName(language)}/>
         </span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">

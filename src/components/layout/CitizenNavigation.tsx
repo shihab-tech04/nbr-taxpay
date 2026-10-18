@@ -3,7 +3,7 @@ import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, Globe2, H
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-no-wave-20261018.png';
+import { SiteLogo } from './SiteLogo';
 
 type CitizenAction = { route: string; en: string; bn: string; category?: string };
 const guestLinks: CitizenAction[] = [
@@ -199,7 +199,7 @@ export function CitizenNavigation() {
           </button>}
           <button type="button" className="citizen-brand" onClick={goHome}
             aria-label={bn ? 'আমার কর মূল পাতা' : 'Amar Kor home'}>
-            <img className="citizen-brand__wordmark" src={amarKorWordmark} alt="" aria-hidden="true" />
+            <SiteLogo className="citizen-brand__wordmark" alt="" aria-hidden="true" />
           </button>
           {inTransaction ? (
             <div className="citizen-flow-actions">
