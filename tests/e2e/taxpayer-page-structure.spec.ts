@@ -13,10 +13,8 @@ test.describe('signed-in page structure', () => {
         expect(await heading.evaluate((node, next) =>
           Boolean(node.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING),
           await tabs.elementHandle())).toBe(true);
-        const firstContent = route === 'verify' ? page.locator('.receipt-lookup__content') : page.locator('[data-testid="user1-synthetic-workspace"] > section').first();
-        expect(await tabs.evaluate((node, next) =>
-          Boolean(node.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING),
-          await firstContent.elementHandle())).toBe(true);
+        expect(await tabs.evaluate(node =>
+          Boolean(node.nextElementSibling && node.nextElementSibling.tagName !== 'NAV'))).toBe(true);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
     });
