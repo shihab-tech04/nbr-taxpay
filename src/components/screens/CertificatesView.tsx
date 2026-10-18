@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Printer } from 'lucide-react';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
-import { useAccountIdentity } from '../../services/accountIdentity';
-import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
+import { getStorySessionPayments, type StorySessionPayment } from '../../services/simulatedPaymentStory';
 
 type CertificatePreview = 'ANNUAL_PAYMENT' | 'WITHHOLDING_PROOF' | 'TRAVEL_CLEARANCE';
 
@@ -15,33 +14,53 @@ const previewOptions: { id: CertificatePreview; en: string; bn: string }[] = [
 ];
 
 export const CertificatesView: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
-  const { taxpayerProfile, receipts, language, userRole, demoUser } = useTaxState();
-  const {user:authenticatedUser}=useAccountIdentity();
+  const { language } = useTaxState();
+
   const [selectedPreview, setSelectedPreview] = useState<CertificatePreview>('ANNUAL_PAYMENT');
   const bn = language === 'bn';
   const label = (en: string, bengali: string) => bn ? bengali : en;
 
-  // These payer-linked records are synthetic UI fixtures. They do not prove settlement,
-  // identify a tax-credit owner, or support a government-issued certificate.
-  const sampleReceipts = taxpayerPreviewReceipts(receipts, taxpayerProfile.tin, userRole, demoUser, Boolean(authenticatedUser));
-  const sampleTotal = sampleReceipts.reduce((total, receipt) => total + receipt.totalAmount, 0);
-  const sampleAvailable = sampleReceipts.length > 0;
+  const [sqlPayments,setSqlPayments]=useState<StorySessionPayment[]>([]);
+  const [sqlError,setSqlError]=useState(false);
+  useEffect(()=>{
+    let active=true;
+    const refresh=async()=>{
+      try{
+        const rows=await getStorySessionPayments();
+        if(active){setSqlPayments(rows.filter(p=>p.status==='SIMULATED_SUCCESS'));setSqlError(false);}
+      }catch{if(active)setSqlError(true);}
+    };
+    void refresh();
+    const timer=window.setInterval(()=>void refresh(),15000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[]);
+  const scopedPayments=sqlPayments.filter(p=>selectedPreview==='ANNUAL_PAYMENT'
+    || (selectedPreview==='WITHHOLDING_PROOF'&&p.service==='SOURCE_TAX_DEPOSIT')
+    || (selectedPreview==='TRAVEL_CLEARANCE'&&p.service==='TRAVEL_TAX'));
+  const sampleTotal=scopedPayments.reduce((total,p)=>total+p.amountMinor/100,0);
+  const sampleAvailable=scopedPayments.length>0;
+  const totalValue=sqlError?label('Unavailable','পাওয়া যাচ্ছে না'):
+    sampleAvailable?formatCurrency(sampleTotal,language):formatCurrency(0,language);
+  const countValue=sqlError?label('Unavailable','পাওয়া যাচ্ছে না'):
+    new Intl.NumberFormat(bn?'bn-BD':'en-US').format(scopedPayments.length);
 
   const details = selectedPreview === 'ANNUAL_PAYMENT'
     ? [
-      { label: label('Payment total', 'পেমেন্টের মোট'), value: sampleAvailable ? formatCurrency(sampleTotal, language) : label('Not available', 'পাওয়া যাচ্ছে না') },
-      { label: label('Records', 'রেকর্ড'), value: sampleAvailable ? new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(sampleReceipts.length) : label('Not available', 'পাওয়া যাচ্ছে না') },
+      { label: label('Payment total', 'পেমেন্টের মোট'), value: totalValue },
+      { label: label('Records', 'রেকর্ড'), value: countValue },
       { label: label('Treasury settlement', 'ট্রেজারি জমা'), value: label('Not verified', 'যাচাই হয়নি') },
       { label: label('Tax credit', 'কর ক্রেডিট'), value: label('Not verified', 'যাচাই হয়নি') }
     ]
     : selectedPreview === 'WITHHOLDING_PROOF'
       ? [
-        { label: label('eTDS connection', 'ই-টিডিএস সংযোগ'), value: label('Not connected', 'সংযুক্ত নয়') },
+        { label: label('Deposit total', 'জমার মোট'), value: totalValue },
+        { label: label('Records', 'রেকর্ড'), value: countValue },
         { label: label('Deductee ownership', 'করদাতার মালিকানা'), value: label('Not verified', 'যাচাই হয়নি') },
         { label: label('Tax credit', 'কর ক্রেডিট'), value: label('Not verified', 'যাচাই হয়নি') }
       ]
       : [
-        { label: label('Travel tax service', 'ভ্রমণ কর সেবা'), value: label('Not connected', 'সংযুক্ত নয়') },
+        { label: label('Travel payment total', 'ভ্রমণ পেমেন্টের মোট'), value: totalValue },
+        { label: label('Records', 'রেকর্ড'), value: countValue },
         { label: label('Government receipt', 'সরকারি রসিদ'), value: label('Unavailable', 'উপলব্ধ নয়') },
         { label: label('Travel clearance', 'ভ্রমণ ছাড়পত্র'), value: label('Unavailable', 'উপলব্ধ নয়') }
       ];
