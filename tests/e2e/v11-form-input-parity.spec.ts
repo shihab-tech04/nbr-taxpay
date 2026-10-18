@@ -67,9 +67,11 @@ test('standalone travel form requires explicit payment method and acknowledgemen
 
   const submit = travel.getByRole('button', { name: 'Continue payment' });
   await expect(submit).toBeDisabled();
-  await expect(travel.getByRole('radio', { name: 'Pay online' })).not.toBeChecked();
-  await travel.getByRole('radio', { name: 'Pay online' }).check();
+  const online = travel.getByRole('button', { name: 'Pay online' });
+  await expect(online).toHaveAttribute('aria-pressed', 'false');
+  await online.click();
   await expect(submit).toBeDisabled();
+  await travel.getByRole('button', { name: 'Mobile banking' }).click();
   await travel.getByRole('radio', { name: 'bKash' }).check();
   await expect(submit).toBeDisabled();
   await travel.getByRole('checkbox', { name: 'The journey, passenger details and amount are correct.' }).check();
