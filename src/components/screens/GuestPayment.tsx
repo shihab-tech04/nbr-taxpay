@@ -172,7 +172,7 @@ interface GuestPaymentProps {
 }
 
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, initialCategory, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
+  const { language, navigate, addPaymentReceipt, routeParams, previewAccount, taxpayerProfile } = useTaxState();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
   const copy = GUEST_COPY[language];
@@ -193,6 +193,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [verifiedReference, setVerifiedReference] = useState<V11GuestNotice | null>(null);
   const tinAttempts = useRef<number[]>([]);
   const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY' | null>(null);
+  // Only the deliberately selected preview account supplies a local taxpayer TIN.
+  // A hosted Auth session by itself is not evidence of TIN ownership.
+  const accountTin = previewAccount?.tin ?? null;
+  const ownTaxpayerSelected = forSelf === true && Boolean(accountTin);
+
+  const choosePayerRelationship = (self: boolean) => {
+    const previouslyOwn = forSelf === true;
+    setForSelf(self);
+    if (self && accountTin) {
+      setTin(accountTin);
+      setPayerName(previewAccount?.nameEn ?? '');
+      if (/^01\d{9}$/.test(taxpayerProfile.phone)) setPhone(taxpayerProfile.phone);
+    } else if (!self && previouslyOwn && accountTin && tin === accountTin) {
+      // The other taxpayer must be identified independently, not inherited from me.
+      setTin('');
+      setPayerName('');
+    }
+    clearReferenceSelection();
+    clearValidationError();
+  };
   
 
   // Category and Head selection
@@ -371,7 +391,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     tinAttempts.current.push(now);
     const reference = noticeReference.trim();
     const matched = reference && !isWithholdingMode ? findV11GuestNotice(tin, reference) : null;
-    if (!isV11GuestTin(tin) || (reference && !isWithholdingMode && (!matched || matched.category !== category))) {
+    const matchingAccountTin = ownTaxpayerSelected && tin === accountTin;
+    if (!(isV11GuestTin(tin) || matchingAccountTin) || (reference && !isWithholdingMode && (!matched || matched.category !== category))) {
       setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', reference && !isWithholdingMode ? 'noticeReference' : 'tin');
       return false;
     }
@@ -649,7 +670,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My own tax', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার নিজের কর' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : "Someone else's tax", bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য কারও কর' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { setForSelf(choice.value); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => choosePayerRelationship(choice.value)} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
@@ -668,10 +689,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('tin')}
                   placeholder={language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
                   value={tin}
+                  readOnly={ownTaxpayerSelected}
+                  aria-readonly={ownTaxpayerSelected || undefined}
                   inputMode="numeric" maxLength={12} autoComplete="off" required
-                  onChange={(e) => { clearReferenceSelection(); setTin(e.target.value.replace(/\D/g, '').slice(0, 12)); }}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
+                  onChange={(e) => { if (ownTaxpayerSelected) return; clearReferenceSelection(); setTin(e.target.value.replace(/\D/g, '').slice(0, 12)); }}
+                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex${ownTaxpayerSelected ? ' bg-slate-100 text-slate-700' : ''}`}
                 />
+                {ownTaxpayerSelected && <p className="mt-1 text-xs text-slate-600">{language === 'bn' ? 'আপনার অ্যাকাউন্টের টিআইএন (শুধু দেখার জন্য)' : 'Your account TIN (read only)'}</p>}
                 {fieldError('tin')}
               </div>
 
