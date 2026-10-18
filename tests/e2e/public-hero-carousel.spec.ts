@@ -84,7 +84,7 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
   expect(new Set(buttonStyles.map(style => style.color)).size).toBe(4);
   expect(new Set(buttonStyles.map(style => style.border)).size).toBe(4);
   for (const style of buttonStyles) {
-    expect(style.background).toBe('rgb(255, 255, 255)');
+    expect(style.background).toBe('rgba(255, 255, 255, 0.52)');
     expect(style.shadow).toBe('none');
   }
   const introButtonColor = await carousel.locator('[data-banner-service="intro"] .citizen-public-primary')
@@ -248,12 +248,19 @@ test('autoplay allows eight seconds to read, while reduced motion and manual sel
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
 });
 
-test('all five banners remain keyboard accessible without indicator or playback controls', async ({ page }) => {
+test('visible previous and next controls restore manual banner navigation without indicators', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
-  await expect(carousel.locator('.public-hero-carousel__controls')).toHaveCount(0);
+  const previous = page.getByRole('button', { name: 'Previous banner' });
+  const next = page.getByRole('button', { name: 'Next banner' });
+  await expect(previous).toBeVisible();
+  await expect(next).toBeVisible();
   await expect(carousel.locator('.public-hero-carousel__indicator')).toHaveCount(0);
+  await previous.click();
+  await expect(carousel).toHaveAttribute('data-active-slide', '4');
+  await next.click();
+  await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await carousel.focus();
   for (let index = 1; index < 5; index++) {
     await page.keyboard.press('ArrowRight');
@@ -261,6 +268,44 @@ test('all five banners remain keyboard accessible without indicator or playback 
   }
   await page.keyboard.press('ArrowRight');
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
+});
+
+test('dragging an illustration changes slides while a vertical gesture does not', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const bounds = await carousel.locator('[data-banner-service="intro"] .public-hero-carousel__media--illustrated').boundingBox();
+  expect(bounds).not.toBeNull();
+  const y = bounds!.y + bounds!.height / 2;
+  await page.mouse.move(bounds!.x + bounds!.width * .8, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds!.x + bounds!.width * .2, y, { steps: 8 });
+  await page.mouse.up();
+  await expect(carousel).toHaveAttribute('data-active-slide', '1');
+
+  const second = await carousel.locator('[data-banner-service="return"] .public-hero-carousel__media--illustrated').boundingBox();
+  expect(second).not.toBeNull();
+  await page.mouse.move(second!.x + second!.width / 2, second!.y + second!.height * .2);
+  await page.mouse.down();
+  await page.mouse.move(second!.x + second!.width / 2 + 20, second!.y + second!.height * .8, { steps: 8 });
+  await page.mouse.up();
+  await expect(carousel).toHaveAttribute('data-active-slide', '1');
+});
+
+test('touch-pointer swipe moves to the next banner on a narrow viewport', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop-1280', 'Mobile swipe test');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await carousel.evaluate(element => {
+    element.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true, pointerType: 'touch', pointerId: 17, isPrimary: true, clientX: 240, clientY: 180,
+    }));
+    element.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true, pointerType: 'touch', pointerId: 17, isPrimary: true, clientX: 80, clientY: 183,
+    }));
+  });
+  await expect(carousel).toHaveAttribute('data-active-slide', '1');
 });
 
 test('each service-specific banner action skips repeated service selection', async ({ page }) => {
@@ -313,12 +358,13 @@ test('mobile banner buttons and artwork remain readable at narrow widths', async
       };
     });
     expect(dimensions.mediaHeight).toBeGreaterThanOrEqual(184);
-    expect(dimensions.verticalZoom).toBeGreaterThan(1.25);
+    expect(dimensions.verticalZoom).toBeCloseTo(1, 2);
     expect(dimensions.titleSize).toBeLessThanOrEqual(width <= 360 ? 22 : 23);
     expect(dimensions.descriptionSize).toBeLessThanOrEqual(14.1);
     expect(dimensions.imageFit).toBe('cover');
     await expect(carousel.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
-    await expect(carousel.locator('.public-hero-carousel__controls')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Previous banner' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Next banner' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 });
