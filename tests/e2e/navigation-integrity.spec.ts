@@ -128,7 +128,7 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await expect(page).toHaveURL(/action=history(?:&|$)/);
   await bottom.getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page).toHaveURL(/action=account_profile(?:&|$)/);
-  await expect(page.getByRole('heading',{name:'Profile',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
   await expect(rail.getByRole('button',{name:'Help',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);

@@ -84,7 +84,7 @@ test('a signed-in account returning to public home sees notification and profile
   await expect(profileMenu.getByRole('button')).toHaveCount(4);
   await expect(profileMenu.getByRole('button').last()).toHaveText('Sign out');
   await profileMenu.getByRole('button',{name:'Profile',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Profile',level:1,exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Taxpayer profile',level:1,exact:true})).toBeVisible();
 
   await page.goto('/?action=landing');
   await header.getByRole('button',{name:'Profile menu'}).click();
