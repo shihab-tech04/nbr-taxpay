@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials stay signed out', async ({page}) => {
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   if (page.viewportSize()!.width<=900) {
     await page.getByRole('button',{name:'Menu'}).click();
     await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Login'}).click();
@@ -20,7 +20,7 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','text');
   await dialog.getByRole('button',{name:'Hide password'}).click();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   await dialog.getByRole('textbox',{name:'User ID'}).fill('user11');
   await dialog.getByLabel('Password',{exact:true}).fill('user11');
   await dialog.getByRole('button',{name:'Sign In'}).click();
@@ -49,7 +49,7 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await expect(page).toHaveURL(/action=account_profile/);
     if (id!==1) await expect(page.getByText('user'+id,{exact:true}).first()).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
-    await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+    await expect(page.locator('#public-home-title')).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   }
   expect(hostedCalls).toEqual([]);

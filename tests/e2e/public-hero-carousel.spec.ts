@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-test('hero provides five bilingual service slides with the original opening banner', async ({ page }) => {
+test('hero provides five bilingual service slides with the original desktop opening banner', async ({ page }, testInfo) => {
+  const mobile = testInfo.project.name !== 'desktop-1280';
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
 
@@ -8,10 +9,10 @@ test('hero provides five bilingual service slides with the original opening bann
   const slides = carousel.getByRole('group', { includeHidden: true });
   await expect(slides).toHaveCount(5);
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
-  await expect(page.getByRole('heading', { name: 'Understand tax payments. Stay in control.' })).toBeVisible();
-  await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p'))
+  await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Understand tax payments. Stay in control.' })).toBeVisible();
+  await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
     .toHaveText('Choose the right tax service, check payment status and find receipts in one place.');
-  await expect(page.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
+  await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
     .toHaveAttribute('src', /taxpay-hero-payment-v3/);
@@ -22,7 +23,7 @@ test('hero provides five bilingual service slides with the original opening bann
   const destinations = [
     ['return', 'Tax with Return', 'Pay Tax with Return'],
     ['advance', 'Advance Income Tax', 'Pay Advance Income Tax'],
-    ['withholding', 'Source Tax Deposit (TDS/TCS)', 'Deposit Source Tax'],
+    ['withholding', mobile ? 'Source Tax (TDS/TCS)' : 'Source Tax Deposit (TDS/TCS)', 'Deposit Source Tax'],
     ['travel', 'Travel Tax', 'Pay Travel Tax'],
   ] as const;
   for (const [index, [service, heading, action]] of destinations.entries()) {
@@ -34,7 +35,7 @@ test('hero provides five bilingual service slides with the original opening bann
     await expect(serviceImage).toBeVisible();
     await expect.poll(() => serviceImage.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(1000);
     if (service === 'travel') {
-      await expect(carousel.locator('[data-banner-service="travel"] .citizen-public-hero__copy > p'))
+      await expect(carousel.locator('[data-banner-service="travel"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
         .toContainText('move through travel tax with confidence');
     }
     await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
@@ -215,7 +216,8 @@ test('mobile illustrated banners blend downward into the image', async ({ page }
   await expect(intro.locator('.public-information-hero__image')).toBeVisible();
 });
 
-test('service labels remain specific and concise in Bangla', async ({ page }) => {
+test('service labels remain specific and concise in Bangla', async ({ page }, testInfo) => {
+  const mobile = testInfo.project.name !== 'desktop-1280';
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'বাংলা' }).click();
@@ -225,7 +227,7 @@ test('service labels remain specific and concise in Bangla', async ({ page }) =>
   const translated = [
     ['রিটার্নের সঙ্গে কর', 'রিটার্নের সঙ্গে কর পরিশোধ'],
     ['অগ্রিম আয়কর', 'অগ্রিম আয়কর পরিশোধ'],
-    ['উৎসে কর জমা (টিডিএস/টিসিএস)', 'উৎসে কর জমা দিন'],
+    [mobile ? 'উৎসে কর জমা' : 'উৎসে কর জমা (টিডিএস/টিসিএস)', 'উৎসে কর জমা দিন'],
     ['ভ্রমণ কর', 'ভ্রমণ কর পরিশোধ'],
   ] as const;
   for (const [heading, action] of translated) {
@@ -248,7 +250,8 @@ test('autoplay allows eight seconds to read, while reduced motion and manual sel
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
 });
 
-test('visible previous and next controls restore manual banner navigation without indicators', async ({ page }) => {
+test('desktop previous and next controls restore manual banner navigation without indicators', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'Mobile uses touch swipe without arrows');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -362,9 +365,60 @@ test('mobile banner buttons and artwork remain readable at narrow widths', async
     expect(dimensions.titleSize).toBeLessThanOrEqual(width <= 360 ? 22 : 23);
     expect(dimensions.descriptionSize).toBeLessThanOrEqual(14.1);
     expect(dimensions.imageFit).toBe('cover');
-    await expect(carousel.getByRole('button', { name: 'Check payment & receipt' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Previous banner' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Next banner' })).toBeVisible();
+    await expect(carousel.getByRole('button', { name: 'Check status' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Previous banner' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Next banner' })).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
+test('mobile banners have distinct concise copy, equal heights and one-line titles and subtitles in both languages', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop-1280', 'Mobile-only copy and layout contract');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  for (const language of ['en', 'bn'] as const) {
+    for (const width of [320, 375, 390, 600]) {
+      await page.setViewportSize({ width, height: 812 });
+      await page.goto('/?action=landing');
+      if (language === 'bn') await page.getByRole('button', { name: 'বাংলা' }).click();
+
+      const carousel = page.locator('.public-hero-carousel');
+      const bannerCopy = await carousel.locator('.public-hero-carousel__slide').evaluateAll(slides => slides.map(slide => {
+        const heading = slide.querySelector<HTMLElement>('h1, h2')!;
+        const description = slide.querySelector<HTMLElement>('.citizen-public-hero__copy > p')!;
+        const mobileHeading = heading.querySelector<HTMLElement>('.public-hero-copy--mobile')!;
+        const mobileDescription = description.querySelector<HTMLElement>('.public-hero-copy--mobile')!;
+        const desktopHeading = heading.querySelector<HTMLElement>('.public-hero-copy--desktop')!;
+        const media = slide.querySelector<HTMLElement>('.public-information-hero__media')!;
+        return {
+          slideHeight: slide.getBoundingClientRect().height,
+          mediaY: media.getBoundingClientRect().y,
+          mediaHeight: media.getBoundingClientRect().height,
+          heading: mobileHeading.textContent || '',
+          subtitle: mobileDescription.textContent || '',
+          desktopCopyHidden: getComputedStyle(desktopHeading).display === 'none',
+          titleOneLine: heading.scrollHeight <= parseFloat(getComputedStyle(heading).lineHeight) + 2,
+          subtitleOneLine: description.scrollHeight <= parseFloat(getComputedStyle(description).lineHeight) + 2,
+          titleFits: heading.scrollWidth <= heading.clientWidth + 1,
+          subtitleFits: description.scrollWidth <= description.clientWidth + 1,
+        };
+      }));
+
+      expect(new Set(bannerCopy.map(banner => banner.slideHeight)).size).toBe(1);
+      expect(new Set(bannerCopy.map(banner => banner.mediaY)).size).toBe(1);
+      expect(new Set(bannerCopy.map(banner => banner.mediaHeight)).size).toBe(1);
+      for (const banner of bannerCopy) {
+        expect(banner.desktopCopyHidden).toBe(true);
+        expect([...banner.heading].length).toBeLessThanOrEqual(24);
+        expect([...banner.subtitle].length).toBeLessThanOrEqual(34);
+        expect(banner.titleOneLine).toBe(true);
+        expect(banner.subtitleOneLine).toBe(true);
+        expect(banner.titleFits).toBe(true);
+        expect(banner.subtitleFits).toBe(true);
+      }
+
+      await expect(carousel.locator('.public-hero-carousel__controls')).toBeHidden();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
   }
 });

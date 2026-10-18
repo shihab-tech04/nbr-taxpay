@@ -68,7 +68,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   };
 
   await page.goto('/?action=landing');
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Payment guidance'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Frequently asked questions'})).toBeVisible();
@@ -79,7 +79,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
 
   await switchToBangla();
-  await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.getByRole('heading',{name:'কর পরিশোধের ধরন জানুন'})).toBeVisible();
   await expect(page.locator('footer').getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);

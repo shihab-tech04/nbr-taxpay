@@ -59,7 +59,7 @@ test.describe('read-only citizen screen matrix',()=>{
     await page.goto('/?action=officer_home');
     await expect(page).toHaveURL(/action=landing/);
     await expect(page.locator('.taxpay-citizen-shell')).toBeVisible();
-    await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+    await expect(page.locator('#public-home-title')).toBeVisible();
     await expect(page.locator('header.bg-emerald-950')).toHaveCount(0);
   });
 });

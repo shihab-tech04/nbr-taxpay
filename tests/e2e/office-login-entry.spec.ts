@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('the former Office login deep link now opens the Amar Kor taxpayer popup', async ({page}) => {
   await page.goto('/?action=office_login');
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
