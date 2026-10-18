@@ -168,6 +168,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
 
       // A bank slip is pending, not a successful payment. The simulated
       // settlement action below is the point where SQL records are written.
+      let paymentSaved=pendingBank;
       if (!pendingBank) {
         try {
           let settled = newReceipt;
@@ -192,6 +193,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
           addPaymentReceipt(settled);
           setCreatedReceipt(settled);
           setPaymentNonce(crypto.randomUUID());
+          paymentSaved=true;
         }catch {
           setError(bn?'অফিসে পেমেন্ট তথ্য পৌঁছায়নি। একই অনুরোধ আবার চেষ্টা করুন।':'Office payment synchronization pending. Retry this payment.');
         }
@@ -199,7 +201,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         setCreatedReceipt(newReceipt);
         setBankSlipPending(true);
       }
-      if (fourStepJourney && (pendingBank || !error)) goStep(3);
+      if (fourStepJourney && paymentSaved) goStep(3);
       setIsProcessing(false);
     }, 1000);
   };
