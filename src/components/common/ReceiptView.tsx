@@ -12,7 +12,7 @@ import {
 import { ChallanReceipt } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
-import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
+import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
@@ -28,7 +28,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'রেকর্ড ডাউনলোড (JSON)',
     title: 'আমার কর — রসিদের বিবরণ',
     challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
-    payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ',
+    payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ', service: 'পেমেন্টের ধরন',
     zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
     paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স',
     scroll: 'ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'স্ক্রল রেফারেন্স নেই',
@@ -44,7 +44,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     back: 'Back to records', print: 'Print receipt', export: 'Export JSON',
     title: 'Amar Kor — Receipt details',
     challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
-    payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year',
+    payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year', service: 'Payment service',
     zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',
     paymentMethod: 'Payment method', transaction: 'Transaction reference',
     scroll: 'Treasury scroll reference', pendingScroll: 'No scroll reference',
@@ -192,6 +192,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.tin}:</span>
               <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{receipt.taxpayerTin || receipt.payerTin}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              <span className="text-slate-500">{labels.service}:</span>
+              <span className="col-span-2 font-semibold text-slate-900">{bn ? (CATEGORY_LABELS[receipt.paymentCategory]?.bn ?? receipt.paymentCategory) : (CATEGORY_LABELS[receipt.paymentCategory]?.en ?? receipt.paymentCategory)}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.year}:</span>
