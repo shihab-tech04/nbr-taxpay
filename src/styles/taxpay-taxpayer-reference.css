@@ -966,6 +966,8 @@
 }
 @media(min-width:1440px) {
   .taxpay-taxpayer-reference .taxpayer-account-tabs { display:none; }
+  /* Authorization directions are functional tabs, not redundant account-page links. */
+  .taxpay-taxpayer-reference .taxpay-authorization .taxpayer-account-tabs { display:flex; }
 }
 .tax-service-choice__saved-drafts {
   display:inline-flex; align-items:center; gap:8px; min-height:42px;
