@@ -55,8 +55,9 @@ test('desktop taxpayer rail keeps profile and language above its final sign-out 
   await expect(page.getByText('No notifications yet.')).toBeVisible();
   await rail.locator('.taxpayer-reference-brand').click();
   await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
-  await expect(page.locator('.public-home-header').getByRole('link',{name:'Login'})).toHaveCount(0);
-  await expect(page.locator('.public-home-header').getByRole('button',{name:'Profile menu'})).toBeVisible();
+  // An exploratory sample role is not a signed-in account.
+  await expect(page.locator('.public-home-header').getByRole('link',{name:'Login'})).toBeVisible();
+  await expect(page.locator('.public-home-header').getByRole('button',{name:'Profile menu'})).toHaveCount(0);
   await page.goBack();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Exit workspace'}).click();
@@ -67,7 +68,7 @@ test('a signed-in account returning to public home sees notification and profile
   test.skip(info.project.name!=='desktop-1280','One desktop journey covers the shared session transition');
   await page.goto('/?action=taxpayer_login');
   await page.getByLabel('User ID').fill('user1');
-  await page.getByLabel('Password').fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await page.locator('.taxpayer-reference-brand').click();
@@ -95,7 +96,7 @@ test('the signed-in public header fits mobile and keeps account controls operabl
   test.skip(info.project.name!=='mobile-320','One runner tests the tightest mobile layout');
   await page.goto('/?action=taxpayer_login');
   await page.getByLabel('User ID').fill('user1');
-  await page.getByLabel('Password').fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
   await page.locator('.citizen-brand').click();
   await expect(page).toHaveURL(/action=landing/);

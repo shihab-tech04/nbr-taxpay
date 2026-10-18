@@ -52,11 +52,12 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const rail = page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await expect(rail).toBeVisible();
   await expect(page.locator('.citizen-header')).toBeHidden();
-  const menu = rail.locator('.taxpayer-reference-account > summary');
-  await expect(menu).toContainText('Menu');
+  const bottom = rail.locator('.taxpayer-reference-rail-bottom');
+  await expect(bottom.getByRole('button').first()).toHaveText('Profile');
+  await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
   await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
-  await expect(rail.locator('.taxpayer-reference-account > summary')).toBeVisible();
+  await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
   const main = page.locator('main');
   expect(await main.evaluate(el => Math.round(el.getBoundingClientRect().left))).toBe(250);
@@ -64,9 +65,8 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await rail.getByRole('button',{name:'Tax ledger'}).click();
   await expect(rail.getByRole('button',{name:'Tax ledger'})).toHaveAttribute('aria-current','page');
   await expect(page.getByText('Ledger information')).toBeVisible();
-  await rail.locator('.taxpayer-reference-account > summary').click();
   await expect(rail.getByRole('button',{name:'Account access'})).toHaveCount(0);
-  await rail.getByRole('button',{name:'Profile',exact:true}).click();
+  await bottom.getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Profile',exact:true}).first()).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
 });
@@ -142,11 +142,12 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     const dialog = page.getByRole('dialog',{name:'Services & menu'});
     const nav = dialog.getByRole('navigation',{name:'Services navigation'});
     await expect(dialog).toBeVisible();
-    for (const group of ['Navigation','Services','Account','Support']) {
+    for (const group of ['Navigation','Services','Account']) {
       await expect(nav.getByText(group,{exact:true})).toBeVisible();
     }
+    await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link');
-    await expect(items).toHaveCount(12);
+    await expect(items).toHaveCount(10);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
