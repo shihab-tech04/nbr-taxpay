@@ -243,7 +243,7 @@ test('Home, User guide and Report use matching content widths and alignment', as
   expect(Math.abs(footerLogo!.x - bounds[0].x), 'Footer aligns with main content').toBeLessThanOrEqual(2);
 });
 
-test('floating help uses guide answers and report form never sends an official ticket',async({page},info)=>{
+test('floating help uses guide answers and report offers an editable review without extra notices',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Chat support'}).click();
@@ -254,11 +254,14 @@ test('floating help uses guide answers and report form never sends an official t
  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
  await expect(page.getByRole('heading',{name:'Report a problem'})).toBeVisible();
- await expect(page.getByText('This form does not send reports or create official tickets.')).toBeVisible();
+ await expect(page.getByText('This form does not send reports or create official tickets.')).toHaveCount(0);
+ await expect(page.getByText('If money was debited, contact your bank or payment provider.')).toHaveCount(0);
  await page.getByLabel('Short description').fill('Example payment record mismatch, using fake data.');
- await page.getByRole('button',{name:'Review form'}).click();
- await expect(page.getByRole('heading',{name:'Form reviewed'})).toBeVisible();
- await expect(page.getByText('Nothing was submitted.',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Review details'}).click();
+ await expect(page.getByRole('heading',{name:'Review your details'})).toBeVisible();
+ await expect(page.locator('.public-report-review')).toContainText('Example payment record mismatch, using fake data.');
+ await page.getByRole('button',{name:'Edit details'}).click();
+ await expect(page.getByLabel('Short description')).toHaveValue('Example payment record mismatch, using fake data.');
 });
 test('public guide and guest launcher pass WCAG automated A/AA',async({page},info)=>{
  test.skip(info.project.name==='desktop-1280','Mobile a11y suite');
@@ -299,7 +302,7 @@ test('guest receipt lookup keeps a compact accessible layout and honest demo res
  await expect(dialog.locator('.receipt-view--embedded')).toHaveCount(0);
  await dialog.getByRole('button',{name:'Search records'}).click();
  await expect(dialog.getByRole('heading',{name:'No matching record'})).toBeVisible();
- await expect(dialog.getByText('If money was debited, contact your bank or payment provider.')).toBeVisible();
+ await expect(dialog.getByText('If money was debited, contact your bank or payment provider.')).toHaveCount(0);
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
  await page.keyboard.press('Escape');

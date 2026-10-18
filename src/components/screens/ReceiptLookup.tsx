@@ -108,7 +108,6 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
-              <p>{t('If money was debited, contact your bank or payment provider.', 'অর্থ কেটে নেওয়া হলে ব্যাংক বা পেমেন্ট সেবাদাতার সঙ্গে যোগাযোগ করুন।')}</p>
               <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate('incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>

@@ -15,6 +15,11 @@ test('public homepage explains the payment path without duplicating service cate
   await expect(page.locator('.public-info-topic')).toHaveCount(0);
   await expect(page.locator('.public-info-guides')).toHaveCount(0);
   await expect(page.locator('.public-more-link')).toHaveCount(0);
+  const surfaces = await page.locator('.public-payment-path__starter, .public-payment-path__steps li, .public-payment-path__symbol').evaluateAll(elements =>
+    elements.map(element => ({gradient: getComputedStyle(element).backgroundImage, color: getComputedStyle(element).backgroundColor})),
+  );
+  expect(surfaces.every(surface => surface.gradient === 'none'), 'Steps should not use gradients').toBe(true);
+  expect(new Set(surfaces.slice(2).map(surface => surface.color)).size).toBeLessThanOrEqual(2);
 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card')).toHaveCount(8);
@@ -30,6 +35,7 @@ test('public FAQ offers readable answers and the full guide without a large foot
   await firstQuestion.locator('summary').click();
   await expect(firstQuestion).toHaveAttribute('open', '');
   await expect(firstQuestion.getByText('It depends on the service.', { exact: false })).toBeVisible();
+  await expect(firstQuestion).toHaveCSS('background-image', 'none');
 
   const gap = await page.evaluate(() => {
     const section = document.querySelector('#public-faq')!;
@@ -39,6 +45,24 @@ test('public FAQ offers readable answers and the full guide without a large foot
   expect(gap, 'FAQ and footer should have a compact transition').toBeLessThanOrEqual(80);
   await faq.getByRole('button', { name: 'Open user guide' }).click();
   await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
+});
+
+test('Report follows heading then compact content with no redundant warnings', async ({ page }) => {
+  await page.goto('/?action=incident');
+  const report = page.locator('.public-report-page');
+  await expect(report.getByRole('heading', { name: 'Report a problem' })).toBeVisible();
+  await expect(report.locator('.citizen-hub-eyebrow')).toHaveCount(0);
+  await expect(report.getByText('This form does not send reports or create official tickets.')).toHaveCount(0);
+  await expect(report.getByText('If money was debited, contact your bank or payment provider.')).toHaveCount(0);
+  await expect(report.getByLabel('Issue type')).toBeVisible();
+  await expect(report.getByLabel('Short description')).toBeVisible();
+  const pageWidth = await report.boundingBox();
+  const contentWidth = await report.locator('.public-report-card').boundingBox();
+  expect(contentWidth!.width).toBeLessThanOrEqual(pageWidth!.width);
+  if (page.viewportSize()!.width >= 1000) expect(contentWidth!.width).toBeLessThan(pageWidth!.width);
+  await report.getByLabel('Short description').fill('A payment reference does not match my record.');
+  await report.getByRole('button', { name: 'Review details' }).click();
+  await expect(report.getByRole('heading', { name: 'Review your details' })).toBeVisible();
 });
 
 test('top navigation uses the approved blue pill for the current public route', async ({ page }) => {

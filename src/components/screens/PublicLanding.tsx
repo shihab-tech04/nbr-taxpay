@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, CircleHelp, Info, ListChecks, MousePointerClick, ReceiptText, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -83,11 +83,8 @@ export const PublicLanding: React.FC = () => {
         </div>
       </div>
       <div className="public-payment-path__starter">
-        <span className="public-payment-path__starter-icon"><MousePointerClick size={21} aria-hidden="true" /></span>
-        <div>
-          <strong>{t('First, choose your tax service', 'প্রথমে করসেবা বেছে নিন')}</strong>
-          <p>{t('Select a service from the banners above. Then follow the steps below.', 'উপরের ব্যানার থেকে সেবা বেছে নিন। এরপর নিচের ধাপগুলো অনুসরণ করুন।')}</p>
-        </div>
+        <span className="public-payment-path__starter-label">{t('Start here', 'এখান থেকে শুরু করুন')}</span>
+        <p>{t('Choose a service from the banner above, then follow these four steps.', 'উপরের ব্যানার থেকে সেবা বেছে নিন, তারপর চারটি ধাপ অনুসরণ করুন।')}</p>
       </div>
       <ol className="public-payment-path__steps">
         {stages.map((stage, index) => <li key={stage.title}>
@@ -99,18 +96,12 @@ export const PublicLanding: React.FC = () => {
           <p>{stage.description}</p>
         </li>)}
       </ol>
-      <p className="public-payment-path__note"><Info size={18} aria-hidden="true" />
-        {t(
-          'Some services allow guest payment; others require an account. You will be guided when that choice matters.',
-          'কিছু সেবায় অতিথি হিসেবে কর পরিশোধ করা যায়; অন্যগুলোতে অ্যাকাউন্ট প্রয়োজন। প্রয়োজনের সময় আপনাকে জানানো হবে।',
-        )}
-      </p>
     </section>
 
     <section id="public-faq" className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
       <div className="public-faq-layout__heading">
         <div>
-          <h2 id="faq-title"><CircleHelp size={23} aria-hidden="true" /> {t('Common questions', 'সাধারণ প্রশ্ন')}</h2>
+          <h2 id="faq-title">{t('Common questions', 'সাধারণ প্রশ্ন')}</h2>
           <p>{t('The answers you may need before making a payment.', 'কর পরিশোধের আগে আপনার প্রয়োজনীয় কিছু উত্তর।')}</p>
         </div>
         <button type="button" className="public-faq-layout__all-guides" onClick={() => navigate('user_guide')}>
