@@ -62,7 +62,7 @@ test('desktop navigation consolidates duplicate Home/Tax summary and groups acco
   await expect(rail).toBeVisible();
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCount(1);
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
   const account=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
   await expect(account.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
