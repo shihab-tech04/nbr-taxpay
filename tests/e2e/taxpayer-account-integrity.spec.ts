@@ -37,8 +37,8 @@ test('other URL-selected fictional accounts do not inherit shared financial bala
 test('sample correction picker never lists another payer and does not claim official submission',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Open menu'}).filter({visible:true}).first().click();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Corrections',exact:true}).click();
+  await page.getByRole('button',{name:'Open transaction history'}).click();
+  await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Issues & corrections'}).click();
   await expect(page.getByRole('heading',{name:'Tax Payment Challan Correction Requests'})).toBeVisible();
   const picker=page.getByLabel('Select A-Challan for Rectification *');
   await expect(picker.locator('option')).toHaveCount(3);

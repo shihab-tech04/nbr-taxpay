@@ -142,12 +142,13 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     const dialog = page.getByRole('dialog',{name:'Services & menu'});
     const nav = dialog.getByRole('navigation',{name:'Services navigation'});
     await expect(dialog).toBeVisible();
-    for (const group of ['Navigation','Services','Account']) {
+    for (const group of ['Navigation','Account']) {
       await expect(nav.getByText(group,{exact:true})).toBeVisible();
     }
+    await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
-    const items = nav.locator('.citizen-dialog__link');
-    await expect(items).toHaveCount(10);
+    const items = nav.locator('.citizen-dialog__link:visible');
+    await expect(items).toHaveCount(5);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
@@ -160,10 +161,11 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     }
     await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
     await expect(nav.getByRole('button',{name:'Notifications'})).toBeVisible();
-    await expect(nav.getByRole('button',{name:'Payment services'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Payment services'})).toHaveCount(0);
     await dialog.getByRole('button',{name:'বাংলা'}).click();
     const bengaliDialog = page.getByRole('dialog',{name:'সেবা ও মেনু'});
-    await expect(bengaliDialog.getByRole('button',{name:'কর পরিশোধ সেবা'})).toBeVisible();
+    await expect(bengaliDialog.getByRole('button',{name:'বিজ্ঞপ্তি'})).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(bengaliDialog).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);

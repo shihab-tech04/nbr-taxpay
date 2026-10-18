@@ -1138,12 +1138,14 @@
 .citizen-dialog__language-row p { font-weight:700; color:var(--citizen-text); font-size:.88rem; }
 .citizen-dialog__language-row .citizen-dialog-language { margin:0; }
 .citizen-dialog__account .citizen-dialog-signout {
+  display:flex; align-items:center; justify-content:center; gap:.55rem;
   width:100%; min-height:44px; margin:0; padding:.65rem 1rem;
   background:var(--citizen-primary); color:var(--citizen-surface);
   border:1px solid var(--citizen-primary); border-radius:.65rem;
   font-weight:750; text-align:center;
 }
 @media(max-width:900px) {
+  .citizen-dialog__desktop-only { display:none; }
   .citizen-header__inner--standard {
     display:grid; grid-template-columns:44px minmax(0,1fr) 44px;
     gap:.5rem; width:100%; max-width:100%; padding:0 12px; box-sizing:border-box;
