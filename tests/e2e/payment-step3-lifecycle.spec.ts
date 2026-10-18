@@ -8,9 +8,12 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.getByRole('button', { name: new RegExp(category) }).click();
   await dialog.getByRole('button', { name: /Continue/ }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await dialog.getByRole('radio', { name: 'My own tax' }).check();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  if (category === 'Tax with Return') await dialog.locator('.payment-head-single input').check();
+  else await dialog.locator('.payment-head-options input').first().check();
   if (category !== 'Source Tax Deposit') await dialog.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await dialog.locator('#guest-tax-amount').fill('12500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();

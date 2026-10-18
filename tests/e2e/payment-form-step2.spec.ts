@@ -25,6 +25,8 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('.payment-form-section')).toHaveCount(2);
   await expect(chooser.locator('#guest-category')).toHaveCount(0);
   await expect(chooser.locator('.payment-form-section').last()).toContainText('Taxpayer identification');
+  await expect(chooser.getByRole('radio', { name: 'My own tax' })).not.toBeChecked();
+  await chooser.getByRole('radio', { name: 'My own tax' }).check();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   const buttons = footer.getByRole('button');
@@ -38,6 +40,8 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('.payment-form-summary__total')).toBeVisible();
   await expect(chooser.locator('.payment-form-summary__breakdown')).toBeHidden();
   expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('auto');
+  await expect(chooser.locator('.payment-head-options input:checked')).toHaveCount(0);
+  await chooser.locator('.payment-head-options input').first().check();
   const originalHead = await chooser.locator('.payment-head-options input:checked').inputValue();
   await chooser.locator('#guest-head-search').fill('no-matching-head-123');
   await chooser.getByRole('button', { name: 'Search', exact: true }).click();
@@ -95,6 +99,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(summary).toHaveCount(1);
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('Payment calculation');
+  await chooser.getByRole('radio', { name: 'My own tax' }).check();
   await page.locator('#guest-tin').fill('123456789012');
   await page.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -108,6 +113,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   const paymentPurpose = sections.first();
   await expect(paymentPurpose.getByRole('heading', { name: 'Payment purpose & head' })).toBeVisible();
   await expect(paymentPurpose.locator('summary')).toHaveCount(0);
+  await chooser.locator('.payment-head-options input').first().check();
   await chooser.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await page.locator('#guest-tax-amount').fill('21875');
   await expect(page.locator('.payment-form-summary__total')).toContainText('21,875');
@@ -136,6 +142,7 @@ test('multiple payment heads have searchable selection, separate amounts and one
   await chooser.getByRole('button', { name: /Advance Tax/ }).click();
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
+  await chooser.getByRole('radio', { name: 'My own tax' }).check();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -143,7 +150,8 @@ test('multiple payment heads have searchable selection, separate amounts and one
 
   const choices = chooser.locator('.payment-head-options input[type="checkbox"]');
   expect(await choices.count()).toBeGreaterThanOrEqual(2);
-  await expect(choices.first()).toBeChecked();
+  await expect(choices.first()).not.toBeChecked();
+  await choices.first().check();
   const second = choices.nth(1);
   const secondId = await second.inputValue();
   await second.check();
@@ -180,6 +188,10 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await payment.getByRole('button', { name: 'Continue without signing in' }).click();
 
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(payment.getByRole('radio', { name: 'My own tax' })).toBeFocused();
+  await expect(payment.getByRole('alert')).toContainText('Choose who');
+  await payment.getByRole('radio', { name: 'My own tax' }).check();
+  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('#guest-tin')).toBeFocused();
   await expect(payment.getByRole('alert')).toContainText('12-digit');
   await payment.locator('#guest-tin').fill('123456789012');
@@ -192,6 +204,7 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await expect(payment.getByRole('alert')).toContainText('Choose the income tax type');
   await expect(payment.getByRole('radio', { name: /Income tax payable by persons other than companies/ })).toBeFocused();
   await payment.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
+  await payment.locator('.payment-head-single input[type="checkbox"]').check();
   await payment.locator('#guest-tax-amount').fill('-5');
   await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(payment.getByRole('alert')).toContainText('greater than zero');

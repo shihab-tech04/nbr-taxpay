@@ -223,7 +223,7 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
   await services.getByRole('button',{name:'Continue without signing in'}).click();
-  const field=services.locator('.payment-flow-embedded input:visible').first();
+  const field=services.locator('#guest-tin');
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });
 

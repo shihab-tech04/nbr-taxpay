@@ -135,10 +135,12 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
   await expect(pageWidth(page)).resolves.toBeLessThanOrEqual(info.project.name === 'mobile-320' ? 322 : info.project.name === 'mobile-375' ? 377 : 1282);
 
+  await page.getByRole('radio', { name: 'My own tax' }).check();
   await page.getByLabel('Taxpayer’s TIN').fill('123456789012');
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.locator('.payment-head-single')).toBeVisible();
+  await page.locator('.payment-head-single input[type="checkbox"]').check();
   await page.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
 
   await page.getByLabel('Payment amount (৳)').fill('0');
@@ -209,10 +211,12 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
   await expect(services).toBeVisible();
+  await services.getByRole('radio', { name: 'My own tax' }).check();
   await services.locator('#guest-tin').fill('123456789012');
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
+  await services.locator('.payment-head-single input[type="checkbox"]').check();
   await services.getByRole('radio', { name: /Income tax payable by persons other than companies/ }).check();
   await services.locator('#guest-tax-amount').fill('0');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
@@ -257,6 +261,9 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.getByRole('button', { name: 'পর্যালোচনায় যান' }).click();
   await expect(page.getByRole('heading', { name: 'তথ্য পর্যালোচনা' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' })).toBeVisible();
+  await page.getByRole('radio', { name: 'অনলাইনে পরিশোধ' }).check();
+  await page.getByRole('radio', { name: 'Nagad' }).check();
+  await page.locator('.travel-flow__channel input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' }).click();
   await expect(page.getByText('ভ্রমণ করের তথ্য প্রস্তুত')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
