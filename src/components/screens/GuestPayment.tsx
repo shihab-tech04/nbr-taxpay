@@ -369,9 +369,23 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
-    // No NBR reference lookup, OTP, identity verification or authenticated account
-    // is needed for this isolated simulated-payment user story.
-    setVerifiedReference(null);
+    // Preserve the existing optional sample-reference behavior for the older
+    // 12-digit v11 fixture tests. New 13-digit simulated payer profiles do not
+    // require a reference lookup or an authenticated account.
+    const reference = noticeReference.trim();
+    const shouldMatchSample = !!reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax;
+    const matched = shouldMatchSample ? findV11GuestNotice(taxpayerTin, reference) : null;
+    if (shouldMatchSample && (!matched || matched.category !== category)) {
+      setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', 'noticeReference');
+      return false;
+    }
+    setVerifiedReference(matched);
+    if (matched) {
+      setNoticeReference(matched.reference);
+      setAssessmentYear(matched.assessmentYear);
+      setSelectedHeadIds(matched.defaultHeadId ? [matched.defaultHeadId] : []);
+      setAmountInputs({});
+    }
     clearValidationError();
     return true;
   };
