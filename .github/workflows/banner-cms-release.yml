@@ -6,11 +6,17 @@ on:
     paths:
       - '.github/workflows/banner-cms-release.yml'
       - 'src/components/screens/PublicHeroCarousel.tsx'
+      - 'src/components/screens/GuestPayment.tsx'
+      - 'src/components/screens/TravelTax.tsx'
+      - 'src/components/ui/PaymentMethodSelector.tsx'
+      - 'src/components/ui/PaymentJourneyFooter.tsx'
+      - 'src/styles/taxpay-service-choice.css'
       - 'supabase/migrations/*banner*.sql'
   workflow_dispatch:
 
 permissions:
   contents: read
+
 
 concurrency:
   group: taxpay-banner-cms-release
