@@ -1,0 +1,22 @@
+name: Story 1 Hosted Payment Sync
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/services/simulatedPaymentStory.ts'
+      - 'src/components/screens/GuestPayment.tsx'
+      - 'supabase/functions/demo-story1-taxpay/**'
+      - 'tests/external/story1-hosted.mjs'
+      - '.github/workflows/story1-hosted.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sync-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Check both hosted Supabase simulations
+        run: node tests/external/story1-hosted.mjs
