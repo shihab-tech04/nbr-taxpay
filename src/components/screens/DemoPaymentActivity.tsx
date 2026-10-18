@@ -112,7 +112,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   </main>;
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
-    <TaxpayerPageHeading title={txt('Payments & activity','পেমেন্ট ও লেনদেন')}
+    <TaxpayerPageHeading title={txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}
       description={`${txt('User ID','ইউজার আইডি')}: ${id}`} />
     {activityTabs && <TaxpayerActivityTabs />}
 
