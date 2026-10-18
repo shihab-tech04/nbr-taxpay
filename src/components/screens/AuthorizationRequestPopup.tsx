@@ -28,7 +28,11 @@ export function AuthorizationRequestPopup(){
         const first=all.find(r=>r.taxpayerId===actor &&
           (r.status==='PENDING'||(r.status==='CODE_ISSUED'&&(r.codeResends??0)>0)) &&
           !dismissed.includes(`${r.id}:${r.codeResends??0}`));
-        if(active&&!code)setIncoming(first??null);
+        // A resend must replace an already-open original-code popup too.
+        if(active&&(!code||first?.status==='CODE_ISSUED')){
+          setIncoming(first??null);
+          if(first?.status==='CODE_ISSUED')setCode(null);
+        }
       }catch{/* Manage Authorization shows read errors; do not disrupt other pages */}
     };
     void poll();const timer=window.setInterval(()=>void poll(),5000);
