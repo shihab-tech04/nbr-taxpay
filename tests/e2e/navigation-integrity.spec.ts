@@ -208,7 +208,8 @@ test('taxpayer mobile menu matches the compact desktop destinations and keeps ex
   for(const [label,route] of destinations){
     await page.getByRole('button',{name:'Open menu'}).first().click();
     const dialog=page.getByRole('dialog',{name:'Services & menu'});
-    await expect(dialog.locator('.citizen-dialog__link:visible')).toHaveCount(5);
+    await expect(dialog.locator('.citizen-dialog__link:visible')).toHaveCount(6);
+    await expect(dialog.getByRole('button',{name:'Manage Authorization'})).toBeVisible();
     await expect(dialog.getByRole('button',{name:'Payment services'})).toHaveCount(0);
     await expect(dialog.getByRole('button',{name:'Help'})).toHaveCount(0);
     await expect(dialog.getByRole('button',{name:'Profile settings'})).toHaveCount(0);
