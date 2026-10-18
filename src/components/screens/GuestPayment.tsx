@@ -29,6 +29,7 @@ import { PaymentRadioCard } from '../ui/PaymentRadioCard';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
+import { findV11GuestNotice, isV11GuestTin, type V11GuestNotice } from '../../services/v11GuestInput';
 
 const GUEST_COPY = {
   en: {
@@ -109,7 +110,6 @@ const GUEST_COPY = {
 
 type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'phone' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
-const initialHead = (category: PaymentCategory) => V11_PAYMENT_OPTIONS.find(head => head.category === category && head.status === 'ACTIVE')?.id;
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
 type PaymentPhase = 'review' | 'processing' | 'pending-bank' | 'failed' | 'settled';
@@ -187,8 +187,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const taxZone = '—';
   const taxCircle = '—';
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
+  // The later approved UX supersedes v11's preselected "My own tax" default.
   const [forSelf, setForSelf] = useState<boolean | null>(null);
   const [noticeReference, setNoticeReference] = useState('');
+  const [verifiedReference, setVerifiedReference] = useState<V11GuestNotice | null>(null);
+  const tinAttempts = useRef<number[]>([]);
   const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY' | null>(null);
   
 
@@ -198,7 +201,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
-  const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>(() => initialHead(category) ? [initialHead(category)!] : []);
+  const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
   const [headSearch, setHeadSearch] = useState('');
   const [headSearchDraft, setHeadSearchDraft] = useState('');
 
@@ -238,6 +241,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setErrorMessage('');
     setErrorField(null);
     setErrorHeadId(null);
+  };
+
+  const clearReferenceSelection = () => {
+    if (!verifiedReference) return;
+    setVerifiedReference(null);
+    setSelectedHeadIds([]);
+    setAmountInputs({});
   };
 
   useEffect(() => {
@@ -283,7 +293,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (isWithholdingMode) {
       setCategory('SOURCE_TAX_DEPOSIT');
-      setSelectedHeadIds([initialHead('SOURCE_TAX_DEPOSIT') || 8]);
+      setSelectedHeadIds([]);
     }
   }, [isWithholdingMode]);
 
@@ -292,8 +302,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!isWithholdingMode && requestedCategory && CATEGORY_LABELS[requestedCategory]) {
       const next = requestedCategory as PaymentCategory;
       setCategory(next);
-      const firstHead = V11_PAYMENT_OPTIONS.find(h => h.category === next && h.status === 'ACTIVE');
-      if (firstHead) setSelectedHeadIds([firstHead.id]);
+      setSelectedHeadIds([]);
     }
   }, [routeParams, initialCategory, isWithholdingMode]);
 
@@ -312,9 +321,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Searching filters the list only. Each selected head remains in the payment and calculation.
   const selectedHeads = V11_PAYMENT_OPTIONS.filter(head => head.category === category && selectedHeadIds.includes(head.id));
   const selectedHead = selectedHeads[0];
-  const headAmount = (headId: number) => parseGuestAmount(amountInputs[headId] || '') ?? 0;
-  const validAmountInputs = selectedHeads.map(head => amountInputs[head.id] || '').filter(raw => parseGuestAmount(raw) !== null);
-  const summedAmount = sumGuestAmounts(validAmountInputs);
+  const amountRawForHead = (headId: number) => verifiedReference ? String(verifiedReference.amount) : amountInputs[headId] || '';
+  const headAmount = (headId: number) => parseGuestAmount(amountRawForHead(headId)) ?? 0;
+  const validAmountInputs = selectedHeads.map(head => amountRawForHead(head.id)).filter(raw => parseGuestAmount(raw) !== null);
+  const summedAmount = verifiedReference && selectedHeads.length > 1 ? null : sumGuestAmounts(validAmountInputs);
   const amountsValid = selectedHeads.length > 0 && validAmountInputs.length === selectedHeads.length && summedAmount !== null;
   const totalAmount = summedAmount ?? 0;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
@@ -324,9 +334,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     head={selectedHeads.length === 1 ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}` : undefined}
     amount={summedAmount}
     breakdown={step >= 3 ? [
-      ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountInputs[head.id] || '') })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
+      ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
       { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
-    ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountInputs[head.id] || '') })) : undefined} />;
+    ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : undefined} />;
 
   const validateIdentity = () => {
     if (forSelf === null) {
@@ -337,7 +347,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.invalidTin, 'tin');
       return false;
     }
-    if (!forSelf && !payerName.trim()) {
+    if (!forSelf && payerName.trim().length < 2) {
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
@@ -348,6 +358,29 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (requiresNBRReference && !noticeReference.trim()) {
       setValidationError(language === 'bn' ? 'এই সেবার জন্য NBR রেফারেন্স দিন।' : 'Enter the NBR reference for this payment service.', 'noticeReference');
       return false;
+    }
+    // v11's guest check accepts its six sample TINs and, when entered,
+    // requires a notice belonging to that same TIN. The message intentionally
+    // does not disclose whether the TIN or reference was the mismatch.
+    const now = Date.now();
+    tinAttempts.current = tinAttempts.current.filter(at => now - at < 10 * 60_000);
+    if (tinAttempts.current.length >= 5) {
+      setValidationError(language === 'bn' ? 'অনেকবার চেষ্টা করা হয়েছে। কয়েক মিনিট পর আবার চেষ্টা করুন।' : 'Too many attempts. Try again in a few minutes.', 'tin');
+      return false;
+    }
+    tinAttempts.current.push(now);
+    const reference = noticeReference.trim();
+    const matched = reference && !isWithholdingMode ? findV11GuestNotice(tin, reference) : null;
+    if (!isV11GuestTin(tin) || (reference && !isWithholdingMode && (!matched || matched.category !== category))) {
+      setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', reference && !isWithholdingMode ? 'noticeReference' : 'tin');
+      return false;
+    }
+    setVerifiedReference(matched || null);
+    if (matched) {
+      setNoticeReference(matched.reference);
+      setAssessmentYear(matched.assessmentYear);
+      setSelectedHeadIds(matched.defaultHeadId ? [matched.defaultHeadId] : []);
+      setAmountInputs({});
     }
     clearValidationError();
     return true;
@@ -636,7 +669,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder={language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
                   value={tin}
                   inputMode="numeric" maxLength={12} autoComplete="off" required
-                  onChange={(e) => setTin(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  onChange={(e) => { clearReferenceSelection(); setTin(e.target.value.replace(/\D/g, '').slice(0, 12)); }}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                 />
                 {fieldError('tin')}
@@ -676,7 +709,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               {!isWithholdingMode && <div>
                 <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
-                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => setNoticeReference(event.target.value)} required={requiresNBRReference}
+                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
                   aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
                   placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
                 {fieldError('noticeReference')}
@@ -703,6 +736,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head'}>
+            {verifiedReference && <p className="text-xs text-slate-600" role="status">{language === 'bn' ? `NBR রেফারেন্স ${verifiedReference.reference} থেকে করবর্ষ ও পরিমাণ পূরণ করা হয়েছে।` : `Assessment year and amount filled from NBR reference ${verifiedReference.reference}.`}</p>}
             {!isWithholdingMode && <fieldset className="payment-form-radio-fieldset">
               <legend className="payment-form-subheading">{language === 'bn' ? 'আয়করের ধরন' : 'Income tax type'} *</legend>
               <div className="payment-radio-card-grid">
@@ -725,8 +759,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 onChange={(e) => {
                   const newCat = e.target.value as PaymentCategory;
                   setCategory(newCat);
-                  const firstInCat = V11_PAYMENT_OPTIONS.find(h => h.category === newCat && h.status === 'ACTIVE');
-                  setSelectedHeadIds(firstInCat ? [firstInCat.id] : []);
+                  setSelectedHeadIds([]);
+                  setVerifiedReference(null);
+                  setNoticeReference('');
+                  setAmountInputs({});
                   setHeadSearch('');
                   setHeadSearchDraft('');
                 }}
@@ -742,10 +778,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
             {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
             {categoryHeads.length === 1 ? (
-              <div id="guest-head-static" className="payment-head-single" tabIndex={-1}>
-                <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head'}</small></div>
-                <CheckCircle size={19} aria-hidden="true" />
-              </div>
+              <label id="guest-head-static" htmlFor={`guest-head-${categoryHeads[0].id}`} className="payment-head-single" tabIndex={-1}>
+                <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{selectedHeadIds.includes(categoryHeads[0].id) ? (language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head') : (language === 'bn' ? 'পেমেন্ট খাত নির্বাচন করুন' : 'Select payment head')}</small></div>
+                <input id={`guest-head-${categoryHeads[0].id}`} type="checkbox" name="guest-payment-head" disabled={categoryHeads[0].status !== 'ACTIVE'} checked={selectedHeadIds.includes(categoryHeads[0].id)} onChange={() => setSelectedHeadIds(previous => previous.includes(categoryHeads[0].id) ? [] : [categoryHeads[0].id])} />
+              </label>
             ) : <fieldset className="payment-head-fieldset grid grid-cols-1 gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
               <legend className="block text-xs font-semibold text-slate-700 self-center">
                 {language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}
@@ -811,7 +847,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                         value={head.id}
                         checked={isSelected}
                         disabled={isBlocked}
-                        onChange={() => !isBlocked && setSelectedHeadIds(previous => previous.includes(head.id) ? previous.filter(id => id !== head.id) : [...previous, head.id])}
+                        onChange={() => !isBlocked && setSelectedHeadIds(previous => verifiedReference ? [head.id] : previous.includes(head.id) ? previous.filter(id => id !== head.id) : [...previous, head.id])}
                         aria-invalid={isFieldInvalid('headId') || undefined}
                         aria-describedby={errorDescription('headId')}
                         className="payment-head-option__radio mt-1 shrink-0 accent-blue-700"
@@ -830,18 +866,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
                 <label htmlFor="guest-assessment-year" className="block text-slate-600 font-medium mb-1">{commonCopy.assessmentYear} *</label>
-                <select id="guest-assessment-year" required value={assessmentYear} onChange={event => setAssessmentYear(event.target.value)} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
+                <select id="guest-assessment-year" required disabled={!!verifiedReference} value={assessmentYear} onChange={event => setAssessmentYear(event.target.value)} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
                   {['2027-28', '2026-27', '2025-26', '2024-25'].map(year => <option value={year} key={year}>{year}</option>)}
                 </select>
               </div>
             </div>
-            {selectedHeads.length === 0 && <p className="payment-form-field-error">{copy.requiredHead}</p>}
             {selectedHeads.map((head, index) => <div className="payment-head-amount" key={head.id}>
               {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
               <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
-              <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required autoComplete="off" maxLength={17}
+              <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required readOnly={!!verifiedReference} autoComplete="off" maxLength={17}
                 placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') && errorHeadId === head.id || undefined} aria-describedby={isFieldInvalid('taxAmount') && errorHeadId === head.id ? `${ERROR_ID}-taxAmount` : undefined}
-                value={amountInputs[head.id] || ''} onChange={event => { setAmountInputs(previous => ({ ...previous, [head.id]: event.target.value })); if (errorHeadId === head.id) clearValidationError(); }}
+                value={verifiedReference ? String(verifiedReference.amount) : amountInputs[head.id] || ''} onChange={event => { setAmountInputs(previous => ({ ...previous, [head.id]: event.target.value })); if (errorHeadId === head.id) clearValidationError(); }}
                 className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
               {isFieldInvalid('taxAmount') && errorHeadId === head.id && fieldError('taxAmount')}
             </div>)}

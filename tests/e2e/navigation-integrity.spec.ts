@@ -46,7 +46,7 @@ test('public footer utility links open their actual destinations without copying
 test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Check payment & receipt'}).click();
+  await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toBeVisible();
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
   await page.getByRole('button',{name:'Pay Tax'}).click();
@@ -112,9 +112,10 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
   await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(4);
-  const menu=rail.locator('.taxpayer-reference-account');
-  await expect(menu.locator('summary')).toContainText('Menu');
-  await expect(menu.getByRole('button',{name:'Certificates'})).toBeHidden();
+  const bottom=rail.locator('.taxpayer-reference-rail-bottom');
+  await expect(bottom.getByRole('button')).toHaveCount(3);
+  await expect(bottom.getByRole('button').first()).toHaveText('Profile');
+  await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
   for(const [label,route] of [
     ['Activity','history'],['Tax ledger','ledger'],['Notifications','account_notifications']
   ] as const){
@@ -125,13 +126,10 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   // Activity stays a single primary destination. The approved compact rail does not add a second navigation level.
   await rail.getByRole('button',{name:'Activity',exact:true}).click();
   await expect(page).toHaveURL(/action=history(?:&|$)/);
-  await menu.locator('summary').click();
-  await expect(menu.getByRole('button')).toHaveCount(2);
-  for(const [label,route] of [['Profile','account_profile'],['Help','user_guide']] as const){
-    await menu.getByRole('button',{name:label,exact:true}).click();
-    await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
-  }
-  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+  await bottom.getByRole('button',{name:'Profile',exact:true}).click();
+  await expect(page).toHaveURL(/action=account_profile(?:&|$)/);
+  await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
+  await expect(rail.getByRole('button',{name:'Help',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Payment guide',exact:true})).toHaveCount(0);
@@ -208,7 +206,7 @@ test('every taxpayer mobile service-menu destination matches its visible label',
     ['Certificates','certificates'],['Corrections','corrections'],
     ['Tax Journey','journey'],['Payment services','services'],
     ['Notifications','account_notifications'],['Profile','account_profile'],
-    ['Profile settings','account_settings'],['Help','user_guide'],['Payment guide','user_guide']
+    ['Profile settings','account_settings']
   ] as const;
   for(const [label,route] of destinations){
     await page.getByRole('button',{name:'Open menu'}).first().click();
@@ -221,7 +219,7 @@ test('every taxpayer mobile service-menu destination matches its visible label',
 
 test('unknown destination falls back to Home without leaving an incorrect URL',async({page})=>{
   await page.goto('/?action=missing_destination');
-  await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page).toHaveURL(/action=landing/);
 });
 
@@ -243,7 +241,7 @@ test('TaxPay rejects Office Management destinations at every direct route entry'
   for(const route of routes){
     await page.goto('/?action='+route);
     await expect(page).toHaveURL(/action=landing(?:&|$)/);
-    await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+    await expect(page.locator('#public-home-title')).toBeVisible();
     await expect(page.locator('header.bg-emerald-950')).toHaveCount(0);
     await expect(page.getByRole('heading',{name:'Officer review inbox'})).toHaveCount(0);
   }

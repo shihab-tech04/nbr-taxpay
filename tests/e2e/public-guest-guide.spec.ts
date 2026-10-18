@@ -9,7 +9,7 @@ test('public hero opens receipt lookup while travel tax remains available below 
  const header=page.locator('.public-home-header');
  await expect(header.getByRole('link',{name:'Login'})).toHaveAttribute('href','?action=taxpayer_login');
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
- await page.getByRole('button',{name:'Check payment & receipt'}).click();
+ await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
  const status=page.getByRole('dialog',{name:'Payment status & receipt'});
  await expect(status).toBeVisible();
  await expect(status.locator('.public-service-dialog__notice')).toHaveCount(0);
@@ -32,6 +32,9 @@ test('public hero opens receipt lookup while travel tax remains available below 
  await travel.getByLabel('Travel date').fill('2026-10-25');
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review travel details'})).toBeVisible();
+ await travel.getByRole('radio',{name:'Pay online'}).check();
+ await travel.getByRole('radio',{name:'bKash'}).check();
+ await travel.locator('.travel-flow__channel input[type="checkbox"]').check();
  await travel.getByRole('button',{name:'Continue payment'}).click();
  await expect(travel.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toHaveCount(0);
@@ -267,7 +270,7 @@ test('public guide and guest launcher pass WCAG automated A/AA',async({page},inf
 
 test('guest receipt lookup keeps a compact accessible layout and honest demo results',async({page})=>{
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'Check payment & receipt'}).click();
+ await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
  const dialog=page.getByRole('dialog',{name:'Payment status & receipt'});
  await expect(dialog).toBeVisible();
  await expect(dialog.locator('.receipt-lookup--embedded')).toHaveCount(1);
@@ -307,7 +310,7 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
  test.skip(info.project.name!=='mobile-320','Bilingual guest modal at smallest viewport');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
- await page.getByRole('button',{name:'পেমেন্ট ও রসিদ যাচাই'}).click();
+ await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
  const dialog=page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'});
  await expect(dialog.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toBeVisible();
  await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
@@ -327,7 +330,7 @@ test('guest receipt modal localizes labels and remains keyboard accessible',asyn
 
 test('shared modal uses left title, close icon, header divider, content and fixed footer',async({page})=>{
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Check payment & receipt'}).click();
+  await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
   const modal=page.getByRole('dialog',{name:'Payment status & receipt'});
   const header=modal.locator('.taxpay-modal__header');
   const body=modal.locator('.taxpay-modal__body');
@@ -359,7 +362,7 @@ test('shared modal uses left title, close icon, header divider, content and fixe
   await expect(footerClose).toBeVisible();
   await footerClose.click();
   await expect(modal).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Check payment & receipt'})).toBeFocused();
+  await expect(page.locator('[data-banner-service="intro"] .citizen-public-secondary')).toBeFocused();
 });
 
 test('travel tax uses same modal header/body/footer without changing its flow',async({page})=>{
@@ -417,6 +420,9 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await expect(modal.getByText('Preview ready',{exact:true})).toHaveCount(0);
  await expect(side.getByText('Total amount')).toBeVisible();
  await expect(modal.getByRole('button',{name:'Continue payment'})).toBeVisible();
+ await modal.getByRole('radio',{name:'Pay online'}).check();
+ await modal.getByRole('radio',{name:'bKash'}).check();
+ await modal.locator('.travel-flow__channel input[type="checkbox"]').check();
  await modal.getByRole('button',{name:'Continue payment'}).click();
  await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
@@ -486,6 +492,9 @@ test('Travel Tax primary action lives in fixed modal footer across all steps',as
  await actions.getByRole('button',{name:'Continue to review'}).click();
  await expect(modal.getByRole('heading',{name:'Review travel details'})).toBeVisible();
  await expect(actions.getByRole('button',{name:'Continue payment'})).toBeVisible();
+ await modal.getByRole('radio',{name:'Pay online'}).check();
+ await modal.getByRole('radio',{name:'bKash'}).check();
+ await modal.locator('.travel-flow__channel input[type="checkbox"]').check();
  await actions.getByRole('button',{name:'Continue payment'}).click();
  await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(actions.getByRole('button',{name:'Start a new payment'})).toBeVisible();

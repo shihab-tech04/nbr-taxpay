@@ -14,6 +14,45 @@
   touch-action: pan-y;
 }
 
+/* The two direct navigation controls are separate from the banner artwork.
+ * They do not add a dot indicator row or consume any banner height. */
+.public-hero-carousel__controls {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+.public-hero-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 75%);
+  color: var(--citizen-primary-dark);
+  box-shadow: 0 1px 4px rgb(20 39 72 / 9%);
+  backdrop-filter: blur(7px);
+  transform: translateY(-50%);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.public-hero-carousel__arrow--previous { left: -20px; }
+.public-hero-carousel__arrow--next { right: -20px; }
+.public-hero-carousel__arrow:hover { background: rgb(255 255 255 / 95%); }
+.public-hero-carousel__arrow:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+.public-hero-carousel__media--illustrated { cursor: grab; }
+.public-hero-carousel[data-dragging="true"] .public-hero-carousel__media--illustrated { cursor: grabbing; }
+.public-hero-carousel__media--illustrated img { user-select: none; -webkit-user-drag: none; }
+
+/* One carousel and one set of actions; only the display copy changes by breakpoint. */
+.public-hero-copy--mobile { display: none; }
+
 /* The carousel's 1px outline follows the visible service without changing
  * its box dimensions. The introduction retains the neutral brand outline. */
 .public-hero-carousel[data-payment-service] {
@@ -78,14 +117,21 @@
 /* Match Sobaike's service-colored outlined hero CTAs without changing the
  * locked #2C5EAD brand primary or the original introduction CTA. */
 .public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary {
-  background: var(--citizen-surface);
+  background: rgb(255 255 255 / 52%);
   color: var(--choice-text);
   border: 1px solid var(--choice-primary);
 }
 .public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary:hover {
-  background: var(--choice-primary);
-  color: white;
+  background: rgb(255 255 255 / 76%);
+  color: var(--choice-text);
   border-color: var(--choice-primary);
+}
+.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary {
+  background: rgb(255 255 255 / 52%);
+}
+.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary:hover {
+  background: rgb(255 255 255 / 76%);
+  color: var(--citizen-primary-dark);
 }
 .public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary:focus-visible {
   outline: 2px solid var(--choice-primary);
@@ -192,7 +238,7 @@
     line-height: 1.28;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p { font-size: .9rem; line-height: 1.5; }
-  .public-hero-carousel__slide .public-information-hero__media { height: 270px; }
+  .public-hero-carousel__slide .public-information-hero__media { height: clamp(270px, 43vw, 390px); }
   .public-hero-carousel__media--illustrated { --banner-fade-direction: to bottom; }
   /* Keep the payment confirmation readable at the top of the travel artwork. */
   .public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__media--illustrated {
@@ -203,29 +249,53 @@
 
 @media (max-width: 600px) {
   .public-hero-carousel { border-radius: 1rem; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy { padding: 1.05rem 1rem .4rem; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1 { font-size: 1.4rem; line-height: 1.28; letter-spacing: -.02em; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.35rem; line-height: 1.3; letter-spacing: -.015em; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p { margin-top: .5rem; font-size: .875rem; line-height: 1.5; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions { margin-top: .85rem; }
+  .public-hero-carousel__controls { display: none; }
+  .public-hero-copy--desktop { display: none; }
+  .public-hero-copy--mobile { display: inline; }
+
+  /* The same copy and image row heights on every slide prevent vertical jumps. */
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: 150px clamp(184px, 52vw, 270px);
+    height: calc(150px + clamp(184px, 52vw, 270px));
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: .75rem 1rem;
+    text-align: center;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+    max-width: 100%;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    letter-spacing: -.015em;
+    white-space: nowrap;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+    max-width: 100%;
+    margin: .4rem 0 0;
+    font-size: .8125rem;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
+    margin-top: .75rem;
+  }
   .public-hero-carousel__slide .public-information-hero__media { height: clamp(184px, 52vw, 270px); }
 
-  /* The artwork reserves its left half for desktop copy. On phones the copy
-   * sits above it, so crop the spare area to enlarge the person and receipt. */
+  /* The generated artwork already frames the people and confirmation cards.
+   * A 132%-tall zoom was cutting off heads, luggage and feet on phones. */
   .public-hero-carousel__slide .public-information-hero__image {
-    position: absolute;
-    top: 50%;
-    right: 0;
+    position: static;
     width: 100%;
-    height: 132%;
+    height: 100%;
     max-width: 100%;
     max-height: none;
     object-fit: cover;
     object-position: right center;
-    transform: translateY(-50%);
-  }
-  .public-hero-carousel__slide[data-banner-service="travel"] .public-information-hero__image {
-    transform: translateY(-58%);
+    transform: none;
   }
   .public-hero-carousel__slide[data-banner-service="intro"] .public-hero-carousel__media--illustrated,
   .public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__media--illustrated {
@@ -234,25 +304,21 @@
   }
   .public-hero-carousel__slide.public-information-hero .public-guest-actions .public-guest-action {
     min-height: 48px;
-    padding: .65rem .85rem;
-    font-size: .875rem;
+    padding: .6rem .75rem;
+    font-size: .8rem;
     line-height: 1.4;
   }
 }
 
-@media (max-width: 390px) {
-  .public-hero-carousel__slide[data-banner-service="intro"] .citizen-public-hero__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .public-hero-carousel__slide[data-banner-service="intro"] .public-guest-action {
-    width: 100%;
-  }
+@media (max-width: 360px) {
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.15rem; }
 }
 
-@media (max-width: 360px) {
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1 { font-size: 1.325rem; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.25rem; }
+@media (max-width: 900px) {
+  .public-hero-carousel__arrow { top: auto; bottom: 12px; transform: none; }
+  .public-hero-carousel__arrow--previous { left: 10px; }
+  .public-hero-carousel__arrow--next { right: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

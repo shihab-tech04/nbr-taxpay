@@ -7,9 +7,10 @@ import { taxpayerBrandName } from '../../config/brand';
 
 /** Citizen-only footer. The existing Officer Footer remains unchanged. */
 export function CitizenFooter(){
-  const {language,navigate,userRole,currentRoute}=useTaxState();
+  const {language,navigate,userRole,currentRoute,previewAccount}=useTaxState();
   const {user}=useAccountIdentity();
   const bn=language==='bn';
+  const signedIn=Boolean(user || previewAccount);
   const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
   const isPublic=['landing','user_guide','guidance','incident'].includes(currentRoute);
@@ -22,7 +23,7 @@ export function CitizenFooter(){
       <nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>
         <button onClick={()=>navigate('verify')} type="button">{bn?'পেমেন্টের অবস্থা ও রসিদ':'Payment status & receipt'}</button>
         <button onClick={()=>navigate('user_guide',{category:'records'})} type="button">{bn?'রসিদ ও সংশোধন':'Receipts & corrections'}</button>
-        <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>
+        {!signedIn && <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>}
         <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
       </nav>
       <div className="public-footer__bottom">
@@ -42,7 +43,7 @@ export function CitizenFooter(){
         <div><img className="citizen-footer__wordmark" src={amarKorWordmark} alt={taxpayerBrandName(language)}/><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
       </div>
       <nav className="citizen-footer__links" aria-label={bn?'সহায়তা লিংক':'Support links'}>
-        {links.map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}>
+        {links.filter(item=>!signedIn || item.route!=='user_guide').map(item=><button key={item.route} type="button" onClick={()=>navigate(item.route)}>
           {bn?item.bn:item.en}
         </button>)}
       </nav>
