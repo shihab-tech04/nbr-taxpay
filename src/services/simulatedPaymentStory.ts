@@ -60,9 +60,18 @@ export type StorySessionPayment={
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
 };
 export async function getStorySessionPayments():Promise<StorySessionPayment[]>{
- const response=await fetch(API+'/payments?sessionId='+encodeURIComponent(getStorySessionId()),{cache:'no-store'});
- if(!response.ok)throw new Error('Payment history unavailable');
- const payload=await response.json() as {success:boolean;data:StorySessionPayment[]};
- if(!payload.success||!Array.isArray(payload.data))throw new Error('Invalid payment history');
- return payload.data;
+  const results:StorySessionPayment[]=[];
+  const session=encodeURIComponent(getStorySessionId());
+  for(let page=1;page<=10000;page++){
+    const response=await fetch(API+'/payments?sessionId='+session+'&page='+page+'&perPage=100',{cache:'no-store'});
+    if(!response.ok)throw new Error('Payment history unavailable');
+    const payload=await response.json() as {success:boolean;data:{items:StorySessionPayment[];total:number}};
+    const batch=payload.data;
+    if(!payload.success||!batch||!Array.isArray(batch.items)||!Number.isSafeInteger(batch.total))
+      throw new Error('Invalid payment history');
+    results.push(...batch.items);
+    if(results.length>=batch.total)return results;
+    if(batch.items.length===0)throw new Error('Incomplete payment history');
+  }
+  throw new Error('Payment history exceeds supported page range');
 }
