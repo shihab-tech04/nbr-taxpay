@@ -240,6 +240,7 @@ test('Travel Tax keeps Back left, Continue right and route calculation available
   await expect(summary).toContainText('Payment calculation');
   await expect(footer.getByRole('button').first()).toHaveText('Back');
   await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await dialog.getByLabel('Passport number').fill('TRAVEL123');
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByLabel('Travel date').fill('2026-10-25');
   await footer.getByRole('button').last().click();
@@ -252,7 +253,6 @@ test('Travel Tax keeps Back left, Continue right and route calculation available
   expect(back).not.toBeNull();
   expect(next).not.toBeNull();
   expect(back!.x + back!.width).toBeLessThan(next!.x);
-  await dialog.getByLabel('Passport number').fill('TRAVEL123');
   await footer.getByRole('button').last().click();
   await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
   await expect(summary).toContainText('Payment calculation');
@@ -281,13 +281,13 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
   await chooser.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await chooser.getByLabel('Passport number').fill('FAKE0001');
   await chooser.getByLabel('Mobile number for receipt').fill('01712345678');
   await chooser.getByLabel('Travel date').fill('2026-10-25');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
   await chooser.locator('#travel-tax-route-0').check();
-  await chooser.getByLabel('Passport number').fill('FAKE0001');
   await expect(chooser.getByText('Payment purpose: Travel Tax')).toBeVisible();
   await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
@@ -311,11 +311,11 @@ test('Travel Tax uses the same grouped providers and preserves declined simulati
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await dialog.getByLabel('Passport number').fill('FAKE0001');
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByLabel('Travel date').fill('2026-10-25');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await dialog.locator('#travel-tax-route-0').check();
-  await dialog.getByLabel('Passport number').fill('FAKE0001');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await expect(dialog.locator('.payment-review__method-groups button')).toHaveCount(3);

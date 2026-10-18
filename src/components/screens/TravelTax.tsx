@@ -193,7 +193,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                 receiptMobile:phone,
                 travelDate,travelRoute:route.route,ageBand,
                 passengerName:passengerName.trim(),
-                // Never publish passport numbers to an unauthenticated Office list.
+                // Stored in both private SQL payment records; the public Office
+                // transaction projection exposes only the masked reference.
+                passportNumber:isDomestic ? null : passportNumber.trim(),
                 lines:newReceipt.items,
               }
             });
@@ -298,7 +300,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
           details:{payerName:passengerName.trim(),assessmentYear:'2026-27',
             paymentMethod,paymentChannel,receiptReference:receipt.tokenNumber,
             receiptMobile:phone,travelDate,travelRoute:route?.route,ageBand,
-            passengerName:passengerName.trim(),lines:receipt.items},
+            passengerName:passengerName.trim(),
+            passportNumber:isDomestic ? null : passportNumber.trim(),
+            lines:receipt.items},
         });
         receipt={...receipt,paymentTransactionId:ack.id};
       }
@@ -402,12 +406,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                 </div>
               )}
             </fieldset>
-            {fourStepJourney && !isDomestic && <div className="travel-flow__field travel-flow__passport-at-route">
-              <label htmlFor="travel-passport">{t.passport} *</label>
-              <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
-                placeholder={t.passportPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
-                onChange={event => setPassportNumber(event.target.value.toUpperCase().replace(/\s+/g, ''))} />
-            </div>}
             </PaymentFormSection>
           </section>}
 
@@ -417,7 +415,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               <h3 id="travel-passenger-heading">{workflow.passenger}</h3>
               <p>{workflow.hint}</p>
             </header>
-            <div className="travel-flow__fields">
+            <div className={'travel-flow__fields' + ((fourStepJourney || !isDomestic) ? ' travel-flow__fields--five' : '')}>
               <div className="travel-flow__field">
                 <label htmlFor="travel-passenger-age">{bn ? 'যাত্রীর বয়স' : 'Passenger age'} *</label>
                 <select id="travel-passenger-age" value={ageBand} onChange={event => setAgeBand(event.target.value as typeof ageBand)}>
@@ -433,8 +431,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                   placeholder={t.passengerPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
                   onChange={e => setPassengerName(e.target.value.toUpperCase())} />
               </div>
-              {!fourStepJourney && !isDomestic && <div className="travel-flow__field">
-                <label htmlFor="travel-passport">{t.passport} *</label>
+              {(fourStepJourney || !isDomestic) && <div className="travel-flow__field">
+                <label htmlFor="travel-passport">{t.passport}{!isDomestic && ' *'}</label>
                 <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
                   placeholder={t.passportPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
                   onChange={e => setPassportNumber(e.target.value.toUpperCase().replace(/\s+/g, ''))} />
