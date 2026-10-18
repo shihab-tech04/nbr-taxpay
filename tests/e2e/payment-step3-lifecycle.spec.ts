@@ -25,7 +25,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   const action = dialog.getByRole('button', { name: /Pay BDT 12,500/ });
   await expect(action).toBeDisabled();
   await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
-  await expect(dialog.getByText('BDT 12,500', { exact: true })).toBeVisible();
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 12,500');
   await expect(dialog.getByText('Payment simulation only')).toHaveCount(0);
   await expect(dialog.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Pay online' }).click();
