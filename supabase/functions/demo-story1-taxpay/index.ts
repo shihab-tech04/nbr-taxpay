@@ -26,7 +26,16 @@ Deno.serve(async(req)=>{
   let rpc:string,args:Record<string,unknown>;
   if(req.method==="GET"&&path==="/payments"){
     const session=u.searchParams.get("sessionId");if(!session||!uuid.test(session))return respond({success:false,error:"INVALID_SESSION"},400);
-    rpc="demo_story1_list";args={p_session:session};
+    if(u.searchParams.has("page")||u.searchParams.has("perPage")){
+      const page=Number(u.searchParams.get("page")??"1");
+      const size=Number(u.searchParams.get("perPage")??"100");
+      if(!Number.isSafeInteger(page)||!Number.isSafeInteger(size)||page<1||page>10000||size<1||size>100)
+        return respond({success:false,error:"INVALID_PAGE"},400);
+      rpc="demo_story1_list_page";args={p_session:session,p_page:page,p_per_page:size};
+    }else{
+      // Original array contract remains unchanged for existing clients.
+      rpc="demo_story1_list";args={p_session:session};
+    }
   }else if(req.method==="GET"&&path==="/notifications"){
     const session=u.searchParams.get("sessionId");if(!session||!uuid.test(session))return respond({success:false,error:"INVALID_SESSION"},400);
     rpc="demo_story1_notices";args={p_session:session};
