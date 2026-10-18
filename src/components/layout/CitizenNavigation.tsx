@@ -3,7 +3,7 @@ import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, Globe2, H
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-taka-20261017.png';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-tax-detail-20261018.png';
 
 type CitizenAction = { route: string; en: string; bn: string; category?: string };
 const guestLinks: CitizenAction[] = [

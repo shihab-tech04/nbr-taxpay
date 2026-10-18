@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity, Bell, BookOpen, CirclePlus, CircleUserRound, Home, LogOut } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-taka-20261017.png';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-tax-detail-20261018.png';
 
 type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentType<{size?: number; 'aria-hidden'?: boolean}> };
 

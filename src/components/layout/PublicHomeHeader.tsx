@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Bell, CircleHelp, Globe2, House, LayoutDashboard, LogOut, Menu, Settings2, ShieldAlert, UserRound, X } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { signOutApplicationAccount, useAccountIdentity } from '../../services/accountIdentity';
-import amarKorWordmark from '../../assets/amar-kor-wordmark-taka-20261017.png';
+import amarKorWordmark from '../../assets/amar-kor-wordmark-tax-detail-20261018.png';
 import { taxpayerBrandName } from '../../config/brand';
 
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
