@@ -914,22 +914,31 @@
 }
 .taxpay-taxpayer-reference .receipt-lookup--page :is(input,button,label,p) { font-family:inherit; }
 
-/* Specialist activity actions remain in-page and never add fixed-rail links. */
-.taxpayer-activity-sections { display:none; }
-@media(min-width:1440px) {
+/* Specialist activity actions stay contextual, with a usable path to receipts and corrections on mobile. */
+.taxpay-taxpayer-reference .taxpayer-activity-sections {
+  display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; padding:8px;
+  border:1px solid var(--color-taxpay-border); border-radius:14px; background:var(--color-taxpay-surface);
+}
+.taxpay-taxpayer-reference .taxpayer-activity-sections button {
+  min-height:42px; padding:9px 14px; border-radius:9px; color:var(--color-taxpay-text);
+  font-size:14px; font-weight:600;
+}
+.taxpay-taxpayer-reference .taxpayer-activity-sections button:hover { background:var(--color-taxpay-background); }
+.taxpay-taxpayer-reference .taxpayer-activity-sections button[aria-current="page"] {
+  background:var(--color-taxpay-primary); color:#fff;
+}
+.taxpay-taxpayer-reference .taxpayer-activity-sections button:focus-visible {
+  outline:3px solid var(--reference-focus); outline-offset:2px;
+}
+@media(max-width:900px) {
   .taxpay-taxpayer-reference .taxpayer-activity-sections {
-    display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; padding:8px;
-    border:1px solid var(--color-taxpay-border); border-radius:14px; background:#fff;
+    flex-wrap:nowrap; overflow-x:auto; scrollbar-width:thin;
   }
-  .taxpayer-activity-sections button {
-    min-height:42px; padding:9px 14px; border-radius:9px; color:var(--color-taxpay-text);
-    font-size:14px; font-weight:600;
+  .taxpay-taxpayer-reference .taxpayer-activity-sections button {
+    flex:0 0 auto; white-space:nowrap;
   }
-  .taxpayer-activity-sections button:hover { background:var(--color-taxpay-background); }
-  .taxpayer-activity-sections button[aria-current="page"] {
-    background:var(--color-taxpay-primary); color:#fff;
-  }
-  .taxpayer-activity-sections button:focus-visible { outline:3px solid var(--reference-focus); outline-offset:2px; }
+}
+@media(min-width:1440px) {
   .taxpay-taxpayer-reference .taxpayer-account-tabs { display:none; }
 }
 .tax-service-choice__saved-drafts {

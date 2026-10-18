@@ -15,10 +15,14 @@ const slides = [
   {
     id: 'intro',
     serviceCode: undefined,
-    headingEn: 'Understand tax payments. Stay in control.',
-    headingBn: 'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।',
-    descriptionEn: 'Choose the right tax service, check payment status and find receipts in one place.',
-    descriptionBn: 'সঠিক করসেবা বেছে নিন, পেমেন্টের অবস্থা দেখুন ও রসিদ খুঁজুন এক জায়গায়।',
+    headingEn: 'Tax payments, without the confusion.',
+    headingBn: 'কর পরিশোধে আর বিভ্রান্তি নয়।',
+    mobileHeadingEn: 'Pay tax with confidence',
+    mobileHeadingBn: 'কর পরিশোধ সহজ করুন',
+    descriptionEn: 'Unsure what tax to pay or where your receipt went? Choose the right service, follow clear steps, and find payment records in one place.',
+    descriptionBn: 'কোন কর দেবেন বা রসিদ কোথায় পাবেন বুঝতে পারছেন না? সঠিক সেবা বেছে নিন, সহজ ধাপে কর দিন ও পেমেন্টের রেকর্ড খুঁজে নিন।',
+    mobileDescriptionEn: 'Pay, track and find receipts.',
+    mobileDescriptionBn: 'কর দিন, রসিদ ও অবস্থা দেখুন।',
     actionEn: 'Pay Tax',
     actionBn: 'কর পরিশোধ',
     image: heroPaymentIllustration,
@@ -28,8 +32,12 @@ const slides = [
     serviceCode: 'TAX_WITH_RETURN',
     headingEn: 'Tax with Return',
     headingBn: 'রিটার্নের সঙ্গে কর',
+    mobileHeadingEn: 'Tax with Return',
+    mobileHeadingBn: 'রিটার্নের সঙ্গে কর',
     descriptionEn: 'Settle the income tax linked to your return through clear, guided steps.',
     descriptionBn: 'রিটার্নের সঙ্গে সংশ্লিষ্ট আয়কর সহজ ও স্পষ্ট ধাপে পরিশোধ করুন।',
+    mobileDescriptionEn: 'Pay tax linked to your return.',
+    mobileDescriptionBn: 'রিটার্নের কর পরিশোধ করুন।',
     actionEn: 'Pay Tax with Return',
     actionBn: 'রিটার্নের সঙ্গে কর পরিশোধ',
     image: returnTaxIllustration,
@@ -39,8 +47,12 @@ const slides = [
     serviceCode: 'ADVANCE_TAX',
     headingEn: 'Advance Income Tax',
     headingBn: 'অগ্রিম আয়কর',
+    mobileHeadingEn: 'Advance Income Tax',
+    mobileHeadingBn: 'অগ্রিম আয়কর',
     descriptionEn: 'Plan ahead by paying income tax early for your chosen assessment year.',
     descriptionBn: 'নির্বাচিত করবর্ষে আগাম আয়কর দিয়ে আপনার কর পরিকল্পনা এগিয়ে নিন।',
+    mobileDescriptionEn: 'Pay early for your tax year.',
+    mobileDescriptionBn: 'করবর্ষ অনুযায়ী অগ্রিম কর দিন।',
     actionEn: 'Pay Advance Income Tax',
     actionBn: 'অগ্রিম আয়কর পরিশোধ',
     image: advanceTaxIllustration,
@@ -50,8 +62,12 @@ const slides = [
     serviceCode: 'SOURCE_TAX_DEPOSIT',
     headingEn: 'Source Tax Deposit (TDS/TCS)',
     headingBn: 'উৎসে কর জমা (টিডিএস/টিসিএস)',
+    mobileHeadingEn: 'Source Tax (TDS/TCS)',
+    mobileHeadingBn: 'উৎসে কর জমা',
     descriptionEn: 'Deposit tax already deducted or collected at source using the right payment head.',
     descriptionBn: 'উৎসে কাটা বা সংগৃহীত কর সঠিক খাতে সহজে জমা দিন।',
+    mobileDescriptionEn: 'Deposit deducted or collected tax.',
+    mobileDescriptionBn: 'কাটা বা সংগৃহীত কর জমা দিন।',
     actionEn: 'Deposit Source Tax',
     actionBn: 'উৎসে কর জমা দিন',
     image: withholdingTaxIllustration,
@@ -61,8 +77,12 @@ const slides = [
     serviceCode: 'TRAVEL_TAX',
     headingEn: 'Travel Tax',
     headingBn: 'ভ্রমণ কর',
+    mobileHeadingEn: 'Travel Tax',
+    mobileHeadingBn: 'ভ্রমণ কর',
     descriptionEn: 'Choose your journey, add passenger details and move through travel tax with confidence.',
     descriptionBn: 'ভ্রমণের ধরন ও যাত্রীর তথ্য দিয়ে ভ্রমণ করের ধাপগুলো সহজে এগিয়ে নিন।',
+    mobileDescriptionEn: 'Pay tax for your journey.',
+    mobileDescriptionBn: 'ভ্রমণের জন্য কর দিন।',
     actionEn: 'Pay Travel Tax',
     actionBn: 'ভ্রমণ কর পরিশোধ',
     image: travelTaxIllustration,
@@ -193,6 +213,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
           {slides.map((slide, index) => {
             const isActive = index === activeIndex;
             const heading = bn ? slide.headingBn : slide.headingEn;
+            const mobileHeading = bn ? slide.mobileHeadingBn : slide.mobileHeadingEn;
             return (
               <article
                 key={slide.id}
@@ -206,15 +227,30 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 inert={!isActive}
               >
                 <div className="citizen-public-hero__copy">
-                  {index === 0 ? <h1 id="public-home-title">{heading}</h1> : <h2>{heading}</h2>}
-                  <p>{bn ? slide.descriptionBn : slide.descriptionEn}</p>
+                  {index === 0 ? (
+                    <h1 id="public-home-title">
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h1>
+                  ) : (
+                    <h2>
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h2>
+                  )}
+                  <p>
+                    <span className="public-hero-copy--desktop">{bn ? slide.descriptionBn : slide.descriptionEn}</span>
+                    <span className="public-hero-copy--mobile">{bn ? slide.mobileDescriptionBn : slide.mobileDescriptionEn}</span>
+                  </p>
                   <div className="citizen-public-hero__actions public-guest-actions">
                     <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax(slide.serviceCode)}>
                       <WalletCards size={18} aria-hidden="true" />{bn ? slide.actionBn : slide.actionEn}
                     </button>
                     {index === 0 && (
                       <button className="citizen-public-secondary public-guest-action" type="button" onClick={onCheckReceipt}>
-                        <Search size={18} aria-hidden="true" />{bn ? 'পেমেন্ট ও রসিদ যাচাই' : 'Check payment & receipt'}
+                        <Search size={18} aria-hidden="true" />
+                        <span className="public-hero-copy--desktop">{bn ? 'পেমেন্ট ও রসিদ যাচাই' : 'Check payment & receipt'}</span>
+                        <span className="public-hero-copy--mobile">{bn ? 'অবস্থা দেখুন' : 'Check status'}</span>
                       </button>
                     )}
                   </div>

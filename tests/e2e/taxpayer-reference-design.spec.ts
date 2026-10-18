@@ -142,12 +142,13 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     const dialog = page.getByRole('dialog',{name:'Services & menu'});
     const nav = dialog.getByRole('navigation',{name:'Services navigation'});
     await expect(dialog).toBeVisible();
-    for (const group of ['Navigation','Services','Account']) {
+    for (const group of ['Navigation','Account']) {
       await expect(nav.getByText(group,{exact:true})).toBeVisible();
     }
+    await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
-    const items = nav.locator('.citizen-dialog__link');
-    await expect(items).toHaveCount(11);
+    const items = nav.locator('.citizen-dialog__link:visible');
+    await expect(items).toHaveCount(6);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
@@ -161,10 +162,11 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
     await expect(nav.getByRole('button',{name:'Notifications'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Manage Authorization'})).toBeVisible();
-    await expect(nav.getByRole('button',{name:'Payment services'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Payment services'})).toHaveCount(0);
     await dialog.getByRole('button',{name:'বাংলা'}).click();
     const bengaliDialog = page.getByRole('dialog',{name:'সেবা ও মেনু'});
-    await expect(bengaliDialog.getByRole('button',{name:'কর পরিশোধ সেবা'})).toBeVisible();
+    await expect(bengaliDialog.getByRole('button',{name:'বিজ্ঞপ্তি'})).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(bengaliDialog).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
@@ -224,7 +226,7 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await services.getByRole('button',{name:/Tax with Return/}).click();
   await services.getByRole('button',{name:'Continue'}).click();
   await services.getByRole('button',{name:'Continue without signing in'}).click();
-  const field=services.locator('.payment-flow-embedded input:visible').first();
+  const field=services.locator('#guest-tin');
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });
 
@@ -248,10 +250,10 @@ test('citizen numeric typography is IBM Plex Mono while regular text uses Poppin
 test('Public homepage uses heading and description without duplicate eyebrow labels',async({page})=>{
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
-  await expect(page.getByText('Choose a payment category.')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'How it works'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Payment guidance'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+  await expect(page.getByText("Pick what you're paying. Then we'll guide you through four clear steps.")).toBeVisible();
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
+  await expect(page.getByRole('heading',{name:'Questions worth answering before you start'})).toBeVisible();
 });
 test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',async({page})=>{
   await page.goto('/?action=landing');
@@ -268,7 +270,8 @@ test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',a
 });
 test('citizen SPA navigation moves focus to main without making static content tabbable',async({page})=>{
   await page.goto('/?action=landing');
-  await page.locator('#public-faq .public-more-link').click();
+  await page.locator('#public-faq details').last().locator('summary').click();
+  await page.locator('#public-faq .public-faq-layout__guide-link').click();
   await expect(page.locator('main#main-content')).toBeFocused();
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);

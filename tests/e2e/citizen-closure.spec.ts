@@ -15,12 +15,12 @@ async function switchTaxpayerToBangla(page: Page) {
 
 test('root is a public information hub with a header Login and no payment action',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+ await expect(page.locator('#public-home-title')).toBeVisible();
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=taxpayer_login');
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.locator('.office-auth')).toHaveCount(0);
- await expect(page.getByRole('heading',{name:'Explore payment types'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
 });
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
@@ -92,8 +92,8 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Open menu'}).click();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
+  await page.getByRole('button',{name:'Open transaction history'}).click();
+  await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
 
   await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();

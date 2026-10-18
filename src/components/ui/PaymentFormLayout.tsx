@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, CircleCheck, ReceiptText } from 'lucide-react';
+import { ChevronDown, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
 import type { ServiceCategoryCode } from './ServiceCategoryTag';
 
@@ -47,9 +47,9 @@ interface PaymentSummaryProps {
   tin?: string;
   year?: string;
   head?: string;
-  amount: number;
+  amount: number | null;
   note?: string;
-  breakdown?: { label: string; value: number }[];
+  breakdown?: { label: string; value: number | null }[];
 }
 
 export function PaymentLiveSummary({ language, category, categoryCode, tin, year, head, amount, note, breakdown }: PaymentSummaryProps) {
@@ -58,10 +58,9 @@ export function PaymentLiveSummary({ language, category, categoryCode, tin, year
     <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
       <div className="payment-form-summary__heading"><ReceiptText size={19} aria-hidden="true" />
         <h2>{bn ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</h2>
-        <span className="payment-form-summary__live"><CircleCheck size={14} aria-hidden="true" />{bn ? 'হালনাগাদ' : 'Live'}</span>
       </div>
       <p className="payment-form-summary__eyebrow">{bn ? 'পরিশোধের মোট পরিমাণ' : 'Payment total'}</p>
-      <output className="payment-form-summary__total" aria-live="polite">{formatCurrency(amount, language)}</output>
+      <output className="payment-form-summary__total" aria-live="polite">{amount === null ? '—' : formatCurrency(amount, language)}</output>
       <p className="payment-form-summary__help">{bn ? 'ফর্মে তথ্য পরিবর্তনের সঙ্গে হিসাব আপডেট হয়।' : 'Updates as you complete the form.'}</p>
       <dl className="payment-form-summary__rows">
         <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd className={categoryCode ? 'taxpay-service-value' : undefined} data-payment-service={categoryCode}>{category}</dd></div>
@@ -71,7 +70,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, tin, year
       </dl>
       {breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
-        {breakdown.map(item => <div key={item.label}><span>{item.label}</span><strong>{formatCurrency(item.value, language)}</strong></div>)}
+        {breakdown.map(item => <div key={item.label}><span>{item.label}</span><strong>{item.value === null ? '—' : formatCurrency(item.value, language)}</strong></div>)}
       </div>}
       {note && <p className="payment-form-summary__notice">{note}</p>}
     </aside>

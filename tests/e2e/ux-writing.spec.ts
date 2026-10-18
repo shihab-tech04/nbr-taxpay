@@ -45,11 +45,11 @@ test('tax journey has no fabricated completed legal obligations, dates or Treasu
 test('public information copy is concise and bilingual while preserving payment safety',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','One bilingual content runner');
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Pay tax with confidence'})).toBeVisible();
  await expect(page.locator('footer').getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await expect(page.getByText('Prototype status')).toHaveCount(0);
  await page.getByRole('button',{name:'বাংলা'}).click();
- await expect(page.getByRole('heading',{name:'কর পরিশোধ বুঝুন, নিজের লেনদেন জানুন।'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'কর পরিশোধ সহজ করুন'})).toBeVisible();
  await page.goto('/?action=travel');
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);

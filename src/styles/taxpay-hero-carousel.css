@@ -50,6 +50,9 @@
 .public-hero-carousel[data-dragging="true"] .public-hero-carousel__media--illustrated { cursor: grabbing; }
 .public-hero-carousel__media--illustrated img { user-select: none; -webkit-user-drag: none; }
 
+/* One carousel and one set of actions; only the display copy changes by breakpoint. */
+.public-hero-copy--mobile { display: none; }
+
 /* The carousel's 1px outline follows the visible service without changing
  * its box dimensions. The introduction retains the neutral brand outline. */
 .public-hero-carousel[data-payment-service] {
@@ -246,11 +249,40 @@
 
 @media (max-width: 600px) {
   .public-hero-carousel { border-radius: 1rem; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy { padding: 1.05rem 1rem .4rem; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1 { font-size: 1.4rem; line-height: 1.28; letter-spacing: -.02em; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.35rem; line-height: 1.3; letter-spacing: -.015em; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p { margin-top: .5rem; font-size: .875rem; line-height: 1.5; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions { margin-top: .85rem; }
+  .public-hero-carousel__controls { display: none; }
+  .public-hero-copy--desktop { display: none; }
+  .public-hero-copy--mobile { display: inline; }
+
+  /* The same copy and image row heights on every slide prevent vertical jumps. */
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: 150px clamp(184px, 52vw, 270px);
+    height: calc(150px + clamp(184px, 52vw, 270px));
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: .75rem 1rem;
+    text-align: center;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+    max-width: 100%;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    letter-spacing: -.015em;
+    white-space: nowrap;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+    max-width: 100%;
+    margin: .4rem 0 0;
+    font-size: .8125rem;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
+    margin-top: .75rem;
+  }
   .public-hero-carousel__slide .public-information-hero__media { height: clamp(184px, 52vw, 270px); }
 
   /* The generated artwork already frames the people and confirmation cards.
@@ -272,25 +304,15 @@
   }
   .public-hero-carousel__slide.public-information-hero .public-guest-actions .public-guest-action {
     min-height: 48px;
-    padding: .65rem .85rem;
-    font-size: .875rem;
+    padding: .6rem .75rem;
+    font-size: .8rem;
     line-height: 1.4;
   }
 }
 
-@media (max-width: 390px) {
-  .public-hero-carousel__slide[data-banner-service="intro"] .citizen-public-hero__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .public-hero-carousel__slide[data-banner-service="intro"] .public-guest-action {
-    width: 100%;
-  }
-}
-
 @media (max-width: 360px) {
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1 { font-size: 1.325rem; }
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.25rem; }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.15rem; }
 }
 
 @media (max-width: 900px) {

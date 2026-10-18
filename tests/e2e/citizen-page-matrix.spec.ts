@@ -7,11 +7,11 @@ const privateRoutes={
   wizard: {kind:'pay',button:'Pay — select payment type'},
   history: {kind:'button',button:'Open transaction history'},
   ledger: {kind:'button',button:'Review tax ledger'},
-  journey: {kind:'menu',button:'Tax Journey'},
-  certificates: {kind:'menu',button:'Certificates'},
-  corrections: {kind:'menu',button:'Corrections'},
+  journey: {kind:'button',button:'Full payment journey'},
+  certificates: {kind:'activity-tab',button:'Receipts & certificates'},
+  corrections: {kind:'activity-tab',button:'Issues & corrections'},
   notifications: {kind:'menu',button:'Notifications'},
-  services: {kind:'menu',button:'Payment services'}
+  services: {kind:'button',button:'View payment services'}
 } as const;
 
 const visualAudit=async(page:import('@playwright/test').Page,key:string,viewport:string) => {
@@ -43,6 +43,9 @@ test.describe('read-only citizen screen matrix',()=>{
       if(choice.kind==='menu'){
         await page.getByRole('button',{name:'Open menu'}).click();
         await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:choice.button,exact:true}).click();
+      } else if(choice.kind==='activity-tab') {
+        await page.getByRole('button',{name:'Open transaction history'}).click();
+        await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:choice.button,exact:true}).click();
       } else if(choice.kind==='pay'){
         await page.getByRole('button',{name:'Pay — select payment type'}).click();
         const services=page.getByRole('dialog',{name:'Pay Tax'});
@@ -59,7 +62,7 @@ test.describe('read-only citizen screen matrix',()=>{
     await page.goto('/?action=officer_home');
     await expect(page).toHaveURL(/action=landing/);
     await expect(page.locator('.taxpay-citizen-shell')).toBeVisible();
-    await expect(page.getByRole('heading',{name:'Understand tax payments. Stay in control.'})).toBeVisible();
+    await expect(page.locator('#public-home-title')).toBeVisible();
     await expect(page.locator('header.bg-emerald-950')).toHaveCount(0);
   });
 });
