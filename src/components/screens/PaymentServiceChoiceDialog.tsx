@@ -28,7 +28,7 @@ type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
 
 export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
-  const { user: verifiedUser } = useAccountIdentity();
+  const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const [selected, setSelected] = useState<ServiceId | null>(initialService);
   const [view, setView] = useState<'choice' | 'access' | 'payment'>(initialService ? 'access' : 'choice');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
@@ -46,16 +46,35 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
-  const advanceToAccess = () => { if (selected) setView('access'); };
   const beginPayment = (withAccount: boolean) => { setUseAccount(withAccount); setStage(1); setView('payment'); };
+  const advanceToAccess = () => {
+    if (!selected || (accountLoading && !previewAccount)) return;
+    if (verifiedUser || previewAccount) beginPayment(true);
+    else setView('access');
+  };
+  const returnToService = () => {
+    setStage(1);
+    setView(verifiedUser || previewAccount ? 'choice' : 'access');
+  };
   const reportStage = useCallback((next: 1 | 2 | 3 | 4) => setStage(next), []);
   const requestAccountAccess = () => {
+    if (accountLoading && !previewAccount) return;
     if (verifiedUser || previewAccount) {
       beginPayment(true);
       return;
     }
     setAccountGate('login');
   };
+
+  useEffect(() => {
+    // Direct-service entry can mount before Supabase restores the Auth session.
+    if (view === 'access' && (verifiedUser || previewAccount)) {
+      setUseAccount(true);
+      setStage(1);
+      setAccountGate(null);
+      setView('payment');
+    }
+  }, [view, verifiedUser, previewAccount]);
 
   useEffect(() => {
     // Each stage starts at its beginning, even when the previous form was scrolled.
@@ -74,7 +93,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
-          {view === 'choice' && <button type="button" className="tax-service-choice__continue" disabled={!selected} onClick={advanceToAccess}>
+          {view === 'choice' && <button type="button" className="tax-service-choice__continue" disabled={!selected || (accountLoading && !previewAccount)} onClick={advanceToAccess}>
             {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
           {view === 'access' && <>
@@ -129,25 +148,25 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </> : view === 'access' ? <div className="tax-service-choice__access-gate">
           {chosenService && <p className="tax-service-choice__selected-service"><span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span><strong data-payment-service={selected ?? undefined}>{tr(chosenService.en, chosenService.bn)}</strong></p>}
           <h3 ref={accessHeadingRef} tabIndex={-1}>{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
-          <p>{publicPayment ? tr('Choose one option to start your payment.', 'পেমেন্ট শুরু করতে একটি উপায় বেছে নিন।') : tr('Sign in to continue with this service.', 'এই সেবায় এগিয়ে যেতে সাইন ইন করুন।')}</p>
+          <p>{accountLoading && !previewAccount ? tr('Checking your account session…', 'আপনার অ্যাকাউন্ট সেশন যাচাই করা হচ্ছে…') : publicPayment ? tr('Choose one option to start your payment.', 'পেমেন্ট শুরু করতে একটি উপায় বেছে নিন।') : tr('Sign in to continue with this service.', 'এই সেবায় এগিয়ে যেতে সাইন ইন করুন।')}</p>
           <div className="tax-service-choice__access-options">
-            {publicPayment && <button type="button" className="tax-service-choice__access-option tax-service-choice__access-option--guest" onClick={() => beginPayment(false)}>
+            {publicPayment && <button type="button" disabled={accountLoading && !previewAccount} className="tax-service-choice__access-option tax-service-choice__access-option--guest" onClick={() => beginPayment(false)}>
               <span className="tax-service-choice__access-icon"><WalletCards size={21} aria-hidden="true" /></span>
               <span className="tax-service-choice__access-copy"><strong>{tr('Continue without signing in', 'সাইন ইন ছাড়াই এগিয়ে যান')}</strong><small>{tr('Enter your details and make this payment', 'আপনার তথ্য দিয়ে এই পেমেন্ট করুন')}</small></span>
               <ArrowRight size={19} className="tax-service-choice__access-arrow" aria-hidden="true" />
             </button>}
-            <button type="button" className="tax-service-choice__access-option" onClick={requestAccountAccess}>
+            <button type="button" disabled={accountLoading && !previewAccount} className="tax-service-choice__access-option" onClick={requestAccountAccess}>
               <span className="tax-service-choice__access-icon"><UserRound size={21} aria-hidden="true" /></span>
               <span className="tax-service-choice__access-copy"><strong>{tr('Continue with my account', 'আমার অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</strong><small>{tr('Sign in to use your account details and records', 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করতে সাইন ইন করুন')}</small></span>
               <ArrowRight size={19} className="tax-service-choice__access-arrow" aria-hidden="true" />
             </button>
           </div>
         </div> : selected === 'TRAVEL_TAX' ? (
-          <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={() => { setView('access'); setStage(1); }} onStageChange={reportStage} />
+          <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
         ) : selected ? (
           <GuestPayment key={selected} embedded initialCategory={selected}
             isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
-            onBackToService={() => { setView('access'); setStage(1); }} onStageChange={reportStage} />
+            onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
       </section>
       {accountGate === 'login' && <TaxpayerLoginDialog
