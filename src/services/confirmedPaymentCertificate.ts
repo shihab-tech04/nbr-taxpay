@@ -48,7 +48,8 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
     return {
       ...(raw as unknown as ChallanReceipt),
       paymentTransactionId:tx.id,
-      createdAt:tx.createdAt,
+      createdAt:tx.createdAt,completedAt:tx.createdAt,
+      treasuryStatus:'GATEWAY_SUCCESS',
       isSimulatedDemo:true,
       taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
