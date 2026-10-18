@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
+import {getStoryNotices,type StoryPaymentNotice} from '../../services/simulatedPaymentStory';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -15,10 +16,23 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
   const [notices,setNotices]=useState<SimulationNotice[]>([]);
+  const [guestNotices,setGuestNotices]=useState<StoryPaymentNotice[]>([]);
+  const [guestError,setGuestError]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
+  useEffect(()=>{
+    if(authenticatedUser)return;
+    let active=true;
+    const refresh=async()=>{
+      try{const data=await getStoryNotices();if(active){setGuestNotices(data);setGuestError('');}}
+      catch{if(active)setGuestError(language==='bn'?'বিজ্ঞপ্তি আপাতত পাওয়া যাচ্ছে না':'Notifications temporarily unavailable');}
+    };
+    void refresh();
+    const timer=window.setInterval(()=>void refresh(),7000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[authenticatedUser?.id,language]);
   useEffect(()=>{
     if(!authenticatedUser){setBoundId(null);setBindingError('');return;}
     let active=true;setBoundId(null);setBindingError('');
@@ -48,10 +62,16 @@ export const NotificationsView:React.FC=()=>{
     finally{setBusyNotice(null);}
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
-  if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-3 rounded-xl border border-taxpay-border bg-white p-6" lang={language}>
-    <h1 className="text-2xl font-bold text-taxpay-text">{label('Sign in to view payment notifications','পেমেন্ট বিজ্ঞপ্তি দেখতে সাইন ইন করুন')}</h1>
-    <p className="text-sm text-taxpay-muted">{label('Sign in with your assigned account to view notifications.','বিজ্ঞপ্তি দেখতে নির্ধারিত অ্যাকাউন্টে সাইন ইন করুন।')}</p>
-    <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white" onClick={()=>navigate('taxpayer_login')}>{label('Open sign-in','সাইন ইন খুলুন')}</button>
+  if(!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
+    <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
+    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
+      {guestError?<p role="alert">{guestError}</p>:
+        !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
+        <ul className="divide-y divide-taxpay-border">{guestNotices.map(n=><li key={n.id} className="py-3">
+          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment completed successfully','পরিশোধ সফলভাবে সম্পন্ন হয়েছে')}</h2>
+          <p className="break-all text-sm text-taxpay-muted">{n.paymentId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
+        </li>)}</ul>}
+    </section>
   </main>;
   if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
   if(!id)return <AccountCenter page="notifications"/>;
