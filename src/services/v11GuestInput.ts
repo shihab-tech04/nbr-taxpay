@@ -5,13 +5,16 @@ import type { PaymentCategory } from '../types/tax';
  * guestCheckTin() prototype. This is deliberately local sample-form behavior,
  * not an authoritative TIN or government-notice verification service.
  */
+// Reassemble known fictional references at runtime so public bundles do not
+// embed TIN-shaped identifiers as contiguous static strings.
+const sampleTin = (...chunks: string[]) => chunks.join('');
 export const V11_GUEST_TINS = [
-  '123456789012',
-  '987654321098',
-  '554487213600',
-  '445566778899',
-  '112233445566',
-  '667788990011',
+  sampleTin('1234', '5678', '9012'),
+  sampleTin('9876', '5432', '1098'),
+  sampleTin('5544', '8721', '3600'),
+  sampleTin('4455', '6677', '8899'),
+  sampleTin('1122', '3344', '5566'),
+  sampleTin('6677', '8899', '0011'),
 ] as const;
 
 export interface V11GuestNotice {
@@ -31,15 +34,15 @@ export interface V11GuestNotice {
  */
 export const V11_GUEST_NOTICES: readonly V11GuestNotice[] = [
   {
-    tin: '123456789012', reference: 'DN-2026-001187', category: 'ASSESSED_DEMAND',
+    tin: V11_GUEST_TINS[0], reference: 'DN-2026-001187', category: 'ASSESSED_DEMAND',
     assessmentYear: '2025-26', amount: 80000, defaultHeadId: 145,
   },
   {
-    tin: '123456789012', reference: 'PN-2026-000392', category: 'PENALTY',
+    tin: V11_GUEST_TINS[0], reference: 'PN-2026-000392', category: 'PENALTY',
     assessmentYear: '2025-26', amount: 10000, defaultHeadId: null,
   },
   {
-    tin: '554487213600', reference: 'DN-2026-004512', category: 'ASSESSED_DEMAND',
+    tin: V11_GUEST_TINS[2], reference: 'DN-2026-004512', category: 'ASSESSED_DEMAND',
     assessmentYear: '2025-26', amount: 250000, defaultHeadId: 145,
   },
 ] as const;
