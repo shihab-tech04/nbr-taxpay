@@ -120,8 +120,12 @@ test('certificate previews stay non-official, match the selected type and locali
 
 test('home payment categories inform visitors rather than initiating transactions',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'Advance income tax'})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Withholding tax'})).toBeVisible();
+ const carousel=page.locator('.public-hero-carousel');
+ await carousel.press('ArrowRight');
+ await carousel.press('ArrowRight');
+ await expect(page.locator('[data-banner-service="advance"] h2')).toBeVisible();
+ await carousel.press('ArrowRight');
+ await expect(page.locator('[data-banner-service="withholding"] h2')).toBeVisible();
  await expect(page.locator('.citizen-pay')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toHaveCount(0);
  await page.goto('/?action=guest');
