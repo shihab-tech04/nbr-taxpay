@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Search, WalletCards } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
 import heroPaymentIllustration from '../../assets/taxpay-hero-payment-v3.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return-v3.webp';
@@ -90,7 +90,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLElement>(null);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
   const bn = language === 'bn';
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % slides.length), []);
@@ -133,29 +133,31 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     if (event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) setIsHovered(true);
   };
 
-  const onTouchStart = (event: React.TouchEvent<HTMLElement>) => {
-    const touch = event.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  const onSwipeStart = (event: React.PointerEvent<HTMLElement>) => {
+    if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select, [role="button"]')) return;
+    pointerStartRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    if (event.nativeEvent.isTrusted) event.currentTarget.setPointerCapture(event.pointerId);
     setIsSwiping(true);
   };
 
-  const onTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
-    const start = touchStartRef.current;
-    if (start) {
-      const touch = event.changedTouches[0];
-      const dx = touch.clientX - start.x;
-      const dy = touch.clientY - start.y;
+  const onSwipeEnd = (event: React.PointerEvent<HTMLElement>) => {
+    const start = pointerStartRef.current;
+    if (start?.id === event.pointerId) {
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
       if (Math.abs(dx) > SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE_RATIO) {
         if (dx < 0) goNext();
         else goPrevious();
       }
     }
-    touchStartRef.current = null;
+    pointerStartRef.current = null;
     setIsSwiping(false);
   };
 
-  const cancelTouch = () => {
-    touchStartRef.current = null;
+  const cancelSwipe = () => {
+    pointerStartRef.current = null;
     setIsSwiping(false);
   };
 
@@ -178,12 +180,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         aria-description={bn ? 'অন্য সেবা দেখতে ডানে বা বামে সোয়াইপ করুন অথবা তীরচিহ্ন কী ব্যবহার করুন।' : 'Swipe or use the left and right arrow keys to see other services.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
+        data-dragging={isSwiping}
         data-payment-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={cancelTouch}
+        onPointerDown={onSwipeStart}
+        onPointerUp={onSwipeEnd}
+        onPointerCancel={cancelSwipe}
+        onLostPointerCapture={cancelSwipe}
       >
         <div className="public-hero-carousel__track" aria-live="off">
           {slides.map((slide, index) => {
@@ -228,6 +232,17 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
           })}
         </div>
       </section>
+      <div className="public-hero-carousel__controls" role="group" aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous" onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
+          <ChevronLeft size={21} aria-hidden="true" />
+        </button>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next" onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
+          <ChevronRight size={21} aria-hidden="true" />
+        </button>
+      </div>
+      <span className="sr-only" role="status" aria-live="polite">
+        {bn ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Banner ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
+      </span>
     </div>
   );
 };
