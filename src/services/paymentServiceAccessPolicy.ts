@@ -28,7 +28,10 @@ export function resolvePaymentServiceAccess(
   operation: PaymentOperation
 ): ServiceAccessDecision {
   const requiresTin = service !== 'TRAVEL_TAX';
-  const requiresNBRReference = service === 'OTHER_TAX_PAYMENT';
+  // The v11 public guest form offers the reference as optional for *every*
+  // liability category, including "other heads". Its signed-in private
+  // "Other Tax Payment" draft has a separate, mandatory reference field.
+  const requiresNBRReference = service === 'OTHER_TAX_PAYMENT' && operation !== 'MAKE_PAYMENT';
   const base = { requiresTin, requiresNBRReference };
   if (operation === 'MAKE_PAYMENT') return { kind: 'PUBLIC', ...base };
   if (operation === 'ALLOCATE_ETDS_DEPOSIT' && service !== 'SOURCE_TAX_DEPOSIT') {

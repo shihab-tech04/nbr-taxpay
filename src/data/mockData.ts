@@ -496,8 +496,8 @@ export const INITIAL_GATEWAY_HEALTH: GatewayHealth[] = [
 
 export const TRAVEL_TAX_RATES = [
   {
-    route: 'By air to the Americas, Europe, Africa, Australia, New Zealand, China, Japan, Hong Kong, North Korea, Vietnam, Laos, Cambodia or Taiwan',
-    routeBn: 'আকাশ পথে আমেরিকা, ইউরোপ, আফ্রিকা, অস্ট্রেলিয়া, নিউজিল্যান্ড, চীন, জাপান, হংকং, উত্তর কোরিয়া, ভিয়েতনাম, লাওস, কম্বোডিয়া বা তাইওয়ান',
+    route: 'By air to North America, South America, Europe, Africa, Australia, New Zealand, China, Japan, Hong Kong, North Korea, Vietnam, Laos, Cambodia or Taiwan',
+    routeBn: 'আকাশ পথে উত্তর আমেরিকা, দক্ষিণ আমেরিকা, ইউরোপ, আফ্রিকা, অস্ট্রেলিয়া, নিউজিল্যান্ড, চীন, জাপান, হংকং, উত্তর কোরিয়া, ভিয়েতনাম, লাওস, কম্বোডিয়া বা তাইওয়ান',
     amount: 6000,
     statutoryRef: 'Section 3, Travel Tax Act 2003 (S.R.O. 2023)',
     statusNote: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED (ILLUSTRATIVE DEMO)'
