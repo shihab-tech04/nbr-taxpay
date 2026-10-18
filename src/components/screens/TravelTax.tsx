@@ -21,6 +21,8 @@ import { formatCurrency } from '../../services/numberFormat';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection } from '../ui/PaymentFormLayout';
+import { PaymentMethodSelector, paymentMethodLabel, type PaymentMethodGroup } from '../ui/PaymentMethodSelector';
+import { PaymentJourneyFooter } from '../ui/PaymentJourneyFooter';
 
 const COPY = {
   en: {
@@ -72,6 +74,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
+  const [methodGroup, setMethodGroup] = useState<PaymentMethodGroup | null>(null);
+  const [simulateDecline, setSimulateDecline] = useState(false);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
@@ -119,6 +123,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     setIsProcessing(true);
 
     setTimeout(async () => {
+      if (paymentChannel === 'NOW' && simulateDecline) {
+        setError(bn ? 'সিমুলেটেড পেমেন্ট প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।' : 'Simulated payment declined. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
       const year = new Date().getFullYear();
       const randChallan = Math.floor(10000000 + Math.random() * 90000000);
       const randToken = Math.floor(100000 + Math.random() * 900000);
@@ -263,6 +272,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     setAgeBand('ADULT'); setSelectedRouteIdx(-1); setRouteSearch(''); setError('');
     setPaymentMethod(null);
     setPaymentChannel(null);
+    setMethodGroup(null);
+    setSimulateDecline(false);
     setAcknowledged(false);
     setBankSlipPending(false);
     setPaymentNonce(crypto.randomUUID());
@@ -470,30 +481,25 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               {!fourStepJourney && <>
                 <div><dt>{bn ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd>{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
                 <div><dt>{bn ? 'পরিমাণ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
-                <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentChannel === 'OTC' ? (bn ? 'ব্যাংক শাখা' : 'Bank branch') : paymentMethod ? ({ BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard' } as Record<string, string>)[paymentMethod] : '—'}</dd></div>
+                <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentMethodLabel(paymentMethod, language)}</dd></div>
               </>}
             </dl>}
             {fourStepJourney && step === 1 && <p className="travel-flow__purpose-total">{bn ? 'পরিশোধের খাত: ভ্রমণ কর' : 'Payment purpose: Travel Tax'} · <strong>{formatCurrency(totalAmount, language)}</strong></p>}
           </section>}
           {step === 2 && <section className="travel-flow__panel travel-flow__channel" aria-labelledby="travel-channel-heading">
             <header className="travel-flow__section-header"><h3 id="travel-channel-heading">{bn ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h3><p>{bn ? 'পেমেন্টের পদ্ধতি নির্বাচন করুন, তারপর নিশ্চিত করুন।' : 'Select a payment method before confirming.'}</p></header>
-            <fieldset className="travel-flow__channel-options">
-              <legend>{bn ? 'কীভাবে পরিশোধ করবেন?' : 'How do you want to pay?'}</legend>
-              <label className="travel-flow__channel-option"><input type="radio" name="travel-payment-channel" checked={paymentChannel === 'NOW'} onChange={() => { setPaymentChannel('NOW'); setPaymentMethod(null); setAcknowledged(false); }} />{bn ? 'অনলাইনে পরিশোধ' : 'Pay online'}</label>
-              <label className="travel-flow__channel-option"><input type="radio" name="travel-payment-channel" checked={paymentChannel === 'OTC'} onChange={() => { setPaymentChannel('OTC'); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }} />{bn ? 'ব্যাংক শাখায় পরিশোধ (চালান স্লিপ)' : 'Pay at a bank branch (payment slip)'}</label>
-            </fieldset>
-            {paymentChannel !== 'OTC' && <>
-            <fieldset className="travel-flow__channel-options"><legend className="sr-only">{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</legend>
-              {([['BKASH','bKash'],['NAGAD','Nagad'],['ROCKET','Rocket'],['INTERNET_BANKING',bn ? 'ইন্টারনেট ব্যাংকিং' : 'Internet banking'],['VISA','Visa'],['MASTERCARD','Mastercard']] as const).map(([method,label]) => <label key={method} className="travel-flow__channel-option"><input type="radio" name="travel-payment-method" checked={paymentMethod === method} onChange={() => { setPaymentChannel('NOW'); setPaymentMethod(method); setAcknowledged(false); }} /><span>{label}</span></label>)}
-            </fieldset>
-            </>}
+            <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
+              onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
+              onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
+              onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
+              simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline} />
             {fourStepJourney && <dl className="travel-flow__review" aria-label={bn ? 'পেমেন্ট যাচাই' : 'Payment review'}>
               <div><dt>{bn ? 'যাত্রাপথ' : 'Journey'}</dt><dd>{route ? (bn ? route.routeBn : route.route) : '—'}</dd></div>
               <div><dt>{bn ? 'যাত্রী' : 'Passenger'}</dt><dd>{passengerName}</dd></div>
               {!isDomestic && <div><dt>{bn ? 'পাসপোর্ট নম্বর' : 'Passport number'}</dt><dd>{passportNumber.replace(/.(?=.{3})/g, '•')}</dd></div>}
               <div><dt>{bn ? 'ভ্রমণের তারিখ' : 'Travel date'}</dt><dd>{travelDate}</dd></div>
               <div><dt>{bn ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd>{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
-              <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentChannel === 'OTC' ? (bn ? 'ব্যাংক শাখা' : 'Bank branch') : paymentMethod ? ({ BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard' } as Record<string, string>)[paymentMethod] : '—'}</dd></div>
+              <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentMethodLabel(paymentMethod, language)}</dd></div>
               <div><dt>{bn ? 'চার্জ' : 'Charge'}</dt><dd>{formatCurrency(0, language)}</dd></div>
             </dl>}
             <p className="travel-flow__purpose-total">{bn ? 'সর্বমোট' : 'Total payable'}: <strong>{formatCurrency(totalAmount, language)}</strong></p>
@@ -521,10 +527,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         </dl>
         {!embedded && primaryAction}
       </aside>
-      {embedded && modalFooterTarget && createPortal(<div className="travel-flow__footer-actions">
-        {fourStepJourney && <button type="button" className="tax-service-choice__cancel" onClick={step === 0 || step === 3 ? onBackToService : () => goStep((step - 1) as 0 | 1 | 2 | 3)}><ArrowLeft size={16} aria-hidden="true" />{workflow.back}</button>}
-        {primaryAction}
-      </div>, modalFooterTarget)}
+      {embedded && modalFooterTarget && createPortal(<PaymentJourneyFooter className="travel-flow__footer-actions"
+        back={fourStepJourney && <button type="button" className="tax-service-choice__cancel" onClick={step === 0 || step === 3 ? onBackToService : () => goStep((step - 1) as 0 | 1 | 2 | 3)}><ArrowLeft size={16} aria-hidden="true" />{workflow.back}</button>}
+        next={primaryAction} />, modalFooterTarget)}
     </div>
   );
 };

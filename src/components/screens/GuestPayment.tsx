@@ -9,12 +9,8 @@ import {
   ArrowLeft, 
   CheckCircle, 
   AlertCircle, 
-  Info, 
   Lock,
-  Search,
-  Smartphone,
-  Landmark,
-  WalletCards
+  Search
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
@@ -26,6 +22,8 @@ import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
 import { PaymentRadioCard } from '../ui/PaymentRadioCard';
+import { PaymentMethodSelector } from '../ui/PaymentMethodSelector';
+import { PaymentJourneyFooter } from '../ui/PaymentJourneyFooter';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
@@ -119,17 +117,6 @@ type PaymentPhase = 'review' | 'processing' | 'pending-bank' | 'failed' | 'settl
 const ONLINE_LIFECYCLE: LifecycleStage[] = ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED', 'PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED'];
 const BANK_LIFECYCLE: LifecycleStage[] = ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED'];
 const BANK_SETTLEMENT: LifecycleStage[] = ['PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED'];
-const ONLINE_METHODS: { id: ChallanReceipt['paymentMethod']; name: string; group: string }[] = [
-  { id: 'BKASH', name: 'bKash', group: 'mfs' },
-  { id: 'NAGAD', name: 'Nagad', group: 'mfs' },
-  { id: 'ROCKET', name: 'Rocket', group: 'mfs' },
-  { id: 'INTERNET_BANKING', name: 'Internet Banking', group: 'bank' },
-  { id: 'SONALI_E_SHEBA', name: 'Sonali e-Sheba', group: 'bank' },
-  { id: 'BEFTN_RTGS', name: 'BEFTN / RTGS', group: 'bank' },
-  { id: 'VISA', name: 'Visa', group: 'card' },
-  { id: 'MASTERCARD', name: 'Mastercard', group: 'card' }
-];
-
 // v11 IT_TYPES: descriptions and government accounting codes are independent
 // of the legacy payment-head codes in the 170-row NBR law master.
 const INCOME_TAX_TYPES = [
@@ -653,11 +640,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         </section>
         </div>
         {embedded && modalFooterTarget && createPortal(
-          <div className="payment-flow-embedded__footer-actions">
-            {completed && <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>}
-            {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
-            {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment}>{language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা' : 'Try another method'} <ArrowRight size={17} /></button>}
-          </div>, modalFooterTarget
+          <PaymentJourneyFooter className="payment-flow-embedded__footer-actions"
+            back={<button type="button" className="tax-service-choice__cancel" onClick={onBackToService} disabled={isProcessing}><ArrowLeft size={17} />{commonCopy.btnBack}</button>}
+            next={<>
+              {completed && <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>}
+              {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
+              {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment}>{language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা' : 'Try another method'} <ArrowRight size={17} /></button>}
+            </>} />, modalFooterTarget
         )}
       </div>
     );
@@ -1000,31 +989,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-review__main">
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
-                <div className="payment-review__channels" role="group" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেল' : 'Payment channel'}>
-                  <button type="button" aria-label={language === 'bn' ? 'অনলাইনে পরিশোধ' : 'Pay online'} aria-pressed={paymentChannel === 'NOW'} className={`payment-review__channel ${paymentChannel === 'NOW' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('NOW'); setMethodGroup(null); setPaymentMethod(null); setAcknowledged(false); }}><CreditCard size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'অনলাইনে পরিশোধ' : 'Pay online'}</strong><small>{language === 'bn' ? 'মোবাইল ব্যাংকিং, ইন্টারনেট ব্যাংকিং বা কার্ড' : 'Mobile banking, internet banking or card'}</small></span><span className="payment-review__radio" /></button>
-                  <button type="button" aria-label={language === 'bn' ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'} aria-pressed={paymentChannel === 'OTC'} className={`payment-review__channel ${paymentChannel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => { setPaymentChannel('OTC'); setMethodGroup(null); setPaymentMethod('BANK_BRANCH'); setAcknowledged(false); }}><Building2 size={23} aria-hidden="true" /><span><strong>{language === 'bn' ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'}</strong><small>{language === 'bn' ? 'আগে চালান স্লিপ, পরে ব্যাংকে পরিশোধ' : 'Get a payment slip for the bank'}</small></span><span className="payment-review__radio" /></button>
-                </div>
-                {paymentChannel === 'NOW' && <div className="payment-review__methods">
-                  <fieldset>
-                    <legend>{language === 'bn' ? 'অনলাইন পেমেন্টের ধরন' : 'Select payment type'}</legend>
-                    <div className="payment-review__method-groups">
-                      {([{ id: 'mfs' as const, Icon: Smartphone, en: 'Mobile banking', bn: 'মোবাইল ব্যাংকিং' }, { id: 'bank' as const, Icon: Landmark, en: 'Internet banking', bn: 'ইন্টারনেট ব্যাংকিং' }, { id: 'card' as const, Icon: WalletCards, en: 'Cards', bn: 'কার্ড' }]).map(group =>
-                        <button type="button" key={group.id} aria-pressed={methodGroup === group.id} onClick={() => { setMethodGroup(group.id); setPaymentMethod(null); setAcknowledged(false); }} className={`payment-review__method-group${methodGroup === group.id ? ' payment-review__method-group--selected' : ''}`}>
-                          <group.Icon size={20} aria-hidden="true" />{language === 'bn' ? group.bn : group.en}
-                        </button>)}
-                    </div>
-                  </fieldset>
-                  {methodGroup && <fieldset className="payment-review__provider-fieldset">
-                    <legend>{methodGroup === 'mfs' ? (language === 'bn' ? 'মোবাইল ব্যাংকিং সেবা' : 'Choose mobile banking service') : methodGroup === 'bank' ? (language === 'bn' ? 'ব্যাংকিং পদ্ধতি' : 'Choose banking option') : (language === 'bn' ? 'কার্ড নেটওয়ার্ক' : 'Choose card network')}</legend>
-                    <div className="payment-review__method-list">{ONLINE_METHODS.filter(method => method.group === methodGroup).map(method => <label key={method.id} className={`payment-review__method ${paymentMethod === method.id ? 'payment-review__method--selected' : ''}`}>
-                      <input type="radio" name="guest-gateway-method" aria-label={method.name} checked={paymentMethod === method.id} onChange={() => { setPaymentMethod(method.id); setAcknowledged(false); }} />
-                      <span className={`payment-review__brand payment-review__brand--${method.id.toLowerCase()}`} aria-hidden="true">{method.id === 'MASTERCARD' ? <span className="payment-review__mastercard-mark" /> : ['BKASH', 'NAGAD', 'ROCKET', 'VISA'].includes(method.id) ? method.name : methodGroup === 'bank' ? <Landmark size={18} /> : <CreditCard size={18} />}</span>
-                      <span>{method.name}</span>
-                    </label>)}</div>
-                  </fieldset>}
-                  <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={e => setSimulateDecline(e.target.checked)} />{language === 'bn' ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>
-                </div>}
-                {paymentChannel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{language === 'bn' ? 'চালান তৈরি হওয়া মানেই কর পরিশোধ নয়। ব্যাংকের অর্থ ট্রেজারিতে নিষ্পন্ন হলে তবেই কর ক্রেডিট।' : 'Generating a challan does not mean tax is paid. Tax credit follows bank payment and Treasury settlement.'}</p>}
+                <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
+                  onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
+                  onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
+                  onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
+                  simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline} />
                 {paymentChannel && paymentMethod && <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি। কর্তিত করদাতারা eTDS-এ বরাদ্দের পর ক্রেডিট পাবেন।' : 'I confirm the agent TIN, deduction head, year and amount. Deductee credit follows eTDS allocation.') : (language === 'bn' ? 'টিআইএন, খাত, আয়করের ধরন, করবর্ষ ও মোট পরিমাণ যাচাই করেছি। ক্রেডিট করদাতার হিসাবে যাবে।' : 'I confirm the TIN, payment head, income tax type, assessment year and total. Credit goes to the taxpayer.')}</span></label>}
               </section>
             </div>

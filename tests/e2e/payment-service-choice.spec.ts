@@ -293,10 +293,38 @@ test('Travel Tax uses identity, calculated amount, channel and confirmation insi
   await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Choose payment channel' })).toBeVisible();
   await expect(chooser.getByRole('button', { name: 'Confirm payment' })).toBeDisabled();
+  await chooser.getByRole('button', { name: 'Pay online' }).click();
+  await chooser.getByRole('button', { name: 'Mobile banking' }).click();
   await chooser.getByRole('radio', { name: 'Nagad' }).check();
   await chooser.getByLabel('The journey, passenger details and amount are correct.').check();
   await chooser.getByRole('button', { name: 'Confirm payment' }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByText('Travel tax details ready')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+});
+
+test('Travel Tax uses the same grouped providers and preserves declined simulation without issuing a receipt', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.getByRole('button', { name: /Travel Tax/ }).click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
+  await dialog.getByLabel('Travel date').fill('2026-10-25');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await dialog.locator('#travel-tax-route-0').check();
+  await dialog.getByLabel('Passport number').fill('FAKE0001');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await expect(dialog.locator('.payment-review__method-groups button')).toHaveCount(3);
+  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
+  await dialog.getByRole('radio', { name: 'Nagad' }).check();
+  await dialog.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
+  await dialog.getByLabel('The journey, passenger details and amount are correct.').check();
+  await dialog.getByRole('button', { name: 'Confirm payment' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Simulated payment declined');
+  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
 });

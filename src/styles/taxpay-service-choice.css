@@ -378,7 +378,11 @@
 .payment-flow-embedded .payment-review__aside,
 .payment-review__aside > .payment-form-summary {position:static;top:auto;}
 .travel-flow__footer-actions {display:flex;align-items:center;gap:.7rem;justify-content:space-between;width:100%;flex-wrap:wrap;}
-.travel-flow__footer-actions > .tax-service-choice__cancel {min-height:44px;padding:.65rem .9rem;border-radius:10px;display:flex;align-items:center;gap:.35rem;}
+.travel-flow__footer-actions .tax-service-choice__cancel {min-height:44px;padding:.65rem .9rem;border-radius:10px;display:flex;align-items:center;gap:.35rem;}
+.payment-journey-footer {display:flex;align-items:center;justify-content:space-between;gap:.65rem;width:100%;min-width:0;}
+.payment-journey-footer__back,.payment-journey-footer__next {display:flex;align-items:center;min-width:0;gap:.5rem;}
+.payment-journey-footer__next {margin-left:auto;justify-content:flex-end;}
+.payment-journey-footer__back:empty,.payment-journey-footer__next:empty {display:none;}
 .payment-flow-embedded__footer-actions { display:flex;align-items:center;justify-content:space-between;gap:.65rem;min-width:0;width:100%; }
 .payment-flow-embedded__footer-actions button { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.65rem 1rem;border-radius:10px;font-size:.85rem;font-weight:700; }
 .payment-flow-embedded__action-short { display:none; }
