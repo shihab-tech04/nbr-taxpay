@@ -40,7 +40,7 @@ Deno.serve(async(req)=>{
     if(check.error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
     result=check.data;
    }else{
-    if(!["request","accept","confirm","decline","revoke"].includes(action)||
+    if(!["request","accept","confirm","decline","revoke","resend","delete"].includes(action)||
        !/^user([1-9]|10)$/.test(input.actor??""))
       return respond({success:false,error:"INVALID_AUTHORIZATION_ACTION"},400);
     const {data,error}=await db.rpc("demo_auth_transition",{

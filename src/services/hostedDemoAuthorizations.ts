@@ -1,13 +1,14 @@
 import { DEMO_USERS, type DemoUserId } from '../data/demoUsers';
 
 /** Shared SQL demo consent. Fictional account names are NOT authenticated taxpayer identities. */
-export type HostedAuthorizationStatus = 'PENDING' | 'CODE_ISSUED' | 'ACTIVE' | 'DENIED' | 'REVOKED' | 'EXPIRED';
+export type HostedAuthorizationStatus = 'PENDING' | 'CODE_ISSUED' | 'ACTIVE' | 'DENIED' | 'REVOKED' | 'EXPIRED' | 'CANCELLED';
 export type HostedAuthorization = {
   id: string; payerId: DemoUserId; taxpayerId: DemoUserId;
   status: HostedAuthorizationStatus;
   requestedAt: number; codeExpiresAt: number;
   consentCode: string | null; confirmedAt: number | null;
   activeUntil: number | null; attempts: number; revokedAt: number | null;
+  codeSentAt?: number | null; codeResends?: number;
 };
 
 const API = 'https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay';
@@ -31,7 +32,7 @@ export const getHostedAuthorizations=async(actor:DemoUserId):Promise<HostedAutho
   if(!Array.isArray(data))throw Error('Invalid authorization response');
   return data;
 };
-export type AuthorizationAction='request'|'accept'|'confirm'|'decline'|'revoke';
+export type AuthorizationAction='request'|'accept'|'confirm'|'decline'|'revoke'|'resend'|'delete';
 export async function performHostedAuthorization(actor:DemoUserId,action:AuthorizationAction,
   options:{id?:string;tin?:string;code?:string}={}):Promise<{id:string;status:HostedAuthorizationStatus;consentCode?:string|null;attempts:number}> {
   const response=await fetch(API+'/authorizations',{

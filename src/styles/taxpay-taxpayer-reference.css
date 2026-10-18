@@ -591,7 +591,9 @@
 .taxpay-taxpayer-reference .taxpay-auth-danger {
   border:1px solid #ba3643;background:white;color:#a62834;
 }
-.taxpay-taxpayer-reference .taxpay-auth-primary:disabled { opacity:.48;cursor:not-allowed; }
+.taxpay-taxpayer-reference .taxpay-auth-primary:disabled,
+.taxpay-taxpayer-reference .taxpay-auth-outline:disabled,
+.taxpay-taxpayer-reference .taxpay-auth-danger:disabled { opacity:.48;cursor:not-allowed; }
 .taxpay-taxpayer-reference .taxpay-auth-add {
   display:grid;gap:8px;margin-top:18px;padding:16px;border:1px solid var(--color-taxpay-border);
   border-radius:12px;background:var(--color-taxpay-background);
