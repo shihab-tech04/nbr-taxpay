@@ -30,6 +30,8 @@ import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, isV11GuestTin, type V11GuestNotice } from '../../services/v11GuestInput';
+import { useAccountIdentity } from '../../services/accountIdentity';
+import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 
 const GUEST_COPY = {
   en: {
@@ -166,13 +168,16 @@ const statusLabels: Record<LifecycleStage, { en: string; bn: string }> = {
 interface GuestPaymentProps {
   isWithholdingMode?: boolean;
   embedded?: boolean;
+  withAccount?: boolean;
   initialCategory?: PaymentCategory;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, initialCategory, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt, routeParams } = useTaxState();
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, onBackToService, onStageChange }) => {
+  const { language, navigate, addPaymentReceipt, routeParams, previewAccount } = useTaxState();
+  const { user: authenticatedUser } = useAccountIdentity();
+  const accountTaxpayer = usePaymentAccountProfile(withAccount ? authenticatedUser?.id ?? null : null, withAccount ? previewAccount : null);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
   const copy = GUEST_COPY[language];
@@ -184,11 +189,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [tin, setTin] = useState('');
   const [payerName, setPayerName] = useState('');
   const [phone, setPhone] = useState('');
-  const taxZone = '—';
-  const taxCircle = '—';
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   // The later approved UX supersedes v11's preselected "My own tax" default.
   const [forSelf, setForSelf] = useState<boolean | null>(null);
+  const ownAccountTax = withAccount && forSelf === true;
+  const ownProfile = ownAccountTax ? accountTaxpayer.profile : null;
+  const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
+  const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
+  const receiptPhone = ownProfile?.receiptMobile ?? phone;
+  const taxZone = ownProfile?.taxZone ?? '—';
+  const taxCircle = ownProfile?.taxCircle ?? '—';
   const [noticeReference, setNoticeReference] = useState('');
   const [verifiedReference, setVerifiedReference] = useState<V11GuestNotice | null>(null);
   const tinAttempts = useRef<number[]>([]);
@@ -330,7 +340,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
   const paymentCalculation = <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
-    categoryCode={category} tin={tin} year={assessmentYear}
+    categoryCode={category} tin={taxpayerTin} year={assessmentYear}
     head={selectedHeads.length === 1 ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}` : undefined}
     amount={summedAmount}
     breakdown={step >= 3 ? [
@@ -343,7 +353,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'কার জন্য পরিশোধ করছেন নির্বাচন করুন।' : 'Choose who you are paying for.', 'payerChoice');
       return false;
     }
-    if (!/^\d{12}$/.test(tin)) {
+    if (ownAccountTax && !ownProfile) {
+      setValidationError(language === 'bn' ? 'এই অ্যাকাউন্টের সঙ্গে করদাতার তথ্য যুক্ত নেই।' : 'No taxpayer profile is linked to this account.', 'tin');
+      return false;
+    }
+    if (!(ownAccountTax ? /^\d{13}$/.test(taxpayerTin) : /^\d{12}$/.test(taxpayerTin))) {
       setValidationError(copy.invalidTin, 'tin');
       return false;
     }
@@ -351,7 +365,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
-    if (!/^01\d{9}$/.test(phone.replace(/\D/g, ''))) {
+    if (!/^01\d{9}$/.test(receiptPhone.replace(/\D/g, ''))) {
       setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন (01XXXXXXXXX)।' : 'Enter an 11-digit receipt mobile number (01XXXXXXXXX).', 'phone');
       return false;
     }
@@ -370,8 +384,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     tinAttempts.current.push(now);
     const reference = noticeReference.trim();
-    const matched = reference && !isWithholdingMode ? findV11GuestNotice(tin, reference) : null;
-    if (!isV11GuestTin(tin) || (reference && !isWithholdingMode && (!matched || matched.category !== category))) {
+    const matched = reference && !isWithholdingMode && !ownAccountTax ? findV11GuestNotice(taxpayerTin, reference) : null;
+    if (!ownAccountTax && (!isV11GuestTin(taxpayerTin) || (reference && !isWithholdingMode && (!matched || matched.category !== category)))) {
       setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', reference && !isWithholdingMode ? 'noticeReference' : 'tin');
       return false;
     }
@@ -475,10 +489,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         tokenNumber: `TKN-${randToken}`,
         paymentCategory: category,
         assessmentYear,
-        payerName: forSelf ? 'Taxpayer / withholding agent' : payerName.trim(),
-        payerTin: 'GUEST',
-        taxpayerTin: tin,
-        receiptMobile: phone,
+        payerName: forSelf ? accountName || 'Taxpayer / withholding agent' : payerName.trim(),
+        payerTin: ownAccountTax ? taxpayerTin : 'GUEST',
+        taxpayerTin,
+        receiptMobile: receiptPhone,
         noticeReference: noticeReference.trim() || undefined,
         isRepresentativePayment: !forSelf,
         representativeTin: undefined,
@@ -649,14 +663,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My own tax', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার নিজের কর' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : "Someone else's tax", bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য কারও কর' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { setForSelf(choice.value); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
               </fieldset>
             </PaymentFormSection>
-            <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? '১২ সংখ্যার টিআইএন ও ঐচ্ছিক রেফারেন্স' : '12-digit TIN and optional NBR reference'}>
+            <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference'}>
+            {ownAccountTax && <p role="status" className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+              {ownProfile
+                ? language === 'bn' ? 'অ্যাকাউন্টের করদাতার তথ্য পূরণ করা হয়েছে। এই তথ্য পরিবর্তন করা যাবে না।' : 'Your account taxpayer details are prefilled and read-only.'
+                : accountTaxpayer.status === 'loading'
+                  ? language === 'bn' ? 'অ্যাকাউন্টের তথ্য লোড হচ্ছে…' : 'Loading your account details…'
+                  : language === 'bn' ? 'এই অ্যাকাউন্টে করদাতার তথ্য যুক্ত নেই।' : 'No taxpayer profile is linked to this account.'}
+            </p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ownAccountTax && <div>
+                <label htmlFor="guest-taxpayer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'করদাতার নাম' : 'Taxpayer name'}</label>
+                <input id="guest-taxpayer-name" type="text" value={accountName} readOnly aria-readonly="true" placeholder="—"
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-slate-100 text-slate-800" />
+              </div>}
               <div>
                 <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
                   {isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : (language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer’s TIN')} *
@@ -666,11 +692,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   type="text"
                   aria-invalid={isFieldInvalid('tin') || undefined}
                   aria-describedby={errorDescription('tin')}
-                  placeholder={language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
-                  value={tin}
-                  inputMode="numeric" maxLength={12} autoComplete="off" required
+                  placeholder={ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
+                  value={taxpayerTin}
+                  inputMode="numeric" maxLength={ownAccountTax ? 13 : 12} autoComplete="off" required
+                  readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
                   onChange={(e) => { clearReferenceSelection(); setTin(e.target.value.replace(/\D/g, '').slice(0, 12)); }}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
+                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('tin')}
               </div>
@@ -697,15 +724,23 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   id="guest-phone"
                   type="tel"
                   placeholder={copy.mobilePlaceholder}
-                  value={phone}
+                  value={receiptPhone}
                   aria-invalid={isFieldInvalid('phone') || undefined}
                   aria-describedby={errorDescription('phone')}
                   inputMode="numeric" maxLength={11} autoComplete="tel-national" required
+                  readOnly={ownAccountTax && Boolean(ownProfile)} aria-readonly={(ownAccountTax && Boolean(ownProfile)) || undefined}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
+                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax && ownProfile ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('phone')}
               </div>
+
+              {ownProfile && <>
+                <div><label htmlFor="guest-tax-zone" className="block text-xs font-semibold text-slate-700 mb-1">{copy.zone}</label>
+                  <input id="guest-tax-zone" value={ownProfile.taxZone} readOnly aria-readonly="true" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-slate-100" /></div>
+                <div><label htmlFor="guest-tax-circle" className="block text-xs font-semibold text-slate-700 mb-1">{copy.circle}</label>
+                  <input id="guest-tax-circle" value={ownProfile.taxCircle} readOnly aria-readonly="true" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-slate-100" /></div>
+              </>}
 
               {!isWithholdingMode && <div>
                 <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>

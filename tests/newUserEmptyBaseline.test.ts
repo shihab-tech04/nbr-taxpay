@@ -9,7 +9,7 @@ test('user7 through user10 retain first-time financial scenarios with named test
     assert.equal(u?.id,id);
     assert.equal(u?.role,'TAXPAYER_INDIVIDUAL');
     assert.ok(u?.nameEn && u?.nameBn);
-    assert.match(u?.tin ?? '',/^\d{12}$/);
+    assert.match(u?.tin ?? '',/^\d{13}$/);
     assert.equal(u?.focusEn,'First-time payment');
     assert.doesNotMatch(u?.focusEn ?? '',/refund|withholding|correction|reversal/i);
   }
