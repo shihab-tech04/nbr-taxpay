@@ -36,7 +36,7 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
   await travel.getByRole('button',{name:'Pay online'}).click();
   await travel.getByRole('button',{name:'Mobile banking'}).click();
  await travel.getByRole('radio',{name:'bKash'}).check();
- await travel.locator('.travel-flow__channel input[type="checkbox"]').check();
+ await travel.locator('.travel-flow__channel-option input[type="checkbox"]').check();
  await travel.getByRole('button',{name:'Continue payment'}).click();
  await expect(travel.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toHaveCount(0);
@@ -291,7 +291,7 @@ test('guest receipt lookup keeps a compact accessible layout and honest demo res
  await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'Back to records'})).toHaveCount(0);
  await expect(dialog.getByRole('button',{name:'Print receipt'})).toBeVisible();
- await expect(dialog.getByRole('button',{name:'Download JSON'})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Download',exact:true})).toBeVisible();
  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
  await expect(dialog.locator('.receipt-view__table')).toBeHidden();
  await expect(dialog.locator('.receipt-view__cards')).toBeVisible();
@@ -427,7 +427,7 @@ test('travel tax desktop stepper scrolls left while payment summary stays anchor
  await modal.getByRole('button',{name:'Pay online'}).click();
  await modal.getByRole('button',{name:'Mobile banking'}).click();
  await modal.getByRole('radio',{name:'bKash'}).check();
- await modal.locator('.travel-flow__channel input[type="checkbox"]').check();
+ await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
  await modal.getByRole('button',{name:'Continue payment'}).click();
  await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
@@ -500,7 +500,7 @@ test('Travel Tax primary action lives in fixed modal footer across all steps',as
  await modal.getByRole('button',{name:'Pay online'}).click();
  await modal.getByRole('button',{name:'Mobile banking'}).click();
  await modal.getByRole('radio',{name:'bKash'}).check();
- await modal.locator('.travel-flow__channel input[type="checkbox"]').check();
+ await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
  await actions.getByRole('button',{name:'Continue payment'}).click();
  await expect(modal.getByRole('heading',{name:'Travel tax details ready'})).toBeVisible();
  await expect(actions.getByRole('button',{name:'Start a new payment'})).toBeVisible();
