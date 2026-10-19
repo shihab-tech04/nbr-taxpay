@@ -114,3 +114,30 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   expect(values.display).toBe('grid');
   expect(values.valueWidth).toBeGreaterThan(values.rowWidth*.8);
 });
+
+test('mobile travel-tax explanation stays within the dashboard rather than clipping off-screen',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
+  await enterUser1(page);
+  const summary=page.locator('.taxpayer-travel-tax-summary');
+  await summary.locator('.taxpayer-inline-help > summary').click();
+  const tooltip=summary.locator('.taxpayer-inline-help__content');
+  await expect(tooltip).toBeVisible();
+  const box=await tooltip.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x+box!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
+  await expect(tooltip).toContainText('Travel tax is reported separately');
+});
+
+test('mobile public Help entry clears the footer identity area',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile footer geometry');
+  await page.goto('/');
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  await expect(page.locator('.public-footer__identity')).toBeVisible();
+  const help=await page.locator('.public-help-launch').boundingBox();
+  const identity=await page.locator('.public-footer__identity').boundingBox();
+  expect(help).not.toBeNull();expect(identity).not.toBeNull();
+  const overlap=help!.x < identity!.x+identity!.width && help!.x+help!.width > identity!.x &&
+    help!.y < identity!.y+identity!.height && help!.y+help!.height > identity!.y;
+  expect(overlap).toBe(false);
+});

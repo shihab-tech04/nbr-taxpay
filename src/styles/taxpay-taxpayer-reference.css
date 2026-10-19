@@ -748,6 +748,19 @@
   .taxpay-taxpayer-reference .taxpayer-dashboard-kpi { min-height: 100px; }
   .taxpay-taxpayer-reference .taxpayer-dashboard-attention > div:first-child { align-items: flex-start; }
   .taxpay-taxpayer-reference .taxpayer-dashboard-chart { padding: 16px; }
+  /* Attach the travel-tax explanation to the full summary row. Its info icon
+     sits near the left edge on narrow phones, where a right-anchored popup
+     otherwise clips outside the viewport. */
+  .taxpay-taxpayer-reference .taxpayer-travel-tax-summary { position: relative; }
+  .taxpay-taxpayer-reference .taxpayer-travel-tax-summary:has(.taxpayer-inline-help[open]) { z-index: 46; }
+  .taxpay-taxpayer-reference .taxpayer-travel-tax-summary .taxpayer-inline-help { position: static; }
+  .taxpay-taxpayer-reference .taxpayer-travel-tax-summary .taxpayer-inline-help__content {
+    top: calc(100% + 6px);
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+  }
 }
 
 
