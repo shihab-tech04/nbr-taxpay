@@ -165,10 +165,16 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
-          OFFICE_SHA="b1cf785ce3df8804f650e588f4ea84fa721a1041"
+          OFFICE_SHA="ddf68c95723038919dcf8a898d2ed96087950db6"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
+          cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_DIR/src/app/contracts/paymentSimulationContract.ts"
+          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-sync-bridge/index.ts"
+          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-command-bridge/index.ts"
+          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 14
+          test "$(find "$OFFICE_DIR/supabase/hosted_migration_history" -name '*.sql' | wc -l)" = 17
+          echo "PASS: shared contracts and deployed bridge source byte-identical; both hosted migration recovery sets present"
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
