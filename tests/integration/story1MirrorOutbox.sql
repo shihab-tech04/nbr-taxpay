@@ -2,7 +2,8 @@
 begin;
 do $test$
 declare
-  payment_id uuid := gen_random_uuid();
+  payment_key uuid := gen_random_uuid();
+  payment_id uuid;
   session_id uuid := gen_random_uuid();
   consent_id uuid;
   claims jsonb;
@@ -10,6 +11,7 @@ declare
   auth_claim jsonb;
   denied boolean := false;
   status_before text;
+  submission jsonb;
 begin
   perform set_config('request.jwt.claim.role','anon',true);
   begin
@@ -19,10 +21,11 @@ begin
   end;
   if not denied then raise exception 'Anonymous queue claim unexpectedly authorized';end if;
 
-  perform public.demo_story1_submit(jsonb_build_object(
-    'idempotencyKey',payment_id,'sessionId',session_id,
+  submission := public.demo_story1_submit(jsonb_build_object(
+    'idempotencyKey',payment_key,'sessionId',session_id,
     'service','TRAVEL_TAX','amountMinor',12345,'origin','TAXPAY_UI',
     'details',jsonb_build_object('travelRoute','Synthetic acceptance')));
+  payment_id := (submission->>'id')::uuid;
   insert into public.demo_authorization_requests(payer_id,taxpayer_id)
     values('user10','user9') returning id into consent_id;
   if (select count(*) from demo_payment.mirror_outbox
