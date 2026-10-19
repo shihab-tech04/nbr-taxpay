@@ -655,7 +655,8 @@
 .taxpay-taxpayer-reference .taxpay-auth-empty p {max-width:430px;}
 @media (max-width: 600px) {
   .taxpay-taxpayer-reference .taxpay-auth-heading-row {align-items:flex-start;gap:12px;}
-  .taxpay-taxpayer-reference .taxpay-auth-heading-row > button {width:auto;align-self:flex-start;}
+  .taxpay-taxpayer-reference .taxpay-auth-heading-row {display:grid;grid-template-columns:minmax(0,1fr) auto;}
+  .taxpay-taxpayer-reference .taxpay-auth-heading-row > button {width:auto;align-self:start;justify-self:end;padding-inline:10px;}
   .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline {display:grid;grid-template-columns:minmax(0,1fr);}
   .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline input,
   .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline > button {width:100%;min-width:0;}
@@ -760,6 +761,13 @@
     right: 8px;
     width: auto;
     max-width: none;
+  }
+  /* Anchor the monthly activity tooltip to its full header, not the icon. */
+  .taxpay-taxpayer-reference .taxpayer-monthly-help-row { position:relative; }
+  .taxpay-taxpayer-reference .taxpayer-monthly-help-row:has(.taxpayer-inline-help[open]) { z-index:46; }
+  .taxpay-taxpayer-reference .taxpayer-monthly-help-row .taxpayer-inline-help { position:static; }
+  .taxpay-taxpayer-reference .taxpayer-monthly-help-row .taxpayer-inline-help__content {
+    top:calc(100% + 6px);left:0;right:0;width:auto;max-width:none;
   }
 }
 
@@ -1035,7 +1043,7 @@
   .taxpay-taxpayer-reference .taxpayer-transaction-filters {grid-template-columns:minmax(0,1fr);}
   .taxpay-taxpayer-reference .taxpayer-transaction-filter--search {grid-column:auto;}
   .taxpay-taxpayer-reference .taxpayer-transaction-detail__overlay {align-items:flex-end;padding:0;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail {max-width:none;max-height:calc(100dvh - 12px);height:min(88dvh,850px);border-radius:16px 16px 0 0;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail {max-width:none;max-height:min(88dvh,850px);height:auto;border-radius:16px 16px 0 0;}
   .taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {padding:14px 16px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-detail__body {padding:0 16px calc(20px + env(safe-area-inset-bottom));}
   .taxpay-taxpayer-reference .taxpayer-transaction-detail__facts {grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 12px;margin-top:18px;}

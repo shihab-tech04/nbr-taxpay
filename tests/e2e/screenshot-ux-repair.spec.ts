@@ -28,8 +28,23 @@ test('mobile transaction details use a contained sheet with a visible close cont
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth+1);
   expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight+1);
   expect(geometry.scrolls).toBe('auto');
+  const renderedHeight=await dialog.evaluate(element=>element.getBoundingClientRect().height);
+  expect(renderedHeight).toBeLessThan(page.viewportSize()!.height*.8);
   await dialog.getByRole('button',{name:'Close transaction details'}).click();
   await expect(dialog).toHaveCount(0);
+});
+
+test('mobile monthly activity help opens fully within the dashboard width',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
+  await enterUser1(page);
+  const row=page.locator('.taxpayer-monthly-help-row');
+  await row.locator('.taxpayer-inline-help > summary').click();
+  const content=row.locator('.taxpayer-inline-help__content');
+  await expect(content).toBeVisible();
+  const bounds=await content.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
 test('mobile journal renders labeled cards with all five financial fields',async({page},info)=>{
