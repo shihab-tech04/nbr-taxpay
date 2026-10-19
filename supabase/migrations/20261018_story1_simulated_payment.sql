@@ -28,7 +28,7 @@ begin
  select * into v from demo_payment.story_payments where id=p_id and session_id=p_session;
  if not found then raise exception 'NOT_FOUND';end if;
  return jsonb_build_object('id',v.id,'data',v.data,'status',v.status,'createdAt',v.created_at);
-end;$function$
+end;$function$;
 
 
 CREATE OR REPLACE FUNCTION public.demo_story1_list(p_session uuid)
@@ -41,7 +41,7 @@ begin
  return coalesce((select jsonb_agg(jsonb_build_object('id',x.id,'service',x.service_code,
   'amountMinor',x.amount_minor,'status',x.status,'createdAt',x.created_at) order by x.created_at desc)
   from (select * from demo_payment.story_payments where session_id=p_session order by created_at desc limit 100) x),'[]'::jsonb);
-end;$function$
+end;$function$;
 
 
 CREATE OR REPLACE FUNCTION public.demo_story1_notices(p_session uuid)
@@ -54,7 +54,7 @@ begin
  return coalesce((select jsonb_agg(jsonb_build_object('id',n.id,'paymentId',n.payment_id,
   'type',n.event_type,'createdAt',n.created_at) order by n.id desc)
   from (select * from demo_payment.story_notifications where session_id=p_session order by id desc limit 100) n),'[]'::jsonb);
-end;$function$
+end;$function$;
 
 
 CREATE OR REPLACE FUNCTION public.demo_story1_submit(p_input jsonb)
@@ -88,7 +88,7 @@ begin
  insert into demo_payment.story_notifications(payment_id,session_id,event_type)
  values(v_new.id,v_session,'SIMULATED_PAYMENT_SUCCESS');
  return jsonb_build_object('id',v_new.id,'status',v_new.status,'replayed',false,'createdAt',v_new.created_at);
-end;$function$
+end;$function$;
 
 revoke all on function public.demo_story1_submit(jsonb), public.demo_story1_get(uuid,uuid), public.demo_story1_list(uuid), public.demo_story1_notices(uuid) from public;
 grant execute on function public.demo_story1_submit(jsonb), public.demo_story1_get(uuid,uuid), public.demo_story1_list(uuid), public.demo_story1_notices(uuid) to anon,authenticated;
