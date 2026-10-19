@@ -2,7 +2,7 @@
 -- EXPIRED state exactly once, even when no new authorization action occurs.
 create or replace function demo_payment.story1_requeue_expired_authorizations(
   p_at timestamptz default now()
-) returns integer language plpgsql security definer set search_path = '' as $$
+) returns integer language plpgsql security invoker set search_path = '' as $$
 declare v_requeued integer;
 begin
   if p_at is null then raise exception 'INVALID_EXPIRY_CHECK_TIME'; end if;
