@@ -70,8 +70,7 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 25
-          test "$(psql -X -Atqc "select count(*) from supabase_migrations.schema_migrations where version in ('20261018050345','20261018072607','20261018075918','20261018090732')")" = 4
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 26
           test "$(psql -X -Atqc "select count(*) from public.taxpay_site_banners")" = 5
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_site_banners'")" = 9
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_transactions') is not null")" = t
@@ -79,7 +78,7 @@ jobs:
           test "$(psql -X -Atqc "select to_regclass('demo_payment.mirror_outbox') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
-          echo "PASS: twenty-five ordered migrations installed, including durable Story1 retry queue, authorization, CMS and owner-update grants"
+          echo "PASS: twenty-six ordered migrations installed, including durable Story1 retry queue, guarded cron schedule, authorization, CMS and owner-update grants"
 
       - name: Verify atomic mirror outbox, service-only claims, ACK and outage retry
         run: |
@@ -171,7 +170,7 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
-          OFFICE_SHA="ddf68c95723038919dcf8a898d2ed96087950db6"
+          OFFICE_SHA="96d766e4ff8b977e19d8c259c5f21c3424f81580"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"

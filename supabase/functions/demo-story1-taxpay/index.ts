@@ -52,8 +52,20 @@ Deno.serve(async(req)=>{
  try{
   if(req.method==="POST"&&path==="/sync/reconcile"){
    const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-   if(!serviceKey||req.headers.get("Authorization")!=="Bearer "+serviceKey)
-    return respond({success:false,error:"SERVICE_ROLE_REQUIRED"},401);
+   if(!serviceKey)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
+   let authorized=req.headers.get("Authorization")==="Bearer "+serviceKey;
+   // The existing private SQL bridge token allows a credential-free cron job
+   // definition: pg_net looks up the current token at runtime inside SQL.
+   if(!authorized){
+    const dispatch=req.headers.get("X-Dispatch-Token");
+    if(dispatch){
+     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+     const {data:config,error:configError}=await admin.rpc("payment_v1_internal_bridge_config");
+     authorized=!configError&&config?.enabled===true&&
+      typeof config.dispatchToken==="string"&&dispatch===config.dispatchToken;
+    }
+   }
+   if(!authorized)return respond({success:false,error:"SERVICE_ROLE_REQUIRED"},401);
    try{return respond({success:true,data:await reconcileMirrors(url,serviceKey)});}
    catch(e){console.error("Story1 reconciliation",e);return respond({success:false,error:"MIRROR_RECONCILIATION_FAILED"},503);}
   }

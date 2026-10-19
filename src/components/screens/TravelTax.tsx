@@ -340,8 +340,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       <FileText size={17} aria-hidden="true" />{isProcessing ? t.running : (fourStepJourney ? (bn ? 'পেমেন্ট নিশ্চিত করুন' : 'Confirm payment') : t.run)}
     </button>
   ) : (
-    <button key="travel-advance" type="button" className="travel-flow__primary" onClick={continueStep}>
-      {fourStepJourney ? (step === 0 ? (bn ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount') : (bn ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')) : (step === 0 ? workflow.continue : workflow.reviewNext)}<ArrowRight size={17} aria-hidden="true" />
+    <button key="travel-advance" type="button" className="travel-flow__primary" onClick={continueStep}
+      aria-label={fourStepJourney ? (step === 0 ? (bn ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount') : (bn ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')) : (step === 0 ? workflow.continue : workflow.reviewNext)}>
+      <span className="payment-flow-embedded__action-long">{fourStepJourney ? (step === 0 ? (bn ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount') : (bn ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')) : (step === 0 ? workflow.continue : workflow.reviewNext)}</span>
+      <span className="payment-flow-embedded__action-short" aria-hidden="true">{bn ? 'এগিয়ে যান' : 'Continue'}</span><ArrowRight size={17} aria-hidden="true" />
     </button>
   );
   return (

@@ -569,6 +569,7 @@
 .taxpay-taxpayer-reference .taxpay-auth-heading-row {
   display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
 }
+.taxpay-taxpayer-reference .taxpay-auth-heading-row > div {flex:1 1 240px;min-width:0;}
 .taxpay-taxpayer-reference .taxpay-auth-heading-row h2 { margin-bottom:4px; }
 .taxpay-taxpayer-reference .taxpay-auth-heading-row p,
 .taxpay-taxpayer-reference .taxpay-auth-add p,
@@ -580,7 +581,8 @@
 .taxpay-taxpayer-reference .taxpay-auth-outline,
 .taxpay-taxpayer-reference .taxpay-auth-danger {
   display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;
-  padding:9px 15px;border-radius:9px;font-size:14px;font-weight:650;cursor:pointer;
+  max-width:100%;padding:9px 15px;border-radius:9px;font-size:14px;font-weight:650;
+  line-height:1.4;overflow-wrap:anywhere;text-align:center;cursor:pointer;
 }
 .taxpay-taxpayer-reference .taxpay-auth-primary {
   border:1px solid var(--color-taxpay-primary);background:var(--color-taxpay-primary);color:white;
@@ -591,17 +593,25 @@
 .taxpay-taxpayer-reference .taxpay-auth-danger {
   border:1px solid #ba3643;background:white;color:#a62834;
 }
+/* The generic account-panel button rule is more specific than the auth variants.
+   Reassert these actions in their own panel so Cancel/Delete never render as blue primaries. */
+.taxpay-taxpayer-reference .taxpay-authorization .taxpayer-account-panel button.taxpay-auth-outline {
+  border:1px solid var(--color-taxpay-border);background:var(--color-taxpay-surface);color:var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpay-authorization .taxpayer-account-panel button.taxpay-auth-danger {
+  border:1px solid #ba3643;background:white;color:#a62834;
+}
 .taxpay-taxpayer-reference .taxpay-auth-primary:disabled,
 .taxpay-taxpayer-reference .taxpay-auth-outline:disabled,
 .taxpay-taxpayer-reference .taxpay-auth-danger:disabled { opacity:.48;cursor:not-allowed; }
 .taxpay-taxpayer-reference .taxpay-auth-add {
-  display:grid;gap:8px;margin-top:18px;padding:16px;border:1px solid var(--color-taxpay-border);
+  display:grid;gap:8px;min-width:0;margin-top:18px;padding:16px;border:1px solid var(--color-taxpay-border);
   border-radius:12px;background:var(--color-taxpay-background);
 }
 .taxpay-taxpayer-reference .taxpay-auth-add label { font-size:14px;font-weight:650; }
-.taxpay-taxpayer-reference .taxpay-auth-inline { display:flex;flex-wrap:wrap;align-items:center;gap:10px; }
+.taxpay-taxpayer-reference .taxpay-auth-inline { display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0; }
 .taxpay-taxpayer-reference .taxpay-auth-inline input {
-  flex:1 1 180px;min-width:0;min-height:44px;border:1px solid var(--color-taxpay-border);
+  flex:1 1 180px;width:auto;min-width:0;max-width:100%;min-height:44px;border:1px solid var(--color-taxpay-border);
   border-radius:9px;padding:10px 12px;font:inherit;color:var(--color-taxpay-text);background:white;
 }
 .taxpay-taxpayer-reference .taxpay-auth-feedback {
@@ -612,10 +622,11 @@
   border-color:#e2b8bd;background:#fff2f3;color:#a62834;
 }
 .taxpay-taxpayer-reference .taxpay-auth-list {list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px;}
-.taxpay-taxpayer-reference .taxpay-auth-row {padding:16px;border:1px solid var(--color-taxpay-border);border-radius:11px;}
+.taxpay-taxpayer-reference .taxpay-auth-row {min-width:0;padding:16px;border:1px solid var(--color-taxpay-border);border-radius:11px;overflow-wrap:anywhere;}
 .taxpay-taxpayer-reference .taxpay-auth-person {
-  display:flex;align-items:start;justify-content:space-between;gap:12px;
+  display:flex;align-items:start;justify-content:space-between;flex-wrap:wrap;gap:12px;
 }
+.taxpay-taxpayer-reference .taxpay-auth-person > div {min-width:0;}
 .taxpay-taxpayer-reference .taxpay-auth-person h3 {font-size:16px;font-weight:700;margin:0;color:var(--color-taxpay-text);}
 .taxpay-taxpayer-reference .taxpay-auth-person p {font-size:13px;color:var(--color-taxpay-muted);margin-top:4px;}
 .taxpay-taxpayer-reference .taxpay-auth-tin {font-family:var(--font-numeric),monospace;letter-spacing:.02em;}
@@ -634,6 +645,7 @@
 }
 .taxpay-taxpayer-reference .taxpay-auth-approval p,
 .taxpay-taxpayer-reference .taxpay-auth-confirm p {font-size:13px;color:var(--color-taxpay-text);line-height:1.6;}
+.taxpay-taxpayer-reference .taxpay-auth-confirm__actions {justify-content:flex-end;}
 .taxpay-taxpayer-reference .taxpay-auth-actions {margin-top:14px;}
 .taxpay-taxpayer-reference .taxpay-auth-empty {
   display:grid;justify-items:center;text-align:center;gap:10px;padding:36px 16px;color:var(--color-taxpay-muted);
@@ -642,10 +654,15 @@
 .taxpay-taxpayer-reference .taxpay-auth-empty h3 {font-size:17px;color:var(--color-taxpay-text);margin:0;}
 .taxpay-taxpayer-reference .taxpay-auth-empty p {max-width:430px;}
 @media (max-width: 600px) {
-  .taxpay-taxpayer-reference .taxpay-auth-heading-row {align-items:stretch;}
-  .taxpay-taxpayer-reference .taxpay-auth-heading-row > button {width:100%;}
-  .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline > button {width:100%;}
+  .taxpay-taxpayer-reference .taxpay-auth-heading-row {align-items:flex-start;gap:12px;}
+  .taxpay-taxpayer-reference .taxpay-auth-heading-row > button {width:auto;align-self:flex-start;}
+  .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline {display:grid;grid-template-columns:minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline input,
+  .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline > button {width:100%;min-width:0;}
+  .taxpay-taxpayer-reference .taxpay-authorization .taxpay-auth-add .taxpay-auth-inline > button.taxpay-auth-primary {width:100%;min-width:0;}
   .taxpay-taxpayer-reference .taxpay-auth-approval .taxpay-auth-inline > button {flex:1 1 100px;}
+  .taxpay-taxpayer-reference .taxpay-auth-confirm__actions {flex-wrap:nowrap;}
+  .taxpay-taxpayer-reference .taxpay-auth-confirm__actions > button {flex:0 1 auto;min-width:0;padding-inline:11px;}
 }
 .taxpay-taxpayer-reference .taxpayer-account-notices p {margin-top:7px;color:var(--color-taxpay-muted);font-size:12px;}
 .taxpay-taxpayer-reference .citizen-dialog-signout {
@@ -935,11 +952,27 @@
 .taxpay-taxpayer-reference .taxpayer-transaction-row__action {
   justify-self:end; white-space:nowrap;
 }
-.taxpay-taxpayer-reference .taxpayer-transaction-detail {padding:24px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {
-  display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__overlay {
+  position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+  padding:16px;background:rgba(15,23,42,.6);
 }
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading h2 {margin-top:4px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail {
+  display:flex;flex-direction:column;min-width:0;width:100%;max-width:576px;
+  max-height:85dvh;overflow:hidden;border-radius:16px;background:white;
+  box-shadow:var(--taxpay-shadow-modal,0 6px 20px rgba(0,0,0,.12));
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {
+  display:flex;flex:0 0 auto;justify-content:space-between;align-items:flex-start;gap:16px;
+  padding:18px 20px;border-bottom:1px solid var(--color-taxpay-border);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading > div {min-width:0;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading p {color:var(--color-taxpay-muted);font-size:12px;line-height:1.5;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading h2 {margin:4px 0 0;font-size:18px;line-height:1.4;font-weight:700;overflow-wrap:anywhere;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__close {
+  display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+  border:1px solid var(--color-taxpay-border);border-radius:10px;color:var(--color-taxpay-primary);background:white;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__body {min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px 20px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-detail__summary {
   display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;
   gap:12px; margin-top:20px; padding:16px;
@@ -959,6 +992,17 @@
   margin-top:5px; overflow-wrap:anywhere; color:var(--color-taxpay-text);
   font-size:14px; font-weight:550; line-height:1.55;
 }
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__mobile {display:grid;gap:10px;}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__card {min-width:0;padding:14px;border:1px solid var(--color-taxpay-border);border-radius:12px;background:white;}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__identity {display:grid;gap:3px;padding-bottom:12px;border-bottom:1px solid var(--color-taxpay-border);}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__identity time {font-size:12px;color:var(--color-taxpay-muted);}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__identity p {font:600 13px/1.5 var(--font-numeric),monospace;overflow-wrap:anywhere;}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dl {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dl > div {display:grid;gap:3px;min-width:0;}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dl > div:last-child {grid-column:1/-1;padding-top:9px;border-top:1px solid var(--color-taxpay-border);}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dt {font-size:12px;color:var(--color-taxpay-muted);}
+.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dd {font:650 14px/1.5 var(--font-numeric),monospace;overflow-wrap:anywhere;}
+@media(min-width:640px) {.taxpay-taxpayer-reference .taxpayer-ledger-journal__mobile {display:none;}}
 @media(max-width:850px) {
   .taxpay-taxpayer-reference .taxpayer-transaction-filters {grid-template-columns:repeat(2,minmax(0,1fr));}
   .taxpay-taxpayer-reference .taxpayer-transaction-filter--search {grid-column:1 / -1;}
@@ -977,8 +1021,13 @@
 @media(max-width:440px) {
   .taxpay-taxpayer-reference .taxpayer-transaction-filters {grid-template-columns:minmax(0,1fr);}
   .taxpay-taxpayer-reference .taxpayer-transaction-filter--search {grid-column:auto;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail {padding:18px;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail__facts {grid-template-columns:minmax(0,1fr);gap:16px;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail__overlay {align-items:flex-end;padding:0;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail {max-width:none;max-height:calc(100dvh - 12px);height:min(88dvh,850px);border-radius:16px 16px 0 0;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {padding:14px 16px;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail__body {padding:0 16px calc(20px + env(safe-area-inset-bottom));}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail__facts {grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 12px;margin-top:18px;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail__facts > :is(:first-child,:nth-child(6),:last-child) {grid-column:1/-1;}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail__summary {margin-top:16px;padding:12px;}
 }
 
 /* Canonical payment-type directory replaces the retired connection-status screen. */
