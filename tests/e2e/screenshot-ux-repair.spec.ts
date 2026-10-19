@@ -29,7 +29,9 @@ test('mobile transaction details use a contained sheet with a visible close cont
   expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight+1);
   expect(geometry.scrolls).toBe('auto');
   const renderedHeight=await dialog.evaluate(element=>element.getBoundingClientRect().height);
-  expect(renderedHeight).toBeLessThan(page.viewportSize()!.height*.8);
+  // The sheet grows with real content, and must stay below the former 88dvh
+  // minimum even at the smallest supported viewport.
+  expect(renderedHeight).toBeLessThan(page.viewportSize()!.height*.87);
   await dialog.getByRole('button',{name:'Close transaction details'}).click();
   await expect(dialog).toHaveCount(0);
 });
