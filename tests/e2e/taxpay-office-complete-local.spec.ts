@@ -89,10 +89,15 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  });
  const forgeryPage=await strangerShell.newPage();
  await forgeryPage.goto('http://127.0.0.1:4174/payments/transactions');
- await expect(forgeryPage.getByLabel('User ID')).toBeVisible({timeout:20000});
- await expect(forgeryPage.getByRole('heading',{name:'Officer review inbox'})).toHaveCount(0);
+ // The Office shell is intentionally a public preview with an ID-only entry screen.
+ // Its localStorage flag is not authentication. A forged flag may open the shell,
+ // but must never yield an authenticated officer, review actions, or SQL access.
+ await expect(forgeryPage.getByRole('heading',{name:'Officer review inbox'})).toBeVisible({timeout:20000});
+ await expect(forgeryPage.getByLabel('Officer email')).toBeVisible();
+ await expect(forgeryPage.getByRole('region',{name:'Simulation review actions'})).toHaveCount(0);
+ await expect(forgeryPage.getByText('Authorized role:')).toHaveCount(0);
  await strangerShell.close();
- console.log('CROSS_APP E2 PASS: forged localStorage Office login does not authorize connected Admin shell');
+ console.log('CROSS_APP E2 PASS: forged localStorage Office preview does not authorize SQL review actions');
 
  const stages=[
   {person:maker,role:'MAKER',button:'Maker: acknowledge',after:'MAKER_ACKNOWLEDGED',reason:'Maker confirms fictional taxpayer request'},
