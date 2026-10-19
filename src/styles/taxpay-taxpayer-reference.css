@@ -593,6 +593,14 @@
 .taxpay-taxpayer-reference .taxpay-auth-danger {
   border:1px solid #ba3643;background:white;color:#a62834;
 }
+/* The generic account-panel button rule is more specific than the auth variants.
+   Reassert these actions in their own panel so Cancel/Delete never render as blue primaries. */
+.taxpay-taxpayer-reference .taxpay-authorization .taxpayer-account-panel button.taxpay-auth-outline {
+  border:1px solid var(--color-taxpay-border);background:var(--color-taxpay-surface);color:var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference .taxpay-authorization .taxpayer-account-panel button.taxpay-auth-danger {
+  border:1px solid #ba3643;background:white;color:#a62834;
+}
 .taxpay-taxpayer-reference .taxpay-auth-primary:disabled,
 .taxpay-taxpayer-reference .taxpay-auth-outline:disabled,
 .taxpay-taxpayer-reference .taxpay-auth-danger:disabled { opacity:.48;cursor:not-allowed; }
@@ -651,6 +659,7 @@
   .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline {display:grid;grid-template-columns:minmax(0,1fr);}
   .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline input,
   .taxpay-taxpayer-reference .taxpay-auth-add .taxpay-auth-inline > button {width:100%;min-width:0;}
+  .taxpay-taxpayer-reference .taxpay-authorization .taxpay-auth-add .taxpay-auth-inline > button.taxpay-auth-primary {width:100%;min-width:0;}
   .taxpay-taxpayer-reference .taxpay-auth-approval .taxpay-auth-inline > button {flex:1 1 100px;}
   .taxpay-taxpayer-reference .taxpay-auth-confirm__actions {flex-wrap:nowrap;}
   .taxpay-taxpayer-reference .taxpay-auth-confirm__actions > button {flex:0 1 auto;min-width:0;padding-inline:11px;}

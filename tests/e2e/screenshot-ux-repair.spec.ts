@@ -63,8 +63,11 @@ test('authorization input and compact delete confirmation remain within mobile v
   const confirm=auth.getByRole('button',{name:'Confirm delete'});
   await expect(confirm).toBeVisible();
   await expect(confirm).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await expect(confirm).toHaveCSS('color','rgb(166, 40, 52)');
+  const cancel=auth.getByRole('button',{name:'Cancel'});
+  await expect(cancel).toHaveCSS('background-color','rgb(255, 255, 255)');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
-  await auth.getByRole('button',{name:'Cancel'}).click();
+  await cancel.click();
   await expect(confirm).toHaveCount(0);
 });
 
