@@ -165,7 +165,7 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
-          OFFICE_SHA="b4177e7ab8d03b31cd44cfdc39c575820a50ec3c"
+          OFFICE_SHA="f3ecb09419838ae4947a79b23b89ad10c885ea19"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
@@ -175,6 +175,7 @@ jobs:
             VITE_TAXPAY_REVIEW_URL="$TAXPAY_LOCAL_SUPABASE_URL" \
             VITE_TAXPAY_REVIEW_PUBLIC_KEY="$TAXPAY_LOCAL_SUPABASE_ANON_KEY" \
             VITE_TAXPAY_REVIEW_DISABLED=false \
+            VITE_OFFICE_PUBLIC_UI_ONLY=false \
             ./node_modules/.bin/vite --host 127.0.0.1 --port 4174 > "$RUNNER_TEMP/office-cross-app.log" 2>&1
           ) &
           OFFICE_PID=$!
