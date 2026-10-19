@@ -10,6 +10,39 @@ async function mirrorAuthorization(id:string){
  const receipt=await res.json();
  return res.ok&&receipt.success&&receipt.data?.id===id;
 }
+type MirrorClaim={type:"PAYMENT"|"AUTHORIZATION";id:string;claimToken:string;sessionId?:string|null};
+async function reconcileMirrors(url:string,serviceKey:string){
+ const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data,error}=await admin.rpc("demo_story1_mirror_claim",{p_limit:20});
+ if(error)throw Error("MIRROR_CLAIM_FAILED: "+error.message);
+ const claimed=data as MirrorClaim[];
+ if(!Array.isArray(claimed))throw Error("MIRROR_CLAIM_INVALID");
+ let acknowledged=0,failed=0;
+ // Bound concurrency so a single outage does not overload either project.
+ for(let offset=0;offset<claimed.length;offset+=5){
+  await Promise.all(claimed.slice(offset,offset+5).map(async item=>{
+   let okay=false,reason="DELIVERY_FAILED";
+   try{
+    if(item.type==="AUTHORIZATION"){
+     okay=await mirrorAuthorization(item.id);
+    }else if(item.type==="PAYMENT"&&item.sessionId){
+     const response=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({id:item.id,sessionId:item.sessionId}),signal:AbortSignal.timeout(10000)});
+     const result=await response.json();
+     okay=response.ok&&result.success===true&&result.data?.id===item.id;
+    }
+    if(!okay)reason="OFFICE_MIRROR_NOT_ACKNOWLEDGED";
+   }catch(e){reason=e instanceof Error?e.message:"DELIVERY_FAILED";}
+   const {data:finished,error:finishError}=await admin.rpc("demo_story1_mirror_finish",{
+    p_type:item.type,p_id:item.id,p_claim_token:item.claimToken,
+    p_success:okay,p_error:okay?null:reason.slice(0,250)
+   });
+   if(finishError||finished!==true)throw Error("MIRROR_ACK_FAILED");
+   if(okay)acknowledged++;else failed++;
+  }));
+ }
+ return {claimed:claimed.length,acknowledged,failed,simulationOnly:true};
+}
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
  const u=new URL(req.url),path=u.pathname.replace(/^\/demo-story1-taxpay/,"");
@@ -17,6 +50,13 @@ Deno.serve(async(req)=>{
  if(!key||!url)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
+  if(req.method==="POST"&&path==="/sync/reconcile"){
+   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+   if(!serviceKey||req.headers.get("Authorization")!=="Bearer "+serviceKey)
+    return respond({success:false,error:"SERVICE_ROLE_REQUIRED"},401);
+   try{return respond({success:true,data:await reconcileMirrors(url,serviceKey)});}
+   catch(e){console.error("Story1 reconciliation",e);return respond({success:false,error:"MIRROR_RECONCILIATION_FAILED"},503);}
+  }
   if(req.method==="GET"&&path==="/authorizations"){
    const actor=u.searchParams.get("actor");
    if(!actor||!/^user([1-9]|10)$/.test(actor))return respond({success:false,error:"INVALID_DEMO_USER"},400);
