@@ -1084,7 +1084,8 @@
  .public-footer__inner{flex-direction:column;align-items:flex-start;gap:.65rem;padding:1rem 1rem 5rem;}
  .public-footer__navs{justify-content:flex-start;gap:.1rem 1rem;}
  .public-footer__bottom{align-self:stretch;justify-content:flex-start;width:100%;}
- .public-help-widget{bottom:calc(.7rem + env(safe-area-inset-bottom));right:.7rem;}
+ /* Keep the fixed Help entry clear of the footer identity and links. */
+ .public-help-widget{bottom:calc(4.75rem + env(safe-area-inset-bottom));right:.7rem;}
  .public-help-panel{max-height:70dvh;}
 }
 @media(prefers-reduced-motion:reduce){

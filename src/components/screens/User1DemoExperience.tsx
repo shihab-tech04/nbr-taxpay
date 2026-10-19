@@ -278,7 +278,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
             <p className="text-[9px] text-taxpay-muted">{bn?['জানু','ফেব','মার্চ','এপ্রি','মে','জুন','জুলা','আগ','সেপ','অক্টো','নভে','ডিসে'][i]:months[i]}</p>
           </div>)}
         </div>
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-taxpay-background px-4 py-3">
+        <div className="taxpayer-travel-tax-summary mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-taxpay-background px-4 py-3">
           <div className="flex items-center gap-2">
             <p className="text-sm text-taxpay-muted">{tr('Travel tax (separate)','ভ্রমণ কর (পৃথক)')}</p>
             {info(tr('Travel tax','ভ্রমণ কর'),'Travel tax is reported separately and never included in income-tax credits.','ভ্রমণ কর আলাদা দেখানো হয় এবং আয়কর ক্রেডিটে যোগ হয় না।')}
