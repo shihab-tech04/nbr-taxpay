@@ -70,14 +70,20 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 24
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 26
           test "$(psql -X -Atqc "select count(*) from public.taxpay_site_banners")" = 5
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_site_banners'")" = 9
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_transactions') is not null")" = t
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_allocations') is not null")" = t
+          test "$(psql -X -Atqc "select to_regclass('demo_payment.mirror_outbox') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
-          echo "PASS: all 24 migrations installed, including five published banners and nine banner RLS policies; original owner-update grants retained"
+          echo "PASS: twenty-six ordered migrations installed, including durable Story1 retry queue, guarded cron schedule, authorization, CMS and owner-update grants"
+
+      - name: Verify atomic mirror outbox, service-only claims, ACK and outage retry
+        run: |
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/story1MirrorOutbox.sql
 
       - name: Verify all ten SQL personas and eight publicly read-only simulated tax services
         shell: bash
@@ -164,16 +170,23 @@ jobs:
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
-          OFFICE_SHA="34a952f4738adc584aaf0eeba1f7710dabbebd92"
+          OFFICE_SHA="96d766e4ff8b977e19d8c259c5f21c3424f81580"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
-          npm install --prefix "$OFFICE_DIR" --no-audit --no-fund
+          cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_DIR/src/app/contracts/paymentSimulationContract.ts"
+          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-sync-bridge/index.ts"
+          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-command-bridge/index.ts"
+          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 14
+          test "$(find "$OFFICE_DIR/supabase/hosted_migration_history" -name '*.sql' | wc -l)" = 17
+          echo "PASS: shared contracts and deployed bridge source byte-identical; both hosted migration recovery sets present"
+          npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
             VITE_TAXPAY_REVIEW_URL="$TAXPAY_LOCAL_SUPABASE_URL" \
             VITE_TAXPAY_REVIEW_PUBLIC_KEY="$TAXPAY_LOCAL_SUPABASE_ANON_KEY" \
             VITE_TAXPAY_REVIEW_DISABLED=false \
+            VITE_OFFICE_PUBLIC_UI_ONLY=false \
             ./node_modules/.bin/vite --host 127.0.0.1 --port 4174 > "$RUNNER_TEMP/office-cross-app.log" 2>&1
           ) &
           OFFICE_PID=$!
