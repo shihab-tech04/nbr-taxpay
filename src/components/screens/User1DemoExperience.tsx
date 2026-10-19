@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
+import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards, X} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -112,6 +112,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   useEffect(()=>{
     if(!selected)return;
     const trigger=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const previousOverflow=document.body.style.overflow;
+    document.body.style.overflow='hidden';
     detailCloseRef.current?.focus();
     const onKeyDown=(event:KeyboardEvent)=>{
       if(event.key==='Escape'){event.preventDefault();setSelected(null);}
@@ -119,7 +121,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       if(event.key==='Tab'){event.preventDefault();detailCloseRef.current?.focus();}
     };
     document.addEventListener('keydown',onKeyDown);
-    return()=>{document.removeEventListener('keydown',onKeyDown);if(trigger?.isConnected)trigger.focus();};
+    return()=>{document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',onKeyDown);if(trigger?.isConnected)trigger.focus();};
   },[selected]);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
@@ -317,13 +319,29 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       {view('services','View payment services','পরিশোধ সেবাসমূহ দেখুন')}
     </section>
   </>;
+  const journalEntries=(()=>{
+    let balance=totals.liability;
+    const postings=scoped.filter(x=>x.state==='POSTED'&&['income','tds','ait'].includes(x.kind)).sort((a,b)=>a.date.localeCompare(b.date));
+    return [{id:'OPEN',date:year.slice(0,4)+'-07-01',ref:'DEMO-LIABILITY-'+year,debit:totals.liability,credit:0,bal:totals.liability},
+      ...postings.map(x=>{balance-=x.amount;return {id:x.id,date:x.date,ref:x.ref,debit:0,credit:x.amount,bal:balance};})];
+  })();
   const ledger=<>
     <section className="grid gap-3 sm:grid-cols-3">{card('Tax liability','করদায়',money(totals.liability),'Single opening liability per tax year','প্রতি করবর্ষে একটি প্রাথমিক দায়')}
       {card('Applied credits','প্রয়োগকৃত ক্রেডিট',money(totals.applied),'TDS + AIT + posted direct payments','উৎসে কর + অগ্রিম কর + পোস্টকৃত পেমেন্ট')}
       {card('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),'Independent from travel-tax records','ভ্রমণ কর থেকে পৃথক')}</section>
     <section className={panel}><h2 className="text-base font-semibold">{tr('Running-balance journal','চলতি ব্যালেন্সের জার্নাল')}</h2>{sub('Journal shows the opening liability and eligible posted entries.','জার্নালে প্রাথমিক দায় ও যোগ্য পোস্টকৃত এন্ট্রি দেখানো হয়েছে।')}
-      <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{['Date','Reference','Debit','Credit','Remaining'].map(x=><th key={x} className="px-3 py-3">{x}</th>)}</tr></thead>
-      <tbody>{(()=>{let bal=totals.liability;const postings=scoped.filter(x=>x.state==='POSTED'&&['income','tds','ait'].includes(x.kind)).sort((a,b)=>a.date.localeCompare(b.date));return [{id:'OPEN',date:year.slice(0,4)+'-07-01',ref:'DEMO-LIABILITY-'+year,debit:totals.liability,credit:0,bal:totals.liability},...postings.map(x=>{bal-=x.amount;return {id:x.id,date:x.date,ref:x.ref,debit:0,credit:x.amount,bal};})].map(x=><tr className="border-b border-slate-100" key={x.id}><td className="whitespace-nowrap px-3 py-3">{x.date}</td><td className="px-3 py-3">{x.ref}</td><td className="px-3 py-3">{x.debit?money(x.debit):'—'}</td><td className="px-3 py-3">{x.credit?money(x.credit):'—'}</td><td className="px-3 py-3 font-semibold">{money(x.bal)}</td></tr>)})()}</tbody></table></div>
+      <div className="taxpayer-ledger-journal__mobile mt-4" role="list" aria-label={tr('Journal entries','জার্নাল এন্ট্রি')}>
+        {journalEntries.map(entry=><article role="listitem" className="taxpayer-ledger-journal__card" key={entry.id}>
+          <div className="taxpayer-ledger-journal__identity"><time dateTime={entry.date}>{entry.date}</time><p>{entry.ref}</p></div>
+          <dl>
+            <div><dt>{tr('Debit','ডেবিট')}</dt><dd>{entry.debit?money(entry.debit):'—'}</dd></div>
+            <div><dt>{tr('Credit','ক্রেডিট')}</dt><dd>{entry.credit?money(entry.credit):'—'}</dd></div>
+            <div><dt>{tr('Remaining','অবশিষ্ট')}</dt><dd>{money(entry.bal)}</dd></div>
+          </dl>
+        </article>)}
+      </div>
+      <div className="mt-4 hidden overflow-x-auto sm:block"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{[tr('Date','তারিখ'),tr('Reference','রেফারেন্স'),tr('Debit','ডেবিট'),tr('Credit','ক্রেডিট'),tr('Remaining','অবশিষ্ট')].map((label,index)=><th key={label} className={'px-3 py-3 '+(index>=2?'text-right':'')}>{label}</th>)}</tr></thead>
+      <tbody>{journalEntries.map(entry=><tr className="border-b border-slate-100" key={entry.id}><td className="whitespace-nowrap px-3 py-3">{entry.date}</td><td className="px-3 py-3">{entry.ref}</td><td className="px-3 py-3 text-right">{entry.debit?money(entry.debit):'—'}</td><td className="px-3 py-3 text-right">{entry.credit?money(entry.credit):'—'}</td><td className="px-3 py-3 text-right font-semibold">{money(entry.bal)}</td></tr>)}</tbody></table></div>
       <p className="mt-3 text-xs text-slate-600">{tr('Control check','যাচাই')}: {money(totals.liability)} − {money(totals.applied)} = {money(totals.outstanding)}. {tr('Pending, travel-tax, disputed, failed and reversal entries are excluded.','অপেক্ষমাণ, ভ্রমণ, বিরোধপূর্ণ, ব্যর্থ ও রিভার্স অন্তর্ভুক্ত নয়।')}</p>
     </section>
   </>;
@@ -368,14 +386,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
-    {selected&&<div role="presentation" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 px-4" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
-      <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="taxpayer-transaction-detail max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-xl">
-        <div className="taxpayer-transaction-detail__heading"><div><p className="text-xs text-taxpay-muted">{tr('Transaction details','লেনদেনের বিস্তারিত')}</p><h2 id="user1-detail-title" className="text-xl font-semibold">{selected.title}</h2></div><button type="button" ref={detailCloseRef} className={action} onClick={()=>setSelected(null)}>{tr('Close','বন্ধ')}</button></div>
+    {selected&&<div role="presentation" className="taxpayer-transaction-detail__overlay" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
+      <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="taxpayer-transaction-detail">
+        <header className="taxpayer-transaction-detail__heading"><div><p>{tr('Transaction details','লেনদেনের বিস্তারিত')}</p><h2 id="user1-detail-title">{selected.title}</h2></div><button type="button" ref={detailCloseRef} className="taxpayer-transaction-detail__close" aria-label={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')} onClick={()=>setSelected(null)}><X size={20} aria-hidden="true"/></button></header>
+        <div className="taxpayer-transaction-detail__body">
         <div className="taxpayer-transaction-detail__summary"><p className="text-xl font-semibold tabular-nums text-taxpay-text">{money(selected.amount)}</p>{tag(selected.state)}</div>
         <dl className="taxpayer-transaction-detail__facts">{[
           [tr('Reference','রেফারেন্স'),selected.ref],[tr('Assessment year','করবর্ষ'),selected.year],[tr('Date','তারিখ'),formatDate(selected.date)],[tr('Category','ধরন'),tr(...labels[selected.kind])],
           [tr('Channel','মাধ্যম'),selected.channel],[tr('Challan reference','চালান রেফারেন্স'),selected.challan||tr('Unavailable','পাওয়া যায়নি')],[tr('Meaning','বিবরণ'),selected.detail]
         ].map(x=><div key={x[0]}><dt>{x[0]}</dt><dd>{x[1]}</dd></div>)}</dl>
+        </div>
       </section>
     </div>}
   </div>;
