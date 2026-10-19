@@ -244,7 +244,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         </div>
       </section>
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-activity-title">
-        <div className="flex items-center justify-between gap-2">
+        <div className="taxpayer-monthly-help-row flex items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 id="taxpayer-activity-title" className="text-base font-semibold">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
             <p className="text-sm font-semibold tabular-nums text-taxpay-primary" aria-live="polite">{money(monthTotal)}</p>

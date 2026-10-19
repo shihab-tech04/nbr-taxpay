@@ -110,7 +110,10 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
     .eq('published', true).order('sort_order', { ascending: true });
   if (error) throw error;
   return (data || []).map(row => {
-    const original = fallbackSlides.find(slide => slide.id === row.id);
+    // Banner IDs identify editable records, while service_code identifies the
+    // selected hero category. A category change must update the default image
+    // even when the record keeps its original ID. Explicit uploads still win.
+    const categoryImage = fallbackSlides.find(slide => (slide.serviceCode || null) === (row.service_code || null))?.image || heroPaymentIllustration;
     return {
       id: row.id, serviceCode: row.service_code || undefined,
       headingEn: row.heading_en, headingBn: row.heading_bn,
@@ -118,8 +121,8 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
       descriptionEn: row.description_en, descriptionBn: row.description_bn,
       mobileDescriptionEn: row.mobile_description_en, mobileDescriptionBn: row.mobile_description_bn,
       actionEn: row.action_en, actionBn: row.action_bn,
-      image: publicBannerImage(row.desktop_image_path, original?.image || heroPaymentIllustration),
-      mobileImage: row.mobile_image_path ? publicBannerImage(row.mobile_image_path, original?.image || heroPaymentIllustration) : undefined,
+      image: publicBannerImage(row.desktop_image_path, categoryImage),
+      mobileImage: row.mobile_image_path ? publicBannerImage(row.mobile_image_path, categoryImage) : undefined,
     };
   });
 }
