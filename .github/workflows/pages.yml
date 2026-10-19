@@ -69,6 +69,13 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/public-homepage-redesign.spec.ts
 
+      - name: Verify screenshot-reported responsive UX repairs
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts
+
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'

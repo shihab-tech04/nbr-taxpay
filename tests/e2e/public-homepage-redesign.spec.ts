@@ -66,14 +66,17 @@ test('Report follows heading then compact content with no redundant warnings', a
       cardWidth: card.width,
       horizontalOffset: Math.abs(card.left + card.width / 2 - main.left - main.width / 2),
       topGap: section.top - main.top,
-      footerGap: footer.top - card.bottom,
+      footerHeight: footer.height,
+      footerBottom: footer.bottom,
+      viewportHeight: window.innerHeight,
     };
   });
   expect(layout.cardWidth).toBeLessThanOrEqual(820);
   expect(layout.horizontalOffset, 'Report form must be horizontally centered').toBeLessThanOrEqual(2);
   expect(layout.topGap, 'Report heading must start near the top of the page').toBeGreaterThanOrEqual(24);
   expect(layout.topGap, 'Report must not be vertically centered on tall screens').toBeLessThanOrEqual(48);
-  expect(layout.footerGap, 'Footer must follow the report form without a large empty strip').toBeLessThanOrEqual(48);
+  expect(layout.footerHeight, 'Footer itself must remain compact rather than filling the viewport').toBeLessThanOrEqual(130);
+  expect(Math.abs(layout.footerBottom - layout.viewportHeight), 'Short report pages must retain a bottom-aligned footer').toBeLessThanOrEqual(4);
   await report.getByLabel('Short description').fill('A payment reference does not match my record.');
   await report.getByRole('button', { name: 'Review details' }).click();
   await expect(report.getByRole('heading', { name: 'Review your details' })).toBeVisible();

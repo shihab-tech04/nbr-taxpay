@@ -241,9 +241,9 @@ export function ManageAuthorization() {
               {removeId !== record.id ? <button type="button" className="taxpay-auth-danger" onClick={() => setRemoveId(record.id)}>{tr('Remove authorization', 'অনুমোদন বাতিল করুন')}</button>
                 : <div className="taxpay-auth-confirm">
                   <p>{tr('Remove this person’s permission to initiate further payments for you?', 'এই ব্যক্তির আপনার হয়ে নতুন পেমেন্ট শুরু করার অনুমতি বাতিল করবেন?')}</p>
-                  <div className="taxpay-auth-inline">
-                    <button type="button" className="taxpay-auth-danger" onClick={() => changeStatus(record, 'revoke')}>{tr('Confirm removal', 'বাতিল নিশ্চিত করুন')}</button>
+                  <div className="taxpay-auth-inline taxpay-auth-confirm__actions">
                     <button type="button" className="taxpay-auth-outline" onClick={() => setRemoveId(null)}>{tr('Keep authorization', 'অনুমোদন রাখুন')}</button>
+                    <button type="button" className="taxpay-auth-danger" onClick={() => changeStatus(record, 'revoke')}>{tr('Confirm removal', 'বাতিল নিশ্চিত করুন')}</button>
                   </div>
                 </div>}
             </div>}
@@ -254,9 +254,9 @@ export function ManageAuthorization() {
                   <p>{status === 'ACTIVE' ? tr('Deleting will immediately revoke this payment permission for both people. The payment and audit history will remain.', 'মুছলে উভয়ের জন্য পরিশোধের অনুমতি বাতিল হবে। পেমেন্ট ও নিরীক্ষার ইতিহাস থাকবে।')
                     : status === 'PENDING' || status === 'CODE_ISSUED' ? tr('Deleting will cancel this pending request for both people and hide it from your list. The audit record will remain.', 'মুছলে অনুরোধটি উভয়ের জন্য বাতিল হবে এবং আপনার তালিকা থেকে সরে যাবে। নিরীক্ষার রেকর্ড থাকবে।')
                     : tr('Remove this item from your list? The audit history will remain available to Office.', 'তালিকা থেকে সরাবেন? নিরীক্ষার ইতিহাস অফিসে থাকবে।')}</p>
-                  <div className="taxpay-auth-inline">
-                    <button type="button" className="taxpay-auth-danger" disabled={busy} onClick={() => deleteAuthorization(record)}>{tr('Confirm delete', 'মুছতে নিশ্চিত করুন')}</button>
+                  <div className="taxpay-auth-inline taxpay-auth-confirm__actions">
                     <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => setDeleteId(null)}>{tr('Cancel', 'ফিরে যান')}</button>
+                    <button type="button" className="taxpay-auth-danger" disabled={busy} onClick={() => deleteAuthorization(record)}>{tr('Confirm delete', 'মুছতে নিশ্চিত করুন')}</button>
                   </div>
                 </div>}
             </div>
