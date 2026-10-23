@@ -209,6 +209,22 @@
     column-gap: 1rem;
   }
 }
+/* Entry cards are presentation choices, not financial service identities.
+   Reuse existing design-system service palettes without changing original IDs. */
+.tax-service-choice__card[data-payer-relationship="SELF"],
+.tax-service-choice__card[data-payment-entry="TAX_WITH_RETURN"] {
+  --choice-primary: var(--service-return-primary);
+  --choice-bg: var(--service-return-bg);
+  --choice-border: var(--service-return-border);
+  --choice-text: var(--service-return-text);
+}
+.tax-service-choice__card[data-payer-relationship="OTHER"],
+.tax-service-choice__card[data-payment-entry="OTHER_TAX"] {
+  --choice-primary: var(--service-general-primary);
+  --choice-bg: var(--service-general-bg);
+  --choice-border: var(--service-general-border);
+  --choice-text: var(--service-general-text);
+}
 .tax-service-choice__card {
   position: relative;
   display: flex;
