@@ -113,7 +113,7 @@ test('Payer and service entry use compact aligned Back/Continue buttons without 
   expect(onlyNext!.height).toBeGreaterThanOrEqual(48);
   expect(onlyNext!.width).toBeLessThan(240);
   // Continue sits on the right instead of stretching across the footer.
-  expect(onlyNext!.x).toBeGreaterThan(entryDialog!.x + entryDialog!.width / 2);
+  expect(onlyNext!.x + onlyNext!.width).toBeGreaterThan(entryDialog!.x + entryDialog!.width - 44);
   await firstContinue.click();
 
   const back = footer.getByRole('button', { name: 'Back', exact: true });
