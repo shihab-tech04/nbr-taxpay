@@ -314,7 +314,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <section className={panel+' taxpayer-services-shortcut'} aria-labelledby="taxpayer-services-title">
       <div>
         <h2 id="taxpayer-services-title" className="text-lg font-semibold">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
-        {sub('Choose Tax with Return or Other Tax, then select an applicable payment type.','রিটার্নসহ কর বা অন্যান্য কর বেছে নিয়ে প্রযোজ্য ধরন নির্বাচন করুন;  পরিশোধ সেবা দেখুন।')}
+        {sub('Choose Tax with Return or Other Tax, then select an applicable payment type.','প্রথমে রিটার্নসহ কর অথবা অন্যান্য কর বেছে নিন। এরপর প্রযোজ্য কর পরিশোধের ধরন নির্বাচন করুন।')}
       </div>
       {view('services','View payment services','পরিশোধ সেবাসমূহ দেখুন')}
     </section>
