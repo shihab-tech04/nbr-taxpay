@@ -23,13 +23,10 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   const second = await cards.nth(1).boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
-  if ((page.viewportSize()?.width ?? 0) >= 1024) {
-    expect(second!.x).toBeGreaterThan(first!.x + first!.width);
-    expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
-  } else {
-    expect(Math.abs(first!.x - second!.x)).toBeLessThan(2);
-    expect(second!.y).toBeGreaterThan(first!.y + first!.height);
-  }
+  // The two decisions are full-width horizontal rows at every viewport, including desktop.
+  expect(Math.abs(first!.x - second!.x)).toBeLessThan(2);
+  expect(Math.abs(first!.width - second!.width)).toBeLessThan(2);
+  expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height);
 
   const iconColors = await cards.evaluateAll(rows => rows.map(row =>
     getComputedStyle(row.querySelector('.tax-service-choice__icon')!).color
@@ -97,6 +94,47 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   await expect(advanceService).toHaveAttribute('aria-pressed', 'true');
   await expect(advanceService).toHaveCSS('border-left-width', '1px');
   await expect(advanceService.locator('.tax-service-choice__radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+});
+
+test('Payer and service entry use compact aligned Back/Continue buttons without the old stretched footer', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const footer = dialog.locator('.tax-service-choice__actions');
+  const firstContinue = footer.getByRole('button', { name: 'Continue', exact: true });
+  await expect(firstContinue).toBeDisabled();
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await expect(firstContinue).toBeEnabled();
+
+  const onlyNext = await firstContinue.boundingBox();
+  const entryDialog = await dialog.boundingBox();
+  expect(onlyNext).not.toBeNull();
+  expect(entryDialog).not.toBeNull();
+  expect(onlyNext!.height).toBeGreaterThanOrEqual(48);
+  expect(onlyNext!.width).toBeLessThan(240);
+  // Continue sits on the right instead of stretching across the footer.
+  expect(onlyNext!.x).toBeGreaterThan(entryDialog!.x + entryDialog!.width / 2);
+  await firstContinue.click();
+
+  const back = footer.getByRole('button', { name: 'Back', exact: true });
+  const next = footer.getByRole('button', { name: 'Continue', exact: true });
+  await expect(back).toBeVisible();
+  await expect(next).toBeDisabled();
+  const backRect = await back.boundingBox();
+  const nextRect = await next.boundingBox();
+  expect(backRect).not.toBeNull();
+  expect(nextRect).not.toBeNull();
+  expect(backRect!.height).toBeGreaterThanOrEqual(48);
+  expect(nextRect!.height).toBeGreaterThanOrEqual(48);
+  expect(Math.abs(backRect!.height - nextRect!.height)).toBeLessThan(2);
+  expect(backRect!.width).toBeGreaterThanOrEqual(100);
+  expect(backRect!.width).toBeLessThan(160);
+  expect(nextRect!.x).toBeGreaterThan(backRect!.x + backRect!.width);
+
+  await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  await expect(next).toBeEnabled();
+  await back.click();
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Every selected payment service has readable title, description and icon contrast', async ({ page }) => {
