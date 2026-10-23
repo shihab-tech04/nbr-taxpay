@@ -16,8 +16,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.getByRole('button', { name: 'Close payment services' })).toBeVisible();
   await expect(chooser.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
 
-  await chooser.getByRole('button', { name: /Penalty/ }).click();
-  await footer.getByRole('button', { name: 'Continue' }).click();
+  await enterTaxPayService(chooser, 'PENALTY');
   await expect(progress).toHaveCount(0);
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(progress.locator('li')).toHaveCount(4);
@@ -26,7 +25,6 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
   await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
   await expect(chooser.locator('#guest-category')).toHaveCount(0);
-  await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
