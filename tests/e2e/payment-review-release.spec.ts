@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
 
 const pageWidth = async (page: import('@playwright/test').Page) =>
@@ -208,11 +209,10 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
-  await services.getByRole('button', { name: /Tax with Return/ }).click();
-  await services.getByRole('button', { name: 'Continue' }).click();
+  await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await services.getByRole('button', { name: 'Continue without signing in' }).click();
-  await services.getByRole('radio', { name: 'My own tax' }).check();
-  await expect(services.locator('.payment-form-section')).toHaveCount(2);
+  await expect(services.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
   await expect(services).toBeVisible();

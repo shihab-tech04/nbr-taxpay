@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 const publicRoutes=['landing','guest','guestwh','travel','verify','incident','guidance','head_catalogue'] as const;
 const privateRoutes={
@@ -49,8 +50,7 @@ test.describe('read-only citizen screen matrix',()=>{
       } else if(choice.kind==='pay'){
         await page.getByRole('button',{name:'Pay — select payment type'}).click();
         const services=page.getByRole('dialog',{name:'Pay Tax'});
-        await services.getByRole('button',{name:/Tax with Return/}).click();
-        await services.getByRole('button',{name:'Continue'}).click();
+        await enterTaxPayService(services, 'TAX_WITH_RETURN');
         await services.getByRole('button',{name:'Continue without signing in'}).click();
       } else if(choice.kind==='button'){
         await page.getByRole('button',{name:new RegExp(choice.button)}).first().click();
