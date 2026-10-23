@@ -140,7 +140,7 @@ test('Pay Tax opens payer-first two top-level services and carries an original s
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(chooser).toBeVisible();
-  await expect(chooser.locator('.tax-service-choice__card')).toHaveCount(8);
+  await expect(chooser.locator('.tax-service-choice__card')).toHaveCount(2);
   await expect(chooser.locator('.tax-service-choice__progress')).toHaveCount(0);
   await expect(chooser.getByRole('button', { name: /Continue/ })).toBeDisabled();
   await choosePayer(chooser, 'SELF');
