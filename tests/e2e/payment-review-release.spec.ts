@@ -216,7 +216,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
   await expect(services).toBeVisible();
-  await services.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(services.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
   await services.locator('#guest-tin').fill('123456789012');
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
