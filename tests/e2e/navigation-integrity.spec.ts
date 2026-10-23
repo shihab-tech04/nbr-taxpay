@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 
 test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
@@ -53,8 +54,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await page.getByRole('button',{name:'Pay Tax'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(services).toBeVisible();
-  await services.getByRole('button',{name:/Tax with Return/}).click();
-  await services.getByRole('button',{name:'Continue'}).click();
+  await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
@@ -88,8 +88,7 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
-  await services.getByRole('button',{name:/Advance Tax/}).click();
-  await services.getByRole('button',{name:'Continue'}).click();
+  await enterTaxPayService(services, 'ADVANCE_TAX');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=account_notifications/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
@@ -147,8 +146,7 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await rail.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
-  await services.getByRole('button',{name:/Tax with Return/}).click();
-  await services.getByRole('button',{name:'Continue'}).click();
+  await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
@@ -184,8 +182,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await expect(page).toHaveURL(/action=ledger/);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
-  await services.getByRole('button',{name:/Tax with Return/}).click();
-  await services.getByRole('button',{name:'Continue'}).click();
+  await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   // Payment services remain reachable through the Pay action without adding duplicate menu items.
   await expect(page).toHaveURL(/action=ledger/);

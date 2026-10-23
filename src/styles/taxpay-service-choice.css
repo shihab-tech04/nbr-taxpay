@@ -209,6 +209,22 @@
     column-gap: 1rem;
   }
 }
+/* Entry cards are presentation choices, not financial service identities.
+   Reuse existing design-system service palettes without changing original IDs. */
+.tax-service-choice__card[data-payer-relationship="SELF"],
+.tax-service-choice__card[data-payment-entry="TAX_WITH_RETURN"] {
+  --choice-primary: var(--service-return-primary);
+  --choice-bg: var(--service-return-bg);
+  --choice-border: var(--service-return-border);
+  --choice-text: var(--service-return-text);
+}
+.tax-service-choice__card[data-payer-relationship="OTHER"],
+.tax-service-choice__card[data-payment-entry="OTHER_TAX"] {
+  --choice-primary: var(--service-general-primary);
+  --choice-bg: var(--service-general-bg);
+  --choice-border: var(--service-general-border);
+  --choice-text: var(--service-general-text);
+}
 .tax-service-choice__card {
   position: relative;
   display: flex;
@@ -308,6 +324,41 @@
 .tax-service-choice__card[aria-pressed="true"] .tax-service-choice__description {
   color: color-mix(in srgb, var(--choice-text) 72%, var(--citizen-muted));
 }
+.tax-service-choice__subtype {
+  display:grid;
+  gap:.4rem;
+  margin-top:1.2rem;
+  max-width:560px;
+}
+.tax-service-choice__subtype label {
+  color:var(--citizen-text);
+  font-size:.9rem;
+  font-weight:700;
+}
+.tax-service-choice__subtype select {
+  width:100%;
+  min-height:48px;
+  padding:.75rem .9rem;
+  border:1px solid var(--citizen-border);
+  border-radius:10px;
+  background:var(--citizen-surface);
+  color:var(--citizen-text);
+  font:inherit;
+}
+.tax-service-choice__subtype select:focus-visible {
+  outline:3px solid var(--citizen-primary);
+  outline-offset:2px;
+}
+.payment-form-payer-confirmation {
+  margin:0 0 .85rem;
+  padding:.75rem 1rem;
+  border:1px solid var(--citizen-border);
+  border-radius:10px;
+  background:var(--color-taxpay-surface-subtle);
+  color:var(--citizen-text);
+  font-size:.9rem;
+}
+.payment-form-payer-confirmation strong { margin-inline-start:.3rem; }
 .tax-service-choice__actions {
   display: flex;
   justify-content: space-between;

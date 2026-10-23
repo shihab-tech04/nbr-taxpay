@@ -4,23 +4,27 @@ async function beginGuestPayment(page: Page, service: string) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.getByRole('button', { name: new RegExp(service) }).click();
+  await expect(dialog.locator('.tax-service-choice__card')).toHaveCount(2);
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  if (service === 'Tax with Return') {
+    await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  } else {
+    const ids: Record<string, string> = { Penalty: 'PENALTY' };
+    await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+    await dialog.locator('#tax-service-other-type').selectOption(ids[service]);
+  }
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   return dialog;
 }
 
-test('no payer choice is preselected; the two binary questions share the same accessible radio cards', async ({ page }) => {
+test('payer is required before choosing a payment service and is not asked twice', async ({ page }) => {
   const dialog = await beginGuestPayment(page, 'Tax with Return');
-  const self = dialog.getByRole('radio', { name: 'My own tax' });
-  const other = dialog.getByRole('radio', { name: "Someone else's tax" });
-  await expect(self).not.toBeChecked();
-  await expect(other).not.toBeChecked();
-  await expect(dialog.getByText('No option selected')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(self).toBeFocused();
-  await expect(dialog.getByRole('alert')).toContainText('Choose who you are paying for');
-  await self.check();
+  await expect(dialog.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(dialog.locator('#guest-tin')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -32,7 +36,6 @@ test('no payer choice is preselected; the two binary questions share the same ac
 
 test('large multi-head values do not turn into zero; missing head is focused with an inline error', async ({ page }) => {
   const dialog = await beginGuestPayment(page, 'Penalty');
-  await dialog.getByRole('radio', { name: 'My own tax' }).check();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -59,7 +62,6 @@ test('large multi-head values do not turn into zero; missing head is focused wit
 
 test('online method categories reveal only relevant providers and reset the previous selection', async ({ page }) => {
   const dialog = await beginGuestPayment(page, 'Tax with Return');
-  await dialog.getByRole('radio', { name: 'My own tax' }).check();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -94,7 +96,6 @@ test('online method categories reveal only relevant providers and reset the prev
 test('payment wizard stays within the viewport at phone widths', async ({ page }, info) => {
   test.skip(info.project.name === 'desktop-1280', 'Small-screen layout check');
   const dialog = await beginGuestPayment(page, 'Tax with Return');
-  await dialog.getByRole('radio', { name: 'My own tax' }).check();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

@@ -159,11 +159,13 @@ interface GuestPaymentProps {
   embedded?: boolean;
   withAccount?: boolean;
   initialCategory?: PaymentCategory;
+  /** Payer relationship is chosen before service selection in the Pay Tax modal. */
+  initialForSelf?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, onBackToService, onStageChange }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialForSelf, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -182,7 +184,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [phone, setPhone] = useState('');
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   // The later approved UX supersedes v11's preselected "My own tax" default.
-  const [forSelf, setForSelf] = useState<boolean | null>(null);
+  const [forSelf, setForSelf] = useState<boolean | null>(initialForSelf ?? null);
   const ownAccountTax = signedInAccount && forSelf === true;
   const ownProfile = ownAccountTax ? accountTaxpayer.profile : null;
   const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
@@ -696,7 +698,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {step === 1 && (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__identity' : ''}`}>
             <div className="payment-form-layout__sections">
-            <PaymentFormSection number={1} staticView={embedded} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
+            {(!embedded || initialForSelf === undefined) ? <PaymentFormSection number={1} staticView={embedded} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
               <fieldset className="payment-form-radio-fieldset" aria-invalid={isFieldInvalid('payerChoice') || undefined}>
                 <legend className="sr-only">{language === 'bn' ? 'পরিশোধকারীর ধরন' : 'Payer relationship'}</legend>
                 <div className="payment-radio-card-grid">
@@ -707,7 +709,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
               </fieldset>
-            </PaymentFormSection>
+            </PaymentFormSection> : <p className="payment-form-payer-confirmation" role="status">
+              {language === 'bn' ? 'কার জন্য পরিশোধ করছেন: ' : 'Paying for: '}
+              <strong>{isWithholdingMode
+                ? (initialForSelf ? (language === 'bn' ? 'উৎসে কর কর্তনকারী' : 'Withholding agent') : (language === 'bn' ? 'কর্তনকারীর পক্ষে' : 'On behalf of the withholding agent'))
+                : (initialForSelf ? (language === 'bn' ? 'আমার নিজের কর' : 'My own tax') : (language === 'bn' ? 'অন্য কারও কর' : "Someone else's tax"))}</strong>
+            </p>}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference'}>
             {ownAccountTax && <p role="status" className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
               {ownProfile

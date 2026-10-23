@@ -116,7 +116,7 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
   }
 });
 
-test('service banners share the exact selected-card palette, including text and the outer outline', async ({ page }, testInfo) => {
+test('service banners preserve distinctive palette and readable CTA with payer-first entry', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Palette contract is viewport-independent');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
@@ -158,45 +158,29 @@ test('service banners share the exact selected-card palette, including text and 
     banners.push(banner);
   }
 
-  // Color names come from the same source as the selected payment cards.
-  // Return from the fifth banner without reintroducing a visible dot strip.
+  // The old eight cards are no longer present; keep checking the four banner palettes.
+  // The shared two-card payer/service gateway is verified independently.
+  for (const banner of banners) {
+    const rgb = (hex: string) => {
+      const bytes = hex.match(/[\da-f]{2}/gi);
+      if (!bytes || bytes.length !== 3) throw new Error(`Invalid service color ${hex}`);
+      return `rgb(${bytes.map(byte => parseInt(byte, 16)).join(', ')})`;
+    };
+    expect(banner.background).toBe(rgb(banner.palette.background));
+    expect(banner.title).toBe(rgb(banner.palette.text));
+    expect(banner.actionText).toBe(rgb(banner.palette.text));
+    expect(banner.actionBorder).toBe(rgb(banner.palette.primary));
+    expect(banner.outline).toBe(rgb(banner.palette.border));
+    expect(banner.description).not.toBe('rgb(95, 107, 122)');
+  }
   for (let index = 0; index < 4; index++) await page.keyboard.press('ArrowLeft');
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const cards = page.locator('.tax-service-choice__card[data-payment-service]');
-  await expect(cards).toHaveCount(8);
-  const rgb = (hex: string) => {
-    const bytes = hex.match(/[\da-f]{2}/gi);
-    if (!bytes || bytes.length !== 3) throw new Error(`Invalid service color ${hex}`);
-    return `rgb(${bytes.map(byte => parseInt(byte, 16)).join(', ')})`;
-  };
-
-  for (const [index, [, code]] of services.entries()) {
-    const option = page.locator(`.tax-service-choice__card[data-payment-service="${code}"]`);
-    await option.click();
-    await expect(option).toHaveAttribute('aria-pressed', 'true');
-    const cardStyles = await option.evaluate(element => {
-      const style = getComputedStyle(element);
-      return {
-        background: style.backgroundColor,
-        border: style.borderColor,
-        palette: {
-          primary: style.getPropertyValue('--choice-primary').trim(),
-          background: style.getPropertyValue('--choice-bg').trim(),
-          border: style.getPropertyValue('--choice-border').trim(),
-          text: style.getPropertyValue('--choice-text').trim(),
-        },
-      };
-    });
-    const banner = banners[index];
-    expect(banner.palette).toEqual(cardStyles.palette);
-    expect(banner.background).toBe(cardStyles.background);
-    expect(banner.title).toBe(rgb(cardStyles.palette.text));
-    expect(banner.actionText).toBe(rgb(cardStyles.palette.text));
-    expect(banner.actionBorder).toBe(rgb(cardStyles.palette.primary));
-    expect(banner.outline).toBe(rgb(cardStyles.palette.border));
-    expect(banner.description).not.toBe('rgb(95, 107, 122)');
-  }
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
 });
 
 test('mobile illustrated banners blend downward into the image', async ({ page }, testInfo) => {
@@ -326,15 +310,23 @@ test('each service-specific banner action skips repeated service selection', asy
     await carousel.focus();
     await page.keyboard.press('ArrowRight');
     await carousel.getByRole('button', { name: action, exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: banner === 'travel' ? 'Travel tax' : 'Pay Tax' });
-    await expect(dialog).toBeVisible();
     if (banner === 'travel') {
-      await expect(dialog.getByRole('navigation', { name: 'Travel tax steps' })).toBeVisible();
-      await dialog.getByRole('button', { name: 'Close modal' }).click();
+      // The named "Pay Travel Tax" CTA retains its dedicated passenger workflow.
+      const travel = page.getByRole('dialog', { name: 'Travel tax' });
+      await expect(travel.getByRole('navigation', { name: 'Travel tax steps' })).toBeVisible();
+      await travel.getByRole('button', { name: 'Close modal' }).click();
     } else {
-      await expect(dialog.locator('.tax-service-choice__grid')).toHaveCount(0);
-      await expect(dialog.locator('.tax-service-choice__access-gate')).toBeVisible();
-      await expect(dialog.locator('.tax-service-choice__selected-service strong')).toHaveAttribute('data-payment-service', code);
+      const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+      await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
+      await dialog.locator('[data-payer-relationship="SELF"]').click();
+      await dialog.getByRole('button', { name: 'Continue' }).click();
+      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+      if (code === 'TAX_WITH_RETURN') {
+        await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
+      } else {
+        await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+        await expect(dialog.locator('#tax-service-other-type')).toHaveValue(code);
+      }
       await dialog.getByRole('button', { name: 'Close payment services' }).click();
     }
   }

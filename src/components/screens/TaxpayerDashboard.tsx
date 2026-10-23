@@ -88,7 +88,7 @@ export const TaxpayerDashboard: React.FC = () => {
     <section className="taxpayer-services-shortcut rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5" aria-labelledby="taxpayer-dashboard-services-title">
       <div>
         <h2 id="taxpayer-dashboard-services-title" className="text-lg font-semibold text-taxpay-text">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
-        <p className="mt-1 text-sm text-taxpay-muted">{tr('Explore all eight payment types, including source tax deposits and separate travel tax.','উৎসে কর জমা ও পৃথক ভ্রমণ করসহ আট ধরনের কর পরিশোধ দেখুন।')}</p>
+        <p className="mt-1 text-sm text-taxpay-muted">{tr('Choose Tax with Return or Other Tax, then select an applicable payment type.','প্রথমে রিটার্নসহ কর অথবা অন্যান্য কর বেছে নিন। এরপর প্রযোজ্য কর পরিশোধের ধরন নির্বাচন করুন।')}</p>
       </div>
       <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
     </section>

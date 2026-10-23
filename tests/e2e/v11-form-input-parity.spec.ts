@@ -1,26 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-test('guest fields start unselected and require a payer relationship and a head', async ({ page }) => {
+test('payer relationship is required at entry and head choice is still validated in Step 2', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.getByRole('button', { name: /Advance Tax/ }).click();
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
+  await dialog.locator('[data-payer-relationship="OTHER"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('#tax-service-other-type').selectOption('ADVANCE_TAX');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-
-  const self = dialog.getByRole('radio', { name: 'My own tax' });
-  const other = dialog.getByRole('radio', { name: "Someone else's tax" });
-  await expect(self).not.toBeChecked();
-  await expect(other).not.toBeChecked();
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('Choose who you are paying for');
-  await expect(self).toBeFocused();
-
-  await other.check();
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
-  await self.check();
-  await expect(dialog.getByLabel('Your name (payer)')).toHaveCount(0);
   await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-payer-name').fill('Sample Agent');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.locator('.payment-head-options input:checked')).toHaveCount(0);
@@ -33,10 +27,13 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.getByRole('button', { name: /Penalty/ }).click();
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('#tax-service-other-type').selectOption('PENALTY');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await dialog.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#guest-notice-ref').fill('DN-2026-001187');

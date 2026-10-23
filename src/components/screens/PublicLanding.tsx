@@ -40,8 +40,8 @@ export const PublicLanding: React.FC = () => {
     {
       question: t('Do I need an account to pay?', 'কর পরিশোধ করতে কি অ্যাকাউন্ট লাগবে?'),
       answer: t(
-        'It depends on the service. Choose the payment service first; you will be asked to sign in when that service requires an account.',
-        'সেবার ওপর নির্ভর করে। আগে করসেবা বেছে নিন; অ্যাকাউন্ট প্রয়োজন হলে উপযুক্ত সময়ে লগইন করতে বলা হবে।',
+        'It depends on the service. Choose the taxpayer relationship and service first. Sign-in is offered when relevant, but public payments can continue without an account.',
+        'সেবার ওপর নির্ভর করে। আগে কার কর পরিশোধ করছেন ও সেবা বেছে নিন। প্রয়োজনে সাইন ইন করতে পারবেন; পাবলিক পেমেন্ট অ্যাকাউন্ট ছাড়াও চলতে পারে।',
       ),
     },
     {
@@ -84,7 +84,7 @@ export const PublicLanding: React.FC = () => {
       </div>
       <div className="public-payment-path__starter">
         <span className="public-payment-path__starter-label">{t('Start here', 'এখান থেকে শুরু করুন')}</span>
-        <p>{t('Choose a service from the banner above, then follow these four steps.', 'উপরের ব্যানার থেকে সেবা বেছে নিন, তারপর চারটি ধাপ অনুসরণ করুন।')}</p>
+        <p>{t('Choose who you are paying for, then select one of two services and follow these four steps.', 'আগে কার কর পরিশোধ করছেন নির্বাচন করুন, তারপর দুটি সেবার একটি বেছে নিয়ে চারটি ধাপ অনুসরণ করুন।')}</p>
       </div>
       <ol className="public-payment-path__steps">
         {stages.map((stage, index) => <li key={stage.title}>

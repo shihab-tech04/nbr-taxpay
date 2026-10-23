@@ -22,7 +22,7 @@ test('public homepage explains the payment path without duplicating service cate
   expect(new Set(surfaces.slice(2).map(surface => surface.color)).size).toBeLessThanOrEqual(2);
 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card')).toHaveCount(8);
+  await expect(page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card')).toHaveCount(2);
 });
 
 test('public FAQ offers readable answers and the full guide without a large footer gap', async ({ page }) => {

@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 async function enterUser1(page:Page){
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',route=>route.fulfill({
@@ -93,8 +94,7 @@ test('mobile Travel Tax keeps the total and Back/Continue on compact distinct ro
   await page.goto('/');
   await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
-  await dialog.getByRole('button',{name:/Travel Tax/}).click();
-  await dialog.getByRole('button',{name:'Continue',exact:true}).click();
+  await enterTaxPayService(dialog, 'TRAVEL_TAX');
   await dialog.getByRole('button',{name:'Continue without signing in'}).click();
   const footer=dialog.locator('.travel-flow__footer-actions');
   const summary=dialog.locator('.travel-flow__summary');
@@ -113,8 +113,7 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   await page.goto('/');
   await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
-  await dialog.getByRole('button',{name:/Travel Tax/}).click();
-  await dialog.getByRole('button',{name:'Continue',exact:true}).click();
+  await enterTaxPayService(dialog, 'TRAVEL_TAX');
   await dialog.getByRole('button',{name:'Continue without signing in'}).click();
   await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await dialog.getByLabel('Passport number').fill('FAKE0001');

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 /** Regression contract: Public and Taxpayer share Government Blue theme; taxpayer reference layout remains protected. */
 const exactReference = {
@@ -120,8 +121,7 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     } else await page.getByRole('button',{name:'EN'}).first().click();
     await page.getByRole('button',{name:'Pay — select payment type'}).click();
     const services=page.getByRole('dialog',{name:'Pay Tax'});
-    await services.getByRole('button',{name:/Tax with Return/}).click();
-    await services.getByRole('button',{name:'Continue'}).click();
+    await enterTaxPayService(services, 'TAX_WITH_RETURN');
     await services.getByRole('button',{name:'Continue without signing in'}).click();
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=services.locator('.payment-flow-embedded');
@@ -228,8 +228,7 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
-  await services.getByRole('button',{name:/Tax with Return/}).click();
-  await services.getByRole('button',{name:'Continue'}).click();
+  await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   const field=services.locator('#guest-tin');
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
@@ -256,7 +255,7 @@ test('Public homepage uses heading and description without duplicate eyebrow lab
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
-  await expect(page.getByText('Choose a service from the banner above, then follow these four steps.')).toBeVisible();
+  await expect(page.getByText('Choose who you are paying for, then select one of two services and follow these four steps.')).toBeVisible();
   await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
   await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
 });

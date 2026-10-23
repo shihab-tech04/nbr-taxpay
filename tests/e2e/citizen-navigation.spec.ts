@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
 
 test('public hero opens service choice before the guest payment form while the receipt action stays available',async({page})=>{
@@ -13,9 +14,8 @@ test('public hero opens service choice before the guest payment form while the r
  await page.getByRole('button',{name:'Pay Tax'}).click();
  const services=page.getByRole('dialog',{name:'Pay Tax'});
  await expect(services).toBeVisible();
- await expect(services.locator('.tax-service-choice__card')).toHaveCount(8);
- await services.getByRole('button',{name:/Tax with Return/}).click();
- await services.getByRole('button',{name:'Continue'}).click();
+ await expect(services.locator('.tax-service-choice__card')).toHaveCount(2);
+ await enterTaxPayService(services, 'TAX_WITH_RETURN');
  await expect(services.getByRole('heading',{name:'How would you like to continue?'})).toBeVisible();
  await services.getByRole('button',{name:'Continue without signing in'}).click();
  await expect(page).toHaveURL(/action=landing/);
