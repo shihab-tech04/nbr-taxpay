@@ -70,7 +70,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => openPaymentServiceChoice(service)}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
       onCheckReceipt={() => setOpenService('status')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />

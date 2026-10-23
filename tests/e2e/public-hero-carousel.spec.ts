@@ -310,18 +310,25 @@ test('each service-specific banner action skips repeated service selection', asy
     await carousel.focus();
     await page.keyboard.press('ArrowRight');
     await carousel.getByRole('button', { name: action, exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-    await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
-    await dialog.locator('[data-payer-relationship="SELF"]').click();
-    await dialog.getByRole('button', { name: 'Continue' }).click();
-    await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
-    if (code === 'TAX_WITH_RETURN') {
-      await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
+    if (banner === 'travel') {
+      // The named "Pay Travel Tax" CTA retains its dedicated passenger workflow.
+      const travel = page.getByRole('dialog', { name: 'Travel tax' });
+      await expect(travel.getByRole('navigation', { name: 'Travel tax steps' })).toBeVisible();
+      await travel.getByRole('button', { name: 'Close modal' }).click();
     } else {
-      await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-      await expect(dialog.locator('#tax-service-other-type')).toHaveValue(code);
+      const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+      await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
+      await dialog.locator('[data-payer-relationship="SELF"]').click();
+      await dialog.getByRole('button', { name: 'Continue' }).click();
+      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+      if (code === 'TAX_WITH_RETURN') {
+        await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
+      } else {
+        await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+        await expect(dialog.locator('#tax-service-other-type')).toHaveValue(code);
+      }
+      await dialog.getByRole('button', { name: 'Close payment services' }).click();
     }
-    await dialog.getByRole('button', { name: 'Close payment services' }).click();
   }
 });
 
