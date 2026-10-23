@@ -308,6 +308,41 @@
 .tax-service-choice__card[aria-pressed="true"] .tax-service-choice__description {
   color: color-mix(in srgb, var(--choice-text) 72%, var(--citizen-muted));
 }
+.tax-service-choice__subtype {
+  display:grid;
+  gap:.4rem;
+  margin-top:1.2rem;
+  max-width:560px;
+}
+.tax-service-choice__subtype label {
+  color:var(--citizen-text);
+  font-size:.9rem;
+  font-weight:700;
+}
+.tax-service-choice__subtype select {
+  width:100%;
+  min-height:48px;
+  padding:.75rem .9rem;
+  border:1px solid var(--citizen-border);
+  border-radius:10px;
+  background:var(--citizen-surface);
+  color:var(--citizen-text);
+  font:inherit;
+}
+.tax-service-choice__subtype select:focus-visible {
+  outline:3px solid var(--citizen-primary);
+  outline-offset:2px;
+}
+.payment-form-payer-confirmation {
+  margin:0 0 .85rem;
+  padding:.75rem 1rem;
+  border:1px solid var(--citizen-border);
+  border-radius:10px;
+  background:var(--color-taxpay-surface-subtle);
+  color:var(--citizen-text);
+  font-size:.9rem;
+}
+.payment-form-payer-confirmation strong { margin-inline-start:.3rem; }
 .tax-service-choice__actions {
   display: flex;
   justify-content: space-between;
