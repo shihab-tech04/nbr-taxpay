@@ -255,7 +255,7 @@ test('Public homepage uses heading and description without duplicate eyebrow lab
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
-  await expect(page.getByText('Choose a service from the banner above, then follow these four steps.')).toBeVisible();
+  await expect(page.getByText('Choose who you are paying for, then select one of two services and follow these four steps.')).toBeVisible();
   await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
   await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
 });
