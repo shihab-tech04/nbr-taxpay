@@ -1,40 +1,43 @@
 import { expect, test } from '@playwright/test';
 
-test('citizen design locks the primary blue and retains category identities inside the real service chooser', async ({ page }) => {
+test('citizen design locks the primary blue, differentiated icons and the preserved financial service identities', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.public-info-topic[data-taxpay-service]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  await expect(page.locator('.tax-service-choice__card')).toHaveCount(8);
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const payerCards = dialog.locator('.tax-service-choice__card[data-payer-relationship]');
+  await expect(payerCards).toHaveCount(2);
+  const colors = await payerCards.evaluateAll(nodes => nodes.map(node => ({
+    primary: getComputedStyle(node).getPropertyValue('--choice-primary').trim(),
+    background: getComputedStyle(node.querySelector('.tax-service-choice__icon')!).backgroundColor,
+    icon: getComputedStyle(node.querySelector('.tax-service-choice__icon')!).color,
+  })));
+  expect(new Set(colors.map(c => c.primary)).size).toBe(2);
+  expect(new Set(colors.map(c => c.icon)).size).toBe(2);
 
-  const styles = await page.evaluate(() => {
-    const shell = document.querySelector<HTMLElement>('.taxpay-citizen-shell');
-    if (!shell) throw new Error('Citizen shell missing');
-    const services = ['TAX_WITH_RETURN', 'ADVANCE_TAX', 'SOURCE_TAX_DEPOSIT', 'OTHER_TAX_PAYMENT'];
-    const cards = services.map(service => {
-      const icon = document.querySelector<HTMLElement>(`.tax-service-choice__card[data-payment-service="${service}"] .tax-service-choice__icon`);
-      if (!icon) throw new Error(`Service palette missing: ${service}`);
-      const style = getComputedStyle(icon);
-      return { service, background: style.backgroundColor, color: style.color };
-    });
-    return {
-      primary: getComputedStyle(shell).getPropertyValue('--citizen-primary').trim(),
-      font: getComputedStyle(shell).fontFamily,
-      cards,
-    };
-  });
-
-  expect(styles.primary.toLowerCase()).toBe('#2c5ead');
-  expect(styles.font).toContain('Poppins');
-  expect(new Set(styles.cards.map(card => card.background)).size).toBe(4);
-  expect(new Set(styles.cards.map(card => card.color)).size).toBe(4);
+  const shell = page.locator('.taxpay-citizen-shell');
+  expect((await shell.evaluate(el => getComputedStyle(el).getPropertyValue('--citizen-primary').trim())).toLowerCase()).toBe('#2c5ead');
+  expect(await shell.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Poppins');
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  const select = dialog.locator('#tax-service-other-type');
+  await expect(select.locator('option')).toHaveCount(8);
+  for (const id of ['ADVANCE_TAX', 'ASSESSED_DEMAND', 'PENALTY', 'SOURCE_TAX_DEPOSIT', 'APPELLATE_TRIBUNAL', 'OTHER_TAX_PAYMENT', 'TRAVEL_TAX']) {
+    await expect(select.locator(`option[value="${id}"]`)).toHaveCount(1);
+  }
 });
 
-test('Bangla text uses Noto Sans Bengali and the same eight actual services', async ({ page }) => {
+test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'যেভাবে কর পরিশোধ করবেন' })).toBeVisible();
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).click();
-  await expect(page.locator('.tax-service-choice__card')).toHaveCount(8);
+  await expect(page.locator('[data-payer-relationship]')).toHaveCount(2);
+  await page.locator('[data-payer-relationship="OTHER"]').click();
+  await page.getByRole('dialog', { name: 'কর পরিশোধ' }).getByRole('button', { name: 'এগিয়ে যান' }).click();
+  await expect(page.locator('[data-payment-entry]')).toHaveCount(2);
   const font = await page.locator('.taxpay-citizen-shell').evaluate(element => getComputedStyle(element).fontFamily);
   expect(font).toMatch(/^['"]?Noto Sans Bengali/);
 });
