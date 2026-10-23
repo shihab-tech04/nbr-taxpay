@@ -17,7 +17,7 @@ export const PaymentServicesPage: React.FC = () => {
         {tr('Select a service', 'সেবা নির্বাচন করুন')} <ArrowRight size={18} aria-hidden="true" />
       </button>} />
     <section className="taxpayer-service-directory__grid" aria-label={tr('Two tax payment services', 'দুটি কর পরিশোধ সেবা')}>
-      {PAYMENT_SERVICE_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }, index) => (
+      {TAXPAY_ENTRY_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }, index) => (
         <article className="taxpayer-service-directory__card" data-payment-service={id} key={id}>
           <div className="taxpayer-service-directory__card-top">
             <span className="taxpayer-service-directory__icon"><Icon size={22} aria-hidden="true" /></span>
