@@ -162,7 +162,7 @@ test('service banners preserve distinctive palette and readable CTA with payer-f
   // The shared two-card payer/service gateway is verified independently.
   for (const banner of banners) {
     const rgb = (hex: string) => {
-      const bytes = hex.match(/[\\da-f]{2}/gi);
+      const bytes = hex.match(/[\da-f]{2}/gi);
       if (!bytes || bytes.length !== 3) throw new Error(`Invalid service color ${hex}`);
       return `rgb(${bytes.map(byte => parseInt(byte, 16)).join(', ')})`;
     };
