@@ -1,6 +1,7 @@
 /* Service choice and account breakpoint precede the four payment steps. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] {
-  width: min(100%, 1040px);
+  /* Two decisions fit a compact dialog; do not inherit the old 8-card width. */
+  width: min(100%, 720px);
   border-radius: var(--taxpay-radius-modal);
   box-shadow: var(--taxpay-shadow-modal);
 }
@@ -203,12 +204,9 @@
   grid-template-columns: minmax(0, 1fr);
   gap: .85rem;
 }
-@media (min-width: 1024px) {
-  .tax-service-choice__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 1rem;
-  }
-}
+/* Both preliminary screens use the same readable full-width option rows,
+   including desktop. The icon, description and radio stay horizontally aligned. */
+.tax-service-choice__grid { grid-template-columns: minmax(0, 1fr); }
 /* Entry cards are presentation choices, not financial service identities.
    Reuse existing design-system service palettes without changing original IDs. */
 .tax-service-choice__card[data-payer-relationship="SELF"],
@@ -369,19 +367,29 @@
 }
 .tax-service-choice__actions:empty { display: none; }
 .tax-service-choice__actions:has(.tax-service-choice__continue) { width: 100%; }
-.tax-service-choice__actions:has(.tax-service-choice__continue):not(:has(.tax-service-choice__cancel)) .tax-service-choice__continue { width: 100%; }
-.tax-service-choice__actions:has(.tax-service-choice__cancel) .tax-service-choice__continue { flex:1; }
-.tax-service-choice__actions:has(.tax-service-choice__cancel):not(:has(.tax-service-choice__continue)) button { flex:0 0 auto; }
+.tax-service-choice__actions .tax-service-choice__continue { margin-inline-start:auto; }
 .tax-service-choice__actions button {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   gap: .5rem;
-  min-height: 44px;
-  padding: .65rem 1.25rem;
+  box-sizing: border-box;
+  height: 48px;
+  min-height: 48px;
+  padding: .65rem 1rem;
   border-radius: 10px;
-  font-size: .88rem;
+  font-size: .9rem;
+  line-height: 1.3;
   font-weight: 700;
+  white-space: nowrap;
+}
+.tax-service-choice__actions .tax-service-choice__cancel { min-width:112px; }
+.tax-service-choice__actions .tax-service-choice__continue { min-width:160px; }
+.tax-service-choice__actions button:focus-visible,
+.payment-flow-embedded__footer-actions button:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
 }
 .tax-service-choice__cancel {
   border: 1px solid var(--citizen-border);
@@ -435,7 +443,11 @@
 .payment-journey-footer__next {margin-left:auto;justify-content:flex-end;}
 .payment-journey-footer__back:empty,.payment-journey-footer__next:empty {display:none;}
 .payment-flow-embedded__footer-actions { display:flex;align-items:center;justify-content:space-between;gap:.65rem;min-width:0;width:100%; }
-.payment-flow-embedded__footer-actions button { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.65rem 1rem;border-radius:10px;font-size:.85rem;font-weight:700; }
+.payment-flow-embedded__footer-actions button { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;box-sizing:border-box;min-height:48px;padding:.65rem 1rem;border-radius:10px;font-size:.9rem;line-height:1.3;font-weight:700; }
+.payment-flow-embedded__footer-actions > button:first-child:not(:last-child),
+.payment-flow-embedded__footer-actions .payment-journey-footer__back > button {min-width:112px;}
+.payment-flow-embedded__footer-actions > button:last-child,
+.payment-flow-embedded__footer-actions .payment-journey-footer__next > button {min-width:160px;}
 .payment-flow-embedded__action-short { display:none; }
 .payment-head-search {display:flex;gap:8px;min-width:0;}
 .payment-head-search input {flex:1;min-width:0;}
@@ -510,11 +522,15 @@
   .tax-service-choice__card strong { font-size: .9rem; }
   .tax-service-choice__description { font-size: .8rem; }
   .tax-service-choice__radio { margin-inline-start: .15rem; }
-  .tax-service-choice__actions button { flex: 1; }
+  .tax-service-choice__actions button { flex: 0 0 auto; }
+  .tax-service-choice__actions .tax-service-choice__cancel { min-width:100px; }
+  .tax-service-choice__actions .tax-service-choice__continue { min-width:0; flex:1 1 auto; }
+  .tax-service-choice__actions:not(:has(.tax-service-choice__cancel)) .tax-service-choice__continue { flex:0 0 auto; width:auto; min-width:148px; }
+  .tax-service-choice__actions button { font-size:.875rem; }
   .payment-flow-embedded__footer-actions { width:100%;gap:.5rem; }
   .payment-flow-embedded__footer-actions button { min-width:0;padding:.62rem .65rem;line-height:1.3; }
-  .payment-flow-embedded__footer-actions button:first-child:not(:last-child) { flex:0 0 34%; }
-  .payment-flow-embedded__footer-actions button:last-child { flex:1 1 0; }
+  .payment-flow-embedded__footer-actions > button:first-child:not(:last-child) { flex:0 0 auto;min-width:100px; }
+  .payment-flow-embedded__footer-actions > button:last-child { flex:1 1 0;min-width:0; }
   .payment-flow-embedded__action-long { display:none; }
   .payment-flow-embedded__action-short { display:inline; }
   .payment-flow-embedded .payment-form-section__heading { padding:12px;gap:10px;min-height:60px; }
