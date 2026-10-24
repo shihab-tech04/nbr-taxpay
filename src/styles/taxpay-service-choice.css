@@ -432,6 +432,11 @@
 .payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-head-amount {
   margin-top: 0;
 }
+/* The year already occupies one outer column; never split it again.
+   This keeps the AY label on one line and the select at normal width. */
+.payment-flow-embedded__payment .payment-amount-fields--simple {
+  grid-template-columns: minmax(0, 1fr);
+}
 /* When a validation message applies to the whole amount section, give it
    its own full row rather than placing it alongside a field. */
 .payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-form-section__body > .payment-form-field-error {
