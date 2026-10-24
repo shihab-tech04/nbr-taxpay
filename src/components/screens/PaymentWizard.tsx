@@ -54,6 +54,11 @@ export const PaymentWizard: React.FC = () => {
   const {user:authenticatedUser}=useAccountIdentity();
   const bn = language === 'bn';
   const t = COPY[language];
+  // Avoid presenting the old Ordinance payment-head code as a current Income Tax Act section.
+  // The correct current-law section depends on filing facts, not AY alone.
+  const returnLawLabel = bn
+    ? 'রিটার্নসহ কর (ধারা ১৭৩ / ১৭৪—প্রযোজ্যতা সাপেক্ষে)'
+    : 'Tax with return (s.173 / s.174, as applicable)';
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -347,7 +352,7 @@ export const PaymentWizard: React.FC = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono-plex font-bold text-taxpay-dark">
-                            {head.economicCode}
+                            {category === 'TAX_WITH_RETURN' ? (bn ? 'ধারা ১৭৩ / ১৭৪' : 's.173 / s.174') : head.economicCode}
                           </span>
                           <span className="font-semibold text-slate-800">
                             {bn ? head.nameBn : head.nameEn}
@@ -361,7 +366,7 @@ export const PaymentWizard: React.FC = () => {
                         </div>
                         {!bn && <div className="text-sm text-slate-500 font-bengali">{head.nameBn}</div>}
                         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                          <span>{bn ? 'মূল নথির খাত-কোড' : 'Source head code'}: <strong>{head.economicCode}</strong></span>
+                          <span>{category === 'TAX_WITH_RETURN' ? (bn ? 'প্রযোজ্য ধারা' : 'Applicable section') : (bn ? 'মূল নথির খাত-কোড' : 'Source head code')}: <strong>{category === 'TAX_WITH_RETURN' ? '173 / 174' : head.economicCode}</strong></span>
                         </div>
                         {head.rateNote && (
                           <div className="text-sm text-emerald-800 font-medium">
@@ -394,7 +399,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode} amount={totalAmount} />
           </div>
         )}
 
@@ -402,19 +407,16 @@ export const PaymentWizard: React.FC = () => {
         {step === 2 && (
           <div className="payment-form-layout">
             <div className="payment-form-layout__sections">
-            <PaymentFormSection number={3} title={bn ? 'বাছাই করা খাত' : 'Selected payment head'}>
-            <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-sm">
-              <span className="text-slate-500 block">{t.selectedHead}:</span>
+            <PaymentFormSection number={3} title={bn ? 'পরিশোধের পরিমাণ' : 'Tax amount & reference'}>
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-sm">
+              <span className="text-slate-600 block">{t.selectedHead}:</span>
               <div className="font-mono-plex font-bold text-sm tabular-nums text-taxpay-dark mt-0.5">
-                {selectedHead?.economicCode} — {bn ? selectedHead?.nameBn : selectedHead?.nameEn}
+                {category === 'TAX_WITH_RETURN' ? returnLawLabel : `${selectedHead?.economicCode} — ${bn ? selectedHead?.nameBn : selectedHead?.nameEn}`}
               </div>
-              <div className="text-sm text-emerald-800 mt-1">
-                {t.act}: {selectedHead?.sectionAct2023} | {t.year}: {assessmentYear}
+              <div className="text-sm text-slate-600 mt-1">
+                {t.year}: {assessmentYear}
               </div>
             </div>
-            </PaymentFormSection>
-
-            <PaymentFormSection number={4} title={bn ? 'পরিশোধের পরিমাণ' : 'Tax amount & reference'}>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
               <h3 className="font-bold text-sm uppercase tracking-wider text-taxpay-dark">
                 {t.amountBreakdown}
@@ -514,7 +516,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
           </div>
         )}
 
@@ -540,7 +542,7 @@ export const PaymentWizard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block">{t.headCode}:</span>
-                  <strong className="font-mono-plex text-taxpay-dark">{selectedHead?.economicCode}</strong>
+                  <strong className="font-mono-plex text-taxpay-dark">{category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode}</strong>
                 </div>
               </div>
 
