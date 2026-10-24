@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EXPECTED=e228f64b816ddca0762c8011deb32ecb8198e20f
+          EXPECTED=96b41d7a5fb65a323f1370fc1bc8f4f167e400b0
           git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' '+refs/pull/*:refs/archive/pull/*'
           CURRENT="$(git rev-parse refs/remotes/origin/main)"
           echo "CURRENT_MAIN=$CURRENT"
@@ -42,7 +42,7 @@ jobs:
           sha256sum -c SHA256SUMS
           git clone --mirror nbr-taxpay-full-history.bundle isolated-restore.git
           git -C isolated-restore.git fsck --full --no-reflogs
-          test "$(git -C isolated-restore.git rev-parse refs/remotes/origin/main)" = "e228f64b816ddca0762c8011deb32ecb8198e20f"
+          test "$(git -C isolated-restore.git rev-parse refs/remotes/origin/main)" = "96b41d7a5fb65a323f1370fc1bc8f4f167e400b0"
           while IFS=' ' read -r sha ref; do
             test "$(git -C isolated-restore.git rev-parse "$ref")" = "$sha"
           done < all-refs.txt
@@ -55,7 +55,7 @@ jobs:
       - name: Export verified backup artifact for independent Google Drive copy
         uses: actions/upload-artifact@v4
         with:
-          name: nbr-taxpay-pre-release-full-history-e228f64b
+          name: nbr-taxpay-pre-release-full-history-96b41d7
           path: /tmp/taxpay-backup/nbr-taxpay-pre-release-full-history.zip
           compression-level: 0
           if-no-files-found: error
