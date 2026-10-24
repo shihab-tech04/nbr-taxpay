@@ -1,3 +1,4 @@
+import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
 
 async function enterUser1(page:Page){
@@ -88,46 +89,43 @@ test('authorization input and compact delete confirmation remain within mobile v
   await expect(confirm).toHaveCount(0);
 });
 
-test('mobile Travel Tax keeps the total and Back/Continue on compact distinct rows',async({page},info)=>{
+test('mobile Travel Tax keeps the total and Continue in separate contained regions',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile payment journey geometry');
   await page.goto('/');
-  // Travel Tax uses its own public banner entry, not the Other Tax subtype picker.
-  const carousel=page.locator('.public-hero-carousel');
-  for(let i=0;i<8 && await carousel.getAttribute('data-payment-service')!=='TRAVEL_TAX';i++){
-    await carousel.getByRole('button',{name:'Next banner'}).click();
-  }
-  await expect(carousel).toHaveAttribute('data-payment-service','TRAVEL_TAX');
-  await carousel.getByRole('button',{name:'Pay Travel Tax'}).click();
+  // Use the existing tested public Travel Tax entry without the removed subtype picker.
+  await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
   const footer=dialog.locator('.travel-flow__footer-actions');
   const summary=dialog.locator('.travel-flow__summary');
-  const back=footer.getByRole('button',{name:'Back'});
-  const next=footer.getByRole('button',{name:'Continue to purpose & amount'});
-  const [backBox,nextBox,summaryBox]=await Promise.all([back.boundingBox(),next.boundingBox(),summary.boundingBox()]);
-  expect(backBox).not.toBeNull();expect(nextBox).not.toBeNull();expect(summaryBox).not.toBeNull();
-  expect(backBox!.x+backBox!.width).toBeLessThanOrEqual(nextBox!.x+1);
-  expect(Math.abs(backBox!.y-nextBox!.y)).toBeLessThanOrEqual(6);
+  const next=footer.getByRole('button',{name:'Continue to passenger details'});
+  const [nextBox,summaryBox,footerBox]=await Promise.all([next.boundingBox(),summary.boundingBox(),footer.boundingBox()]);
+  expect(nextBox).not.toBeNull();expect(summaryBox).not.toBeNull();expect(footerBox).not.toBeNull();
+  const width=page.viewportSize()!.width;
+  expect(nextBox!.x).toBeGreaterThanOrEqual(0);
+  expect(nextBox!.x+nextBox!.width).toBeLessThanOrEqual(width+1);
+  expect(nextBox!.width).toBeGreaterThan(80);
+  expect(footerBox!.y).toBeGreaterThan(summaryBox!.y);
   expect(summaryBox!.height).toBeLessThanOrEqual(100);
+  await dialog.locator('#travel-tax-route-1').check();
+  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
+  await next.click();
+  await expect(dialog.getByLabel('Passenger name')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
 test('desktop Travel Tax keeps long journey descriptions readable in the calculation panel',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop long-label layout');
   await page.goto('/');
-  // Travel Tax uses its own public banner entry, not the Other Tax subtype picker.
-  const carousel=page.locator('.public-hero-carousel');
-  for(let i=0;i<8 && await carousel.getAttribute('data-payment-service')!=='TRAVEL_TAX';i++){
-    await carousel.getByRole('button',{name:'Next banner'}).click();
-  }
-  await expect(carousel).toHaveAttribute('data-payment-service','TRAVEL_TAX');
-  await carousel.getByRole('button',{name:'Pay Travel Tax'}).click();
+  // Use the existing tested public Travel Tax entry without the removed subtype picker.
+  await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
+  await dialog.locator('#travel-tax-route-0').check();
+  await dialog.getByRole('button',{name:'Continue to passenger details'}).click();
   await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await dialog.getByLabel('Passport number').fill('FAKE0001');
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByLabel('Travel date').fill('2026-10-25');
-  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
-  await dialog.locator('#travel-tax-route-0').check();
+  await dialog.getByRole('button',{name:'Continue to review'}).click();
   const row=dialog.locator('.travel-flow__summary-list > div').nth(2);
   await expect(row.locator('dd')).not.toBeEmpty();
   const values=await row.evaluate(element=>({display:getComputedStyle(element).display,
