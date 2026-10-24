@@ -1,0 +1,55 @@
+name: TaxPay Other Tax v11 multi-taxpayer acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/screens/GuestPayment.tsx'
+      - 'src/components/screens/OtherTaxBatchComposer.tsx'
+      - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - '.github/workflows/other-tax-batch-v11.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/screens/GuestPayment.tsx'
+      - 'src/components/screens/OtherTaxBatchComposer.tsx'
+      - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - '.github/workflows/other-tax-batch-v11.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Grouped heads, taxpayer composition and safe checkout
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript and domain acceptance
+        run: |
+          npm run lint
+          npm run test:domain
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test v11 43 grouped heads, 2+ taxpayers, per-head amount/year and fail-closed A-Challan boundary
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts
+      - name: Upload Playwright evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: other-tax-batch-v11-failure-evidence
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
