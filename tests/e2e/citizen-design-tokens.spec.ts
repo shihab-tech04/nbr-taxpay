@@ -22,11 +22,9 @@ test('citizen design locks the primary blue, differentiated icons and the preser
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  const select = dialog.locator('#tax-service-other-type');
-  await expect(select.locator('option')).toHaveCount(8);
-  for (const id of ['ADVANCE_TAX', 'ASSESSED_DEMAND', 'PENALTY', 'SOURCE_TAX_DEPOSIT', 'APPELLATE_TRIBUNAL', 'OTHER_TAX_PAYMENT', 'TRAVEL_TAX']) {
-    await expect(select.locator(`option[value="${id}"]`)).toHaveCount(1);
-  }
+  await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
 });
 
 test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', async ({ page }) => {
