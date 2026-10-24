@@ -11,9 +11,8 @@ async function beginGuestPayment(page: Page, service: string) {
   if (service === 'Tax with Return') {
     await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   } else {
-    const ids: Record<string, string> = { Penalty: 'PENALTY' };
     await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-    await dialog.locator('#tax-service-other-type').selectOption(ids[service]);
+    await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   }
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
@@ -35,7 +34,7 @@ test('payer is required before choosing a payment service and is not asked twice
 });
 
 test('large multi-head values do not turn into zero; missing head is focused with an inline error', async ({ page }) => {
-  const dialog = await beginGuestPayment(page, 'Penalty');
+  const dialog = await beginGuestPayment(page, 'Other Tax');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
