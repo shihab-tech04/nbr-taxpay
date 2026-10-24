@@ -99,6 +99,14 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/verifiedPrimaryAdmin.sql
 
+      - name: Rehearse verified-admin-only CMS policies on isolated PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f docs/security/taxpay-cms-anonymous-write-lockdown-20261024.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/cmsVerifiedAdminAccess.sql
+
       - name: Verify exact synthetic SQL seed totals and event graph (rollback only)
         shell: bash
         run: |
@@ -177,7 +185,7 @@ jobs:
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_DIR/src/app/contracts/paymentSimulationContract.ts"
           cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-sync-bridge/index.ts"
           cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-command-bridge/index.ts"
-          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 14
+          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 16
           test "$(find "$OFFICE_DIR/supabase/hosted_migration_history" -name '*.sql' | wc -l)" = 17
           echo "PASS: shared contracts and deployed bridge source byte-identical; both hosted migration recovery sets present"
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
