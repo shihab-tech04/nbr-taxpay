@@ -16,7 +16,8 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
 
-  await expect(payment.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(payment.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
   await expect(payment.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
   await expect(payment.locator('#guest-tin')).toHaveValue('2222222222222');
@@ -47,7 +48,8 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
+  await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
   await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).not.toHaveAttribute('readonly');
   await expect(payment.locator('#guest-phone')).not.toHaveAttribute('readonly');
