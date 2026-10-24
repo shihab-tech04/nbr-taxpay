@@ -113,6 +113,13 @@ test('general authenticated taxpayer private draft to officer decisions to owner
  await accountPage.goto('http://127.0.0.1:4173/?action=account_notifications');
  await expect(accountPage.getByRole('heading',{name:'Account notifications'})).toBeVisible({timeout:16000});
  await expect(accountPage.getByText('Officer completed the review')).toBeVisible({timeout:17000});
+ // The global Notifications entry must resolve to this owner-only inbox even
+ // when a real authenticated TaxPay user has no fictional demo-payment profile.
+ const globalNotificationsPage=await ownerUI.context.newPage();
+ await globalNotificationsPage.goto('http://127.0.0.1:4173/?action=notifications');
+ await expect(globalNotificationsPage.getByRole('heading',{name:'Account notifications'})).toBeVisible({timeout:18000});
+ await expect(globalNotificationsPage.getByText('Officer completed the review')).toBeVisible({timeout:18000});
+ await globalNotificationsPage.close();
  console.log('PRIVATE_CROSSAPP E3 PASS: taxpayer review status and notification read-back, no receipt/credit');
  await accountPage.close();await ownerUI.context.close();
 });

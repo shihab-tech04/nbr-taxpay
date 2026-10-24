@@ -21,7 +21,8 @@ function validRecord(record:SimulationTransaction):boolean {
 export function reconcileDemoSimulationActivity(
   actor:SimulationUser,
   payerRows:readonly SimulationTransaction[],
-  beneficiaryRows:readonly SimulationTransaction[]
+  beneficiaryRows:readonly SimulationTransaction[],
+  maxResults=30,
 ):DemoSimulationActivity[]{
   const found=new Map<string,DemoSimulationActivity>();
   for(const tx of payerRows){
@@ -53,5 +54,5 @@ export function reconcileDemoSimulationActivity(
     });
   }
   return [...found.values()].sort((a,b)=>
-    (Date.parse(b.createdAt)||0)-(Date.parse(a.createdAt)||0)).slice(0,30);
+    (Date.parse(b.createdAt)||0)-(Date.parse(a.createdAt)||0)).slice(0,maxResults);
 }
