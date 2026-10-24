@@ -185,7 +185,7 @@ jobs:
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_DIR/src/app/contracts/paymentSimulationContract.ts"
           cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-sync-bridge/index.ts"
           cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-command-bridge/index.ts"
-          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 14
+          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 15
           test "$(find "$OFFICE_DIR/supabase/hosted_migration_history" -name '*.sql' | wc -l)" = 17
           echo "PASS: shared contracts and deployed bridge source byte-identical; both hosted migration recovery sets present"
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
