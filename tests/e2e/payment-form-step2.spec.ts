@@ -280,14 +280,17 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await payment.locator('#guest-tin').fill('123456789012');
   await payment.locator('#guest-phone').fill('01712345678');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(payment.locator('.payment-head-single')).toBeVisible();
+  await expect(payment.locator('.payment-head-single')).toHaveCount(0);
+  await expect(payment.locator('.payment-form-summary__rows')).toContainText('Tax with return (s.173 / s.174, as applicable)');
+  await expect(payment.locator('.payment-form-summary__rows')).not.toContainText('74 —');
   await expect(payment.locator('#guest-head-search')).toHaveCount(0);
 
   await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(payment.getByRole('alert')).toContainText('Choose the income tax type');
   await expect(payment.getByRole('radio', { name: /Person other than company/ })).toBeFocused();
   await payment.getByRole('radio', { name: /Person other than company/ }).check();
-  await expect(payment.locator('.payment-head-single input[type="checkbox"]')).toBeChecked();
+  await expect(payment.locator('.payment-head-single input[type="checkbox"]')).toHaveCount(0);
+  await expect(payment.locator('#guest-tax-amount')).toBeVisible();
   await payment.locator('#guest-tax-amount').fill('-5');
   await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(payment.getByRole('alert')).toContainText('greater than zero');
