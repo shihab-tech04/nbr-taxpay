@@ -1,3 +1,4 @@
+import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { expect, test, type Locator } from '@playwright/test';
 
 async function choosePayer(dialog: Locator, mode: 'SELF' | 'OTHER' = 'SELF') {
@@ -271,4 +272,43 @@ test('Travel Tax remains separately accessible from its existing public banner',
   await expect(travel).toBeVisible();
   await expect(travel.locator('.travel-flow')).toBeVisible();
   await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(6);
+});
+
+test('Existing Travel Tax banner still provides journey, passenger and payment validation', async ({ page }) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const travel = page.getByRole('dialog', { name: 'Travel tax' });
+  await travel.locator('#travel-tax-route-1').check();
+  await expect(travel.locator('.travel-flow__total')).toContainText('2,000');
+  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await expect(travel.getByLabel('Passenger name')).toBeVisible();
+  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await travel.getByLabel('Passport number').fill('TRAVEL123');
+  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
+  await travel.getByLabel('Travel date').fill('2026-10-25');
+  await travel.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(travel.getByRole('heading', { name: 'Review travel details' })).toBeVisible();
+  await expect(travel.getByRole('button', { name: 'Continue payment' })).toBeDisabled();
+  await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
+});
+
+test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const travel = page.getByRole('dialog', { name: 'Travel tax' });
+  await travel.locator('#travel-tax-route-0').check();
+  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await travel.getByLabel('Passport number').fill('TRAVEL123');
+  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
+  await travel.getByLabel('Travel date').fill('2026-10-25');
+  await travel.getByRole('button', { name: 'Continue to review' }).click();
+  await travel.getByRole('button', { name: 'Pay online' }).click();
+  await travel.getByRole('button', { name: 'Mobile banking' }).click();
+  await travel.getByRole('radio', { name: 'Nagad' }).check();
+  await travel.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
+  await travel.getByLabel('The journey, passenger details and amount are correct.').check();
+  await travel.getByRole('button', { name: 'Continue payment' }).click();
+  await expect(travel.getByRole('alert')).toContainText('Simulated payment declined', { timeout: 12000 });
+  await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
 });
