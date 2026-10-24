@@ -20,9 +20,13 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(progress).toHaveCount(0);
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(progress.locator('li')).toHaveCount(4);
+  // The full 4-stage indicator fits into one short line on narrow screens.
+  expect(await progress.evaluate(el => el.getBoundingClientRect().height)).toBeLessThanOrEqual(48);
+  expect(await progress.evaluate(el => el.scrollWidth)).toBeLessThanOrEqual(await progress.evaluate(el => el.clientWidth));
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
   await expect(progress.locator('.tax-service-choice__stage-label--short').first()).toBeVisible();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
   await expect(chooser.locator('#guest-category')).toHaveCount(0);
   await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
@@ -93,14 +97,16 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(chooser, 'OTHER_TAX_PAYMENT');
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   const sections = chooser.locator('.payment-form-section');
   const summary = chooser.locator('.payment-form-summary');
   await expect(sections).toHaveCount(1);
   await expect(summary).toHaveCount(1);
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('Payment calculation');
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await page.locator('#guest-tin').fill('123456789012');
   await page.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -227,7 +233,8 @@ test('multiple payment heads have searchable selection, separate amounts and one
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(chooser, 'OTHER_TAX_PAYMENT');
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
