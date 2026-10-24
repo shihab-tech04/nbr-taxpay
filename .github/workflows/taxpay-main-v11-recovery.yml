@@ -1,0 +1,52 @@
+name: TaxPay pre-v11 authoritative history backup
+
+on:
+  push:
+    branches:
+      - backup/taxpay-pre-other-v11-20261024
+    paths:
+      - .github/workflows/taxpay-main-v11-recovery.yml
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Main all-refs backup and independent restore proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch authoritative remote refs
+        run: |
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          test "$(git rev-parse origin/main)" = '1ccf18a660f48ca340813f275a13b172379efa0a'
+          git fsck --connectivity-only --no-reflogs
+      - name: Create full history bundle and checksums
+        run: |
+          mkdir -p recovery
+          git bundle create recovery/taxpay-pre-v11-all-refs.bundle --all
+          (cd recovery && sha256sum taxpay-pre-v11-all-refs.bundle > taxpay-pre-v11-all-refs.bundle.sha256)
+          git bundle verify recovery/taxpay-pre-v11-all-refs.bundle
+          printf '%s\n' 'main=1ccf18a660f48ca340813f275a13b172379efa0a' 'source=shihab-tech04/nbr-taxpay' 'created_by=GitHub_Actions' > recovery/restore.txt
+      - name: Independent clean restore
+        run: |
+          mkdir -p /tmp/taxpay-restore-proof
+          git clone recovery/taxpay-pre-v11-all-refs.bundle /tmp/taxpay-restore-proof/repo
+          git -C /tmp/taxpay-restore-proof/repo cat-file -e '1ccf18a660f48ca340813f275a13b172379efa0a^{commit}'
+          git -C /tmp/taxpay-restore-proof/repo checkout --detach '1ccf18a660f48ca340813f275a13b172379efa0a'
+          test "$(git -C /tmp/taxpay-restore-proof/repo rev-parse HEAD)" = '1ccf18a660f48ca340813f275a13b172379efa0a'
+          test -f /tmp/taxpay-restore-proof/repo/src/components/screens/GuestPayment.tsx
+          git -C /tmp/taxpay-restore-proof/repo fsck --connectivity-only --no-reflogs
+      - name: Upload immutable recovery archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-pre-other-v11-full-history-1ccf18a
+          path: recovery/
+          if-no-files-found: error
+          retention-days: 30
