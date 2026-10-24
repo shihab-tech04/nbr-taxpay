@@ -1,7 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
-import {formatSimulatedAmount,getDemoStoryPaymentHistory,type SimulationTransaction} from '../../services/simulatedPaymentsApi';
+import {formatSimulatedAmount,getDemoStoryPaymentHistory} from '../../services/simulatedPaymentsApi';
+import {reconcileDemoSimulationActivity,type DemoSimulationActivity} from '../../services/demoSimulationActivity';
 import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
@@ -25,7 +26,7 @@ export const NotificationsView:React.FC=()=>{
   const [loading,setLoading]=useState(true);
   const [authorizationNotices,setAuthorizationNotices]=useState<HostedAuthorization[]>([]);
   const [authorizationError,setAuthorizationError]=useState('');
-  const [previewPaymentEvents,setPreviewPaymentEvents]=useState<SimulationTransaction[]>([]);
+  const [previewPaymentEvents,setPreviewPaymentEvents]=useState<DemoSimulationActivity[]>([]);
   const [previewPaymentError,setPreviewPaymentError]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
@@ -45,12 +46,12 @@ export const NotificationsView:React.FC=()=>{
     let active=true;
     const refresh=async()=>{
       try{
-        const records=await getDemoStoryPaymentHistory(previewAccount.id,'payer');
-        if(active){
-          setPreviewPaymentEvents(records.filter(record=>record.payer===previewAccount.id &&
-            record.simulationOnly===true && Number.isSafeInteger(record.totalMinor) && record.totalMinor>0).slice(0,30));
-          setPreviewPaymentError('');
-        }
+        const [payerRows,beneficiaryRows]=await Promise.all([
+          getDemoStoryPaymentHistory(previewAccount.id,'payer'),
+          getDemoStoryPaymentHistory(previewAccount.id,'beneficiary'),
+        ]);
+        const records=reconcileDemoSimulationActivity(previewAccount.id,payerRows,beneficiaryRows);
+        if(active){setPreviewPaymentEvents(records);setPreviewPaymentError('');}
       }catch(e){if(active){setPreviewPaymentEvents([]);setPreviewPaymentError(e instanceof Error?e.message:'Simulation updates unavailable');}}
     };
     void refresh();const timer=window.setInterval(()=>void refresh(),7000);
@@ -125,7 +126,10 @@ export const NotificationsView:React.FC=()=>{
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
        !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No simulated payment activity yet.','এখনো কোনো পেমেন্ট সিমুলেশন নেই।')}</p>:
        <ul className="divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-3">
-         <p className="font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.totalMinor)}</p>
+         <p className="font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.amountMinor)}</p>
+         <p className="text-sm text-taxpay-muted">{payment.perspective==='beneficiary'
+           ?label(`Allocated to you in a simulation by ${payment.payer}`,`${payment.payer}-এর সিমুলেশনে আপনার জন্য বরাদ্দ`)
+           :label('Simulation you recorded','আপনার সংরক্ষিত সিমুলেশন')}</p>
          <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Simulation status','সিমুলেশনের অবস্থা')}: {payment.state}</p>
        </li>)}</ul>}
     </section>
