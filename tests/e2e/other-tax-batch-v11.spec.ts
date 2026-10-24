@@ -70,7 +70,7 @@ test('other-tax multi-person batch can be reviewed but cannot issue one combined
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
-  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await expect(dialog.getByRole('button', { name: /Pay BDT 2,500/ })).toBeDisabled();
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toHaveCount(0);
 });
