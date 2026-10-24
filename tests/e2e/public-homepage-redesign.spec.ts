@@ -5,7 +5,7 @@ test('public homepage explains the payment path without duplicating service cate
   await page.goto('/?action=landing');
 
   const mobile = testInfo.project.name !== 'desktop-1280';
-  await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: mobile ? 'Pay tax, step by step' : 'Your tax payments, made simpler' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'How your payment works' })).toBeVisible();
   await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
   await expect(page.locator('.public-payment-path__steps > li .public-payment-path__symbol svg')).toHaveCount(4);

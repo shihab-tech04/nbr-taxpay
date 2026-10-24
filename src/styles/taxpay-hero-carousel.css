@@ -327,3 +327,21 @@
 @media (prefers-reduced-motion: reduce) {
   .public-hero-carousel__track { transition: none; }
 }
+
+/* The generated flat editorial artwork is intentionally cropped to the service's
+ * media frame. Apply a subtle service-tint over the illustration so the image
+ * dissolves into the same approved palette used by its payment-choice card. */
+.public-hero-carousel__slide[data-payment-service] .public-hero-carousel__service-image {
+  filter: saturate(.84);
+}
+.public-hero-carousel__slide[data-payment-service] .public-hero-carousel__media--illustrated::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(to right,
+    color-mix(in srgb, var(--choice-bg) 40%, transparent) 0%,
+    color-mix(in srgb, var(--choice-bg) 10%, transparent) 65%,
+    color-mix(in srgb, var(--choice-primary) 8%, transparent) 100%);
+}
