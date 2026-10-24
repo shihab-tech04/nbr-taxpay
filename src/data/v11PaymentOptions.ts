@@ -17,7 +17,9 @@ const PURPOSE_TO_CATEGORY: Record<string, PaymentCategory> = {
 
 export const V11_PAYMENT_OPTIONS: readonly MasterPaymentHead[] = V11_SOURCE_HEADS.map(head => ({
   id: head.id,
-  economicCode: head.codeEn,
+  // Owner-corrected display code. Preserve the original v11 source row (ID 125, code 74)
+  // for provenance and legacy replay; this is a product presentation correction, not legal certification.
+  economicCode: head.id === 125 ? '174' : head.codeEn,
   nameEn: head.en,
   nameBn: head.bn ?? head.en,
   category: PURPOSE_TO_CATEGORY[head.purpose],
