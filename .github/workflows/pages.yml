@@ -164,7 +164,7 @@ jobs:
           git -C recovery/restore-test fsck --full --no-reflogs
           git -C recovery/restore-test cat-file -e "${BASE_SHA}^{commit}"
           test "$(git -C recovery/restore-test rev-parse "${BASE_SHA}^{tree}")" = "$(git --git-dir=recovery/current-main.git rev-parse "${BASE_SHA}^{tree}")"
-          sha256sum recovery/pre-release.bundle > recovery/checksums.sha256
+          sha256sum recovery/pre-release.bundle | sed 's#recovery/pre-release.bundle#pre-release.bundle#' > recovery/checksums.sha256
           printf 'repo=%s\nbase_sha=%s\nbundle_restore=PASS\n' "$REPO" "$BASE_SHA" > recovery/manifest.txt
           cd recovery
           zip -q -9 taxpay-pre-release-recovery.zip pre-release.bundle checksums.sha256 manifest.txt
