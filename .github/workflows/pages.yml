@@ -140,6 +140,47 @@ jobs:
         with:
           path: dist
 
+
+  pre-release-recovery:
+    name: Backup and restore-test current main (PR only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Capture full pre-release Git history
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          git clone --mirror "https://github.com/${REPO}.git" recovery/current-main.git
+          actual=$(git --git-dir=recovery/current-main.git rev-parse refs/heads/main)
+          test "$actual" = "$BASE_SHA"
+          git --git-dir=recovery/current-main.git bundle create "$PWD/recovery/pre-release.bundle" --all
+          git clone --quiet recovery/pre-release.bundle recovery/restore-test
+          git -C recovery/restore-test fsck --full --no-reflogs
+          git -C recovery/restore-test cat-file -e "${BASE_SHA}^{commit}"
+          test "$(git -C recovery/restore-test rev-parse "${BASE_SHA}^{tree}")" = "$(git --git-dir=recovery/current-main.git rev-parse "${BASE_SHA}^{tree}")"
+          sha256sum recovery/pre-release.bundle > recovery/checksums.sha256
+          printf 'repo=%s\nbase_sha=%s\nbundle_restore=PASS\n' "$REPO" "$BASE_SHA" > recovery/manifest.txt
+          cd recovery
+          zip -q -9 taxpay-pre-release-recovery.zip pre-release.bundle checksums.sha256 manifest.txt
+          sha256sum taxpay-pre-release-recovery.zip > archive.sha256
+
+      - name: Upload restorable current-main history
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-pre-release-full-history
+          path: |
+            recovery/taxpay-pre-release-recovery.zip
+            recovery/archive.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+
   deploy:
     name: Publish verified static build
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
