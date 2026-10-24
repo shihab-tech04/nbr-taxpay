@@ -41,7 +41,7 @@ test('Other Tax supports multiple unique taxpayer identities and deleting taxpay
   await lines.first().locator('input[id^="other-tax-amount"]').fill('1000');
   await lines.last().locator('select[id^="other-tax-year"]').selectOption('2025-26');
   await lines.last().locator('input[id^="other-tax-amount"]').fill('2000');
-  await expect(batch.getByText('BDT 3,000')).toBeVisible();
+  await expect(batch.locator('strong.font-mono-plex.text-taxpay-primary')).toHaveText('BDT 3,000');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 3,000');
 
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
