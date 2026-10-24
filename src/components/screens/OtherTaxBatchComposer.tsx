@@ -38,9 +38,10 @@ type Props = {
   lines: OtherTaxAllocation[];
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
+  summary?: React.ReactNode;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, error }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, error, summary }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -185,6 +186,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
           </div>
         </section>
       </div>
+      {summary}
     </div>
   );
 }
