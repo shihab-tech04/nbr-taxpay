@@ -11,20 +11,20 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await expect(page.getByRole('heading', { name: mobile ? 'Pay tax, step by step' : 'Your tax payments, made simpler' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-    .toHaveText('Unsure what tax to pay or where your receipt went? Choose the right service, follow clear steps, and find payment records in one place.');
+    .toHaveText('Not sure which tax payment service you need? Choose what you want to pay, follow the steps and keep your payment details handy.');
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
-    .toHaveAttribute('src', /taxpay-hero-payment-v3/);
+    .toHaveAttribute('src', /taxpay-hero-concept-intro/);
   await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(0);
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
 
   await carousel.focus();
   const destinations = [
-    ['return', 'Tax with Return', 'Pay Tax with Return'],
-    ['advance', 'Advance Income Tax', 'Pay Advance Income Tax'],
+    ['return', mobile ? 'Tax with Return' : 'Pay tax with your return', 'Pay Tax with Return'],
+    ['advance', mobile ? 'Pay tax in advance' : 'Pay income tax in advance', 'Pay Advance Income Tax'],
     ['withholding', mobile ? 'Deposit source tax' : 'Deducted tax? Deposit it here', 'Deposit Source Tax'],
-    ['travel', 'Travel Tax', 'Pay Travel Tax'],
+    ['travel', mobile ? 'Pay travel tax' : 'Travel tax for your journey', 'Pay Travel Tax'],
   ] as const;
   for (const [index, [service, heading, action]] of destinations.entries()) {
     await page.keyboard.press('ArrowRight');
@@ -36,7 +36,7 @@ test('hero provides five bilingual service slides with the original desktop open
     await expect.poll(() => serviceImage.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(1000);
     if (service === 'travel') {
       await expect(carousel.locator('[data-banner-service="travel"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-        .toContainText('move through travel tax with confidence');
+        .toContainText('to pay any applicable travel tax');
     }
     await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);
@@ -92,10 +92,10 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     .evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
-    return: 'taxpay-hero-return-v3',
-    advance: 'taxpay-hero-advance-v3',
-    withholding: 'taxpay-hero-withholding-v3',
-    travel: 'taxpay-hero-travel-v6',
+    return: 'taxpay-hero-concept-return',
+    advance: 'taxpay-hero-concept-advance',
+    withholding: 'taxpay-hero-concept-withholding',
+    travel: 'taxpay-hero-concept-travel',
   };
   for (const [service, assetName] of Object.entries(expectedImages)) {
     const artwork = await carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__service-image`)
@@ -209,10 +209,10 @@ test('service labels remain specific and concise in Bangla', async ({ page }, te
   const carousel = page.getByRole('region', { name: 'কর পরিশোধের সেবা ব্যানার' });
   await carousel.focus();
   const translated = [
-    ['রিটার্নের সঙ্গে কর', 'রিটার্নের সঙ্গে কর পরিশোধ'],
-    ['অগ্রিম আয়কর', 'অগ্রিম আয়কর পরিশোধ'],
-    [mobile ? 'উৎসে কর জমা' : 'উৎসে কর জমা (টিডিএস/টিসিএস)', 'উৎসে কর জমা দিন'],
-    ['ভ্রমণ কর', 'ভ্রমণ কর পরিশোধ'],
+    [mobile ? 'রিটার্নের সঙ্গে কর' : 'রিটার্নের কর এখানেই দিন', 'রিটার্নের সঙ্গে কর পরিশোধ'],
+    [mobile ? 'অগ্রিম আয়কর' : 'আগাম আয়কর পরিশোধ করুন', 'অগ্রিম আয়কর পরিশোধ'],
+    [mobile ? 'উৎসে কর জমা' : 'কর্তন বা আদায় করা কর জমা দিন', 'উৎসে কর জমা দিন'],
+    [mobile ? 'ভ্রমণ কর' : 'যাত্রার আগে ভ্রমণ কর পরিশোধ', 'ভ্রমণ কর পরিশোধ'],
   ] as const;
   for (const [heading, action] of translated) {
     await page.keyboard.press('ArrowRight');
