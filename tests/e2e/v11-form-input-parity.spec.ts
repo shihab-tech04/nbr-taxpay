@@ -32,7 +32,7 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#guest-notice-ref').fill('DN-2026-001187');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(dialog.getByRole('alert')).toContainText('could not confirm');
   await dialog.locator('#guest-notice-ref').fill('pn-2026-000392');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
