@@ -1,0 +1,62 @@
+name: TaxPay pre-release full-history bundle
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/pre-release-full-history-backup.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  archive-and-restore-test:
+    name: Full Git history bundle / SHA-256 / isolated restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Capture authoritative pre-release HEAD and all accessible refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED=e228f64b816ddca0762c8011deb32ecb8198e20f
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' '+refs/pull/*:refs/archive/pull/*'
+          CURRENT="$(git rev-parse refs/remotes/origin/main)"
+          echo "CURRENT_MAIN=$CURRENT"
+          test "$CURRENT" = "$EXPECTED"
+          mkdir -p /tmp/taxpay-backup
+          git show-ref | LC_ALL=C sort > /tmp/taxpay-backup/all-refs.txt
+          printf 'Repository: shihab-tech04/nbr-taxpay\nMain: %s\n' "$CURRENT" > /tmp/taxpay-backup/manifest.txt
+          git bundle create /tmp/taxpay-backup/nbr-taxpay-full-history.bundle --all
+          git bundle verify /tmp/taxpay-backup/nbr-taxpay-full-history.bundle
+          sha256sum /tmp/taxpay-backup/nbr-taxpay-full-history.bundle > /tmp/taxpay-backup/SHA256SUMS
+      - name: Independently restore and verify every ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/taxpay-backup
+          sha256sum -c SHA256SUMS
+          git clone --mirror nbr-taxpay-full-history.bundle isolated-restore.git
+          git -C isolated-restore.git fsck --full --no-reflogs
+          test "$(git -C isolated-restore.git rev-parse refs/remotes/origin/main)" = "e228f64b816ddca0762c8011deb32ecb8198e20f"
+          while IFS=' ' read -r sha ref; do
+            test "$(git -C isolated-restore.git rev-parse "$ref")" = "$sha"
+          done < all-refs.txt
+          printf 'RESTORE_PASS sha256+bundle_verify+git_fsck+all_refs+expected_main\n' > restore-test-result.txt
+          rm -rf isolated-restore.git
+      - name: Package independent recovery archive
+        run: |
+          cd /tmp/taxpay-backup
+          zip -0 -q nbr-taxpay-pre-release-full-history.zip nbr-taxpay-full-history.bundle SHA256SUMS manifest.txt all-refs.txt restore-test-result.txt
+      - name: Export verified backup artifact for independent Google Drive copy
+        uses: actions/upload-artifact@v4
+        with:
+          name: nbr-taxpay-pre-release-full-history-e228f64b
+          path: /tmp/taxpay-backup/nbr-taxpay-pre-release-full-history.zip
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
