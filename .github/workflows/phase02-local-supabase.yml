@@ -99,6 +99,14 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/verifiedPrimaryAdmin.sql
 
+      - name: Rehearse verified-admin-only CMS policies on isolated PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f docs/security/taxpay-cms-anonymous-write-lockdown-20261024.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/cmsVerifiedAdminAccess.sql
+
       - name: Verify exact synthetic SQL seed totals and event graph (rollback only)
         shell: bash
         run: |
