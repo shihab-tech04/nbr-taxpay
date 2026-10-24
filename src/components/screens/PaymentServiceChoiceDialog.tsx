@@ -31,7 +31,13 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(null);
   // A direct service referral keeps its original service ID; the generic Pay Tax
   // entry uses the existing Tax with Return journey until other-tax requirements are defined.
-  // Local Playwright exercises preserved internal service flows without restoring the removed choice UI.\n  // This test-only override does not ship in the production Vite build.\n  const testService = import.meta.env.DEV\n    ? (window as Window & { __taxpayQaPaymentService?: ServiceId }).__taxpayQaPaymentService\n    : undefined;\n  const selected: ServiceId = initialService ?? (testService && PAYMENT_SERVICE_CHOICES.some(item => item.id === testService)\n    ? testService : 'TAX_WITH_RETURN');
+  // Local Playwright exercises preserved internal service flows without restoring the removed choice UI.
+  // This test-only override does not ship in the production Vite build.
+  const testService = import.meta.env.DEV
+    ? (window as Window & { __taxpayQaPaymentService?: ServiceId }).__taxpayQaPaymentService
+    : undefined;
+  const selected: ServiceId = initialService ?? (testService && PAYMENT_SERVICE_CHOICES.some(item => item.id === testService)
+    ? testService : 'TAX_WITH_RETURN');
   const [view, setView] = useState<'payer' | 'access' | 'payment'>('payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [accountGate, setAccountGate] = useState<'login' | null>(null);
