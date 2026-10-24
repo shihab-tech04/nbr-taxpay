@@ -33,12 +33,12 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
   }
 });
 
-test('retired connection-status page is replaced by two entry choices with preserved tax purpose coverage',async({page})=>{
+test('retired connection-status page now opens payer-first payment without another tax-type choice',async({page})=>{
   await page.goto('/?action=services&demoUser=user1');
-  await expect(page.getByRole('heading',{name:'Choose a tax payment service'})).toBeVisible();
-  await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(2);
-   await expect(page.locator('.taxpayer-service-directory__card[data-payment-service="TAX_WITH_RETURN"]')).toBeVisible();
-   await expect(page.locator('.taxpayer-service-directory__card[data-payment-service="OTHER_TAX"]')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Pay Tax'})).toBeVisible();
+  await expect(page.locator('.taxpayer-service-directory__card')).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Start payment'})).toBeVisible();
+  await expect(page.locator('.taxpayer-service-directory__card[data-payment-service]')).toHaveCount(0);
   await expect(page.getByText('Not connected',{exact:true})).toHaveCount(0);
   await expect(page.getByText(/visual preview|verified application session|SQL-backed service scenarios|fictional examples/i)).toHaveCount(0);
 });
