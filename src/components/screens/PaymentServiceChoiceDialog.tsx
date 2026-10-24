@@ -31,7 +31,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(null);
   // A direct service referral keeps its original service ID; the generic Pay Tax
   // entry uses the existing Tax with Return journey until other-tax requirements are defined.
-  const selected: ServiceId = initialService ?? 'TAX_WITH_RETURN';
+  // Local Playwright exercises preserved internal service flows without restoring the removed choice UI.\n  // This test-only override does not ship in the production Vite build.\n  const testService = import.meta.env.DEV\n    ? (window as Window & { __taxpayQaPaymentService?: ServiceId }).__taxpayQaPaymentService\n    : undefined;\n  const selected: ServiceId = initialService ?? (testService && PAYMENT_SERVICE_CHOICES.some(item => item.id === testService)\n    ? testService : 'TAX_WITH_RETURN');
   const [view, setView] = useState<'payer' | 'access' | 'payment'>('payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [accountGate, setAccountGate] = useState<'login' | null>(null);
@@ -151,7 +151,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           onClick={() => { close(); navigate('secure_workspace'); }}>
           <FolderOpen size={17} aria-hidden="true" />
           {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
-        </button>}        </> : view === 'access' ? <div className="tax-service-choice__access-gate">
+        </button>}\n        </> : view === 'access' ? <div className="tax-service-choice__access-gate">
           {chosenService && <p className="tax-service-choice__selected-service"><span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span><strong data-payment-service={selected ?? undefined}>{tr(chosenService.en, chosenService.bn)}</strong></p>}
           <h3 ref={accessHeadingRef} tabIndex={-1}>{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
           <p>{accountLoading && !previewAccount ? tr('Checking your account session…', 'আপনার অ্যাকাউন্ট সেশন যাচাই করা হচ্ছে…') : publicPayment ? tr('Choose one option to start your payment.', 'পেমেন্ট শুরু করতে একটি উপায় বেছে নিন।') : tr('Sign in to continue with this service.', 'এই সেবায় এগিয়ে যেতে সাইন ইন করুন।')}</p>
