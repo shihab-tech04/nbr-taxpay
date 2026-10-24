@@ -9,7 +9,9 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
     const page = dialog.page();
     await page.evaluate(id => { (window as Window & { __taxpayQaPaymentService?: string }).__taxpayQaPaymentService = id; }, serviceId);
     await dialog.getByRole('button', { name: 'Close payment services' }).click();
-    await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+    const publicPay = page.getByRole('button', { name: 'Pay Tax', exact: true });
+    if (await publicPay.isVisible()) await publicPay.click();
+    else await page.getByRole('button', { name: 'Pay — select payment type' }).first().click();
   }
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await dialog.locator(`[data-payer-relationship="${payer}"]`).click();
