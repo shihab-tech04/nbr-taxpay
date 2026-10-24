@@ -102,7 +102,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     let active = true;
     const uid = user.id;
     setLoadState('loading');
-    (async () => {
+    const refreshNotices = () => (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || auth.user?.id !== uid) throw new Error('Account session expired');
       const [draftResult, reviewResult] = await Promise.all([
@@ -119,7 +119,11 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       setReviewNotices((reviewResult.data ?? []) as ReviewNotice[]);
       setLoadState('ready');
     })().catch(() => { if (active) { setNotices([]); setReviewNotices([]); setLoadState('error'); } });
-    return () => { active = false; };
+    void refreshNotices();
+    // New non-financial officer updates arrive without requiring a page reload.
+    // Every poll revalidates the currently authenticated owner before and after SQL reads.
+    const poll = window.setInterval(() => { void refreshNotices(); }, 12000);
+    return () => { active = false; window.clearInterval(poll); };
   }, [page, user?.id, allowed, revision]);
 
   const savePreferences = async (event: React.FormEvent) => {
