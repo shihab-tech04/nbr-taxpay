@@ -39,3 +39,4 @@ jobs:
             recovery/MANIFEST.txt
             recovery/SHA256SUMS
           retention-days: 30
+# Exact-head recovery refresh after authorized main changed to a0f61f6ff3b8d9d429de4b07a76875b6dc7192a0
