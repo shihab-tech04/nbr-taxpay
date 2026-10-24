@@ -865,14 +865,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </div>}
 
             {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
-            {categoryHeads.length === 1 ? (
-              // In the Pay Tax modal, the one fixed head is already shown in
-              // Payment calculation. Preserve its original standalone selector.
-              !embedded && <label id="guest-head-static" htmlFor={`guest-head-${categoryHeads[0].id}`} className="payment-head-single" tabIndex={-1}>
-                <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{selectedHeads.length ? (language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head') : (language === 'bn' ? 'পেমেন্ট খাত উপলব্ধ নয়' : 'Payment head unavailable')}</small></div>
-                <input id={`guest-head-${categoryHeads[0].id}`} type="checkbox" name="guest-payment-head" disabled checked={selectedHeads.length > 0} readOnly />
-              </label>
-            ) : <fieldset className="payment-head-fieldset grid grid-cols-1 gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
+            {categoryHeads.length === 1 ? null : <fieldset className="payment-head-fieldset grid grid-cols-1 gap-2" aria-invalid={isFieldInvalid('headId') || undefined} aria-describedby={errorDescription('headId')}>
               <legend className="block text-xs font-semibold text-slate-700 self-center">
                 {language === 'bn' ? 'পেমেন্ট খাত' : 'Payment head'}
               </legend>
