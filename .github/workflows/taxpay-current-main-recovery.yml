@@ -1,4 +1,4 @@
-name: TaxPay pre-Step1Step2 UX release full-history recovery
+name: TaxPay pre-single-head UI release recovery b6f0caa
 on:
   push:
     branches:
@@ -18,17 +18,17 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin '+refs/heads/*:refs/remotes/origin/*' --tags --prune
-          test "$(git rev-parse refs/remotes/origin/main)" = "e228f64b816ddca0762c8011deb32ecb8198e20f"
+          test "$(git rev-parse refs/remotes/origin/main)" = "b6f0caa814dd0aa2c5a701f9638eeebfbeaa82b5"
           git bundle create taxpay-current-main-all-refs.bundle --all
           git bundle verify taxpay-current-main-all-refs.bundle
           mkdir -p recovered
           git -C recovered init
           git -C recovered fetch ../taxpay-current-main-all-refs.bundle '+refs/*:refs/*'
           git -C recovered fsck --full --no-reflogs
-          test "$(git -C recovered rev-parse refs/remotes/origin/main)" = "e228f64b816ddca0762c8011deb32ecb8198e20f"
+          test "$(git -C recovered rev-parse refs/remotes/origin/main)" = "b6f0caa814dd0aa2c5a701f9638eeebfbeaa82b5"
           sha256sum taxpay-current-main-all-refs.bundle > taxpay-current-main-all-refs.bundle.sha256
           sha256sum -c taxpay-current-main-all-refs.bundle.sha256
-          printf 'Verified original main: %s\nRestore: git fetch taxpay-current-main-all-refs.bundle refs/remotes/origin/main:refs/heads/main\n' "e228f64b816ddca0762c8011deb32ecb8198e20f" > recovery-instructions.txt
+          printf 'Verified original main: %s\nRestore: git fetch taxpay-current-main-all-refs.bundle refs/remotes/origin/main:refs/heads/main\n' "b6f0caa814dd0aa2c5a701f9638eeebfbeaa82b5" > recovery-instructions.txt
       - name: Preserve complete bundle, checksum and recovery instructions
         uses: actions/upload-artifact@v4
         with:
