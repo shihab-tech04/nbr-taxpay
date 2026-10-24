@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --force --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' '+refs/pull/*/head:refs/remotes/pull/*'
+          git fetch --force --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' '+refs/pull/*/head:refs/remotes/pull-heads/*'
           PRE_SHA="$(git rev-parse refs/remotes/origin/main)"
           test "$PRE_SHA" = "13d53f8f5e73a48877a6bb8d6729d293bbe13a34"
           git fsck --full --no-reflogs
