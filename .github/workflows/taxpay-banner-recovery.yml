@@ -1,0 +1,41 @@
+name: TaxPay pre-banner independent Git backup
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/taxpay-banner-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Backup authoritative main and independently verify exact recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --prune
+          mkdir -p recovery
+          REF="$(git rev-parse refs/remotes/origin/main)"
+          TREE="$(git rev-parse "$REF^{tree}")"
+          printf 'main_commit=%s\nmain_tree=%s\n' "$REF" "$TREE" | tee recovery/MANIFEST.txt
+          git bundle create recovery/taxpay-pre-banner-full-history.bundle --all
+          git bundle verify recovery/taxpay-pre-banner-full-history.bundle | tee recovery/bundle-verify.txt
+          git clone --mirror recovery/taxpay-pre-banner-full-history.bundle recovery/isolated-restored.git
+          test "$(git -C recovery/isolated-restored.git cat-file -t "$REF")" = commit
+          test "$(git -C recovery/isolated-restored.git rev-parse "$REF^{tree}")" = "$TREE"
+          git -C recovery/isolated-restored.git fsck --full --no-reflogs
+          sha256sum recovery/taxpay-pre-banner-full-history.bundle | tee recovery/SHA256SUMS
+          echo VERIFIED_EXACT_COMMIT_AND_TREE >> recovery/MANIFEST.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-prebanner-full-history-recovery
+          path: |
+            recovery/taxpay-pre-banner-full-history.bundle
+            recovery/bundle-verify.txt
+            recovery/MANIFEST.txt
+            recovery/SHA256SUMS
+          retention-days: 30
