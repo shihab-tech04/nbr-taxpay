@@ -33,7 +33,8 @@ test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', a
   await expect(page.locator('[data-payer-relationship]')).toHaveCount(2);
   await page.locator('[data-payer-relationship="OTHER"]').click();
   await page.getByRole('dialog', { name: 'কর পরিশোধ' }).getByRole('button', { name: 'এগিয়ে যান' }).click();
-  await expect(page.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);\n  await expect(page.getByRole('heading', { name: 'কীভাবে এগিয়ে যেতে চান?' })).toBeVisible();
+  await expect(page.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'কীভাবে এগিয়ে যেতে চান?' })).toBeVisible();
   const font = await page.locator('.taxpay-citizen-shell').evaluate(element => getComputedStyle(element).fontFamily);
   expect(font).toMatch(/^['"]?Noto Sans Bengali/);
 });
