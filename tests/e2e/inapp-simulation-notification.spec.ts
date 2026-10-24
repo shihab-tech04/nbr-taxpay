@@ -60,3 +60,27 @@ test('preview account notifications show only the payer’s recorded simulation 
   await expect(page.getByText('৳9,999.99')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
 });
+
+test('beneficiary in-app notification shows only allocated demo amount, not payer total',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','Account-scoped allocation notification regression');
+  await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
+  await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
+    const body=route.request().postDataJSON() as {p_actor:string;p_view:string};
+    expect(body.p_actor).toBe('user1');
+    const beneficiary={
+      id:'SIM-bene-1',transactionId:'60000000-0000-4000-8000-000000000001',
+      payer:'user4',state:'SIMULATED',createdAt:'2026-10-24T13:00:00Z',
+      simulationOnly:true,totalMinor:125000,reviewStatus:'MIRRORED_TO_OFFICE',
+      allocations:[{id:'line-1',lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',
+        assessmentYear:'2026-27',amountMinor:3250}],events:[],
+    };
+    await route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify(body.p_view==='beneficiary'?[beneficiary]:[])});
+  });
+  await page.goto('/?action=notifications');
+  await expect(page.getByRole('heading',{name:'Payment simulation updates'})).toBeVisible();
+  await expect(page.getByText('৳32.50')).toBeVisible();
+  await expect(page.getByText('Allocated to you in a simulation by user4')).toBeVisible();
+  await expect(page.getByText('৳1,250.00')).toHaveCount(0);
+  await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
+});
