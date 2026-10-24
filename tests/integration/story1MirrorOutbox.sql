@@ -6,6 +6,9 @@ declare
   payment_id uuid;
   session_id uuid := gen_random_uuid();
   consent_id uuid;
+  expiring_id uuid;
+  expiring_claim jsonb;
+  expiry_at timestamptz;
   claims jsonb;
   payment_claim jsonb;
   auth_claim jsonb;
@@ -65,7 +68,34 @@ begin
   then raise exception 'Source authorization change did not reset pending mirror';end if;
   select status into status_before from demo_payment.story_payments where id=payment_id;
   if status_before<>'SIMULATED_SUCCESS' then raise exception 'Mirror work altered payment status';end if;
-  raise notice 'PASS: durable outbox, service-only claims, exact ACK, stale-claim rejection, retry and authorization requeue';
+
+  -- Time-based expiry has no row UPDATE; the cron job must enqueue it once.
+  insert into public.demo_authorization_requests(payer_id,taxpayer_id)
+    values('user8','user7') returning id,code_expires_at into expiring_id,expiry_at;
+  claims := public.demo_story1_mirror_claim(20);
+  select x.value into expiring_claim from jsonb_array_elements(claims) x
+    where x.value->>'type'='AUTHORIZATION' and (x.value->>'id')::uuid=expiring_id;
+  if expiring_claim is null or not public.demo_story1_mirror_finish(
+    'AUTHORIZATION',expiring_id,(expiring_claim->>'claimToken')::uuid,true)
+  then raise exception 'Initial expiring authorization ACK failed';end if;
+  if demo_payment.story1_requeue_expired_authorizations(expiry_at-interval '1 second')<>0
+  then raise exception 'Authorization requeued before its expiry';end if;
+  if demo_payment.story1_requeue_expired_authorizations(expiry_at+interval '1 second')<>1
+  then raise exception 'Expired authorization did not requeue';end if;
+  if demo_payment.story1_requeue_expired_authorizations(expiry_at+interval '2 seconds')<>0
+  then raise exception 'Expired authorization requeued twice before ACK';end if;
+  claims := public.demo_story1_mirror_claim(20);
+  select x.value into expiring_claim from jsonb_array_elements(claims) x
+    where x.value->>'type'='AUTHORIZATION' and (x.value->>'id')::uuid=expiring_id;
+  if expiring_claim is null or not public.demo_story1_mirror_finish(
+    'AUTHORIZATION',expiring_id,(expiring_claim->>'claimToken')::uuid,true)
+  then raise exception 'Expired authorization ACK failed';end if;
+  -- Simulate the ACK timestamp after expiry rather than waiting in CI.
+  update demo_payment.mirror_outbox set acknowledged_at=expiry_at+interval '2 seconds'
+    where entity_type='AUTHORIZATION' and entity_id=expiring_id;
+  if demo_payment.story1_requeue_expired_authorizations(expiry_at+interval '3 seconds')<>0
+  then raise exception 'Already acknowledged expiry was requeued again';end if;
+  raise notice 'PASS: durable outbox, service-only claims, stale-claim rejection, retry and exactly-once derived expiry';
 end;
 $test$;
 rollback;

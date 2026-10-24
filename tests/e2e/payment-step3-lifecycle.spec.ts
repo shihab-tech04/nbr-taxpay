@@ -1,6 +1,26 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function openReview(page: Page, category = 'Tax with Return') {
+  // This is the disconnected browser/UI suite. Verify the request payload while
+  // avoiding hosted synthetic writes; separate disposable-SQL E2E tests cover
+  // actual TaxPay → Office persistence, acknowledgments and notification delivery.
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const request = route.request().postDataJSON() as {
+      amountMinor?: number; sessionId?: string; origin?: string; service?: string;
+    };
+    expect(request.amountMinor).toBe(1250000);
+    expect(request.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(request.origin).toBe('QA_BROWSER');
+    expect(request.service).toBe(category === 'Tax with Return' ? 'TAX_WITH_RETURN' : 'OTHER_TAX_PAYMENT');
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        success: true, id: '10000000-0000-4000-8000-000000000002',
+        status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+      }),
+    });
+  });
   await page.goto('/');
   const initialUrl = page.url();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
