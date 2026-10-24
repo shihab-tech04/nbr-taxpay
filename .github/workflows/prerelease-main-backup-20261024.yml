@@ -1,0 +1,42 @@
+name: TaxPay independent pre-release Git backup
+on:
+  push:
+    branches: [ops/taxpay-main-1ccf18a-backup-20261024]
+permissions:
+  contents: read
+jobs:
+  backup-and-restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export pinned complete main Git history and independently restore
+        env:
+          EXPECTED_MAIN_SHA: 1ccf18a660f48ca340813f275a13b172379efa0a
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          ACTUAL_SHA="$(git rev-parse refs/remotes/origin/main)"
+          test "$ACTUAL_SHA" = "$EXPECTED_MAIN_SHA"
+          mkdir -p recovery
+          git branch -f release-snapshot "$EXPECTED_MAIN_SHA"
+          git bundle create recovery/taxpay-main-pre-release.bundle refs/heads/release-snapshot
+          git bundle verify recovery/taxpay-main-pre-release.bundle
+          git clone --quiet --branch release-snapshot recovery/taxpay-main-pre-release.bundle "$RUNNER_TEMP/recovered"
+          test "$(git -C "$RUNNER_TEMP/recovered" rev-parse HEAD)" = "$EXPECTED_MAIN_SHA"
+          git -C "$RUNNER_TEMP/recovered" fsck --full --no-reflogs
+          git -C "$RUNNER_TEMP/recovered" ls-files | wc -l > recovery/restored-file-count.txt
+          printf 'main_sha=%s\nrestore_test=PASS\n' "$EXPECTED_MAIN_SHA" > recovery/restore-report.txt
+          (cd recovery && sha256sum taxpay-main-pre-release.bundle > SHA256SUMS.txt)
+          cat recovery/restore-report.txt
+          cat recovery/SHA256SUMS.txt
+      - name: Upload portable Git bundle for independent Google Drive retention
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-prerelease-main-1ccf18a-git-bundle
+          path: recovery/
+          retention-days: 10
+          if-no-files-found: error
