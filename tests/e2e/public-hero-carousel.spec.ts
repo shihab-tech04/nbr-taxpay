@@ -180,7 +180,7 @@ test('service banners preserve distinctive palette and readable CTA with payer-f
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.getByRole('button', { name: 'Continue' }).click();
-  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+  await expect(dialog.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);\n  await expect(dialog.locator('[data-payment-service="TAX_WITH_RETURN"]')).toBeVisible();
 });
 
 test('mobile illustrated banners blend downward into the image', async ({ page }, testInfo) => {
@@ -320,13 +320,8 @@ test('each service-specific banner action skips repeated service selection', asy
       await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
       await dialog.locator('[data-payer-relationship="SELF"]').click();
       await dialog.getByRole('button', { name: 'Continue' }).click();
-      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
-      if (code === 'TAX_WITH_RETURN') {
-        await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
-      } else {
-        await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-        await expect(dialog.locator('#tax-service-other-type')).toHaveValue(code);
-      }
+      await expect(dialog.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
+      await expect(dialog.locator(`[data-payment-service="${code}"]`)).toBeVisible();
       await dialog.getByRole('button', { name: 'Close payment services' }).click();
     }
   }
