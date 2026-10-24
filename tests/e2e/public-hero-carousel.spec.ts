@@ -14,8 +14,11 @@ test('hero provides five bilingual service slides with the original desktop open
     .toHaveText('Not sure which payment to make? Find the service you need, follow the steps and keep your payment record close at hand.');
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
-  await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
-    .toHaveAttribute('src', /taxpay-hero-payment-v3/);
+  const introImageSrc = await carousel.locator('[data-banner-service="intro"] .public-information-hero__image').getAttribute('src');
+  expect(introImageSrc).toBeTruthy();
+  expect(introImageSrc!.startsWith('data:image/svg+xml,')
+    ? introImageSrc!.includes('%232C5EAD')
+    : introImageSrc!.includes('taxpay-hero-payment-concept')).toBe(true);
   await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(0);
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
 
@@ -92,12 +95,12 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     .evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
-    return: 'taxpay-hero-return-v3',
-    advance: 'taxpay-hero-advance-v3',
-    withholding: 'taxpay-hero-withholding-v3',
-    travel: 'taxpay-hero-travel-v6',
-  };
-  for (const [service, assetName] of Object.entries(expectedImages)) {
+    return: ['taxpay-hero-return-concept', '%23315DAA'],
+    advance: ['taxpay-hero-advance-concept', '%23A65B19'],
+    withholding: ['taxpay-hero-withholding-concept', '%236D4BA8'],
+    travel: ['taxpay-hero-travel-concept', '%230C6D8D'],
+  } as const;
+  for (const [service, [assetName, themeColor]] of Object.entries(expectedImages)) {
     const artwork = await carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__service-image`)
       .evaluate(image => ({
         src: (image as HTMLImageElement).src,
@@ -107,7 +110,9 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
         panel: image.parentElement?.getBoundingClientRect().toJSON(),
         fade: image.parentElement && getComputedStyle(image.parentElement).getPropertyValue('--banner-fade-end').trim(),
       }));
-    expect(artwork.src).toContain(assetName);
+    expect(artwork.src.startsWith('data:image/svg+xml,')
+      ? artwork.src.includes(themeColor)
+      : artwork.src.includes(assetName)).toBe(true);
     expect(artwork.naturalWidth).toBeGreaterThan(1000);
     expect(artwork.fit).toBe('cover');
     expect(artwork.bounds.width).toBeCloseTo(artwork.panel!.width, 0);
