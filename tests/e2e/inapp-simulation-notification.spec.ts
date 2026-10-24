@@ -37,3 +37,26 @@ test('in-app notice fails closed if stored payment amount cannot be verified',as
   await expect(page.getByRole('alert')).toContainText('Could not verify the simulated amount');
   await expect(page.getByText(/Simulated amount:/)).toHaveCount(0);
 });
+
+test('preview account notifications show only the payer’s recorded simulation amounts',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','Synthetic account notification regression on mobile');
+  await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
+  await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
+    const payment=(payer:string,amountMinor:number)=>({
+      id:'id-'+payer,transactionId:'txn-'+payer,payer,state:'SIMULATED',
+      createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:amountMinor,
+      reviewStatus:'PENDING_OFFICER',allocations:[],events:[]
+    });
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([
+      payment('user1',234567),payment('user2',999999)
+    ])});
+  });
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[]})});
+  });
+  await page.goto('/?action=notifications');
+  await expect(page.getByRole('heading',{name:'Payment simulation updates'})).toBeVisible();
+  await expect(page.getByText('৳2,345.67')).toBeVisible();
+  await expect(page.getByText('৳9,999.99')).toHaveCount(0);
+  await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
+});
