@@ -1,0 +1,50 @@
+name: TaxPay independent pre-release history backup
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/taxpay-independent-history-backup.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Acquire all authoritative Git refs and verify original main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --force --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' '+refs/pull/*/head:refs/remotes/pull/*'
+          PRE_SHA="$(git rev-parse refs/remotes/origin/main)"
+          test "$PRE_SHA" = "13d53f8f5e73a48877a6bb8d6729d293bbe13a34"
+          git fsck --full --no-reflogs
+          mkdir -p backup
+          git for-each-ref --format='%(refname) %(objectname)' | LC_ALL=C sort > backup/refs.txt
+          printf 'Repository: shihab-tech04/nbr-taxpay\nPre-release main: %s\nRefs captured: %s\n' "$PRE_SHA" "$(wc -l < backup/refs.txt)" > backup/manifest.txt
+      - name: Create independent historical bundle and test restoration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git bundle create backup/taxpay-pre-release.bundle --all
+          git bundle verify backup/taxpay-pre-release.bundle
+          sha256sum backup/taxpay-pre-release.bundle > backup/bundle.sha256
+          mkdir -p /tmp/taxpay-restore
+          git clone --mirror backup/taxpay-pre-release.bundle /tmp/taxpay-restore/repo.git
+          git -C /tmp/taxpay-restore/repo.git fsck --full --no-reflogs
+          test "$(git -C /tmp/taxpay-restore/repo.git cat-file -t 13d53f8f5e73a48877a6bb8d6729d293bbe13a34)" = commit
+          git -C /tmp/taxpay-restore/repo.git cat-file -e 13d53f8f5e73a48877a6bb8d6729d293bbe13a34^{tree}
+          cat backup/bundle.sha256
+          echo "RESTORE PASS: original main commit and full object graph recover from the standalone bundle" >> backup/manifest.txt
+      - name: Upload full history backup as temporary transferable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-pre-release-history-20261024
+          path: backup/
+          if-no-files-found: error
+          retention-days: 7
