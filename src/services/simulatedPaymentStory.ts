@@ -1,3 +1,4 @@
+import type { ChallanReceipt } from '../types/tax';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -74,4 +75,55 @@ export async function getStorySessionPayments():Promise<StorySessionPayment[]>{
     if(batch.items.length===0)throw new Error('Incomplete payment history');
   }
   throw new Error('Payment history exceeds supported page range');
+}
+
+
+/**
+ * Recover an existing *simulated* receipt belonging to the current browser
+ * session. This is not a public challan search and does not grant access to
+ * records from another session or verify taxpayer ownership.
+ *
+ * The current API lists opaque payment IDs, not receipt references, so a
+ * bounded scan fetches each session-owned detail and matches the mobile and
+ * reference locally. A future A-Challan lookup needs its own authorized API.
+ */
+export async function findSessionReceiptByReference(reference: string, mobile: string): Promise<ChallanReceipt | null> {
+  const wanted = reference.trim().toUpperCase();
+  const receiptMobile = mobile.replace(/\D/g, '');
+  if (!wanted || !/^01\d{9}$/.test(receiptMobile)) return null;
+
+  const records = await getStorySessionPayments();
+  // Never silently report NOT_FOUND when the bounded lookup cannot cover all records.
+  if (records.length > 200) throw new Error('SESSION_LOOKUP_LIMIT');
+  const sessionId = getStorySessionId();
+
+  for (const record of records) {
+    if (!/^[0-9a-f-]{36}$/i.test(record.id) || record.status !== 'SIMULATED_SUCCESS') continue;
+    const response = await fetch(API + '/payments/' + encodeURIComponent(record.id) +
+      '?sessionId=' + encodeURIComponent(sessionId), { cache: 'no-store' });
+    if (!response.ok) throw new Error('SESSION_LOOKUP_UNAVAILABLE');
+
+    const payload = await response.json() as {
+      success?: boolean;
+      simulationOnly?: boolean;
+      data?: { id?: string; status?: string; data?: {
+        details?: { receiptSnapshot?: Partial<ChallanReceipt> };
+      } };
+    };
+    if (payload.success !== true || payload.simulationOnly !== true) throw new Error('INVALID_SESSION_RECEIPT');
+    if (payload.data?.id !== record.id || payload.data.status !== 'SIMULATED_SUCCESS') continue;
+    const receipt = payload.data.data?.details?.receiptSnapshot;
+    if (!receipt || receipt.isSimulatedDemo !== true ||
+        typeof receipt.challanNo !== 'string' ||
+        typeof receipt.tokenNumber !== 'string' ||
+        typeof receipt.gatewayTransactionId !== 'string' ||
+        !Array.isArray(receipt.items) ||
+        typeof receipt.totalAmount !== 'number' ||
+        receipt.receiptMobile !== receiptMobile) continue;
+    const knownReferences = [receipt.challanNo, receipt.tokenNumber, receipt.gatewayTransactionId,
+      receipt.paymentTransactionId, record.id];
+    if (!knownReferences.some(value => typeof value === 'string' && value.toUpperCase() === wanted)) continue;
+    return { ...receipt, paymentTransactionId: record.id } as ChallanReceipt;
+  }
+  return null;
 }

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import { findSessionReceiptByReference } from '../../services/simulatedPaymentStory';
 
 type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean };
 
@@ -15,14 +16,54 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const [receiptMobile, setReceiptMobile] = useState('');
   const [searchedReference, setSearchedReference] = useState('');
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
+  const [lookupPending, setLookupPending] = useState(false);
+  const [lookupError, setLookupError] = useState(false);
+  const lookupSequence = useRef(0);
+  useEffect(() => () => { lookupSequence.current += 1; }, []);
+  const resetLookup = () => {
+    lookupSequence.current += 1;
+    setSearchResult(null);
+    setLookupPending(false);
+    setLookupError(false);
+  };
   const sampleReceipts = receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const reference = query.trim();
     if (!reference) return;
+    const sequence = ++lookupSequence.current;
     setSearchedReference(reference);
-    setSearchResult(lookupReceipt(reference, receiptMobile) ?? 'NOT_FOUND');
+    setLookupError(false);
+    const local = lookupReceipt(reference, receiptMobile);
+    if (local) {
+      setLookupPending(false);
+      setSearchResult(local);
+      return;
+    }
+
+    // Cross-session lookup requires an approved authorized API. The existing
+    // recovery route only reads simulated records from this browser session.
+    if (!/^01\d{9}$/.test(receiptMobile)) {
+      setLookupPending(false);
+      setSearchResult('NOT_FOUND');
+      return;
+    }
+    setSearchResult(null);
+    setLookupPending(true);
+    void findSessionReceiptByReference(reference, receiptMobile)
+      .then(receipt => {
+        if (lookupSequence.current !== sequence) return;
+        setSearchResult(receipt ?? 'NOT_FOUND');
+      })
+      .catch(() => {
+        if (lookupSequence.current !== sequence) return;
+        setLookupError(true);
+        setSearchResult(null);
+      })
+      .finally(() => {
+        if (lookupSequence.current === sequence) setLookupPending(false);
+      });
   };
 
   return (
@@ -57,13 +98,13 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
                 value={query}
                 onChange={event => {
                   setQuery(event.target.value);
-                  setSearchResult(null);
+                  resetLookup();
                 }}
                 className="receipt-lookup__input font-mono-plex"
               />
               <button
                 type="submit"
-                disabled={!query.trim()}
+                disabled={!query.trim() || lookupPending}
                 className="receipt-lookup__submit"
               >
                 <Search size={18} aria-hidden="true" />
@@ -75,7 +116,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <label htmlFor="receipt-lookup-mobile">{t('Receipt mobile number', 'রসিদের মোবাইল নম্বর')}</label>
             <input id="receipt-lookup-mobile" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={11}
               placeholder="01XXXXXXXXX" value={receiptMobile}
-              onChange={event => { setReceiptMobile(event.target.value.replace(/\D/g, '').slice(0, 11)); setSearchResult(null); }}
+              onChange={event => { setReceiptMobile(event.target.value.replace(/\D/g, '').slice(0, 11)); resetLookup(); }}
               className="receipt-lookup__input font-mono-plex" />
             <p className="receipt-lookup__hint">{t('Required for receipts generated through the guest payment form.', 'অতিথি পেমেন্ট ফর্মের মাধ্যমে তৈরি রসিদের জন্য আবশ্যক।')}</p>
           </div>
@@ -92,6 +133,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
                     onClick={() => {
                       setQuery(receipt.challanNo);
                       setSearchedReference(receipt.challanNo);
+                      resetLookup();
                       setSearchResult(receipt);
                     }}
                   >
@@ -102,6 +144,13 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             </div>
           )}
         </form>
+        {lookupPending && <p role="status" className="receipt-lookup__hint">
+          {t('Checking records from this browser session…', 'এই ব্রাউজার সেশনের রেকর্ড খোঁজা হচ্ছে…')}
+        </p>}
+        {lookupError && <div role="alert" className="receipt-lookup__result receipt-lookup__result--error">
+          <AlertCircle size={20} aria-hidden="true" />
+          <p>{t('Saved session records are temporarily unavailable. Please retry; no missing-record result has been confirmed.', 'সংরক্ষিত সেশন রেকর্ড এখন পাওয়া যাচ্ছে না। আবার চেষ্টা করুন; রেকর্ড নেই বলে নিশ্চিত হওয়া যায়নি।')}</p>
+        </div>}
         {searchResult === 'NOT_FOUND' && (
           <div className="receipt-lookup__result receipt-lookup__result--error" role="status" aria-live="polite">
             <AlertCircle size={20} aria-hidden="true" />
