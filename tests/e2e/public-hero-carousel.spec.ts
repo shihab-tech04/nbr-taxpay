@@ -11,7 +11,7 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion.' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-    .toHaveText('Unsure what tax to pay or where your receipt went? Choose the right service, follow clear steps, and find payment records in one place.');
+    .toHaveText('Choose the payment you need, see what happens next, and keep the payment reference handy when you need it.');
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
