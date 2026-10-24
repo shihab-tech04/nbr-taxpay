@@ -1,0 +1,34 @@
+name: TaxPay current-main pre-sync offline recovery
+on:
+  push:
+    branches: [backup/taxpay-current-before-sync-fix-20261024]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch all authoritative source branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+      - name: Bundle, hash and verify exact live main
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          git bundle create recovery/taxpay-current-all-history.bundle --all
+          git bundle verify recovery/taxpay-current-all-history.bundle
+          sha256sum recovery/taxpay-current-all-history.bundle > recovery/taxpay-current-all-history.bundle.sha256
+          git clone -q recovery/taxpay-current-all-history.bundle recovery/restore-check
+          git -C recovery/restore-check fsck --full --no-reflogs
+          git -C recovery/restore-check checkout --detach b6f0caa814dd0aa2c5a701f9638eeebfbeaa82b5
+          test "$(git -C recovery/restore-check rev-parse HEAD)" = b6f0caa814dd0aa2c5a701f9638eeebfbeaa82b5
+          git -C recovery/restore-check rev-parse HEAD > recovery/current-main-sha.txt
+          rm -rf recovery/restore-check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-current-pre-cms-sync-all-history
+          path: recovery/
+          retention-days: 30
