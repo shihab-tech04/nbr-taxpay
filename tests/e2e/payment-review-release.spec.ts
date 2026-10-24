@@ -221,7 +221,8 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
-  await expect(services.locator('.payment-head-single input[type="checkbox"]')).toBeChecked();
+  await expect(services.locator('.payment-head-single')).toHaveCount(0);
+  await expect(services.locator('.payment-form-summary__rows')).toContainText('Tax with return (s.173 / s.174, as applicable)');
   await services.getByRole('radio', { name: /Person other than company/ }).check();
   await services.locator('#guest-tax-amount').fill('0');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
