@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
-import heroPaymentIllustration from '../../assets/taxpay-hero-payment-v3.webp';
-import returnTaxIllustration from '../../assets/taxpay-hero-return-v3.webp';
-import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v3.webp';
-import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v3.webp';
-import travelTaxIllustration from '../../assets/taxpay-hero-travel-v6.webp';
+import heroPaymentIllustration from '../../assets/taxpay-hero-payment-concept.svg';
+import returnTaxIllustration from '../../assets/taxpay-hero-return-concept.svg';
+import advanceTaxIllustration from '../../assets/taxpay-hero-advance-concept.svg';
+import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-concept.svg';
+import travelTaxIllustration from '../../assets/taxpay-hero-travel-concept.svg';
 import { supabase } from '../../services/supabaseClient';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
@@ -20,10 +20,10 @@ const defaultSlides = [
     headingBn: 'কর পরিশোধে আর বিভ্রান্তি নয়।',
     mobileHeadingEn: 'Pay tax with confidence',
     mobileHeadingBn: 'কর পরিশোধ সহজ করুন',
-    descriptionEn: 'Unsure what tax to pay or where your receipt went? Choose the right service, follow clear steps, and find payment records in one place.',
-    descriptionBn: 'কোন কর দেবেন বা রসিদ কোথায় পাবেন বুঝতে পারছেন না? সঠিক সেবা বেছে নিন, সহজ ধাপে কর দিন ও পেমেন্টের রেকর্ড খুঁজে নিন।',
-    mobileDescriptionEn: 'Pay, track and find receipts.',
-    mobileDescriptionBn: 'কর দিন, রসিদ ও অবস্থা দেখুন।',
+    descriptionEn: 'Not sure which payment to make? Find the service you need, follow the steps and keep your payment record close at hand.',
+    descriptionBn: 'কোন কর কীভাবে পরিশোধ করবেন বুঝতে পারছেন না? প্রয়োজনীয় সেবা বেছে নিন, ধাপে ধাপে এগিয়ে যান এবং পেমেন্টের তথ্য খুঁজে নিন।',
+    mobileDescriptionEn: 'Pay tax and find your receipts.',
+    mobileDescriptionBn: 'কর দিন, পেমেন্টের তথ্য দেখুন।',
     actionEn: 'Pay Tax',
     actionBn: 'কর পরিশোধ',
     image: heroPaymentIllustration,
@@ -35,10 +35,10 @@ const defaultSlides = [
     headingBn: 'রিটার্নের সঙ্গে কর',
     mobileHeadingEn: 'Tax with Return',
     mobileHeadingBn: 'রিটার্নের সঙ্গে কর',
-    descriptionEn: 'Settle the income tax linked to your return through clear, guided steps.',
-    descriptionBn: 'রিটার্নের সঙ্গে সংশ্লিষ্ট আয়কর সহজ ও স্পষ্ট ধাপে পরিশোধ করুন।',
-    mobileDescriptionEn: 'Pay tax linked to your return.',
-    mobileDescriptionBn: 'রিটার্নের কর পরিশোধ করুন।',
+    descriptionEn: 'Filing your income tax return and have tax to pay? Make that payment here and keep the details for your records.',
+    descriptionBn: 'রিটার্ন জমা দেওয়ার সময় কর পরিশোধ করতে হবে? এখান থেকে পেমেন্ট করুন এবং পরিশোধের তথ্য সংরক্ষণ করুন।',
+    mobileDescriptionEn: 'Pay the tax due with your return.',
+    mobileDescriptionBn: 'রিটার্নের বকেয়া কর দিন।',
     actionEn: 'Pay Tax with Return',
     actionBn: 'রিটার্নের সঙ্গে কর পরিশোধ',
     image: returnTaxIllustration,
@@ -50,10 +50,10 @@ const defaultSlides = [
     headingBn: 'অগ্রিম আয়কর',
     mobileHeadingEn: 'Advance Income Tax',
     mobileHeadingBn: 'অগ্রিম আয়কর',
-    descriptionEn: 'Plan ahead by paying income tax early for your chosen assessment year.',
-    descriptionBn: 'নির্বাচিত করবর্ষে আগাম আয়কর দিয়ে আপনার কর পরিকল্পনা এগিয়ে নিন।',
-    mobileDescriptionEn: 'Pay early for your tax year.',
-    mobileDescriptionBn: 'করবর্ষ অনুযায়ী অগ্রিম কর দিন।',
+    descriptionEn: 'Making an advance income tax payment? Select the assessment year, enter the amount and complete the payment.',
+    descriptionBn: 'অগ্রিম আয়কর দিতে চান? করবর্ষ নির্বাচন করুন, পরিমাণ লিখুন এবং পেমেন্ট সম্পন্ন করুন।',
+    mobileDescriptionEn: 'Pay tax ahead of your return.',
+    mobileDescriptionBn: 'অগ্রিম আয়কর পরিশোধ করুন।',
     actionEn: 'Pay Advance Income Tax',
     actionBn: 'অগ্রিম আয়কর পরিশোধ',
     image: advanceTaxIllustration,
@@ -65,10 +65,10 @@ const defaultSlides = [
     headingBn: 'উৎসে কর জমা (টিডিএস/টিসিএস)',
     mobileHeadingEn: 'Source Tax (TDS/TCS)',
     mobileHeadingBn: 'উৎসে কর জমা',
-    descriptionEn: 'Deposit tax already deducted or collected at source using the right payment head.',
-    descriptionBn: 'উৎসে কাটা বা সংগৃহীত কর সঠিক খাতে সহজে জমা দিন।',
-    mobileDescriptionEn: 'Deposit deducted or collected tax.',
-    mobileDescriptionBn: 'কাটা বা সংগৃহীত কর জমা দিন।',
+    descriptionEn: 'Deducted tax from a salary or supplier bill, or collected tax on a transaction? Deposit it under the appropriate tax category.',
+    descriptionBn: 'বেতন বা সরবরাহকারীর বিল থেকে কর কেটেছেন, কিংবা লেনদেনে কর আদায় করেছেন? প্রযোজ্য খাতে সেই কর জমা দিন।',
+    mobileDescriptionEn: 'Deposit tax withheld or collected.',
+    mobileDescriptionBn: 'কাটা বা আদায়কৃত কর জমা দিন।',
     actionEn: 'Deposit Source Tax',
     actionBn: 'উৎসে কর জমা দিন',
     image: withholdingTaxIllustration,
@@ -80,10 +80,10 @@ const defaultSlides = [
     headingBn: 'ভ্রমণ কর',
     mobileHeadingEn: 'Travel Tax',
     mobileHeadingBn: 'ভ্রমণ কর',
-    descriptionEn: 'Choose your journey, add passenger details and move through travel tax with confidence.',
-    descriptionBn: 'ভ্রমণের ধরন ও যাত্রীর তথ্য দিয়ে ভ্রমণ করের ধাপগুলো সহজে এগিয়ে নিন।',
-    mobileDescriptionEn: 'Pay tax for your journey.',
-    mobileDescriptionBn: 'ভ্রমণের জন্য কর দিন।',
+    descriptionEn: 'Preparing to travel abroad? Enter your journey and passenger details to continue with the applicable travel tax payment.',
+    descriptionBn: 'বিদেশ ভ্রমণের প্রস্তুতি নিচ্ছেন? ভ্রমণ ও যাত্রীর তথ্য দিয়ে প্রযোজ্য ভ্রমণ কর পরিশোধ করুন।',
+    mobileDescriptionEn: 'Pay tax before your journey.',
+    mobileDescriptionBn: 'ভ্রমণের আগে কর পরিশোধ করুন।',
     actionEn: 'Pay Travel Tax',
     actionBn: 'ভ্রমণ কর পরিশোধ',
     image: travelTaxIllustration,

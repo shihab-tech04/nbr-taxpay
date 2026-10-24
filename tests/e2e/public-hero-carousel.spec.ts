@@ -11,7 +11,7 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion.' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-    .toHaveText('Unsure what tax to pay or where your receipt went? Choose the right service, follow clear steps, and find payment records in one place.');
+    .toHaveText('Not sure which payment to make? Find the service you need, follow the steps and keep your payment record close at hand.');
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
@@ -36,7 +36,7 @@ test('hero provides five bilingual service slides with the original desktop open
     await expect.poll(() => serviceImage.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(1000);
     if (service === 'travel') {
       await expect(carousel.locator('[data-banner-service="travel"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-        .toContainText('move through travel tax with confidence');
+        .toContainText('applicable travel tax payment');
     }
     await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);

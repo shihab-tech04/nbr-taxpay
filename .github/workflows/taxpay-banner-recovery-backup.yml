@@ -1,0 +1,57 @@
+name: TaxPay banner independent recovery backup
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/taxpay-banner-recovery-backup.yml'
+      - 'src/assets/taxpay-hero-*-concept.svg'
+      - 'src/components/screens/PublicHeroCarousel.tsx'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify source main SHA
+        env:
+          EXPECTED_BASE: 80d6954934b2b1b34fa31c6fa084f90d8a63fb0f
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/main:refs/remotes/origin/main' --tags
+          CURRENT="$(git rev-parse refs/remotes/origin/main)"
+          test "$CURRENT" = "$EXPECTED_BASE"
+      - name: Bundle all current main history and independently restore
+        env:
+          EXPECTED_BASE: 80d6954934b2b1b34fa31c6fa084f90d8a63fb0f
+        run: |
+          set -euo pipefail
+          mkdir -p taxpay-recovery
+          git bundle create taxpay-recovery/main-before-banner-release.bundle refs/remotes/origin/main --tags
+          git bundle verify taxpay-recovery/main-before-banner-release.bundle
+          git clone --mirror taxpay-recovery/main-before-banner-release.bundle /tmp/taxpay-independent-restore.git
+          git --git-dir=/tmp/taxpay-independent-restore.git fsck --full --strict
+          RESTORED="$(git --git-dir=/tmp/taxpay-independent-restore.git rev-parse refs/remotes/origin/main)"
+          test "$RESTORED" = "$EXPECTED_BASE"
+          ORIGINAL_TREE="$(git rev-parse "$EXPECTED_BASE^{tree}")"
+          RESTORED_TREE="$(git --git-dir=/tmp/taxpay-independent-restore.git rev-parse "$RESTORED^{tree}")"
+          test "$ORIGINAL_TREE" = "$RESTORED_TREE"
+          printf 'RECOVERY_PASS\nsource_commit=%s\nrestored_commit=%s\nsource_tree=%s\nrestored_tree=%s\n' "$EXPECTED_BASE" "$RESTORED" "$ORIGINAL_TREE" "$RESTORED_TREE" > taxpay-recovery/RESTORE_EVIDENCE.txt
+          git show-ref > taxpay-recovery/checkout-refs.txt
+          cd taxpay-recovery
+          sha256sum main-before-banner-release.bundle RESTORE_EVIDENCE.txt checkout-refs.txt > SHA256SUMS
+          sha256sum --check SHA256SUMS
+      - name: Upload backup artifact for private Google Drive transfer
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-main-before-five-banners
+          path: taxpay-recovery/
+          retention-days: 7
+          if-no-files-found: error
