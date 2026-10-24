@@ -20,13 +20,9 @@ test('citizen design locks the primary blue, differentiated icons and the preser
   expect(await shell.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Poppins');
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  const select = dialog.locator('#tax-service-other-type');
-  await expect(select.locator('option')).toHaveCount(8);
-  for (const id of ['ADVANCE_TAX', 'ASSESSED_DEMAND', 'PENALTY', 'SOURCE_TAX_DEPOSIT', 'APPELLATE_TRIBUNAL', 'OTHER_TAX_PAYMENT', 'TRAVEL_TAX']) {
-    await expect(select.locator(`option[value="${id}"]`)).toHaveCount(1);
-  }
+  await expect(dialog.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
+  await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+  await expect(dialog.locator('[data-payment-service="TAX_WITH_RETURN"]')).toBeVisible();
 });
 
 test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', async ({ page }) => {
@@ -37,7 +33,7 @@ test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', a
   await expect(page.locator('[data-payer-relationship]')).toHaveCount(2);
   await page.locator('[data-payer-relationship="OTHER"]').click();
   await page.getByRole('dialog', { name: 'কর পরিশোধ' }).getByRole('button', { name: 'এগিয়ে যান' }).click();
-  await expect(page.locator('[data-payment-entry]')).toHaveCount(2);
+  await expect(page.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);\n  await expect(page.getByRole('heading', { name: 'কীভাবে এগিয়ে যেতে চান?' })).toBeVisible();
   const font = await page.locator('.taxpay-citizen-shell').evaluate(element => getComputedStyle(element).fontFamily);
   expect(font).toMatch(/^['"]?Noto Sans Bengali/);
 });
