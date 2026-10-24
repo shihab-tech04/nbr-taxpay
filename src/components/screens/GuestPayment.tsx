@@ -340,7 +340,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const paymentCalculation = <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
-    head={selectedHeads.length === 1 ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}` : undefined}
+    head={selectedHeads.length === 1
+      ? category === 'TAX_WITH_RETURN'
+        // v11's "74" is an old-Ordinance source label, not a current-law payment head.
+        // Income Tax Act 2023: section 173 applies to timely returns, 174 to late returns.
+        // Filing-date facts are not collected here; do not silently select one section.
+        ? language === 'bn' ? 'রিটার্নসহ কর (ধারা ১৭৩ / ১৭৪—প্রযোজ্যতা সাপেক্ষে)' : 'Tax with return (s.173 / s.174, as applicable)'
+        : `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}`
+      : undefined}
     amount={summedAmount}
     breakdown={step >= 3 ? [
       ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
@@ -859,7 +866,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
             {/* Exact head descriptions and codes transcribed from the v11 HTML. */}
             {categoryHeads.length === 1 ? (
-              <label id="guest-head-static" htmlFor={`guest-head-${categoryHeads[0].id}`} className="payment-head-single" tabIndex={-1}>
+              // In the Pay Tax modal, the one fixed head is already shown in
+              // Payment calculation. Preserve its original standalone selector.
+              !embedded && <label id="guest-head-static" htmlFor={`guest-head-${categoryHeads[0].id}`} className="payment-head-single" tabIndex={-1}>
                 <div><strong>{categoryHeads[0].economicCode} — {language === 'bn' ? categoryHeads[0].nameBn : categoryHeads[0].nameEn}</strong><small>{selectedHeads.length ? (language === 'bn' ? 'নির্বাচিত পেমেন্ট খাত' : 'Selected payment head') : (language === 'bn' ? 'পেমেন্ট খাত উপলব্ধ নয়' : 'Payment head unavailable')}</small></div>
                 <input id={`guest-head-${categoryHeads[0].id}`} type="checkbox" name="guest-payment-head" disabled checked={selectedHeads.length > 0} readOnly />
               </label>
