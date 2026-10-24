@@ -110,3 +110,34 @@ test('payment wizard stays within the viewport at phone widths', async ({ page }
   await expect(dialog.getByRole('radio', { name: 'Visa' })).toBeVisible();
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
 });
+
+
+test('desktop Pay Tax steps size to content and align AY with amount without an unnecessary scroll', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop 1280px geometry acceptance');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const dialog = await beginGuestPayment(page, 'Tax with Return');
+  const outer = dialog.locator('.taxpay-modal__body');
+  const stepOneBox = await dialog.boundingBox();
+  expect(stepOneBox).not.toBeNull();
+  // Step 1 contains one short taxpayer card and a summary, not a 92vh blank canvas.
+  expect(stepOneBox!.height).toBeLessThan(760);
+  expect(await outer.evaluate(node => node.scrollHeight - node.clientHeight)).toBeLessThanOrEqual(2);
+
+  await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.locator('#guest-assessment-year')).toBeVisible();
+  await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
+  const [year, amount] = await Promise.all([
+    dialog.locator('#guest-assessment-year').boundingBox(),
+    dialog.locator('#guest-tax-amount').boundingBox()
+  ]);
+  expect(year).not.toBeNull();
+  expect(amount).not.toBeNull();
+  expect(Math.abs(year!.y - amount!.y)).toBeLessThanOrEqual(12);
+  // The nested AY grid must not collapse the dropdown to half its column.
+  expect(year!.width).toBeGreaterThan(amount!.width * 0.75);
+  expect(year!.x + year!.width).toBeLessThanOrEqual(amount!.x + 2);
+  expect(await outer.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+  await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+});
