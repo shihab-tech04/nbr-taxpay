@@ -135,6 +135,8 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   expect(year).not.toBeNull();
   expect(amount).not.toBeNull();
   expect(Math.abs(year!.y - amount!.y)).toBeLessThanOrEqual(12);
+  // The nested AY grid must not collapse the dropdown to half its column.
+  expect(year!.width).toBeGreaterThan(amount!.width * 0.75);
   expect(year!.x + year!.width).toBeLessThanOrEqual(amount!.x + 2);
   expect(await outer.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
   await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
