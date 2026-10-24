@@ -9,7 +9,9 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
     await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   } else {
     await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-    await dialog.locator('#tax-service-other-type').selectOption(serviceId);
+    await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+    // The public Other Tax card now selects its generic service directly.
+    await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   }
   await dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
 }
