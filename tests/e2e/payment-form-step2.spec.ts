@@ -86,6 +86,28 @@ test('mobile service gate and four payment steps remain compact and usable', asy
 
 test('Step 2 guest form groups inputs and recalculates the right-hand summary', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Two-column geometry on desktop');
+  // Disconnected frontend/browser CI must not create real hosted synthetic rows.
+  // The separate disposable-SQL two-app E2E suite exercises actual persistence.
+  let paymentPosts = 0;
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const payload = route.request().postDataJSON() as {
+      origin?: string; service?: string; amountMinor?: number; sessionId?: string;
+    };
+    expect(payload.origin).toBe('QA_BROWSER');
+    expect(payload.service).toBe('OTHER_TAX_PAYMENT');
+    expect(payload.amountMinor).toBe(1200000);
+    expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    paymentPosts += 1;
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        success: true, status: 'SIMULATED_SUCCESS',
+        id: '10000000-0000-4000-8000-000000000001',
+        mirrored: true, simulationOnly: true,
+      }),
+    });
+  });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const originalUrl = page.url();
@@ -131,6 +153,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await chooser.getByRole('button', { name: /Pay BDT 12,000/ }).click();
   await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
   await expect(chooser.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  expect(paymentPosts).toBe(1);
   await chooser.getByText('Payment progress details').click();
   await expect(chooser.getByTestId('payment-lifecycle').getByText('CREDITED')).toBeVisible();
   await chooser.getByRole('button', { name: 'Receipt details' }).click();
