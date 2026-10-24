@@ -1,6 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
-import {getStoryNotices,type StoryPaymentNotice} from '../../services/simulatedPaymentStory';
+import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
+import {formatSimulatedAmount,getDemoStoryPaymentHistory,type SimulationTransaction} from '../../services/simulatedPaymentsApi';
+import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -17,12 +19,14 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
   const [notices,setNotices]=useState<SimulationNotice[]>([]);
-  const [guestNotices,setGuestNotices]=useState<StoryPaymentNotice[]>([]);
+  const [guestNotices,setGuestNotices]=useState<VerifiedStoryPaymentNotice[]>([]);
   const [guestError,setGuestError]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
   const [authorizationNotices,setAuthorizationNotices]=useState<HostedAuthorization[]>([]);
   const [authorizationError,setAuthorizationError]=useState('');
+  const [previewPaymentEvents,setPreviewPaymentEvents]=useState<SimulationTransaction[]>([]);
+  const [previewPaymentError,setPreviewPaymentError]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
   useEffect(()=>{
@@ -37,11 +41,31 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[previewAccount?.id]);
   useEffect(()=>{
-    if(authenticatedUser)return;
+    if(!previewAccount){setPreviewPaymentEvents([]);setPreviewPaymentError('');return;}
     let active=true;
     const refresh=async()=>{
-      try{const data=await getStoryNotices();if(active){setGuestNotices(data);setGuestError('');}}
-      catch{if(active)setGuestError(language==='bn'?'বিজ্ঞপ্তি আপাতত পাওয়া যাচ্ছে না':'Notifications temporarily unavailable');}
+      try{
+        const records=await getDemoStoryPaymentHistory(previewAccount.id,'payer');
+        if(active){
+          setPreviewPaymentEvents(records.filter(record=>record.payer===previewAccount.id &&
+            record.simulationOnly===true && Number.isSafeInteger(record.totalMinor) && record.totalMinor>0).slice(0,30));
+          setPreviewPaymentError('');
+        }
+      }catch(e){if(active){setPreviewPaymentEvents([]);setPreviewPaymentError(e instanceof Error?e.message:'Simulation updates unavailable');}}
+    };
+    void refresh();const timer=window.setInterval(()=>void refresh(),7000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[previewAccount?.id]);
+  useEffect(()=>{
+    if(authenticatedUser){setGuestNotices([]);setGuestError('');return;}
+    let active=true;
+    const refresh=async()=>{
+      try{
+        const [events,payments]=await Promise.all([getStoryNotices(),getStorySessionPayments()]);
+        const verified=reconcileStoryPaymentNotices(events,payments);
+        if(active){setGuestNotices(verified);setGuestError('');}
+      }
+      catch{if(active){setGuestNotices([]);setGuestError(language==='bn'?'সিমুলেশন বিজ্ঞপ্তির পরিমাণ যাচাই করা যায়নি।':'Could not verify the simulated amount for these notifications.');}}
     };
     void refresh();
     const timer=window.setInterval(()=>void refresh(),7000);
@@ -95,6 +119,16 @@ export const NotificationsView:React.FC=()=>{
           onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
       </li>)}</ul>}
     </section>
+    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment simulation updates','পেমেন্ট সিমুলেশন হালনাগাদ')}>
+      <h2 className="font-semibold text-taxpay-text">{label('Payment simulation updates','পেমেন্ট সিমুলেশন হালনাগাদ')}</h2>
+      <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
+      {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
+       !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No simulated payment activity yet.','এখনো কোনো পেমেন্ট সিমুলেশন নেই।')}</p>:
+       <ul className="divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-3">
+         <p className="font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.totalMinor)}</p>
+         <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Simulation status','সিমুলেশনের অবস্থা')}: {payment.state}</p>
+       </li>)}</ul>}
+    </section>
   </main>;
   // Keep the existing pre-payment account entry; successful guest payments
   // use their own session-scoped SQL notification feed without logging in.
@@ -110,7 +144,8 @@ export const NotificationsView:React.FC=()=>{
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
         <ul className="divide-y divide-taxpay-border">{guestNotices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment completed successfully','পরিশোধ সফলভাবে সম্পন্ন হয়েছে')}</h2>
+          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment simulation recorded · No money transferred','পেমেন্ট সিমুলেশন সংরক্ষিত · কোনো অর্থ স্থানান্তর হয়নি')}</h2>
+          <p className="font-semibold tabular-nums text-taxpay-text">{label('Simulated amount','সিমুলেশনের পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
           <p className="break-all text-sm text-taxpay-muted">{n.paymentId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
         </li>)}</ul>}
     </section>
