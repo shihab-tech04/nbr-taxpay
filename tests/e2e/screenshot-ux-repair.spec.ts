@@ -1,5 +1,4 @@
 import {expect,test,type Page} from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
 
 async function enterUser1(page:Page){
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',route=>route.fulfill({
@@ -92,10 +91,14 @@ test('authorization input and compact delete confirmation remain within mobile v
 test('mobile Travel Tax keeps the total and Back/Continue on compact distinct rows',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile payment journey geometry');
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
-  await enterTaxPayService(dialog, 'TRAVEL_TAX');
-  await dialog.getByRole('button',{name:'Continue without signing in'}).click();
+  // Travel Tax uses its own public banner entry, not the Other Tax subtype picker.
+  const carousel=page.locator('.public-hero-carousel');
+  for(let i=0;i<8 && await carousel.getAttribute('data-payment-service')!=='TRAVEL_TAX';i++){
+    await carousel.getByRole('button',{name:'Next banner'}).click();
+  }
+  await expect(carousel).toHaveAttribute('data-payment-service','TRAVEL_TAX');
+  await carousel.getByRole('button',{name:'Pay Travel Tax'}).click();
+  const dialog=page.getByRole('dialog',{name:'Travel tax'});
   const footer=dialog.locator('.travel-flow__footer-actions');
   const summary=dialog.locator('.travel-flow__summary');
   const back=footer.getByRole('button',{name:'Back'});
@@ -111,10 +114,14 @@ test('mobile Travel Tax keeps the total and Back/Continue on compact distinct ro
 test('desktop Travel Tax keeps long journey descriptions readable in the calculation panel',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop long-label layout');
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
-  await enterTaxPayService(dialog, 'TRAVEL_TAX');
-  await dialog.getByRole('button',{name:'Continue without signing in'}).click();
+  // Travel Tax uses its own public banner entry, not the Other Tax subtype picker.
+  const carousel=page.locator('.public-hero-carousel');
+  for(let i=0;i<8 && await carousel.getAttribute('data-payment-service')!=='TRAVEL_TAX';i++){
+    await carousel.getByRole('button',{name:'Next banner'}).click();
+  }
+  await expect(carousel).toHaveAttribute('data-payment-service','TRAVEL_TAX');
+  await carousel.getByRole('button',{name:'Pay Travel Tax'}).click();
+  const dialog=page.getByRole('dialog',{name:'Travel tax'});
   await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await dialog.getByLabel('Passport number').fill('FAKE0001');
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
