@@ -16,7 +16,9 @@
 }
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.payment-flow-embedded) {
   width: min(100%, 1160px);
-  height: min(92dvh, 950px);
+  /* Short payment steps shrink to their content instead of leaving an empty page. */
+  height: auto;
+  max-height: min(92dvh, 950px);
 }
 .tax-service-choice { font-family: inherit; }
 .tax-service-choice--travel { display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;width:100%;height:100%; }
@@ -414,6 +416,26 @@
   row-gap:14px;
 }
 .payment-flow-embedded__content > .payment-form-layout { display:contents; }
+/* Keep AY and amount next to one another in the short single-head payment
+   form. The summary rail remains in its own desktop column. */
+.payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-form-section__body {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+  align-items: start;
+}
+.payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-amount-fields,
+.payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-head-amount-grid {
+  min-width: 0;
+}
+.payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-head-amount {
+  margin-top: 0;
+}
+/* When a validation message applies to the whole amount section, give it
+   its own full row rather than placing it alongside a field. */
+.payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-form-section__body > .payment-form-field-error {
+  grid-column: 1 / -1;
+}
+
 .payment-flow-embedded__identity > .payment-form-layout__sections { grid-column:1;grid-row:1;width:100%; }
 .payment-flow-embedded__identity > .payment-form-summary { grid-column:2;grid-row:1;top:0; }
 .payment-flow-embedded__payment > .payment-form-layout__sections { grid-column:1;grid-row:1; }
@@ -463,6 +485,9 @@
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer-actions { flex:1 1 auto; }
 .payment-flow-embedded--receipt .receipt-view--embedded { max-width:100%; }
 @media(max-width:800px){
+  .payment-flow-embedded__payment .payment-form-section:has(#guest-assessment-year) .payment-form-section__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .payment-flow-embedded__content { display:block; }
   .payment-flow-embedded__receipt-layout {display:block;}
   .payment-flow-embedded__receipt-layout > .payment-form-summary {margin-top:14px;position:static;}
@@ -487,6 +512,7 @@
   .travel-flow__footer-actions .travel-flow__primary {flex:1 1 auto;width:auto;min-width:0;}
 }
 @media (max-width: 650px) {
+  /* Mobile retains the full-height, scrollable stepper with its fixed footer. */
   .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] {
     width: 100%;
     max-height: 100dvh;
