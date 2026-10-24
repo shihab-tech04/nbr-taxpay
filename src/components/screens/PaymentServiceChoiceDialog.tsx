@@ -11,6 +11,7 @@ import { TravelTax } from './TravelTax';
 import { TaxpayerLoginDialog } from './TaxpayerLoginDialog';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
+import { taxpayerBrandName } from '../../config/brand';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
 export const PAYMENT_SERVICE_CHOICES = [
@@ -40,9 +41,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  const [view, setView] = useState<'payer' | 'choice' | 'access' | 'payment'>('payer');
+  const [view, setView] = useState<'payer' | 'choice' | 'access' | 'login' | 'payment'>('payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [accountGate, setAccountGate] = useState<'login' | null>(null);
   const [useAccount, setUseAccount] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -75,7 +75,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       beginPayment(true);
       return;
     }
-    setAccountGate('login');
+    setView('login');
   };
 
   useEffect(() => {
@@ -83,7 +83,6 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     if (view === 'access' && (verifiedUser || previewAccount)) {
       setUseAccount(true);
       setStage(1);
-      setAccountGate(null);
       setView('payment');
     }
   }, [view, verifiedUser, previewAccount]);
@@ -100,9 +99,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
 
   return (
     <TaxPayModal
-      title={tr('Pay Tax', 'কর পরিশোধ')}
+      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
-      className={view === 'access' ? 'tax-service-choice-modal--access' : ''}
+      className={view === 'access' || view === 'login' ? 'tax-service-choice-modal--access' : ''}
       service={view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
@@ -117,6 +116,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             </button>
           </>}
           {view === 'access' && <button type="button" className="tax-service-choice__cancel" onClick={() => setView('choice')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back', 'ফিরুন')}</button>}
+          {view === 'login' && <>
+            <button type="button" className="tax-service-choice__cancel" onClick={() => setView('access')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back', 'ফিরুন')}</button>
+            <button type="submit" form="taxpay-embedded-login-form" className="tax-service-choice__continue">{tr('Sign In', 'সাইন ইন')} <ArrowRight size={18} aria-hidden="true" /></button>
+          </>}
         </div>
       )}
     >
@@ -201,7 +204,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
               <ArrowRight size={19} className="tax-service-choice__access-arrow" aria-hidden="true" />
             </button>
           </div>
-        </div> : selected === 'TRAVEL_TAX' ? (
+        </div> : view === 'login' ? (
+          <TaxpayerLoginDialog embedded preservePaymentJourney onClose={() => setView('access')} onSuccess={() => beginPayment(true)} />
+        ) : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
         ) : selected ? (
           <GuestPayment key={`${selected}-${payerForSelf}`} embedded initialCategory={selected} initialForSelf={payerForSelf ?? undefined} withAccount={useAccount}
@@ -209,11 +214,6 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
       </section>
-      {accountGate === 'login' && <TaxpayerLoginDialog
-        preservePaymentJourney
-        onClose={() => setAccountGate(null)}
-        onSuccess={() => { setAccountGate(null); beginPayment(true); }}
-      />}
     </TaxPayModal>
   );
 }

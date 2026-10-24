@@ -11,6 +11,12 @@ test('account sign-in at the breakpoint retains the selected service and starts 
 
   await payment.getByRole('button', { name: 'Continue with my account' }).click();
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
+  await expect(page.locator('.taxpayer-login-backdrop')).toHaveCount(0);
+  await expect(login.locator('.taxpayer-login-dialog--embedded')).toBeVisible();
+  await expect(login.locator('.taxpayer-login-heading')).toHaveCount(0);
+  await expect(login.getByRole('textbox', { name: 'User ID' })).toBeFocused();
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -39,4 +45,33 @@ test('guest payment continues directly from the breakpoint without opening accou
   await expect(payment.getByRole('radio', { name: "Someone else's tax" })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
+test('payment account login stays in the same dialog when returning Back, rejecting bad credentials and closing', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'OTHER');
+  await payment.getByRole('button', { name: 'Continue with my account' }).click();
+
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(login.locator('.taxpayer-login-dialog--embedded')).toBeVisible();
+  await expect(page.locator('.taxpayer-login-backdrop')).toHaveCount(0);
+  await login.getByRole('textbox', { name: 'User ID' }).fill('invalid-user');
+  await login.getByLabel('Password', { exact: true }).fill('incorrect');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login.getByRole('alert')).toContainText('Incorrect User ID or password');
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+
+  await login.getByRole('button', { name: 'Back' }).click();
+  await expect(payment).toBeVisible();
+  await expect(payment.getByRole('button', { name: 'Continue with my account' })).toBeVisible();
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('Tax with Return');
+  await payment.getByRole('button', { name: 'Continue with my account' }).click();
+  const retry = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await expect(retry.getByRole('textbox', { name: 'User ID' })).toHaveValue('');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(0);
 });
