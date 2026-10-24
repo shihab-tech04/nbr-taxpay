@@ -137,6 +137,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
         )}
 
+        {receipt.isSimulatedDemo === true && (
+          <p role="note" className="my-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+            {bn
+              ? 'শুধু ডেমো রসিদ — কোনো অর্থ স্থানান্তর, সরকারি চালান বা কর ক্রেডিট হয়নি।'
+              : 'Demo receipt only — no money transferred, government challan or tax credit issued.'}
+          </p>
+        )}
+
         {/* Challan Identifiers Ribbon */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 my-5 text-xs">
           <div>
