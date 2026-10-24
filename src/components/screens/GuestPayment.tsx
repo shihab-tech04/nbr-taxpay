@@ -194,13 +194,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = ownProfile?.receiptMobile ?? phone;
-  const otherBatch = !isWithholdingMode && forSelf === false && category === 'OTHER_TAX_PAYMENT';
-  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: otherTaxpayerName }, ...additionalTaxpayers];
-  const batchAmount = otherTaxAllocationTotal(otherTaxLines);
-  const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
-    && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
-      && batchTaxpayers.some(person => person.id === line.taxpayerId)
-      && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
   const taxZone = ownProfile?.taxZone ?? '—';
   const taxCircle = ownProfile?.taxCircle ?? '—';
   const [noticeReference, setNoticeReference] = useState('');
@@ -216,6 +209,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
+  const otherBatch = !isWithholdingMode && forSelf === false && category === 'OTHER_TAX_PAYMENT';
+  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: otherTaxpayerName }, ...additionalTaxpayers];
+  const batchAmount = otherTaxAllocationTotal(otherTaxLines);
+  const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
+    && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
+      && batchTaxpayers.some(person => person.id === line.taxpayerId)
+      && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
+
   const [headSearch, setHeadSearch] = useState('');
   const [headSearchDraft, setHeadSearchDraft] = useState('');
 
@@ -390,7 +391,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         return false;
       }
     }
-    if (!/^01\d{9}$/.test(receiptPhone)) {
+    if (otherBatch && !/^01\d{9}$/.test(receiptPhone)) {
       setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন।' :
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
       return false;
@@ -928,7 +929,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={paymentCalculation}
             lines={otherTaxLines} onChange={next => { setOtherTaxLines(next); clearValidationError(); }}
             error={isFieldInvalid('headId') ? errorMessage : undefined} />
         ) : (
