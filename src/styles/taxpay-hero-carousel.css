@@ -187,12 +187,8 @@
 .public-hero-carousel__slide .public-hero-carousel__service-image {
   max-height: none;
   object-fit: cover;
-  object-position: center;
-}
-
-/* Show the traveler's shoes and suitcase wheels in the shortest phone crop. */
-.public-hero-carousel__slide[data-banner-service="travel"] .public-hero-carousel__service-image {
-  object-position: center 62%;
+  /* The new character-free artwork is composed to the right; never crop its focal subject. */
+  object-position: right center;
 }
 
 .public-hero-carousel:focus-visible {
@@ -285,8 +281,7 @@
   }
   .public-hero-carousel__slide .public-information-hero__media { height: clamp(184px, 52vw, 270px); }
 
-  /* The generated artwork already frames the people and confirmation cards.
-   * A 132%-tall zoom was cutting off heads, luggage and feet on phones. */
+  /* Prevent unnecessary zoom and preserve the new conceptual art at phone sizes. */
   .public-hero-carousel__slide .public-information-hero__image {
     /* Fill the definite media frame instead of sizing from intrinsic image
      * dimensions (which left a 143px image inside a 184px phone banner). */

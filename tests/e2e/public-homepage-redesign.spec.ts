@@ -119,13 +119,13 @@ test('top navigation uses the approved blue pill for the current public route', 
   await expect(guide).not.toHaveAttribute('aria-current', 'page');
 });
 
-test('mobile banner keeps five original illustrations, one-line copy and no arrows', async ({ page }) => {
+test('mobile banner keeps all five approved conceptual illustrations, one-line copy and no arrows', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
-  const expectedAssets = ['payment-v3', 'return-v3', 'advance-v3', 'withholding-v3', 'travel-v6'];
+  const expectedAssets = ['intro-concept-v5', 'return-concept-v5', 'advance-concept-v5', 'withholding-concept-v5', 'travel-concept-v5'];
   const images = await carousel.locator('.public-information-hero__image').evaluateAll(elements =>
     elements.map(element => (element as HTMLImageElement).src),
   );
