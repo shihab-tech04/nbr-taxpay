@@ -36,7 +36,7 @@ test('hero provides five bilingual service slides with the original desktop open
     await expect.poll(() => serviceImage.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(1000);
     if (service === 'travel') {
       await expect(carousel.locator('[data-banner-service="travel"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
-        .toContainText('move through travel tax with confidence');
+        .toContainText('check and pay the applicable travel tax');
     }
     await expect(carousel.getByRole('button', { name: action, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);
