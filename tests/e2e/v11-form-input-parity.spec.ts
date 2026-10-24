@@ -15,12 +15,17 @@ test('payer relationship is required at entry and head choice is still validated
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Sample Agent');
+  await dialog.locator('#other-tax-primary-name').fill('Sample Taxpayer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.locator('.payment-head-options input:checked')).toHaveCount(0);
-  await dialog.getByRole('radio', { name: /Person other than company/ }).check();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await expect(batch).toBeVisible();
+  await expect(batch).toContainText('43 liability heads');
+  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
+  await expect(dialog.getByText('Income tax type', { exact: true })).toHaveCount(0);
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('Select an available payment head');
+  await expect(batch.getByRole('alert')).toContainText('Choose at least one eligible head');
 });
 
 test('sample v11 notices validate the TIN pair and prefill locked AY and amount', async ({ page }) => {
