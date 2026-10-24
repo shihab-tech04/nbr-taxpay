@@ -1,0 +1,48 @@
+name: TaxPay pre-release independent Git recovery
+on:
+  pull_request:
+    paths: ['.github/workflows/taxpay-pre-release-recovery.yml']
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout without credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build full remote-ref bundle and test restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          git ls-remote --refs origin 'refs/*' | LC_ALL=C sort > recovery/remote-refs.tsv
+          test -s recovery/remote-refs.tsv
+          git fetch --no-tags origin '+refs/*:refs/backup/*'
+          git for-each-ref --format='%(objectname)%09%(refname)' refs/backup |
+            sed 's#refs/backup/#refs/#' | LC_ALL=C sort > recovery/fetched-refs.tsv
+          diff -u recovery/remote-refs.tsv recovery/fetched-refs.tsv
+          git bundle create recovery/taxpay-pre-release.bundle --all
+          git bundle verify recovery/taxpay-pre-release.bundle
+          git -C . rev-parse HEAD > recovery/build-head.sha
+          git ls-remote origin refs/heads/main | cut -f1 > recovery/main-head.sha
+          git archive --format=tar.gz --output=recovery/main-source.tar.gz "$(cat recovery/main-head.sha)"
+          sha256sum recovery/*.bundle recovery/*.tar.gz > recovery/SHA256SUMS
+          mkdir -p /tmp/taxpay-isolated-restore
+          git clone recovery/taxpay-pre-release.bundle /tmp/taxpay-isolated-restore/clone
+          git -C /tmp/taxpay-isolated-restore/clone fsck --full --no-reflogs
+          test "$(git -C /tmp/taxpay-isolated-restore/clone cat-file -t "$(cat recovery/main-head.sha)")" = commit
+          test "$(git -C /tmp/taxpay-isolated-restore/clone rev-parse "$(cat recovery/main-head.sha)^{tree}")" = "$(git rev-parse "$(cat recovery/main-head.sha)^{tree}")"
+          printf 'PASS exact remote-ref map, git bundle verify, isolated clone, fsck and main-tree restore\n' > recovery/RESTORE_RESULT.txt
+          printf 'Remote refs: ' >> recovery/RESTORE_RESULT.txt
+          wc -l < recovery/remote-refs.tsv >> recovery/RESTORE_RESULT.txt
+      - name: Upload controlled backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-full-pre-release-recovery
+          path: recovery/
+          retention-days: 7
+          if-no-files-found: error
