@@ -75,10 +75,11 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
   await footer.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(progress).toHaveCount(0);
-  await footer.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(chooser.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
   await chooser.locator('[data-payer-relationship="SELF"]').click();
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(chooser.locator('#tax-service-other-type')).toHaveValue('PENALTY');
+  await expect(chooser.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
+  await expect(chooser.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
   await chooser.getByRole('button', { name: 'Close payment services' }).click();
   await expect(chooser).toHaveCount(0);
 });
@@ -157,7 +158,7 @@ test('single-head tax service exposes its amount and multiple amounts divide the
 
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toBeVisible();
   await enterTaxPayService(dialog, 'ADVANCE_TAX');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.locator('#guest-tin').fill('444444444444');

@@ -1,15 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 test('payer relationship is required at entry and head choice is still validated in Step 2', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
-  await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.locator('#tax-service-other-type').selectOption('ADVANCE_TAX');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await enterTaxPayService(dialog, 'ADVANCE_TAX', 'OTHER');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
@@ -27,11 +24,7 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.locator('#tax-service-other-type').selectOption('PENALTY');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await enterTaxPayService(dialog, 'PENALTY', 'SELF');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('123456789012');

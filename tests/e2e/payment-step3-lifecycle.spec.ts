@@ -1,3 +1,4 @@
+import { enterTaxPayService } from './pay-tax-entry-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 async function openReview(page: Page, category = 'Tax with Return') {
@@ -5,16 +6,11 @@ async function openReview(page: Page, category = 'Tax with Return') {
   const initialUrl = page.url();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  if (category === 'Tax with Return') {
-    await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
-  } else {
-    const serviceIds: Record<string, string> = { 'Advance Tax': 'ADVANCE_TAX', Penalty: 'PENALTY', 'Source Tax Deposit': 'SOURCE_TAX_DEPOSIT' };
-    await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-    await dialog.locator('#tax-service-other-type').selectOption(serviceIds[category]);
-  }
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  const serviceIds: Record<string, string> = {
+    'Tax with Return': 'TAX_WITH_RETURN', 'Advance Tax': 'ADVANCE_TAX',
+    Penalty: 'PENALTY', 'Source Tax Deposit': 'SOURCE_TAX_DEPOSIT'
+  };
+  await enterTaxPayService(dialog, serviceIds[category]);
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('123456789012');

@@ -1,3 +1,4 @@
+import { enterTaxPayService } from './pay-tax-entry-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 async function beginGuestPayment(page: Page, service: string) {
@@ -6,16 +7,11 @@ async function beginGuestPayment(page: Page, service: string) {
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.locator('.tax-service-choice__card')).toHaveCount(2);
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  if (service === 'Tax with Return') {
-    await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
-  } else {
-    const ids: Record<string, string> = { Penalty: 'PENALTY' };
-    await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-    await dialog.locator('#tax-service-other-type').selectOption(ids[service]);
-  }
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  const ids: Record<string, string> = {
+    'Tax with Return': 'TAX_WITH_RETURN',
+    'Penalty': 'PENALTY'
+  };
+  await enterTaxPayService(dialog, ids[service]);
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   return dialog;
 }
