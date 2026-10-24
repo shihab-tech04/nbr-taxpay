@@ -30,7 +30,7 @@ type TopLevelService = 'TAX_WITH_RETURN' | 'OTHER_TAX';
 /** Only two services appear at entry. The original service IDs stay intact underneath. */
 export const TAXPAY_ENTRY_CHOICES = [
   { id: 'TAX_WITH_RETURN', Icon: FileCheck2, en: 'Tax with Return', bn: 'রিটার্নসহ কর', detailEn: 'Pay income tax with your annual return.', detailBn: 'বার্ষিক রিটার্নের সঙ্গে আয়কর পরিশোধ করুন।' },
-  { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Choose another payment type in the next field.', detailBn: 'পরবর্তী ঘরে অন্য কর পরিশোধের ধরন বেছে নিন।' }
+  { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
 export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
@@ -38,8 +38,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(null);
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
-  const [otherType, setOtherType] = useState<ServiceId | ''>(initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : '');
-  const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? otherType || null : null;
+  // Other Tax is one entry choice. No follow-up subtype selection is collected here.
+  const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   const [view, setView] = useState<'payer' | 'choice' | 'access' | 'payment'>('payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [accountGate, setAccountGate] = useState<'login' | null>(null);
@@ -179,15 +179,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             </button>
           ))}
         </div>
-        {topLevel === 'OTHER_TAX' && <div className="tax-service-choice__subtype">
-          <label htmlFor="tax-service-other-type">{tr('Other tax payment type', 'অন্যান্য কর পরিশোধের ধরন')}</label>
-          <select id="tax-service-other-type" value={otherType} onChange={event => setOtherType(event.target.value as ServiceId | '')} required>
-            <option value="">{tr('Choose a payment type', 'কর পরিশোধের ধরন নির্বাচন করুন')}</option>
-            {PAYMENT_SERVICE_CHOICES.filter(choice => choice.id !== 'TAX_WITH_RETURN').map(choice =>
-              <option key={choice.id} value={choice.id}>{tr(choice.en, choice.bn)}</option>
-            )}
-          </select>
-        </div>}
+
         {verifiedUser && <button type="button" className="tax-service-choice__saved-drafts"
           onClick={() => { close(); navigate('secure_workspace'); }}>
           <FolderOpen size={17} aria-hidden="true" />

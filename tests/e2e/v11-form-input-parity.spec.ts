@@ -8,7 +8,7 @@ test('payer relationship is required at entry and head choice is still validated
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.locator('#tax-service-other-type').selectOption('ADVANCE_TAX');
+  await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
@@ -24,23 +24,18 @@ test('payer relationship is required at entry and head choice is still validated
 });
 
 test('sample v11 notices validate the TIN pair and prefill locked AY and amount', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.locator('#tax-service-other-type').selectOption('PENALTY');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  // A legacy v11 category is still testable through its explicit guest deep link.
+  await page.goto('/?action=guest&initialCategory=PENALTY');
+  const dialog = page;
+  await dialog.getByRole('radio', { name: 'My own tax' }).check();
+  await expect(dialog.getByRole('radio', { name: 'My own tax' })).toBeChecked();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#guest-notice-ref').fill('DN-2026-001187');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(dialog.getByRole('alert')).toContainText('could not confirm');
   await dialog.locator('#guest-notice-ref').fill('pn-2026-000392');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
   const year = dialog.locator('#guest-assessment-year');
   await expect(year).toHaveValue('2025-26');

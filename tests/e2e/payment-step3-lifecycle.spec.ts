@@ -10,9 +10,8 @@ async function openReview(page: Page, category = 'Tax with Return') {
   if (category === 'Tax with Return') {
     await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   } else {
-    const serviceIds: Record<string, string> = { 'Advance Tax': 'ADVANCE_TAX', Penalty: 'PENALTY', 'Source Tax Deposit': 'SOURCE_TAX_DEPOSIT' };
     await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-    await dialog.locator('#tax-service-other-type').selectOption(serviceIds[category]);
+    await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   }
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
@@ -31,7 +30,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
 }
 
 test('online Step 3 requires channel, method and reviewed details before advancing', async ({ page }) => {
-  const dialog = await openReview(page, 'Advance Tax');
+  const dialog = await openReview(page, 'Other Tax');
   const action = dialog.getByRole('button', { name: /Pay BDT 12,500/ });
   await expect(action).toBeDisabled();
   await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);

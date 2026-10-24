@@ -325,7 +325,9 @@ test('each service-specific banner action skips repeated service selection', asy
         await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
       } else {
         await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-        await expect(dialog.locator('#tax-service-other-type')).toHaveValue(code);
+        await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+        await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+        await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', code);
       }
       await dialog.getByRole('button', { name: 'Close payment services' }).click();
     }

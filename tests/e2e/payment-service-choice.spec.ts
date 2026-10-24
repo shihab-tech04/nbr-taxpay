@@ -1,13 +1,10 @@
+import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { expect, test, type Locator } from '@playwright/test';
 
 async function choosePayer(dialog: Locator, mode: 'SELF' | 'OTHER' = 'SELF') {
   await dialog.locator(`[data-payer-relationship="${mode}"]`).click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.tax-service-choice__card')).toHaveCount(2);
-}
-async function chooseOtherType(dialog: Locator, type: string) {
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.locator('#tax-service-other-type').selectOption(type);
 }
 
 test('Service selector preserves geometry and uses icon, text and radio cues for selection', async ({ page }) => {
@@ -172,217 +169,138 @@ test('Every selected payment service has readable title, description and icon co
   }
 });
 
-test('Pay Tax opens payer-first two top-level services and carries an original subtype to the form', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+test('Other Tax proceeds directly without an additional payment-type selector', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(chooser).toBeVisible();
-  await expect(chooser.locator('.tax-service-choice__card')).toHaveCount(2);
-  await expect(chooser.locator('.tax-service-choice__progress')).toHaveCount(0);
-  await expect(chooser.getByRole('button', { name: /Continue/ })).toBeDisabled();
-  await choosePayer(chooser, 'SELF');
-  await expect(chooser.locator('[data-payment-entry]')).toHaveCount(2);
-  await chooseOtherType(chooser, 'ADVANCE_TAX');
-  await expect(chooser.locator('#tax-service-other-type option')).toHaveCount(8);
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await choosePayer(dialog, 'OTHER');
+  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+  await expect(dialog.getByText('Other tax payment type')).toHaveCount(0);
   const originalUrl = page.url();
-  await chooser.getByRole('button', { name: /Continue/ }).click();
-  await expect(chooser).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
-  await expect(chooser.locator('.tax-service-choice__progress')).toHaveCount(0);
-  await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.locator('.tax-service-choice__stage--current svg')).toHaveCount(1);
-  await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
-  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
   expect(page.url()).toBe(originalUrl);
 });
 
-test('The access breakpoint keeps guest and account choices together in a compact dialog', async ({ page }) => {
+test('Tax with Return still proceeds with its unchanged service ID', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await choosePayer(dialog, 'SELF');
+  await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
+  await expect(dialog.locator('#guest-tin')).toBeVisible();
+  await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+});
+
+test('Back preserves payer and Other Tax choice without restoring the removed dropdown', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await choosePayer(dialog, 'SELF');
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('Access gate keeps account and guest choices compact', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(chooser, 'SELF');
-  await chooseOtherType(chooser, 'PENALTY');
-  await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
-
-  const guest = chooser.getByRole('button', { name: /Continue without signing in/ });
-  const account = chooser.getByRole('button', { name: /Continue with my account/ });
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await choosePayer(dialog, 'SELF');
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  const guest = dialog.getByRole('button', { name: 'Continue without signing in' });
+  const account = dialog.getByRole('button', { name: 'Continue with my account' });
   await expect(guest).toBeVisible();
   await expect(account).toBeVisible();
-  await expect(chooser.locator('.tax-service-choice__access-options > button')).toHaveCount(2);
-  await expect(chooser.locator('.taxpay-modal__footer').getByRole('button', { name: /Continue/ })).toHaveCount(0);
-  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Penalty');
-  const dialogBox = await chooser.boundingBox();
-  const guestBox = await guest.boundingBox();
-  const accountBox = await account.boundingBox();
-  expect(dialogBox).not.toBeNull();
-  expect(guestBox).not.toBeNull();
-  expect(accountBox).not.toBeNull();
-  expect(dialogBox!.width).toBeLessThanOrEqual(704);
-  expect(Math.abs(guestBox!.x - accountBox!.x)).toBeLessThan(2);
-  expect(Math.abs(guestBox!.width - accountBox!.width)).toBeLessThan(2);
-  expect(accountBox!.y).toBeGreaterThan(guestBox!.y + guestBox!.height);
-
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  const first = await guest.boundingBox();
+  const second = await account.boundingBox();
+  expect(first).not.toBeNull();
+  expect(second).not.toBeNull();
+  expect(Math.abs(first!.x - second!.x)).toBeLessThan(2);
+  expect(Math.abs(first!.width - second!.width)).toBeLessThan(2);
+  expect(second!.y).toBeGreaterThan(first!.y + first!.height);
   await account.click();
   await expect(page.getByRole('dialog', { name: /sign in/i })).toBeVisible();
 });
 
-test('Source tax and travel tax stay inside the same modal with their category-specific forms', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/');
-  const originalUrl = page.url();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  let chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(chooser, 'SELF');
-  await chooseOtherType(chooser, 'SOURCE_TAX_DEPOSIT');
-  await chooser.getByRole('button', { name: /Continue/ }).click();
-  await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser).toBeVisible();
-  await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Source Tax Deposit');
-  await expect(chooser.locator('#guest-category')).toHaveCount(0);
-  expect(page.url()).toBe(originalUrl);
-
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(chooser, 'OTHER');
-  await chooseOtherType(chooser, 'TRAVEL_TAX');
-  await chooser.getByRole('button', { name: /Continue/ }).click();
-  await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser).toBeVisible();
-  await expect(chooser.locator('.travel-flow')).toBeVisible();
-  await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await expect(chooser.getByLabel('Passenger name')).toBeVisible();
-  expect(page.url()).toBe(originalUrl);
-});
-
-test('All eight preserved service IDs remain reachable through the two-choice payment entry', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(chooser, 'SELF');
-  const serviceIds = ['TAX_WITH_RETURN', 'ADVANCE_TAX', 'ASSESSED_DEMAND', 'PENALTY', 'SOURCE_TAX_DEPOSIT', 'APPELLATE_TRIBUNAL', 'OTHER_TAX_PAYMENT', 'TRAVEL_TAX'];
-  for (const [i, id] of serviceIds.entries()) {
-    if (id === 'TAX_WITH_RETURN') await chooser.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
-    else await chooseOtherType(chooser, id);
-    await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
-    await expect(chooser.getByRole('button', { name: 'Continue with my account' })).toBeVisible();
-    await expect(chooser.getByRole('button', { name: 'Continue without signing in' })).toBeVisible();
-    await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-    await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-    if (i === 7) {
-      await chooser.locator('.travel-flow__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-    } else {
-      await chooser.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-    }
-  }
-});
-
-test('Travel Tax keeps Back left, Continue right and route calculation available across steps', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop-1280', 'Desktop journey alignment');
+test('Other Tax keeps the v11 guest reference and four payment stages', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
-  await chooseOtherType(dialog, 'TRAVEL_TAX');
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  const footer = dialog.locator('.travel-flow__footer-actions');
-  const summary = dialog.locator('.travel-flow__summary');
-  await expect(summary).toContainText('Payment calculation');
-  await expect(footer.getByRole('button').first()).toHaveText('Back');
-  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('TRAVEL123');
-  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
-  await dialog.getByLabel('Travel date').fill('2026-10-25');
-  await footer.getByRole('button').last().click();
-  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
-  await expect(dialog.locator('#travel-tax-route-results')).toBeVisible();
-  await dialog.locator('#travel-tax-route-1').check();
-  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
-  const back = await footer.getByRole('button').first().boundingBox();
-  const next = await footer.getByRole('button').last().boundingBox();
-  expect(back).not.toBeNull();
-  expect(next).not.toBeNull();
-  expect(back!.x + back!.width).toBeLessThan(next!.x);
-  await footer.getByRole('button').last().click();
-  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
-  await expect(summary).toContainText('Payment calculation');
-});
-
-test('Other Tax Payment uses the v11 optional guest NBR reference', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(chooser, 'SELF');
-  await chooseOtherType(chooser, 'OTHER_TAX_PAYMENT');
-  await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
-  await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
-  await chooser.locator('#guest-tin').fill('123456789012');
-  await chooser.locator('#guest-phone').fill('01712345678');
-  await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
-});
-
-test('Travel Tax uses identity, calculated amount, channel and confirmation inside the service modal', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(chooser, 'SELF');
-  await chooseOtherType(chooser, 'TRAVEL_TAX');
-  await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
-  await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.getByText('Step 1 of 4')).toBeVisible();
-  await chooser.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await chooser.getByLabel('Passport number').fill('FAKE0001');
-  await chooser.getByLabel('Mobile number for receipt').fill('01712345678');
-  await chooser.getByLabel('Travel date').fill('2026-10-25');
-  await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(chooser.getByText('Step 2 of 4')).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'Choose destination & travel mode' })).toBeVisible();
-  await chooser.locator('#travel-tax-route-0').check();
-  await expect(chooser.getByText('Payment purpose: Travel Tax')).toBeVisible();
-  await chooser.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(chooser.getByText('Step 3 of 4')).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'Choose payment channel' })).toBeVisible();
-  await expect(chooser.getByRole('button', { name: 'Confirm payment' })).toBeDisabled();
-  await chooser.getByRole('button', { name: 'Pay online' }).click();
-  await chooser.getByRole('button', { name: 'Mobile banking' }).click();
-  await chooser.getByRole('radio', { name: 'Nagad' }).check();
-  await chooser.getByLabel('The journey, passenger details and amount are correct.').check();
-  await chooser.getByRole('button', { name: 'Confirm payment' }).click();
-  await expect(chooser.getByText('Step 4 of 4')).toBeVisible();
-  await expect(chooser.getByText('Travel tax details ready')).toBeVisible();
-  await expect(chooser.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
-});
-
-test('Travel Tax uses the same grouped providers and preserves declined simulation without issuing a receipt', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await choosePayer(dialog, 'SELF');
-  await chooseOtherType(dialog, 'TRAVEL_TAX');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('FAKE0001');
-  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
-  await dialog.getByLabel('Travel date').fill('2026-10-25');
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await dialog.locator('#travel-tax-route-0').check();
-  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await dialog.getByRole('button', { name: 'Pay online' }).click();
-  await expect(dialog.locator('.payment-review__method-groups button')).toHaveCount(3);
-  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
-  await dialog.getByRole('radio', { name: 'Nagad' }).check();
-  await dialog.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
-  await dialog.getByLabel('The journey, passenger details and amount are correct.').check();
-  await dialog.getByRole('button', { name: 'Confirm payment' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('Simulated payment declined');
-  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
+  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+});
+
+test('Travel Tax remains separately accessible from its existing public banner', async ({ page }) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const travel = page.getByRole('dialog', { name: 'Travel tax' });
+  await expect(travel).toBeVisible();
+  await expect(travel.locator('.travel-flow')).toBeVisible();
+  await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(6);
+});
+
+test('Existing Travel Tax banner still provides journey, passenger and payment validation', async ({ page }) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const travel = page.getByRole('dialog', { name: 'Travel tax' });
+  await travel.locator('#travel-tax-route-1').check();
+  await expect(travel.locator('.travel-flow__total')).toContainText('2,000');
+  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await expect(travel.getByLabel('Passenger name')).toBeVisible();
+  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await travel.getByLabel('Passport number').fill('TRAVEL123');
+  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
+  await travel.getByLabel('Travel date').fill('2026-10-25');
+  await travel.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(travel.getByRole('heading', { name: 'Review travel details' })).toBeVisible();
+  await expect(travel.getByRole('button', { name: 'Continue payment' })).toBeDisabled();
+  await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
+});
+
+test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const travel = page.getByRole('dialog', { name: 'Travel tax' });
+  await travel.locator('#travel-tax-route-0').check();
+  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
+  await travel.getByLabel('Passport number').fill('TRAVEL123');
+  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
+  await travel.getByLabel('Travel date').fill('2026-10-25');
+  await travel.getByRole('button', { name: 'Continue to review' }).click();
+  await travel.getByRole('button', { name: 'Pay online' }).click();
+  await travel.getByRole('button', { name: 'Mobile banking' }).click();
+  await travel.getByRole('radio', { name: 'Nagad' }).check();
+  await travel.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
+  await travel.getByLabel('The journey, passenger details and amount are correct.').check();
+  await travel.getByRole('button', { name: 'Continue payment' }).click();
+  await expect(travel.getByRole('alert')).toContainText('Simulated payment declined', { timeout: 12000 });
+  await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
 });
