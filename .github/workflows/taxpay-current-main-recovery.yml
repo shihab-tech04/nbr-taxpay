@@ -1,4 +1,4 @@
-name: TaxPay exact-main offline recovery bundle 20261024
+name: TaxPay exact-main offline recovery bundle 20261024 login
 on:
   push:
     branches:
@@ -18,17 +18,17 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin '+refs/heads/*:refs/remotes/origin/*' --tags --prune
-          test "$(git rev-parse refs/remotes/origin/main)" = "13d53f8f5e73a48877a6bb8d6729d293bbe13a34"
+          test "$(git rev-parse refs/remotes/origin/main)" = "ec60ade09fe62b30bcc827a14ca791b59db03805"
           git bundle create taxpay-current-main-all-refs.bundle --all
           git bundle verify taxpay-current-main-all-refs.bundle
           mkdir -p recovered
           git -C recovered init
           git -C recovered fetch ../taxpay-current-main-all-refs.bundle '+refs/*:refs/*'
           git -C recovered fsck --full --no-reflogs
-          test "$(git -C recovered rev-parse refs/remotes/origin/main)" = "13d53f8f5e73a48877a6bb8d6729d293bbe13a34"
+          test "$(git -C recovered rev-parse refs/remotes/origin/main)" = "ec60ade09fe62b30bcc827a14ca791b59db03805"
           sha256sum taxpay-current-main-all-refs.bundle > taxpay-current-main-all-refs.bundle.sha256
           sha256sum -c taxpay-current-main-all-refs.bundle.sha256
-          printf 'Verified original main: %s\nRestore: git fetch taxpay-current-main-all-refs.bundle refs/remotes/origin/main:refs/heads/main\n' "13d53f8f5e73a48877a6bb8d6729d293bbe13a34" > recovery-instructions.txt
+          printf 'Verified original main: %s\nRestore: git fetch taxpay-current-main-all-refs.bundle refs/remotes/origin/main:refs/heads/main\n' "ec60ade09fe62b30bcc827a14ca791b59db03805" > recovery-instructions.txt
       - name: Preserve complete bundle, checksum and recovery instructions
         uses: actions/upload-artifact@v4
         with:
