@@ -88,11 +88,11 @@ test('guest menus and bell route to their named services; contextual payment cho
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
-  await enterTaxPayService(services, 'ADVANCE_TAX');
+  await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=account_notifications/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Advance Tax');
+  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
   await page.reload();
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
