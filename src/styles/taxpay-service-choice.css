@@ -23,7 +23,16 @@
 .tax-service-choice { font-family: inherit; }
 .tax-service-choice--travel { display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;width:100%;height:100%; }
 .tax-service-choice--travel > .tax-service-choice__eyebrow { margin:1rem 1.4rem .4rem; }
-.tax-service-choice--travel > .tax-service-choice__progress {
+.tax-service-choice--travel > .tax-service-choice__progress { flex:0 0 auto;margin:0 1.4rem .5rem; }
+.tax-service-choice--travel > .travel-flow { flex:1 1 auto;min-height:0;height:auto; }
+.tax-service-choice__eyebrow {
+  margin: 0 0 .3rem;
+  color: var(--citizen-muted);
+  font-size: .76rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+.tax-service-choice__progress {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .35rem;
