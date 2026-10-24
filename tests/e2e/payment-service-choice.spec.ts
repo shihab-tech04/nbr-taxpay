@@ -258,16 +258,8 @@ test('Other Tax keeps the v11 guest reference and four payment stages', async ({
 });
 
 test('Travel Tax remains separately accessible from its existing public banner', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  const banner = page.getByRole('region', { name: 'Tax payment service banners' });
-  const next = page.getByRole('button', { name: 'Next banner' });
-  for (let i = 0; i < 5; i += 1) {
-    if (await banner.getAttribute('data-payment-service') === 'TRAVEL_TAX') break;
-    await next.click();
-  }
-  await expect(banner).toHaveAttribute('data-payment-service', 'TRAVEL_TAX');
-  await banner.locator('article[data-payment-service="TRAVEL_TAX"] button').first().click();
+  await openTravelTaxFromBanner(page);
   const travel = page.getByRole('dialog', { name: 'Travel tax' });
   await expect(travel).toBeVisible();
   await expect(travel.locator('.travel-flow')).toBeVisible();
