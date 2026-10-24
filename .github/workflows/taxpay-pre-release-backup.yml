@@ -1,8 +1,8 @@
-name: TaxPay full current-main pre-layout Git history recovery
+name: TaxPay full current-main pre-release-20261024 Git history recovery
 on:
   push:
     branches:
-      - backup/taxpay-pre-layout-20261023
+      - backup/taxpay-pre-release-20261024-20261023
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,30 +19,30 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
-          test "$(git rev-parse refs/remotes/origin/main)" = "5e42d41cd3cb011f4e017d8663a4cf0881ebe6a0"
+          test "$(git rev-parse refs/remotes/origin/main)" = "13d53f8f5e73a48877a6bb8d6729d293bbe13a34"
           git for-each-ref --format='%(refname): %(objectname)' refs/remotes/origin > pre-release-refs.txt
-          git bundle create taxpay-pre-layout-all-refs.bundle --all
-          git bundle verify taxpay-pre-layout-all-refs.bundle
+          git bundle create taxpay-pre-release-20261024-all-refs.bundle --all
+          git bundle verify taxpay-pre-release-20261024-all-refs.bundle
       - name: Restore-test the bundle and validate original main
         shell: bash
         run: |
           set -euo pipefail
           mkdir restored
           git -C restored init
-          git -C restored fetch ../taxpay-pre-layout-all-refs.bundle '+refs/*:refs/*'
+          git -C restored fetch ../taxpay-pre-release-20261024-all-refs.bundle '+refs/*:refs/*'
           git -C restored fsck --full --no-reflogs
-          test "$(git -C restored rev-parse refs/remotes/origin/main)" = "5e42d41cd3cb011f4e017d8663a4cf0881ebe6a0"
-          sha256sum taxpay-pre-layout-all-refs.bundle > taxpay-pre-layout-all-refs.bundle.sha256
-          sha256sum -c taxpay-pre-layout-all-refs.bundle.sha256
-          printf 'pre-release main: 5e42d41cd3cb011f4e017d8663a4cf0881ebe6a0\n' > recovery-instructions.txt
-          printf 'Restore original main with: git fetch taxpay-pre-layout-all-refs.bundle refs/remotes/origin/main:refs/heads/main\n' >> recovery-instructions.txt
+          test "$(git -C restored rev-parse refs/remotes/origin/main)" = "13d53f8f5e73a48877a6bb8d6729d293bbe13a34"
+          sha256sum taxpay-pre-release-20261024-all-refs.bundle > taxpay-pre-release-20261024-all-refs.bundle.sha256
+          sha256sum -c taxpay-pre-release-20261024-all-refs.bundle.sha256
+          printf 'pre-release main: 13d53f8f5e73a48877a6bb8d6729d293bbe13a34\n' > recovery-instructions.txt
+          printf 'Restore original main with: git fetch taxpay-pre-release-20261024-all-refs.bundle refs/remotes/origin/main:refs/heads/main\n' >> recovery-instructions.txt
       - name: Upload complete history/source backup for independent Drive retention
         uses: actions/upload-artifact@v4
         with:
-          name: taxpay-pre-layout-git-bundle-20261023
+          name: taxpay-pre-release-20261024-git-bundle-20261023
           path: |
-            taxpay-pre-layout-all-refs.bundle
-            taxpay-pre-layout-all-refs.bundle.sha256
+            taxpay-pre-release-20261024-all-refs.bundle
+            taxpay-pre-release-20261024-all-refs.bundle.sha256
             pre-release-refs.txt
             recovery-instructions.txt
           retention-days: 90
