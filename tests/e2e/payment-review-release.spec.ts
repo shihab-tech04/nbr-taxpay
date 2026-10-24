@@ -142,8 +142,8 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByLabel('Taxpayer’s TIN').fill('123456789012');
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
-  await expect(page.locator('.payment-head-single')).toBeVisible();
-  await expect(page.locator('.payment-head-single input[type="checkbox"]')).toBeChecked();
+  await expect(page.locator('.payment-head-single')).toHaveCount(0);
+  await expect(page.locator('.payment-form-summary__rows')).toContainText('Tax with return (s.173 / s.174, as applicable)');
   await page.getByRole('radio', { name: /Person other than company/ }).check();
 
   await page.getByLabel('Payment amount (৳)').fill('0');
