@@ -15,7 +15,7 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
-    .toHaveAttribute('src', /taxpay-hero-payment-v3/);
+    .toHaveAttribute('src', /taxpay-hero-intro-concept-v5/);
   await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(0);
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
 
@@ -92,10 +92,10 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     .evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
-    return: 'taxpay-hero-return-v3',
-    advance: 'taxpay-hero-advance-v3',
-    withholding: 'taxpay-hero-withholding-v3',
-    travel: 'taxpay-hero-travel-v6',
+    return: 'taxpay-hero-return-concept-v5',
+    advance: 'taxpay-hero-advance-concept-v5',
+    withholding: 'taxpay-hero-withholding-concept-v5',
+    travel: 'taxpay-hero-travel-concept-v5',
   };
   for (const [service, assetName] of Object.entries(expectedImages)) {
     const artwork = await carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__service-image`)
