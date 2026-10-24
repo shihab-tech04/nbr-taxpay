@@ -39,7 +39,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(null);
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
-  const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? 'OTHER_TAX_PAYMENT' : null;
+  const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   const [view, setView] = useState<'payer' | 'choice' | 'access' | 'payment'>('payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [accountGate, setAccountGate] = useState<'login' | null>(null);
