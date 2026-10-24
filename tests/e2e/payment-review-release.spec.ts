@@ -211,7 +211,8 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await services.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(services.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
