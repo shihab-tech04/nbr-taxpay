@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
-import {formatSimulatedAmount} from '../../services/simulatedPaymentsApi';
+import {formatSimulatedAmount,getDemoStoryPaymentHistory,type SimulationTransaction} from '../../services/simulatedPaymentsApi';
 import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
@@ -25,6 +25,8 @@ export const NotificationsView:React.FC=()=>{
   const [loading,setLoading]=useState(true);
   const [authorizationNotices,setAuthorizationNotices]=useState<HostedAuthorization[]>([]);
   const [authorizationError,setAuthorizationError]=useState('');
+  const [previewPaymentEvents,setPreviewPaymentEvents]=useState<SimulationTransaction[]>([]);
+  const [previewPaymentError,setPreviewPaymentError]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
   useEffect(()=>{
@@ -36,6 +38,22 @@ export const NotificationsView:React.FC=()=>{
       catch(e){if(active)setAuthorizationError(e instanceof Error?e.message:'Could not load authorization notices');}
     };
     void refresh();const timer=window.setInterval(()=>void refresh(),5000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[previewAccount?.id]);
+  useEffect(()=>{
+    if(!previewAccount){setPreviewPaymentEvents([]);setPreviewPaymentError('');return;}
+    let active=true;
+    const refresh=async()=>{
+      try{
+        const records=await getDemoStoryPaymentHistory(previewAccount.id,'payer');
+        if(active){
+          setPreviewPaymentEvents(records.filter(record=>record.payer===previewAccount.id &&
+            record.simulationOnly===true && Number.isSafeInteger(record.totalMinor) && record.totalMinor>0).slice(0,30));
+          setPreviewPaymentError('');
+        }
+      }catch(e){if(active){setPreviewPaymentEvents([]);setPreviewPaymentError(e instanceof Error?e.message:'Simulation updates unavailable');}}
+    };
+    void refresh();const timer=window.setInterval(()=>void refresh(),7000);
     return()=>{active=false;window.clearInterval(timer);};
   },[previewAccount?.id]);
   useEffect(()=>{
@@ -100,6 +118,16 @@ export const NotificationsView:React.FC=()=>{
         <button type="button" className="mt-2 rounded-lg border border-blue-300 px-3 py-2 font-semibold text-blue-800"
           onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
       </li>)}</ul>}
+    </section>
+    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment simulation updates','পেমেন্ট সিমুলেশন হালনাগাদ')}>
+      <h2 className="font-semibold text-taxpay-text">{label('Payment simulation updates','পেমেন্ট সিমুলেশন হালনাগাদ')}</h2>
+      <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
+      {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
+       !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No simulated payment activity yet.','এখনো কোনো পেমেন্ট সিমুলেশন নেই।')}</p>:
+       <ul className="divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-3">
+         <p className="font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.totalMinor)}</p>
+         <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Simulation status','সিমুলেশনের অবস্থা')}: {payment.state}</p>
+       </li>)}</ul>}
     </section>
   </main>;
   // Keep the existing pre-payment account entry; successful guest payments
