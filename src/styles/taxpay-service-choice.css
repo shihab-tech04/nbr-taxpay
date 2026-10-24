@@ -23,45 +23,38 @@
 .tax-service-choice { font-family: inherit; }
 .tax-service-choice--travel { display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;width:100%;height:100%; }
 .tax-service-choice--travel > .tax-service-choice__eyebrow { margin:1rem 1.4rem .4rem; }
-.tax-service-choice--travel > .tax-service-choice__progress { flex:0 0 auto;margin:0 1.4rem .5rem; }
-.tax-service-choice--travel > .travel-flow { flex:1 1 auto;min-height:0;height:auto; }
-.tax-service-choice__eyebrow {
-  margin: 0 0 .65rem;
-  color: var(--citizen-muted);
-  font-size: .85rem;
-  font-weight: 650;
-  line-height: 1.5;
-}
-.tax-service-choice__progress {
+.tax-service-choice--travel > .tax-service-choice__progress {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  padding: 0 0 1rem;
-  margin: 0 0 1.1rem;
+  gap: .35rem;
+  padding: 0 0 .45rem;
+  margin: 0 0 .6rem;
   list-style: none;
   border-bottom: 1px solid var(--citizen-border);
 }
 .tax-service-choice__progress li {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: .35rem;
+  justify-content: center;
+  gap: .4rem;
   min-width: 0;
-  padding: .25rem .15rem;
+  min-height: 30px;
+  padding: .12rem .15rem;
   color: var(--citizen-muted);
-  font-size: .78rem;
+  font-size: .76rem;
   font-weight: 650;
+  line-height: 1.25;
   text-align: center;
-  line-height: 1.35;
 }
 .tax-service-choice__progress li:not(:last-child)::after {
   content: '';
   position: absolute;
-  top: 18px;
-  left: calc(50% + 17px);
-  width: calc(100% - 34px);
-  height: 2px;
+  right: -.2rem;
+  top: 25%;
+  height: 50%;
+  width: 1px;
   background: var(--citizen-border);
 }
 .tax-service-choice__progress li.tax-service-choice__stage--complete::after {
@@ -72,14 +65,14 @@
   z-index: 1;
   display: grid;
   place-items: center;
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
   border: 1.5px solid var(--citizen-border);
   border-radius: 50%;
   background: white;
   color: var(--citizen-muted);
-  font-size: .82rem;
+  font-size: .76rem;
   font-weight: 750;
 }
 .tax-service-choice__progress li.tax-service-choice__stage--current {
@@ -98,16 +91,22 @@
   background: var(--citizen-primary);
   color: white;
 }
-.tax-service-choice__stage-label { overflow-wrap: anywhere; }
+.tax-service-choice__stage-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .tax-service-choice__stage-label--short { display: none; }
 .tax-service-choice__selected-service {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: .35rem .7rem;
-  margin: 0 0 1rem;
+  margin: 0 0 .6rem;
   color: var(--citizen-muted);
-  font-size: .84rem;
+  font-size: .8rem;
   line-height: 1.45;
 }
 .tax-service-choice__selected-service strong {
@@ -554,7 +553,10 @@
     width:100%;
     flex:0 0 auto;
   }
-  .tax-service-choice__progress li { font-size: .75rem; }
+  .tax-service-choice__progress { gap: .1rem; }
+  .tax-service-choice__progress li { font-size: .68rem; gap: .2rem; }
+  .tax-service-choice__progress .tax-service-choice__stage-number { flex-basis: 22px; width: 22px; height: 22px; }
+  .tax-service-choice__progress .tax-service-choice__stage-number svg { width: 14px; height: 14px; }
   .tax-service-choice__stage-label--full { display: none; }
   .tax-service-choice__stage-label--short { display: block; }
   .tax-service-choice__grid { gap: .75rem; }
