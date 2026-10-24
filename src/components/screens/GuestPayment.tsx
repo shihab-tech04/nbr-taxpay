@@ -32,6 +32,7 @@ import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11Guest
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
+import { OtherTaxBatchComposer, otherTaxAllocationTotal, otherTaxAllocationHead, isOtherTaxHeadEligible, OTHER_TAX_YEARS, type OtherTaxTaxpayer, type OtherTaxAllocation } from './OtherTaxBatchComposer';
 
 const GUEST_COPY = {
   en: {
@@ -181,6 +182,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Form inputs
   const [tin, setTin] = useState('');
   const [payerName, setPayerName] = useState('');
+  const [otherTaxpayerName, setOtherTaxpayerName] = useState('');
+  const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>([]);
+  const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [phone, setPhone] = useState('');
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   // The later approved UX supersedes v11's preselected "My own tax" default.
@@ -205,6 +209,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
+  const otherBatch = !isWithholdingMode && forSelf === false && category === 'OTHER_TAX_PAYMENT';
+  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: otherTaxpayerName }, ...additionalTaxpayers];
+  const batchAmount = otherTaxAllocationTotal(otherTaxLines);
+  const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
+    && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
+      && batchTaxpayers.some(person => person.id === line.taxpayerId)
+      && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
+
   const [headSearch, setHeadSearch] = useState('');
   const [headSearchDraft, setHeadSearchDraft] = useState('');
 
@@ -335,9 +347,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const validAmountInputs = selectedHeads.map(head => amountRawForHead(head.id)).filter(raw => parseGuestAmount(raw) !== null);
   const summedAmount = verifiedReference && selectedHeads.length > 1 ? null : sumGuestAmounts(validAmountInputs);
   const amountsValid = selectedHeads.length > 0 && validAmountInputs.length === selectedHeads.length && summedAmount !== null;
-  const totalAmount = summedAmount ?? 0;
+  const totalAmount = otherBatch ? batchAmount ?? 0 : summedAmount ?? 0;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
-  const paymentCalculation = <PaymentLiveSummary language={language}
+  const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language}
+    category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
+    categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
+    year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
+    amount={batchAmount}
+    breakdown={otherTaxLines.map(line => {
+      const head = otherTaxAllocationHead(line.headId);
+      const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
+      return { label: `${head?.economicCode || ''} — ${person?.name || person?.tin || ''} · ${line.assessmentYear}`,
+        value: otherTaxAllocationTotal([line]) };
+    })} /> : <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
     head={selectedHeads.length === 1
@@ -365,6 +387,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (!/^\d{12,13}$/.test(taxpayerTin)) {
       setValidationError(copy.invalidTin, 'tin');
+      return false;
+    }
+    if (otherBatch) {
+      if (otherTaxpayerName.trim().length < 2 ||
+          additionalTaxpayers.some(person => person.name.trim().length < 2 || !/^\d{12}$/.test(person.tin)) ||
+          new Set(batchTaxpayers.map(person => person.tin)).size !== batchTaxpayers.length) {
+        setValidationError(language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন এবং নাম লিখুন।' :
+          'Give every taxpayer a distinct 12-digit TIN and a name.', 'tin');
+        return false;
+      }
+    }
+    if (otherBatch && !/^01\d{9}$/.test(receiptPhone)) {
+      setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন।' :
+        'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
       return false;
     }
     if (!forSelf && payerName.trim().length < 2) {
@@ -398,6 +434,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleStep2Next = () => {
+    if (otherBatch) {
+      const invalid = otherTaxLines.find(line =>
+        !isOtherTaxHeadEligible(line.headId) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
+        !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
+        otherTaxAllocationTotal([line]) === null);
+      if (!batchValid || invalid) {
+        setValidationError(language === 'bn' ? 'প্রতিটি খাতের জন্য করদাতা, করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' :
+          'Choose at least one eligible head and give each line a taxpayer, assessment year and positive amount.', 'headId');
+        return;
+      }
+      clearValidationError();
+      setStep(3);
+      return;
+    }
     if (!isWithholdingMode && !incomeTaxType) {
       setValidationError(language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন।' : 'Choose the income tax type.', 'incomeTaxType');
       return;
@@ -467,6 +517,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleExecutePayment = () => {
+    // A batch cannot be represented as a single taxpayer challan. Keep the
+    // existing payment presentation but defer batch execution to A-Challan.
+    if (otherBatch) return;
     if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !amountsValid || !(totalAmount > 0)) return;
     setIsProcessing(true);
     setPaymentPhase('processing');
@@ -479,7 +532,18 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const randToken = Math.floor(100000 + Math.random() * 900000);
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-      const lineItems: PaymentLineItem[] = selectedHeads.map(head => {
+      const lineItems: PaymentLineItem[] = otherBatch ? otherTaxLines.map(line => {
+        const head = otherTaxAllocationHead(line.headId)!;
+        const amount = otherTaxAllocationTotal([line]) || 0;
+        const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
+        return {
+          headId: head.id, economicCode: head.economicCode, headNameEn: head.nameEn,
+          taxAmount: head.category === 'PENALTY' ? 0 : amount,
+          penaltyAmount: head.category === 'PENALTY' ? amount : 0,
+          surchargeAmount: 0, interestAmount: 0, totalAmount: amount,
+          note: `Preview allocation: taxpayer TIN ${taxpayer.tin}; AY ${line.assessmentYear}`
+        };
+      }) : selectedHeads.map(head => {
         const amount = headAmount(head.id);
         return {
           headId: head.id,
@@ -501,7 +565,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         challanNo: `ACS-${year}-${randChallan}`,
         tokenNumber: `TKN-${randToken}`,
         paymentCategory: category,
-        assessmentYear,
+        assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
         payerName: forSelf ? accountName || '—' : payerName.trim(),
         payerTin: ownAccountTax ? taxpayerTin : 'GUEST',
         taxpayerTin,
@@ -546,6 +610,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             isWithholding: isWithholdingMode,
             paymentChannel, paymentMethod,
             lines: lineItems,
+            ...(otherBatch ? { allocations: otherTaxLines.map(line => {
+              const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
+              return { taxpayerTin: taxpayer.tin, taxpayerName: taxpayer.name,
+                headId: line.headId, assessmentYear: line.assessmentYear,
+                amountMinor: Math.round((otherTaxAllocationTotal([line]) || 0) * 100) };
+            }) } : {}),
             totalAmount,
             taxCreditStatus: newReceipt.taxCreditStatus,
             receiptSnapshot: {...newReceipt,treasuryStatus:'GATEWAY_SUCCESS'}
@@ -804,6 +874,51 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>}
             </div>
             </PaymentFormSection>}
+            {otherBatch && <PaymentFormSection number={3} staticView={embedded}
+              title={language === 'bn' ? 'করদাতাদের তালিকা' : 'Taxpayers in this payment'}
+              description={language === 'bn' ? 'একাধিক করদাতা যোগ বা মুছুন।' : 'Add and remove taxpayer identities. Each payment head will be assigned to one taxpayer.'}>
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="other-tax-primary-name" className="block text-xs font-semibold text-slate-700 mb-1">
+                    {language === 'bn' ? 'প্রথম করদাতার নাম' : 'First taxpayer name'} *
+                  </label>
+                  <input id="other-tax-primary-name" value={otherTaxpayerName}
+                    onChange={e => setOtherTaxpayerName(e.target.value)} type="text" autoComplete="off"
+                    className="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                </div>
+                {additionalTaxpayers.map((person, index) => <div key={person.id}
+                  className="rounded-lg border border-slate-200 p-3" data-testid="other-tax-taxpayer">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <strong className="text-sm">{language === 'bn' ? 'করদাতা' : 'Taxpayer'} {index + 2}</strong>
+                    <button type="button" className="min-h-11 rounded-lg border border-red-200 px-3 text-red-700"
+                      onClick={() => {
+                        setAdditionalTaxpayers(previous => previous.filter(item => item.id !== person.id));
+                        setOtherTaxLines(previous => previous.filter(line => line.taxpayerId !== person.id));
+                      }}>{language === 'bn' ? 'মুছুন' : 'Remove taxpayer'}</button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label htmlFor={`other-tax-tin-${person.id}`} className="block text-xs font-semibold mb-1">TIN *</label>
+                      <input id={`other-tax-tin-${person.id}`} value={person.tin} maxLength={12} inputMode="numeric"
+                        onChange={e => setAdditionalTaxpayers(prev => prev.map(item =>
+                          item.id === person.id ? { ...item, tin: e.target.value.replace(/\D/g, '').slice(0, 12) } : item))}
+                        className="min-h-11 w-full rounded-lg border border-slate-300 px-3 font-mono-plex text-sm" />
+                    </div>
+                    <div><label htmlFor={`other-tax-name-${person.id}`} className="block text-xs font-semibold mb-1">
+                      {language === 'bn' ? 'নাম' : 'Name'} *</label>
+                      <input id={`other-tax-name-${person.id}`} value={person.name}
+                        onChange={e => setAdditionalTaxpayers(prev => prev.map(item =>
+                          item.id === person.id ? { ...item, name: e.target.value } : item))}
+                        className="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-sm" />
+                    </div>
+                  </div>
+                </div>)}
+                <button type="button" disabled={additionalTaxpayers.length >= 19}
+                  className="min-h-11 rounded-lg border border-taxpay-primary px-4 font-semibold text-taxpay-primary disabled:opacity-50"
+                  onClick={() => setAdditionalTaxpayers(prev => [...prev, {
+                    id: crypto.randomUUID(), tin: '', name: ''
+                  }])}>{language === 'bn' ? '+ আরেকজন করদাতা যোগ করুন' : '+ Add another taxpayer'}</button>
+              </div>
+            </PaymentFormSection>}
 
             {!embedded && <div className="flex justify-end pt-3">
               <button
@@ -820,7 +935,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         )}
 
         {/* STEP 2: Head Selection & Financial Amounts */}
-        {step === 2 && (
+        {step === 2 && (otherBatch ? (
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={paymentCalculation}
+            lines={otherTaxLines} onChange={next => { setOtherTaxLines(next); clearValidationError(); }}
+            error={isFieldInvalid('headId') ? errorMessage : undefined} />
+        ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={embedded && category === 'TAX_WITH_RETURN' ? (language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন' : 'Choose the income tax type') : (language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head')}>
@@ -993,7 +1112,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </div>
             {paymentCalculation}
           </div>
-        )}
+        ))}
 
         {/* STEP 3: Review Challan & Execute Simulated Gateway */}
         {step === 3 && (
@@ -1001,12 +1120,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-review__main">
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
+                {otherBatch && <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-taxpay-dark mb-3">
+                  {language === 'bn' ? 'একাধিক করদাতার খাত ও পরিমাণ দেখা যাচ্ছে। ব্যাচ পেমেন্টের বাস্তব নিষ্পত্তি ভবিষ্যতে A-Challan ইন্টিগ্রেশনে হবে।' :
+                    'Taxpayer allocations are ready for review. Batch settlement is reserved for the future A-Challan integration; this screen does not submit a combined challan.'}
+                </p>}
                 <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
                   onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
                   onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
                   onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
                   simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline} />
-                {paymentChannel && paymentMethod && <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি। কর্তিত করদাতারা eTDS-এ বরাদ্দের পর ক্রেডিট পাবেন।' : 'I confirm the agent TIN, deduction head, year and amount. Deductee credit follows eTDS allocation.') : (language === 'bn' ? 'টিআইএন, খাত, আয়করের ধরন, করবর্ষ ও মোট পরিমাণ যাচাই করেছি। ক্রেডিট করদাতার হিসাবে যাবে।' : 'I confirm the TIN, payment head, income tax type, assessment year and total. Credit goes to the taxpayer.')}</span></label>}
+                {paymentChannel && paymentMethod && <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি। কর্তিত করদাতারা eTDS-এ বরাদ্দের পর ক্রেডিট পাবেন।' : 'I confirm the agent TIN, deduction head, year and amount. Deductee credit follows eTDS allocation.') : otherBatch ? (language === 'bn' ? 'প্রতিটি করদাতার টিআইএন, সংশ্লিষ্ট খাত, করবর্ষ ও পরিমাণ যাচাই করেছি।' : 'I confirm each taxpayer TIN and the assigned payment heads, assessment years and amounts.') : (language === 'bn' ? 'টিআইএন, খাত, আয়করের ধরন, করবর্ষ ও মোট পরিমাণ যাচাই করেছি। ক্রেডিট করদাতার হিসাবে যাবে।' : 'I confirm the TIN, payment head, income tax type, assessment year and total. Credit goes to the taxpayer.')}</span></label>}
               </section>
             </div>
             <aside className="payment-review__aside" aria-label={language === 'bn' ? 'পেমেন্টের মোট পরিমাণ' : 'Payment total'}>
@@ -1014,7 +1137,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing || otherBatch}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -1041,7 +1164,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged} aria-busy={isProcessing}>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged || otherBatch} aria-busy={isProcessing}>
               {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}
