@@ -151,7 +151,8 @@ test('single-head tax service exposes its amount and multiple amounts divide the
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'OTHER');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
   await expect(dialog.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-payer-name').fill('Test Payer');
@@ -192,7 +193,8 @@ test('four and five selected heads form balanced rows on desktop and stack on mo
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -280,7 +282,8 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await enterTaxPayService(payment, 'TAX_WITH_RETURN');
   await payment.getByRole('button', { name: 'Continue without signing in' }).click();
 
-  await expect(payment.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('#guest-tin')).toBeFocused();
   await expect(payment.getByRole('alert')).toContainText('12-digit');
