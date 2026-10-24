@@ -28,10 +28,10 @@ test('Other Tax supports multiple unique taxpayer identities and deleting taxpay
   await expect(batch).toContainText('43 liability heads');
   await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('button[aria-label^="Add "]')).toHaveCount(43);
-  await expect(batch.getByRole('button', { name: 'Add 19AAAAA' })).toBeDisabled();
   await expect(dialog.getByText('Income tax type')).toHaveCount(0);
 
   await batch.locator('[data-head-group="Others"] summary').click();
+  await expect(batch.getByRole('button', { name: 'Add 19AAAAA' })).toBeDisabled();
   await batch.getByRole('button', { name: 'Add 16A' }).click();
   await batch.locator('#other-tax-target').selectOption({ label: 'Taxpayer Beta · 222222222222' });
   await batch.getByRole('button', { name: 'Add 16A' }).click();
