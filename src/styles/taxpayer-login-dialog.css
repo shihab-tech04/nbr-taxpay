@@ -145,6 +145,26 @@
   font-weight: 500;
 }
 .taxpayer-login-submit:hover { background: var(--color-taxpay-dark); }
+
+/* Account access inside the Pay Tax journey shares the parent's single modal shell.
+   Reuse all login-field styles without drawing a nested card or backdrop. */
+.taxpay-citizen-shell .taxpayer-login-dialog--embedded {
+  width: 100%;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.taxpay-citizen-shell .taxpayer-login-dialog--embedded .taxpayer-login-recovery-row {
+  padding-bottom: 0;
+}
+.taxpay-citizen-shell .taxpayer-login-dialog--embedded .taxpayer-login-recovery {
+  margin: 12px 0 0;
+}
+
 @media (max-width: 560px) {
   .taxpayer-login-backdrop { padding: 14px; }
   .taxpayer-login-dialog { padding: 18px; border-radius: 14px; }
