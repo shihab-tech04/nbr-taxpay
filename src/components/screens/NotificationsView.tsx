@@ -1,6 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
-import {getStoryNotices,type StoryPaymentNotice} from '../../services/simulatedPaymentStory';
+import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
+import {formatSimulatedAmount} from '../../services/simulatedPaymentsApi';
+import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -17,7 +19,7 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
   const [notices,setNotices]=useState<SimulationNotice[]>([]);
-  const [guestNotices,setGuestNotices]=useState<StoryPaymentNotice[]>([]);
+  const [guestNotices,setGuestNotices]=useState<VerifiedStoryPaymentNotice[]>([]);
   const [guestError,setGuestError]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
@@ -37,11 +39,15 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[previewAccount?.id]);
   useEffect(()=>{
-    if(authenticatedUser)return;
+    if(authenticatedUser){setGuestNotices([]);setGuestError('');return;}
     let active=true;
     const refresh=async()=>{
-      try{const data=await getStoryNotices();if(active){setGuestNotices(data);setGuestError('');}}
-      catch{if(active)setGuestError(language==='bn'?'বিজ্ঞপ্তি আপাতত পাওয়া যাচ্ছে না':'Notifications temporarily unavailable');}
+      try{
+        const [events,payments]=await Promise.all([getStoryNotices(),getStorySessionPayments()]);
+        const verified=reconcileStoryPaymentNotices(events,payments);
+        if(active){setGuestNotices(verified);setGuestError('');}
+      }
+      catch{if(active){setGuestNotices([]);setGuestError(language==='bn'?'সিমুলেশন বিজ্ঞপ্তির পরিমাণ যাচাই করা যায়নি।':'Could not verify the simulated amount for these notifications.');}}
     };
     void refresh();
     const timer=window.setInterval(()=>void refresh(),7000);
@@ -110,7 +116,8 @@ export const NotificationsView:React.FC=()=>{
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
         <ul className="divide-y divide-taxpay-border">{guestNotices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment completed successfully','পরিশোধ সফলভাবে সম্পন্ন হয়েছে')}</h2>
+          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment simulation recorded · No money transferred','পেমেন্ট সিমুলেশন সংরক্ষিত · কোনো অর্থ স্থানান্তর হয়নি')}</h2>
+          <p className="font-semibold tabular-nums text-taxpay-text">{label('Simulated amount','সিমুলেশনের পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
           <p className="break-all text-sm text-taxpay-muted">{n.paymentId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
         </li>)}</ul>}
     </section>
