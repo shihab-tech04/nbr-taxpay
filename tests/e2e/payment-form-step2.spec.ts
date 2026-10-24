@@ -78,7 +78,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await footer.getByRole('button', { name: 'Back', exact: true }).click();
   await chooser.locator('[data-payer-relationship="SELF"]').click();
   await chooser.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(chooser.locator('#tax-service-other-type')).toHaveValue('PENALTY');
+  await expect(chooser.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);\n  await expect(chooser.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
   await chooser.getByRole('button', { name: 'Close payment services' }).click();
   await expect(chooser).toHaveCount(0);
 });
