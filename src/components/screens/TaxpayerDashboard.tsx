@@ -8,6 +8,7 @@ import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ServiceCategoryTag, type ServiceCategoryCode } from '../ui/ServiceCategoryTag';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import { taxpayerGreeting, isReturningTaxpayer } from '../../services/taxpayerGreeting';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -17,6 +18,11 @@ export const TaxpayerDashboard: React.FC = () => {
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
+  const registeredName = typeof user?.user_metadata?.taxpay_display_name === 'string'
+    ? user.user_metadata.taxpay_display_name.trim() : '';
+  const visibleName = registeredName || (previewAccount ? (bn ? previewAccount.nameBn : previewAccount.nameEn) : '');
+  const greeting = taxpayerGreeting(language, new Date().getHours(), visibleName,
+    Boolean(previewAccount) || isReturningTaxpayer(user?.created_at, user?.last_sign_in_at));
   const serviceName = (code: ServiceCategoryCode) => code === 'TRAVEL_TAX' ? tr('Travel tax','ভ্রমণ কর') : (CATEGORY_LABELS[code]?.[language] ?? code);
   const [year,setYear] = useState(ASSESSMENT_YEARS[0] || '2026-2027');
   const [category,setCategory] = useState<Category>('all');
@@ -64,6 +70,10 @@ export const TaxpayerDashboard: React.FC = () => {
     const a=document.createElement('a');a.href=url;a.download='TaxPay_example_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
   return <div className={`mx-auto max-w-[1150px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
+    <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
+      <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
+      <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
+    </section>
     <TaxpayerPageHeading className="taxpayer-dashboard-header" title={tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}
       description={previewAccount ? `${tr('User ID','ইউজার আইডি')}: ${previewAccount.id}` : undefined}
       actions={<div className="flex flex-wrap items-end gap-2">
