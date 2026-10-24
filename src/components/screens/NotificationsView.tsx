@@ -17,6 +17,7 @@ export const NotificationsView:React.FC=()=>{
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
+  const [bindingReady,setBindingReady]=useState(false);
   const [busyNotice,setBusyNotice]=useState<number|null>(null);
   const privateMode=Boolean(authenticatedUser);
   const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
@@ -74,10 +75,10 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[authenticatedUser?.id,language]);
   useEffect(()=>{
-    if(!authenticatedUser){setBoundId(null);setBindingError('');return;}
-    let active=true;setBoundId(null);setBindingError('');
-    getBoundSimulationUser().then(profile=>{if(active)setBoundId(profile);})
-      .catch(e=>{if(active)setBindingError(e instanceof Error?e.message:'Profile assignment unavailable');});
+    if(!authenticatedUser){setBoundId(null);setBindingError('');setBindingReady(false);return;}
+    let active=true;setBoundId(null);setBindingError('');setBindingReady(false);
+    getBoundSimulationUser().then(profile=>{if(active){setBoundId(profile);setBindingReady(true);}})
+      .catch(e=>{if(active){setBindingError(e instanceof Error?e.message:'Profile assignment unavailable');setBindingReady(true);}});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
   useEffect(()=>{
@@ -163,7 +164,13 @@ export const NotificationsView:React.FC=()=>{
         </li>)}</ul>}
     </section>
   </main>;
-  if(privateMode&&!id)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{bindingError||'Checking profile assignment…'}</p></main>;
+  // Authenticated general TaxPay users can receive review/draft notifications
+  // without a fictional simulator profile. The AccountCenter has its own
+  // authenticated owner-only SQL query, so never block that private inbox.
+  if(privateMode&&!id){
+    if(!bindingReady)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{label('Checking account…','অ্যাকাউন্ট যাচাই হচ্ছে…')}</p></main>;
+    return <AccountCenter page="notifications"/>;
+  }
   if(!id)return <AccountCenter page="notifications"/>;
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
