@@ -786,12 +786,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
               </fieldset>
-            </PaymentFormSection> : <p className="payment-form-payer-confirmation" role="status">
-              {language === 'bn' ? 'কার জন্য পরিশোধ করছেন: ' : 'Paying for: '}
-              <strong>{isWithholdingMode
-                ? (initialForSelf ? (language === 'bn' ? 'উৎসে কর কর্তনকারী' : 'Withholding agent') : (language === 'bn' ? 'কর্তনকারীর পক্ষে' : 'On behalf of the withholding agent'))
-                : (initialForSelf ? (language === 'bn' ? 'আমার নিজের কর' : 'My own tax') : (language === 'bn' ? 'অন্য কারও কর' : "Someone else's tax"))}</strong>
-            </p>}
+            </PaymentFormSection> : null}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification'} description={language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference'}>
             {ownAccountTax && <p role="status" className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
               {ownProfile
