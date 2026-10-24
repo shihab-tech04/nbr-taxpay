@@ -438,6 +438,16 @@
   grid-column: 1 / -1;
 }
 
+/* Multi-head payments need the full form width for each amount and code.
+   Only the short one-head layout should use paired AY/amount columns. */
+.payment-flow-embedded__payment .payment-form-section:has(.payment-head-amount:nth-child(2)) .payment-form-section__body {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+.payment-flow-embedded__payment .payment-form-section:has(.payment-head-amount:nth-child(2)) .payment-head-amount {
+  margin-top: 14px;
+}
+
 .payment-flow-embedded__identity > .payment-form-layout__sections { grid-column:1;grid-row:1;width:100%; }
 .payment-flow-embedded__identity > .payment-form-summary { grid-column:2;grid-row:1;top:0; }
 .payment-flow-embedded__payment > .payment-form-layout__sections { grid-column:1;grid-row:1; }
