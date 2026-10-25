@@ -391,8 +391,8 @@
   }
 }
 
-/* Homepage intro payment access: both primary CTAs stay adjacent and
- * receipt lookup wraps underneath. Applies to published CMS banner IDs too. */
+/* The introductory banner has three equal-height actions in a single row.
+ * The existing service banners, hero dimensions and CMS artwork stay unchanged. */
 .public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
   padding-block: .75rem;
 }
@@ -401,46 +401,95 @@
 }
 .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: .5rem;
-  row-gap: .35rem;
-  margin-top: .55rem;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.15fr) minmax(0, 1.62fr);
+  gap: .35rem;
+  margin-top: .7rem;
+  align-items: stretch;
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
   min-width: 0;
+  max-width: none;
   width: 100%;
-  gap: .3rem;
-  padding-inline: .45rem;
-  font-size: .78rem;
+  min-height: 46px;
+  padding: .4rem .3rem;
+  gap: .25rem;
+  font-size: .7rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  border-radius: .55rem;
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
-  grid-column: 1 / -1;
-  justify-self: start;
-  min-height: 32px;
-  padding: .35rem .7rem;
-  font-size: .77rem;
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
-@media (max-width: 900px) {
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
-    justify-self: center;
+/* Pay Tax remains the filled primary CTA. Travel Tax is outlined secondary;
+ * receipt/status lookup is the quiet search action, not a third primary. */
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel {
+  background: rgb(255 255 255 / 58%);
+  color: var(--citizen-primary-dark);
+  border: 1px solid var(--citizen-primary);
+}
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:hover {
+  background: rgb(255 255 255 / 90%);
+  color: var(--citizen-primary-dark);
+}
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup {
+  grid-column: auto;
+  justify-self: stretch;
+  background: rgb(255 255 255 / 64%);
+  color: var(--citizen-primary-dark);
+  border: 1px solid var(--citizen-border) !important;
+}
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup:hover {
+  background: white;
+  color: var(--citizen-primary-dark);
+}
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:focus-visible,
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup:focus-visible {
+  outline: 2px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+.public-hero-carousel__travel-compact { display: none; }
+
+@media (min-width: 901px) and (max-width: 1100px) {
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
+    gap: .25rem;
+  }
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
+    padding-inline: .15rem;
+    font-size: .64rem;
+    gap: .2rem;
+  }
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary svg,
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel svg {
+    display: none;
   }
 }
 @media (max-width: 600px) {
+  /* Space is limited at 320px. Shorten visible travel text while retaining
+   * its complete accessible name and the original onPayTax('TRAVEL_TAX') route. */
   .public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
     padding-block: .35rem;
   }
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
-    margin-top: .35rem;
-    row-gap: .3rem;
-  }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary {
-    min-width: 0;
-    padding-inline: .3rem;
+    margin-top: .45rem;
     gap: .25rem;
-    font-size: .75rem;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
-    min-height: 32px;
-    padding: .25rem .65rem;
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
+    min-height: 44px;
+    padding-inline: .18rem;
+    font-size: .69rem;
+    gap: .2rem;
   }
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary svg,
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel svg {
+    display: none;
+  }
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup svg {
+    width: 14px;
+    height: 14px;
+  }
+  .public-hero-carousel__travel-full { display: none; }
+  .public-hero-carousel__travel-compact { display: inline; }
 }
