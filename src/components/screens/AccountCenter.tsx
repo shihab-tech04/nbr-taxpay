@@ -219,9 +219,6 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>
-                {previewAccount && <div className="taxpayer-account-actions">
-                  <button type="button" onClick={() => navigate('manage_authorization')}>{language === 'bn' ? 'অনুমোদন পরিচালনা' : 'Manage Authorization'}</button>
-                </div>}
               </>
             )}
             {sampleOnly && page === 'settings' && (

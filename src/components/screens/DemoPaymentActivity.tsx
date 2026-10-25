@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
+import {parsePaymentPrefill} from '../../services/paymentPrefill';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {activeAuthorizationFor,getHostedAuthorizations} from '../../services/hostedDemoAuthorizations';
 import {formatCurrency} from '../../services/numberFormat';
@@ -42,14 +43,12 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const chooseCategory=(category:SimulationCategory)=>{setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
 
   useEffect(()=>{
-    const incoming=routeParams?.initialCategory;
-    if(typeof incoming==='string'&&(simulationCategories as readonly string[]).includes(incoming)){
-      const category=incoming as SimulationCategory;
-      setParentCategory(category);
-      setLines(old=>old.map(line=>({...line,category})));
-      setPaymentStage(2);
-    }
-  },[routeParams?.initialCategory]);
+    const context=parsePaymentPrefill(routeParams??{});
+    if(!context)return;
+    setParentCategory(context.category);
+    setLines(old=>old.map(line=>({...line,category:context.category,assessmentYear:context.assessmentYear,amount:context.amount})));
+    setPaymentStage(2);
+  },[routeParams?.initialCategory,routeParams?.initialAssessmentYear,routeParams?.initialAmount]);
 
   useEffect(()=>{
     if(!authenticatedUser){setBoundId(null);setBindingError('');return;}
@@ -58,7 +57,15 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       .catch(e=>{if(active)setBindingError(e instanceof Error?e.message:'Profile authorization unavailable');});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
-  useEffect(()=>{if(!id)return;const incoming=routeParams?.initialCategory;const initialCategory=typeof incoming==='string'&&(simulationCategories as readonly string[]).includes(incoming)?incoming as SimulationCategory:'TAX_WITH_RETURN';setLines([{...freshLine(id),category:initialCategory}]);setNonce(crypto.randomUUID());setSubmitMessage('');setPaymentStage(incoming?2:0);},[id,routeParams?.initialCategory]);
+  useEffect(()=>{
+    if(!id)return;
+    const context=parsePaymentPrefill(routeParams??{});
+    setParentCategory(context?.category??'TAX_WITH_RETURN');
+    setLines([{...freshLine(id),...(context??{})}]);
+    setNonce(crypto.randomUUID());
+    setSubmitMessage('');
+    setPaymentStage(context?2:0);
+  },[id,routeParams?.initialCategory,routeParams?.initialAssessmentYear,routeParams?.initialAmount]);
   useEffect(()=>{
     if(!id||!privateMode)return;
     let active=true;

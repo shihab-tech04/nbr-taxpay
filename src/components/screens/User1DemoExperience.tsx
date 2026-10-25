@@ -4,6 +4,7 @@ import {useTaxState} from '../../services/taxState';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {taxpayerGreeting} from '../../services/taxpayerGreeting';
 
 /**
  * Public synthetic storybook dataset for fictional "user1" only.
@@ -81,6 +82,7 @@ export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','his
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=({route,activityTabs=false})=>{
   const {navigate,language,setLanguage,routeParams}=useTaxState();
   const bn=language==='bn';
+  const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
@@ -318,6 +320,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       </div>
       {view('services','View payment services','পরিশোধ সেবাসমূহ দেখুন')}
     </section>
+    {totals.outstanding>0 && <section className={panel} aria-labelledby="taxpayer-selected-payment-heading">
+      <h2 id="taxpayer-selected-payment-heading" className="text-base font-semibold">{tr('Review a suggested payment','পরামর্শকৃত পেমেন্ট যাচাই করুন')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted">{tr('Displayed Tax with Return balance for ','প্রদর্শিত রিটার্নসহ করের অবশিষ্ট, করবর্ষ ')}{year} · {money(totals.outstanding)}. {tr('Confirm the year, applicable head and amount before payment.','পেমেন্টের আগে করবর্ষ, প্রযোজ্য খাত ও পরিমাণ যাচাই করুন।')}</p>
+      <button type="button" className={action+' mt-3'} onClick={()=>navigate('wizard',{
+        initialCategory:'TAX_WITH_RETURN',initialAssessmentYear:year,initialAmount:totals.outstanding.toFixed(2)
+      })}>{tr('Pay selected tax','নির্বাচিত কর পরিশোধ করুন')} <ArrowRight size={16} aria-hidden="true"/></button>
+    </section>}
   </>;
   const journalEntries=(()=>{
     let balance=totals.liability;
@@ -363,7 +372,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       ['Income sources','Salary, bank interest and consultancy'],['Address','Address unavailable'],
       ['Assessment years',taxYears.map(x=>x.year).join(', ')],['Representative mandate','Not applicable']
     ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="text-xs text-slate-500">{x[0]}</p><p className="mt-1 text-sm font-semibold">{x[1]}</p></div>)}</div>
-    <div className="mt-4">{view('manage_authorization','Manage Authorization','অনুমোদন পরিচালনা')}</div>
   </section>;
   const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Recent updates','সাম্প্রতিক আপডেট')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
   const settings=<section className={panel+' taxpayer-preferences'}>
@@ -380,8 +388,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
-  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  const content=route==='ledger'?ledger:route==='history'?<>{transactionList}{journey}</>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
+    {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
+      <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
+      <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
+    </section>}
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
