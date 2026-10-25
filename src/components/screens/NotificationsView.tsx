@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
+import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
 import {formatSimulatedAmount,getDemoStoryPaymentHistory} from '../../services/simulatedPaymentsApi';
 import {reconcileDemoSimulationActivity,type DemoSimulationActivity} from '../../services/demoSimulationActivity';
@@ -143,6 +144,7 @@ export const NotificationsView:React.FC=()=>{
          <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Simulation status','সিমুলেশনের অবস্থা')}: {payment.state}</p>
        </li>)}</ul>}
     </section>
+    <SessionPaymentNotifications language={language}/>
   </main>;
   // Keep the existing pre-payment account entry; successful guest payments
   // use their own session-scoped SQL notification feed without logging in.
@@ -191,5 +193,6 @@ export const NotificationsView:React.FC=()=>{
           {privateMode&&<button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50" disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}
         </li>)}</ul>}
     </section>
+    <SessionPaymentNotifications language={language}/>
   </main>;
 };
