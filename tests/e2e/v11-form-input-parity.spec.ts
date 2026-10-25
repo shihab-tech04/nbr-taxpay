@@ -28,7 +28,7 @@ test('payer relationship is required at entry and head choice is still validated
   await expect(dialog.getByText('Income tax type', { exact: true })).toHaveCount(0);
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(batch.getByRole('alert')).toContainText('Choose at least one eligible head');
+  await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Select at least one payment head to continue.');
 });
 
 test('sample v11 notices validate the TIN pair and prefill locked AY and amount', async ({ page }) => {
