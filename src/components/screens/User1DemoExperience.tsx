@@ -322,7 +322,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     </section>
     {totals.outstanding>0 && <section className={panel} aria-labelledby="taxpayer-selected-payment-heading">
       <h2 id="taxpayer-selected-payment-heading" className="text-base font-semibold">{tr('Review a suggested payment','পরামর্শকৃত পেমেন্ট যাচাই করুন')}</h2>
-      <p className="mt-2 text-sm text-taxpay-muted">{tr('From this sample ledger only: remaining Tax with Return for ','শুধু এই নমুনা লেজার অনুযায়ী: রিটার্নসহ করের অবশিষ্ট, করবর্ষ ')}{year} · {money(totals.outstanding)}. {tr('Confirm the year, applicable head and amount before payment.','পেমেন্টের আগে করবর্ষ, প্রযোজ্য খাত ও পরিমাণ যাচাই করুন।')}</p>
+      <p className="mt-2 text-sm text-taxpay-muted">{tr('Displayed Tax with Return balance for ','প্রদর্শিত রিটার্নসহ করের অবশিষ্ট, করবর্ষ ')}{year} · {money(totals.outstanding)}. {tr('Confirm the year, applicable head and amount before payment.','পেমেন্টের আগে করবর্ষ, প্রযোজ্য খাত ও পরিমাণ যাচাই করুন।')}</p>
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('wizard',{
         initialCategory:'TAX_WITH_RETURN',initialAssessmentYear:year,initialAmount:totals.outstanding.toFixed(2)
       })}>{tr('Pay selected tax','নির্বাচিত কর পরিশোধ করুন')} <ArrowRight size={16} aria-hidden="true"/></button>
