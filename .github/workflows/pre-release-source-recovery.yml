@@ -1,0 +1,48 @@
+name: Verified pre-release source recovery
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create source and full-history recovery archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="$(git rev-parse HEAD)"
+          mkdir -p recovery
+          git bundle create "recovery/pre-release-history.bundle" --all
+          git bundle verify "recovery/pre-release-history.bundle"
+          git archive --format=tar "$BASE_SHA" | gzip -9 > "recovery/pre-release-source.tar.gz"
+          printf '%s\n' "$BASE_SHA" > recovery/BASE_SHA
+          (cd recovery && sha256sum pre-release-history.bundle pre-release-source.tar.gz BASE_SHA > SHA256SUMS)
+          (cd recovery && sha256sum --check SHA256SUMS)
+      - name: Independent git bundle restore test
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="$(cat recovery/BASE_SHA)"
+          mkdir -p /tmp/pre-release-restore
+          git clone --mirror recovery/pre-release-history.bundle /tmp/pre-release-restore/restore.git
+          git --git-dir=/tmp/pre-release-restore/restore.git cat-file -e "$BASE_SHA^{commit}"
+          git --git-dir=/tmp/pre-release-restore/restore.git fsck --full --strict
+          mkdir -p /tmp/pre-release-restore/source
+          tar -xzf recovery/pre-release-source.tar.gz -C /tmp/pre-release-restore/source
+          test -f /tmp/pre-release-restore/source/package.json
+          echo "RECOVERY_RESTORE_PASS_SHA=$BASE_SHA"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pre-release-recovery-${{ github.event.pull_request.number || github.run_id }}
+          path: recovery/
+          retention-days: 1
+          if-no-files-found: error
