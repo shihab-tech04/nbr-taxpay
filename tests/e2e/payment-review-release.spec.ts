@@ -127,6 +127,20 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 });
 
 test('guest payment remains a bilingual, accessible simulation at mobile and desktop widths', async ({ page }, info) => {
+  // This is a UI/a11y contract: use a deterministic synthetic acknowledgement.
+  // Hosted SQL mirroring is exercised independently by Story 1 Hosted Payment Sync.
+  // No real payment or credit is represented by this fixture.
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true, id: '00000000-0000-4000-8000-000000000001',
+        status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+      }),
+    });
+  });
   await page.goto('/?action=guest');
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
 
