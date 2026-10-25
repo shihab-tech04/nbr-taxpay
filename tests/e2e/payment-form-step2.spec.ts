@@ -156,6 +156,12 @@ test('single-head tax service exposes its amount and multiple amounts divide the
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
+  // The v11 source's legacy code 74 is not promoted to an accounting head or current law.
+  // Section 174 is shown inline with the amount and qualified for late filing only.
+  await expect(dialog.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(dialog.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
+  await expect(dialog.locator('.payment-head-fieldset')).toHaveCount(0);
+  await expect(dialog.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
   await expect(dialog.locator('.payment-head-amount')).toHaveCount(1);
   await dialog.locator('#guest-tax-amount').fill('1000');
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
@@ -288,7 +294,9 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await payment.locator('#guest-phone').fill('01712345678');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('.payment-head-single')).toHaveCount(0);
-  await expect(payment.locator('.payment-form-summary__rows')).toContainText('Tax with return (s.173 / s.174, as applicable)');
+  await expect(payment.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(payment.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
+  await expect(payment.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
   await expect(payment.locator('.payment-form-summary__rows')).not.toContainText('74 —');
   await expect(payment.locator('#guest-head-search')).toHaveCount(0);
 

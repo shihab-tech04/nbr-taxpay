@@ -371,14 +371,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     })} /> : <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
-    head={selectedHeads.length === 1
-      ? category === 'TAX_WITH_RETURN'
-        // v11's "74" is an old-Ordinance source label, not a current-law payment head.
-        // Income Tax Act 2023: section 173 applies to timely returns, 174 to late returns.
-        // Filing-date facts are not collected here; do not silently select one section.
-        ? language === 'bn' ? 'রিটার্নসহ কর (ধারা ১৭৩ / ১৭৪—প্রযোজ্যতা সাপেক্ষে)' : 'Tax with return (s.173 / s.174, as applicable)'
-        : `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}`
-      : undefined}
+    head={category === 'TAX_WITH_RETURN'
+      // The original v11 "74" is preserved as source provenance, not presented as current law.
+      // Return-tax context is displayed inline with the amount, not in a second summary row.
+      ? undefined
+      : selectedHeads.length === 1
+        ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}`
+        : undefined}
     amount={summedAmount}
     breakdown={step >= 3 ? [
       ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
@@ -1054,7 +1053,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection>
 
             {/* Financial Amounts Breakdown */}
-            <PaymentFormSection number={4} staticView={embedded} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
+            <PaymentFormSection number={4} staticView={embedded} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={category === 'TAX_WITH_RETURN'
+              ? language === 'bn'
+                ? '১৭৪ — রিটার্নের সাথে কর (বিলম্বিত রিটার্ন)। সময়মতো দাখিলে ধারা ১৭৩ প্রযোজ্য; এই ফর্ম প্রযোজ্যতা নির্ধারণ করে না।'
+                : '174 — Tax with return (late filing). Section 173 applies to on-time returns; filing-date applicability is not determined here.'
+              : language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
             <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
                 <label htmlFor="guest-assessment-year" className="block text-slate-600 font-medium mb-1">{commonCopy.assessmentYear} *</label>

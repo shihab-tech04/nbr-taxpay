@@ -57,8 +57,13 @@ export const PaymentWizard: React.FC = () => {
   // Avoid presenting the old Ordinance payment-head code as a current Income Tax Act section.
   // The correct current-law section depends on filing facts, not AY alone.
   const returnLawLabel = bn
-    ? 'রিটার্নসহ কর (ধারা ১৭৩ / ১৭৪—প্রযোজ্যতা সাপেক্ষে)'
-    : 'Tax with return (s.173 / s.174, as applicable)';
+    ? '১৭৪ — রিটার্নের সাথে কর (বিলম্বিত রিটার্ন)'
+    : '174 — Tax with return (late filing)';
+  // Display reference only. Section 173 governs on-time return payment.
+  // Filing-date applicability and the late-return calculation are not inferred from this screen.
+  const returnLawNote = bn
+    ? 'সময়মতো রিটার্নের ক্ষেত্রে ধারা ১৭৩ প্রযোজ্য; প্রযোজ্যতা যাচাই ছাড়া ধারা ১৭৪ প্রয়োগ করবেন না।'
+    : 'Section 173 applies to on-time returns; section 174 applies to late returns. Filing-date applicability is not determined here.';
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -399,7 +404,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode} amount={totalAmount} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={category === 'TAX_WITH_RETURN' ? undefined : selectedHead?.economicCode} amount={totalAmount} />
           </div>
         )}
 
@@ -408,19 +413,17 @@ export const PaymentWizard: React.FC = () => {
           <div className="payment-form-layout">
             <div className="payment-form-layout__sections">
             <PaymentFormSection number={3} title={bn ? 'পরিশোধের পরিমাণ' : 'Tax amount & reference'}>
-            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-sm">
-              <span className="text-slate-600 block">{t.selectedHead}:</span>
-              <div className="font-mono-plex font-bold text-sm tabular-nums text-taxpay-dark mt-0.5">
-                {category === 'TAX_WITH_RETURN' ? returnLawLabel : `${selectedHead?.economicCode} — ${bn ? selectedHead?.nameBn : selectedHead?.nameEn}`}
-              </div>
-              <div className="text-sm text-slate-600 mt-1">
-                {t.year}: {assessmentYear}
-              </div>
-            </div>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
               <h3 className="font-bold text-sm uppercase tracking-wider text-taxpay-dark">
                 {t.amountBreakdown}
               </h3>
+              <div data-testid="wizard-return-tax-head-inline" className="text-sm text-slate-700">
+                <strong className="font-mono-plex text-taxpay-dark">
+                  {category === 'TAX_WITH_RETURN' ? returnLawLabel : `${selectedHead?.economicCode} — ${bn ? selectedHead?.nameBn : selectedHead?.nameEn}`}
+                </strong>
+                <span className="ml-2 text-slate-600">· {t.year}: {assessmentYear}</span>
+                {category === 'TAX_WITH_RETURN' && <p className="mt-1 text-xs text-slate-600">{returnLawNote}</p>}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
                 <div>
                   <label htmlFor="wizard-tax-amount" className="block text-slate-600 font-medium mb-1">{t.tax} *</label>
@@ -516,7 +519,7 @@ export const PaymentWizard: React.FC = () => {
               </button>
             </div>
             </div>
-            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
+            <PaymentLiveSummary language={language} category={bn ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en} categoryCode={category} tin={taxpayerProfile.tin} year={assessmentYear} head={category === 'TAX_WITH_RETURN' ? undefined : selectedHead?.economicCode} amount={totalAmount} breakdown={[{label:t.tax,value:taxAmount},{label:t.penalty,value:penaltyAmount},{label:t.surcharge,value:surchargeAmount},{label:t.interest,value:interestAmount}]} />
           </div>
         )}
 
