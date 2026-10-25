@@ -294,7 +294,9 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await payment.locator('#guest-phone').fill('01712345678');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('.payment-head-single')).toHaveCount(0);
-  await expect(payment.locator('.payment-form-summary__rows')).toContainText('Tax with return (s.173 / s.174, as applicable)');
+  await expect(payment.getByTestId('return-tax-head-inline')).toContainText('174 — Tax with return (late filing)');
+  await expect(payment.getByTestId('return-tax-head-inline')).toContainText('Section 173 applies to on-time returns');
+  await expect(payment.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
   await expect(payment.locator('.payment-form-summary__rows')).not.toContainText('74 —');
   await expect(payment.locator('#guest-head-search')).toHaveCount(0);
 
