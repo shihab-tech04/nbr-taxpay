@@ -212,10 +212,22 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                             <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-amount-${selectedLine.id}`}>
                               {tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *
                             </label>
-                            <input id={`other-tax-amount-${selectedLine.id}`} type="text" inputMode="decimal"
-                              value={selectedLine.amount} onChange={event => edit(selectedLine.id, { amount: event.target.value })}
+                            <input id={amountId} type="text" inputMode="decimal"
+                              pattern="[0-9]+([.][0-9]{1,2})?" required
+                              aria-invalid={invalid || undefined}
+                              aria-describedby={invalid ? amountId + '-error' : undefined}
+                              value={selectedLine.amount} onChange={event => {
+                                const next = normalizeGuestAmountInput(event.target.value);
+                                if (next !== null) edit(selectedLine.id, { amount: next });
+                              }}
                               placeholder="0.00" maxLength={17}
-                              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono-plex text-sm" />
+                              className={invalid
+                                ? "min-h-11 w-full rounded-lg border border-rose-600 bg-white px-3 font-mono-plex text-sm"
+                                : "min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono-plex text-sm"} />
+                            {invalid && <p id={amountId + '-error'} className="payment-form-field-error">
+                              {tx('Enter a positive amount using digits (up to 2 decimal places).',
+                                'সংখ্যা দিয়ে শূন্যের বেশি পরিমাণ লিখুন (সর্বোচ্চ ২ দশমিক স্থান)।')}
+                            </p>}
                           </div>
                         </div>}
                       </li>;
