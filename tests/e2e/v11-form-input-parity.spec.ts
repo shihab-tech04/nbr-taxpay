@@ -11,7 +11,8 @@ test('payer relationship is required at entry and head choice is still validated
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Sample Agent');
