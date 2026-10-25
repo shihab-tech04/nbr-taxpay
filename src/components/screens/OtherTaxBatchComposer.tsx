@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { BLOCKED_HEAD_IDS } from '../../data/paymentHeads';
 import { formatCurrency } from '../../services/numberFormat';
-import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
+import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import type { Language } from '../../types/tax';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
@@ -49,6 +49,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
+  const rootRef = useRef<HTMLDivElement>(null);
   const [activeTaxpayer, setActiveTaxpayer] = useState('primary');
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
@@ -57,6 +58,23 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
   const search = query.trim().toLocaleLowerCase();
   const count = grouped.reduce((n, group) => n + group.rows.length, 0);
   const usedTotal = otherTaxAllocationTotal(lines);
+  const isIncomplete = (line: OtherTaxAllocation) =>
+    otherTaxAllocationAmount(line) === null || !isOtherTaxHeadEligible(line.headId) ||
+    !OTHER_TAX_YEARS.some(year => year === line.assessmentYear);
+  const invalidLines = error ? lines.filter(isIncomplete) : [];
+  const firstInvalid = invalidLines[0];
+
+  useEffect(() => {
+    if (!error) return;
+    setQuery('');
+    if (firstInvalid && firstInvalid.taxpayerId !== activeId) {
+      setActiveTaxpayer(firstInvalid.taxpayerId);
+      return;
+    }
+    rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]').forEach(group => {
+      if (group.querySelector('[data-invalid="true"]')) group.open = true;
+    });
+  }, [error, activeId, firstInvalid?.id]);
 
   // One selection per taxpayer and source head. Selecting a different taxpayer
   // does not change, duplicate or remove another taxpayer's allocations.
@@ -75,12 +93,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
     onChange(lines.map(line => line.id === id ? { ...line, ...update } : line));
 
   return (
-    <div className="payment-form-layout payment-flow-embedded__payment" data-testid="other-tax-batch">
+    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment" data-testid="other-tax-batch">
       <div className="payment-form-layout__sections">
-        <section className="payment-form-section payment-form-section--static">
+        <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
           <div className="payment-form-section__heading">
             <div className="payment-form-section__heading-copy">
               <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
+              {error && <p className="other-tax-error-heading">{tx('Review highlighted entries', 'চিহ্নিত তথ্য সংশোধন করুন')}</p>}
               <p>{tx('Choose a taxpayer, then tick the payment heads. Enter the year and amount directly below each selection.',
                 'করদাতা নির্বাচন করে খাতে টিক দিন। নির্বাচিত খাতের নিচেই করবর্ষ ও পরিমাণ লিখুন।')}</p>
             </div>
