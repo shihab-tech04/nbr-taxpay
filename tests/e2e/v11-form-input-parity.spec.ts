@@ -20,8 +20,10 @@ test('payer relationship is required at entry and head choice is still validated
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('43 liability heads');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
+  await expect(batch).toContainText('42 available Other Tax heads');
+  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
+  await expect(batch.locator('#other-tax-target')).toHaveCount(0);
   await expect(dialog.getByText('Income tax type', { exact: true })).toHaveCount(0);
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
