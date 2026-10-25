@@ -74,7 +74,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
     rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]').forEach(group => {
       if (group.querySelector('[data-invalid="true"]')) group.open = true;
     });
-  }, [error, activeId, firstInvalid?.id]);
+  }, [error, activeId, firstInvalid?.id, query]);
 
   // One selection per taxpayer and source head. Selecting a different taxpayer
   // does not change, duplicate or remove another taxpayer's allocations.
@@ -197,7 +197,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                           </span>
                         </label>
                         {selectedLine && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
-                          data-testid="other-tax-line" data-head-id={head.id}>
+                          data-testid="other-tax-line" data-head-id={head.id} data-invalid={invalid ? 'true' : undefined}>
                           <div>
                             <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-year-${selectedLine.id}`}>
                               {tx('Assessment year', 'করবর্ষ')} *
