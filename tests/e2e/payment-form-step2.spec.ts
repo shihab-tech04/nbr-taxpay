@@ -156,6 +156,12 @@ test('single-head tax service exposes its amount and multiple amounts divide the
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
+  // The v11 source's legacy code 74 is not promoted to an accounting head or current law.
+  // Section 174 is shown inline with the amount and qualified for late filing only.
+  await expect(dialog.getByTestId('return-tax-head-inline')).toContainText('174 — Tax with return (late filing)');
+  await expect(dialog.getByTestId('return-tax-head-inline')).toContainText('Section 173 applies to on-time returns');
+  await expect(dialog.locator('.payment-head-fieldset')).toHaveCount(0);
+  await expect(dialog.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
   await expect(dialog.locator('.payment-head-amount')).toHaveCount(1);
   await dialog.locator('#guest-tax-amount').fill('1000');
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
