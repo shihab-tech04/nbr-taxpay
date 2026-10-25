@@ -5,6 +5,7 @@ import { useAccountIdentity, signOutApplicationAccount } from '../../services/ac
 import { useTaxState } from '../../services/taxState';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -316,6 +317,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                   </> : <p role="status">{t.noNotices}</p>}
               </section>
             )}
+            {page === 'notifications' && <SessionPaymentNotifications language={language} />}
             <div className="taxpayer-account-actions">
               <button type="button" className="taxpayer-account-secondary" disabled={busy} onClick={signOut}>
                 <LogOut size={17} aria-hidden />{t.logout}
