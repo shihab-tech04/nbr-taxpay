@@ -10,59 +10,90 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-test('Other Tax supports multiple unique taxpayer identities and deleting taxpayers', async ({ page }) => {
+test('Other Tax has five v11 groups, never Return, and uses in-place clickable checkbox rows', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.locator('#other-tax-primary-name').fill('Taxpayer Alpha');
-  await dialog.getByRole('button', { name: '+ Add another taxpayer' }).click();
-  const second = dialog.getByTestId('other-tax-taxpayer');
-  await expect(second).toHaveCount(1);
-  await second.locator('input[id^="other-tax-tin"]').fill('222222222222');
-  await second.locator('input[id^="other-tax-name"]').fill('Taxpayer Beta');
+  // Taxpayer beneficiary names are optional; payer/receipt names stay distinct.
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
 
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('43 liability heads');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
-  await expect(batch.locator('button[aria-label^="Add "]')).toHaveCount(43);
-  await expect(dialog.getByText('Income tax type')).toHaveCount(0);
+  await expect(batch).toContainText('42 available Other Tax heads');
+  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
+  await expect(batch.locator('#other-tax-target')).toHaveCount(0);
+  await expect(batch.getByRole('button', { name: /^Add (68A|68B)/ })).toHaveCount(0);
+  await expect(batch.getByRole('heading', { name: /Selected payment heads/ })).toHaveCount(0);
 
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  const h68a = batch.getByRole('checkbox', { name: /Select 68A/ });
+  const h68b = batch.getByRole('checkbox', { name: /Select 68B/ });
+  await expect(h68a).toBeVisible();
+  await expect(h68b).toBeVisible();
+  await expect(batch.locator('[data-head-group="Advance Tax"]')).toContainText('Advance tax on cigarrete manufacturer');
+  await expect(batch.locator('[data-head-group="Advance Tax"]')).toContainText('Advance tax for the owners of private motor car');
+  await h68a.check();
+  await h68b.check();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(2);
+  await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('1000');
+  await batch.getByTestId('other-tax-line').last().locator('input[id^="other-tax-amount"]').fill('2000');
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68A — Advance tax on cigarrete manufacturer');
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68B — Advance tax for the owners of private motor car');
+
+  await h68a.uncheck();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 2,000');
   await batch.locator('[data-head-group="Others"] summary').click();
-  await expect(batch.getByRole('button', { name: 'Add 19AAAAA' })).toBeDisabled();
-  await batch.getByRole('button', { name: 'Add 16A' }).click();
-  await batch.locator('#other-tax-target').selectOption({ label: 'Taxpayer Beta · 222222222222' });
-  await batch.getByRole('button', { name: 'Add 16A' }).click();
-
-  const lines = batch.getByTestId('other-tax-line');
-  await expect(lines).toHaveCount(2);
-  await lines.first().locator('input[id^="other-tax-amount"]').fill('1000');
-  await lines.last().locator('select[id^="other-tax-year"]').selectOption('2025-26');
-  await lines.last().locator('input[id^="other-tax-amount"]').fill('2000');
-  await expect(batch.locator('strong.font-mono-plex.text-taxpay-primary')).toHaveText('BDT 3,000');
-  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 3,000');
-
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(1);
-  await dialog.getByRole('button', { name: 'Remove taxpayer' }).click();
-  await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByTestId('other-tax-line')).toHaveCount(1);
-  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 1,000');
+  await expect(batch.getByRole('checkbox', { name: /Select 19AAAAA/ })).toBeDisabled();
 });
 
-test('other-tax multi-person batch can be reviewed but cannot issue one combined challan', async ({ page }) => {
+test('switching taxpayer preserves each person’s head, year and amount without a target dropdown', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.locator('#other-tax-primary-name').fill('Taxpayer Alpha');
+  await dialog.getByRole('button', { name: '+ Add another taxpayer' }).click();
+  const other = dialog.getByTestId('other-tax-taxpayer');
+  await other.locator('input[id^="other-tax-tin"]').fill('222222222222');
+  await other.locator('input[id^="other-tax-name"]').fill('Taxpayer Beta');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1000');
+
+  const tabs = batch.getByTestId('other-tax-taxpayer-tabs');
+  await tabs.getByRole('button').nth(1).click();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('111111111111');
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('Taxpayer Beta');
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('2025-26');
+
+  await tabs.getByRole('button').first().click();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  await expect(batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]')).toHaveValue('1000');
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Remove taxpayer' }).click();
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 1,000');
+});
+
+test('other-tax allocations can be reviewed in Step 3 but never create a combined challan', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Others"] summary').click();
-  await batch.getByRole('button', { name: 'Add 16A' }).click();
+  await batch.getByRole('checkbox', { name: /Select 16A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
