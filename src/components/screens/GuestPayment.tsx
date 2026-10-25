@@ -360,7 +360,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     breakdown={otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
-      return { label: `${head?.economicCode || ''} — ${person?.name || person?.tin || ''} · ${line.assessmentYear}`,
+      return { label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn} · ${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line]) };
     })} /> : <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
