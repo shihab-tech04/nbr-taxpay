@@ -16,7 +16,7 @@ test('Other Tax supports multiple unique taxpayer identities and deleting taxpay
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#other-tax-primary-name').fill('Taxpayer Alpha');
-  await dialog.getByRole('button', { name: '+ Add another taxpayer' }).click();
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   const second = dialog.getByTestId('other-tax-taxpayer');
   await expect(second).toHaveCount(1);
   await second.locator('input[id^="other-tax-tin"]').fill('222222222222');
@@ -46,7 +46,9 @@ test('Other Tax supports multiple unique taxpayer identities and deleting taxpay
 
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(1);
-  await dialog.getByRole('button', { name: 'Remove taxpayer' }).click();
+  await dialog.getByRole('button', { name: 'Remove taxpayer 2' }).click();
+  await expect(dialog.getByText('Removing this taxpayer will also remove 1 assigned payment head. Continue?')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Yes, remove' }).click();
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-line')).toHaveCount(1);
@@ -73,4 +75,44 @@ test('other-tax multi-person batch can be reviewed but cannot issue one combined
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await expect(dialog.getByRole('button', { name: /Pay BDT 2,500/ })).toBeDisabled();
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toHaveCount(0);
+});
+
+test('Other Tax starts with one TIN and an optional name, and added rows remain clear on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  const dialog = await getFlow(page);
+  const list = dialog.getByTestId('other-tax-taxpayer-list');
+  await expect(list).toContainText('1 taxpayer added');
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toContainText('Taxpayer 1');
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  await expect(list).toContainText('2 taxpayers added');
+  const added = dialog.getByTestId('other-tax-taxpayer');
+  await expect(added).toHaveCount(1);
+  await expect(added.locator('input[id^="other-tax-tin-"]')).toBeFocused();
+  await added.locator('input[id^="other-tax-tin-"]').fill('222222222222');
+  await expect(added.getByText('Taxpayer name (optional)')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch').locator('#other-tax-target option')).toHaveCount(2);
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Remove taxpayer 2' }).click();
+  await expect(added).toHaveCount(0);
+  await expect(list).toContainText('1 taxpayer added');
+  expect(await list.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+});
+test('Other Tax rejects duplicate TINs but does not require names', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const tin2 = dialog.locator('input[id^="other-tax-tin-"]');
+  await tin2.fill('111111111111');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText('Enter a different 12-digit TIN for each taxpayer. Names are optional.')).toBeVisible();
+  await tin2.fill('222222222222');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
 });
