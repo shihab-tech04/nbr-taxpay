@@ -42,8 +42,8 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   if (category === 'Tax with Return') {
     await expect(dialog.locator('.payment-head-single')).toHaveCount(0);
-    await expect(dialog.getByTestId('return-tax-head-inline')).toContainText('174 — Tax with return (late filing)');
-  await expect(dialog.getByTestId('return-tax-head-inline')).toContainText('Section 173 applies to on-time returns');
+    await expect(dialog.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(dialog.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
   await expect(dialog.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
     await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
   }
