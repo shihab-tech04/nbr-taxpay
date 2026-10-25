@@ -1,0 +1,68 @@
+name: TaxPay independent latest-main Git recovery bundle
+
+on:
+  push:
+    branches:
+      - backup/taxpay-full-history-pre-release-20261025
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Full mirror, SHA-256 and isolated restore verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Mirror all advertised Git refs and objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          git clone --mirror "https://github.com/${GITHUB_REPOSITORY}.git" recovery/source.git
+          git -C recovery/source.git fsck --full --no-reflogs
+          git -C recovery/source.git for-each-ref --format='%(refname) %(objectname)' | LC_ALL=C sort > recovery/original-refs.txt
+          test -s recovery/original-refs.txt
+          git -C recovery/source.git rev-parse refs/heads/main > recovery/main-sha.txt
+          git -C recovery/source.git bundle create "$GITHUB_WORKSPACE/recovery/taxpay-complete-pre-release.bundle" --all
+          test -s recovery/taxpay-complete-pre-release.bundle
+
+      - name: Verify bundle and restore into a clean separate repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C recovery/source.git bundle verify "$GITHUB_WORKSPACE/recovery/taxpay-complete-pre-release.bundle"
+          git clone --mirror recovery/taxpay-complete-pre-release.bundle recovery/restored.git
+          git -C recovery/restored.git fsck --full --no-reflogs
+          git -C recovery/restored.git for-each-ref --format='%(refname) %(objectname)' | LC_ALL=C sort > recovery/restored-refs.txt
+          diff -u recovery/original-refs.txt recovery/restored-refs.txt
+          cmp recovery/main-sha.txt <(git -C recovery/restored.git rev-parse refs/heads/main)
+          (cd recovery && sha256sum taxpay-complete-pre-release.bundle > SHA256SUMS)
+          (cd recovery && sha256sum --check SHA256SUMS)
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "run_sha=${GITHUB_SHA}"
+            echo "main_sha=$(cat recovery/main-sha.txt)"
+            echo "ref_count=$(wc -l < recovery/original-refs.txt)"
+            echo "original_refs_sha256=$(sha256sum recovery/original-refs.txt | cut -d' ' -f1)"
+            echo "restore_refs_sha256=$(sha256sum recovery/restored-refs.txt | cut -d' ' -f1)"
+            echo "bundle_sha256=$(cut -d' ' -f1 recovery/SHA256SUMS)"
+            echo "git_fsck=PASS"
+            echo "isolated_bundle_restore=PASS"
+            echo "exact_ref_comparison=PASS"
+          } > recovery/MANIFEST.txt
+          cat recovery/MANIFEST.txt
+
+      - name: Upload complete recovery artifact for independent off-GitHub copy
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-pre-release-complete-git-recovery
+          path: |
+            recovery/taxpay-complete-pre-release.bundle
+            recovery/SHA256SUMS
+            recovery/MANIFEST.txt
+            recovery/main-sha.txt
+            recovery/original-refs.txt
+            recovery/restored-refs.txt
+          retention-days: 7
+          if-no-files-found: error
