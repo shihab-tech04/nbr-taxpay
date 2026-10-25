@@ -166,3 +166,29 @@
 @media(max-width:900px){.payment-review{grid-template-columns:minmax(0,1fr)}.payment-review__aside{position:static;grid-row:1}.payment-review__rows{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.payment-radio-card-grid{grid-template-columns:1fr}.payment-radio-card{min-height:56px;padding:11px 12px}.payment-review__method-groups{grid-template-columns:1fr}.payment-review__method-group{justify-content:flex-start;padding:11px 14px;min-height:49px}.payment-review__method-list{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-review__method{flex-wrap:wrap;gap:7px;min-width:0}.payment-review__brand{min-width:40px}.payment-form-summary__breakdown{padding:13px 14px}}
 @media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{grid-template-columns:minmax(0,1fr);padding:16px;gap:20px}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{width:100%;margin-left:33px}}
+
+
+/* Other Tax: one clearly numbered taxpayer per row, responsive and keyboard-friendly. */
+.taxpay-taxpayer-list{display:grid;gap:12px;min-width:0}
+.taxpay-taxpayer-list__count{margin:0;color:#526681;font-size:12px;font-weight:600}
+.taxpay-taxpayer-row{border:1px solid #dce5f0;border-radius:10px;padding:14px;min-width:0;background:#fff;display:grid;gap:12px}
+.taxpay-taxpayer-row__header{display:flex;align-items:center;justify-content:space-between;min-height:30px;gap:10px}
+.taxpay-taxpayer-row__header h3{font-size:14px;font-weight:700;color:#172b4d;margin:0;display:flex;align-items:center;gap:8px}
+.taxpay-taxpayer-row__header h3 span{font-size:11px;font-weight:600;color:#466282;background:#eef3fa;border-radius:12px;padding:3px 9px}
+.taxpay-taxpayer-row__fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.taxpay-taxpayer-row__fields>div{min-width:0;display:grid;align-content:start;gap:6px}
+.taxpay-taxpayer-row__fields label{font-size:12px;font-weight:600;color:#334b6c}
+.taxpay-taxpayer-row__fields input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;color:#172b4d;font-size:14px;background:#fff}
+.taxpay-taxpayer-row__fields input:focus-visible{outline:2px solid #2c5ead;outline-offset:2px}
+.taxpay-taxpayer-row__remove{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid #ead1d4;border-radius:9px;background:#fff;color:#a3283c;cursor:pointer}
+.taxpay-taxpayer-row__remove:hover{background:#fff2f4;border-color:#c33d4d}
+.taxpay-taxpayer-row__remove:focus-visible,.taxpay-taxpayer-list__add:focus-visible{outline:3px solid #2c5ead;outline-offset:2px}
+.taxpay-taxpayer-list__add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:0;border:1.5px dashed #7a9bcf;border-radius:10px;background:#f6f9ff;color:#2357a1;font-weight:700;font-size:13px;cursor:pointer}
+.taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:#2c5ead}
+.taxpay-taxpayer-list__add:disabled{opacity:.5;cursor:not-allowed}
+.taxpay-taxpayer-list__limit{font-size:12px;color:#526681;margin:0}
+.taxpay-taxpayer-row__confirmation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #e6ebf2;padding-top:12px}
+.taxpay-taxpayer-row__confirmation p{flex-basis:100%;margin:0;font-size:12px;color:#813040}
+.taxpay-taxpayer-row__confirmation button{border-radius:8px;min-height:44px;padding:0 13px;font-size:12px;font-weight:650;border:1px solid #dce5f0}
+.taxpay-taxpayer-row__confirmation button:first-of-type{background:#a3283c;color:white;border-color:#a3283c}
+@media(max-width:575px){.taxpay-taxpayer-row{padding:12px}.taxpay-taxpayer-row__fields{grid-template-columns:minmax(0,1fr);gap:12px}}
