@@ -63,7 +63,13 @@ test('public information header and sections fit all requested widths',async({pa
   expect(travel).not.toBeNull();
   expect(receipt).not.toBeNull();
   expect(Math.abs(pay!.y-travel!.y),'payment actions should share a row at '+width).toBeLessThan(2);
-  expect(receipt!.y,'receipt action should remain below primary payment actions at '+width).toBeGreaterThanOrEqual(pay!.y+pay!.height);
+  expect(Math.abs(pay!.y-receipt!.y),'all three actions should share a row at '+width).toBeLessThan(2);
+  const actionFit=await heroActions.evaluate(actions=>[...actions.querySelectorAll<HTMLButtonElement>('button')].every(button=>{
+    const rect=button.getBoundingClientRect();
+    const box=actions.getBoundingClientRect();
+    return rect.left>=box.left-1 && rect.right<=box.right+1 && button.scrollWidth<=button.clientWidth+1;
+  }));
+  expect(actionFit,'all three actions should fit their cells at '+width).toBe(true);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
