@@ -390,7 +390,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch) {
-      if (additionalTaxpayers.some(person => !/^\d{12}$/.test(person.tin)) ||
+      if (!/^\d{12}$/.test(taxpayerTin) ||
+          additionalTaxpayers.some(person => !/^\d{12}$/.test(person.tin)) ||
           new Set(batchTaxpayers.map(person => person.tin)).size !== batchTaxpayers.length) {
         setValidationError(language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন লিখুন; নাম ঐচ্ছিক।' :
           'Give every taxpayer a distinct 12-digit TIN. Names are optional.', 'tin');
