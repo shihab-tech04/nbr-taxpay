@@ -127,6 +127,28 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 });
 
 test('guest payment remains a bilingual, accessible simulation at mobile and desktop widths', async ({ page }, info) => {
+  // This is a disconnected public-UI browser test. The hosted payment-sync
+  // contract is verified separately; never depend on external latency here.
+  let paymentPosts = 0;
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const payload = route.request().postDataJSON() as {
+      origin?: string; service?: string; amountMinor?: number; sessionId?: string;
+    };
+    expect(payload.origin).toBe('QA_BROWSER');
+    expect(payload.service).toBe('TAX_WITH_RETURN');
+    expect(payload.amountMinor).toBe(1500000);
+    expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    paymentPosts += 1;
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        success: true, status: 'SIMULATED_SUCCESS',
+        id: '10000000-0000-4000-8000-000000000002',
+        mirrored: true, simulationOnly: true,
+      }),
+    });
+  });
   await page.goto('/?action=guest');
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
 
@@ -178,6 +200,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByRole('checkbox', { name: /টিআইএন, খাত/ }).check();
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট প্রক্রিয়া সম্পন্ন' })).toBeVisible({ timeout: 12000 });
+  expect(paymentPosts).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
