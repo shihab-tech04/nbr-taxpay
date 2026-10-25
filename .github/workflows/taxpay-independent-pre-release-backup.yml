@@ -24,6 +24,7 @@ jobs:
           git -C recovery/source.git for-each-ref --format='%(refname) %(objectname)' | LC_ALL=C sort > recovery/original-refs.txt
           test -s recovery/original-refs.txt
           git -C recovery/source.git rev-parse refs/heads/main > recovery/main-sha.txt
+          test "$(cat recovery/main-sha.txt)" = "7a24c9948b487f5236935e2214983f2be705685f"
           git -C recovery/source.git bundle create "$GITHUB_WORKSPACE/recovery/taxpay-complete-pre-release.bundle" --all
           test -s recovery/taxpay-complete-pre-release.bundle
 
