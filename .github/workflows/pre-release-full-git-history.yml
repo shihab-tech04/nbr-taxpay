@@ -1,0 +1,48 @@
+name: Independent pre-release complete Git recovery bundle
+on:
+  push:
+    branches:
+      - recovery/full-history-20261025
+permissions:
+  contents: read
+jobs:
+  full-history-and-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Capture every GitHub-advertised ref and verify exact refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-backup
+          git ls-remote --refs origin 'refs/*' | LC_ALL=C sort -k2 > release-backup/remote-refs.tsv
+          test -s release-backup/remote-refs.tsv
+          git fetch --no-tags --force origin '+refs/*:refs/backup/origin/*'
+          git for-each-ref refs/backup/origin --format='%(objectname)%09%(refname)' | sed 's#refs/backup/origin/#refs/#' | LC_ALL=C sort -k2 > release-backup/fetched-refs.tsv
+          diff -u release-backup/remote-refs.tsv release-backup/fetched-refs.tsv
+          git rev-parse refs/backup/origin/heads/main > release-backup/main.sha
+          wc -l release-backup/remote-refs.tsv | tee release-backup/ref-count.txt
+      - name: Build full closure bundle; isolated restore and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="${GITHUB_REPOSITORY##*/}"
+          git bundle create "release-backup/${name}-full-history.bundle" --all
+          git bundle verify "release-backup/${name}-full-history.bundle" >release-backup/bundle-verification.txt 2>&1
+          mkdir -p /tmp/git-restore
+          git clone --mirror "$(pwd)/release-backup/${name}-full-history.bundle" /tmp/git-restore/repo.git
+          git -C /tmp/git-restore/repo.git fsck --full --strict --no-reflogs >release-backup/restore-fsck.txt 2>&1
+          git for-each-ref --format='%(objectname)%09%(refname)' | LC_ALL=C sort -k2 >release-backup/prebackup-refs.tsv
+          git -C /tmp/git-restore/repo.git for-each-ref --format='%(objectname)%09%(refname)' | LC_ALL=C sort -k2 >release-backup/restored-refs.tsv
+          diff -u release-backup/prebackup-refs.tsv release-backup/restored-refs.tsv
+          sha256sum release-backup/*.bundle >release-backup/SHA256SUMS
+          printf 'Repository: %s\nMain: %s\nRestore: PASS\nRef equality: PASS\n' "$GITHUB_REPOSITORY" "$(cat release-backup/main.sha)" >release-backup/RESTORE_RESULT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pre-release-full-git-history-and-verified-restore
+          path: release-backup/
+          retention-days: 7
+          compression-level: 0
