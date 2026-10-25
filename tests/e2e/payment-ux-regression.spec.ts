@@ -22,7 +22,8 @@ async function beginGuestPayment(page: Page, service: string) {
 test('payer is required before choosing a payment service and is not asked twice', async ({ page }) => {
   const dialog = await beginGuestPayment(page, 'Tax with Return');
   await expect(dialog.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(dialog.locator('#guest-tin')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
