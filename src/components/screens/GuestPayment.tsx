@@ -357,7 +357,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     breakdown={otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
-      return { label: `${head?.economicCode || ''} — ${person?.name || person?.tin || ''} · ${line.assessmentYear}`,
+      return { label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn} · ${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line]) };
     })} /> : <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
@@ -390,11 +390,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch) {
-      if (otherTaxpayerName.trim().length < 2 ||
-          additionalTaxpayers.some(person => person.name.trim().length < 2 || !/^\d{12}$/.test(person.tin)) ||
+      if (additionalTaxpayers.some(person => !/^\d{12}$/.test(person.tin)) ||
           new Set(batchTaxpayers.map(person => person.tin)).size !== batchTaxpayers.length) {
-        setValidationError(language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন এবং নাম লিখুন।' :
-          'Give every taxpayer a distinct 12-digit TIN and a name.', 'tin');
+        setValidationError(language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন লিখুন; নাম ঐচ্ছিক।' :
+          'Give every taxpayer a distinct 12-digit TIN. Names are optional.', 'tin');
         return false;
       }
     }
@@ -880,7 +879,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <div className="space-y-3">
                 <div>
                   <label htmlFor="other-tax-primary-name" className="block text-xs font-semibold text-slate-700 mb-1">
-                    {language === 'bn' ? 'প্রথম করদাতার নাম' : 'First taxpayer name'} *
+                    {language === 'bn' ? 'প্রথম করদাতার নাম (ঐচ্ছিক)' : 'First taxpayer name (optional)'}
                   </label>
                   <input id="other-tax-primary-name" value={otherTaxpayerName}
                     onChange={e => setOtherTaxpayerName(e.target.value)} type="text" autoComplete="off"
@@ -904,7 +903,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                         className="min-h-11 w-full rounded-lg border border-slate-300 px-3 font-mono-plex text-sm" />
                     </div>
                     <div><label htmlFor={`other-tax-name-${person.id}`} className="block text-xs font-semibold mb-1">
-                      {language === 'bn' ? 'নাম' : 'Name'} *</label>
+                      {language === 'bn' ? 'নাম (ঐচ্ছিক)' : 'Name (optional)'}</label>
                       <input id={`other-tax-name-${person.id}`} value={person.name}
                         onChange={e => setAdditionalTaxpayers(prev => prev.map(item =>
                           item.id === person.id ? { ...item, name: e.target.value } : item))}
