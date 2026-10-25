@@ -24,3 +24,17 @@ export function sumGuestAmounts(amounts: string[]): number | null {
   }
   return Number(cents) / 100;
 }
+
+/**
+ * Keep financial amount text input numeric without enabling browser 'e' or '+'
+ * notation (as native type=number would). Return null for an invalid edit so
+ * pasted extra precision, extra digits or letters never silently change money.
+ * Preserve a trailing decimal while the user is typing.
+ */
+export function normalizeGuestAmountInput(raw: string): string | null {
+  const banglaDigits = '০১২৩৪৫৬৭৮৯';
+  const normalized = raw.replace(/[০-৯]/g, digit => String(banglaDigits.indexOf(digit)));
+  const withLeadingZero = normalized.startsWith('.') ? '0' + normalized : normalized;
+  if (!/^(?:[0-9]{0,14})(?:\.[0-9]{0,2})?$/.test(withLeadingZero)) return null;
+  return withLeadingZero.replace(/^0+(?=\d)/, '');
+}
