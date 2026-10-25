@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Lock } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { BLOCKED_HEAD_IDS } from '../../data/paymentHeads';
@@ -17,8 +17,12 @@ export type OtherTaxAllocation = {
 };
 
 export const OTHER_TAX_YEARS = ['2027-28', '2026-27', '2025-26', '2024-25'] as const;
-const GROUP_ORDER = ['Tax with Return', 'Advance Tax', 'Tax against Demand', 'Penalty', 'Appellate Tribunal', 'Others'] as const;
-const liability = V11_SOURCE_HEADS.filter(head => head.journey === 'LIABILITY' && head.active);
+// Return tax is a separate service. It must never be offered under Other Tax.
+const GROUP_ORDER = ['Advance Tax', 'Tax against Demand', 'Penalty', 'Appellate Tribunal', 'Others'] as const;
+const liability = V11_SOURCE_HEADS.filter(head =>
+  head.journey === 'LIABILITY' && head.active &&
+  head.purpose !== 'return' && head.grpEn !== 'Tax with Return'
+);
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
 const sourceOptions = new Map(V11_PAYMENT_OPTIONS.map(head => [head.id, head]));
 
@@ -45,22 +49,30 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
-  const [selectedTaxpayer, setSelectedTaxpayer] = useState('primary');
+  const [activeTaxpayer, setActiveTaxpayer] = useState('primary');
+  const activeId = taxpayers.some(person => person.id === activeTaxpayer)
+    ? activeTaxpayer : taxpayers[0]?.id;
+  const activePerson = taxpayers.find(person => person.id === activeId);
+  const activeLines = lines.filter(line => line.taxpayerId === activeId);
   const search = query.trim().toLocaleLowerCase();
   const count = grouped.reduce((n, group) => n + group.rows.length, 0);
-  const addHead = (headId: number) => {
-    if (!isOtherTaxHeadEligible(headId)) return;
-    onChange([...lines, {
-      id: crypto.randomUUID(),
-      taxpayerId: taxpayers.some(item => item.id === selectedTaxpayer) ? selectedTaxpayer : taxpayers[0].id,
-      headId,
-      assessmentYear: '2026-27',
-      amount: '',
-    }]);
+  const usedTotal = otherTaxAllocationTotal(lines);
+
+  // One selection per taxpayer and source head. Selecting a different taxpayer
+  // does not change, duplicate or remove another taxpayer's allocations.
+  const toggleHead = (headId: number, checked: boolean) => {
+    if (!activeId || !isOtherTaxHeadEligible(headId)) return;
+    if (!checked) {
+      onChange(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
+    } else if (!lines.some(line => line.taxpayerId === activeId && line.headId === headId)) {
+      onChange([...lines, {
+        id: crypto.randomUUID(), taxpayerId: activeId, headId,
+        assessmentYear: '2026-27', amount: '',
+      }]);
+    }
   };
   const edit = (id: string, update: Partial<OtherTaxAllocation>) =>
     onChange(lines.map(line => line.id === id ? { ...line, ...update } : line));
-  const usedTotal = otherTaxAllocationTotal(lines);
 
   return (
     <div className="payment-form-layout payment-flow-embedded__payment" data-testid="other-tax-batch">
@@ -68,120 +80,126 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
         <section className="payment-form-section payment-form-section--static">
           <div className="payment-form-section__heading">
             <div className="payment-form-section__heading-copy">
-              <h2>{tx('Search all payment heads', 'সব পরিশোধ খাত খুঁজুন')}</h2>
-              <p>{tx(
-                `${count} liability heads, grouped exactly as in the supplied v11 source. Source-tax deductions use the separate withholding journey.`,
-                `v11 উৎস অনুযায়ী ${count}টি খাত উদ্দেশ্যভিত্তিক সাজানো। উৎসে কর কর্তন আলাদা যাত্রায়।`,
-              )}</p>
+              <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
+              <p>{tx('Choose a taxpayer, then tick the payment heads. Enter the year and amount directly below each selection.',
+                'করদাতা নির্বাচন করে খাতে টিক দিন। নির্বাচিত খাতের নিচেই করবর্ষ ও পরিমাণ লিখুন।')}</p>
             </div>
           </div>
           <div className="payment-form-section__body space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
-              <div>
-                <label htmlFor="other-tax-head-filter" className="block text-xs font-semibold text-slate-700 mb-1">
-                  {tx('What are you paying for?', 'কী জন্য কর পরিশোধ করছেন?')}
-                </label>
-                <div className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 min-h-11">
-                  <Search size={17} aria-hidden="true" className="text-taxpay-primary shrink-0" />
-                  <input id="other-tax-head-filter" type="search" value={query}
-                    onChange={event => setQuery(event.target.value)}
-                    placeholder={tx('Search purpose, head or code — e.g. advance, 16A', 'উদ্দেশ্য, খাত বা কোড দিয়ে খুঁজুন')}
-                    className="w-full min-w-0 text-sm bg-transparent outline-none" />
-                </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-700 mb-2">
+                {tx('Paying tax for', 'যার কর পরিশোধ করছেন')}
+              </p>
+              <div role="group" aria-label={tx('Choose a taxpayer to assign payment heads', 'করদাতা নির্বাচন করুন')}
+                className="flex flex-wrap gap-2" data-testid="other-tax-taxpayer-tabs">
+                {taxpayers.map((person, index) => {
+                  const selectedCount = lines.filter(line => line.taxpayerId === person.id).length;
+                  const active = activeId === person.id;
+                  return <button key={person.id} type="button"
+                    aria-pressed={active} onClick={() => setActiveTaxpayer(person.id)}
+                    className={`min-h-11 rounded-lg border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ${active
+                      ? 'border-taxpay-primary bg-blue-50 text-taxpay-dark font-semibold'
+                      : 'border-slate-300 bg-white text-slate-700'}`}>
+                    <span className="block">{person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1)}</span>
+                    <span className="block text-xs font-mono-plex">{person.tin} · {selectedCount} {tx('selected', 'নির্বাচিত')}</span>
+                  </button>;
+                })}
               </div>
-              <div>
-                <label htmlFor="other-tax-target" className="block text-xs font-semibold text-slate-700 mb-1">
-                  {tx('Add selected head for taxpayer', 'যে করদাতার জন্য খাত যোগ করবেন')}
-                </label>
-                <select id="other-tax-target" value={taxpayers.some(t => t.id === selectedTaxpayer) ? selectedTaxpayer : taxpayers[0].id}
-                  onChange={event => setSelectedTaxpayer(event.target.value)}
-                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm">
-                  {taxpayers.map((t, i) => <option key={t.id} value={t.id}>{t.name || tx('Taxpayer', 'করদাতা') + ' ' + (i + 1)} · {t.tin}</option>)}
-                </select>
+              {taxpayers.length > 1 && <p className="mt-2 text-xs text-slate-600">
+                {tx('Switch taxpayers here to select different heads. Other taxpayers’ selections are preserved.',
+                  'অন্য করদাতার খাত নির্বাচন করতে এখানে করদাতা বদলান। পূর্বের নির্বাচন অপরিবর্তিত থাকবে।')}
+              </p>}
+            </div>
+            <div>
+              <label htmlFor="other-tax-head-filter" className="block text-xs font-semibold text-slate-700 mb-1">
+                {tx('Find a payment head', 'পরিশোধের খাত খুঁজুন')}
+              </label>
+              <div className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 min-h-11">
+                <Search size={17} aria-hidden="true" className="text-taxpay-primary shrink-0" />
+                <input id="other-tax-head-filter" type="search" value={query}
+                  onChange={event => setQuery(event.target.value)}
+                  placeholder={tx('Search name or code — e.g. 68A, motor car', 'নাম বা কোড দিয়ে খুঁজুন — যেমন 68A')}
+                  className="w-full min-w-0 text-sm bg-transparent outline-none" />
               </div>
             </div>
-            <div className="max-h-80 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-200"
-              role="region" aria-label={tx('Grouped v11 payment heads', 'v11 খাতের তালিকা')} tabIndex={0}>
+            <p className="text-xs text-slate-600" role="status">
+              {tx(`${activeLines.length} heads selected for ${activePerson?.name || activePerson?.tin || 'this taxpayer'} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
+                `এই করদাতার জন্য ${activeLines.length}টি খাত নির্বাচিত · অন্যান্য করের জন্য ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
+            </p>
+            <div className="rounded-lg border border-slate-200" data-testid="other-tax-head-catalogue">
               {grouped.map(group => {
                 const matched = group.rows.filter(head =>
                   !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search));
                 if (!matched.length) return null;
+                const groupSelectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
                 return <details key={group.name} open={search ? true : undefined}
-                  className="group" data-head-group={group.name}>
-                  <summary className="cursor-pointer px-3 py-3 bg-slate-50 text-xs font-bold text-taxpay-dark">
-                    {bn ? matched[0].grpBn : group.name} <span className="text-slate-500">({matched.length})</span>
+                  className="group border-b border-slate-200 last:border-b-0" data-head-group={group.name}>
+                  <summary className="cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+                    {bn ? matched[0].grpBn : group.name}
+                    <span className="text-slate-500 font-normal"> ({matched.length})</span>
+                    {groupSelectedCount > 0 && <span className="ml-2 text-taxpay-primary text-xs">
+                      {groupSelectedCount} {tx('selected', 'নির্বাচিত')}
+                    </span>}
                   </summary>
-                  <ul className="divide-y divide-slate-100 list-none">
+                  <ul className="divide-y divide-slate-200 list-none m-0 p-0">
                     {matched.map(head => {
                       const blocked = !isOtherTaxHeadEligible(head.id);
-                      return <li key={head.id} className="flex gap-3 items-start justify-between px-3 py-3">
-                        <div className="min-w-0 text-xs">
-                          <p><strong className="font-mono-plex">{head.codeEn}</strong> — {bn ? head.bn || head.en : head.en}</p>
-                          {head.bn && <p lang={bn ? 'en' : 'bn'} className="text-slate-600 mt-1">{bn ? head.en : head.bn}</p>}
-                          {head.note && <p className="text-slate-600 mt-1">{head.note}</p>}
-                          {blocked && <p className="text-rose-700 mt-1">{tx('Unavailable pending owner review', 'মালিকের যাচাই পর্যন্ত অনুপলব্ধ')}</p>}
-                        </div>
-                        <button type="button" disabled={blocked} onClick={() => addHead(head.id)}
-                          aria-label={tx('Add', 'যোগ করুন') + ' ' + head.codeEn}
-                          className="shrink-0 min-h-11 inline-flex gap-1 items-center rounded-lg border border-taxpay-primary px-3 font-semibold text-taxpay-primary disabled:opacity-50 disabled:border-slate-300">
-                          {blocked ? <Lock size={14} aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
-                          {tx('Add', 'যোগ')}
-                        </button>
+                      const selectedLine = activeLines.find(line => line.headId === head.id);
+                      return <li key={head.id} className={selectedLine ? 'bg-blue-50/40' : 'bg-white'}>
+                        <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50/60'}`}>
+                          <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#2c5ead]"
+                            checked={!!selectedLine} disabled={blocked}
+                            onChange={event => toggleHead(head.id, event.target.checked)}
+                            aria-label={tx('Select', 'নির্বাচন করুন') + ' ' + head.codeEn + ' — ' + head.en} />
+                          <span className="min-w-0 text-sm">
+                            <span className="block text-taxpay-dark">
+                              <strong className="font-mono-plex">{head.codeEn}</strong> — {bn ? head.bn || head.en : head.en}
+                            </span>
+                            {head.bn && <span lang={bn ? 'en' : 'bn'} className="block text-xs text-slate-600 mt-1">
+                              {bn ? head.en : head.bn}
+                            </span>}
+                            {blocked && <span className="block text-xs text-rose-700 mt-1">
+                              {tx('Unavailable pending verification', 'যাচাই না হওয়া পর্যন্ত নির্বাচন করা যাবে না')}
+                            </span>}
+                          </span>
+                        </label>
+                        {selectedLine && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
+                          data-testid="other-tax-line" data-head-id={head.id}>
+                          <div>
+                            <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-year-${selectedLine.id}`}>
+                              {tx('Assessment year', 'করবর্ষ')} *
+                            </label>
+                            <select id={`other-tax-year-${selectedLine.id}`} value={selectedLine.assessmentYear}
+                              onChange={event => edit(selectedLine.id, { assessmentYear: event.target.value })}
+                              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
+                              {OTHER_TAX_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-amount-${selectedLine.id}`}>
+                              {tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *
+                            </label>
+                            <input id={`other-tax-amount-${selectedLine.id}`} type="text" inputMode="decimal"
+                              value={selectedLine.amount} onChange={event => edit(selectedLine.id, { amount: event.target.value })}
+                              placeholder="0.00" maxLength={17}
+                              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono-plex text-sm" />
+                          </div>
+                        </div>}
                       </li>;
                     })}
                   </ul>
                 </details>;
               })}
-              {!grouped.some(g => g.rows.some(h => !search || [h.codeEn, h.en, h.bn || '', h.grpEn, h.grpBn].join(' ').toLocaleLowerCase().includes(search))) &&
+              {!grouped.some(group => group.rows.some(head => !search ||
+                [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search))) &&
                 <p className="p-4 text-sm text-slate-600">{tx('No matching payment head', 'কোনো খাত পাওয়া যায়নি')}</p>}
             </div>
-          </div>
-        </section>
-        <section className="payment-form-section payment-form-section--static">
-          <div className="payment-form-section__heading">
-            <div className="payment-form-section__heading-copy">
-              <h2>{tx('Selected payment heads', 'নির্বাচিত পেমেন্ট খাত')} ({lines.length})</h2>
-              <p>{tx('Each entry has its own taxpayer, assessment year and amount. The same head can be added for more than one taxpayer.', 'প্রতিটি খাতের করদাতা, করবর্ষ ও পরিমাণ আলাদা। একাধিক করদাতার জন্য একই খাত যোগ করা যাবে।')}</p>
-            </div>
-          </div>
-          <div className="payment-form-section__body space-y-3">
-            {lines.length === 0 && <p className="text-sm text-slate-600">{tx('Choose one or more heads from the grouped list.', 'উপরের তালিকা থেকে এক বা একাধিক খাত বেছে নিন।')}</p>}
-            {lines.map((line, index) => {
-              const head = otherTaxAllocationHead(line.headId);
-              return <article key={line.id} className="rounded-lg border border-slate-200 p-3 space-y-3" data-testid="other-tax-line">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-taxpay-dark">{index + 1}. {head?.economicCode} — {bn ? head?.nameBn : head?.nameEn}</h3>
-                  <button type="button" aria-label={tx('Remove payment head', 'খাত মুছুন') + ' ' + (head?.economicCode || '')}
-                    className="min-h-11 min-w-11 flex items-center justify-center rounded-lg border border-slate-200 text-red-700"
-                    onClick={() => onChange(lines.filter(item => item.id !== line.id))}>
-                    <Trash2 size={17} aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div><label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-person-${line.id}`}>{tx('Taxpayer', 'করদাতা')} *</label>
-                    <select id={`other-tax-person-${line.id}`} value={line.taxpayerId}
-                      onChange={e => edit(line.id, { taxpayerId: e.target.value })}
-                      className="min-h-11 w-full rounded-lg border border-slate-300 px-2 text-sm">
-                      {taxpayers.map((t, i) => <option key={t.id} value={t.id}>{t.name || tx('Taxpayer','করদাতা') + ' ' + (i + 1)} · {t.tin}</option>)}
-                    </select></div>
-                  <div><label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-year-${line.id}`}>{tx('Assessment year', 'করবর্ষ')} *</label>
-                    <select id={`other-tax-year-${line.id}`} value={line.assessmentYear}
-                      onChange={e => edit(line.id, { assessmentYear: e.target.value })}
-                      className="min-h-11 w-full rounded-lg border border-slate-300 px-2 text-sm">
-                      {OTHER_TAX_YEARS.map(y => <option key={y}>{y}</option>)}
-                    </select></div>
-                  <div><label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-amount-${line.id}`}>{tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *</label>
-                    <input id={`other-tax-amount-${line.id}`} type="text" inputMode="decimal"
-                      value={line.amount} onChange={e => edit(line.id, { amount: e.target.value })}
-                      placeholder="0.00" maxLength={17} className="min-h-11 w-full rounded-lg border border-slate-300 px-3 font-mono-plex text-sm" />
-                  </div>
-                </div>
-              </article>;
-            })}
             {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
-            <div className="flex justify-between items-center border-t border-slate-200 pt-3">
-              <span className="text-sm font-semibold">{tx('Total', 'মোট')}</span>
-              <strong className="font-mono-plex text-taxpay-primary">{usedTotal === null ? '—' : formatCurrency(usedTotal, language)}</strong>
+            <div className="flex justify-between gap-3 border-t border-slate-200 pt-3">
+              <span className="text-sm font-semibold">{tx('Total for all taxpayers', 'সব করদাতার মোট')}</span>
+              <strong className="font-mono-plex text-taxpay-primary" data-testid="other-tax-combined-total">
+                {usedTotal === null ? '—' : formatCurrency(usedTotal, language)}
+              </strong>
             </div>
           </div>
         </section>
