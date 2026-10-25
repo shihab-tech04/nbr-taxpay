@@ -450,7 +450,8 @@
   outline: 2px solid var(--citizen-primary);
   outline-offset: 2px;
 }
-.public-hero-carousel__travel-compact { display: none; }
+.public-hero-carousel__travel-compact,
+.public-hero-carousel__pay-compact { display: none; }
 
 @media (min-width: 901px) and (max-width: 1100px) {
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
@@ -492,4 +493,11 @@
   }
   .public-hero-carousel__travel-full { display: none; }
   .public-hero-carousel__travel-compact { display: inline; }
+}
+
+/* Preserve a readable Bengali primary label on 320px phones without
+ * changing the button's full accessible name. */
+@media (max-width: 360px) {
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__pay-full { display: none; }
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__pay-compact { display: inline; }
 }
