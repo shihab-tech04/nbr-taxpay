@@ -25,7 +25,7 @@ import { PaymentRadioCard } from '../ui/PaymentRadioCard';
 import { PaymentMethodSelector } from '../ui/PaymentMethodSelector';
 import { PaymentJourneyFooter } from '../ui/PaymentJourneyFooter';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
-import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
+import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import { paymentAmountRowColumns } from '../../services/paymentAmountLayout';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
@@ -448,8 +448,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
         otherTaxAllocationTotal([line]) === null);
       if (!batchValid || invalid) {
-        setValidationError(language === 'bn' ? 'প্রতিটি খাতের জন্য করদাতা, করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' :
-          'Choose at least one eligible head and give each line a taxpayer, assessment year and positive amount.', 'headId');
+        const message = otherTaxLines.length === 0
+          ? language === 'bn' ? 'এগোনোর আগে অন্তত একটি পরিশোধের খাত নির্বাচন করুন।' : 'Select at least one payment head to continue.'
+          : invalid
+            ? language === 'bn' ? 'লাল রঙে চিহ্নিত খাতগুলোর করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' : 'Correct the highlighted payment heads: each needs a valid assessment year and positive amount.'
+            : language === 'bn' ? 'মোট পরিমাণ সীমার বাইরে। প্রতিটি পরিমাণ পরীক্ষা করুন।' : 'The combined amount is outside the supported limit. Review the amounts.';
+        setValidationError(message, 'headId');
         return;
       }
       clearValidationError();
@@ -905,7 +909,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={paymentCalculation}
-            lines={otherTaxLines} onChange={next => { setOtherTaxLines(next); clearValidationError(); }}
+            lines={otherTaxLines} onChange={next => {
+              setOtherTaxLines(next);
+              // Keep the invalid-row indicators visible until every selected
+              // head is corrected, instead of hiding them after the first edit.
+              if (isFieldInvalid('headId')) {
+                const sum = otherTaxAllocationTotal(next);
+                const allValid = next.length > 0 && sum !== null && sum > 0 &&
+                  next.every(line => isOtherTaxHeadEligible(line.headId) &&
+                    OTHER_TAX_YEARS.some(year => year === line.assessmentYear) &&
+                    batchTaxpayers.some(person => person.id === line.taxpayerId));
+                if (allValid) clearValidationError();
+              }
+            }}
             error={isFieldInvalid('headId') ? errorMessage : undefined} />
         ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
