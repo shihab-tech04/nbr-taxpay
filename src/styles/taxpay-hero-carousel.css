@@ -400,15 +400,30 @@
   margin-top: .4rem;
 }
 .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: .5rem;
   row-gap: .35rem;
   margin-top: .55rem;
 }
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary {
+  min-width: 0;
+  width: 100%;
+  gap: .3rem;
+  padding-inline: .45rem;
+  font-size: .78rem;
+}
 .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
+  grid-column: 1 / -1;
+  justify-self: start;
   min-height: 32px;
   padding: .35rem .7rem;
   font-size: .77rem;
+}
+@media (max-width: 900px) {
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
+    justify-self: center;
+  }
 }
 @media (max-width: 600px) {
   .public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
@@ -417,6 +432,12 @@
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
     margin-top: .35rem;
     row-gap: .3rem;
+  }
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary {
+    min-width: 0;
+    padding-inline: .3rem;
+    gap: .25rem;
+    font-size: .75rem;
   }
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
     min-height: 32px;
