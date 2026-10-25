@@ -88,6 +88,33 @@ test('first-banner travel shortcut is localized in Bangla', async ({ page }) => 
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
+test('all three first-banner actions fit one line in Bangla on small screens', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-320', 'One runner covers mobile width matrix');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [320, 360, 375, 390, 600]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto('/?action=landing');
+    await page.getByRole('button', { name: 'বাংলা' }).click();
+    const intro = page.locator('[data-banner-service="intro"]');
+    await expect(intro.getByRole('button', { name: 'কর পরিশোধ', exact: true })).toBeVisible();
+    await expect(intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true })).toBeVisible();
+    const geometry = await intro.evaluate(slide => {
+      const buttons = [...slide.querySelectorAll<HTMLButtonElement>('.public-guest-action')];
+      const bounds = slide.getBoundingClientRect();
+      const boxes = buttons.map(button => button.getBoundingClientRect());
+      return {
+        count: buttons.length,
+        sameRow: boxes.every(rect => Math.abs(rect.y - boxes[0].y) < 2),
+        inside: boxes.every(rect => rect.left >= bounds.left && rect.right <= bounds.right),
+        noClippedLabels: buttons.every(button => button.scrollWidth <= button.clientWidth + 1),
+      };
+    });
+    expect(geometry, 'Bangla first-banner actions at ' + width).toEqual({
+      count: 3, sameRow: true, inside: true, noClippedLabels: true,
+    });
+  }
+});
+
 test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Desktop columns are evaluated once');
   await page.emulateMedia({ reducedMotion: 'reduce' });
