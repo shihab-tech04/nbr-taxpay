@@ -35,7 +35,8 @@ async function openReview(page: Page, category = 'Tax with Return') {
   }
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

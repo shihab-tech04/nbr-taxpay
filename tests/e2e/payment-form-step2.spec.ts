@@ -22,7 +22,8 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(progress.locator('li')).toHaveCount(4);
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
   await expect(progress.locator('.tax-service-choice__stage-label--short').first()).toBeVisible();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
   await expect(chooser.locator('#guest-category')).toHaveCount(0);
   await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
@@ -93,14 +94,16 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(chooser, 'OTHER_TAX_PAYMENT');
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   const sections = chooser.locator('.payment-form-section');
   const summary = chooser.locator('.payment-form-summary');
   await expect(sections).toHaveCount(1);
   await expect(summary).toHaveCount(1);
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('Payment calculation');
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await page.locator('#guest-tin').fill('123456789012');
   await page.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -145,7 +148,8 @@ test('single-head tax service exposes its amount and multiple amounts divide the
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'OTHER');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
   await expect(dialog.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-payer-name').fill('Test Payer');
@@ -186,7 +190,8 @@ test('four and five selected heads form balanced rows on desktop and stack on mo
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -227,7 +232,8 @@ test('multiple payment heads have searchable selection, separate amounts and one
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(chooser, 'OTHER_TAX_PAYMENT');
   await chooser.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(chooser.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await chooser.locator('#guest-tin').fill('123456789012');
   await chooser.locator('#guest-phone').fill('01712345678');
   await chooser.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -273,7 +279,8 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await enterTaxPayService(payment, 'TAX_WITH_RETURN');
   await payment.getByRole('button', { name: 'Continue without signing in' }).click();
 
-  await expect(payment.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('#guest-tin')).toBeFocused();
   await expect(payment.getByRole('alert')).toContainText('12-digit');
