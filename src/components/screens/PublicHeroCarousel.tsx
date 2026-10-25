@@ -315,12 +315,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                       <WalletCards size={18} aria-hidden="true" />{bn ? slide.actionBn : slide.actionEn}
                     </button>
                     {index === 0 && !slide.serviceCode && (
-                      <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax('TRAVEL_TAX')}>
-                        <WalletCards size={18} aria-hidden="true" />{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}
+                      <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}>
+                        <WalletCards size={18} aria-hidden="true" />
+                        <span className="public-hero-carousel__travel-full">{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</span>
+                        <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
                       </button>
                     )}
                     {index === 0 && (
-                      <button className="citizen-public-secondary public-guest-action" type="button" onClick={onCheckReceipt}>
+                      <button className="citizen-public-secondary public-guest-action public-hero-carousel__lookup" type="button" onClick={onCheckReceipt}>
                         <Search size={18} aria-hidden="true" />
                         <span className="public-hero-copy--desktop">{bn ? 'পেমেন্ট ও রসিদ যাচাই' : 'Check payment & receipt'}</span>
                         <span className="public-hero-copy--mobile">{bn ? 'অবস্থা দেখুন' : 'Check status'}</span>
