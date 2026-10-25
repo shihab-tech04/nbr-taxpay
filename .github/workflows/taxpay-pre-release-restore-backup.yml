@@ -1,0 +1,50 @@
+name: TaxPay isolated pre-release source and history recovery
+on:
+  push:
+    branches:
+      - fix/other-tax-inline-integrated-20261025
+    paths:
+      - '.github/workflows/taxpay-pre-release-restore-backup.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pre-release-main-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout authoritative main and ALL reachable history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pin main, bundle Git history, export source and restore independently
+        shell: bash
+        env:
+          EXPECTED_MAIN_SHA: 'b1f12365bd2874b8fed3bf513b2e5035d86338f1'
+        run: |
+          set -euo pipefail
+          actual=$(git rev-parse HEAD)
+          test "$actual" = "$EXPECTED_MAIN_SHA" || { echo "MAIN MOVED: abort backup"; exit 2; }
+          mkdir -p "$RUNNER_TEMP/release-backup" "$RUNNER_TEMP/restore"
+          cd "$GITHUB_WORKSPACE"
+          git bundle create "$RUNNER_TEMP/release-backup/nbr-taxpay-main-history.bundle" --all
+          git bundle verify "$RUNNER_TEMP/release-backup/nbr-taxpay-main-history.bundle"
+          git archive --format=tar --output="$RUNNER_TEMP/release-backup/nbr-taxpay-main-source.tar" HEAD
+          git clone --no-local -b main "$RUNNER_TEMP/release-backup/nbr-taxpay-main-history.bundle" "$RUNNER_TEMP/restore/isolated"
+          test "$(git -C "$RUNNER_TEMP/restore/isolated" rev-parse HEAD)" = "$EXPECTED_MAIN_SHA"
+          git -C "$RUNNER_TEMP/restore/isolated" fsck --full --no-reflogs
+          test "$(git -C "$RUNNER_TEMP/restore/isolated" ls-tree -r --name-only HEAD | wc -l)" -gt 100
+          cd "$RUNNER_TEMP/release-backup"
+          printf 'repository=shihab-tech04/nbr-taxpay\nmain=%s\nrestore=verified\nsource=git archive HEAD\n' "$actual" > RESTORE-REPORT.txt
+          sha256sum nbr-taxpay-main-history.bundle nbr-taxpay-main-source.tar > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+          cat RESTORE-REPORT.txt SHA256SUMS.txt
+      - name: Publish verified recoverable backup artifact for transfer to private Drive
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-main-pre-release-restorable-b1f12365bd28
+          path: ${{ runner.temp }}/release-backup/
+          if-no-files-found: error
+          retention-days: 7
