@@ -55,7 +55,7 @@ test('public information header and sections fit all requested widths',async({pa
   await expect(page.locator('.public-home-header').getByRole('img',{name:'Amar Kor'})).toBeVisible();
   await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
-  const heroActions=page.locator('.public-information-hero .public-guest-actions');
+  const heroActions=page.locator('.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions').first();
   const pay=await heroActions.getByRole('button',{name:'Pay Tax',exact:true}).boundingBox();
   const travel=await heroActions.getByRole('button',{name:'Pay Travel Tax',exact:true}).boundingBox();
   const receipt=await heroActions.locator('.citizen-public-secondary').boundingBox();
