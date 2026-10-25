@@ -286,6 +286,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 key={slide.id}
                 className="citizen-public-hero public-information-hero public-hero-carousel__slide"
                 data-banner-service={slide.id}
+                data-banner-kind={slide.serviceCode ? 'service' : 'intro'}
                 data-payment-service={slide.serviceCode}
                 role="group"
                 aria-roledescription="slide"
