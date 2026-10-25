@@ -187,7 +187,7 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
   await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText("Someone else's tax");
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
   expect(page.url()).toBe(originalUrl);
 });
 
@@ -250,7 +250,7 @@ test('Other Tax keeps the v11 guest reference and four payment stages', async ({
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
-  await expect(dialog.locator('.payment-form-payer-confirmation')).toContainText('My own tax');
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
