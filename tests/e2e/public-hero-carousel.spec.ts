@@ -66,11 +66,14 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
         const rect = button.getBoundingClientRect();
         return rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom;
       }),
-      receiptBelow: lookup.top >= pay.bottom,
-      sameStyle: getComputedStyle(buttons[0]).backgroundColor === getComputedStyle(buttons[1]).backgroundColor,
+      receiptSameRow: Math.abs(pay.top - lookup.top) <= 2,
+      primaryIsFilled: getComputedStyle(buttons[0]).backgroundColor !== getComputedStyle(buttons[1]).backgroundColor,
+      travelIsOutlined: getComputedStyle(buttons[1]).borderStyle === 'solid'
+        && getComputedStyle(buttons[1]).borderWidth === '1px',
+      lookupIsSubtle: getComputedStyle(buttons[2]).borderColor !== getComputedStyle(buttons[1]).borderColor,
     };
   });
-  expect(geometry).toEqual({ adjacent: true, within: true, receiptBelow: true, sameStyle: true });
+  expect(geometry).toEqual({ adjacent: true, within: true, receiptSameRow: true, primaryIsFilled: true, travelIsOutlined: true, lookupIsSubtle: true });
   await travelTax.click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
 });
