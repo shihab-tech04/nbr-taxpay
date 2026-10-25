@@ -357,11 +357,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
     amount={batchAmount}
+    helpText={!batchValid && otherTaxLines.length > 0
+      ? language === 'bn' ? 'সব নির্বাচিত খাতের পরিমাণ সম্পূর্ণ হলে মোট হিসাব দেখা যাবে।' : 'Complete every selected amount to see the final total.'
+      : undefined}
     breakdown={otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
-      return { label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn} · ${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
-        value: otherTaxAllocationTotal([line]) };
+      return {
+        label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
+        detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
+        value: otherTaxAllocationTotal([line])
+      };
     })} /> : <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
@@ -1063,7 +1069,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
               <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required readOnly={!!verifiedReference} autoComplete="off" maxLength={17}
                 placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') && errorHeadId === head.id || undefined} aria-describedby={isFieldInvalid('taxAmount') && errorHeadId === head.id ? `${ERROR_ID}-taxAmount` : undefined}
-                value={verifiedReference ? String(verifiedReference.amount) : amountInputs[head.id] || ''} onChange={event => { setAmountInputs(previous => ({ ...previous, [head.id]: event.target.value })); if (errorHeadId === head.id) clearValidationError(); }}
+                value={verifiedReference ? String(verifiedReference.amount) : amountInputs[head.id] || ''} onChange={event => {
+                  const next = normalizeGuestAmountInput(event.target.value);
+                  if (next === null) return;
+                  setAmountInputs(previous => ({ ...previous, [head.id]: next }));
+                  if (errorHeadId === head.id) clearValidationError();
+                }}
                 className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
               {isFieldInvalid('taxAmount') && errorHeadId === head.id && fieldError('taxAmount')}
             </div>)}
