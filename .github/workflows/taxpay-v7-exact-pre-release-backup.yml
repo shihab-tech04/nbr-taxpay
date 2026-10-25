@@ -1,0 +1,40 @@
+name: TaxPay exact pre-v7 Git recovery verified
+on:
+  push:
+    branches:
+      - backup/taxpay-v7-original-main-4e731-20261025
+permissions:
+  contents: read
+jobs:
+  create-verified-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Capture exact authoritative original main and isolated restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED=4e73178d6ca34ad7bb43e7ee3dd83076a32b5577
+          git cat-file -e "$EXPECTED^{commit}"
+          git update-ref refs/heads/snapshot-pre-v7 "$EXPECTED"
+          mkdir -p "$RUNNER_TEMP/pre-v7"
+          git bundle create "$RUNNER_TEMP/pre-v7/full-main-git.bundle" refs/heads/snapshot-pre-v7
+          git bundle verify "$RUNNER_TEMP/pre-v7/full-main-git.bundle" > "$RUNNER_TEMP/pre-v7/bundle-verify.txt" 2>&1
+          git clone --mirror "$RUNNER_TEMP/pre-v7/full-main-git.bundle" "$RUNNER_TEMP/offline-restore.git"
+          test "$(git -C "$RUNNER_TEMP/offline-restore.git" rev-parse refs/heads/snapshot-pre-v7)" = "$EXPECTED"
+          git -C "$RUNNER_TEMP/offline-restore.git" fsck --full --no-reflogs > "$RUNNER_TEMP/pre-v7/fsck.txt" 2>&1
+          echo "restored_sha=$EXPECTED" > "$RUNNER_TEMP/pre-v7/RESTORE_RESULT.txt"
+          echo "complete_source_history=PASS" >> "$RUNNER_TEMP/pre-v7/RESTORE_RESULT.txt"
+          echo "git_integrity=PASS" >> "$RUNNER_TEMP/pre-v7/RESTORE_RESULT.txt"
+          (cd "$RUNNER_TEMP/pre-v7" && sha256sum full-main-git.bundle > SHA256SUMS)
+          cat "$RUNNER_TEMP/pre-v7/RESTORE_RESULT.txt" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-pre-v7-main-4e731-complete-git
+          path: ${{ runner.temp }}/pre-v7/
+          retention-days: 14
+          if-no-files-found: error
