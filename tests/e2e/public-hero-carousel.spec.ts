@@ -15,7 +15,7 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
-    .toHaveAttribute('src', /taxpay-hero-intro-concept-v6/);
+    .toHaveAttribute('src', /taxpay-hero-intro-concept-v7/);
   await expect(carousel.locator('.public-hero-carousel__image-placeholder')).toHaveCount(0);
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
 
@@ -69,6 +69,38 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
   expect(dimensions.shadow).toBe('none');
   expect(dimensions.fadeDirection).toBe('to right');
 
+  // The illustration is a full-width banner canvas, not a second half-width
+  // image. This prevents tiny artwork and visible rectangular color seams.
+  const artworkGeometry = await carousel.locator('[data-banner-service]').evaluateAll(slides =>
+    slides.map(slide => {
+      const panel = slide.querySelector<HTMLElement>('.public-hero-carousel__media--illustrated');
+      const img = panel?.querySelector<HTMLImageElement>('img');
+      if (!panel || !img) throw new Error('Banner illustration missing');
+      const slideBox = slide.getBoundingClientRect();
+      const mediaBox = panel.getBoundingClientRect();
+      const imageBox = img.getBoundingClientRect();
+      return {
+        widthDifference: Math.abs(mediaBox.width - slideBox.width),
+        leftDifference: Math.abs(mediaBox.left - slideBox.left),
+        heightDifference: Math.abs(mediaBox.height - slideBox.height),
+        imageWidthDifference: Math.abs(imageBox.width - slideBox.width),
+        position: getComputedStyle(panel).position,
+        imageFit: getComputedStyle(img).objectFit,
+        gradient: getComputedStyle(panel, '::before').backgroundImage,
+      };
+    }),
+  );
+  for (const layout of artworkGeometry) {
+    expect(layout.position).toBe('absolute');
+    expect(layout.widthDifference).toBeLessThan(2);
+    expect(layout.leftDifference).toBeLessThan(2);
+    expect(layout.heightDifference).toBeLessThan(2);
+    expect(layout.imageWidthDifference).toBeLessThan(2);
+    expect(layout.imageFit).toBe('cover');
+    expect(layout.gradient).toContain('linear-gradient');
+  }
+
+
   const backgrounds = await carousel.locator('[data-banner-service]').evaluateAll(slides =>
     slides.map(slide => getComputedStyle(slide).backgroundColor),
   );
@@ -92,10 +124,10 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     .evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
-    return: 'taxpay-hero-return-concept-v6',
-    advance: 'taxpay-hero-advance-concept-v6',
-    withholding: 'taxpay-hero-withholding-concept-v6',
-    travel: 'taxpay-hero-travel-concept-v6',
+    return: 'taxpay-hero-return-concept-v7',
+    advance: 'taxpay-hero-advance-concept-v7',
+    withholding: 'taxpay-hero-withholding-concept-v7',
+    travel: 'taxpay-hero-travel-concept-v7',
   };
   for (const [service, assetName] of Object.entries(expectedImages)) {
     const artwork = await carousel.locator(`[data-banner-service="${service}"] .public-hero-carousel__service-image`)

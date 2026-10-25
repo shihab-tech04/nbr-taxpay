@@ -322,3 +322,62 @@
 @media (prefers-reduced-motion: reduce) {
   .public-hero-carousel__track { transition: none; }
 }
+
+
+/* v7 full-bleed service artwork: the image itself is a complete landscape
+ * canvas. Do not squeeze its right-hand illustration into the grid's narrow
+ * media column. Let CSS tint the left edge with the authoritative service BG.
+ * Keep the existing 55:65 content proportions, height and accessible controls.
+ */
+@media (min-width: 901px) {
+  .public-hero-carousel__slide.public-information-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+  }
+  .public-hero-carousel__slide.public-information-hero .public-information-hero__media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    border-radius: inherit;
+  }
+  .public-hero-carousel__slide.public-information-hero .public-information-hero__image {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    object-position: right center;
+    transform: none;
+  }
+  .public-hero-carousel__slide.public-information-hero .public-hero-carousel__media--illustrated::before {
+    background: linear-gradient(to right,
+      var(--banner-bg) 0%,
+      var(--banner-bg) 26%,
+      color-mix(in srgb, var(--banner-bg) 96%, transparent) 38%,
+      color-mix(in srgb, var(--banner-bg) 65%, transparent) 51%,
+      transparent 68%);
+  }
+}
+@media (max-width: 900px) {
+  /* On a stacked mobile banner, blend down from the colored copy panel. */
+  .public-hero-carousel__slide.public-information-hero .public-hero-carousel__media--illustrated::before {
+    background: linear-gradient(to bottom,
+      var(--banner-bg) 0%,
+      color-mix(in srgb, var(--banner-bg) 78%, transparent) 18%,
+      transparent 46%);
+  }
+}
