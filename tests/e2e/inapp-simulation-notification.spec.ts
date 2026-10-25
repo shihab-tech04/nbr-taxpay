@@ -84,3 +84,18 @@ test('beneficiary in-app notification shows only allocated demo amount, not paye
   await expect(page.getByText('৳1,250.00')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
 });
+
+test('preview account also shows this browser session SQL payment notice', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile-375', 'Session notification regression');
+  await mockSessionNotifications(page, 125050);
+  await page.addInitScript(() => sessionStorage.setItem('taxpay-taxpayer-preview-user', 'user1'));
+  await page.route('**/rest/v1/rpc/demo_story1_demo_history', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  });
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [] }) });
+  });
+  await page.goto('/?action=notifications');
+  await expect(page.getByRole('heading', { name: 'This browser’s payment notifications' })).toBeVisible();
+  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+});
