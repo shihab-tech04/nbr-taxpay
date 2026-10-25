@@ -286,6 +286,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 key={slide.id}
                 className="citizen-public-hero public-information-hero public-hero-carousel__slide"
                 data-banner-service={slide.id}
+                data-banner-kind={slide.serviceCode ? 'service' : 'intro'}
                 data-payment-service={slide.serviceCode}
                 role="group"
                 aria-roledescription="slide"
@@ -313,6 +314,11 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                     <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax(slide.serviceCode)}>
                       <WalletCards size={18} aria-hidden="true" />{bn ? slide.actionBn : slide.actionEn}
                     </button>
+                    {index === 0 && !slide.serviceCode && (
+                      <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax('TRAVEL_TAX')}>
+                        <WalletCards size={18} aria-hidden="true" />{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}
+                      </button>
+                    )}
                     {index === 0 && (
                       <button className="citizen-public-secondary public-guest-action" type="button" onClick={onCheckReceipt}>
                         <Search size={18} aria-hidden="true" />

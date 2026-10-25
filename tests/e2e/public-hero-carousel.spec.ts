@@ -46,6 +46,45 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
 });
 
+test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  const intro = page.locator('[data-banner-service="intro"]');
+  const payTax = intro.getByRole('button', { name: 'Pay Tax', exact: true });
+  const travelTax = intro.getByRole('button', { name: 'Pay Travel Tax', exact: true });
+  const receipt = intro.getByRole('button', { name: /Check (payment & receipt|status)/ });
+  await expect(payTax).toBeVisible();
+  await expect(travelTax).toBeVisible();
+  await expect(receipt).toBeVisible();
+  const geometry = await intro.evaluate(slide => {
+    const buttons = [...slide.querySelectorAll<HTMLButtonElement>('.public-guest-action')];
+    const [pay, travel, lookup] = buttons.map(button => button.getBoundingClientRect());
+    const bounds = slide.getBoundingClientRect();
+    return {
+      adjacent: Math.abs(pay.top - travel.top) <= 2 && travel.left > pay.right,
+      within: buttons.every(button => {
+        const rect = button.getBoundingClientRect();
+        return rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom;
+      }),
+      receiptBelow: lookup.top >= pay.bottom,
+      sameStyle: getComputedStyle(buttons[0]).backgroundColor === getComputedStyle(buttons[1]).backgroundColor,
+    };
+  });
+  expect(geometry).toEqual({ adjacent: true, within: true, receiptBelow: true, sameStyle: true });
+  await travelTax.click();
+  await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
+});
+
+test('first-banner travel shortcut is localized in Bangla', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'বাংলা' }).click();
+  const intro = page.locator('[data-banner-service="intro"]');
+  await expect(intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true })).toBeVisible();
+  await intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
 test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Desktop columns are evaluated once');
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -121,7 +160,7 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     expect(style.shadow).toBe('none');
   }
   const introButtonColor = await carousel.locator('[data-banner-service="intro"] .citizen-public-primary')
-    .evaluate(button => getComputedStyle(button).backgroundColor);
+    .first().evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
     return: 'taxpay-hero-return-concept-v7',
