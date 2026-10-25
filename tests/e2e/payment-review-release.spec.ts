@@ -143,8 +143,8 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.locator('.payment-head-single')).toHaveCount(0);
-  await expect(page.getByTestId('return-tax-head-inline')).toContainText('174 — Tax with return (late filing)');
-  await expect(page.getByTestId('return-tax-head-inline')).toContainText('Section 173 applies to on-time returns');
+  await expect(page.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(page.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
   await expect(page.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
   await page.getByRole('radio', { name: /Person other than company/ }).check();
 
@@ -230,8 +230,8 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
   await expect(services.locator('.payment-head-single')).toHaveCount(0);
-  await expect(services.getByTestId('return-tax-head-inline')).toContainText('174 — Tax with return (late filing)');
-  await expect(services.getByTestId('return-tax-head-inline')).toContainText('Section 173 applies to on-time returns');
+  await expect(services.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(services.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
   await expect(services.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
   await services.getByRole('radio', { name: /Person other than company/ }).check();
   await services.locator('#guest-tax-amount').fill('0');
