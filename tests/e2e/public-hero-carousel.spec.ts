@@ -160,7 +160,7 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     expect(style.shadow).toBe('none');
   }
   const introButtonColor = await carousel.locator('[data-banner-service="intro"] .citizen-public-primary')
-    .evaluate(button => getComputedStyle(button).backgroundColor);
+    .first().evaluate(button => getComputedStyle(button).backgroundColor);
   expect(introButtonColor).toBe('rgb(44, 94, 173)');
   const expectedImages = {
     return: 'taxpay-hero-return-concept-v7',
