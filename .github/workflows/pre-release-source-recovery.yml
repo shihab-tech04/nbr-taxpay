@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
       - name: Create source and full-history recovery archives
