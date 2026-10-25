@@ -30,7 +30,12 @@
 .payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
 .payment-form-summary__breakdown h3{font-size:13px;font-weight:700;margin:0 0 2px}
 .payment-form-summary__breakdown>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(75px,auto);align-items:start;gap:9px;font-size:12px;line-height:1.5;color:#516681}
-.payment-form-summary__breakdown strong{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:#263d5b;text-align:right;overflow-wrap:anywhere}
+.payment-form-summary__breakdown strong{min-width:0;max-width:100%;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:#263d5b;text-align:right;overflow-wrap:anywhere;white-space:normal}
+.payment-form-summary__entry-description{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+.payment-form-summary__entry-description small{display:block;min-width:0;overflow-wrap:anywhere;color:#526881;font-size:11px;line-height:1.5}
+.payment-form-summary__entry:has(.payment-form-summary__entry-description small){grid-template-columns:minmax(0,1fr);gap:3px;padding:0 0 9px;border-bottom:1px solid #dfe7f1}
+.payment-form-summary__entry:has(.payment-form-summary__entry-description small):last-child{border-bottom:0;padding-bottom:0}
+.payment-form-summary__entry:has(.payment-form-summary__entry-description small) strong{justify-self:end;max-width:100%;text-align:right}
 .payment-form-summary__notice{margin:0;border-top:1px solid #e0e9f4;padding:15px 18px;font-size:11px;line-height:1.65;color:#536883;background:#f0f6ff}
 .payment-form-layout input,.payment-form-layout select{max-width:100%}
 .payment-head-single{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #bfcee8;border-radius:10px;background:#f6f9ff;color:#254e92}
@@ -192,3 +197,17 @@
 .taxpay-taxpayer-row__confirmation button{border-radius:8px;min-height:44px;padding:0 13px;font-size:12px;font-weight:650;border:1px solid #dce5f0}
 .taxpay-taxpayer-row__confirmation button:first-of-type{background:#a3283c;color:white;border-color:#a3283c}
 @media(max-width:575px){.taxpay-taxpayer-row{padding:12px}.taxpay-taxpayer-row__fields{grid-template-columns:minmax(0,1fr);gap:12px}}
+
+
+/* Other Tax validation: mark the actual taxpayer, group, row and amount in error. */
+.other-tax-section--invalid{border-color:#d26a73}
+.other-tax-error-heading{color:#a52335!important;font-size:12px;font-weight:700}
+.other-tax-error-summary{padding:12px 14px;border:1px solid #d98591;border-radius:9px;background:#fff9f9;color:#842338;display:grid;gap:5px}
+.other-tax-error-summary strong{font-size:13px}
+.other-tax-error-summary p{margin:0;font-size:12px;line-height:1.45}
+.other-tax-error-summary button{justify-self:start;min-height:44px;color:#264f93;font-weight:700;text-decoration:underline;text-underline-offset:3px;font-size:12px}
+.other-tax-error-summary button:focus-visible{outline:2px solid #2c5ead;outline-offset:2px}
+.other-tax-group--invalid>summary{background:#fff1f2;color:#85263b}
+.other-tax-row--invalid{background:#fff7f7;box-shadow:inset 3px 0 0 #c8374c}
+.other-tax-row--invalid input[aria-invalid="true"]{border-color:#b82d43;box-shadow:0 0 0 1px #b82d43}
+.other-tax-total{min-width:0;max-width:70%;text-align:right;overflow-wrap:anywhere}

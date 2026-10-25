@@ -146,3 +146,83 @@ test('Other Tax rejects duplicate TINs but does not require names', async ({ pag
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
 });
+
+test('Other Tax numeric-only amounts and inline invalid-row guidance survive correction', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  const amount = batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]');
+  await amount.fill('letters and e+');
+  await expect(amount).toHaveValue('');
+  await amount.fill('123.456');
+  await expect(amount).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Correct the highlighted payment heads');
+  await expect(batch.locator('[data-head-group="Advance Tax"]')).toHaveAttribute('data-invalid', 'true');
+  await expect(batch.locator('[data-head-id]')).toHaveAttribute('data-invalid', 'true');
+  await expect(amount).toHaveAttribute('aria-invalid', 'true');
+  await expect(batch.locator('.other-tax-section--invalid')).toHaveCount(1);
+  await expect(batch.locator('#' + await amount.getAttribute('aria-describedby'))).toContainText('Enter a positive amount');
+  await amount.fill('১২৩.৪৫');
+  await expect(amount).toHaveValue('123.45');
+  await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
+  await expect(amount).not.toHaveAttribute('aria-invalid', 'true');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
+});
+
+test('Other Tax shows the affected taxpayer when another beneficiary has a missing amount', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  const tabs = batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
+  await tabs.nth(1).click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(tabs.first()).toHaveAttribute('aria-pressed', 'true');
+  await expect(tabs.first()).toContainText('1 incomplete');
+  const invalid = batch.locator('[data-head-id][data-invalid="true"]');
+  await expect(invalid).toHaveCount(1);
+  await expect(batch.locator('[data-head-group="Advance Tax"]')).toHaveAttribute('open', '');
+  await invalid.locator('input[id^="other-tax-amount"]').fill('1000');
+  await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+});
+
+test('long BDT amounts and taxpayer descriptions stay inside the calculation panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.locator('#other-tax-primary-name').fill('Long Taxpayer Name Sample');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  await batch.getByTestId('other-tax-line').nth(0).locator('input[id^="other-tax-amount"]').fill('43122314534');
+  await batch.getByTestId('other-tax-line').nth(1).locator('input[id^="other-tax-amount"]').fill('124123412124');
+  const summary = dialog.locator('.payment-form-summary');
+  await expect(summary.locator('.payment-form-summary__entry-description small')).toHaveCount(2);
+  await expect(summary.locator('.payment-form-summary__total')).toContainText('1,67,24,57,26,658');
+  expect(await summary.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  for (const entry of await summary.locator('.payment-form-summary__entry').all()) {
+    expect(await entry.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  }
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(await summary.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+});

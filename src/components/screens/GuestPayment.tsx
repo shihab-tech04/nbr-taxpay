@@ -25,7 +25,7 @@ import { PaymentRadioCard } from '../ui/PaymentRadioCard';
 import { PaymentMethodSelector } from '../ui/PaymentMethodSelector';
 import { PaymentJourneyFooter } from '../ui/PaymentJourneyFooter';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
-import { parseGuestAmount, sumGuestAmounts } from '../../services/guestAmount';
+import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import { paymentAmountRowColumns } from '../../services/paymentAmountLayout';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
@@ -357,11 +357,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
     amount={batchAmount}
+    helpText={!batchValid && otherTaxLines.length > 0
+      ? language === 'bn' ? 'সব নির্বাচিত খাতের পরিমাণ সম্পূর্ণ হলে মোট হিসাব দেখা যাবে।' : 'Complete every selected amount to see the final total.'
+      : undefined}
     breakdown={otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
-      return { label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn} · ${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
-        value: otherTaxAllocationTotal([line]) };
+      return {
+        label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
+        detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
+        value: otherTaxAllocationTotal([line])
+      };
     })} /> : <PaymentLiveSummary language={language}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
@@ -448,8 +454,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
         otherTaxAllocationTotal([line]) === null);
       if (!batchValid || invalid) {
-        setValidationError(language === 'bn' ? 'প্রতিটি খাতের জন্য করদাতা, করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' :
-          'Choose at least one eligible head and give each line a taxpayer, assessment year and positive amount.', 'headId');
+        const message = otherTaxLines.length === 0
+          ? language === 'bn' ? 'এগোনোর আগে অন্তত একটি পরিশোধের খাত নির্বাচন করুন।' : 'Select at least one payment head to continue.'
+          : invalid
+            ? language === 'bn' ? 'লাল রঙে চিহ্নিত খাতগুলোর করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' : 'Correct the highlighted payment heads: each needs a valid assessment year and positive amount.'
+            : language === 'bn' ? 'মোট পরিমাণ সীমার বাইরে। প্রতিটি পরিমাণ পরীক্ষা করুন।' : 'The combined amount is outside the supported limit. Review the amounts.';
+        setValidationError(message, 'headId');
         return;
       }
       clearValidationError();
@@ -905,7 +915,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={paymentCalculation}
-            lines={otherTaxLines} onChange={next => { setOtherTaxLines(next); clearValidationError(); }}
+            lines={otherTaxLines} onChange={next => {
+              setOtherTaxLines(next);
+              // Keep the invalid-row indicators visible until every selected
+              // head is corrected, instead of hiding them after the first edit.
+              if (isFieldInvalid('headId')) {
+                const sum = otherTaxAllocationTotal(next);
+                const allValid = next.length > 0 && sum !== null && sum > 0 &&
+                  next.every(line => isOtherTaxHeadEligible(line.headId) &&
+                    OTHER_TAX_YEARS.some(year => year === line.assessmentYear) &&
+                    batchTaxpayers.some(person => person.id === line.taxpayerId));
+                if (allValid) clearValidationError();
+              }
+            }}
             error={isFieldInvalid('headId') ? errorMessage : undefined} />
         ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
@@ -1047,7 +1069,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
               <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required readOnly={!!verifiedReference} autoComplete="off" maxLength={17}
                 placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') && errorHeadId === head.id || undefined} aria-describedby={isFieldInvalid('taxAmount') && errorHeadId === head.id ? `${ERROR_ID}-taxAmount` : undefined}
-                value={verifiedReference ? String(verifiedReference.amount) : amountInputs[head.id] || ''} onChange={event => { setAmountInputs(previous => ({ ...previous, [head.id]: event.target.value })); if (errorHeadId === head.id) clearValidationError(); }}
+                value={verifiedReference ? String(verifiedReference.amount) : amountInputs[head.id] || ''} onChange={event => {
+                  const next = normalizeGuestAmountInput(event.target.value);
+                  if (next === null) return;
+                  setAmountInputs(previous => ({ ...previous, [head.id]: next }));
+                  if (errorHeadId === head.id) clearValidationError();
+                }}
                 className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
               {isFieldInvalid('taxAmount') && errorHeadId === head.id && fieldError('taxAmount')}
             </div>)}
