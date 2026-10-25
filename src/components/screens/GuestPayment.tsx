@@ -1031,17 +1031,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection>
 
             {/* Financial Amounts Breakdown */}
-            <PaymentFormSection number={4} staticView={embedded} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
-            {category === 'TAX_WITH_RETURN' && (
-              <div data-testid="return-tax-head-inline" className="payment-form-accounting-code">
-                <strong>{language === 'bn' ? '১৭৪ — রিটার্নের সাথে কর (বিলম্বিত রিটার্ন)' : '174 — Tax with return (late filing)'}</strong>
-                <p className="mt-1 text-xs text-slate-600">
-                  {language === 'bn'
-                    ? 'সময়মতো রিটার্নের ক্ষেত্রে ধারা ১৭৩ প্রযোজ্য। দাখিলের তারিখ যাচাই ছাড়া ধারা ১৭৪ প্রযোজ্য ধরে নেওয়া যাবে না।'
-                    : 'Section 173 applies to on-time returns. Section 174 applies to late returns; filing-date applicability is not determined here.'}
-                </p>
-              </div>
-            )}
+            <PaymentFormSection number={4} staticView={embedded} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={category === 'TAX_WITH_RETURN'
+              ? language === 'bn'
+                ? '১৭৪ — রিটার্নের সাথে কর (বিলম্বিত রিটার্ন)। সময়মতো দাখিলে ধারা ১৭৩ প্রযোজ্য; এই ফর্ম প্রযোজ্যতা নির্ধারণ করে না।'
+                : '174 — Tax with return (late filing). Section 173 applies to on-time returns; filing-date applicability is not determined here.'
+              : language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
             <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
                 <label htmlFor="guest-assessment-year" className="block text-slate-600 font-medium mb-1">{commonCopy.assessmentYear} *</label>
