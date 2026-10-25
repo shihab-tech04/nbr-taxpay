@@ -1,0 +1,41 @@
+name: TaxPay V7 verified release recovery
+on:
+  push:
+    branches:
+      - backup/taxpay-v7-pre-release-20261025-0948
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create, checksum and restore exact production git bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED=326167eb88bdca99aca3c6b7b7eb58e557886391
+          git fetch --no-tags origin +refs/heads/main:refs/heads/main
+          ACTUAL=$(git rev-parse refs/heads/main)
+          test "$ACTUAL" = "$EXPECTED"
+          mkdir -p "$RUNNER_TEMP/taxpay-v7-backup"
+          git bundle create "$RUNNER_TEMP/taxpay-v7-backup/pre-v7-full-history.bundle" refs/heads/main
+          git bundle verify "$RUNNER_TEMP/taxpay-v7-backup/pre-v7-full-history.bundle" > "$RUNNER_TEMP/taxpay-v7-backup/bundle-verify.txt" 2>&1
+          git clone --mirror "$RUNNER_TEMP/taxpay-v7-backup/pre-v7-full-history.bundle" "$RUNNER_TEMP/isolated-pre-v7.git"
+          git -C "$RUNNER_TEMP/isolated-pre-v7.git" fsck --full --no-reflogs > "$RUNNER_TEMP/taxpay-v7-backup/fsck.txt" 2>&1
+          test "$(git -C "$RUNNER_TEMP/isolated-pre-v7.git" rev-parse refs/heads/main)" = "$EXPECTED"
+          echo "verified_sha=$EXPECTED" > "$RUNNER_TEMP/taxpay-v7-backup/RESTORE_RESULT.txt"
+          echo "source_complete=yes" >> "$RUNNER_TEMP/taxpay-v7-backup/RESTORE_RESULT.txt"
+          echo "git_fsck=PASS" >> "$RUNNER_TEMP/taxpay-v7-backup/RESTORE_RESULT.txt"
+          (cd "$RUNNER_TEMP/taxpay-v7-backup" && sha256sum pre-v7-full-history.bundle > SHA256SUMS)
+          cat "$RUNNER_TEMP/taxpay-v7-backup/RESTORE_RESULT.txt" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-main-326167-full-history-offsite
+          path: ${{ runner.temp }}/taxpay-v7-backup/
+          retention-days: 14
+          if-no-files-found: error
