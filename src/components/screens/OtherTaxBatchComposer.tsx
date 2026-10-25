@@ -114,6 +114,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                 {taxpayers.map((person, index) => {
                   const selectedCount = lines.filter(line => line.taxpayerId === person.id).length;
                   const active = activeId === person.id;
+                  const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
                   return <button key={person.id} type="button"
                     aria-pressed={active} onClick={() => setActiveTaxpayer(person.id)}
                     className={`min-h-11 rounded-lg border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ${active
@@ -121,6 +122,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                       : 'border-slate-300 bg-white text-slate-700'}`}>
                     <span className="block">{person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1)}</span>
                     <span className="block text-xs font-mono-plex">{person.tin} · {selectedCount} {tx('selected', 'নির্বাচিত')}</span>
+                    {issues > 0 && <span className="block text-xs font-semibold text-rose-700">{issues} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
                   </button>;
                 })}
               </div>
@@ -145,17 +147,27 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
               {tx(`${activeLines.length} heads selected for ${activePerson?.name || activePerson?.tin || 'this taxpayer'} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
                 `এই করদাতার জন্য ${activeLines.length}টি খাত নির্বাচিত · অন্যান্য করের জন্য ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
             </p>
-            <div className="rounded-lg border border-slate-200" data-testid="other-tax-head-catalogue">
+            {error && <div className="other-tax-error-summary" role="alert" data-testid="other-tax-validation-summary">
+              <strong>{tx('Check highlighted payment entries', 'চিহ্নিত পরিশোধের তথ্য পরীক্ষা করুন')}</strong>
+              <p>{error}</p>
+              {firstInvalid && <button type="button" onClick={() => {
+                setActiveTaxpayer(firstInvalid.taxpayerId);
+                setQuery('');
+              }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
+            </div>}
+            <div className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
               {grouped.map(group => {
                 const matched = group.rows.filter(head =>
                   !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search));
                 if (!matched.length) return null;
                 const groupSelectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
+                const groupErrors = invalidLines.filter(line => line.taxpayerId === activeId && group.rows.some(head => head.id === line.headId)).length;
                 return <details key={group.name} open={search ? true : undefined}
-                  className="group border-b border-slate-200 last:border-b-0" data-head-group={group.name}>
+                  className={groupErrors ? "group border-b border-rose-300 last:border-b-0 other-tax-group--invalid" : "group border-b border-slate-200 last:border-b-0"} data-head-group={group.name} data-invalid={groupErrors ? "true" : undefined}>
                   <summary className="cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
                     {bn ? matched[0].grpBn : group.name}
                     <span className="text-slate-500 font-normal"> ({matched.length})</span>
+                    {groupErrors > 0 && <span className="ml-2 text-rose-700 text-xs font-semibold">{groupErrors} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
                     {groupSelectedCount > 0 && <span className="ml-2 text-taxpay-primary text-xs">
                       {groupSelectedCount} {tx('selected', 'নির্বাচিত')}
                     </span>}
@@ -164,7 +176,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                     {matched.map(head => {
                       const blocked = !isOtherTaxHeadEligible(head.id);
                       const selectedLine = activeLines.find(line => line.headId === head.id);
-                      return <li key={head.id} className={selectedLine ? 'bg-blue-50/40' : 'bg-white'}>
+                      const invalid = Boolean(error && selectedLine && isIncomplete(selectedLine));
+                      const amountId = selectedLine ? 'other-tax-amount-' + selectedLine.id : '';
+                      return <li key={head.id} data-invalid={invalid ? 'true' : undefined} className={invalid ? 'other-tax-row--invalid' : selectedLine ? 'bg-blue-50/40' : 'bg-white'}>
                         <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50/60'}`}>
                           <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#2c5ead]"
                             checked={!!selectedLine} disabled={blocked}
@@ -213,7 +227,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                 [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search))) &&
                 <p className="p-4 text-sm text-slate-600">{tx('No matching payment head', 'কোনো খাত পাওয়া যায়নি')}</p>}
             </div>
-            {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
+            {error && usedTotal === null && invalidLines.length === 0 && <p className="payment-form-field-error">{tx('Combined amount exceeds the supported limit. Reduce the amounts.', 'মোট পরিমাণ সীমার বেশি। পরিমাণ কমান।')}</p>}
             <div className="flex justify-between gap-3 border-t border-slate-200 pt-3">
               <span className="text-sm font-semibold">{tx('Total for all taxpayers', 'সব করদাতার মোট')}</span>
               <strong className="font-mono-plex text-taxpay-primary" data-testid="other-tax-combined-total">
