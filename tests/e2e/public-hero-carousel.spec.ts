@@ -66,11 +66,14 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
         const rect = button.getBoundingClientRect();
         return rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom;
       }),
-      receiptBelow: lookup.top >= pay.bottom,
-      sameStyle: getComputedStyle(buttons[0]).backgroundColor === getComputedStyle(buttons[1]).backgroundColor,
+      receiptSameRow: Math.abs(pay.top - lookup.top) <= 2,
+      primaryIsFilled: getComputedStyle(buttons[0]).backgroundColor !== getComputedStyle(buttons[1]).backgroundColor,
+      travelIsOutlined: getComputedStyle(buttons[1]).borderStyle === 'solid'
+        && getComputedStyle(buttons[1]).borderWidth === '1px',
+      lookupIsSubtle: getComputedStyle(buttons[2]).borderColor !== getComputedStyle(buttons[1]).borderColor,
     };
   });
-  expect(geometry).toEqual({ adjacent: true, within: true, receiptBelow: true, sameStyle: true });
+  expect(geometry).toEqual({ adjacent: true, within: true, receiptSameRow: true, primaryIsFilled: true, travelIsOutlined: true, lookupIsSubtle: true });
   await travelTax.click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
 });
@@ -83,6 +86,33 @@ test('first-banner travel shortcut is localized in Bangla', async ({ page }) => 
   await expect(intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true })).toBeVisible();
   await intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('all three first-banner actions fit one line in Bangla on small screens', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-320', 'One runner covers mobile width matrix');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [320, 360, 375, 390, 600]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto('/?action=landing');
+    await page.getByRole('button', { name: 'বাংলা' }).click();
+    const intro = page.locator('[data-banner-service="intro"]');
+    await expect(intro.getByRole('button', { name: 'কর পরিশোধ', exact: true })).toBeVisible();
+    await expect(intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true })).toBeVisible();
+    const geometry = await intro.evaluate(slide => {
+      const buttons = [...slide.querySelectorAll<HTMLButtonElement>('.public-guest-action')];
+      const bounds = slide.getBoundingClientRect();
+      const boxes = buttons.map(button => button.getBoundingClientRect());
+      return {
+        count: buttons.length,
+        sameRow: boxes.every(rect => Math.abs(rect.y - boxes[0].y) < 2),
+        inside: boxes.every(rect => rect.left >= bounds.left && rect.right <= bounds.right),
+        noClippedLabels: buttons.every(button => button.scrollWidth <= button.clientWidth + 1),
+      };
+    });
+    expect(geometry, 'Bangla first-banner actions at ' + width).toEqual({
+      count: 3, sameRow: true, inside: true, noClippedLabels: true,
+    });
+  }
 });
 
 test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {

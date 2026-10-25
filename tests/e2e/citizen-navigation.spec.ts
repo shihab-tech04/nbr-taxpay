@@ -55,7 +55,7 @@ test('public information header and sections fit all requested widths',async({pa
   await expect(page.locator('.public-home-header').getByRole('img',{name:'Amar Kor'})).toBeVisible();
   await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
-  const heroActions=page.locator('.public-information-hero .public-guest-actions');
+  const heroActions=page.locator('.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions').first();
   const pay=await heroActions.getByRole('button',{name:'Pay Tax',exact:true}).boundingBox();
   const travel=await heroActions.getByRole('button',{name:'Pay Travel Tax',exact:true}).boundingBox();
   const receipt=await heroActions.locator('.citizen-public-secondary').boundingBox();
@@ -63,7 +63,13 @@ test('public information header and sections fit all requested widths',async({pa
   expect(travel).not.toBeNull();
   expect(receipt).not.toBeNull();
   expect(Math.abs(pay!.y-travel!.y),'payment actions should share a row at '+width).toBeLessThan(2);
-  expect(receipt!.y,'receipt action should remain below primary payment actions at '+width).toBeGreaterThanOrEqual(pay!.y+pay!.height);
+  expect(Math.abs(pay!.y-receipt!.y),'all three actions should share a row at '+width).toBeLessThan(2);
+  const actionFit=await heroActions.evaluate(actions=>[...actions.querySelectorAll<HTMLButtonElement>('button')].every(button=>{
+    const rect=button.getBoundingClientRect();
+    const box=actions.getBoundingClientRect();
+    return rect.left>=box.left-1 && rect.right<=box.right+1 && button.scrollWidth<=button.clientWidth+1;
+  }));
+  expect(actionFit,'all three actions should fit their cells at '+width).toBe(true);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
