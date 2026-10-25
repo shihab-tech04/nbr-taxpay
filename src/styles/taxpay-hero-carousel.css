@@ -128,27 +128,27 @@
 }
 /* The introduction offers both payment routes side by side. Keep receipt
  * lookup available underneath without clipping the fixed-height artwork. */
-.public-hero-carousel__slide[data-banner-service="intro"] .citizen-public-hero__copy {
+.public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
   padding-block: .75rem;
 }
-.public-hero-carousel__slide[data-banner-service="intro"] .citizen-public-hero__copy > p {
+.public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy > p {
   margin-top: .4rem;
 }
-.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
   flex-wrap: wrap;
   column-gap: .5rem;
   row-gap: .35rem;
   margin-top: .55rem;
 }
-.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
   min-height: 32px;
   padding: .35rem .7rem;
   font-size: .77rem;
 }
-.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary {
   background: rgb(255 255 255 / 52%);
 }
-.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary:hover {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-secondary:hover {
   background: rgb(255 255 255 / 76%);
   color: var(--citizen-primary-dark);
 }
@@ -180,7 +180,7 @@
 
 /* All service illustrations fill the frame. Keep their CSS fade narrow; the
  * introduction retains its gentler, wider blend with the default brand tint. */
-.public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__media--illustrated {
+.public-hero-carousel__slide:not([data-banner-kind="intro"]) .public-hero-carousel__media--illustrated {
   --banner-fade-mid: 8%;
   --banner-fade-end: 24%;
 }
@@ -199,7 +199,7 @@
   );
 }
 
-.public-hero-carousel__slide[data-banner-service="intro"] .public-information-hero__media {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-information-hero__media {
   align-items: flex-end;
 }
 
@@ -314,8 +314,8 @@
     object-position: right center;
     transform: none;
   }
-  .public-hero-carousel__slide[data-banner-service="intro"] .public-hero-carousel__media--illustrated,
-  .public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__media--illustrated {
+  .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__media--illustrated,
+  .public-hero-carousel__slide:not([data-banner-kind="intro"]) .public-hero-carousel__media--illustrated {
     --banner-fade-mid: 0%;
     --banner-fade-end: 16%;
   }
