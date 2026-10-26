@@ -77,24 +77,24 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
 
 test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=verify');
-  // The notifications bell is a mobile-only control; desktop visitors can open
-  // the same safe account-notifications destination through its deep link.
+  // Guest visitors open the session-only notification destination; the
+  // protected account inbox remains sign-in gated.
   if (page.viewportSize()!.width <= 900) {
     await page.locator('.citizen-header').getByRole('button',{name:'Notifications'}).click();
   } else {
-    await page.goto('/?action=account_notifications');
+    await page.goto('/?action=payment_notifications');
   }
-  await expect(page).toHaveURL(/action=account_notifications/);
-  await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
+  await expect(page).toHaveURL(/action=payment_notifications/);
+  await expect(page.getByRole('heading',{name:'Sign in to view payment notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
   await services.getByRole('button',{name:'Continue without signing in'}).click();
-  await expect(page).toHaveURL(/action=account_notifications/);
+  await expect(page).toHaveURL(/action=payment_notifications/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sign in to view payment notifications',exact:true})).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
 
