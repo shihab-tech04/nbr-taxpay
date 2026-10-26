@@ -226,3 +226,27 @@ test('long BDT amounts and taxpayer descriptions stay inside the calculation pan
   await page.setViewportSize({ width: 375, height: 812 });
   expect(await summary.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
+
+test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit the legacy income-type UI', async ({ page }) => {
+  for (const relationship of ['SELF', 'OTHER'] as const) {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+    await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', relationship);
+    await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+    await dialog.locator('#guest-tin').fill('111111111111');
+    if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
+    await dialog.locator('#guest-phone').fill('01712345678');
+    await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+    await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(dialog.locator('[data-head-group]')).toHaveCount(5);
+    await expect(dialog.locator('#guest-income-type-NON_COMPANY')).toHaveCount(0);
+    await expect(dialog.locator('#guest-head-search')).toHaveCount(0);
+    await expect(dialog.getByTestId('other-tax-batch')).toContainText('42 available Other Tax heads');
+    await dialog.locator('[data-head-group="Advance Tax"] summary').click();
+    await dialog.getByRole('checkbox', { name: /Select 68A/ }).check();
+    await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
+    await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 250');
+  }
+});
