@@ -92,6 +92,6 @@ test('unrelated guest own Tax with Return keeps its existing identity and step-t
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
-  await expect(dialog.getByText('Income tax type', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('radio', { name: /Person other than company/ })).toBeVisible();
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
