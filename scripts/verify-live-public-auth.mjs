@@ -58,8 +58,12 @@ try {
       body: JSON.stringify({ success: true, data: { items: [{ id: paymentId, service: 'TAX_WITH_RETURN', amountMinor: 125050, status: 'SIMULATED_SUCCESS', createdAt: '2026-10-24T10:00:00Z' }], total: 1 } })
     }));
     const guestUrl = new URL(base);
-    guestUrl.searchParams.set('action', 'verify');
+    // Verify on an always-public CitizenNavigation page: public information pages
+    // use a separate header, and the notification bell is owned by this shell.
+    guestUrl.searchParams.set('action', 'head_catalogue');
     await guest.goto(guestUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // Preserve the end-to-end bell-click assertion and protected-account isolation.
+    await expect(guest.locator('.citizen-header')).toBeVisible({ timeout: 15_000 });
     await guest.getByRole('button', { name: 'Notifications' }).first().click();
     await expect(guest).toHaveURL(/action=payment_notifications/);
     await expect(guest.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
