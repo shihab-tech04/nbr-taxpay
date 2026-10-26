@@ -6,6 +6,7 @@ interface Props {
   language: 'en' | 'bn';
   primaryTin: string;
   primaryName: string;
+  lockedPrimary?: boolean;
   additional: OtherTaxTaxpayer[];
   allocations: OtherTaxAllocation[];
   invalidId: string | null;
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
@@ -50,17 +51,18 @@ export function OtherTaxTaxpayerList({
       <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-          <input id="guest-tin" type="text" inputMode="numeric" maxLength={12} autoComplete="off" required
+          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary ? 13 : 12} autoComplete="off" required
+            readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
             value={primaryTin} placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
             aria-describedby={tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : undefined}
-            onChange={event => { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, 12)); onClearError(); }} />
+            onChange={event => { if (!lockedPrimary) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, 12)); onClearError(); } }} />
         </div>
         <div>
           <label htmlFor="other-tax-primary-name">{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
           <input id="other-tax-primary-name" type="text" autoComplete="off" value={primaryName}
-            placeholder={bn ? 'নাম জানা থাকলে লিখুন' : 'Enter name if known'}
-            onChange={event => onPrimaryName(event.target.value)} />
+            placeholder={bn ? 'নাম জানা থাকলে লিখুন' : 'Enter name if known'} readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
+            onChange={event => { if (!lockedPrimary) onPrimaryName(event.target.value); }} />
         </div>
       </div>
       {tinError && (!invalidId || invalidId === 'primary') &&
