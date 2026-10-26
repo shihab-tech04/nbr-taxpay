@@ -1,0 +1,117 @@
+name: TaxPay complete branch disposition and offsite recovery source
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/taxpay-all-branches-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    name: Exhaustive all-ref audit and independent restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout authoritative main with full history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch all remote branch tips; preserve refs, never merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          git rev-parse origin/main
+          mkdir -p audit/patches recovery
+      - name: Audit every branch and record unique file-level changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections,gzip,json,pathlib,subprocess,hashlib
+          out=pathlib.Path('audit')
+          def git(*a,check=True):
+              x=subprocess.run(['git',*a],stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=check)
+              return x.stdout.decode('utf-8','replace').strip()
+          main=git('rev-parse','origin/main')
+          refs=[r for r in git('for-each-ref','--format=%(refname:short)','refs/remotes/origin').splitlines() if r and r not in ('origin/main','origin/HEAD')]
+          records=[]
+          for i,ref in enumerate(refs,1):
+              head=git('rev-parse',ref)
+              bname=ref.removeprefix('origin/')
+              counts=git('rev-list','--left-right','--count',f'origin/main...{ref}').split()
+              behind,ahead=map(int,counts)
+              mb=git('merge-base','origin/main',ref,check=False)
+              if not mb:
+                  status='UNRELATED_HISTORY_MANUAL_REVIEW'
+                  files=[]
+              else:
+                  files=git('diff','--name-status',mb,ref,check=False).splitlines()
+                  if ahead==0: status='ALREADY_IN_MAIN_HISTORY'
+                  elif bname.startswith(('backup/','recovery/','ops/','audit/','qa/','parallel/')): status='PRESERVE_AUDIT_RECOVERY_REVIEW_ONLY'
+                  else: status='UNIQUE_CODE_REVIEW_REQUIRED'
+              commits=git('log','--format=%H%x09%s',f'origin/main..{ref}',check=False).splitlines()
+              changefiles=[x.split('\t')[-1] for x in files]
+              record=dict(branch=bname,head=head,merge_base=mb or None,ahead=ahead,behind=behind,status=status,
+                          unique_commits=commits,changed_files=files,files_count=len(files),
+                          component_paths=[p for p in changefiles if p.startswith(('src/','supabase/','tests/','.github/'))])
+              if ahead>0 and mb and status=='UNIQUE_CODE_REVIEW_REQUIRED':
+                  diff=subprocess.run(['git','diff','--binary',mb,ref],stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True).stdout
+                  fname=hashlib.sha256(bname.encode()).hexdigest()[:24]+'.patch.gz'
+                  with gzip.open(out/'patches'/fname,'wb',compresslevel=6) as f: f.write(diff)
+                  record['patch_file']='patches/'+fname
+                  record['patch_sha256']=hashlib.sha256(diff).hexdigest()
+                  record['patch_bytes']=len(diff)
+              records.append(record)
+              print('BRANCH_AUDITED',i, '/',len(refs),status,'ahead',ahead,'behind',behind,'files',len(files),bname,flush=True)
+          counts=dict(collections.Counter(r['status'] for r in records))
+          report=dict(base_sha=main,branch_total_including_main=len(records)+1,branches_excluding_main=len(records),
+                      disposition_totals=counts,branches=records,
+                      note='Classification is historical ancestry and code-diff evidence, not approval or feature QA. Candidates require conflict resolution and live tests.')
+          (out/'all-branch-dispositions.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          lines=['# TaxPay exhaustive branch audit', '',f'Main: {main}',f'Branches: {len(records)+1}', '',
+                 '## Evidence-qualified dispositions','',*['- '+k+': '+str(v) for k,v in sorted(counts.items())],
+                 '', '| Branch | Ahead | Behind | Status | Files |','|---|---:|---:|---|---:|']
+          lines.extend('| '+r['branch'].replace('|','/')+' | '+str(r['ahead'])+' | '+str(r['behind'])+
+                       ' | '+r['status']+' | '+str(r['files_count'])+' |' for r in records)
+          (out/'ALL_BRANCHES.md').write_text('\n'.join(lines)+'\n')
+          print('AUDIT_FINAL_SUMMARY',json.dumps({'main':main,'total':len(records)+1,'groups':counts}),flush=True)
+          PY
+      - name: Create full Git history plus exact-main source archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAIN_SHA="$(git rev-parse origin/main)"
+          git bundle create recovery/taxpay-all-refs.bundle --all
+          git bundle verify recovery/taxpay-all-refs.bundle
+          git archive --format=tar "$MAIN_SHA" | gzip -9 > recovery/taxpay-main-source.tar.gz
+          echo "$MAIN_SHA" > recovery/MAIN_SHA
+          (cd recovery && sha256sum taxpay-all-refs.bundle taxpay-main-source.tar.gz MAIN_SHA > SHA256SUMS)
+          (cd recovery && sha256sum -c SHA256SUMS)
+          echo "BACKUP_SOURCE_SHA=$MAIN_SHA"
+      - name: Independent full-history restore and checksum test
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAIN_SHA="$(cat recovery/MAIN_SHA)"
+          git clone --mirror recovery/taxpay-all-refs.bundle "$RUNNER_TEMP/taxpay-restore.git"
+          git --git-dir="$RUNNER_TEMP/taxpay-restore.git" cat-file -e "$MAIN_SHA^{commit}"
+          git --git-dir="$RUNNER_TEMP/taxpay-restore.git" fsck --full
+          mkdir -p "$RUNNER_TEMP/taxpay-source-restore"
+          tar -xzf recovery/taxpay-main-source.tar.gz -C "$RUNNER_TEMP/taxpay-source-restore"
+          test -s "$RUNNER_TEMP/taxpay-source-restore/package.json"
+          (cd recovery && sha256sum -c SHA256SUMS)
+          echo "RESTORED_MAIN_SHA=$MAIN_SHA"
+          echo "RESTORE_AND_HASH_PASS"
+      - name: Upload evidence and verified recovery archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-full-branch-audit-and-recovery
+          path: |
+            audit/
+            recovery/
+          retention-days: 7
+          if-no-files-found: error
