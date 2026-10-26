@@ -238,6 +238,8 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
+    if (relationship === 'SELF') await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+    else await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
     await expect(dialog.locator('[data-head-group]')).toHaveCount(5);
