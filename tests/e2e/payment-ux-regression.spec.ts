@@ -61,6 +61,18 @@ test('large multi-head values do not turn into zero; missing head is focused wit
 });
 
 test('online method categories reveal only relevant providers and reset the previous selection', async ({ page }) => {
+  // This is a payment-method UI regression: do not depend on a live backend
+  // or create a hosted simulated payment during the disconnected CI run.
+  // Preserve the full success gate by requiring a mirror acknowledgment.
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    const payload = route.request().postDataJSON() as { amountMinor?: number; service?: string };
+    expect(payload.amountMinor).toBe(2_500_000);
+    expect(payload.service).toBe('TAX_WITH_RETURN');
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, id: '33333333-3333-4333-8333-333333333333', status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true })
+    });
+  });
   const dialog = await beginGuestPayment(page, 'Tax with Return');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
