@@ -154,10 +154,12 @@ const MainRouter: React.FC = () => {
         return <CorrectionRequests activityTabs={showActivitySections} />;
       case 'notifications':
         return <NotificationsView />;
-      case 'account_notifications':
-        // The public bell must show session-owned SQL payment events to guests.
-        // Authenticated accounts retain the existing protected account inbox.
+      case 'payment_notifications':
+        // Public only for opaque browser-session simulated payment events.
+        // Never open account-scoped notifications through this route.
         return verifiedApplicationUser ? <AccountCenter page="notifications" /> : <NotificationsView />;
+      case 'account_notifications':
+        return <AccountCenter page="notifications" />;
       case 'account_profile':
         return <AccountCenter page="profile" />;
       case 'account_settings':
