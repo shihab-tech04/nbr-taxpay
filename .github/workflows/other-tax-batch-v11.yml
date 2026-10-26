@@ -7,6 +7,8 @@ on:
       - 'src/components/screens/GuestPayment.tsx'
       - 'src/components/screens/OtherTaxBatchComposer.tsx'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - 'tests/e2e/other-tax-self-other-parity.spec.ts'
+      - 'src/components/screens/OtherTaxTaxpayerList.tsx'
       - '.github/workflows/other-tax-batch-v11.yml'
   push:
     branches: [main]
@@ -14,6 +16,8 @@ on:
       - 'src/components/screens/GuestPayment.tsx'
       - 'src/components/screens/OtherTaxBatchComposer.tsx'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - 'tests/e2e/other-tax-self-other-parity.spec.ts'
+      - 'src/components/screens/OtherTaxTaxpayerList.tsx'
       - '.github/workflows/other-tax-batch-v11.yml'
 
 permissions:
@@ -43,7 +47,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-self-other-parity.spec.ts
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4
