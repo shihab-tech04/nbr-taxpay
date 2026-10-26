@@ -67,9 +67,9 @@ test('online method categories reveal only relevant providers and reset the prev
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await dialog.getByRole('radio', { name: /Person other than company/ }).check();
   await expect(dialog.locator('.payment-head-single')).toHaveCount(0);
-  await expect(dialog.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(dialog.locator('.payment-form-section').last()).not.toContainText('Selected payment head');
   await expect(dialog.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
-  await expect(dialog.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
+  await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await dialog.locator('#guest-tax-amount').fill('25000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
@@ -107,9 +107,9 @@ test('payment wizard stays within the viewport at phone widths', async ({ page }
   expect(overflow).toBeLessThanOrEqual(1);
   await dialog.getByRole('radio', { name: /Person other than company/ }).check();
   await expect(dialog.locator('.payment-head-single')).toHaveCount(0);
-  await expect(dialog.locator('.payment-form-section').last()).toContainText('174 — Tax with return (late filing)');
+  await expect(dialog.locator('.payment-form-section').last()).not.toContainText('Selected payment head');
   await expect(dialog.locator('.payment-form-section').last()).toContainText('Section 173 applies to on-time returns');
-  await expect(dialog.locator('.payment-form-summary__rows')).not.toContainText('Payment head');
+  await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await dialog.locator('#guest-tax-amount').fill('12000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
