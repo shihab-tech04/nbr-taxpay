@@ -42,3 +42,5 @@ jobs:
 # Exact-head recovery refresh after authorized main changed to a0f61f6ff3b8d9d429de4b07a76875b6dc7192a0
 
 # Pre-notification-release refresh: verify authoritative main 3168889da10fb5d7b5f78c5a4c5ffdd77bb910df or newer, without merging this workflow.
+
+# Current-main authenticated guest-notice release backup — cutoff 226d074bd52c884a75b53202a8da1dd4bf696c63; no production code change.
