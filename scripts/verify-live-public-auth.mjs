@@ -62,20 +62,12 @@ try {
     // use a separate header, and the notification bell is owned by this shell.
     guestUrl.searchParams.set('action', 'head_catalogue');
     await guest.goto(guestUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    // Preserve responsive behavior: this bell is deliberately mobile-only.
-    // On desktop the route is public but no bell is rendered; test a direct public link
-    // rather than fabricating a desktop control or weakening access boundaries.
+    // Both responsive layouts must provide the real guest notification bell.
+    // Never substitute a direct deep-link for user-visible navigation.
     await expect(guest.locator('.citizen-header')).toBeVisible({ timeout: 15_000 });
     const notificationBell = guest.locator('.citizen-header__notification');
-    if (isMobile) {
-      await expect(notificationBell).toBeVisible();
-      await notificationBell.click();
-    } else {
-      await expect(notificationBell).toBeHidden();
-      const notificationUrl = new URL(base);
-      notificationUrl.searchParams.set('action', 'payment_notifications');
-      await guest.goto(notificationUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    }
+    await expect(notificationBell).toBeVisible();
+    await notificationBell.click();
     await expect(guest).toHaveURL(/action=payment_notifications/);
     await expect(guest.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
     await expect(guest.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
