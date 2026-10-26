@@ -70,6 +70,7 @@ test('online method categories reveal only relevant providers and reset the prev
   await expect(dialog.locator('.payment-form-section').last()).not.toContainText('Selected payment head');
   await expect(dialog.locator('.payment-form-section').last()).toContainText('See the payment summary for the applicable sections');
   await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
+  await expect(dialog.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await dialog.locator('#guest-tax-amount').fill('25000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
@@ -110,6 +111,7 @@ test('payment wizard stays within the viewport at phone widths', async ({ page }
   await expect(dialog.locator('.payment-form-section').last()).not.toContainText('Selected payment head');
   await expect(dialog.locator('.payment-form-section').last()).toContainText('See the payment summary for the applicable sections');
   await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
+  await expect(dialog.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await dialog.locator('#guest-tax-amount').fill('12000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
