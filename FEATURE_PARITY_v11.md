@@ -26,6 +26,7 @@
 | certificates | src/components/screens/CertificatesView.tsx |
 | corrections | src/components/screens/CorrectionRequests.tsx |
 | notifications | src/components/screens/NotificationsView.tsx |
+| payment_notifications | src/components/screens/NotificationsView.tsx |
 | account_notifications | src/components/screens/AccountCenter.tsx |
 | account_profile | src/components/screens/AccountCenter.tsx |
 | account_settings | src/components/screens/AccountCenter.tsx |
