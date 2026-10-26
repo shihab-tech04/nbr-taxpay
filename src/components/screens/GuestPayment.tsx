@@ -423,7 +423,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
       return false;
     }
-    if (!ownAccountTax && payerName.trim().length < 2) {
+    if (!ownAccountTax && (forSelf === false || otherBatch) && payerName.trim().length < 2) {
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
