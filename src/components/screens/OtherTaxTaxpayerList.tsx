@@ -7,6 +7,7 @@ interface Props {
   primaryTin: string;
   primaryName: string;
   lockedPrimary?: boolean;
+  allowAdditional?: boolean;
   additional: OtherTaxTaxpayer[];
   allocations: OtherTaxAllocation[];
   invalidId: string | null;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, lockedPrimary = false, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
@@ -107,7 +108,7 @@ export function OtherTaxTaxpayerList({
         </div>}
       </article>;
     })}
-    <button type="button" className="taxpay-taxpayer-list__add" disabled={additional.length >= 19}
+    {allowAdditional && <button type="button" className="taxpay-taxpayer-list__add" disabled={additional.length >= 19}
       onClick={() => {
         const id = crypto.randomUUID();
         onAdditional([...additional, { id, tin: '', name: '' }]);
@@ -117,7 +118,7 @@ export function OtherTaxTaxpayerList({
       }}>
       <Plus size={18} aria-hidden="true" />
       {bn ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer'}
-    </button>
+    </button>}
     {additional.length >= 19 && <p className="taxpay-taxpayer-list__limit">
       {bn ? 'একটি পেমেন্টে সর্বোচ্চ ২০ জন করদাতা যোগ করা যাবে।' : 'Maximum 20 taxpayers per payment.'}
     </p>}
