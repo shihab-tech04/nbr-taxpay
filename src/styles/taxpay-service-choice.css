@@ -516,6 +516,16 @@
   .payment-flow-embedded .payment-form-summary__rows,
   .payment-flow-embedded .payment-form-summary__breakdown,
   .payment-flow-embedded .payment-form-summary__help { display:none; }
+  /* Keep the return-law head visible inside the calculation rail on phones.
+     Other details remain collapsed to preserve the compact summary. */
+  .payment-flow-embedded__payment .payment-form-summary__rows--return-context {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    padding:0 14px 13px;
+  }
+  .payment-flow-embedded__payment .payment-form-summary__rows--return-context > div:not(:last-child) {
+    display:none;
+  }
   .payment-flow-embedded:has(.payment-review) .payment-review__aside .payment-form-summary__breakdown,
   .payment-flow-embedded__receipt-layout .payment-form-summary__breakdown {display:grid;}
   .payment-flow-embedded .payment-form-summary__heading { border-bottom:0;padding:12px 14px 0; }
