@@ -99,3 +99,14 @@ test('preview account also shows this browser session SQL payment notice', async
   await expect(page.getByRole('heading', { name: 'This browser’s payment notifications' })).toBeVisible();
   await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
 });
+
+
+test('guest notification bell destination displays the session SQL payment event', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile-375', 'Guest bell regression on mobile layout');
+  await mockSessionNotifications(page, 125050);
+  // CitizenNavigation links to account_notifications, not the legacy notifications route.
+  await page.goto('/?action=account_notifications');
+  await expect(page.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
+  await expect(page.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByText('No stored draft activity for this account.')).toHaveCount(0);
+});
