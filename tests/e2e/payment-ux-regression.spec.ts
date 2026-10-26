@@ -44,9 +44,11 @@ test('large multi-head values do not turn into zero; missing head is highlighted
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
   const amounts = batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]');
+  await amounts.nth(1).fill('1');
   await amounts.first().fill('111122241212');
-  const expectedFirst = new Intl.NumberFormat('en-IN').format(111122241212);
+  const expectedFirst = new Intl.NumberFormat('en-IN').format(111122241213);
   await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedFirst);
+  await amounts.nth(1).fill('');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Correct the highlighted payment heads');
   await expect(amounts.nth(1)).toHaveAttribute('aria-invalid', 'true');
