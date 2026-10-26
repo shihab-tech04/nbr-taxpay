@@ -211,8 +211,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
-  const otherBatch = !isWithholdingMode && forSelf === false && category === 'OTHER_TAX_PAYMENT';
-  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: otherTaxpayerName }, ...additionalTaxpayers];
+  // One canonical Other Tax form for SELF and OTHER, regardless of sign-in state.
+  // Payer relationship changes identity fields only; it never selects another head catalogue.
+  const otherBatch = !isWithholdingMode && category === 'OTHER_TAX_PAYMENT';
+  const batchTaxpayers: OtherTaxTaxpayer[] = [
+    { id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : forSelf === true ? payerName : otherTaxpayerName },
+    ...(forSelf === false ? additionalTaxpayers : []),
+  ];
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
     && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
@@ -395,14 +400,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'এই অ্যাকাউন্টের সঙ্গে করদাতার তথ্য যুক্ত নেই।' : 'No taxpayer profile is linked to this account.', 'tin');
       return false;
     }
-    if (!/^\d{12,13}$/.test(taxpayerTin)) {
+    if (!(ownAccountTax ? /^\d{12,13}$/.test(taxpayerTin) : /^\d{12}$/.test(taxpayerTin))) {
       setValidationError(copy.invalidTin, 'tin');
       return false;
     }
     if (otherBatch) {
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
-        if (!/^\d{12}$/.test(person.tin) || seenTins.has(person.tin)) return true;
+        if (!(person.id === 'primary' && ownAccountTax ? /^\d{12,13}$/.test(person.tin) : /^\d{12}$/.test(person.tin)) || seenTins.has(person.tin)) return true;
         seenTins.add(person.tin);
         return false;
       });
@@ -418,7 +423,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
       return false;
     }
-    if (!forSelf && payerName.trim().length < 2) {
+    if (!ownAccountTax && payerName.trim().length < 2) {
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
@@ -839,7 +844,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('tin')}
               </div>}
 
-              {forSelf === false && <div>
+              {(!ownAccountTax && (forSelf === false || otherBatch)) && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)'} *</label>
                 <input
                   id="guest-payer-name"
@@ -865,9 +870,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-invalid={isFieldInvalid('phone') || undefined}
                   aria-describedby={errorDescription('phone')}
                   inputMode="numeric" maxLength={11} autoComplete="tel-national" required
-                  readOnly={ownAccountTax && Boolean(ownProfile)} aria-readonly={(ownAccountTax && Boolean(ownProfile)) || undefined}
+                  readOnly={ownAccountTax && Boolean(ownProfile?.receiptMobile)} aria-readonly={(ownAccountTax && Boolean(ownProfile?.receiptMobile)) || undefined}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax && ownProfile ? 'bg-slate-100 text-slate-800' : ''}`}
+                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax && ownProfile?.receiptMobile ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('phone')}
               </div>
@@ -890,8 +895,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection>}
             {otherBatch && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'এই পেমেন্টের করদাতারা' : 'Taxpayers in this payment'}
-              description={language === 'bn' ? 'প্রত্যেক করদাতার জন্য আলাদা টিআইএন দিন। নাম ঐচ্ছিক; পরের ধাপে প্রতিটি পেমেন্ট খাত একজন করদাতাকে বরাদ্দ করবেন।' : 'Enter a unique TIN for each taxpayer. Names are optional. Assign each payment head to a taxpayer in the next step.'}>
-              <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={otherTaxpayerName}
+              description={forSelf === true
+                ? (language === 'bn' ? 'নিজের টিআইএন যাচাই করুন; পরবর্তী ধাপে পেমেন্ট খাত ও পরিমাণ নির্বাচন করুন।' : 'Confirm your taxpayer TIN, then choose payment heads and amounts in the next step.')
+                : (language === 'bn' ? 'প্রত্যেক করদাতার জন্য আলাদা টিআইএন দিন। নাম ঐচ্ছিক; পরের ধাপে প্রতিটি পেমেন্ট খাত একজন করদাতাকে বরাদ্দ করবেন।' : 'Enter a unique TIN for each taxpayer. Names are optional. Assign each payment head to a taxpayer in the next step.')}>
+              <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin}
+                primaryName={ownAccountTax ? accountName : forSelf === true ? payerName : otherTaxpayerName}
+                primaryReadOnly={ownAccountTax} showPrimaryName={forSelf === false} allowAdditional={forSelf === false}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
                 onPrimaryTin={value => { clearReferenceSelection(); setTin(value); }}
