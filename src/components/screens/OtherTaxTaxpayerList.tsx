@@ -6,6 +6,9 @@ interface Props {
   language: 'en' | 'bn';
   primaryTin: string;
   primaryName: string;
+  primaryReadOnly?: boolean;
+  showPrimaryName?: boolean;
+  allowAdditional?: boolean;
   additional: OtherTaxTaxpayer[];
   allocations: OtherTaxAllocation[];
   invalidId: string | null;
@@ -18,13 +21,14 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, primaryReadOnly = false, showPrimaryName = true,
+  allowAdditional = true, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
   const [addedId, setAddedId] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
-  const count = additional.length + 1;
+  const count = (allowAdditional ? additional.length : 0) + 1;
   useEffect(() => {
     if (addedId) document.getElementById('other-tax-tin-' + addedId)?.focus();
   }, [addedId]);
@@ -45,28 +49,29 @@ export function OtherTaxTaxpayerList({
     </p>
     <article className="taxpay-taxpayer-row" data-testid="other-tax-primary-taxpayer">
       <div className="taxpay-taxpayer-row__header">
-        <h3>{bn ? 'করদাতা ১' : 'Taxpayer 1'} <span>{bn ? 'প্রাথমিক' : 'Default'}</span></h3>
+        <h3>{!allowAdditional ? (bn ? 'আপনার করদাতা' : 'Your taxpayer') : (bn ? 'করদাতা ১' : 'Taxpayer 1')} <span>{bn ? 'প্রাথমিক' : 'Default'}</span></h3>
       </div>
       <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-          <input id="guest-tin" type="text" inputMode="numeric" maxLength={12} autoComplete="off" required
+          <input id="guest-tin" type="text" inputMode="numeric" maxLength={primaryReadOnly ? 13 : 12} autoComplete="off" required
+            readOnly={primaryReadOnly} aria-readonly={primaryReadOnly || undefined}
             value={primaryTin} placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
             aria-describedby={tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : undefined}
-            onChange={event => { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, 12)); onClearError(); }} />
+            onChange={event => { if (primaryReadOnly) return; onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, 12)); onClearError(); }} />
         </div>
-        <div>
+        {showPrimaryName && <div>
           <label htmlFor="other-tax-primary-name">{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
           <input id="other-tax-primary-name" type="text" autoComplete="off" value={primaryName}
             placeholder={bn ? 'নাম জানা থাকলে লিখুন' : 'Enter name if known'}
             onChange={event => onPrimaryName(event.target.value)} />
-        </div>
+        </div>}
       </div>
       {tinError && (!invalidId || invalidId === 'primary') &&
         <p id="guest-payment-error-tin" className="payment-form-field-error" role="alert">{tinError}</p>}
     </article>
-    {additional.map((person, index) => {
+    {allowAdditional && additional.map((person, index) => {
       const assigned = allocations.filter(line => line.taxpayerId === person.id).length;
       const confirming = pendingRemoval === person.id;
       return <article key={person.id} className="taxpay-taxpayer-row" data-testid="other-tax-taxpayer">
@@ -105,7 +110,7 @@ export function OtherTaxTaxpayerList({
         </div>}
       </article>;
     })}
-    <button type="button" className="taxpay-taxpayer-list__add" disabled={additional.length >= 19}
+    {allowAdditional && <button type="button" className="taxpay-taxpayer-list__add" disabled={additional.length >= 19}
       onClick={() => {
         const id = crypto.randomUUID();
         onAdditional([...additional, { id, tin: '', name: '' }]);
@@ -115,8 +120,8 @@ export function OtherTaxTaxpayerList({
       }}>
       <Plus size={18} aria-hidden="true" />
       {bn ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer'}
-    </button>
-    {additional.length >= 19 && <p className="taxpay-taxpayer-list__limit">
+    </button>}
+    {allowAdditional && additional.length >= 19 && <p className="taxpay-taxpayer-list__limit">
       {bn ? 'একটি পেমেন্টে সর্বোচ্চ ২০ জন করদাতা যোগ করা যাবে।' : 'Maximum 20 taxpayers per payment.'}
     </p>}
   </div>;
