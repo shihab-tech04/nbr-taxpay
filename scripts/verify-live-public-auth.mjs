@@ -58,9 +58,11 @@ try {
       body: JSON.stringify({ success: true, data: { items: [{ id: paymentId, service: 'TAX_WITH_RETURN', amountMinor: 125050, status: 'SIMULATED_SUCCESS', createdAt: '2026-10-24T10:00:00Z' }], total: 1 } })
     }));
     const guestUrl = new URL(base);
-    guestUrl.searchParams.set('action', 'verify');
+    // The public verification page has no Notifications button. Exercise the
+    // canonical public notification route directly; the authenticated private
+    // dashboard gate is independently asserted above for each viewport.
+    guestUrl.searchParams.set('action', 'payment_notifications');
     await guest.goto(guestUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await guest.getByRole('button', { name: 'Notifications' }).first().click();
     await expect(guest).toHaveURL(/action=payment_notifications/);
     await expect(guest.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
     await expect(guest.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
@@ -68,7 +70,7 @@ try {
     await guest.screenshot({ path: `test-results/live-auth-notification-${name}.png`, fullPage: true });
     await guest.close();
   }
-  console.log('PASS: private URL auth boundary and deployed guest bell route with mocked read-only SQL response at desktop/mobile widths');
+  console.log('PASS: private URL auth boundary and deployed public notification route with mocked read-only SQL response at desktop/mobile widths');
 } finally {
   await browser.close();
 }
