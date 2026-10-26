@@ -80,3 +80,18 @@ test('signed-in someone-else Other Tax never substitutes the account holder TIN'
   await expect(dialog.getByTestId('other-tax-batch')).toContainText('123456789012');
   await expect(dialog.getByTestId('other-tax-batch').locator('[data-head-group]')).toHaveCount(5);
 });
+
+test('unrelated guest own Tax with Return keeps its existing identity and step-two contract', async ({ page }) => {
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
+  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(dialog.locator('#guest-payer-name')).toHaveCount(0);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+  await expect(dialog.getByText('Income tax type', { exact: true })).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
+});
