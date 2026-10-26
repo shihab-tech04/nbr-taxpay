@@ -372,9 +372,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
     head={category === 'TAX_WITH_RETURN'
-      // The original v11 "74" is preserved as source provenance, not presented as current law.
-      // Return-tax context is displayed inline with the amount, not in a second summary row.
-      ? undefined
+      // The legacy v11 "74" is a historical label, not the current-law section.
+      // Applicability cannot be inferred from assessment year alone: on-time §173, late §174.
+      ? (language === 'bn'
+        ? 'রিটার্নসহ কর — সময়মতো দাখিল: ধারা ১৭৩; বিলম্বিত দাখিল: ধারা ১৭৪'
+        : 'Tax with Return — Section 173 (on-time) / 174 (late filing)')
       : selectedHeads.length === 1
         ? `${selectedHead?.economicCode} — ${language === 'bn' ? selectedHead?.nameBn : selectedHead?.nameEn}`
         : undefined}
@@ -1055,8 +1057,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {/* Financial Amounts Breakdown */}
             <PaymentFormSection number={4} staticView={embedded} title={language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount'} description={category === 'TAX_WITH_RETURN'
               ? language === 'bn'
-                ? '১৭৪ — রিটার্নের সাথে কর (বিলম্বিত রিটার্ন)। সময়মতো দাখিলে ধারা ১৭৩ প্রযোজ্য; এই ফর্ম প্রযোজ্যতা নির্ধারণ করে না।'
-                : '174 — Tax with return (late filing). Section 173 applies to on-time returns; filing-date applicability is not determined here.'
+                ? 'রিটার্ন অনুযায়ী পরিশোধের পরিমাণ লিখুন। প্রযোজ্য ধারা পেমেন্টের সারসংক্ষেপে দেখুন।'
+                : 'Enter the amount from your return. See the payment summary for the applicable sections.'
               : language === 'bn' ? 'পরিশোধের পরিমাণ লিখুন' : 'Enter the amount shown on your return, notice or order'}>
             <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
