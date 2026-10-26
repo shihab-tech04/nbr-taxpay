@@ -27,9 +27,10 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('2,100');
   await batch.locator('#other-tax-head-filter').fill('no-matching-head-123');
-  await expect(batch).toContainText('0 available Other Tax heads');
+  await expect(batch).toContainText('No matching payment head');
   await batch.locator('#other-tax-head-filter').fill('');
-  await expect(batch.getByRole('checkbox', { name: /Select 68A/ })).toBeChecked();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68A');
   const actions = footer.getByRole('button');
   await expect(actions).toHaveCount(2);
   await expect(actions.first()).toHaveAccessibleName('Back');
@@ -167,8 +168,9 @@ test('multiple Other Tax heads keep distinct amounts through searching and into 
   await batch.locator('#other-tax-head-filter').fill('nonexistent-economic-code');
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,500');
   await batch.locator('#other-tax-head-filter').fill('');
-  await expect(batch.getByRole('checkbox', { name: /Select 68A/ })).toBeChecked();
-  await expect(batch.getByRole('checkbox', { name: /Select 68B/ })).toBeChecked();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(2);
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68A');
+  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68B');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
