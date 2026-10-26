@@ -63,7 +63,9 @@ export function PaymentLiveSummary({ language, category, categoryCode, tin, year
       <p className="payment-form-summary__eyebrow">{bn ? 'পরিশোধের মোট পরিমাণ' : 'Payment total'}</p>
       <output className="payment-form-summary__total" aria-live="polite">{amount === null ? '—' : formatCurrency(amount, language)}</output>
       <p className="payment-form-summary__help">{helpText || (bn ? 'ফর্মে তথ্য পরিবর্তনের সঙ্গে হিসাব আপডেট হয়।' : 'Updates as you complete the form.')}</p>
-      <dl className="payment-form-summary__rows">
+      <dl className={categoryCode === 'TAX_WITH_RETURN' && head
+        ? 'payment-form-summary__rows payment-form-summary__rows--return-context'
+        : 'payment-form-summary__rows'}>
         <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd className={categoryCode ? 'taxpay-service-value' : undefined} data-payment-service={categoryCode}>{category}</dd></div>
         {tin && <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd className="payment-form-summary__mono">{tin}</dd></div>}
         {year && <div><dt>{bn ? 'করবর্ষ' : 'Assessment year'}</dt><dd>{year}</dd></div>}
