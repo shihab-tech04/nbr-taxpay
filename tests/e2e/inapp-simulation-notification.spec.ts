@@ -99,3 +99,15 @@ test('preview account also shows this browser session SQL payment notice', async
   await expect(page.getByRole('heading', { name: 'This browser’s payment notifications' })).toBeVisible();
   await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
 });
+
+
+test('guest bell opens a public session-only SQL payment notification without account access', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile-375', 'Guest bell regression on mobile layout');
+  await mockSessionNotifications(page, 125050);
+  await page.goto('/?action=verify');
+  await page.getByRole('button', { name: 'Notifications' }).first().click();
+  await expect(page).toHaveURL(/action=payment_notifications/);
+  await expect(page.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
+  await expect(page.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByText('No stored draft activity for this account.')).toHaveCount(0);
+});
