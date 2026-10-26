@@ -211,8 +211,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
-  const otherBatch = !isWithholdingMode && forSelf === false && category === 'OTHER_TAX_PAYMENT';
-  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: otherTaxpayerName }, ...additionalTaxpayers];
+  // Both payer relationships use the same Other Tax selection and allocation UI.
+  const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
+  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
     && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
@@ -402,7 +403,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (otherBatch) {
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
-        if (!/^\d{12}$/.test(person.tin) || seenTins.has(person.tin)) return true;
+        if (!(person.id === 'primary' && ownAccountTax ? /^\d{12,13}$/.test(person.tin) : /^\d{12}$/.test(person.tin)) || seenTins.has(person.tin)) return true;
         seenTins.add(person.tin);
         return false;
       });
@@ -538,8 +539,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const handleExecutePayment = () => {
     // A batch cannot be represented as a single taxpayer challan. Keep the
     // existing payment presentation but defer batch execution to A-Challan.
-    if (otherBatch) return;
-    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !amountsValid || !(totalAmount > 0)) return;
+    // A multi-taxpayer batch cannot be represented by one synthetic challan.
+    // Single-taxpayer Other Tax uses the same verified lifecycle as other heads.
+    if (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid)) return;
+    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !(otherBatch ? batchValid : amountsValid) || !(totalAmount > 0)) return;
     setIsProcessing(true);
     setPaymentPhase('processing');
     setLifecycleStages([]);
@@ -891,7 +894,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {otherBatch && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'এই পেমেন্টের করদাতারা' : 'Taxpayers in this payment'}
               description={language === 'bn' ? 'প্রত্যেক করদাতার জন্য আলাদা টিআইএন দিন। নাম ঐচ্ছিক; পরের ধাপে প্রতিটি পেমেন্ট খাত একজন করদাতাকে বরাদ্দ করবেন।' : 'Enter a unique TIN for each taxpayer. Names are optional. Assign each payment head to a taxpayer in the next step.'}>
-              <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={otherTaxpayerName}
+              <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
                 onPrimaryTin={value => { clearReferenceSelection(); setTin(value); }}
@@ -1137,7 +1140,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing || otherBatch}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing || (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid))}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -1164,7 +1167,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged || otherBatch} aria-busy={isProcessing}>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged || (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid))} aria-busy={isProcessing}>
               {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}
