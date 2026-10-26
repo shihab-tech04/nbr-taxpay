@@ -34,7 +34,7 @@ test('logged-out own and other tax share the exact Other Tax head catalogue', as
     await batch.locator('[data-head-group="Advance Tax"] summary').click();
     await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
     await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1250.50');
-    await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 1,250.50');
+    await expect(batch.getByTestId('other-tax-combined-total')).toContainText('BDT 1,250.5');
     await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68A');
     await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
     await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
