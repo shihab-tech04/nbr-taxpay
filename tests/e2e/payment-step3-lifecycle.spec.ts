@@ -57,7 +57,9 @@ async function openReview(page: Page, category = 'Tax with Return') {
 }
 
 test('online Step 3 requires channel, method and reviewed details before advancing', async ({ page }) => {
-  const dialog = await openReview(page, 'Other Tax');
+  // Single-return payment is executable in the simulator; a multi-head Other Tax
+  // batch remains deliberately disabled until authoritative A-Challan support.
+  const dialog = await openReview(page);
   const action = dialog.getByRole('button', { name: /Pay BDT 12,500/ });
   await expect(action).toBeDisabled();
   await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
