@@ -155,7 +155,9 @@ const MainRouter: React.FC = () => {
       case 'notifications':
         return <NotificationsView />;
       case 'account_notifications':
-        return <AccountCenter page="notifications" />;
+        // The public bell must show session-owned SQL payment events to guests.
+        // Authenticated accounts retain the existing protected account inbox.
+        return verifiedApplicationUser ? <AccountCenter page="notifications" /> : <NotificationsView />;
       case 'account_profile':
         return <AccountCenter page="profile" />;
       case 'account_settings':
