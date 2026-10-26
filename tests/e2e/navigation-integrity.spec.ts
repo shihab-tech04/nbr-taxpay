@@ -77,13 +77,11 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
 
 test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=verify');
-  // Guest visitors open the session-only notification destination; the
-  // protected account inbox remains sign-in gated.
-  if (page.viewportSize()!.width <= 900) {
-    await page.locator('.citizen-header').getByRole('button',{name:'Notifications'}).click();
-  } else {
-    await page.goto('/?action=payment_notifications');
-  }
+  // Guest visitors use the actual header bell on desktop and mobile;
+  // the protected account inbox remains sign-in gated.
+  const guestBell = page.locator('.citizen-header__notification');
+  await expect(guestBell).toBeVisible();
+  await guestBell.click();
   await expect(page).toHaveURL(/action=payment_notifications/);
   await expect(page.getByRole('heading',{name:'Sign in to view payment notifications',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();

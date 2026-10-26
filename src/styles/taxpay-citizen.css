@@ -1194,6 +1194,20 @@
 }
 @media(min-width:901px) {
   .citizen-dialog__navigation { max-height:50dvh; }
+  /* Keep the existing notification control discoverable on desktop as well as mobile.
+     No extra header button or new design token is introduced. */
+  .citizen-header__notification {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    border-radius:.55rem;
+    color:white;
+  }
+  .citizen-header__notification:hover { background:var(--citizen-primary); }
+  .citizen-header__notification:focus-visible { outline:3px solid white; outline-offset:2px; }
 }
 
 @media(max-width:900px) {
