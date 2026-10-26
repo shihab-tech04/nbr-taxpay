@@ -34,30 +34,33 @@ test('payer is required before choosing a payment service and is not asked twice
   await expect(dialog.locator('#guest-tin-hint')).toHaveCount(0);
 });
 
-test('large multi-head values do not turn into zero; missing head is focused with an inline error', async ({ page }) => {
+test('large grouped Other Tax amounts retain precision and missing allocations are highlighted before review', async ({ page }) => {
   const dialog = await beginGuestPayment(page, 'Other Tax');
   await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-payer-name').fill('Example payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await dialog.getByRole('radio', { name: /Person other than company/ }).check();
-  await dialog.locator('.payment-head-options input[type="checkbox"]').first().check();
-  const secondHead = dialog.locator('.payment-head-options input[type="checkbox"]').nth(1);
-  const secondId = await secondHead.inputValue();
-  await secondHead.check();
-  await dialog.locator('#guest-tax-amount').fill('111122241212');
-  const expectedFirst = new Intl.NumberFormat('en-IN').format(111122241212);
-  await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedFirst);
-  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('—');
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  const lines = batch.getByTestId('other-tax-line');
+  await expect(lines).toHaveCount(2);
+  await lines.nth(0).locator('input[id^="other-tax-amount"]').fill('111122241212');
+  // The second missing allocation cannot silently be treated as zero.
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('—');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(dialog.locator(`#guest-tax-amount-${secondId}`)).toBeFocused();
-  await expect(dialog.getByRole('alert')).toContainText('greater than zero');
-  await dialog.locator(`#guest-tax-amount-${secondId}`).fill('12214124442.75');
+  await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Correct the highlighted payment heads');
+  const second = lines.nth(1).locator('input[id^="other-tax-amount"]');
+  await expect(second).toHaveAttribute('aria-invalid', 'true');
+  await second.fill('12214124442.75');
   const expectedTotal = new Intl.NumberFormat('en-IN').format(123336365654.75);
   await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedTotal);
-  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
-  await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
+  // This grouped multi-head journey must not fabricate a combined challan.
+  await expect(dialog.getByText(/Batch settlement is reserved for the future A-Challan integration/)).toBeVisible();
 });
 
 test('online method categories reveal only relevant providers and reset the previous selection', async ({ page }) => {
