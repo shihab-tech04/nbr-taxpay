@@ -125,7 +125,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     >
       <section ref={flowRef} className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
-          <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow">{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)} · {stages[stage - 1]}</p>
+          <p ref={stepHeadingRef} tabIndex={-1} aria-live="polite" className="tax-service-choice__eyebrow">{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => {
               const StageIcon = stageIcons[index];
