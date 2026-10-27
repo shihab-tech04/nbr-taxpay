@@ -13,6 +13,8 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(progress.locator('li')).toHaveCount(4);
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
+  await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveText('Step 1 of 4');
+  await expect(dialog.locator('.payment-form-summary__rows [data-payment-service="OTHER_TAX_PAYMENT"]')).toHaveText('Other Tax Payment');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
