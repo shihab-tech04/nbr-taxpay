@@ -24,6 +24,9 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(progress.locator('.tax-service-choice__stage-label--short').first()).toBeVisible();
   await expect(chooser.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
+  await expect(chooser.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  await expect(chooser.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
+  await expect(chooser.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
   await expect(chooser.locator('.payment-form-section')).toHaveCount(1);
   await expect(chooser.locator('#guest-category')).toHaveCount(0);
   await expect(chooser.getByRole('heading', { name: 'Taxpayer identification' })).toBeVisible();
@@ -110,7 +113,9 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(sections).toHaveCount(2);
   await expect(summary).toHaveCount(1);
   await expect(summary).toBeVisible();
-  await expect(summary).toContainText('Other Tax');
+  await expect(summary).not.toContainText('Other Tax Payment & Travel Tax');
+  await expect(summary.locator('[data-payment-service]')).toHaveCount(0);
+  await expect(summary.locator('.payment-form-summary__eyebrow')).toHaveCSS('font-size', '14px');
   const columns = await chooser.locator('.payment-flow-embedded__content').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
   expect(columns).toBe(2);
 
