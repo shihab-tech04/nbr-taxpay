@@ -424,15 +424,17 @@ test('each service-specific banner action skips repeated service selection', asy
       await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
       await dialog.locator('[data-payer-relationship="SELF"]').click();
       await dialog.getByRole('button', { name: 'Continue' }).click();
-      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
-      if (code === 'TAX_WITH_RETURN') {
-        await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
-      } else {
-        await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-        await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
-        await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-        await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', code);
-      }
+      // The CTA has already selected the service. Keep that exact service
+      // but do not ask the taxpayer to make the same decision a second time.
+      await expect(dialog.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
+      await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+      await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
+        .toHaveAttribute('data-payment-service', code);
+      // Back keeps the chosen taxpayer and never reintroduces a second chooser.
+      await dialog.locator('.tax-service-choice__actions')
+        .getByRole('button', { name: 'Back', exact: true }).click();
+      await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
+      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
       await dialog.getByRole('button', { name: 'Close payment services' }).click();
     }
   }

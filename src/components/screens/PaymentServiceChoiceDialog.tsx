@@ -66,7 +66,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   };
   const returnToService = () => {
     setStage(1);
-    setView('choice');
+    // A banner/direct-service referral already selected the applicable service.
+    // Back returns to payer identity rather than an unnecessary second choice.
+    setView(initialService ? 'payer' : 'choice');
   };
   const reportStage = useCallback((next: 1 | 2 | 3 | 4) => setStage(next), []);
   const requestAccountAccess = () => {
@@ -106,7 +108,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
-          {view === 'payer' && <button type="button" className="tax-service-choice__continue" disabled={payerForSelf === null} onClick={() => setView('choice')}>
+          {view === 'payer' && <button type="button" className="tax-service-choice__continue" disabled={payerForSelf === null || (Boolean(initialService) && accountLoading && !previewAccount)}
+            onClick={() => initialService ? advanceToAccess() : setView('choice')}>
             {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
           {view === 'choice' && <>
@@ -115,7 +118,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
               {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
             </button>
           </>}
-          {view === 'access' && <button type="button" className="tax-service-choice__cancel" onClick={() => setView('choice')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back', 'ফিরুন')}</button>}
+          {view === 'access' && <button type="button" className="tax-service-choice__cancel" onClick={() => setView(initialService ? 'payer' : 'choice')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back', 'ফিরুন')}</button>}
           {view === 'login' && <>
             <button type="button" className="tax-service-choice__cancel" onClick={() => setView('access')}><ArrowLeft size={17} aria-hidden="true" />{tr('Back', 'ফিরুন')}</button>
             <button type="submit" form="taxpay-embedded-login-form" className="tax-service-choice__continue">{tr('Sign In', 'সাইন ইন')} <ArrowRight size={18} aria-hidden="true" /></button>
