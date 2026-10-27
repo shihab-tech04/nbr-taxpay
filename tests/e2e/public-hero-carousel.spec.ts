@@ -308,7 +308,8 @@ test('mobile illustrated banners blend downward into the image', async ({ page }
   const mobileGradients = await carousel.locator('[data-banner-service] .public-hero-carousel__media--illustrated')
     .evaluateAll(media => media.map(panel => getComputedStyle(panel, '::before').backgroundImage));
   for (const gradient of mobileGradients) {
-    expect(gradient).toContain('to bottom');
+    // CSSOM may omit the default 'to bottom' keyword; direction is verified
+    // by --banner-fade-direction above. Assert the smooth stops, not serialization.
     expect(gradient).toContain('14%');
     expect(gradient).toContain('29%');
     expect(gradient).toContain('52%');
