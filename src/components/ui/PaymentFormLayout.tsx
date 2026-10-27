@@ -44,6 +44,7 @@ interface PaymentSummaryProps {
   language: Language;
   category: string;
   categoryCode?: ServiceCategoryCode;
+  hideService?: boolean;
   tin?: string;
   year?: string;
   head?: string;
@@ -53,7 +54,7 @@ interface PaymentSummaryProps {
   breakdown?: { label: string; detail?: string; value: number | null }[];
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, tin, year, head, amount, note, helpText, breakdown }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown }: PaymentSummaryProps) {
   const bn = language === 'bn';
   return (
     <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
@@ -66,7 +67,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, tin, year
       <dl className={categoryCode === 'TAX_WITH_RETURN' && head
         ? 'payment-form-summary__rows payment-form-summary__rows--return-context'
         : 'payment-form-summary__rows'}>
-        <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd className={categoryCode ? 'taxpay-service-value' : undefined} data-payment-service={categoryCode}>{category}</dd></div>
+        {!hideService && <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd className={categoryCode ? 'taxpay-service-value' : undefined} data-payment-service={categoryCode}>{category}</dd></div>}
         {tin && <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd className="payment-form-summary__mono">{tin}</dd></div>}
         {year && <div><dt>{bn ? 'করবর্ষ' : 'Assessment year'}</dt><dd>{year}</dd></div>}
         {head && <div><dt>{bn ? 'খাত' : 'Payment head'}</dt><dd>{head}</dd></div>}
