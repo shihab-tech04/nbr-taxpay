@@ -536,3 +536,44 @@
   .public-record-search input { padding-inline: .7rem; font-size: 1rem; }
   .public-record-search button { flex-basis: 48px; }
 }
+
+
+/* Homepage banner: equal content and illustration columns on desktop.
+ * Keep mobile's established stacked layout and all existing carousel behavior. */
+@media (min-width: 901px) {
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .public-hero-carousel__slide.public-information-hero .public-information-hero__media {
+    inset: 0 0 0 50%;
+    width: 50%;
+    border-radius: 0;
+  }
+  .public-hero-carousel__slide.public-information-hero .public-information-hero__media > picture {
+    inset: 0;
+    width: 100%;
+  }
+  .public-hero-carousel__slide.public-information-hero .public-hero-carousel__media--illustrated::before {
+    background: none;
+  }
+}
+
+/* Make both introduction actions equal-width, equal-height and visually balanced,
+ * while preserving primary/secondary color and existing click handlers. */
+.public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__actions.public-guest-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: .35rem;
+}
+.public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__actions.public-guest-actions > button.public-guest-action {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 46px;
+  margin: 0;
+  flex: none;
+  justify-content: center;
+  align-items: center;
+}
