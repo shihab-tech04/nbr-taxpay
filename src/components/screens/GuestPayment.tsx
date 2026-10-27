@@ -189,7 +189,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [phone, setPhone] = useState('');
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
-  // The later approved UX supersedes v11's preselected "My own tax" default.
+  // The later approved UX supersedes v11's preselected self-tax default.
   const [forSelf, setForSelf] = useState<boolean | null>(initialForSelf ?? null);
   const ownAccountTax = signedInAccount && forSelf === true;
   const ownProfile = ownAccountTax ? accountTaxpayer.profile : null;
@@ -801,7 +801,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <fieldset className="payment-form-radio-fieldset" aria-invalid={isFieldInvalid('payerChoice') || undefined}>
                 <legend className="sr-only">{language === 'bn' ? 'পরিশোধকারীর ধরন' : 'Payer relationship'}</legend>
                 <div className="payment-radio-card-grid">
-                  {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My own tax', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার নিজের কর' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : "Someone else's tax", bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য কারও কর' }].map(choice =>
+                  {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
                       onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setAdditionalTaxpayers([]); setOtherTaxLines([]); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
