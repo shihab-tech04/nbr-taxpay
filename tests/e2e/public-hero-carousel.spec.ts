@@ -63,6 +63,7 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
     const bounds = slide.getBoundingClientRect();
     return {
       adjacent: Math.abs(pay.top - travel.top) <= 2 && travel.left > pay.right,
+      sameSize: Math.abs(pay.width - travel.width) < 2 && Math.abs(pay.height - travel.height) < 2,
       within: buttons.every(button => {
         const rect = button.getBoundingClientRect();
         return rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom;
@@ -72,7 +73,7 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
         && getComputedStyle(buttons[1]).borderWidth === '1px',
     };
   });
-  expect(geometry).toEqual({ adjacent: true, within: true, primaryIsFilled: true, travelIsOutlined: true });
+  expect(geometry).toEqual({ adjacent: true, sameSize: true, within: true, primaryIsFilled: true, travelIsOutlined: true });
   await travelTax.click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
 });
@@ -104,17 +105,18 @@ test('both first-banner payment actions fit one line in Bangla on small screens'
       return {
         count: buttons.length,
         sameRow: boxes.every(rect => Math.abs(rect.y - boxes[0].y) < 2),
+        sameSize: boxes.every(rect => Math.abs(rect.width - boxes[0].width) < 2 && Math.abs(rect.height - boxes[0].height) < 2),
         inside: boxes.every(rect => rect.left >= bounds.left && rect.right <= bounds.right),
         noClippedLabels: buttons.every(button => button.scrollWidth <= button.clientWidth + 1),
       };
     });
     expect(geometry, 'Bangla first-banner actions at ' + width).toEqual({
-      count: 2, sameRow: true, inside: true, noClippedLabels: true,
+      count: 2, sameRow: true, sameSize: true, inside: true, noClippedLabels: true,
     });
   }
 });
 
-test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {
+test('desktop banner uses equal 50:50 columns, a 50px shorter height, flat elevation and matching tints', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Desktop columns are evaluated once');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
@@ -132,12 +134,12 @@ test('desktop banner uses a 55:65 split, a 50px shorter height, flat elevation a
     };
   });
   expect(dimensions.columns).toHaveLength(2);
-  expect(dimensions.columns[1] / dimensions.columns[0]).toBeCloseTo(65 / 55, 1);
+  expect(dimensions.columns[1] / dimensions.columns[0]).toBeCloseTo(1, 2);
   expect(dimensions.height).toBe(270);
   expect(dimensions.shadow).toBe('none');
   expect(dimensions.fadeDirection).toBe('to right');
 
-  // The illustration is a full-width banner canvas, not a second half-width
+  // The illustration remains a full-width banner canvas behind the 50:50 grid, not a cropped half-width
   // image. This prevents tiny artwork and visible rectangular color seams.
   const artworkGeometry = await carousel.locator('[data-banner-service]').evaluateAll(slides =>
     slides.map(slide => {
