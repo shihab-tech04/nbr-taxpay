@@ -323,7 +323,7 @@ test('Bangla homepage reference search keeps keyboard access and full-page recei
 
 test('remaining Travel Tax modal keeps title, close icon, dividers, content and fixed footer',async({page})=>{
   await page.goto('/?action=landing');
-  const trigger=page.locator('[data-banner-service="intro"]').getByRole('button',{name:'Pay Travel Tax'});
+  const trigger=page.locator('[data-banner-service="travel"]').getByRole('button',{name:'Pay Travel Tax'});
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const header=modal.locator('.taxpay-modal__header');
