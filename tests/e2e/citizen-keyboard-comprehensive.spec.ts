@@ -38,7 +38,7 @@ test('Public Pay Tax dialog has keyboard entry, close and focus return; receipt 
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Close payment services' })).toBeFocused();
+  await expect(dialog.getByRole('heading', { name: 'Who are you paying for?' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(open).toBeFocused();
