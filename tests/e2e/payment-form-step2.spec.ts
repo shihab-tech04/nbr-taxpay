@@ -44,6 +44,11 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(chooser.locator('.payment-form-summary__breakdown')).toBeHidden();
   expect(await chooser.locator('.payment-head-options').evaluate(el => getComputedStyle(el).overflowY)).toBe('auto');
   await expect(chooser.locator('.payment-head-options input:checked')).toHaveCount(0);
+  const readableHeadLabels = await chooser.locator('.payment-head-options .text-xs, .payment-head-options [class~="text-[11px]"]')
+    .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
+      .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
+  expect(readableHeadLabels.length).toBeGreaterThan(0);
+  expect(Math.min(...readableHeadLabels)).toBeGreaterThanOrEqual(14);
   await chooser.locator('.payment-head-options input').first().check();
   const originalHead = await chooser.locator('.payment-head-options input:checked').inputValue();
   await chooser.locator('#guest-head-search').fill('no-matching-head-123');
