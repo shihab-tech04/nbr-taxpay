@@ -31,17 +31,24 @@ test('Public mobile menu enters a real keyboard sequence and restores trigger fo
   await expect(trigger).toBeFocused();
 });
 
-test('Public service dialog has an accessible entry, close and focus return', async ({ page }) => {
+test('Public Pay Tax dialog has keyboard entry, close and focus return; receipt search opens the full page', async ({ page }) => {
   await page.goto('/?action=landing');
-  const open = page.locator('[data-banner-service="intro"] .citizen-public-secondary');
+  const open = page.getByRole('button', { name: 'Pay Tax', exact: true });
   await open.focus();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Payment status & receipt' });
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Close modal' })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'Close payment services' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(open).toBeFocused();
+  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  await search.focus();
+  await search.fill('NO-SUCH-DEMO-REFERENCE-12345');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/action=verify/);
+  await expect(page.getByRole('heading', { name: 'Receipt lookup' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Payment status & receipt' })).toHaveCount(0);
 });
 
 test('Taxpayer dashboard contains two-line section introductions and keyboard-operable filters', async ({ page }) => {
