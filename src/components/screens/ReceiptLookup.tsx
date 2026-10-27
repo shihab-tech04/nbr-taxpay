@@ -9,10 +9,12 @@ import { findSessionReceiptByReference } from '../../services/simulatedPaymentSt
 type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean };
 
 export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false }) => {
-  const { language, lookupReceipt, receipts, navigate } = useTaxState();
+  const { language, lookupReceipt, receipts, navigate, routeParams } = useTaxState();
+  // Homepage reference is kept in in-memory navigation state, never in a public URL.
+  const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialReference);
   const [receiptMobile, setReceiptMobile] = useState('');
   const [searchedReference, setSearchedReference] = useState('');
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
@@ -28,14 +30,12 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   };
   const sampleReceipts = receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const reference = query.trim();
+  const searchReference = (reference: string, mobile: string) => {
     if (!reference) return;
     const sequence = ++lookupSequence.current;
     setSearchedReference(reference);
     setLookupError(false);
-    const local = lookupReceipt(reference, receiptMobile);
+    const local = lookupReceipt(reference, mobile);
     if (local) {
       setLookupPending(false);
       setSearchResult(local);
@@ -44,14 +44,14 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
 
     // Cross-session lookup requires an approved authorized API. The existing
     // recovery route only reads simulated records from this browser session.
-    if (!/^01\d{9}$/.test(receiptMobile)) {
+    if (!/^01\d{9}$/.test(mobile)) {
       setLookupPending(false);
       setSearchResult('NOT_FOUND');
       return;
     }
     setSearchResult(null);
     setLookupPending(true);
-    void findSessionReceiptByReference(reference, receiptMobile)
+    void findSessionReceiptByReference(reference, mobile)
       .then(receipt => {
         if (lookupSequence.current !== sequence) return;
         setSearchResult(receipt ?? 'NOT_FOUND');
@@ -64,6 +64,15 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
       .finally(() => {
         if (lookupSequence.current === sequence) setLookupPending(false);
       });
+  };
+  useEffect(() => {
+    if (initialReference) searchReference(initialReference, '');
+    // This initial search runs only when arriving from the homepage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    searchReference(query.trim(), receiptMobile);
   };
 
   return (
