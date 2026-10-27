@@ -177,11 +177,15 @@ jobs:
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_SUPABASE_URL); if(!['127.0.0.1','localhost'].includes(u.hostname))process.exit(1)"
           OFFICE_DIR="$RUNNER_TEMP/office-cross-app"
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          # Fetch the audited, immutable Office revision, instead of assuming moving main remains unchanged.
-          OFFICE_SHA="96d766e4ff8b977e19d8c259c5f21c3424f81580"
-          git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
+          # Test the Office main revision that actually exists when this run starts.
+          # Freeze it for the remainder of this isolated acceptance run and record
+          # the tested SHA; do not keep silently retesting an obsolete pinned Office head.
+          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
+          echo "TaxPay integration tested Office Management main: $OFFICE_SHA"
+          echo "### Cross-app version tested" >> "$GITHUB_STEP_SUMMARY"
+          echo "Office Management main commit: \`$OFFICE_SHA\`" >> "$GITHUB_STEP_SUMMARY"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_DIR/src/app/contracts/paymentSimulationContract.ts"
           cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-sync-bridge/index.ts"
           cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-command-bridge/index.ts"
