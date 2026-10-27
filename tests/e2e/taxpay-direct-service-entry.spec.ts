@@ -20,6 +20,12 @@ for (const { slide, cta, selected } of [
     await selectedSlide.getByRole('button', { name: cta, exact: true }).click();
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(modal).toBeVisible();
+    // Source copy parity: payer liability and authorization stay visible in the existing cards.
+    await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('My tax liability');
+    await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('You are both the payer and the taxpayer.');
+    await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Facilitate another taxpayer’s payment');
+    await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('You facilitate the payment; the liability and the tax credit stay theirs.');
+    await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Only where the taxpayer has authorized you.');
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(modal.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();

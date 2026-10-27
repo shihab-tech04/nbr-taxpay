@@ -34,8 +34,8 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
 
   const tin = payment.getByRole('textbox', { name: 'Taxpayer’s TIN *' });
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
-  await expect(payment.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   await expect(tin).toHaveValue('2222222222222');
   await expect(tin).toHaveAttribute('readonly', '');
   await expect(payment.getByText('Your account taxpayer details are prefilled and read-only.')).toBeVisible();
@@ -51,7 +51,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(tin).toHaveValue('');
   await expect(tin).not.toHaveAttribute('readonly', '');
   await tin.fill('123456789012');

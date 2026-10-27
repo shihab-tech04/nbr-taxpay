@@ -153,9 +153,9 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
 
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
-  await expect(page.getByRole('radio', { name: 'My own tax' })).not.toBeChecked();
+  await expect(page.getByRole('radio', { name: 'My tax liability' })).not.toBeChecked();
   await expect(page.getByLabel('Taxpayer’s TIN')).toHaveCount(0);
-  await page.getByRole('radio', { name: 'My own tax' }).check();
+  await page.getByRole('radio', { name: 'My tax liability' }).check();
   await expect(page.getByLabel('Taxpayer’s TIN')).toBeVisible();
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
@@ -239,7 +239,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('button', { name: 'Continue without signing in' }).click();
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
+  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   const progress = services.locator('.tax-service-choice__progress');
   await expect(progress.locator('li')).toHaveCount(4);
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
@@ -256,7 +256,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
   await expect(services).toBeVisible();
-  await expect(services.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
+  await expect(services.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   await services.locator('#guest-tin').fill('123456789012');
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();

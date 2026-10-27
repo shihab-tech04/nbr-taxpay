@@ -26,8 +26,8 @@ test('account sign-in at the breakpoint retains the selected service and starts 
   await expect(selectedService).toHaveText('Other Tax Payment');
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
-  await expect(payment.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly');
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
@@ -43,8 +43,8 @@ test('guest payment continues directly from the breakpoint without opening accou
   await expect(payment).toBeVisible();
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
-  await expect(payment.getByRole('radio', { name: "Someone else's tax" })).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(payment.getByRole('radio', { name: "Facilitate another taxpayer’s payment" })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
