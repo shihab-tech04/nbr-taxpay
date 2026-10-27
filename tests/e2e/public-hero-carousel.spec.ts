@@ -139,8 +139,8 @@ test('desktop banner uses equal 50:50 columns, a 50px shorter height, flat eleva
   expect(dimensions.shadow).toBe('none');
   expect(dimensions.fadeDirection).toBe('to right');
 
-  // Full-width bundled/CMS artwork stays intact, while an opaque 50%-wide mask
-  // makes the left text panel visually separate from the right image panel.
+  // Bundled/CMS artwork remains full-bleed, while the left-to-right overlay
+  // transitions gradually from the service background into the illustration.
   const artworkGeometry = await carousel.locator('[data-banner-service]').evaluateAll(slides =>
     slides.map(slide => {
       const panel = slide.querySelector<HTMLElement>('.public-hero-carousel__media--illustrated');
@@ -168,8 +168,12 @@ test('desktop banner uses equal 50:50 columns, a 50px shorter height, flat eleva
     expect(layout.imageWidthDifference).toBeLessThan(2);
     expect(layout.imageFit).toBe('cover');
     expect(layout.gradient).toContain('linear-gradient');
-    // Both consecutive 50% stops are essential: no translucent artwork behind text.
-    expect(layout.gradient.match(/50%/g)).toHaveLength(2);
+    // Ensure multiple gradual color stops, not the previous hard 50% seam.
+    expect(layout.gradient).toContain('34%');
+    expect(layout.gradient).toContain('43%');
+    expect(layout.gradient).toContain('59%');
+    expect(layout.gradient).toContain('70%');
+    expect(layout.gradient).not.toContain('transparent 50%');
   }
 
 
@@ -301,6 +305,15 @@ test('mobile illustrated banners blend downward into the image', async ({ page }
   expect(serviceFadeDirections).toEqual(['to bottom', 'to bottom', 'to bottom', 'to bottom']);
   const columns = await intro.evaluate(slide => getComputedStyle(slide).gridTemplateColumns.split(' '));
   expect(columns).toHaveLength(1);
+  const mobileGradients = await carousel.locator('[data-banner-service] .public-hero-carousel__media--illustrated')
+    .evaluateAll(media => media.map(panel => getComputedStyle(panel, '::before').backgroundImage));
+  for (const gradient of mobileGradients) {
+    // CSSOM may omit the default 'to bottom' keyword; direction is verified
+    // by --banner-fade-direction above. Assert the smooth stops, not serialization.
+    expect(gradient).toContain('14%');
+    expect(gradient).toContain('29%');
+    expect(gradient).toContain('52%');
+  }
   await expect(intro.locator('.public-information-hero__image')).toBeVisible();
 });
 

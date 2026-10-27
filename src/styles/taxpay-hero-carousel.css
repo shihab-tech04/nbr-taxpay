@@ -372,24 +372,29 @@
     object-position: right center;
     transform: none;
   }
-  /* The image deliberately stays full-bleed to protect CMS and bundled artwork,
-   * but its left half must be COMPLETELY obscured. A translucent fade exposed
-   * illustrated props behind the copy and made the claimed 50:50 split invisible. */
+  /* Keep the entire CMS/bundled image canvas for its right-hand composition.
+   * Blend FROM the left into the existing service background instead of cutting
+   * the artwork at 50%. The copy side stays opaque, while the transition crosses
+   * the visual midpoint without adding a seam or blurring the focal illustration. */
   .public-hero-carousel__slide.public-information-hero .public-hero-carousel__media--illustrated::before {
     background: linear-gradient(to right,
       var(--banner-bg) 0%,
-      var(--banner-bg) 50%,
-      transparent 50%,
-      transparent 100%);
+      var(--banner-bg) 34%,
+      color-mix(in srgb, var(--banner-bg) 96%, transparent) 43%,
+      color-mix(in srgb, var(--banner-bg) 78%, transparent) 50%,
+      color-mix(in srgb, var(--banner-bg) 42%, transparent) 59%,
+      transparent 70%);
   }
 }
 @media (max-width: 900px) {
-  /* On a stacked mobile banner, blend down from the colored copy panel. */
+  /* Stacked banners fade FROM the top of the illustration into the copy color.
+   * Leave the lower illustration crisp and preserve the existing mobile layout. */
   .public-hero-carousel__slide.public-information-hero .public-hero-carousel__media--illustrated::before {
     background: linear-gradient(to bottom,
       var(--banner-bg) 0%,
-      color-mix(in srgb, var(--banner-bg) 78%, transparent) 18%,
-      transparent 46%);
+      color-mix(in srgb, var(--banner-bg) 92%, transparent) 14%,
+      color-mix(in srgb, var(--banner-bg) 62%, transparent) 29%,
+      transparent 52%);
   }
 }
 
