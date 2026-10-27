@@ -12,7 +12,7 @@ test('payer relationship is required at entry and head choice is still validated
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Sample Agent');
@@ -35,8 +35,8 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
   // A legacy v11 category is still testable through its explicit guest deep link.
   await page.goto('/?action=guest&initialCategory=PENALTY');
   const dialog = page;
-  await dialog.getByRole('radio', { name: 'My own tax' }).check();
-  await expect(dialog.getByRole('radio', { name: 'My own tax' })).toBeChecked();
+  await dialog.getByRole('radio', { name: 'My tax liability' }).check();
+  await expect(dialog.getByRole('radio', { name: 'My tax liability' })).toBeChecked();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#guest-notice-ref').fill('DN-2026-001187');
