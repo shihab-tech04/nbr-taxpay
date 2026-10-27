@@ -391,7 +391,7 @@
   }
 }
 
-/* The introductory banner has three equal-height actions in a single row.
+/* The introductory banner keeps its two payment actions in a single row.
  * The existing service banners, hero dimensions and CMS artwork stay unchanged. */
 .public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
   padding-block: .75rem;
@@ -401,7 +401,7 @@
 }
 .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
   display: grid;
-  grid-template-columns: minmax(0, .8fr) minmax(0, 1.15fr) minmax(0, 1.62fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
   gap: .35rem;
   margin-top: .7rem;
   align-items: stretch;
@@ -423,8 +423,7 @@
   height: 16px;
   flex: none;
 }
-/* Pay Tax remains the filled primary CTA. Travel Tax is outlined secondary;
- * receipt/status lookup is the quiet search action, not a third primary. */
+/* Pay Tax remains the filled primary CTA. Travel Tax is outlined secondary. */
 .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel {
   background: rgb(255 255 255 / 58%);
   color: var(--citizen-primary-dark);
@@ -434,19 +433,7 @@
   background: rgb(255 255 255 / 90%);
   color: var(--citizen-primary-dark);
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup {
-  grid-column: auto;
-  justify-self: stretch;
-  background: rgb(255 255 255 / 64%);
-  color: var(--citizen-primary-dark);
-  border: 1px solid var(--citizen-border) !important;
-}
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup:hover {
-  background: white;
-  color: var(--citizen-primary-dark);
-}
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:focus-visible,
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup:focus-visible {
+.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:focus-visible {
   outline: 2px solid var(--citizen-primary);
   outline-offset: 2px;
 }
@@ -487,10 +474,6 @@
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel svg {
     display: none;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__lookup svg {
-    width: 14px;
-    height: 14px;
-  }
   .public-hero-carousel__travel-full { display: none; }
   .public-hero-carousel__travel-compact { display: inline; }
 }
@@ -500,4 +483,56 @@
 @media (max-width: 360px) {
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__pay-full { display: none; }
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__pay-compact { display: inline; }
+}
+
+/* Standalone record search below every banner, with no lookup modal or extra fields. */
+.public-record-search {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+  min-height: 58px;
+  padding: .4rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: .9rem;
+  background: var(--citizen-surface);
+  box-shadow: var(--taxpay-shadow-card);
+}
+.public-record-search:focus-within {
+  border-color: var(--citizen-primary);
+}
+.public-record-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: .65rem 1rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--citizen-text);
+  font: inherit;
+  font-size: 1rem;
+}
+.public-record-search input::placeholder { color: var(--citizen-muted); opacity: 1; }
+.public-record-search button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 52px;
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--citizen-border);
+  border-radius: .5rem;
+  background: transparent;
+  color: var(--citizen-primary-dark);
+  cursor: pointer;
+}
+.public-record-search button:hover:not(:disabled) { background: var(--citizen-primary-light); }
+.public-record-search button:disabled { opacity: .48; cursor: not-allowed; }
+.public-record-search button:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .public-record-search { min-height: 52px; padding: .25rem; }
+  .public-record-search input { padding-inline: .7rem; font-size: 1rem; }
+  .public-record-search button { flex-basis: 48px; }
 }
