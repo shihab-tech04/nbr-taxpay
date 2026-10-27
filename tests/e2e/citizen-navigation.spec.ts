@@ -2,10 +2,12 @@ import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
 
-test('public hero opens service choice before the guest payment form while the receipt action stays available',async({page})=>{
+test('public hero opens payment while standalone receipt search stays accessible',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
- await expect(page.locator('[data-banner-service="intro"] .citizen-public-secondary')).toBeVisible();
+ await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
@@ -58,18 +60,22 @@ test('public information header and sections fit all requested widths',async({pa
   const heroActions=page.locator('.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions').first();
   const pay=await heroActions.getByRole('button',{name:'Pay Tax',exact:true}).boundingBox();
   const travel=await heroActions.getByRole('button',{name:'Pay Travel Tax',exact:true}).boundingBox();
-  const receipt=await heroActions.locator('.citizen-public-secondary').boundingBox();
+  const search=page.locator('.public-record-search');
+  const searchBox=await search.boundingBox();
+  const heroBox=await page.locator('.public-hero-carousel').boundingBox();
   expect(pay).not.toBeNull();
   expect(travel).not.toBeNull();
-  expect(receipt).not.toBeNull();
-  expect(Math.abs(pay!.y-travel!.y),'payment actions should share a row at '+width).toBeLessThan(2);
-  expect(Math.abs(pay!.y-receipt!.y),'all three actions should share a row at '+width).toBeLessThan(2);
+  expect(searchBox).not.toBeNull();
+  expect(heroBox).not.toBeNull();
+  expect(Math.abs(pay!.y-travel!.y),'both payment actions should share a row at '+width).toBeLessThan(2);
+  expect(searchBox!.y,'receipt search must sit below the full banner at '+width).toBeGreaterThanOrEqual(heroBox!.y+heroBox!.height-2);
+  await expect(search.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
   const actionFit=await heroActions.evaluate(actions=>[...actions.querySelectorAll<HTMLButtonElement>('button')].every(button=>{
     const rect=button.getBoundingClientRect();
     const box=actions.getBoundingClientRect();
     return rect.left>=box.left-1 && rect.right<=box.right+1 && button.scrollWidth<=button.clientWidth+1;
   }));
-  expect(actionFit,'all three actions should fit their cells at '+width).toBe(true);
+  expect(actionFit,'both payment actions should fit their cells at '+width).toBe(true);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
