@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, WalletCards } from 'lucide-react';
+import { ChevronLeft, ChevronRight, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
 import heroPaymentIllustration from '../../assets/taxpay-hero-intro-concept-v7.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return-concept-v7.webp';
@@ -130,14 +130,12 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
   onPayTax: (service?: BannerPaymentService) => void;
-  onCheckReceipt: () => void;
   paused?: boolean;
 };
 
 export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   language,
   onPayTax,
-  onCheckReceipt,
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -325,13 +323,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                         <WalletCards size={18} aria-hidden="true" />
                         <span className="public-hero-carousel__travel-full">{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</span>
                         <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
-                      </button>
-                    )}
-                    {index === 0 && (
-                      <button className="citizen-public-secondary public-guest-action public-hero-carousel__lookup" type="button" onClick={onCheckReceipt}>
-                        <Search size={18} aria-hidden="true" />
-                        <span className="public-hero-copy--desktop">{bn ? 'পেমেন্ট ও রসিদ যাচাই' : 'Check payment & receipt'}</span>
-                        <span className="public-hero-copy--mobile">{bn ? 'অবস্থা দেখুন' : 'Check status'}</span>
                       </button>
                     )}
                   </div>

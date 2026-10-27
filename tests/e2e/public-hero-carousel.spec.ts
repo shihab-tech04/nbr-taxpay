@@ -12,7 +12,9 @@ test('hero provides five bilingual service slides with the original desktop open
   await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion.' })).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .citizen-public-hero__copy > p .public-hero-copy--desktop'))
     .toHaveText('Choose the payment you need, see what happens next, and keep the payment reference handy when you need it.');
-  await expect(page.getByRole('button', { name: mobile ? 'Check status' : 'Check payment & receipt' })).toBeVisible();
+  await expect(carousel.getByRole('button', { name: /Check (payment & receipt|status)/ })).toHaveCount(0);
+  await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Payment status & receipt' })).toHaveCount(0);
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
   await expect(carousel.locator('[data-banner-service="intro"] .public-information-hero__image'))
     .toHaveAttribute('src', /taxpay-hero-intro-concept-v7/);
@@ -52,13 +54,12 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
   const intro = page.locator('[data-banner-service="intro"]');
   const payTax = intro.getByRole('button', { name: 'Pay Tax', exact: true });
   const travelTax = intro.getByRole('button', { name: 'Pay Travel Tax', exact: true });
-  const receipt = intro.getByRole('button', { name: /Check (payment & receipt|status)/ });
   await expect(payTax).toBeVisible();
   await expect(travelTax).toBeVisible();
-  await expect(receipt).toBeVisible();
+  await expect(intro.locator('.public-guest-action')).toHaveCount(2);
   const geometry = await intro.evaluate(slide => {
     const buttons = [...slide.querySelectorAll<HTMLButtonElement>('.public-guest-action')];
-    const [pay, travel, lookup] = buttons.map(button => button.getBoundingClientRect());
+    const [pay, travel] = buttons.map(button => button.getBoundingClientRect());
     const bounds = slide.getBoundingClientRect();
     return {
       adjacent: Math.abs(pay.top - travel.top) <= 2 && travel.left > pay.right,
@@ -66,14 +67,12 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
         const rect = button.getBoundingClientRect();
         return rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom;
       }),
-      receiptSameRow: Math.abs(pay.top - lookup.top) <= 2,
       primaryIsFilled: getComputedStyle(buttons[0]).backgroundColor !== getComputedStyle(buttons[1]).backgroundColor,
       travelIsOutlined: getComputedStyle(buttons[1]).borderStyle === 'solid'
         && getComputedStyle(buttons[1]).borderWidth === '1px',
-      lookupIsSubtle: getComputedStyle(buttons[2]).borderColor !== getComputedStyle(buttons[1]).borderColor,
     };
   });
-  expect(geometry).toEqual({ adjacent: true, within: true, receiptSameRow: true, primaryIsFilled: true, travelIsOutlined: true, lookupIsSubtle: true });
+  expect(geometry).toEqual({ adjacent: true, within: true, primaryIsFilled: true, travelIsOutlined: true });
   await travelTax.click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
 });
@@ -88,7 +87,7 @@ test('first-banner travel shortcut is localized in Bangla', async ({ page }) => 
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
-test('all three first-banner actions fit one line in Bangla on small screens', async ({ page }, testInfo) => {
+test('both first-banner payment actions fit one line in Bangla on small screens', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-320', 'One runner covers mobile width matrix');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const width of [320, 360, 375, 390, 600]) {
@@ -110,7 +109,7 @@ test('all three first-banner actions fit one line in Bangla on small screens', a
       };
     });
     expect(geometry, 'Bangla first-banner actions at ' + width).toEqual({
-      count: 3, sameRow: true, inside: true, noClippedLabels: true,
+      count: 2, sameRow: true, inside: true, noClippedLabels: true,
     });
   }
 });
@@ -460,7 +459,9 @@ test('mobile banner buttons and artwork remain readable at narrow widths', async
     expect(dimensions.titleSize).toBeLessThanOrEqual(width <= 360 ? 22 : 23);
     expect(dimensions.descriptionSize).toBeLessThanOrEqual(14.1);
     expect(dimensions.imageFit).toBe('cover');
-    await expect(carousel.getByRole('button', { name: 'Check status' })).toBeVisible();
+    await expect(carousel.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+    await expect(carousel.getByRole('button', { name: 'Check status' })).toHaveCount(0);
+    await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Previous banner' })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Next banner' })).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
