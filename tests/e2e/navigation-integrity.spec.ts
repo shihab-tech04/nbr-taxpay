@@ -48,9 +48,15 @@ test('public footer utility links open their actual destinations without copying
 test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/?action=landing');
-  await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
-  await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toBeVisible();
-  await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
+  const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
+  await expect(search).toBeVisible();
+  await search.fill('NO-SUCH-DEMO-REFERENCE-12345');
+  await search.press('Enter');
+  await expect(page).toHaveURL(/action=verify/);
+  await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
+  await expect(page.getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-DEMO-REFERENCE-12345');
+  await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toHaveCount(0);
+  await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay Tax'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(services).toBeVisible();
