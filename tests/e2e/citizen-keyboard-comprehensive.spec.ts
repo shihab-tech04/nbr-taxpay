@@ -31,12 +31,15 @@ test('Public mobile menu enters a real keyboard sequence and restores trigger fo
   await expect(trigger).toBeFocused();
 });
 
-test('Public service dialog has an accessible entry, close and focus return', async ({ page }) => {
+test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return while receipt lookup is full page', async ({ page }) => {
   await page.goto('/?action=landing');
-  const open = page.locator('[data-banner-service="intro"] .citizen-public-secondary');
+  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  await expect(search).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Payment status & receipt' })).toHaveCount(0);
+  const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Pay Travel Tax' });
   await open.focus();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Payment status & receipt' });
+  const dialog = page.getByRole('dialog', { name: 'Travel tax' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close modal' })).toBeFocused();
   await page.keyboard.press('Escape');
