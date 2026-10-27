@@ -658,3 +658,10 @@
     font-size:14px;
   }
 }
+
+/* Utility-sized copy inside the payment journey must respect the 14px minimum,
+   including bilingual payment-head metadata and optional notes. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.payment-flow-embedded)
+  :is(.text-xs, [class~="text-[10px]"], [class~="text-[11px]"], [class~="text-[12px]"], [class~="text-[13px]"]) {
+  font-size: 14px;
+}
