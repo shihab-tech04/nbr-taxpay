@@ -459,7 +459,9 @@ test('mobile banner buttons and artwork remain readable at narrow widths', async
     expect(dimensions.titleSize).toBeLessThanOrEqual(width <= 360 ? 22 : 23);
     expect(dimensions.descriptionSize).toBeLessThanOrEqual(14.1);
     expect(dimensions.imageFit).toBe('cover');
-    await expect(carousel.getByRole('button', { name: 'Check status' })).toBeVisible();
+    await expect(carousel.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+    await expect(carousel.getByRole('button', { name: 'Check status' })).toHaveCount(0);
+    await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Previous banner' })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Next banner' })).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
