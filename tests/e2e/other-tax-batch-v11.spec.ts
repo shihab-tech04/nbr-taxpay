@@ -252,3 +252,53 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 250');
   }
 });
+
+test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
+  await login.getByLabel('Password', { exact: true }).fill('user2');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login).toHaveCount(0);
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toBeVisible();
+  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
+  await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly');
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveValue('Meghna Trading Ltd.');
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly');
+  await expect(dialog.locator('#guest-phone')).toHaveValue('01700000002');
+  await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly');
+  await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
+});
+
+test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitutes the account TIN', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await login.getByLabel('Password', { exact: true }).fill('user1');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login).toHaveCount(0);
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  await expect(dialog.locator('#guest-tin')).toHaveValue('');
+  await expect(dialog.locator('#guest-tin')).not.toHaveAttribute('readonly');
+  await dialog.locator('#guest-tin').fill('123456789012');
+  await expect(dialog.locator('#other-tax-primary-name')).not.toHaveAttribute('readonly');
+  await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+  await dialog.locator('#guest-payer-name').fill('Authorized Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await expect(batch).toContainText('123456789012');
+  await expect(batch).not.toContainText('1111111111111');
+  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+});
