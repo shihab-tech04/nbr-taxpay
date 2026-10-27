@@ -139,8 +139,8 @@ test('desktop banner uses equal 50:50 columns, a 50px shorter height, flat eleva
   expect(dimensions.shadow).toBe('none');
   expect(dimensions.fadeDirection).toBe('to right');
 
-  // The illustration remains a full-width banner canvas behind the 50:50 grid, not a cropped half-width
-  // image. This prevents tiny artwork and visible rectangular color seams.
+  // Full-width bundled/CMS artwork stays intact, while an opaque 50%-wide mask
+  // makes the left text panel visually separate from the right image panel.
   const artworkGeometry = await carousel.locator('[data-banner-service]').evaluateAll(slides =>
     slides.map(slide => {
       const panel = slide.querySelector<HTMLElement>('.public-hero-carousel__media--illustrated');
@@ -168,6 +168,8 @@ test('desktop banner uses equal 50:50 columns, a 50px shorter height, flat eleva
     expect(layout.imageWidthDifference).toBeLessThan(2);
     expect(layout.imageFit).toBe('cover');
     expect(layout.gradient).toContain('linear-gradient');
+    // Both consecutive 50% stops are essential: no translucent artwork behind text.
+    expect(layout.gradient.match(/50%/g)).toHaveLength(2);
   }
 
 
