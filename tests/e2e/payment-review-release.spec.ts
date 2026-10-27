@@ -240,8 +240,13 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
+  await expect(services.locator('.tax-service-choice__selected-service')).not.toContainText('Travel Tax');
   const progress = services.locator('.tax-service-choice__progress');
   await expect(progress.locator('li')).toHaveCount(4);
+  await expect(services.locator('.tax-service-choice__eyebrow')).toHaveText('Step 1 of 4');
+  const headerSizes = await services.locator('.tax-service-choice__eyebrow, .tax-service-choice__selected-service, .tax-service-choice__progress li').evaluateAll(elements =>
+    elements.map(element => parseFloat(getComputedStyle(element).fontSize)));
+  expect(headerSizes.every(size => size >= 14)).toBe(true);
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
   expect(progressHeight).toBeLessThanOrEqual(info.project.name.startsWith('mobile') ? 84 : 52);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
