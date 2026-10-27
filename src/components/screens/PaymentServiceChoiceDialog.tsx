@@ -146,7 +146,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           <p className="tax-service-choice__selected-service">
             <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
             <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
-            <span>{payerForSelf ? tr('My own tax', 'আমার নিজের কর') : tr("Someone else's tax", 'অন্য কারও কর')}</span>
+            <span>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</span>
           </p>
           {view === 'payment' && stage < 4 && useAccount && <p className="tax-service-choice__account-access">{tr('Continuing with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যাচ্ছেন')}</p>}
         </>}
@@ -154,14 +154,14 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           <h3 ref={payerHeadingRef} tabIndex={-1} id="tax-service-choice-question">{tr('Who are you paying for?', 'কার কর পরিশোধ করছেন?')}</h3>
           <div className="tax-service-choice__grid" role="group" aria-label={tr('Taxpayer relationship', 'করদাতার সঙ্গে সম্পর্ক')}>
             {[
-              { own: true, Icon: UserRound, en: 'My own tax', bn: 'আমার নিজের কর', detailEn: 'Pay tax for myself.', detailBn: 'নিজের কর পরিশোধ করব।' },
-              { own: false, Icon: UsersRound, en: "Someone else's tax", bn: 'অন্য কারও কর', detailEn: 'Pay on behalf of another taxpayer.', detailBn: 'অন্য করদাতার পক্ষে কর পরিশোধ করব।' }
-            ].map(({ own, Icon, en, bn: bangla, detailEn, detailBn }) => (
+              { own: true, Icon: UserRound, en: 'My tax liability', bn: 'আমার করদায়', detailEn: 'You are both the payer and the taxpayer.', detailBn: 'আপনি একই সঙ্গে করদাতা ও পরিশোধকারী।', noteEn: '', noteBn: '' },
+              { own: false, Icon: UsersRound, en: 'Facilitate another taxpayer’s payment', bn: 'অন্য করদাতার কর পরিশোধে সহায়তা করুন', detailEn: 'You facilitate the payment; the liability and the tax credit stay theirs.', detailBn: 'আপনি শুধু পরিশোধে সহায়তা করেন; করদায় ও কর ক্রেডিট করদাতারই থাকে।', noteEn: 'Only where the taxpayer has authorized you.', noteBn: 'শুধুমাত্র করদাতার অনুমোদন থাকলে।' }
+            ].map(({ own, Icon, en, bn: bangla, detailEn, detailBn, noteEn, noteBn }) => (
               <button type="button" key={String(own)} aria-pressed={payerForSelf === own}
                 data-payer-relationship={own ? 'SELF' : 'OTHER'} className="tax-service-choice__card" onClick={() => setPayerForSelf(own)}>
                 <span className="tax-service-choice__icon"><Icon size={23} strokeWidth={1.9} aria-hidden="true" /></span>
                 <span className="tax-service-choice__copy"><strong>{tr(en, bangla)}</strong>
-                  <span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span></span>
+                  <span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span>{noteEn && <span className="tax-service-choice__description">{tr(noteEn, noteBn)}</span>}</span>
                 <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
               </button>
             ))}
@@ -169,7 +169,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </> : view === 'choice' ? <>
         <p className="tax-service-choice__selected-service">
           <span>{tr('Paying for', 'যার জন্য পরিশোধ')}</span>
-          <strong>{payerForSelf ? tr('My own tax', 'আমার নিজের কর') : tr("Someone else's tax", 'অন্য কারও কর')}</strong>
+          <strong>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</strong>
         </p>
         <h3 ref={serviceHeadingRef} tabIndex={-1} id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
