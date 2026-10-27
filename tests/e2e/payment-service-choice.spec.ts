@@ -188,6 +188,11 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
   await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Someone else's tax");
+  await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
+  await expect(dialog.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
+  const visiblePayerText = await dialog.locator('.tax-service-choice__selected-service')
+    .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
+  expect(visiblePayerText).toBeGreaterThanOrEqual(14);
   expect(page.url()).toBe(originalUrl);
 });
 

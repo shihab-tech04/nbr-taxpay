@@ -244,6 +244,14 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(progress.locator('li')).toHaveCount(4);
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
   expect(progressHeight).toBeLessThanOrEqual(info.project.name.startsWith('mobile') ? 84 : 52);
+  // Compactness must never come from shrinking the step labels below the approved 14px floor.
+  const stepTextSize = await progress.locator('.tax-service-choice__stage--current .tax-service-choice__stage-label:visible').first()
+    .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
+  expect(stepTextSize).toBeGreaterThanOrEqual(14);
+  await expect(services.locator('.tax-service-choice__eyebrow')).toHaveText('Step 1 of 4');
+  const visibleContextTextSize = await services.locator('.tax-service-choice__selected-service')
+    .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
+  expect(visibleContextTextSize).toBeGreaterThanOrEqual(14);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // The original taxpayer dashboard remains mounted behind the modal.
@@ -257,6 +265,17 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.payment-form-section').last()).toContainText('Enter the amount from your return');
   await expect(services.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await expect(services.locator('.payment-form-summary__rows--return-context')).toBeVisible();
+  await expect(services.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
+  await expect(services.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveCount(1);
+  const smallDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd, .payment-form-summary__eyebrow')
+    .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
+      .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
+  expect(smallDetails.length).toBeGreaterThan(0);
+  expect(Math.min(...smallDetails)).toBeGreaterThanOrEqual(14);
+  const visibleSmallUtilities = await services.locator('.payment-flow-embedded .text-xs, .payment-flow-embedded [class~="text-[10px]"], .payment-flow-embedded [class~="text-[11px]"]')
+    .evaluateAll(elements => elements.filter(el => el.getClientRects().length > 0)
+      .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
+  if (visibleSmallUtilities.length > 0) expect(Math.min(...visibleSmallUtilities)).toBeGreaterThanOrEqual(14);
   await services.getByRole('radio', { name: /Person other than company/ }).check();
   await services.locator('#guest-tax-amount').fill('0');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
