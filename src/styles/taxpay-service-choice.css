@@ -658,3 +658,11 @@
     font-size: .68rem;
   }
 }
+
+/* Final audit: readable payment modal typography without restoring oversized spacing. */
+.tax-service-choice:has(.payment-flow-embedded) > .tax-service-choice__eyebrow,
+.tax-service-choice:has(.payment-flow-embedded) > .tax-service-choice__selected-service,
+.tax-service-choice:has(.payment-flow-embedded) > .tax-service-choice__progress li { font-size: 14px; }
+@media (max-width: 560px) {
+  .tax-service-choice:has(.payment-flow-embedded) > .tax-service-choice__progress li { font-size: 14px; }
+}
