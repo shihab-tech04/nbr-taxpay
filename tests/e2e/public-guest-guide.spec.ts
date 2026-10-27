@@ -296,36 +296,40 @@ test('guest receipt search is under the banner and opens full-page results witho
  expect(overflow).toBeLessThanOrEqual(2);
 });
 
-test('guest receipt modal localizes labels and remains keyboard accessible',async({page},info)=>{
- test.skip(info.project.name!=='mobile-320','Bilingual guest modal at smallest viewport');
+test('Bangla homepage reference search keeps keyboard access and full-page receipt details',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-320','Bilingual full-page receipt at smallest viewport');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
- await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
- const dialog=page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'});
- await expect(dialog.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toBeVisible();
- await expect(dialog.getByPlaceholder('রেফারেন্স লিখুন')).toBeVisible();
- await expect(dialog.getByRole('button',{name:'রেকর্ড খুঁজুন'})).toBeDisabled();
- await dialog.locator('.receipt-lookup__sample').first().click();
- await expect(dialog.getByText('সরকারি চালান নয়')).toHaveCount(0);
- await expect(dialog.getByRole('button',{name:'রেকর্ডে ফিরুন'})).toHaveCount(0);
- await expect(dialog.getByRole('button',{name:'রসিদ প্রিন্ট'})).toBeVisible();
- await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
- const dimensions=await dialog.locator('.receipt-view__paper').evaluate(el=>({paper:el.getBoundingClientRect().width,viewport:window.innerWidth}));
+ const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
+ await expect(search).toBeVisible();
+ await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
+ await search.fill('SYNTHETIC-NO-MATCH-2026');
+ await search.press('Enter');
+ await expect(page).toHaveURL(/action=verify/);
+ const lookup=page.locator('.receipt-lookup--page');
+ await expect(lookup).toBeVisible();
+ await expect(lookup.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toHaveValue('SYNTHETIC-NO-MATCH-2026');
+ await expect(lookup.getByText('কোনো মিল পাওয়া যায়নি')).toBeVisible();
+ await lookup.locator('.receipt-lookup__sample').first().click();
+ await expect(lookup.getByRole('button',{name:'রসিদ প্রিন্ট'})).toBeVisible();
+ await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
+ const dimensions=await lookup.locator('.receipt-view__paper').evaluate(el=>({paper:el.getBoundingClientRect().width,viewport:innerWidth}));
  expect(dimensions.paper).toBeLessThanOrEqual(dimensions.viewport);
- const a11y=await new AxeBuilder({page}).include('.public-service-dialog[data-public-service="status"]').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
+ const a11y=await new AxeBuilder({page}).include('.receipt-lookup--page').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
  expect(a11y.violations).toEqual([]);
- await page.keyboard.press('Escape');
- await expect(dialog).toHaveCount(0);
+ await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
 });
 
-test('shared modal uses left title, close icon, header divider, content and fixed footer',async({page})=>{
+test('remaining Travel Tax modal keeps title, close icon, dividers, content and fixed footer',async({page})=>{
   await page.goto('/?action=landing');
-  await page.locator('[data-banner-service="intro"] .citizen-public-secondary').click();
-  const modal=page.getByRole('dialog',{name:'Payment status & receipt'});
+  const trigger=page.locator('[data-banner-service="intro"]').getByRole('button',{name:'Pay Travel Tax'});
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
   const header=modal.locator('.taxpay-modal__header');
   const body=modal.locator('.taxpay-modal__body');
   const footer=modal.locator('.taxpay-modal__footer');
-  const title=header.getByRole('heading',{name:'Payment status & receipt',level:2});
+  const title=header.getByRole('heading',{name:'Travel tax',level:2});
   const closeIcon=header.getByRole('button',{name:'Close modal'});
   const footerClose=footer.getByRole('button',{name:'Close',exact:true});
 
@@ -333,7 +337,7 @@ test('shared modal uses left title, close icon, header divider, content and fixe
   await expect(closeIcon).toBeVisible();
   await expect(header).toHaveCSS('border-bottom-style','solid');
   await expect(footer).toHaveCSS('border-top-style','solid');
-  await expect(body.getByLabel('Challan, token or transaction reference')).toBeVisible();
+  await expect(body.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
   await expect(footerClose).toBeVisible();
   const positions=await modal.evaluate(el=>{
     const h=el.querySelector('.taxpay-modal__header')!.getBoundingClientRect();
@@ -346,13 +350,12 @@ test('shared modal uses left title, close icon, header divider, content and fixe
   expect(positions.titleLeft).toBeLessThan(positions.closeLeft);
   expect(positions.headerBottom).toBeLessThanOrEqual(positions.bodyTop+1);
   expect(positions.bodyBottom).toBeLessThanOrEqual(positions.footerTop+1);
-  await modal.locator('.receipt-lookup__sample').first().click();
   await body.evaluate(el=>{el.scrollTop=el.scrollHeight;});
   await expect(header).toBeVisible();
   await expect(footerClose).toBeVisible();
   await footerClose.click();
   await expect(modal).toHaveCount(0);
-  await expect(page.locator('[data-banner-service="intro"] .citizen-public-secondary')).toBeFocused();
+  await expect(trigger).toBeFocused();
 });
 
 test('travel tax uses same modal header/body/footer without changing its flow',async({page})=>{
