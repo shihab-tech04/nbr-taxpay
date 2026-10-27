@@ -47,9 +47,15 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
     await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
   }
-  else await dialog.locator('.payment-head-options input').first().check();
-  if (category !== 'Source Tax Deposit') await dialog.getByRole('radio', { name: /Person other than company/ }).check();
-  await dialog.locator('#guest-tax-amount').fill('12500');
+  else {
+    await dialog.locator('[data-head-group="Advance Tax"] summary').click();
+    await dialog.getByRole('checkbox', { name: /Select 68A/ }).check();
+    await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('12500');
+  }
+  if (category === 'Tax with Return') {
+    await dialog.getByRole('radio', { name: /Person other than company/ }).check();
+    await dialog.locator('#guest-tax-amount').fill('12500');
+  }
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
   await expect(page).toHaveURL(initialUrl);
@@ -72,7 +78,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(dialog.getByRole('radio', { name: 'Mastercard' })).toBeVisible();
   await dialog.getByRole('radio', { name: 'Visa' }).check();
   await expect(action).toBeDisabled();
-  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await expect(action).toBeEnabled();
   await action.click();
   await expect(dialog.getByText('Step 4 of 4')).toBeVisible();
@@ -96,7 +102,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
 test('bank branch creates an unpaid challan first, then a receipt after simulated settlement', async ({ page }) => {
   const dialog = await openReview(page);
   await dialog.getByRole('button', { name: 'Pay at a bank branch' }).click();
-  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: 'Get payment slip' }).click();
   await expect(dialog.getByRole('heading', { name: 'Bank payment slip ready' })).toBeVisible();
   await expect(dialog.getByText('This is not tax paid yet')).toBeVisible();
@@ -118,7 +124,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
-  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment request declined' })).toBeVisible({ timeout: 12000 });
   await dialog.getByText('Payment progress details').click();
@@ -130,7 +136,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'Nagad' }).check();
-  await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();

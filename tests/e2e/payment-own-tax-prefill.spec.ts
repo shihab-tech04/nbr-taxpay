@@ -18,12 +18,18 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
 
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My own tax');
   await expect(payment.getByRole('radio', { name: 'My own tax' })).toHaveCount(0);
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
+  // The unified Other Tax form renders account identity exactly once, in its canonical taxpayer list.
+  // Keep checking immutable signed-in profile values; do not remove the original acceptance requirement.
+  await expect(payment.getByTestId('other-tax-primary-taxpayer')).toBeVisible();
+  await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Meghna Trading Ltd.');
+  await expect(payment.locator('#other-tax-primary-name')).toHaveAttribute('readonly');
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
+  await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toHaveValue('2222222222222');
   await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
   await expect(payment.locator('#guest-tax-zone')).toHaveValue('Taxes Zone 2');
   await expect(payment.locator('#guest-tax-circle')).toHaveValue('circle-2');
-  for (const selector of ['#guest-taxpayer-name', '#guest-tin', '#guest-phone', '#guest-tax-zone', '#guest-tax-circle']) {
+  for (const selector of ['#other-tax-primary-name', '#guest-tin', '#guest-phone', '#guest-tax-zone', '#guest-tax-circle']) {
     await expect(payment.locator(selector)).toHaveAttribute('readonly');
   }
 

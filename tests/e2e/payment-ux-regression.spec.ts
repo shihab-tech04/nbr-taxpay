@@ -34,27 +34,28 @@ test('payer is required before choosing a payment service and is not asked twice
   await expect(dialog.locator('#guest-tin-hint')).toHaveCount(0);
 });
 
-test('large multi-head values do not turn into zero; missing head is focused with an inline error', async ({ page }) => {
+test('large multi-head values do not turn into zero; missing head is highlighted with an inline error', async ({ page }) => {
   const dialog = await beginGuestPayment(page, 'Other Tax');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await dialog.getByRole('radio', { name: /Person other than company/ }).check();
-  await dialog.locator('.payment-head-options input[type="checkbox"]').first().check();
-  const secondHead = dialog.locator('.payment-head-options input[type="checkbox"]').nth(1);
-  const secondId = await secondHead.inputValue();
-  await secondHead.check();
-  await dialog.locator('#guest-tax-amount').fill('111122241212');
-  const expectedFirst = new Intl.NumberFormat('en-IN').format(111122241212);
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  const amounts = batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]');
+  await amounts.nth(1).fill('1');
+  await amounts.first().fill('111122241212');
+  const expectedFirst = new Intl.NumberFormat('en-IN').format(111122241213);
   await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedFirst);
-  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('—');
+  await amounts.nth(1).fill('');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(dialog.locator(`#guest-tax-amount-${secondId}`)).toBeFocused();
-  await expect(dialog.getByRole('alert')).toContainText('greater than zero');
-  await dialog.locator(`#guest-tax-amount-${secondId}`).fill('12214124442.75');
+  await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Correct the highlighted payment heads');
+  await expect(amounts.nth(1)).toHaveAttribute('aria-invalid', 'true');
+  await amounts.nth(1).fill('12214124442.75');
   const expectedTotal = new Intl.NumberFormat('en-IN').format(123336365654.75);
   await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedTotal);
-  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
   await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
