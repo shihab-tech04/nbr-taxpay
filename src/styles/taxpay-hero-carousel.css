@@ -420,7 +420,7 @@
   min-height: 46px;
   padding: .4rem .3rem;
   gap: .25rem;
-  font-size: .7rem;
+  font-size: 14px;
   line-height: 1.15;
   white-space: nowrap;
   border-radius: .55rem;
@@ -453,7 +453,7 @@
   }
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
     padding-inline: .15rem;
-    font-size: .64rem;
+    font-size: 14px;
     gap: .2rem;
   }
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary svg,
@@ -474,7 +474,7 @@
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
     min-height: 44px;
     padding-inline: .18rem;
-    font-size: .69rem;
+    font-size: 14px;
     gap: .2rem;
   }
   .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary svg,
