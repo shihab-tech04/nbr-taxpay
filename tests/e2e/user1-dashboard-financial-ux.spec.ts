@@ -41,9 +41,9 @@ test('review tiles navigate to accurately filtered transaction sets without cred
 test('monthly chart renders only recorded bars, supports Tab focus and routes to filtered activity',async({page})=>{
   await page.goto(dashboard);
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
-  const group=page.getByRole('group',{name:/Income tax: Jan/});
-  await expect(group.getByRole('button',{name:/Income tax, Jan/})).toHaveCount(0);
-  const june=group.getByRole('button',{name:/Income tax, Jun/});
+  const group=page.getByRole('group',{name:/Income tax: Jun 2026/});
+  await expect(group.getByRole('button',{name:/Income tax, Jan 2026/})).toHaveCount(0);
+  const june=group.getByRole('button',{name:/Income tax, Jun 2026/});
   await expect(june).toBeVisible();
   await june.focus();
   await expect(june).toBeFocused();
@@ -81,7 +81,7 @@ test('phone-to-wide-desktop layout keeps chart, KPIs and review actions usable',
     await page.setViewportSize({width,height:820});
     await page.goto(dashboard);
     await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
-    await expect(page.getByRole('group',{name:/Income tax: Jan/})).toBeVisible();
+    await expect(page.getByRole('group',{name:/Income tax: Jun 2026/})).toBeVisible();
     await expect(page.getByRole('button',{name:'View Pending: 1'})).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'Horizontal overflow at '+width).toBeLessThanOrEqual(2);
