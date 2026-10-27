@@ -1787,8 +1787,8 @@ export const CATEGORY_LABELS: Record<string, { en: string; bn: string; desc: str
   },
   TRAVEL_TAX: { en: 'Travel Tax', bn: 'ভ্রমণ কর', desc: 'Travel tax payment' },
   OTHER_TAX_PAYMENT: {
-    en: 'Other Tax Payment & Travel Tax',
-    bn: 'অন্যান্য কর ও ভ্রমণ কর',
+    en: 'Other Tax Payment',
+    bn: 'অন্যান্য কর পরিশোধ',
     desc: 'Surcharges, foreign travel tax, capital gains, deed registration, and specialized levies'
   }
 };
