@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -10,6 +10,7 @@ export const PublicLanding: React.FC = () => {
   const { user } = useAccountIdentity();
   const signedIn = Boolean(user || previewAccount);
   const [openService, setOpenService] = useState<PublicService | null>(null);
+  const [paymentReference, setPaymentReference] = useState('');
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
@@ -71,9 +72,35 @@ export const PublicLanding: React.FC = () => {
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
-      onCheckReceipt={() => setOpenService('status')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
+
+    <form
+      className="public-record-search"
+      role="search"
+      onSubmit={event => {
+        event.preventDefault();
+        const reference = paymentReference.trim();
+        if (reference) navigate('verify', { initialReference: reference });
+      }}
+    >
+      <label className="sr-only" htmlFor="public-payment-reference">
+        {t('Search payment records by reference', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন')}
+      </label>
+      <input
+        id="public-payment-reference"
+        type="search"
+        autoComplete="off"
+        spellCheck={false}
+        maxLength={120}
+        value={paymentReference}
+        onChange={event => setPaymentReference(event.target.value)}
+        placeholder={t('Search payment records', 'পেমেন্ট রেকর্ড খুঁজুন')}
+      />
+      <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
+        <Search size={23} aria-hidden="true" />
+      </button>
+    </form>
 
     <section id="public-how-it-works" className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
       <div className="citizen-hub-section__heading">
