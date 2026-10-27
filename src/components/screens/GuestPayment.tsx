@@ -352,7 +352,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const amountsValid = selectedHeads.length > 0 && validAmountInputs.length === selectedHeads.length && summedAmount !== null;
   const totalAmount = otherBatch ? batchAmount ?? 0 : summedAmount ?? 0;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
-  const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language}
+  const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
@@ -368,7 +368,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line])
       };
-    })} /> : <PaymentLiveSummary language={language}
+    })} /> : <PaymentLiveSummary language={language} hideService={embedded}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
     head={category === 'TAX_WITH_RETURN'
