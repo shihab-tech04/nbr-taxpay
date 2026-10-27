@@ -116,7 +116,7 @@ test('public guidance links stay on-page without authorizing account access',asy
 
 test('leaving an active payment through the logo confirms before discarding entered details', async ({page}) => {
   await page.goto('/?action=guest');
-  await page.getByRole('radio', { name: 'My own tax' }).check();
+  await page.getByRole('radio', { name: 'My tax liability' }).check();
   await page.getByLabel('Taxpayer’s TIN').fill('123456789012');
   const prompt = page.waitForEvent('dialog');
   const clickHome = page.getByRole('button', { name: 'Amar Kor home' }).click();
