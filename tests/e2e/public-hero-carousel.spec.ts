@@ -537,3 +537,13 @@ test('mobile banners have distinct concise copy, equal heights and one-line titl
     }
   }
 });
+
+
+test('introductory banner payment button typography respects the 14px floor', async ({ page }) => {
+  await page.goto('/?action=landing');
+  const buttons = page.locator('[data-banner-service="intro"] .public-guest-action');
+  await expect(buttons).toHaveCount(2);
+  const fontSizes = await buttons.evaluateAll(elements =>
+    elements.map(element => Number.parseFloat(getComputedStyle(element).fontSize)));
+  for (const size of fontSizes) expect(size).toBeGreaterThanOrEqual(14);
+});
