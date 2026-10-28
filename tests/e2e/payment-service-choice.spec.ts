@@ -231,15 +231,13 @@ test('Combined payer and account choices retain selection through login and Back
   await account.click();
   await expect(account).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await expect(login).toBeVisible();
   await expect(login.locator('.taxpay-modal__back')).toBeVisible();
+  await expect(login.getByRole('button', { name: 'Sign In' })).toBeDisabled();
   await login.locator('.taxpay-modal__back').click();
-  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-  await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Other Tax keeps the v11 guest reference and four payment stages', async ({ page }) => {

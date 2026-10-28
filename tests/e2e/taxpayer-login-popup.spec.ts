@@ -85,9 +85,9 @@ test('empty and mismatched passwords cannot sign in even with a valid User ID', 
   await page.goto('/?action=taxpayer_login');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
-  await dialog.getByRole('button',{name:'Sign In'}).click();
-  await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
+  await expect(dialog.getByRole('button',{name:'Sign In'})).toBeDisabled();
   await dialog.getByLabel('Password',{exact:true}).fill('user2');
+  await expect(dialog.getByRole('button',{name:'Sign In'})).toBeEnabled();
   await dialog.getByRole('button',{name:'Sign In'}).click();
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);

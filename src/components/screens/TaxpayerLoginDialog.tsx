@@ -5,12 +5,13 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
-export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false }: {
+export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange }: {
   onClose?: () => void;
   onSuccess?: () => void;
   preservePaymentJourney?: boolean;
   /** Reuse the parent payment modal's title, close control, overlay and footer. */
   embedded?: boolean;
+  onValidityChange?: (valid: boolean) => void;
 } = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
   const [userId, setUserId] = useState('');
@@ -23,6 +24,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const dialogRef = useRef<HTMLElement>(null);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
+  const credentialsReady = Boolean(userId.trim() && password.trim());
+  useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
   useEffect(() => {
     const lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -54,6 +57,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!credentialsReady) return;
     if (verifiedApplicationUser) {
       setError('already_signed_in');
       return;
@@ -117,7 +121,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
             : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
         </p>}
         {!embedded && <div className="taxpayer-login-actions">
-          <button className="taxpayer-login-submit" type="submit">
+          <button className="taxpayer-login-submit" type="submit" disabled={!credentialsReady}>
             {bn ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={19} aria-hidden="true" />
           </button>
         </div>}

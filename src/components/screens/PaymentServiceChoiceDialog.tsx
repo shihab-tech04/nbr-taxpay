@@ -45,6 +45,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [useAccount, setUseAccount] = useState(false);
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account'>('guest');
+  const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
   const serviceHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -59,11 +60,26 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
   const beginPayment = (withAccount: boolean) => { setUseAccount(withAccount); setStage(1); setView('payment'); };
+  const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
     if (payerForSelf === null || !selected || (accountLoading && !previewAccount)) return;
     if (verifiedUser || previewAccount) { beginPayment(true); return; }
     if (entryAccess === 'guest' && publicPayment) { beginPayment(false); return; }
-    setView('login');
+    openLogin();
+  };
+  const advanceAfterPayer = () => {
+    if (payerForSelf === null || (accountLoading && !previewAccount)) return;
+    // Account access must authenticate before the tax-type chooser, not afterwards.
+    if (verifiedUser || previewAccount) {
+      if (initialService) beginPayment(true);
+      else setView('choice');
+    } else if (entryAccess === 'account') {
+      openLogin();
+    } else if (initialService) {
+      advanceToPayment();
+    } else {
+      setView('choice');
+    }
   };
   const returnToService = () => {
     setStage(1);
@@ -83,24 +99,24 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
 
   return (
     <TaxPayModal
-      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : view === 'payer' ? tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?') : tr('Pay Tax', 'কর পরিশোধ')}
-      ariaLabel={view === 'payer' ? tr('Pay Tax', 'কর পরিশোধ') : undefined}
+      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : view === 'payer' ? tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?') : view === 'choice' ? tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?') : tr('Pay Tax', 'কর পরিশোধ')}
+      ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'tax-service-choice-modal--access' : ''}
       animateSize={view === 'payer' || view === 'choice' || view === 'login'}
       motionKey={view}
-      onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView(initialService ? 'payer' : 'choice') : undefined}
+      onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView('payer') : undefined}
       backLabel={tr('Back', 'ফিরুন')}
       service={view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
           {view === 'payer' && <button type="button" className="tax-service-choice__continue" disabled={payerForSelf === null || (Boolean(initialService) && accountLoading && !previewAccount)}
-            onClick={() => initialService ? advanceToPayment() : setView('choice')}>
+            onClick={advanceAfterPayer}>
             {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
           </button>}
           {view === 'choice' && <button type="button" className="tax-service-choice__continue" disabled={!selected || (accountLoading && !previewAccount)} onClick={advanceToPayment}>{tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" /></button>}
-          {view === 'login' && <button type="submit" form="taxpay-embedded-login-form" className="tax-service-choice__continue">{tr('Sign In', 'সাইন ইন')} <ArrowRight size={18} aria-hidden="true" /></button>}
+          {view === 'login' && <button type="submit" form="taxpay-embedded-login-form" className="tax-service-choice__continue" disabled={!loginReady}>{tr('Sign In', 'সাইন ইন')} <ArrowRight size={18} aria-hidden="true" /></button>}
         </div>
       )}
     >
@@ -160,11 +176,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             </div>
           </>)}
         </> : view === 'choice' ? <>
-        <p className="tax-service-choice__selected-service">
-          <span>{tr('Paying for', 'যার জন্য পরিশোধ')}</span>
-          <strong>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</strong>
-        </p>
-        <h3 ref={serviceHeadingRef} tabIndex={-1} id="tax-service-choice-question">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
+        <h3 ref={serviceHeadingRef} tabIndex={-1} id="tax-service-choice-question" className="tax-service-choice__payer-focus">{tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?')}</h3>
         <div className="tax-service-choice__grid" role="group" aria-label={tr('Tax payment services', 'কর পরিশোধের সেবা')}>
           {TAXPAY_ENTRY_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
             <button type="button" key={id} aria-pressed={topLevel === id}
@@ -178,6 +190,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             </button>
           ))}
         </div>
+        <p className="tax-service-choice__selected-service tax-service-choice__selected-service--below">
+          <span>{tr('Paying for', 'যার জন্য পরিশোধ')}</span>
+          <strong>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</strong>
+        </p>
 
         {verifiedUser && <button type="button" className="tax-service-choice__saved-drafts"
           onClick={() => { close(); navigate('secure_workspace'); }}>
@@ -185,7 +201,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
         </button>}
         </> : view === 'login' ? (
-          <TaxpayerLoginDialog embedded preservePaymentJourney onClose={() => setView(initialService ? 'payer' : 'choice')} onSuccess={() => beginPayment(true)} />
+          <TaxpayerLoginDialog embedded preservePaymentJourney onClose={() => setView('payer')} onValidityChange={setLoginReady} onSuccess={() => initialService ? beginPayment(true) : setView('choice')} />
         ) : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
         ) : selected ? (
