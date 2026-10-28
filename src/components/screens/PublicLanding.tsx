@@ -183,12 +183,12 @@ export const PublicLanding: React.FC = () => {
                         onClick={() => chooseReference(option.value)}
                       >
                         <Search size={17} aria-hidden="true" />
-                        <span className="public-record-suggestions__option-copy">
+                        <div className="public-record-suggestions__option-copy">
                           <p className="public-record-suggestions__value">{option.value}</p>
                           <p className="public-record-suggestions__kind">
                             {option.kind === 'challan' ? t('Sample challan reference', 'নমুনা চালান রেফারেন্স') : option.kind === 'token' ? t('Sample payment token', 'নমুনা পেমেন্ট টোকেন') : t('Sample transaction reference', 'নমুনা লেনদেন রেফারেন্স')}
                           </p>
-                        </span>
+                        </div>
                         <ArrowRight size={16} aria-hidden="true" />
                       </button>
                     </li>
