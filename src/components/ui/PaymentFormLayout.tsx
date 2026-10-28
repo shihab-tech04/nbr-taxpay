@@ -52,9 +52,10 @@ interface PaymentSummaryProps {
   note?: string;
   helpText?: string;
   breakdown?: { label: string; detail?: string; value: number | null }[];
+  groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; entries: { label: string; detail?: string; value: number | null }[] }[];
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown }: PaymentSummaryProps) {
   const bn = language === 'bn';
   return (
     <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
@@ -82,6 +83,25 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <strong>{item.value === null ? '—' : formatCurrency(item.value, language)}</strong>
         </div>)}
       </div>}
+      {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
+        <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
+        {groupedBreakdown.map((group, index) => <details key={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
+          <summary>
+            <span className="payment-form-summary__taxpayer-name">
+              <strong>{group.label}</strong>
+              <small>{bn ? 'টিআইএন' : 'TIN'}: {group.tin || '—'} · {group.entries.length} {bn ? 'টি খাত' : group.entries.length === 1 ? 'head' : 'heads'}</small>
+            </span>
+            <span className="payment-form-summary__taxpayer-total">{group.amount === null ? '—' : formatCurrency(group.amount, language)}</span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </summary>
+          <div className="payment-form-summary__taxpayer-items">
+            {group.entries.length ? group.entries.map((entry, entryIndex) => <div key={entryIndex} className="payment-form-summary__taxpayer-item">
+              <p>{entry.label}{entry.detail && <small>{entry.detail}</small>}</p>
+              <strong>{entry.value === null ? '—' : formatCurrency(entry.value, language)}</strong>
+            </div>) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
+          </div>
+        </details>)}
+      </section>}
       {note && <p className="payment-form-summary__notice">{note}</p>}
     </aside>
   );

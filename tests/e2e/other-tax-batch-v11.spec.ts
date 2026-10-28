@@ -71,9 +71,14 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await batch.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
   await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
-  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('111111111111');
-  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('Taxpayer Beta');
-  await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('2025-26');
+  const groupedTotals = dialog.getByTestId('grouped-taxpayer-calculation');
+  await expect(groupedTotals.locator('details')).toHaveCount(2);
+  await expect(groupedTotals.locator('details').first().locator('summary')).toContainText('1,000');
+  await expect(groupedTotals.locator('details').nth(1).locator('summary')).toContainText('2,000');
+  await expect(groupedTotals).toContainText('111111111111');
+  await expect(groupedTotals).toContainText('Taxpayer Beta');
+  await groupedTotals.locator('details').nth(1).locator('summary').click();
+  await expect(groupedTotals.locator('details').nth(1)).toContainText('2025-26');
 
   await tabs.getByRole('button').first().click();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
@@ -297,7 +302,7 @@ test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitu
   await expect(dialog.locator('#guest-phone')).toHaveValue('01700000001');
   await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText(/No active authorization for this taxpayer/)).toBeVisible();
+  await expect(dialog.getByText(/Taxpayer 1 \(123456789012\) is not approved for payment through your account/)).toBeVisible();
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
 

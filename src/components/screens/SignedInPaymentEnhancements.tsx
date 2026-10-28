@@ -22,13 +22,13 @@ export function SignedInTaxpayerCard({ profile, language, id = 'guest-tin' }: {
 }) {
   const tr = (en: string, bn: string) => language === 'bn' ? bn : en;
   return <section id={id} tabIndex={-1} aria-label={tr('Account taxpayer details', 'অ্যাকাউন্টের করদাতার তথ্য')}
-    className="col-span-full rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-    <div className="mb-3 flex items-center justify-between gap-3">
+    className="account-taxpayer-summary col-span-full">
+    <div className="account-taxpayer-summary__heading mb-3 flex items-center justify-between gap-3">
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('Taxpayer details', 'করদাতার তথ্য')}</h3>
-      <p className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">{tr('From your account', 'আপনার অ্যাকাউন্ট থেকে')}</p>
+      <p className="account-taxpayer-summary__source">{tr('Account information', 'অ্যাকাউন্টের তথ্য')}</p>
     </div>
     {!profile ? <p role="status" className="text-sm text-slate-600">{tr('Your linked taxpayer profile is unavailable. Check your account before continuing.', 'সংযুক্ত করদাতার তথ্য পাওয়া যায়নি। এগোনোর আগে অ্যাকাউন্ট দেখুন।')}</p> :
-    <dl className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
+    <dl className="account-taxpayer-summary__fields grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
       {([
         [tr('Taxpayer name', 'করদাতার নাম'), language === 'bn' ? profile.nameBn : profile.nameEn],
         [tr('Taxpayer TIN', 'করদাতার টিআইএন'), profile.tin],
@@ -46,8 +46,9 @@ export function SignedInTaxpayerCard({ profile, language, id = 'guest-tin' }: {
 }
 
 /** Hosted demonstration consent only. This component does not grant payment authorization. */
-export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSelect, onManage }: {
+export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedTins = [], allowAdd = false, onSelect, onManage }: {
   actor: DemoUserId | null; language: Language; selectedTin: string;
+  addedTins?: readonly string[]; allowAdd?: boolean;
   onSelect: (tin: string, name: string) => void; onManage: () => void;
 }) {
   const [records, setRecords] = useState<HostedAuthorization[]>([]);
@@ -72,6 +73,12 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
     return () => { mounted = false; window.clearInterval(timer); };
   }, [actor]);
   const choices = actor && status === 'ready' ? activeAuthorizedTaxpayers(records, actor, now) : [];
+  const pending = actor && status === 'ready'
+    ? records.filter(record => record.payerId === actor && (record.status === 'PENDING' || record.status === 'CODE_ISSUED'))
+    : [];
+  const expired = actor && status === 'ready'
+    ? records.filter(record => record.payerId === actor && record.status === 'EXPIRED')
+    : [];
   const candidate = userIdForHostedTin(selectedTin);
   const canRequest = actor && candidate && actor !== candidate &&
     !records.some(record => record.payerId === actor && record.taxpayerId === candidate &&
@@ -90,25 +97,51 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
     } finally { setRequesting(false); }
   };
   return <section aria-label={tr('Authorized taxpayers', 'অনুমোদিত করদাতা')}
-    className="col-span-full rounded-xl border border-slate-200 bg-white p-4" data-testid="authorized-taxpayer-choices">
+    className="account-authorizations col-span-full" data-testid="authorized-taxpayer-choices">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('Authorized taxpayers', 'অনুমোদিত করদাতা')}</h3>
-      <button type="button" className="min-h-10 text-sm font-semibold text-taxpay-primary underline underline-offset-2"
+      <button type="button" className="min-h-10 text-sm font-semibold text-taxpay-primary no-underline"
         onClick={onManage}>{tr('Manage authorization', 'অনুমোদন পরিচালনা করুন')}</button>
     </div>
     <p className="mt-1 text-sm text-slate-600">{tr('Select an active authorization or enter a new taxpayer TIN below.', 'সক্রিয় অনুমোদন বেছে নিন অথবা নিচে নতুন করদাতার টিআইএন লিখুন।')}</p>
     {status === 'loading' && <p role="status" className="mt-3 text-sm text-slate-600">{tr('Checking authorizations…', 'অনুমোদন যাচাই হচ্ছে…')}</p>}
     {status === 'error' && <p role="alert" className="mt-3 text-sm text-rose-700">{tr('Authorizations could not be verified. Try Manage authorization.', 'অনুমোদন যাচাই করা যায়নি। অনুমোদন পরিচালনা করুন-এ যান।')}</p>}
-    {status === 'ready' && <p className="mt-3 text-xs font-semibold text-slate-600">{tr('Active authorizations', 'সক্রিয় অনুমোদন')}: {choices.length}</p>}
+    {status === 'ready' && choices.length > 0 && <p className="mt-3 text-sm font-semibold text-taxpay-dark">{tr('You can pay for these taxpayers', 'এই করদাতাদের জন্য পরিশোধ করতে পারবেন')}: {choices.length}</p>}
     {choices.length > 0 && <div role="group" aria-label={tr('Choose authorized taxpayer', 'অনুমোদিত করদাতা নির্বাচন')} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
       {choices.map(choice => <button key={choice.authorizationId} type="button" aria-pressed={selectedTin === choice.tin}
+        disabled={addedTins.includes(choice.tin) && choice.tin !== selectedTin}
         onClick={() => onSelect(choice.tin, language === 'bn' ? choice.nameBn : choice.nameEn)}
         className={`min-h-16 rounded-lg border p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary ${selectedTin === choice.tin ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
         <p className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? choice.nameBn : choice.nameEn}</p>
         <p className="mt-1 text-xs text-slate-600">{tr('TIN', 'টিআইএন')}: {choice.tin}</p>
+        <p className="mt-1 text-xs font-semibold text-taxpay-primary">{addedTins.includes(choice.tin)
+          ? tr('Already in this payment', 'এই পেমেন্টে ইতিমধ্যে যুক্ত')
+          : allowAdd ? tr('Add to this payment', 'এই পেমেন্টে যোগ করুন')
+          : tr('Use this taxpayer', 'এই করদাতাকে নির্বাচন করুন')}</p>
       </button>)}
     </div>}
-    {status === 'ready' && !choices.length && <p className="mt-2 text-sm text-slate-500">{tr('No active authorizations. Request one through Manage authorization.', 'কোনো সক্রিয় অনুমোদন নেই। অনুমোদন পরিচালনা করুন থেকে অনুরোধ পাঠান।')}</p>}
+    {pending.length > 0 && <div className="account-authorizations__pending" aria-label={tr('Requests awaiting approval', 'অনুমোদনের অপেক্ষায় থাকা অনুরোধ')}>
+      <h4>{tr('Awaiting authorization', 'অনুমোদনের অপেক্ষায়')}: {pending.length}</h4>
+      {pending.map(record => {
+        const taxpayer = getDemoUser(record.taxpayerId);
+        return <p key={record.id} className="account-authorizations__pending-item">
+          <strong>{taxpayer ? (language === 'bn' ? taxpayer.nameBn : taxpayer.nameEn) : record.taxpayerId}</strong>
+          {taxpayer && <span>{tr('TIN', 'টিআইএন')}: {taxpayer.tin}</span>}
+          <span>{record.status === 'CODE_ISSUED'
+            ? tr('Awaiting your code confirmation', 'আপনার কোড নিশ্চিত করার অপেক্ষায়')
+            : tr('Awaiting taxpayer approval', 'করদাতার অনুমোদনের অপেক্ষায়')}</span>
+        </p>;
+      })}
+    </div>}
+    {expired.length > 0 && <p className="account-authorizations__expired" role="status">
+      {tr('Expired authorization requests', 'মেয়াদোত্তীর্ণ অনুমোদন অনুরোধ')}: {expired.length}.
+      {' '}{tr('You can send a new request from Manage authorization.', 'অনুমোদন পরিচালনা থেকে নতুন অনুরোধ পাঠাতে পারবেন।')}
+    </p>}
+    {status === 'ready' && !choices.length && <div className="account-authorizations__empty" role="status">
+      <p className="font-semibold">{tr('You have no approved taxpayers yet', 'এখনও কোনো অনুমোদিত করদাতা নেই')}</p>
+      <p>{tr('Enter the taxpayer’s TIN below. If authorization is available, request it before proceeding with an account payment.', 'নিচে করদাতার টিআইএন দিন। অনুমোদনের সুযোগ থাকলে অ্যাকাউন্ট থেকে পরিশোধের আগে অনুরোধ করুন।')}</p>
+    </div>}
+    {status === 'ready' && selectedTin && !choices.some(choice => choice.tin === selectedTin) && !canRequest && <p className="account-authorizations__selection-note" role="status">{tr('This TIN is not on your approved list. Choose an approved taxpayer or manage access before continuing.', 'এই টিআইএন অনুমোদিত তালিকায় নেই। অনুমোদিত করদাতা বাছুন অথবা এগোনোর আগে অনুমোদন পরিচালনা করুন।')}</p>}
     {canRequest && <button type="button" disabled={requesting} onClick={() => void requestConsent()}
       className="mt-3 min-h-11 rounded-lg border border-taxpay-primary px-4 text-sm font-semibold text-taxpay-primary hover:bg-blue-50 disabled:opacity-60">
       {requesting ? tr('Requesting…', 'অনুরোধ পাঠানো হচ্ছে…') : tr('Request authorization for this TIN', 'এই টিআইএন-এর জন্য অনুমোদন চান')}
@@ -130,8 +163,8 @@ export function AccountPaymentSuggestions({ userId, language, mode, onChoose }: 
   if (!userId || (data.status === 'ready' && suggestions.length === 0)) return null;
   return <section className="mb-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4"
     aria-label={tr('Payment suggestions', 'পরিশোধের পরামর্শ')} data-testid="payment-suggestions">
-    <h3 className="text-sm font-semibold text-taxpay-text">{tr('Relevant payment records', 'প্রাসঙ্গিক পরিশোধের রেকর্ড')}</h3>
-    <p className="mt-1 text-xs text-slate-600">{tr('Based on this taxpayer’s recorded demo activity. Check applicability; these are not confirmed amounts due.', 'এই করদাতার পরীক্ষামূলক কার্যক্রমের ভিত্তিতে। প্রযোজ্যতা যাচাই করুন; এগুলো নিশ্চিত বকেয়া নয়।')}</p>
+    <h3 className="text-sm font-semibold text-taxpay-text">{tr('Suggested payment heads', 'প্রস্তাবিত পেমেন্ট খাত')}</h3>
+    <p className="mt-1 text-xs text-slate-600">{tr('Based on earlier records. Choose a head only if it applies to this payment.', 'আগের রেকর্ড অনুযায়ী। এই পেমেন্টে প্রযোজ্য হলে খাত নির্বাচন করুন।')}</p>
     {data.status === 'loading' && <p className="mt-2 text-sm text-slate-600">{tr('Loading account records…', 'অ্যাকাউন্টের রেকর্ড লোড হচ্ছে…')}</p>}
     {data.status === 'error' && <p className="mt-2 text-sm text-slate-600">{tr('Record suggestions are unavailable. Continue by choosing a payment head below.', 'রেকর্ডভিত্তিক পরামর্শ পাওয়া যাচ্ছে না। নিচে পরিশোধ খাত নির্বাচন করুন।')}</p>}
     {suggestions.length > 0 && <ul className="mt-3 grid list-none gap-2">
@@ -140,7 +173,7 @@ export function AccountPaymentSuggestions({ userId, language, mode, onChoose }: 
           <p className="text-sm font-semibold text-slate-800">{title[suggestion.serviceCode][language]}</p>
           <p className="mt-1 text-xs text-slate-600">{suggestion.requiresReview
             ? tr('Check the existing record before paying again.', 'আবার পরিশোধের আগে আগের রেকর্ডটি দেখুন।')
-            : tr('Previously used in this demo. Select only if applicable again.', 'এই ডেমোতে আগে ব্যবহৃত। আবার প্রযোজ্য হলেই নির্বাচন করুন।')}
+            : tr('Previously selected. Choose again if applicable.', 'আগে নির্বাচিত হয়েছিল। প্রযোজ্য হলে আবার বেছে নিন।')}
             {suggestion.assessmentYear ? ` · ${suggestion.assessmentYear}` : ''}
           </p>
         </div>

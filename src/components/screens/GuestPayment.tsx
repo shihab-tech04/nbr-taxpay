@@ -378,7 +378,24 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       : !batchValid && otherTaxLines.length > 0
       ? language === 'bn' ? 'সব নির্বাচিত খাতের পরিমাণ সম্পূর্ণ হলে মোট হিসাব দেখা যাবে।' : 'Complete every selected amount to see the final total.'
       : undefined}
-    breakdown={otherTaxLines.map(line => {
+    groupedBreakdown={batchTaxpayers.length > 1 ? batchTaxpayers.map((person, index) => {
+      const lines = otherTaxLines.filter(line => line.taxpayerId === person.id);
+      return {
+        id: person.id,
+        label: person.name.trim() || (language === 'bn' ? `করদাতা ${index + 1}` : `Taxpayer ${index + 1}`),
+        tin: person.tin,
+        amount: lines.length ? otherTaxAllocationTotal(lines) : null,
+        entries: lines.map(line => {
+          const head = otherTaxAllocationHead(line.headId);
+          return {
+            label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
+            detail: line.assessmentYear,
+            value: otherTaxAllocationTotal([line]),
+          };
+        }),
+      };
+    }) : undefined}
+    breakdown={batchTaxpayers.length > 1 ? undefined : otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
       return {
@@ -497,9 +514,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         const missing = recipients.find(person => !active.some(choice => choice.tin === person.tin));
         if (missing) {
           if (missing.id !== 'primary') setInvalidBatchTaxpayerId(missing.id);
+          const personNumber = recipients.findIndex(person => person.id === missing.id) + 1;
           setValidationError(language === 'bn'
-            ? 'এই করদাতার সক্রিয় অনুমোদন নেই। অনুমোদন পরিচালনা করুন থেকে অনুরোধ পাঠান।'
-            : 'No active authorization for this taxpayer. Request authorization in Manage authorization.', 'tin');
+            ? `করদাতা ${personNumber} (${missing.tin}) আপনার অনুমোদিত তালিকায় নেই। অনুমোদিত করদাতা নির্বাচন করুন অথবা অনুমোদনের অনুরোধ করুন।`
+            : `Taxpayer ${personNumber} (${missing.tin}) is not approved for payment through your account. Choose an approved taxpayer or request access first.`, 'tin');
           return;
         }
         setAuthorizedTaxpayerId(userIdForHostedTin(taxpayerTin));
@@ -886,12 +904,25 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('payerChoice')}
               </fieldset>
             </PaymentFormSection> : null}
-            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer & receipt details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'করদাতাদের টিআইএন নিচের তালিকায় যোগ করুন।' : 'Add taxpayer TINs in the list below.') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
+            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} />}
             {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={demoConsentActor} language={language}
               selectedTin={taxpayerTin}
-              onSelect={(nextTin, nextName) => { clearReferenceSelection(); setTin(nextTin); setOtherTaxpayerName(nextName);
-                setAuthorizedTaxpayerId(userIdForHostedTin(nextTin)); clearValidationError(); }}
+              addedTins={otherBatch ? batchTaxpayers.map(person => person.tin).filter(Boolean) : [taxpayerTin]}
+              allowAdd={Boolean(otherBatch && authorizedTaxpayerId)}
+              onSelect={(nextTin, nextName) => {
+                clearReferenceSelection();
+                if (otherBatch && authorizedTaxpayerId && taxpayerTin && taxpayerTin !== nextTin) {
+                  if (!batchTaxpayers.some(person => person.tin === nextTin)) {
+                    setAdditionalTaxpayers(people => [...people, { id: crypto.randomUUID(), tin: nextTin, name: nextName }]);
+                  }
+                } else {
+                  setTin(nextTin);
+                  setOtherTaxpayerName(nextName);
+                  setAuthorizedTaxpayerId(userIdForHostedTin(nextTin));
+                }
+                clearValidationError();
+              }}
               onManage={() => { setPaymentServiceChoiceOpen(false); navigate('manage_authorization'); }} />}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {!otherBatch && !ownAccountTax && <div>
