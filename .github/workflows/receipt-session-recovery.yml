@@ -8,6 +8,9 @@ on:
       - 'src/services/simulatedPaymentStory.ts'
       - 'tests/e2e/receipt-session-recovery.spec.ts'
       - 'tests/e2e/receipt-modal-unification.spec.ts'
+      - 'tests/e2e/inapp-simulation-notification.spec.ts'
+      - 'tests/e2e/payment-review-release.spec.ts'
+      - 'tests/e2e/public-guest-guide.spec.ts'
       - '.github/workflows/receipt-session-recovery.yml'
   push:
     branches: [main]
@@ -16,6 +19,9 @@ on:
       - 'src/services/simulatedPaymentStory.ts'
       - 'tests/e2e/receipt-session-recovery.spec.ts'
       - 'tests/e2e/receipt-modal-unification.spec.ts'
+      - 'tests/e2e/inapp-simulation-notification.spec.ts'
+      - 'tests/e2e/payment-review-release.spec.ts'
+      - 'tests/e2e/public-guest-guide.spec.ts'
       - '.github/workflows/receipt-session-recovery.yml'
 
 permissions:
@@ -45,7 +51,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/receipt-session-recovery.spec.ts tests/e2e/receipt-modal-unification.spec.ts
+        run: npx playwright test tests/e2e/receipt-session-recovery.spec.ts tests/e2e/receipt-modal-unification.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/inapp-simulation-notification.spec.ts
       - name: Upload failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
