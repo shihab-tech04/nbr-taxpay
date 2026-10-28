@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
+  ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
   Plane, ReceiptText, Scale, UserRound, UsersRound, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
