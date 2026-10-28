@@ -67,11 +67,17 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   const login = dialog.locator('[data-payment-access="ACCOUNT"]');
+  // The dialog itself is deliberately animating its height and vertical position.
+  // Compare both cards only once that transition has settled.
+  await expect.poll(async () => {
+    const first = await guest.boundingBox();
+    const second = await login.boundingBox();
+    return first && second ? Math.abs(first.y - second.y) : Infinity;
+  }).toBeLessThan(2);
   const first = await guest.boundingBox();
   const second = await login.boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
-  expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
   expect(Math.abs(first!.width - second!.width)).toBeLessThan(2);
   await login.click();
   await expect(login).toHaveAttribute('aria-pressed', 'true');
