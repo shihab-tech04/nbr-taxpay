@@ -1977,3 +1977,32 @@
   .public-faq-layout__all-guides {justify-content:flex-start;}
   .public-faq-layout .public-info-faq summary {font-size:.9rem;padding:.8rem .2rem;}
 }
+
+
+/* Unified visual frame for TaxPay authorization dialogs, without changing code lengths or authentication. */
+.taxpay-reference-dialog {width:min(100%,600px);max-height:min(90dvh,800px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--citizen-border);border-radius:16px;background:var(--citizen-surface);color:var(--citizen-text);box-shadow:var(--taxpay-shadow-modal);}
+.taxpay-reference-dialog__header {flex:none;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:.75rem;align-items:center;min-height:76px;padding:1rem 1.35rem;border-bottom:1px solid var(--citizen-border);}
+.taxpay-reference-dialog__header h2 {margin:0;text-align:center;font-size:clamp(18px,2vw,22px);line-height:1.45;font-weight:600;}
+.taxpay-reference-dialog__back-placeholder {width:44px;}
+.taxpay-reference-dialog__close {width:44px;height:44px;display:grid;place-items:center;grid-column:3;border:1px solid var(--citizen-border);border-radius:10px;background:var(--citizen-surface);color:var(--citizen-text);}
+.taxpay-reference-dialog__body {padding:1.35rem;overflow:auto;min-height:0;}
+.taxpay-reference-dialog__body :is(button,input):focus-visible,.taxpay-reference-dialog__close:focus-visible {outline:3px solid var(--citizen-primary);outline-offset:2px;}
+.taxpay-authorization-popup .taxpay-reference-dialog__body > div > .flex {border-top:1px solid var(--citizen-border);padding-top:1.25rem;}
+/* Diagnostic parity register retains its detailed table while using the same restrained header. */
+.taxpay-parity-dialog__header {background:var(--citizen-surface)!important;color:var(--citizen-text)!important;position:relative;min-height:76px;}
+.taxpay-parity-dialog__header > div {flex:1;justify-content:center;text-align:center;}
+.taxpay-parity-dialog__header > div > svg {display:none;}
+.taxpay-parity-dialog__header h2 {font-family:inherit;font-weight:600;}
+.taxpay-parity-dialog__header p {color:var(--citizen-muted)!important;}
+.taxpay-parity-dialog__close {width:44px;height:44px;border:1px solid var(--citizen-border);color:var(--citizen-text)!important;background:var(--citizen-surface);display:grid;place-items:center;}
+/* Mobile navigation bottom sheet uses the same centered-header controls. */
+.citizen-dialog__title {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:.75rem;padding-bottom:.9rem;border-bottom:1px solid var(--citizen-border);}
+.citizen-dialog__title::before {content:'';grid-column:1;}
+.citizen-dialog__title h2 {grid-column:2;text-align:center;font-size:1.15rem;font-weight:600;margin:0;}
+.citizen-dialog__title button {grid-column:3;grid-row:1;border:1px solid var(--citizen-border);background:var(--citizen-surface);}
+@media(max-width:560px) {
+  .taxpay-reference-dialog__header {grid-template-columns:40px minmax(0,1fr) 40px;padding:.8rem 1rem;}
+  .taxpay-reference-dialog__close,.taxpay-reference-dialog__back-placeholder {width:40px;height:40px;}
+  .taxpay-reference-dialog__body {padding:1rem;}
+  .citizen-dialog__title {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}
+}
