@@ -27,7 +27,7 @@ test('typing shows a clean, in-flow two-part suggestion list with demo-only refe
   await search.fill('DEMO-REF-001');
   await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
   await expect(section.getByRole('heading', { name: 'Sample references (demo only)' })).toBeVisible();
-  await expect(section.getByRole('option', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
+  await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
   await expect(section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ })).toBeVisible();
   const geometry = await section.evaluate(element => {
     const dropdown = element.querySelector<HTMLElement>('.public-record-suggestions')!;
@@ -52,7 +52,7 @@ test('keyboard can select a matching synthetic reference without leaking it into
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   await search.fill('TKN-882190');
   await search.press('ArrowDown');
-  await expect(search).toHaveAttribute('aria-activedescendant', 'public-search-option-0');
+  await expect(page.locator('#public-search-option-0')).toHaveClass(/is-active/);
   await search.press('Enter');
   await expect(page).toHaveURL(/action=verify/);
   expect(page.url()).not.toContain('TKN-882190');
