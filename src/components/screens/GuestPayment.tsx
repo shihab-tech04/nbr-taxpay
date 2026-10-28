@@ -357,8 +357,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
-    amount={batchAmount}
-    helpText={!batchValid && otherTaxLines.length > 0
+    amount={step === 1 ? null : batchAmount}
+    helpText={step === 1
+      ? language === 'bn' ? 'পরবর্তী ধাপে খাত ও পরিমাণ নির্বাচন করলে মোট হিসাব দেখা যাবে।' : 'Your total will appear after you choose payment heads and amounts in Step 2.'
+      : !batchValid && otherTaxLines.length > 0
       ? language === 'bn' ? 'সব নির্বাচিত খাতের পরিমাণ সম্পূর্ণ হলে মোট হিসাব দেখা যাবে।' : 'Complete every selected amount to see the final total.'
       : undefined}
     breakdown={otherTaxLines.map(line => {

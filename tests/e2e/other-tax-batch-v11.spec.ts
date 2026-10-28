@@ -300,3 +300,26 @@ test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitu
   await expect(batch).not.toContainText('1111111111111');
   await expect(batch.locator('[data-head-group]')).toHaveCount(5);
 });
+
+
+test('Step 1 shows a pending calculation rather than a misleading zero', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('1 taxpayer added');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
+  await expect(dialog.locator('.payment-form-summary__help'))
+    .toContainText('Your total will appear after you choose payment heads and amounts in Step 2.');
+});
+
+test('additional taxpayers are not blocked by an unapproved 20-person limit', async ({ page }) => {
+  const dialog = await getFlow(page);
+  const add = dialog.getByRole('button', { name: 'Add another taxpayer' });
+  for (let index = 0; index < 20; index++) {
+    await add.click();
+  }
+  await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(20);
+  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('21 taxpayers added');
+  await expect(add).toBeEnabled();
+  await expect(dialog.getByText('Maximum 20 taxpayers per payment.')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Remove taxpayer 21' }).click();
+  await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(19);
+});
