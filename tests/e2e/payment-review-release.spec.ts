@@ -216,7 +216,8 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     const receiptModal = page.locator('.receipt-modal');
     await expect(receiptModal).toBeVisible();
     await receiptModal.evaluate(async dialog => {
-      const nodes = [dialog, dialog.parentElement].filter((node): node is Element => node !== null);
+      const nodes: Element[] = [dialog];
+      if (dialog.parentElement) nodes.push(dialog.parentElement);
       await Promise.all(nodes.flatMap(node => node.getAnimations({ subtree: false }))
         .filter(animation => animation.playState === 'running')
         .map(animation => animation.finished.catch(() => undefined)));
