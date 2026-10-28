@@ -56,7 +56,7 @@ export function OtherTaxTaxpayerList({
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
           <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
             readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
-            value={primaryTin} placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+            value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ সংখ্যার বা ডেমো টিআইএন' : '12-digit or demo TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
             aria-describedby={tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : undefined}
             onChange={event => { if (!lockedPrimary) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onClearError(); } }} />
@@ -88,7 +88,7 @@ export function OtherTaxTaxpayerList({
           <div>
             <label htmlFor={'other-tax-tin-' + person.id}>{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
             <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={allowSyntheticDemoTin ? 13 : 12}
-              value={person.tin} required autoComplete="off" placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+              value={person.tin} required autoComplete="off" placeholder={allowSyntheticDemoTin ? (bn ? '১২ সংখ্যার বা ডেমো টিআইএন' : '12-digit or demo TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
               aria-invalid={Boolean(tinError && invalidId === person.id) || undefined}
               aria-describedby={tinError && invalidId === person.id ? 'guest-payment-error-tin' : undefined}
               onChange={event => edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12) })} />
