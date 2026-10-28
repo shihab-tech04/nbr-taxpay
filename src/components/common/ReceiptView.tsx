@@ -128,7 +128,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         <header className="receipt-view__summary">
           <div className="receipt-view__summary-copy">
             <p className="receipt-view__eyebrow">{bn ? 'পেমেন্ট রেকর্ড' : 'Payment record'}</p>
-            <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt overview'}</h3>
+            <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
             <p className="receipt-view__summary-subtitle">
               {bn ? (CATEGORY_LABELS[receipt.paymentCategory]?.bn ?? receipt.paymentCategory)
                 : (CATEGORY_LABELS[receipt.paymentCategory]?.en ?? receipt.paymentCategory)}
