@@ -14,6 +14,14 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   const cards = chooser.locator('.tax-service-choice__card');
   await expect(cards).toHaveCount(2);
+  // The approved dialog intentionally opens at 99% scale before easing to
+  // 100%. Capture the baseline only after that entrance animation finishes.
+  // Do not hide real card displacement by increasing the 0.5px tolerance.
+  await chooser.evaluate(async dialog => {
+    await Promise.all(dialog.getAnimations({ subtree: false })
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished));
+  });
   await expect(cards.first()).toHaveCSS('flex-direction', 'row');
 
   const first = await cards.nth(0).boundingBox();
