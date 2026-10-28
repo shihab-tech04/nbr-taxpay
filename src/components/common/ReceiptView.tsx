@@ -69,7 +69,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
     GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
     GATEWAY_SUCCESS: bn ? 'সিমুলেটেড পেমেন্ট সফল' : 'Simulated payment successful',
-    TREASURY_SCROLLED: bn ? 'ট্রেজারিতে নথিভুক্ত' : 'TREASURY_SCROLLED',
+    TREASURY_SCROLLED: receipt.isSimulatedDemo
+      ? (bn ? 'সিমুলেশন সংরক্ষিত' : 'Simulation recorded')
+      : (bn ? 'ট্রেজারিতে নথিভুক্ত' : 'Treasury recorded'),
     FAILED: bn ? 'ব্যর্থ' : 'FAILED',
     EXPIRED: bn ? 'মেয়াদ শেষ' : 'EXPIRED',
     REVERSED: bn ? 'প্রত্যাবর্তিত' : 'REVERSED'
@@ -120,13 +122,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
       {/* Payment record generated from the app's local transaction state. */}
       <div className="receipt-view__paper print-card bg-white border border-slate-300 rounded-xl shadow-md p-4 sm:p-8 relative overflow-hidden text-slate-800 font-sans" lang={language}>
-        {embedded ? (
-          <header className="receipt-view__header">
-            <div className="receipt-view__heading">
-              <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
-            </div>
-          </header>
-        ) : (
+        {!embedded && (
           <div className="text-center pb-6 border-b-2 border-taxpay-primary space-y-1 relative">
             <div className="flex items-center justify-center gap-2 text-taxpay-dark">
               <Building2 className="w-8 h-8 text-emerald-800" />
@@ -337,14 +333,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         </div>
 
         {/* Dual Financial Status Indicators */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-          {/* Treasury Status */}
+        <div className={`receipt-view__status grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs ${receipt.isSimulatedDemo ? 'receipt-view__status--simulation' : ''}`}>
+          {/* Payment record status; the simulation is not a Treasury settlement. */}
           <div className="flex items-start gap-2.5">
             <div className="p-1.5 rounded-full bg-emerald-100 text-emerald-800 mt-0.5">
               <CheckCircle className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-700 block">{labels.treasuryStatus}:</span>
+              <span className="font-semibold text-slate-700 block">{receipt.isSimulatedDemo ? (bn ? 'রেকর্ডের অবস্থা' : 'Record status') : labels.treasuryStatus}:</span>
               <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                 {treasuryStatusLabels}
               </span>
