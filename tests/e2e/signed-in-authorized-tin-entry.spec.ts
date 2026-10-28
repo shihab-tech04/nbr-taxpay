@@ -13,7 +13,7 @@ async function mockAuthorizations(page: Page, records: ReturnType<typeof authori
     body: JSON.stringify(records ? { success: true, data: records, simulationOnly: true } : { success: false, error: 'AUTHORIZATION_READ_FAILED' })
   }));
 }
-async function openSignedInOtherTax(page: Page) {
+async function openSignedInOtherTax(page: Page, service = 'OTHER_TAX_PAYMENT') {
   await page.goto('/?action=taxpayer_login');
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
@@ -22,13 +22,23 @@ async function openSignedInOtherTax(page: Page) {
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  await enterTaxPayService(dialog, service, 'OTHER');
   return dialog;
 }
 
 test('recognized, actively authorized demo TINs are not truncated', async ({ page }) => {
   await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
   const dialog = await openSignedInOtherTax(page);
+  const tin = dialog.locator('#guest-tin');
+  await tin.fill('2222222222222');
+  await expect(tin).toHaveValue('2222222222222');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+});
+
+test('the single-beneficiary service also accepts an authorized fictional TIN', async ({ page }) => {
+  await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
+  const dialog = await openSignedInOtherTax(page, 'TAX_WITH_RETURN');
   const tin = dialog.locator('#guest-tin');
   await tin.fill('2222222222222');
   await expect(tin).toHaveValue('2222222222222');
@@ -80,6 +90,35 @@ test('guest TIN input stays limited to twelve digits', async ({ page }) => {
   await expect(tin).toHaveAttribute('maxlength', '12');
   await tin.fill('1234567890123');
   await expect(tin).toHaveValue('123456789012');
+  await tin.fill('1234');
+  await dialog.locator('#guest-payer-name').fill('Sample payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText('Enter the taxpayer’s 12-digit TIN.')).toBeVisible();
+});
+
+test('Bengali entry rejects an unknown demo TIN and accepts an approved one', async ({ page }) => {
+  await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await login.getByLabel('Password', { exact: true }).fill('user1');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'বাংলা', exact: true }).click();
+  await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
+  await dialog.locator('[data-payer-relationship="OTHER"]').click();
+  await dialog.locator('.tax-service-choice__actions button').click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('.tax-service-choice__actions button').click();
+  const tin = dialog.locator('#guest-tin');
+  await tin.fill('1234567890123');
+  await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
+  await expect(dialog.getByText('১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার ডেমো টিআইএন দিন।')).toBeVisible();
+  await tin.fill('2222222222222');
+  await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
 });
 
 test('a taxpayer with saved heads cannot silently be changed to another TIN', async ({ page }) => {
