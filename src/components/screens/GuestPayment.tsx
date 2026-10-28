@@ -648,9 +648,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setShowReceiptDetails(false);
     clearValidationError();
 
-      const year = new Date().getFullYear();
-      const randChallan = Math.floor(10000000 + Math.random() * 90000000);
-      const randToken = Math.floor(100000 + Math.random() * 900000);
+      // One explicitly synthetic reference is stable across retries of this attempt.
+      const attemptId = crypto.randomUUID();
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
       const lineItems: PaymentLineItem[] = otherBatch ? otherTaxLines.map(line => {
@@ -681,10 +680,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-${Date.now()}`,
-        taxEventId: `TE-${year}-${Math.floor(100000 + Math.random() * 900000)}`,
-        paymentTransactionId: `PT-${year}-${Math.floor(100000 + Math.random() * 900000)}`,
-        challanNo: `ACS-${year}-${randChallan}`,
-        tokenNumber: `TKN-${randToken}`,
+        taxEventId: `SIM-EVENT-${attemptId}`,
+        paymentTransactionId: `SIM-PAYMENT-${attemptId}`,
+        challanNo: `SIM-${attemptId}`,
+        tokenNumber: `SIM-TOKEN-${attemptId}`,
         paymentCategory: category,
         assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
         payerName: forSelf ? accountName || '—' : effectivePayerName.trim(),
@@ -702,7 +701,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         items: lineItems,
         totalAmount,
         paymentMethod,
-        gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
+        gatewayTransactionId: `SIM-TXN-${attemptId}`,
         treasuryStatus: 'INITIATED',
         // CRITICAL DOMAIN SEPARATION:
         taxCreditStatus: (isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT') 
@@ -714,7 +713,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       pendingStoryRef.current = {
         receipt: newReceipt,
         payload: {
-          idempotencyKey: crypto.randomUUID(),
+          idempotencyKey: attemptId,
           sessionId: getStorySessionId(),
           service: category,
           amountMinor: Math.round(totalAmount * 100),
@@ -804,7 +803,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           </div>
           <div className="payment-lifecycle__overview">
             <div><span>{language === 'bn' ? 'মোট পরিশোধ' : 'Amount'}</span><strong>{formatCurrency(totalAmount, language)}</strong></div>
-            <div><span>{language === 'bn' ? 'চালান রেফারেন্স' : 'Challan reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>
+            <div><span>{language === 'bn' ? 'সিমুলেশন রেফারেন্স' : 'Simulation reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>
           </div>
           <details className="payment-lifecycle__progress-detail" open={!completed && !bankPending && !declined}>
             <summary>{language === 'bn' ? 'পেমেন্টের বিস্তারিত অগ্রগতি' : 'Payment progress details'} <span>{lifecycleStages.length} / {paymentChannel === 'OTC' ? 7 : ONLINE_LIFECYCLE.length}</span></summary>
@@ -812,7 +811,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <dl className="payment-lifecycle__references">
               <div><dt>{language === 'bn' ? 'কর ইভেন্ট আইডি' : 'Tax event ID'}</dt><dd>{attemptReceipt?.taxEventId || '—'}</dd></div>
               <div><dt>{language === 'bn' ? 'পেমেন্ট ট্রানজেকশন আইডি' : 'Payment transaction ID'}</dt><dd>{attemptReceipt?.paymentTransactionId || '—'}</dd></div>
-              <div><dt>{language === 'bn' ? 'ACS চালান রেফারেন্স' : 'ACS challan reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</dd></div>
+              <div><dt>{language === 'bn' ? 'সিমুলেশন রেফারেন্স' : 'Simulation reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</dd></div>
               <div><dt>{language === 'bn' ? 'মোট অর্থ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
             </dl>
             <ol className="payment-lifecycle__timeline" aria-label={language === 'bn' ? 'পরিশোধের অবস্থা' : 'Payment lifecycle'} aria-live="polite" data-testid="payment-lifecycle">

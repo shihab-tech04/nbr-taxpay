@@ -28,7 +28,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const labels = bn ? {
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'ডাউনলোড',
     title: 'আমার কর — রসিদের বিবরণ',
-    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
+    challan: 'সিমুলেশন রেফারেন্স', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'রেফারেন্স কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ', service: 'পেমেন্টের ধরন',
     zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
     paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স',
@@ -44,7 +44,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   } : {
     back: 'Back to records', print: 'Print receipt', export: 'Download',
     title: 'Amar Kor — Receipt details',
-    challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
+    challan: 'Simulation reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year', service: 'Payment service',
     zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',
     paymentMethod: 'Payment method', transaction: 'Transaction reference',
@@ -69,7 +69,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
     GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
     GATEWAY_SUCCESS: bn ? 'সিমুলেটেড পেমেন্ট সফল' : 'Simulated payment successful',
-    TREASURY_SCROLLED: bn ? 'ট্রেজারিতে নথিভুক্ত' : 'TREASURY_SCROLLED',
+    // Legacy demo snapshots may carry this sample value; it is not Treasury evidence.
+    TREASURY_SCROLLED: bn ? 'সিমুলেশন সম্পন্ন — ট্রেজারি যাচাই হয়নি' : 'Simulation complete — Treasury not verified',
     FAILED: bn ? 'ব্যর্থ' : 'FAILED',
     EXPIRED: bn ? 'মেয়াদ শেষ' : 'EXPIRED',
     REVERSED: bn ? 'প্রত্যাবর্তিত' : 'REVERSED'
@@ -235,7 +236,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
-                {receipt.treasuryScrollNo || labels.pendingScroll}
+                {receipt.isSimulatedDemo ? (bn ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued') : receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
             </div>
 

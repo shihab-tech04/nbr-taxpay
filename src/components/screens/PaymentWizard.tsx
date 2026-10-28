@@ -141,9 +141,6 @@ export const PaymentWizard: React.FC = () => {
     setErrorMessage('');
 
     setTimeout(async () => {
-      const year = new Date().getFullYear();
-      const randChallan = Math.floor(10000000 + Math.random() * 90000000);
-      const randToken = Math.floor(100000 + Math.random() * 900000);
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
       const lineItem: PaymentLineItem = {
@@ -160,8 +157,8 @@ export const PaymentWizard: React.FC = () => {
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-wiz-${Date.now()}`,
-        challanNo: `AC-${year}-${randChallan}`,
-        tokenNumber: `TKN-${randToken}`,
+        challanNo: `SIM-${paymentNonce}`,
+        tokenNumber: `SIM-TOKEN-${paymentNonce}`,
         paymentCategory: category,
         assessmentYear,
         payerName: taxpayerProfile.nameEn,
@@ -173,10 +170,8 @@ export const PaymentWizard: React.FC = () => {
         items: [lineItem],
         totalAmount,
         paymentMethod,
-        gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
-        treasuryDate: now,
-        treasuryStatus: 'TREASURY_SCROLLED',
+        gatewayTransactionId: `SIM-TXN-${paymentNonce}`,
+        treasuryStatus: 'GATEWAY_SUCCESS',
         taxCreditStatus: category === 'SOURCE_TAX_DEPOSIT' ? 'NOT_APPLICABLE' : 'PENDING_RECONCILIATION',
         createdAt: now,
         completedAt: now,

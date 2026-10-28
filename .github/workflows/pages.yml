@@ -95,6 +95,13 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts tests/e2e/signed-in-authorized-tin-entry.spec.ts
 
+      - name: Verify synthetic receipts and simulated bank slips
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/simulation-receipt-safety.spec.ts
+
       - name: Verify connected fictional Start Payment entry on a mobile viewport
         env:
           VITE_SUPABASE_DISABLED: 'true'

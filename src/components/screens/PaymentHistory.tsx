@@ -15,8 +15,8 @@ import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageS
 const statusText: Record<string, {en:string; bn:string}> = {
   INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
   GATEWAY_PENDING:{en:'Payment pending',bn:'পেমেন্ট অপেক্ষমাণ'},
-  GATEWAY_SUCCESS:{en:'Gateway completed',bn:'গেটওয়ে সম্পন্ন'},
-  TREASURY_SCROLLED:{en:'Treasury recorded',bn:'ট্রেজারিতে নথিভুক্ত'},
+  GATEWAY_SUCCESS:{en:'Simulation complete',bn:'সিমুলেশন সম্পন্ন'},
+  TREASURY_SCROLLED:{en:'Simulation complete; Treasury not verified',bn:'সিমুলেশন সম্পন্ন; ট্রেজারি যাচাই হয়নি'},
   FAILED:{en:'Failed',bn:'ব্যর্থ'},
   EXPIRED:{en:'Expired',bn:'মেয়াদ শেষ'},
   REVERSED:{en:'Reversed',bn:'প্রত্যাবর্তিত'},
