@@ -954,3 +954,12 @@
     left: calc(50% + 19px); width: calc(100% - 38px);
   }
 }
+
+/* Authorization request lifecycle is explicit without implying permission to pay. */
+.account-authorizations__pending { display:grid; gap:.4rem; padding:.55rem 0; border-top:1px solid var(--citizen-border); }
+.account-authorizations__pending h4 { margin:0; color:var(--citizen-text); font-size:14px; font-weight:750; }
+.account-authorizations__pending-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.15rem .8rem; margin:0; padding:.45rem 0; font-size:14px; }
+.account-authorizations__pending-item strong { color:var(--citizen-text); min-width:0; overflow-wrap:anywhere; }
+.account-authorizations__pending-item span { color:var(--citizen-muted); overflow-wrap:anywhere; }
+.account-authorizations__pending-item span:last-child { grid-column:1/-1; }
+@media(max-width:600px){.account-authorizations__pending-item{grid-template-columns:minmax(0,1fr)}}
