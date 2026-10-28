@@ -2134,7 +2134,7 @@
 }
 @media print {
   .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header,
-  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main,
+  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)),
   .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer,
   .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-help-chat {
     display:none!important;
@@ -2149,6 +2149,7 @@
     box-shadow:none!important;
     overflow:visible!important;
   }
+  .taxpay-citizen-shell > main:has(.receipt-modal) > div:has(.receipt-modal) > :not(.taxpay-modal__overlay) {display:none!important;}
   .receipt-modal .receipt-view__actions,
   .receipt-modal .receipt-lookup__back {display:none!important;}
   .receipt-modal .receipt-view--embedded .receipt-view__paper {border:0;box-shadow:none;}
