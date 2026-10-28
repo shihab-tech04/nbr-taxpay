@@ -181,7 +181,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           <FolderOpen size={17} aria-hidden="true" />
           {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
         </button>}
-        </> : view === 'login' ? (</div> : view === 'login' ? (
+        </> : view === 'login' ? (
           <TaxpayerLoginDialog embedded preservePaymentJourney onClose={() => setView(initialService ? 'payer' : 'choice')} onSuccess={() => beginPayment(true)} />
         ) : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
