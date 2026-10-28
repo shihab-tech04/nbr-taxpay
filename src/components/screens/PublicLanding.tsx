@@ -158,6 +158,10 @@ export const PublicLanding: React.FC = () => {
               }
             }}
             aria-describedby="public-record-search-help"
+            aria-controls={searchOpen ? 'public-record-suggestions' : undefined}
+            aria-expanded={searchOpen}
+            aria-activedescendant={searchOpen && activeSuggestion >= 0 && matchedOptions[activeSuggestion]
+              ? `public-search-option-${activeSuggestion}` : undefined}
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
           />
           <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
