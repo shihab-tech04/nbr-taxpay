@@ -13,7 +13,7 @@ export function CitizenFooter(){
   const signedIn=Boolean(user || previewAccount);
   const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
-  const isPublic=['landing','user_guide','guidance','incident'].includes(currentRoute);
+  const isPublic=['landing','user_guide','guidance','incident','verify','payment_details'].includes(currentRoute);
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'আমার কর ফুটার':'Amar Kor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">

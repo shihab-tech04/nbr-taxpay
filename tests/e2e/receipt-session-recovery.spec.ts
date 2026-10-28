@@ -59,7 +59,7 @@ test('status lookup restores a same-session simulated receipt after a page reloa
   await page.reload();
   await page.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(reference);
   await page.getByRole('textbox', { name: 'Receipt mobile number' }).fill(mobile);
-  await page.getByRole('button', { name: 'Search records' }).click();
+  await page.getByRole('dialog', { name: 'Payment status & receipt' }).getByRole('button', { name: 'Search records' }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   await expect(page.locator('.receipt-view')).toContainText(reference);
   await expect(page.locator('.receipt-view')).toContainText('Simulated payment successful');
@@ -70,7 +70,7 @@ test('a matching reference does not expose a receipt with the wrong mobile', asy
   await page.goto('/?action=verify');
   await page.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(reference);
   await page.getByRole('textbox', { name: 'Receipt mobile number' }).fill('01700000000');
-  await page.getByRole('button', { name: 'Search records' }).click();
+  await page.getByRole('dialog', { name: 'Payment status & receipt' }).getByRole('button', { name: 'Search records' }).click();
   await expect(page.getByRole('heading', { name: 'No matching record' })).toBeVisible();
   await expect(page.locator('.receipt-view')).toHaveCount(0);
 });
@@ -82,7 +82,7 @@ test('backend outage is not misreported as a missing receipt', async ({ page }) 
   await page.goto('/?action=verify');
   await page.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(reference);
   await page.getByRole('textbox', { name: 'Receipt mobile number' }).fill(mobile);
-  await page.getByRole('button', { name: 'Search records' }).click();
+  await page.getByRole('dialog', { name: 'Payment status & receipt' }).getByRole('button', { name: 'Search records' }).click();
   await expect(page.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
   await expect(page.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
 });

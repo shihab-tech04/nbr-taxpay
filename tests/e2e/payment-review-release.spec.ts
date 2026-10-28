@@ -225,8 +225,11 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     await page.getByTestId('receipt-breakdown-table').screenshot({ path: 'docs/acceptance-evidence/2026-10-12/guest-receipt-lines-bn-desktop-1280.png' });
   }
 
+  // A receipt modal blocks the page-level language control until it is closed.
+  await page.getByRole('dialog', { name: 'আমার কর — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await page.getByRole('button', { name: 'Receipt details' }).click();
+  await expect(page.getByRole('dialog', { name: 'Amar Kor — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 

@@ -16,7 +16,9 @@ import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { PublicReport } from './components/screens/PublicReport';
 import { GuestPayment } from './components/screens/GuestPayment';
 import { TravelTax } from './components/screens/TravelTax';
-import { ReceiptLookup } from './components/screens/ReceiptLookup';
+import { PublicServiceModal } from './components/screens/PublicServiceModal';
+import { TaxPayModal } from './components/ui/TaxPayModal';
+import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
 import { ArchitectureView } from './components/screens/ArchitectureView';
 import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
@@ -62,16 +64,18 @@ const MainRouter: React.FC = () => {
     validCertificateTransactionId(routeParams.transactionId);
   const privateSampleGate = !publicConfirmedReceipt && !previewAccess &&
     requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
+  // Receipt routes remain deep-linkable, but their UI lives in the shared modal.
+  const receiptOverlayRoute = currentRoute === 'verify' || currentRoute === 'payment_details';
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
   const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login';
   const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
   // The public guide retains the same public navigation for guests and signed-in visitors.
-  const taxpayerSupportRoute = taxpayerSession && currentRoute === 'verify';
-  const publicInformationRoute = ['landing','incident'].includes(currentRoute) ||
+  const taxpayerSupportRoute = false; // Receipt status is now a public modal, not a taxpayer-page shell.
+  const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
-  const taxpayerReference = (privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace';
+  const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace');
   const showActivitySections = taxpayerSession && !privateSampleGate && activityRoutes.has(currentRoute);
 
   // Listen to browser URL search params for direct action links (?action=...)
@@ -128,7 +132,7 @@ const MainRouter: React.FC = () => {
       case 'travel':
         return <TravelTax />;
       case 'verify':
-        return <ReceiptLookup activityTabs={showActivitySections} />;
+        return <PublicLanding />; // Receipt lookup opens in the shared public modal.
       case 'incident':
         return <PublicReport />;
       case 'architecture':
@@ -144,7 +148,7 @@ const MainRouter: React.FC = () => {
       case 'history':
         return <PaymentHistory activityTabs={showActivitySections} />;
       case 'payment_details':
-        return <PaymentDetailView />;
+        return <PublicLanding />; // Receipt content opens over the public shell.
       case 'ledger':
         return <TaxLedger />;
       case 'journey':
@@ -208,7 +212,14 @@ const MainRouter: React.FC = () => {
         </>}
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
-      {publicInformationRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
+      {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
+      {receiptOverlayRoute && (currentRoute === 'verify'
+        ? <PublicServiceModal service="status" onClose={() => navigate('landing')} />
+        : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
+            service="status" className="receipt-modal" footer={<></>}
+            onClose={() => navigate(receiptReturnRoute(routeParams.returnTo))}>
+            <PaymentDetailView embedded />
+          </TaxPayModal>)}
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
       {loginOverlay && <TaxpayerLoginDialog />}

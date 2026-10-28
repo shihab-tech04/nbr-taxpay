@@ -10,7 +10,7 @@ import type { ChallanReceipt } from '../../types/tax';
 import { getConfirmedReceipt, validCertificateTransactionId } from '../../services/confirmedPaymentCertificate';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
 
-function SyncedCertificate({transactionId,docAction}:{transactionId:string;docAction?:string}){
+function SyncedCertificate({transactionId,docAction,embedded=false}:{transactionId:string;docAction?:string;embedded?:boolean}){
   const [receipt,setReceipt]=useState<ChallanReceipt|null>(null);
   const [error,setError]=useState('');
   const [actionError,setActionError]=useState('');
@@ -34,14 +34,14 @@ function SyncedCertificate({transactionId,docAction}:{transactionId:string;docAc
   },[receipt,docAction]);
   if(error)return <main className="mx-auto max-w-3xl p-6" role="alert"><h1>Payment certificate unavailable</h1><p>{error}</p></main>;
   if(!receipt)return <main className="mx-auto max-w-3xl p-6" role="status">Loading payment certificate…</main>;
-  return <main className="mx-auto max-w-5xl pb-10">
+  return <div className="mx-auto max-w-5xl pb-4">
     {actionError&&<p role="alert">{actionError}</p>}
-    <ReceiptView receipt={receipt} onBack={()=>window.close()}/>
-  </main>;
+    <ReceiptView receipt={receipt} embedded={embedded} onBack={()=>window.close()}/>
+  </div>;
 }
 
 
-export const PaymentDetailView: React.FC = () => {
+export const PaymentDetailView: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
   const { selectedReceipt, receipts, taxpayerProfile, userRole, demoUser, routeParams, navigate } = useTaxState();
   const confirmedId=routeParams.transactionId;
   const { user: authenticatedUser } = useAccountIdentity();
@@ -56,7 +56,7 @@ export const PaymentDetailView: React.FC = () => {
     returnTo === 'dashboard' || returnTo === 'taxpayer_home' ? 'Back to Dashboard' : 'Back to Payment History';
 
   if(validCertificateTransactionId(confirmedId))
-    return <SyncedCertificate transactionId={confirmedId} docAction={routeParams.docAction}/>;
+    return <SyncedCertificate transactionId={confirmedId} docAction={routeParams.docAction} embedded={embedded}/>;
 
   if (!availableReceipt) {
     return (
@@ -79,7 +79,7 @@ export const PaymentDetailView: React.FC = () => {
 
   return (
     <div className="pb-12">
-      <ReceiptView receipt={availableReceipt} onBack={() => navigate(returnTo)} />
+      <ReceiptView receipt={availableReceipt} embedded={embedded} onBack={() => navigate(returnTo)} />
     </div>
   );
 };

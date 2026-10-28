@@ -29,7 +29,7 @@ try {
     await search.fill('TKN-882190');
     await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
     await expect(section.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
-    await expect(section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ })).toBeVisible();
+    await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
     await expect(section.locator('.public-record-discovery__heading svg')).toHaveCount(0);
     await expect(section.getByText('Search by challan, token or transaction reference.')).toBeVisible();
     await expect(section.getByText(/For guest-payment records/)).toHaveCount(0);
@@ -49,20 +49,22 @@ try {
         Math.abs(flow.gapToNext - gapBefore) > 1) {
       throw new Error(`Live ${name} search dropdown resized the card or detached from input: ${JSON.stringify(flow)}`);
     }
-    const link = section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ });
-    await expect(link).toHaveCSS('text-decoration-line', 'none');
-    await link.hover();
-    await expect(link).toHaveCSS('text-decoration-line', 'none');
+    const resultOption = section.getByRole('button', { name: /TKN-882190/ });
+    await expect(resultOption).toHaveCSS('text-decoration-line', 'none');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (overflow > 2) throw new Error(`Live ${name} public search horizontal overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-search-${name}.png`, fullPage: true });
     await section.getByRole('button', { name: /TKN-882190/ }).click();
     await expect(page).toHaveURL(/action=verify/);
-    await expect(page.getByRole('textbox', { name: /Challan, token or transaction reference/ })).toHaveValue('TKN-882190');
+    const receiptModal = page.getByRole('dialog', { name: 'Payment status & receipt' });
+    await expect(receiptModal).toBeVisible();
+    await expect(receiptModal.locator('.receipt-view--embedded')).toContainText('TKN-882190');
+    await expect(page.locator('.citizen-header')).toHaveCount(0);
+    await expect(page.locator('.public-home-header')).toBeVisible();
     if (page.url().includes('TKN-882190')) throw new Error('Reference leaked into live URL');
     await page.close();
   }
-  console.log('PASS: actual deployed TaxPay Pages search section, suggestions, sample links, desktop/mobile bounds and verification route');
+  console.log('PASS: actual deployed TaxPay Pages search, modal receipt, responsive bounds and no legacy blue-header route');
 } finally {
   await browser.close();
 }
