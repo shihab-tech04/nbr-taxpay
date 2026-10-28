@@ -271,7 +271,7 @@ test('public guide and guest launcher pass WCAG automated A/AA',async({page},inf
 });
 
 
-test('guest receipt search is under the banner and opens full-page results without a modal',async({page})=>{
+test('guest receipt search is under the banner and opens receipt results in the shared modal',async({page})=>{
  await page.goto('/?action=landing');
  const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
  await expect(search).toBeVisible();
@@ -280,24 +280,24 @@ test('guest receipt search is under the banner and opens full-page results witho
  await search.fill('NO-SUCH-DEMO-REFERENCE-12345');
  await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
  await expect(page).toHaveURL(/action=verify/);
- const lookup=page.locator('.receipt-lookup--page');
+ const lookup=page.getByRole('dialog',{name:'Payment status & receipt'});
  await expect(lookup).toBeVisible();
  await expect(lookup.getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-DEMO-REFERENCE-12345');
  await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
  const samples=lookup.locator('.receipt-lookup__sample');
  await expect(samples).toHaveCount(3);
  await samples.first().click();
- await expect(lookup.getByRole('heading',{name:'Receipt details'})).toBeVisible();
+ await expect(lookup.locator('.receipt-view--embedded')).toBeVisible();
  await expect(lookup.getByRole('button',{name:'Print receipt'})).toBeVisible();
  await expect(lookup.getByRole('button',{name:'Download',exact:true})).toBeVisible();
  await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
- await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
+ await expect(page.locator('.citizen-header')).toHaveCount(0);
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
 });
 
-test('Bangla homepage reference search keeps keyboard access and full-page receipt details',async({page},info)=>{
- test.skip(info.project.name!=='mobile-320','Bilingual full-page receipt at smallest viewport');
+test('Bangla homepage reference search keeps keyboard access and modal receipt details',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-320','Bilingual modal receipt at smallest viewport');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'বাংলা'}).click();
  const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
@@ -307,7 +307,7 @@ test('Bangla homepage reference search keeps keyboard access and full-page recei
  await search.fill('SYNTHETIC-NO-MATCH-2026');
  await search.press('Enter');
  await expect(page).toHaveURL(/action=verify/);
- const lookup=page.locator('.receipt-lookup--page');
+ const lookup=page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'});
  await expect(lookup).toBeVisible();
  await expect(lookup.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toHaveValue('SYNTHETIC-NO-MATCH-2026');
  await expect(lookup.getByText('কোনো মিল পাওয়া যায়নি')).toBeVisible();
@@ -316,9 +316,9 @@ test('Bangla homepage reference search keeps keyboard access and full-page recei
  await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
  const dimensions=await lookup.locator('.receipt-view__paper').evaluate(el=>({paper:el.getBoundingClientRect().width,viewport:innerWidth}));
  expect(dimensions.paper).toBeLessThanOrEqual(dimensions.viewport);
- const a11y=await new AxeBuilder({page}).include('.receipt-lookup--page').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
+ const a11y=await new AxeBuilder({page}).include('.receipt-modal').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
  expect(a11y.violations).toEqual([]);
- await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
+ await expect(lookup).toBeVisible();
 });
 
 test('remaining Travel Tax modal keeps title, close icon, dividers, content and fixed footer',async({page})=>{

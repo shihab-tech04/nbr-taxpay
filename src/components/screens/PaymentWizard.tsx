@@ -13,6 +13,7 @@ import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { ReceiptView } from '../common/ReceiptView';
+import { TaxPayModal } from '../ui/TaxPayModal';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -227,7 +228,15 @@ export const PaymentWizard: React.FC = () => {
             {t.newPayment}
           </button>
         </div>
-        <ReceiptView receipt={createdReceipt} onBack={() => navigate('taxpayer_home')} />
+        <TaxPayModal
+          title={bn ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
+          service="status"
+          className="receipt-modal"
+          footer={<></>}
+          onClose={() => navigate('taxpayer_home')}
+        >
+          <ReceiptView receipt={createdReceipt} embedded />
+        </TaxPayModal>
       </div>
     );
   }

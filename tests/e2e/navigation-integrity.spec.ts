@@ -42,7 +42,7 @@ test('public footer utility links open their actual destinations without copying
   await expect(page.getByRole('heading',{name:'Receipts & corrections'})).toBeVisible();
   await footer.getByRole('button',{name:'Payment status & receipt'}).click();
   await expect(page).toHaveURL(/action=verify/);
-  await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
 });
 
 test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
@@ -53,8 +53,8 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await search.fill('NO-SUCH-REFERENCE-98765');
   await search.press('Enter');
   await expect(page).toHaveURL(/action=verify/);
-  await expect(page.locator('.receipt-lookup--page').getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-REFERENCE-98765');
-  await expect(page.getByRole('dialog',{name:/Payment status & receipt/})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:/Payment status & receipt/}).getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-REFERENCE-98765');
+  await expect(page.locator('.citizen-header')).toHaveCount(0);
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay Tax'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
@@ -69,18 +69,20 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
 
   await page.goto('/?action=verify');
-  await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
-  await page.getByRole('button',{name:/Use reference:/}).first().click();
-  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
-  await page.getByRole('button',{name:'Back to records'}).click();
-  await expect(page.getByRole('heading',{name:'Receipt lookup'})).toBeVisible();
+  const receiptDialog = page.getByRole('dialog',{name:'Payment status & receipt'});
+  await expect(receiptDialog).toBeVisible();
+  await receiptDialog.getByRole('button',{name:/Use reference:/}).first().click();
+  await expect(receiptDialog.locator('.receipt-view--embedded')).toBeVisible();
+  await receiptDialog.getByRole('button',{name:'Back to search'}).click();
+  await expect(receiptDialog.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeVisible();
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toHaveCount(0);
+  await receiptDialog.getByRole('button',{name:'Close modal'}).click();
+  await expect(page).toHaveURL(/action=landing/);
 });
 
 test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
-  await page.goto('/?action=verify');
+  await page.goto('/?action=head_catalogue');
   // Guest visitors use the actual header bell on desktop and mobile;
   // the protected account inbox remains sign-in gated.
   const guestBell = page.locator('.citizen-header__notification');
@@ -252,7 +254,7 @@ test('TaxPay rejects Office Management destinations at every direct route entry'
   }
 });
 
-test('Taxpayer receipt inspection retains its private navigation and returns to activity',async({page},info)=>{
+test('Taxpayer receipt inspection is modal, preserves its deep link and returns to activity',async({page},info)=>{
   // The approved desktop reference rail appears at >=1440px, not at 1280px.
   if(info.project.name==='desktop-1280') await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=history');
@@ -266,15 +268,14 @@ test('Taxpayer receipt inspection retains its private navigation and returns to 
     await page.getByRole('button',{name:'View details'}).first().click();
   }
   await expect(page).toHaveURL(/action=payment_details&returnTo=history/);
-  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Payment receipt details'}).locator('.receipt-view--embedded')).toBeVisible();
   await expect(page).toHaveURL(/demoReceipt=rcpt-101/);
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Amar Kor — Receipt details'})).toBeVisible();
-  await expect(page.getByText('AC-2025-09-DEMO-REF-001',{exact:true})).toBeVisible();
-  if(page.viewportSize()!.width >= 1440){
-    await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
-  }
-  await page.getByRole('button',{name:'Back to records'}).click();
+  const modal = page.getByRole('dialog',{name:'Payment receipt details'});
+  await expect(modal.locator('.receipt-view--embedded')).toContainText('AC-2025-09-DEMO-REF-001');
+  await expect(page.locator('.citizen-header')).toHaveCount(0);
+  await expect(page.locator('.public-home-header')).toBeVisible();
+  await modal.getByRole('button',{name:'Close modal'}).click();
   await expect(page).toHaveURL(/action=history/);
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });

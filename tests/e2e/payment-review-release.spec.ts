@@ -211,6 +211,17 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
 
   if (info.project.name === 'mobile-320') {
+    // Axe must inspect the settled receipt, not the partially transparent
+    // dialog and overlay during their existing entrance animations.
+    const receiptModal = page.locator('.receipt-modal');
+    await expect(receiptModal).toBeVisible();
+    await receiptModal.evaluate(async dialog => {
+      const nodes = [dialog, dialog.parentElement].filter((node): node is Element => node !== null);
+      await Promise.all(nodes.flatMap(node => node.getAnimations({ subtree: false }))
+        .filter(animation => animation.playState === 'running')
+        .map(animation => animation.finished.catch(() => undefined)));
+    });
+    await expect(receiptModal).toBeVisible();
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
     expect(axe.violations.map(({ id, impact, nodes }) => ({ id, impact, count: nodes.length, targets: nodes.flatMap(node => node.target) }))).toEqual([]);
   }
@@ -225,8 +236,11 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
     await page.getByTestId('receipt-breakdown-table').screenshot({ path: 'docs/acceptance-evidence/2026-10-12/guest-receipt-lines-bn-desktop-1280.png' });
   }
 
+  // A receipt modal blocks the page-level language control until it is closed.
+  await page.getByRole('dialog', { name: 'আমার কর — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.getByRole('heading', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await page.getByRole('button', { name: 'Receipt details' }).click();
+  await expect(page.getByRole('dialog', { name: 'Amar Kor — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 

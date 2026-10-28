@@ -18,6 +18,8 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
       title={title}
       closeLabel={bn ? 'বন্ধ করুন' : 'Close'}
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
+      className={service === 'status' ? 'receipt-modal' : ''}
+      footer={service === 'status' ? <></> : undefined}
       service={service}
       onClose={onClose}
     >

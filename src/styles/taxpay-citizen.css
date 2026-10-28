@@ -2052,3 +2052,106 @@
     scroll-behavior:auto !important;
   }
 }
+
+
+/* Receipt route consolidation: use the existing modal, never the legacy full-page blue header. */
+.taxpay-citizen-shell .taxpay-modal.receipt-modal {
+  width:min(100%,960px);
+  max-height:calc(100dvh - 2rem);
+}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header {
+  border-bottom:1px solid var(--citizen-border);
+  padding:1rem 1.35rem;
+}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body {
+  padding:clamp(1rem,2vw,1.5rem);
+}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer {
+  display:none;
+}
+.receipt-modal .receipt-lookup__form {
+  max-width:100%;
+  gap:1rem;
+}
+.receipt-modal .receipt-lookup__found,
+.receipt-modal .receipt-lookup--embedded .receipt-lookup__found {
+  margin-top:0;
+}
+.receipt-modal .receipt-lookup__back {
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  min-height:44px;
+  margin-bottom:.75rem;
+  padding:.4rem .65rem;
+  border:0;
+  background:transparent;
+  color:var(--citizen-primary-dark);
+  font-family:inherit;
+  font-size:.86rem;
+  font-weight:750;
+}
+.receipt-modal .receipt-lookup__back:hover {
+  background:var(--citizen-primary-light);
+  border-radius:.55rem;
+}
+.receipt-modal .receipt-view--embedded .receipt-view__header {display:none;}
+.receipt-modal .receipt-view--embedded .receipt-view__paper {
+  border:0;
+  border-radius:0;
+  padding:.25rem 0 0;
+  box-shadow:none;
+}
+.receipt-modal .receipt-view--embedded .receipt-view__actions {
+  margin:0 0 .75rem;
+}
+.receipt-modal .receipt-view--embedded .receipt-view__status--simulation > div:first-child > div:first-child {
+  background:var(--citizen-primary-light);
+  color:var(--citizen-primary-dark);
+}
+.receipt-modal .receipt-view--embedded .receipt-view__status--simulation > div:first-child .bg-emerald-100 {
+  color:var(--citizen-primary-dark);
+  background:var(--citizen-primary-light);
+  border-color:var(--citizen-border);
+}
+.receipt-modal .receipt-view__paper .font-mono-plex {
+  overflow-wrap:anywhere;
+}
+@media (min-width:651px) {
+  .receipt-modal .receipt-view--embedded .receipt-view__cards {display:none;}
+  .receipt-modal .receipt-view--embedded .receipt-view__table {display:block;}
+}
+@media (max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal.receipt-modal {
+    width:100%;
+    max-width:100%;
+    height:100dvh;
+    max-height:100dvh;
+  }
+  .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body {
+    padding:1rem;
+  }
+  .receipt-modal .receipt-lookup__back {margin-bottom:.4rem;}
+}
+@media print {
+  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header,
+  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)),
+  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer,
+  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-help-chat {
+    display:none!important;
+  }
+  .taxpay-citizen-shell .taxpay-modal.receipt-modal {
+    position:static!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    max-height:none!important;
+    border:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+  .taxpay-citizen-shell > main:has(.receipt-modal) > div:has(.receipt-modal) > :not(.taxpay-modal__overlay) {display:none!important;}
+  .receipt-modal .receipt-view__actions,
+  .receipt-modal .receipt-lookup__back {display:none!important;}
+  .receipt-modal .receipt-view--embedded .receipt-view__paper {border:0;box-shadow:none;}
+}

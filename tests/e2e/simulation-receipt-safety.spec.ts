@@ -23,6 +23,12 @@ function expectSafeSnapshot(input: PaymentInput) {
   expect(snapshot.treasuryStatus).toBe('GATEWAY_SUCCESS');
   expect(snapshot.treasuryScrollNo).toBeUndefined();
   expect(snapshot.treasuryDate).toBeUndefined();
+  if (input.service === 'TRAVEL_TAX') {
+    // The Office projection consumes this snapshot; raw passport values must
+    // not escape through its payer name or item notes.
+    expect(JSON.stringify(snapshot)).not.toContain('DEMO1234');
+    expect(JSON.stringify(snapshot)).toContain('•••••234');
+  }
   expect(input.details.receiptReference).toContain(input.idempotencyKey);
 }
 async function travelReview(page: Page) {

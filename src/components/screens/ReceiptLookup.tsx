@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
@@ -87,7 +87,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
           <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
           <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
         </header>}
-        <form className="receipt-lookup__form" onSubmit={handleSearch} role="search">
+        {!(searchResult && searchResult !== "NOT_FOUND") && <form className="receipt-lookup__form" onSubmit={handleSearch} role="search">
           <div className="receipt-lookup__field">
             <label htmlFor="receipt-lookup-reference">
               {t('Challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স')}
@@ -152,7 +152,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
               </div>
             </div>
           )}
-        </form>
+        </form>}
         {lookupPending && <p role="status" className="receipt-lookup__hint">
           {t('Checking records from this browser session…', 'এই ব্রাউজার সেশনের রেকর্ড খোঁজা হচ্ছে…')}
         </p>}
@@ -174,6 +174,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
         )}
         {searchResult && searchResult !== 'NOT_FOUND' && (
           <div className="receipt-lookup__found">
+            <button type="button" className="receipt-lookup__back no-print" onClick={() => {
+              resetLookup();
+              setSearchedReference("");
+            }}><ArrowLeft size={17} aria-hidden="true" />{t("Back to search", "অনুসন্ধানে ফিরুন")}</button>
             <p className="sr-only" role="status">
               {t('Receipt details loaded.', 'রসিদের তথ্য দেখানো হয়েছে।')}
             </p>

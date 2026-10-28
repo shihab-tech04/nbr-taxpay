@@ -130,6 +130,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       }
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
       const pendingBank = paymentChannel === 'OTC';
+      // The raw passport is stored only in the intended private details field.
+      // Receipt snapshots are also consumed by the Office projection, so do
+      // not copy the raw value into payer names or item notes.
+      const passportReference = isDomestic ? 'Not required' :
+        '•'.repeat(Math.max(0, passportNumber.length - 3)) + passportNumber.slice(-3);
       // Reuse the idempotency nonce so retries keep the same synthetic reference.
       const paymentReference = `SIM-TOKEN-${paymentNonce}`;
 
@@ -141,7 +146,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         tokenNumber: paymentReference,
         paymentCategory: 'TRAVEL_TAX',
         assessmentYear: '2026-27',
-        payerName: `${passengerName} (Passport: ${passportNumber})`,
+        payerName: `${passengerName} (Passport: ${passportReference})`,
         payerTin: 'NON-TIN-PASSENGER',
         receiptMobile: phone,
         isRepresentativePayment: false,
@@ -158,7 +163,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
             surchargeAmount: 0,
             interestAmount: 0,
             totalAmount,
-            note: `Date: ${travelDate} | Age band: ${ageBand} | Passport: ${isDomestic ? 'Not required' : passportNumber}`
+            note: `Date: ${travelDate} | Age band: ${ageBand} | Passport: ${passportReference}`
           }
         ],
         totalAmount,
