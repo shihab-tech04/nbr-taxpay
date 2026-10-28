@@ -88,6 +88,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       onClose={close}
       className={view === 'login' ? 'tax-service-choice-modal--access' : ''}
       animateSize={view === 'payer' || view === 'choice' || view === 'login'}
+      motionKey={view}
       onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView(initialService ? 'payer' : 'choice') : undefined}
       backLabel={tr('Back', 'ফিরুন')}
       service={view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}

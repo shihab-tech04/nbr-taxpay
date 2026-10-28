@@ -19,6 +19,8 @@ export interface TaxPayModalProps {
   ariaLabel?: string;
   /** Animate compact content-height changes without changing payment-stage scrolling. */
   animateSize?: boolean;
+  /** Current inner screen; re-observe when the screen's element changes. */
+  motionKey?: string;
 }
 
 /**
@@ -39,6 +41,7 @@ export function TaxPayModal({
   backLabel = 'Back',
   ariaLabel,
   animateSize = false,
+  motionKey,
 }: TaxPayModalProps) {
   const titleId = useId();
   const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
@@ -125,7 +128,7 @@ export function TaxPayModal({
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [animateSize]);
+  }, [animateSize, motionKey]);
 
   return (
     <TaxPayModalFooterTarget.Provider value={footerTarget}>

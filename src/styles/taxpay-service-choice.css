@@ -764,3 +764,93 @@
   .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__body {padding:1rem;}
   .tax-service-choice__access-option {min-height:64px;padding:.65rem .75rem;}
 }
+
+
+/* E-TIN modal-aligned spacing; access choice becomes two equal-width radio cards.
+   On narrow screens the cards stack for readable 14px minimum copy. */
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__access-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  align-items: stretch;
+}
+.taxpay-citizen-shell .tax-service-choice__access-heading {
+  margin: 1rem 0 .75rem;
+  padding-top: 1rem;
+}
+.taxpay-citizen-shell .tax-service-choice__access-option {
+  min-width: 0;
+  min-height: 108px;
+  align-items: flex-start;
+  padding: 1rem;
+  gap: .75rem;
+  border-radius: 12px;
+  transition: background-color var(--taxpay-motion-fast) ease-in-out,
+              border-color var(--taxpay-motion-fast) ease-in-out,
+              box-shadow var(--taxpay-motion-fast) ease-in-out;
+}
+.taxpay-citizen-shell .tax-service-choice__access-option .tax-service-choice__access-icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  margin-top: 1px;
+}
+.taxpay-citizen-shell .tax-service-choice__access-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  gap: .3rem;
+}
+.taxpay-citizen-shell .tax-service-choice__access-option strong,
+.taxpay-citizen-shell .tax-service-choice__access-option small {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .tax-service-choice__access-radio {
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 10px 0 0 auto;
+  border: 1.5px solid var(--citizen-border);
+  border-radius: 50%;
+  background: var(--citizen-surface);
+  transition: border-color var(--taxpay-motion-fast) ease-in-out;
+}
+.taxpay-citizen-shell .tax-service-choice__access-radio > span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background-color var(--taxpay-motion-fast) ease-in-out;
+}
+.taxpay-citizen-shell .tax-service-choice__access-option[aria-pressed="true"] {
+  border-color: var(--citizen-primary);
+  background: var(--color-taxpay-surface-subtle);
+  box-shadow: inset 2px 0 0 var(--citizen-primary);
+}
+.taxpay-citizen-shell .tax-service-choice__access-option[aria-pressed="true"] .tax-service-choice__access-radio {
+  border-color: var(--citizen-primary);
+}
+.taxpay-citizen-shell .tax-service-choice__access-option[aria-pressed="true"] .tax-service-choice__access-radio > span {
+  background: var(--citizen-primary);
+}
+.taxpay-citizen-shell .tax-service-choice__card {
+  transition: border-color var(--taxpay-motion-fast) ease-in-out,
+              background-color var(--taxpay-motion-fast) ease-in-out,
+              box-shadow var(--taxpay-motion-fast) ease-in-out;
+}
+.taxpay-citizen-shell .tax-service-choice {
+  animation: taxpay-content-enter 190ms var(--taxpay-motion-ease) both;
+}
+@media (max-width:620px) {
+  .taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__access-options {
+    grid-template-columns: minmax(0,1fr);
+    gap: .65rem;
+  }
+  .taxpay-citizen-shell .tax-service-choice__access-option {
+    min-height: 76px;
+    align-items: center;
+    padding: .75rem;
+  }
+  .taxpay-citizen-shell .tax-service-choice__access-radio { margin-top: 0; }
+}
