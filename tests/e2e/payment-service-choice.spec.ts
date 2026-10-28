@@ -14,6 +14,14 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   const cards = chooser.locator('.tax-service-choice__card');
   await expect(cards).toHaveCount(2);
+  // The approved dialog intentionally opens at 99% scale before easing to
+  // 100%. Capture the baseline only after that entrance animation finishes.
+  // Do not hide real card displacement by increasing the 0.5px tolerance.
+  await chooser.evaluate(async dialog => {
+    await Promise.all(dialog.getAnimations({ subtree: false })
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished));
+  });
   await expect(cards.first()).toHaveCSS('flex-direction', 'row');
 
   const first = await cards.nth(0).boundingBox();
@@ -55,11 +63,14 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
     };
   });
   const expectStablePositions = async (before: Awaited<ReturnType<typeof coordinates>>) => {
-    const after = await coordinates();
-    for (const part of ['icon', 'title', 'radio'] as const) {
-      expect(Math.abs(after[part].x - before[part].x)).toBeLessThan(.5);
-      expect(Math.abs(after[part].y - before[part].y)).toBeLessThan(.5);
-    }
+    // The approved modal uses height and content transitions. Assert exact
+    // final alignment instead of sampling the changing intermediate geometry.
+    await expect.poll(async () => {
+      const after = await coordinates();
+      return (['icon', 'title', 'radio'] as const).every(part =>
+        Math.abs(after[part].x - before[part].x) < .5 &&
+        Math.abs(after[part].y - before[part].y) < .5);
+    }, { timeout: 6500, intervals: [50, 100, 150, 250] }).toBe(true);
   };
   const before = await coordinates();
   const idleIconColor = await returnService.locator('.tax-service-choice__icon').evaluate(el => getComputedStyle(el).color);

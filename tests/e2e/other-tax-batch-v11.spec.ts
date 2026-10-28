@@ -262,13 +262,13 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
-  await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toBeVisible();
-  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
-  await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly');
-  await expect(dialog.locator('#other-tax-primary-name')).toHaveValue('Meghna Trading Ltd.');
-  await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly');
-  await expect(dialog.locator('#guest-phone')).toHaveValue('01700000002');
-  await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly');
+  const identity = dialog.getByRole('region', { name: 'Account taxpayer details' });
+  await expect(identity).toContainText('2222222222222');
+  await expect(identity).toContainText('Meghna Trading Ltd.');
+  await expect(identity).toContainText('01700000002');
+  await expect(identity.locator('input')).toHaveCount(0);
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
+  await expect(dialog.locator('#guest-phone')).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
@@ -292,13 +292,13 @@ test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitu
   await dialog.locator('#guest-tin').fill('123456789012');
   await expect(dialog.locator('#other-tax-primary-name')).not.toHaveAttribute('readonly');
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
-  await dialog.locator('#guest-payer-name').fill('Authorized Payer');
-  await dialog.locator('#guest-phone').fill('01712345678');
+  await expect(dialog.locator('#guest-payer-name')).toHaveValue('Md. Arif Rahman');
+  await expect(dialog.locator('#guest-payer-name')).toHaveAttribute('readonly');
+  await expect(dialog.locator('#guest-phone')).toHaveValue('01700000001');
+  await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  const batch = dialog.getByTestId('other-tax-batch');
-  await expect(batch).toContainText('123456789012');
-  await expect(batch).not.toContainText('1111111111111');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(dialog.getByText(/No active authorization for this taxpayer/)).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
 
 

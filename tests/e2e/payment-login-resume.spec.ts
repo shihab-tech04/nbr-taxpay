@@ -29,7 +29,9 @@ test('account sign-in at the breakpoint retains the selected service and starts 
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toBeVisible();
-  await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly');
+  await expect(payment.getByRole('region', { name: 'Account taxpayer details' })).toContainText('2222222222222');
+  await expect(payment.locator('input#guest-tin')).toHaveCount(0);
+  await expect(payment.locator('#guest-notice-ref')).toBeEditable();
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
 });
