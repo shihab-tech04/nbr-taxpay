@@ -73,7 +73,7 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
   }, [actor]);
   const choices = actor && status === 'ready' ? activeAuthorizedTaxpayers(records, actor, now) : [];
   const candidate = userIdForHostedTin(selectedTin);
-  const canRequest = actor && candidate && actor !== candidate &&
+  const canRequest = status === 'ready' && actor && candidate && actor !== candidate &&
     !records.some(record => record.payerId === actor && record.taxpayerId === candidate &&
       (record.status === 'PENDING' || record.status === 'CODE_ISSUED' || record.status === 'ACTIVE')) &&
     !choices.some(choice => choice.tin === selectedTin);
@@ -93,10 +93,10 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
     className="col-span-full rounded-xl border border-slate-200 bg-white p-4" data-testid="authorized-taxpayer-choices">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('Authorized taxpayers', 'অনুমোদিত করদাতা')}</h3>
-      <button type="button" className="min-h-10 text-sm font-semibold text-taxpay-primary underline underline-offset-2"
+      <button type="button" className="min-h-10 text-sm font-semibold text-taxpay-primary hover:text-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={onManage}>{tr('Manage authorization', 'অনুমোদন পরিচালনা করুন')}</button>
     </div>
-    <p className="mt-1 text-sm text-slate-600">{tr('Select an active authorization or enter a new taxpayer TIN below.', 'সক্রিয় অনুমোদন বেছে নিন অথবা নিচে নতুন করদাতার টিআইএন লিখুন।')}</p>
+    <p className="mt-1 text-sm text-slate-600">{tr('Choose an authorized taxpayer or enter a TIN below. New demo authorizations require the taxpayer’s approval.', 'অনুমোদিত করদাতা বাছুন অথবা নিচে টিআইএন লিখুন। নতুন ডেমো অনুমোদনের জন্য করদাতার সম্মতি প্রয়োজন।')}</p>
     {status === 'loading' && <p role="status" className="mt-3 text-sm text-slate-600">{tr('Checking authorizations…', 'অনুমোদন যাচাই হচ্ছে…')}</p>}
     {status === 'error' && <p role="alert" className="mt-3 text-sm text-rose-700">{tr('Authorizations could not be verified. Try Manage authorization.', 'অনুমোদন যাচাই করা যায়নি। অনুমোদন পরিচালনা করুন-এ যান।')}</p>}
     {status === 'ready' && <p className="mt-3 text-xs font-semibold text-slate-600">{tr('Active authorizations', 'সক্রিয় অনুমোদন')}: {choices.length}</p>}
@@ -108,7 +108,7 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
         <p className="mt-1 text-xs text-slate-600">{tr('TIN', 'টিআইএন')}: {choice.tin}</p>
       </button>)}
     </div>}
-    {status === 'ready' && !choices.length && <p className="mt-2 text-sm text-slate-500">{tr('No active authorizations. Request one through Manage authorization.', 'কোনো সক্রিয় অনুমোদন নেই। অনুমোদন পরিচালনা করুন থেকে অনুরোধ পাঠান।')}</p>}
+    {status === 'ready' && !choices.length && <p className="mt-2 text-sm text-slate-500">{tr('No active authorizations. Enter a recognized demo taxpayer TIN to request consent, or open Manage authorization.', 'কোনো সক্রিয় অনুমোদন নেই। সম্মতি চাইতে ডেমো করদাতার টিআইএন লিখুন অথবা অনুমোদন পরিচালনা করুন খুলুন।')}</p>}
     {canRequest && <button type="button" disabled={requesting} onClick={() => void requestConsent()}
       className="mt-3 min-h-11 rounded-lg border border-taxpay-primary px-4 text-sm font-semibold text-taxpay-primary hover:bg-blue-50 disabled:opacity-60">
       {requesting ? tr('Requesting…', 'অনুরোধ পাঠানো হচ্ছে…') : tr('Request authorization for this TIN', 'এই টিআইএন-এর জন্য অনুমোদন চান')}
