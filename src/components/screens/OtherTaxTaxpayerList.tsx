@@ -108,7 +108,7 @@ export function OtherTaxTaxpayerList({
         </div>}
       </article>;
     })}
-    {allowAdditional && <button type="button" className="taxpay-taxpayer-list__add" disabled={additional.length >= 19}
+    {allowAdditional && <button type="button" className="taxpay-taxpayer-list__add"
       onClick={() => {
         const id = crypto.randomUUID();
         onAdditional([...additional, { id, tin: '', name: '' }]);
@@ -119,8 +119,5 @@ export function OtherTaxTaxpayerList({
       <Plus size={18} aria-hidden="true" />
       {bn ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer'}
     </button>}
-    {additional.length >= 19 && <p className="taxpay-taxpayer-list__limit">
-      {bn ? 'একটি পেমেন্টে সর্বোচ্চ ২০ জন করদাতা যোগ করা যাবে।' : 'Maximum 20 taxpayers per payment.'}
-    </p>}
   </div>;
 }
