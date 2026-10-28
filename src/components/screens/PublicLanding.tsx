@@ -160,10 +160,6 @@ export const PublicLanding: React.FC = () => {
                 setActiveSuggestion(index => index <= 0 ? matchedOptions.length - 1 : index - 1);
               }
             }}
-            aria-autocomplete="list"
-            aria-controls="public-record-suggestions"
-            aria-expanded={searchOpen && Boolean(cleanReference)}
-            aria-activedescendant={searchOpen && activeSuggestion >= 0 ? `public-search-option-${activeSuggestion}` : undefined}
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
           />
           <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
@@ -175,13 +171,11 @@ export const PublicLanding: React.FC = () => {
             <div className="public-record-suggestions__group">
               <h3>{t('Matching sample references', 'মিলে যাওয়া নমুনা রেফারেন্স')}</h3>
               {matchedOptions.length > 0 ? (
-                <ul className="public-record-suggestions__list" role="listbox" aria-label={t('Matching sample references', 'মিলে যাওয়া নমুনা রেফারেন্স')}>
+                <ul className="public-record-suggestions__list">
                   {matchedOptions.map((option, index) => (
                     <li key={option.kind + option.value}>
                       <button
                         id={`public-search-option-${index}`}
-                        role="option"
-                        aria-selected={activeSuggestion === index}
                         className={activeSuggestion === index ? 'public-record-suggestions__option is-active' : 'public-record-suggestions__option'}
                         type="button"
                         onMouseDown={event => event.preventDefault()}
