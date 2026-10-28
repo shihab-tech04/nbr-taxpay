@@ -23,7 +23,7 @@ try {
     await expect(section).toBeVisible({ timeout: 30_000 });
     await search.fill('TKN-882190');
     await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
-    await expect(section.getByRole('option', { name: /TKN-882190/ })).toBeVisible();
+    await expect(section.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
     await expect(section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ })).toBeVisible();
     await expect(section.locator('.public-record-discovery__heading svg')).toHaveCount(0);
     await expect(section.getByText('Search by challan, token or transaction reference.')).toBeVisible();
@@ -43,7 +43,7 @@ try {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (overflow > 2) throw new Error(`Live ${name} public search horizontal overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-search-${name}.png`, fullPage: true });
-    await section.getByRole('option', { name: /TKN-882190/ }).click();
+    await section.getByRole('button', { name: /TKN-882190/ }).click();
     await expect(page).toHaveURL(/action=verify/);
     await expect(page.getByRole('textbox', { name: /Challan, token or transaction reference/ })).toHaveValue('TKN-882190');
     if (page.url().includes('TKN-882190')) throw new Error('Reference leaked into live URL');
