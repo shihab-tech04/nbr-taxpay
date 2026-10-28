@@ -965,3 +965,14 @@
 @media(max-width:600px){.account-authorizations__pending-item{grid-template-columns:minmax(0,1fr)}}
 
 .account-authorizations__expired { margin:0; padding:.55rem 0; border-top:1px solid var(--citizen-border); color:var(--citizen-muted); font-size:14px; line-height:1.5; }
+
+/* Remove legacy generic section borders from the read-only account identity. */
+#guest-tin.account-taxpayer-summary {
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 1px solid var(--citizen-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
