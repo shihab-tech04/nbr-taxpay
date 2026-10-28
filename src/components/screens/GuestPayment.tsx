@@ -466,17 +466,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const chooseSuggestedHead = (code: DemoServiceCode) => {
-    // Suggestions never prefill an amount or claim that a balance is payable.
+    // A service suggestion is not a verified accounting head. Display the
+    // matching catalogue group and require the taxpayer to select explicitly.
     const group: Partial<Record<DemoServiceCode, string>> = {
       ADVANCE_TAX: 'Advance Tax', ASSESSED_DEMAND: 'Tax against Demand',
       PENALTY: 'Penalty', APPELLATE_TRIBUNAL: 'Appellate Tribunal',
       OTHER_TAX_PAYMENT: 'Others'
     };
-    const matching = V11_SOURCE_HEADS.find(row => row.grpEn === group[code] && isOtherTaxHeadEligible(row.id));
-    if (!matching || otherTaxLines.some(line => line.taxpayerId === 'primary' && line.headId === matching.id)) return;
-    setOtherTaxLines(before => [...before, {
-      id: crypto.randomUUID(), taxpayerId: 'primary', headId: matching.id, assessmentYear: '2026-27', amount: ''
-    }]);
+    const name = group[code];
+    if (!name) return;
+    const section = [...document.querySelectorAll<HTMLDetailsElement>('details[data-head-group]')]
+      .find(item => item.dataset.headGroup === name);
+    if (!section) return;
+    section.open = true;
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    section.querySelector('summary')?.focus({ preventScroll: true });
   };
 
   const handleStep1Next = async () => {
