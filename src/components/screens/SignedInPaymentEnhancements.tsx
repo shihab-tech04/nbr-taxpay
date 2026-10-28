@@ -76,6 +76,9 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
   const pending = actor && status === 'ready'
     ? records.filter(record => record.payerId === actor && (record.status === 'PENDING' || record.status === 'CODE_ISSUED'))
     : [];
+  const expired = actor && status === 'ready'
+    ? records.filter(record => record.payerId === actor && record.status === 'EXPIRED')
+    : [];
   const candidate = userIdForHostedTin(selectedTin);
   const canRequest = actor && candidate && actor !== candidate &&
     !records.some(record => record.payerId === actor && record.taxpayerId === candidate &&
@@ -130,6 +133,10 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
         </p>;
       })}
     </div>}
+    {expired.length > 0 && <p className="account-authorizations__expired" role="status">
+      {tr('Expired authorization requests', 'মেয়াদোত্তীর্ণ অনুমোদন অনুরোধ')}: {expired.length}.
+      {' '}{tr('You can send a new request from Manage authorization.', 'অনুমোদন পরিচালনা থেকে নতুন অনুরোধ পাঠাতে পারবেন।')}
+    </p>}
     {status === 'ready' && !choices.length && <div className="account-authorizations__empty" role="status">
       <p className="font-semibold">{tr('You have no approved taxpayers yet', 'এখনও কোনো অনুমোদিত করদাতা নেই')}</p>
       <p>{tr('Enter the taxpayer’s TIN below. If authorization is available, request it before proceeding with an account payment.', 'নিচে করদাতার টিআইএন দিন। অনুমোদনের সুযোগ থাকলে অ্যাকাউন্ট থেকে পরিশোধের আগে অনুরোধ করুন।')}</p>
