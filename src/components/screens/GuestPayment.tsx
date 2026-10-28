@@ -417,7 +417,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (otherBatch) {
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
-        if (!(person.id === 'primary' && ownAccountTax ? /^\d{12,13}$/.test(person.tin) : /^\d{12}$/.test(person.tin)) || seenTins.has(person.tin)) return true;
+        const syntheticAuthorized = signedInAccount && forSelf === false && Boolean(userIdForHostedTin(person.tin));
+        const tinValid = person.id === 'primary' && ownAccountTax
+          ? /^\d{12,13}$/.test(person.tin)
+          : syntheticAuthorized ? /^\d{13}$/.test(person.tin) : /^\d{12}$/.test(person.tin);
+        if (!tinValid || seenTins.has(person.tin)) return true;
         seenTins.add(person.tin);
         return false;
       });
@@ -548,6 +552,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const pending = pendingStoryRef.current;
     if (!pending) { setPaymentPhase('failed'); setIsProcessing(false); return; }
     try {
+      if (signedInAccount && forSelf === false) {
+        const actor = previewAccount?.id;
+        if (!actor) throw new Error('Account authorization unavailable');
+        const active = activeAuthorizedTaxpayers(await getHostedAuthorizations(actor), actor);
+        const recipients = otherBatch ? batchTaxpayers : [{ id: 'primary', tin: taxpayerTin }];
+        if (recipients.some(person => !active.some(choice => choice.tin === person.tin))) {
+          throw new Error('Authorization expired or revoked. Return to taxpayer details and select an active authorization.');
+        }
+      }
       const confirmed = await persistSimulatedPayment(pending.payload);
       const settledReceipt: ChallanReceipt = {
         ...receipt,
