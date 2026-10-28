@@ -40,7 +40,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(pageA.locator('.taxpayer-reference-secure')).toBeVisible();
   await expect(referenceA).toHaveCSS('background-color', 'rgb(240, 242, 245)');
   expect((await referenceA.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim())).toUpperCase()).toBe('#2C5EAD');
-  await expect(pageA.locator('.taxpayer-reference-secure input').first()).toHaveCSS('border-color', 'rgb(225, 230, 238)');
+  await expect(pageA.locator('.taxpayer-reference-secure input').first()).toHaveCSS('border-color', 'rgb(228, 230, 235)');
   expect(await pageA.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await pageA.getByLabel('Assessment-year label (not verified)').fill('2026-27');
   await pageA.getByLabel('Proposed amount (BDT)').fill('123.45');
