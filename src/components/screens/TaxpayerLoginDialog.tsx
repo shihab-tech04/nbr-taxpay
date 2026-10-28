@@ -68,10 +68,10 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
 
   const content = <section ref={dialogRef} role={embedded ? undefined : 'dialog'}
       aria-modal={embedded ? undefined : true} aria-labelledby={embedded ? undefined : 'taxpayer-login-title'}
-      className={embedded ? 'taxpayer-login-dialog taxpayer-login-dialog--embedded' : 'taxpayer-login-dialog'}>
+      className={embedded ? 'taxpayer-login-dialog taxpayer-login-dialog--embedded' : 'taxpayer-login-dialog taxpayer-login-dialog--reference'}>
       {!embedded && <div className="taxpayer-login-heading">
         <h2 id="taxpayer-login-title">{bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`}</h2>
-        <button type="button" onClick={close} aria-label={bn ? 'বন্ধ করুন' : 'Close'}>
+        <button type="button" onClick={close} aria-label={bn ? 'বন্ধ করুন' : 'Close'} className="taxpayer-login-heading__close">
           <X size={24} aria-hidden="true" />
         </button>
       </div>}

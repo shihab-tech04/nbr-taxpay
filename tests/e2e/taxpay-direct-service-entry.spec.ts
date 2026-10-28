@@ -21,18 +21,17 @@ for (const { slide, cta, selected } of [
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(modal).toBeVisible();
     // Source copy parity: payer liability and authorization stay visible in the existing cards.
-    await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('My tax liability');
-    await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('You are both the payer and the taxpayer.');
+    await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('My Tax Liability');
+    await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('Pay tax for myself.');
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Facilitate another taxpayer’s payment');
-    await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('You facilitate the payment; the liability and the tax credit stay theirs.');
-    await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Only where the taxpayer has authorized you.');
+    await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Pay on behalf of another taxpayer.');
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(modal.getByText('Step 1 of 4')).toBeVisible();
     await expect(modal.locator('[data-payment-entry]')).toHaveCount(0);
     await expect(modal.locator('[data-payment-service]').first()).toHaveAttribute('data-payment-service', selected);
     await modal.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-    await expect(modal.getByRole('heading', { name: 'Who are you paying for?' })).toBeVisible();
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Whose tax liability are you settling?');
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   });
 }

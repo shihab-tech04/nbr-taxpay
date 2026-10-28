@@ -83,7 +83,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
 
   return (
     <TaxPayModal
-      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : tr('Pay Tax', 'কর পরিশোধ')}
+      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : view === 'payer' ? tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?') : tr('Pay Tax', 'কর পরিশোধ')}
+      ariaLabel={view === 'payer' ? tr('Pay Tax', 'কর পরিশোধ') : undefined}
       onClose={close}
       className={view === 'login' ? 'tax-service-choice-modal--access' : ''}
       onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView(initialService ? 'payer' : 'choice') : undefined}
@@ -126,11 +127,11 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           {view === 'payment' && stage < 4 && useAccount && <p className="tax-service-choice__account-access">{tr('Continuing with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যাচ্ছেন')}</p>}
         </>}
         {view === 'payer' ? <>
-          <h3 ref={payerHeadingRef} tabIndex={-1} id="tax-service-choice-question">{tr('Who are you paying for?', 'কার কর পরিশোধ করছেন?')}</h3>
+          <h3 ref={payerHeadingRef} tabIndex={-1} id="tax-service-choice-question" className="tax-service-choice__payer-focus">{tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?')}</h3>
           <div className="tax-service-choice__grid" role="group" aria-label={tr('Taxpayer relationship', 'করদাতার সঙ্গে সম্পর্ক')}>
             {[
-              { own: true, Icon: UserRound, en: 'My tax liability', bn: 'আমার করদায়', detailEn: 'You are both the payer and the taxpayer.', detailBn: 'আপনি একই সঙ্গে করদাতা ও পরিশোধকারী।', noteEn: '', noteBn: '' },
-              { own: false, Icon: UsersRound, en: 'Facilitate another taxpayer’s payment', bn: 'অন্য করদাতার কর পরিশোধে সহায়তা করুন', detailEn: 'You facilitate the payment; the liability and the tax credit stay theirs.', detailBn: 'আপনি শুধু পরিশোধে সহায়তা করেন; করদায় ও কর ক্রেডিট করদাতারই থাকে।', noteEn: 'Only where the taxpayer has authorized you.', noteBn: 'শুধুমাত্র করদাতার অনুমোদন থাকলে।' }
+              { own: true, Icon: UserRound, en: 'My Tax Liability', bn: 'আমার করদায়', detailEn: 'Pay tax for myself.', detailBn: 'নিজের কর পরিশোধ করুন।', noteEn: '', noteBn: '' },
+              { own: false, Icon: UsersRound, en: 'Facilitate another taxpayer’s payment', bn: 'অন্য করদাতার কর পরিশোধে সহায়তা করুন', detailEn: 'Pay on behalf of another taxpayer.', detailBn: 'অন্য করদাতার পক্ষে কর পরিশোধ করুন।', noteEn: '', noteBn: '' }
             ].map(({ own, Icon, en, bn: bangla, detailEn, detailBn, noteEn, noteBn }) => (
               <button type="button" key={String(own)} aria-pressed={payerForSelf === own}
                 data-payer-relationship={own ? 'SELF' : 'OTHER'} className="tax-service-choice__card" onClick={() => setPayerForSelf(own)}>
@@ -142,16 +143,16 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             ))}
           </div>
           {verifiedUser || previewAccount ? <p className="tax-service-choice__signed-in">{tr('Continue with your signed-in account', 'সাইন ইন করা অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</p> : <>
-            <h3 className="tax-service-choice__access-heading">{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
+            <h3 className="tax-service-choice__access-heading">{tr('How you want to settle it?', 'কীভাবে পরিশোধ করতে চান?')}</h3>
             <div className="tax-service-choice__access-options" role="group" aria-label={tr('Payment access', 'পেমেন্টের মাধ্যম')}>
               {[
-                { id: 'guest' as const, Icon: WalletCards, en: 'As a guest user', bn: 'অতিথি হিসেবে', detailEn: 'Enter your details and pay', detailBn: 'তথ্য দিয়ে পরিশোধ করুন' },
-                { id: 'account' as const, Icon: UserRound, en: 'By logging into my account', bn: 'আমার অ্যাকাউন্টে সাইন ইন করে', detailEn: 'Use your account details and records', detailBn: 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করুন' }
+                { id: 'guest' as const, Icon: WalletCards, en: 'As a guest User', bn: 'অতিথি হিসেবে', detailEn: 'Enter your details and make this payment', detailBn: 'আপনার তথ্য দিয়ে এই কর পরিশোধ করুন' },
+                { id: 'account' as const, Icon: UserRound, en: 'By logging into my account', bn: 'আমার অ্যাকাউন্টে সাইন ইন করে', detailEn: 'Sign in to use your account details and records', detailBn: 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করতে সাইন ইন করুন' }
               ].map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
                 <button type="button" key={id} className="tax-service-choice__access-option" aria-pressed={entryAccess === id} data-payment-access={id.toUpperCase()} onClick={() => setEntryAccess(id)}>
                   <span className="tax-service-choice__access-icon"><Icon size={20} aria-hidden="true" /></span>
                   <span className="tax-service-choice__access-copy"><strong>{tr(en, bangla)}</strong><small>{tr(detailEn, detailBn)}</small></span>
-                  <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
+                  <ArrowRight className="tax-service-choice__access-arrow" size={19} aria-hidden="true" />
                 </button>
               ))}
             </div>
