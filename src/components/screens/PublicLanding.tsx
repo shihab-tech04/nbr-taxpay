@@ -145,7 +145,7 @@ export const PublicLanding: React.FC = () => {
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
             onKeyDown={event => {
-              if (event.key === 'Escape') { setSearchOpen(false); setActiveSuggestion(-1); }
+              if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setSearchOpen(false); setActiveSuggestion(-1); return; }
               if (event.key === 'ArrowDown' && matchedOptions.length) {
                 event.preventDefault();
                 setSearchOpen(true);
@@ -157,9 +157,6 @@ export const PublicLanding: React.FC = () => {
                 setActiveSuggestion(index => index <= 0 ? matchedOptions.length - 1 : index - 1);
               }
             }}
-            aria-expanded={searchOpen}
-            aria-controls={searchOpen ? "public-record-suggestions" : undefined}
-            aria-activedescendant={searchOpen && activeSuggestion >= 0 ? `public-search-option-${activeSuggestion}` : undefined}
             aria-describedby="public-record-search-help"
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
           />
