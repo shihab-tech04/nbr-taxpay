@@ -6,14 +6,14 @@ import type { DemoSqlServiceRecord, DemoServiceCode } from './demoSqlProfiles';
 export function activeAuthorizedTaxpayers(records: readonly HostedAuthorization[], payer: DemoUserId, now = Date.now()) {
   const seen = new Set<DemoUserId>();
   return records.filter(record => record.payerId === payer && record.status === 'ACTIVE' &&
-      typeof record.activeUntil === 'number' && record.activeUntil > now)
+      (record.activeUntil === null || record.activeUntil > now))
     .sort((a, b) => (b.confirmedAt ?? 0) - (a.confirmedAt ?? 0))
     .flatMap(record => {
       if (seen.has(record.taxpayerId)) return [];
       seen.add(record.taxpayerId);
       const user = getDemoUser(record.taxpayerId);
       return user ? [{ authorizationId: record.id, userId: user.id, tin: user.tin,
-        nameEn: user.nameEn, nameBn: user.nameBn, activeUntil: record.activeUntil! }] : [];
+        nameEn: user.nameEn, nameBn: user.nameBn, activeUntil: record.activeUntil }] : [];
     });
 }
 
