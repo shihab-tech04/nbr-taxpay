@@ -905,9 +905,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('tin')}
                   placeholder={ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
                   value={taxpayerTin}
-                  inputMode="numeric" maxLength={ownAccountTax ? 13 : 12} autoComplete="off" required
+                  inputMode="numeric" maxLength={signedInAccount && forSelf === false ? 13 : ownAccountTax ? 13 : 12} autoComplete="off" required
                   readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
-                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(e.target.value.replace(/\D/g, '').slice(0, 12)); }}
+                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(e.target.value.replace(/\D/g, '').slice(0, signedInAccount && forSelf === false ? 13 : 12)); }}
                   className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('tin')}
@@ -965,7 +965,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
                 onPrimaryTin={value => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(value); }}
-                onPrimaryName={setOtherTaxpayerName} onAdditional={setAdditionalTaxpayers}
+                onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={signedInAccount && forSelf === false} onAdditional={setAdditionalTaxpayers}
                 onAllocations={setOtherTaxLines} onClearError={clearValidationError} />
             </PaymentFormSection>}
 
