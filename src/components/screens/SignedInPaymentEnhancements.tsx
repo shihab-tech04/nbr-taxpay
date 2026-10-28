@@ -146,7 +146,7 @@ export function AccountPaymentSuggestions({ userId, language, mode, onChoose }: 
         </div>
         {!suggestion.requiresReview && onChoose && <button type="button" onClick={() => onChoose(suggestion.serviceCode)}
           className="min-h-10 rounded-lg border border-taxpay-primary px-3 text-xs font-semibold text-taxpay-primary hover:bg-blue-50">
-          {tr('Choose head', 'খাত বেছে নিন')}</button>}
+          {tr('View payment heads', 'পেমেন্ট খাত দেখুন')}</button>}
       </li>)}
     </ul>}
   </section>;
