@@ -611,7 +611,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // existing payment presentation but defer batch execution to A-Challan.
     // A multi-taxpayer batch cannot be represented by one synthetic challan.
     // Single-taxpayer Other Tax uses the same verified lifecycle as other heads.
-    if (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid)) return;
+    if (otherBatch && (batchTaxpayers.length !== 1 || !batchValid ||
+      (forSelf !== true && !(signedInAccount && forSelf === false &&
+        authorizedTaxpayerId === userIdForHostedTin(taxpayerTin))))) return;
     if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !(otherBatch ? batchValid : amountsValid) || !(totalAmount > 0)) return;
     setIsProcessing(true);
     setPaymentPhase('processing');
@@ -659,7 +661,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         paymentCategory: category,
         assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
         payerName: forSelf ? accountName || '—' : effectivePayerName.trim(),
-        payerTin: ownAccountTax ? taxpayerTin : 'GUEST',
+        payerTin: signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
         taxpayerTin,
         receiptMobile: receiptPhone,
         noticeReference: noticeReference.trim() || undefined,
@@ -693,6 +695,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             receiptReference: newReceipt.challanNo,
             taxpayerTin,
             payerName: newReceipt.payerName,
+            payerTin: newReceipt.payerTin,
             payerMode: forSelf ? 'SELF' : 'OTHER',
             assessmentYear,
             taxZone, taxCircle,
