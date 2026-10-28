@@ -184,10 +184,10 @@ export const PublicLanding: React.FC = () => {
                       >
                         <Search size={17} aria-hidden="true" />
                         <span className="public-record-suggestions__option-copy">
-                          <span className="public-record-suggestions__value">{option.value}</span>
-                          <span className="public-record-suggestions__kind">
+                          <p className="public-record-suggestions__value">{option.value}</p>
+                          <p className="public-record-suggestions__kind">
                             {option.kind === 'challan' ? t('Sample challan reference', 'নমুনা চালান রেফারেন্স') : option.kind === 'token' ? t('Sample payment token', 'নমুনা পেমেন্ট টোকেন') : t('Sample transaction reference', 'নমুনা লেনদেন রেফারেন্স')}
-                          </span>
+                          </p>
                         </span>
                         <ArrowRight size={16} aria-hidden="true" />
                       </button>
@@ -213,7 +213,7 @@ export const PublicLanding: React.FC = () => {
                     className="public-record-suggestions__link"
                     aria-label={t('Try sample reference', 'নমুনা রেফারেন্স দেখুন') + ': ' + receipt.challanNo}
                   >
-                    <span>{receipt.challanNo}</span>
+                    <p>{receipt.challanNo}</p>
                     <ArrowRight size={16} aria-hidden="true" />
                   </a>
                 ))}
