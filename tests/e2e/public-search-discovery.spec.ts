@@ -52,7 +52,7 @@ test('dropdown closes on Escape and outside click, and Bangla labels remain usab
   await search.press('Escape');
   await expect(page.locator('#public-record-suggestions')).toHaveCount(0);
   await search.click();
-  await page.getByRole('heading', { name: 'How your payment works' }).click();
+  await page.getByRole('heading', { name: 'Find a payment record' }).click();
   await expect(page.locator('#public-record-suggestions')).toHaveCount(0);
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
