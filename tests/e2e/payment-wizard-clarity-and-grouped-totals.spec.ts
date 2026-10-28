@@ -73,3 +73,52 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText('Based on this taxpayer’s recorded demo activity.')).toHaveCount(0);
 });
+
+test('account beneficiary selector separates pending consent and adds multiple approved taxpayers without replacing them', async ({ page }) => {
+  let currentStatus: 'PENDING' | 'ACTIVE' = 'PENDING';
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations**', async route => {
+    const url = new URL(route.request().url());
+    if (route.request().method() !== 'GET' || url.searchParams.get('actor') !== 'user1') {
+      await route.fulfill({ status: 403, body: '{"success":false,"error":"FORBIDDEN"}' });
+      return;
+    }
+    const now = Date.now();
+    const records = (['user2','user3'] as const).map((taxpayerId,index) => ({
+      id: '11111111-1111-4111-8111-11111111111' + index,
+      payerId: 'user1', taxpayerId, status: currentStatus,
+      requestedAt: now - 1000, codeExpiresAt: now + 600000,
+      consentCode: null, confirmedAt: currentStatus === 'ACTIVE' ? now - 500 : null,
+      activeUntil: currentStatus === 'ACTIVE' ? now + 86400000 : null,
+      attempts: 0, revokedAt: null, codeSentAt: null, codeResends: 0
+    }));
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({success:true,data:records}) });
+  });
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await page.getByRole('textbox', { name: 'Password' }).fill('user1');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  let dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const panel = dialog.getByTestId('authorized-taxpayer-choices');
+  await expect(panel.getByRole('heading', { name: 'Awaiting authorization: 2' })).toBeVisible();
+  await expect(panel.getByText('Awaiting taxpayer approval')).toHaveCount(2);
+  await expect(panel.getByRole('button', { name: /Add to this payment/ })).toHaveCount(0);
+  // Reopen with now-approved records, exercising the exact same UI without altering hosted SQL.
+  currentStatus = 'ACTIVE';
+  await page.reload();
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await expect(choices.getByText('You can pay for these taxpayers: 2')).toBeVisible();
+  await choices.getByRole('button', { name: /2222222222222/ }).click();
+  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
+  await choices.getByRole('button', { name: /3333333333333/ }).click();
+  const list = dialog.getByTestId('other-tax-taxpayer-list');
+  await expect(list.getByTestId('other-tax-taxpayer')).toHaveCount(1);
+  await expect(list.locator('input[id^="other-tax-tin-"]')).toHaveValue('3333333333333');
+  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
+});
