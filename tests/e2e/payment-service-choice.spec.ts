@@ -55,11 +55,14 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
     };
   });
   const expectStablePositions = async (before: Awaited<ReturnType<typeof coordinates>>) => {
-    const after = await coordinates();
-    for (const part of ['icon', 'title', 'radio'] as const) {
-      expect(Math.abs(after[part].x - before[part].x)).toBeLessThan(.5);
-      expect(Math.abs(after[part].y - before[part].y)).toBeLessThan(.5);
-    }
+    // The approved modal uses height and content transitions. Assert exact
+    // final alignment instead of sampling the changing intermediate geometry.
+    await expect.poll(async () => {
+      const after = await coordinates();
+      return (['icon', 'title', 'radio'] as const).every(part =>
+        Math.abs(after[part].x - before[part].x) < .5 &&
+        Math.abs(after[part].y - before[part].y) < .5);
+    }, { timeout: 6500, intervals: [50, 100, 150, 250] }).toBe(true);
   };
   const before = await coordinates();
   const idleIconColor = await returnService.locator('.tax-service-choice__icon').evaluate(el => getComputedStyle(el).color);
