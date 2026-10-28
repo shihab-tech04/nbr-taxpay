@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
-/** Regression contract: Public and Taxpayer share Government Blue theme; taxpayer reference layout remains protected. */
+/** Regression contract: preserve Amar Kor primary while signed-in styling uses Sobaike Public tokens. */
 const exactReference = {
   primary: 'rgb(44, 94, 173)',
   background: 'rgb(240, 242, 245)',
-  text: 'rgb(23, 32, 51)',
-  border: 'rgb(225, 230, 238)',
+  text: 'rgb(5, 5, 5)',
+  border: 'rgb(228, 230, 235)',
   focus: 'rgb(92, 168, 216)'
 } as const;
 
@@ -38,7 +38,7 @@ test('Public and Taxpayer retain Government Blue tokens; legacy Office URL retur
   expect((await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--reference-focus').trim())).toUpperCase()).toBe('#5CA8D8');
   const taxpayerTheme = await taxpayer.evaluate(el => getComputedStyle(el).getPropertyValue('--color-taxpay-primary').trim());
   expect(taxpayerTheme.toLowerCase()).toBe(guestTheme.toLowerCase());
-  expect(await taxpayer.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Poppins');
+  expect(await taxpayer.evaluate(el => getComputedStyle(el).fontFamily)).toContain('Noto Sans');
   await page.goto('/?action=officer_home');
   await expect(page).toHaveURL(/action=landing/);
   await expect(page.locator('.taxpay-citizen-shell')).toBeVisible();
@@ -87,7 +87,7 @@ test('Sobaike-style desktop rail remains aligned at three breakpoints without a 
     await expect(rail).toHaveCSS('width',`${expectedRailWidth}px`);
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
     await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
-    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
+    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow',/0px 1px/);
     await expect(page.locator('.citizen-pay')).toBeHidden();
     const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(overflow,`sidebar overflow at ${width}px`).toBeLessThanOrEqual(1);
@@ -216,13 +216,13 @@ test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({
   await expect(page.getByRole('columnheader',{name:'ডেবিট (দায়)'})).toBeVisible();
 });
 
-test('Public and Taxpayer use one family and legible payment controls', async ({page}) => {
+test('Guest retains its original font; signed-in taxpayer uses Sobaike Public Noto and legible controls', async ({page}) => {
   await page.goto('/?action=landing');
   const publicFont = await page.locator('.taxpay-citizen-shell').evaluate(el => getComputedStyle(el).fontFamily);
   expect(publicFont).toContain('Poppins');
   await page.goto('/?action=secure_workspace');
   const taxpayerFont = await page.locator('.taxpay-taxpayer-reference').evaluate(el => getComputedStyle(el).fontFamily);
-  expect(taxpayerFont).toContain('Poppins');
+  expect(taxpayerFont).toContain('Noto Sans');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
@@ -232,7 +232,7 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });
 
-test('citizen numeric typography is IBM Plex Mono while regular text uses Poppins',async({page})=>{
+test('Guest numbers retain IBM Plex Mono, signed-in workspace uses Noto Sans',async({page})=>{
   await page.goto('/?action=landing');
   const shell=page.locator('.taxpay-citizen-shell');
   await expect(shell).toHaveCSS('font-family',/Poppins/);
@@ -246,7 +246,7 @@ test('citizen numeric typography is IBM Plex Mono while regular text uses Poppin
   });
   expect(families).toContain('IBM Plex Mono');
   await openSampleTaxpayer(page);
-  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Poppins/);
+  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Noto Sans/);
 });
 
 test('Public homepage uses heading and description without duplicate eyebrow labels',async({page})=>{
