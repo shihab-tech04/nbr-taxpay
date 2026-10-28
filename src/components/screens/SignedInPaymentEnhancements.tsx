@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Language } from '../../types/tax';
 import type { PaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { getDemoUser, type DemoUserId } from '../../data/demoUsers';
-import { getHostedAuthorizations, type HostedAuthorization } from '../../services/hostedDemoAuthorizations';
+import { getHostedAuthorizations, performHostedAuthorization, userIdForHostedTin, type HostedAuthorization } from '../../services/hostedDemoAuthorizations';
 import { useDemoSqlProfileAndServiceRecords, type DemoServiceCode } from '../../services/demoSqlProfiles';
 import { activeAuthorizedTaxpayers, accountPaymentSuggestions } from '../../services/signedInPaymentContext';
 
@@ -53,6 +53,8 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
   const [records, setRecords] = useState<HostedAuthorization[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [now, setNow] = useState(() => Date.now());
+  const [requesting, setRequesting] = useState(false);
+  const [requestFeedback, setRequestFeedback] = useState<string | null>(null);
   const tr = (en: string, bn: string) => language === 'bn' ? bn : en;
   useEffect(() => {
     if (!actor) { setRecords([]); setStatus('ready'); return; }
@@ -70,6 +72,23 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
     return () => { mounted = false; window.clearInterval(timer); };
   }, [actor]);
   const choices = actor && status === 'ready' ? activeAuthorizedTaxpayers(records, actor, now) : [];
+  const candidate = userIdForHostedTin(selectedTin);
+  const canRequest = actor && candidate && actor !== candidate &&
+    !records.some(record => record.payerId === actor && record.taxpayerId === candidate &&
+      (record.status === 'PENDING' || record.status === 'CODE_ISSUED' || record.status === 'ACTIVE')) &&
+    !choices.some(choice => choice.tin === selectedTin);
+  const requestConsent = async () => {
+    if (!actor || !canRequest || requesting) return;
+    setRequestFeedback(null); setRequesting(true);
+    try {
+      await performHostedAuthorization(actor, 'request', { tin: selectedTin });
+      setRequestFeedback(tr('Authorization requested. The taxpayer must approve before you can continue.', 'অনুমোদনের অনুরোধ পাঠানো হয়েছে। এগোনোর আগে করদাতাকে অনুমোদন দিতে হবে।'));
+      setRecords(await getHostedAuthorizations(actor));
+      setStatus('ready'); setNow(Date.now());
+    } catch (error) {
+      setRequestFeedback(error instanceof Error ? error.message : tr('Unable to request authorization.', 'অনুমোদন অনুরোধ ব্যর্থ হয়েছে।'));
+    } finally { setRequesting(false); }
+  };
   return <section aria-label={tr('Authorized taxpayers', 'অনুমোদিত করদাতা')}
     className="col-span-full rounded-xl border border-slate-200 bg-white p-4" data-testid="authorized-taxpayer-choices">
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -90,6 +109,11 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
       </button>)}
     </div>}
     {status === 'ready' && !choices.length && <p className="mt-2 text-sm text-slate-500">{tr('No active authorizations. Request one through Manage authorization.', 'কোনো সক্রিয় অনুমোদন নেই। অনুমোদন পরিচালনা করুন থেকে অনুরোধ পাঠান।')}</p>}
+    {canRequest && <button type="button" disabled={requesting} onClick={() => void requestConsent()}
+      className="mt-3 min-h-11 rounded-lg border border-taxpay-primary px-4 text-sm font-semibold text-taxpay-primary hover:bg-blue-50 disabled:opacity-60">
+      {requesting ? tr('Requesting…', 'অনুরোধ পাঠানো হচ্ছে…') : tr('Request authorization for this TIN', 'এই টিআইএন-এর জন্য অনুমোদন চান')}
+    </button>}
+    {requestFeedback && <p role="status" className="mt-2 text-sm text-slate-600">{requestFeedback}</p>}
     {!actor && <p className="mt-2 text-xs text-slate-600">{tr('Account-based authorization suggestions require a verified, supported account.', 'অ্যাকাউন্টভিত্তিক অনুমোদনের জন্য যাচাইকৃত সমর্থিত অ্যাকাউন্ট প্রয়োজন।')}</p>}
   </section>;
 }
