@@ -20,10 +20,16 @@ test('search uses the established icon-free section heading and concise single-l
   await expect(page.locator('.public-record-suggestions')).toHaveCount(0);
 });
 
-test('typing shows a clean, in-flow two-part suggestion list with demo-only references', async ({ page }) => {
+test('typing opens a floating two-part dropdown without changing the card height', async ({ page }) => {
   await page.goto('/?action=landing');
   const section = page.getByRole('region', { name: 'Find a payment record' });
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
+  const nextGapBefore = await page.evaluate(() => {
+    const card = document.querySelector('.public-record-discovery')!.getBoundingClientRect();
+    const next = document.querySelector('#public-how-it-works')!.getBoundingClientRect();
+    return next.top - card.bottom;
+  });
   await search.fill('DEMO-REF-001');
   await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
   await expect(section.getByRole('heading', { name: 'Sample references (demo only)' })).toBeVisible();
@@ -37,10 +43,22 @@ test('typing shows a clean, in-flow two-part suggestion list with demo-only refe
       position: getComputedStyle(dropdown).position,
       shadow: getComputedStyle(dropdown).boxShadow,
       belowField: rect.top >= searchField.getBoundingClientRect().bottom,
-      sectionContainsDropdown: element.getBoundingClientRect().bottom >= rect.bottom,
+      cardHeight: element.getBoundingClientRect().height,
+      dropdownOutsideCard: rect.bottom > element.getBoundingClientRect().bottom,
+      nextGap: document.querySelector('#public-how-it-works')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
     };
   });
-  expect(geometry).toEqual({ position: 'static', shadow: 'none', belowField: true, sectionContainsDropdown: true });
+  expect(geometry.position).toBe('absolute');
+  expect(geometry.belowField).toBe(true);
+  expect(geometry.dropdownOutsideCard).toBe(true);
+  expect(Math.abs(geometry.cardHeight - cardHeightBefore)).toBeLessThan(2);
+  expect(Math.abs(geometry.nextGap - nextGapBefore)).toBeLessThan(2);
+  const demoLink = section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ });
+  await expect(demoLink).toHaveCSS('text-decoration-line', 'none');
+  await demoLink.hover();
+  await expect(demoLink).toHaveCSS('text-decoration-line', 'none');
+  await demoLink.focus();
+  await expect(demoLink).toHaveCSS('text-decoration-line', 'none');
   await search.fill('not-a-real-reference');
   await expect(section.getByText(/No matching samples/)).toBeVisible();
   await expect(section.getByRole('link', { name: /Try sample reference/ }).first()).toBeVisible();
@@ -84,10 +102,11 @@ test('suggestions close on Escape or outside click, and translate cleanly into B
   await expect(page.getByRole('heading', { name: 'নমুনা রেফারেন্স (শুধু ডেমো)' })).toBeVisible();
 });
 
-test('dropdown pushes later sections down without horizontal overflow on narrow screens', async ({ page }) => {
+test('dropdown overlays following content without resizing the card or overflowing narrow screens', async ({ page }) => {
   for (const width of [320, 375, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 820 });
     await page.goto('/?action=landing');
+    const heightBefore = await page.locator('.public-record-discovery').evaluate(element => element.getBoundingClientRect().height);
     await page.getByRole('searchbox', { name: 'Search payment records by reference' }).fill('DEMO');
     const geometry = await page.evaluate(() => {
       const section = document.querySelector<HTMLElement>('.public-record-discovery')!;
@@ -98,12 +117,18 @@ test('dropdown pushes later sections down without horizontal overflow on narrow 
         left: bounds.left, right: bounds.right,
         viewportWidth: innerWidth,
         pageWidth: document.documentElement.scrollWidth,
-        noOverlap: following.getBoundingClientRect().top >= section.getBoundingClientRect().bottom,
+        cardHeight: section.getBoundingClientRect().height,
+        dropdownIsFloating: getComputedStyle(dropdown).position === 'absolute',
+        belowField: bounds.top >= document.querySelector('.public-record-search')!.getBoundingClientRect().bottom,
+        nextSectionBelowCard: following.getBoundingClientRect().top >= section.getBoundingClientRect().bottom,
       };
     });
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     expect(geometry.pageWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
-    expect(geometry.noOverlap).toBe(true);
+    expect(geometry.dropdownIsFloating).toBe(true);
+    expect(geometry.belowField).toBe(true);
+    expect(geometry.nextSectionBelowCard).toBe(true);
+    expect(Math.abs(geometry.cardHeight - heightBefore)).toBeLessThan(2);
   }
 });
