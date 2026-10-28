@@ -61,6 +61,12 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
       expect(Math.abs(after[part].y - before[part].y)).toBeLessThan(.5);
     }
   };
+  // Wait until the modal entrance scale has finished before capturing
+  // subpixel geometry. The selected-state test below still checks that
+  // icons, text and radios do not shift relative to the card.
+  await expect.poll(async () => chooser.evaluate(element =>
+    element.getAnimations().every(animation => animation.playState !== 'running')
+  )).toBe(true);
   const before = await coordinates();
   const idleIconColor = await returnService.locator('.tax-service-choice__icon').evaluate(el => getComputedStyle(el).color);
   const idleTitleColor = await returnService.locator('strong').evaluate(el => getComputedStyle(el).color);
