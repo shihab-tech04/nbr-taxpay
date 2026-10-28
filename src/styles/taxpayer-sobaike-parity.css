@@ -1,0 +1,330 @@
+/*
+ * Signed-in Amar Kor <-> Sobaike Janao Public visual parity.
+ * Source of truth: Sobaike-janao-public/main, src/index.css,
+ * src/components/layout/DesktopLeftRail.tsx, src/components/ui/Button.tsx.
+ * Scope: authenticated / fictional taxpayer workspace presentation only.
+ *
+ * The taxpay primary (#2C5EAD) and its hover/active tokens are deliberately
+ * inherited without modification. Neither payment logic nor Office UI changes.
+ */
+
+/* Sobaike Public semantic surfaces and typography; Amar Kor primary stays locked. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+  --color-taxpay-background: #F0F2F5;
+  --color-taxpay-surface: #FFFFFF;
+  --color-taxpay-surface-subtle: #F0F2F5;
+  --color-taxpay-border: #E4E6EB;
+  --color-taxpay-text: #050505;
+  --color-taxpay-muted: #65676B;
+  --taxpay-shadow-control: 0 1px rgb(0 0 0 / 5%);
+  --taxpay-shadow-card: 0 1px rgb(0 0 0 / 5%);
+  --taxpay-radius-control: 12px;
+  --taxpay-radius-card: 16px;
+  --font-text: 'Noto Sans', 'Noto Sans Bengali', system-ui, sans-serif;
+  --font-numeric: 'Noto Sans', 'Noto Sans Bengali', system-ui, sans-serif;
+  --sobaike-control-focus: #3A7CA5;
+  --sobaike-surface-hover: #E4E6EB;
+  --sobaike-type-body: 16px;
+  --sobaike-type-meta: 14px;
+  --sobaike-type-action: 14px;
+  --sobaike-radius-badge: 8px;
+  font-family: var(--font-text);
+  font-size: var(--sobaike-type-body);
+  line-height: 1.625;
+  background: var(--color-taxpay-background);
+  color: var(--color-taxpay-text);
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] {
+  --font-text: 'Noto Sans Bengali', 'Noto Sans', system-ui, sans-serif;
+  --font-numeric: 'Noto Sans Bengali', 'Noto Sans', system-ui, sans-serif;
+  font-family: var(--font-text);
+  line-height: 1.65;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) :is(button, input, select, textarea, table, .font-bengali) {
+  font-family: inherit;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) :is(button, input, select, textarea, a, summary):focus-visible {
+  outline: 2px solid var(--sobaike-control-focus);
+  outline-offset: 2px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) :is(button, input, select, textarea) {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) :is(button, select, input:not([type="checkbox"]):not([type="radio"])) {
+  min-height: 44px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) :is(select, input:not([type="checkbox"]):not([type="radio"]), textarea) {
+  border-radius: var(--taxpay-radius-control);
+  border-color: var(--color-taxpay-border);
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-text);
+}
+
+/* Sobaike's fixed 240 / 250 / 260px rail, 20px inset, 44px interactions. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail {
+  padding: 20px 16px;
+  border-right: 1px solid var(--color-taxpay-border);
+  background: var(--color-taxpay-surface);
+  color: var(--color-taxpay-text);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-brand {
+  min-height: 48px;
+  border-radius: var(--taxpay-radius-control);
+  padding: 4px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action {
+  min-height: 44px;
+  margin: 20px 0 20px;
+  padding: 10px 16px;
+  border-radius: var(--taxpay-radius-control);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  /* Preserve the Amar Kor brand action, not Sobaike's teal primary. */
+  background: var(--color-taxpay-primary);
+  color: #FFFFFF;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action:hover {
+  background: var(--color-taxpay-primary-hover);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action:active {
+  background: var(--color-taxpay-primary-active);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links {
+  gap: 4px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
+  min-height: 44px;
+  padding: 10px 12px;
+  gap: 12px;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--color-taxpay-muted);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button:hover {
+  color: var(--color-taxpay-text);
+  background: var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button[aria-current="page"] {
+  background: var(--color-taxpay-surface);
+  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-text);
+  font-weight: 600;
+  box-shadow: var(--taxpay-shadow-control);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom {
+  border-color: var(--color-taxpay-border);
+  gap: 10px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 22px;
+  background: var(--color-taxpay-surface);
+  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-muted);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button:hover {
+  background: var(--color-taxpay-background);
+  color: var(--color-taxpay-text);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom strong {
+  background: var(--color-taxpay-background);
+  color: var(--color-taxpay-text);
+  border: 1px solid var(--color-taxpay-border);
+}
+
+/* Sobaike's 900px centered reading column and responsive side gutters. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > * {
+  max-width: 900px;
+  min-width: 0;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace {
+  max-width: 900px;
+  font-family: var(--font-text);
+  color: var(--color-taxpay-text);
+  line-height: 1.625;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-slate-500"],
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-slate-600"] {
+  color: var(--color-taxpay-muted);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-slate-800"],
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-slate-700"] {
+  color: var(--color-taxpay-text);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(h1,h2,h3,h4) {
+  color: var(--color-taxpay-text);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading {
+  min-height: 0;
+  padding: 20px 24px;
+  gap: 16px;
+  border-radius: var(--taxpay-radius-card);
+  border-color: var(--color-taxpay-border);
+  background: var(--color-taxpay-surface);
+  box-shadow: var(--taxpay-shadow-card);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading h1 {
+  font-size: 30px;
+  line-height: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-page-heading h1 {
+  font-size: 32px;
+  line-height: 42px;
+  font-weight: 700;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(h2) {
+  font-size: 22px;
+  line-height: 32px;
+  font-weight: 600;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-workspace :is(h2) {
+  font-size: 24px;
+  line-height: 34px;
+  font-weight: 700;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(h3,h4) {
+  font-size: 16px;
+  line-height: 26px;
+  font-weight: 600;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-xs"] {
+  font-size: 14px;
+  line-height: 22px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-monthly-chart [class~="text-[10px]"] {
+  font-size: 14px;
+  line-height: 20px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-sm"] {
+  font-size: 14px;
+  line-height: 22px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-lg"] {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+/* Shared Sobaike bordered cards: 16px radius, soft edge, no visual gradient. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace > :is(section,article),
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-dashboard-kpi,
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-dashboard-chart,
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-dashboard-attention,
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-services-shortcut,
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-transaction-panel,
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [data-testid="demo-sql-service-panel"] {
+  border-color: var(--color-taxpay-border);
+  border-radius: var(--taxpay-radius-card);
+  background: var(--color-taxpay-surface);
+  box-shadow: var(--taxpay-shadow-card);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-dashboard-kpi {
+  padding: 20px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-dashboard-kpi--balance {
+  border-color: var(--color-taxpay-primary);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-dashboard-kpi :is(p,[class~="tabular-nums"]) {
+  font-family: var(--font-text);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-dashboard-kpi [class~="text-2xl"] {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="bg-slate-50"],
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="bg-taxpay-background"] {
+  background: var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="border-slate-200"] {
+  border-color: var(--color-taxpay-border);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-review-tile,.taxpayer-travel-tax-summary) {
+  border-color: var(--color-taxpay-border);
+  border-radius: var(--taxpay-radius-control);
+  background: var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-review-tile:hover {
+  background: var(--sobaike-surface-hover);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-coverage-row,.taxpayer-transaction-row) {
+  border-color: var(--color-taxpay-border);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace .taxpayer-coverage-row:hover {
+  background: var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-transaction-row__action, .taxpayer-transaction-panel button, .taxpayer-dashboard-chart button, .taxpayer-services-shortcut button) {
+  border-radius: var(--taxpay-radius-control);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-dashboard-chart button, .taxpayer-services-shortcut button, .taxpayer-transaction-panel button):hover {
+  border-color: var(--color-taxpay-border);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-monthly-bar {
+  background: var(--color-taxpay-secondary);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-monthly-bar:hover {
+  filter: brightness(.94);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(table, .taxpayer-transaction-list) {
+  font-variant-numeric: tabular-nums;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(th,td) {
+  border-color: var(--color-taxpay-border);
+  color: var(--color-taxpay-text);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(th) {
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-taxpay-background);
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-transaction-filter input,.taxpayer-transaction-filter select) {
+  border-color: var(--color-taxpay-border);
+  border-radius: var(--taxpay-radius-control);
+  font-size: 16px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-transaction-detail, .taxpayer-transaction-detail__summary) {
+  border-color: var(--color-taxpay-border);
+  border-radius: var(--taxpay-radius-card);
+}
+@media (min-width: 1440px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main {
+    padding: 24px 24px 40px;
+  }
+}
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+    --sobaike-type-body: 14px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading {
+    padding: 16px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading h1 {
+    font-size: 26px;
+    line-height: 35px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-page-heading h1 {
+    font-size: 28px;
+    line-height: 38px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace h2 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-dashboard-kpi {
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) :is(button,input,select,textarea) {
+    transition: none;
+  }
+}
