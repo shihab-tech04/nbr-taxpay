@@ -18,20 +18,17 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
 
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
-  // The unified Other Tax form renders account identity exactly once, in its canonical taxpayer list.
-  // Keep checking immutable signed-in profile values; do not remove the original acceptance requirement.
-  await expect(payment.getByTestId('other-tax-primary-taxpayer')).toBeVisible();
-  await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Meghna Trading Ltd.');
-  await expect(payment.locator('#other-tax-primary-name')).toHaveAttribute('readonly');
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
+  // The same four-stage journey uses a display card, not read-only text boxes.
+  const card = payment.getByTestId('other-tax-primary-taxpayer');
+  await expect(card).toBeVisible();
+  await expect(card.locator('dl#guest-tin')).toContainText('2222222222222');
+  await expect(card.locator('dl#guest-tin')).toContainText('Meghna Trading Ltd.');
+  await expect(card.locator('input')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
-  await expect(payment.locator('#guest-tin')).toHaveValue('2222222222222');
-  await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
-  await expect(payment.locator('#guest-tax-zone')).toHaveValue('Taxes Zone 2');
-  await expect(payment.locator('#guest-tax-circle')).toHaveValue('circle-2');
-  for (const selector of ['#other-tax-primary-name', '#guest-tin', '#guest-phone', '#guest-tax-zone', '#guest-tax-circle']) {
-    await expect(payment.locator(selector)).toHaveAttribute('readonly');
-  }
+  await expect(payment.locator('#guest-phone')).toHaveCount(0);
+  await expect(payment.locator('#guest-tax-zone')).toHaveCount(0);
+  await expect(payment.locator('#guest-tax-circle')).toHaveCount(0);
+  await expect(payment.locator('#guest-notice-ref')).toBeEditable();
 
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.getByText('Step 2 of 4')).toBeVisible();
@@ -46,7 +43,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
-  await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
+  await expect(payment.locator('#guest-tin')).toContainText('1111111111111');
   // Change relationship through the existing Back controls; the category remains selected.
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('.taxpay-modal__back').click();
@@ -65,7 +62,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
-  await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly');
+  await expect(payment.locator('#guest-tin')).toHaveCount(1);
 });
 
 test('standalone payment form also recognizes an existing account session', async ({ page }) => {
@@ -75,7 +72,7 @@ test('standalone payment form also recognizes an existing account session', asyn
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=guest');
   await page.getByRole('radio', { name: 'My tax liability' }).check();
-  await expect(page.locator('#guest-taxpayer-name')).toHaveValue('Rupali Textiles Ltd.');
-  await expect(page.locator('#guest-tin')).toHaveValue('3333333333333');
-  await expect(page.locator('#guest-tin')).toHaveAttribute('readonly');
+  await expect(page.getByRole('region', { name: 'Account taxpayer details' })).toContainText('Rupali Textiles Ltd.');
+  await expect(page.locator('#guest-tin')).toContainText('3333333333333');
+  await expect(page.locator('input#guest-tin')).toHaveCount(0);
 });
