@@ -904,12 +904,25 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('payerChoice')}
               </fieldset>
             </PaymentFormSection> : null}
-            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer & receipt details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'করদাতাদের টিআইএন নিচের তালিকায় যোগ করুন।' : 'Add taxpayer TINs in the list below.') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
+            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} />}
             {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={demoConsentActor} language={language}
               selectedTin={taxpayerTin}
-              onSelect={(nextTin, nextName) => { clearReferenceSelection(); setTin(nextTin); setOtherTaxpayerName(nextName);
-                setAuthorizedTaxpayerId(userIdForHostedTin(nextTin)); clearValidationError(); }}
+              addedTins={otherBatch ? batchTaxpayers.map(person => person.tin).filter(Boolean) : [taxpayerTin]}
+              allowAdd={Boolean(otherBatch && authorizedTaxpayerId)}
+              onSelect={(nextTin, nextName) => {
+                clearReferenceSelection();
+                if (otherBatch && authorizedTaxpayerId && taxpayerTin && taxpayerTin !== nextTin) {
+                  if (!batchTaxpayers.some(person => person.tin === nextTin)) {
+                    setAdditionalTaxpayers(people => [...people, { id: crypto.randomUUID(), tin: nextTin, name: nextName }]);
+                  }
+                } else {
+                  setTin(nextTin);
+                  setOtherTaxpayerName(nextName);
+                  setAuthorizedTaxpayerId(userIdForHostedTin(nextTin));
+                }
+                clearValidationError();
+              }}
               onManage={() => { setPaymentServiceChoiceOpen(false); navigate('manage_authorization'); }} />}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {!otherBatch && !ownAccountTax && <div>
