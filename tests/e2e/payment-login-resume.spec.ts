@@ -5,6 +5,7 @@ test('account sign-in at the breakpoint retains the selected service and starts 
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await enterTaxPayService(payment, 'OTHER_TAX_PAYMENT', 'SELF');
   const selectedService = payment.locator('.tax-service-choice__selected-service strong');
@@ -51,6 +52,7 @@ test('payment account login stays in the same dialog when returning Back, reject
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'OTHER');
 

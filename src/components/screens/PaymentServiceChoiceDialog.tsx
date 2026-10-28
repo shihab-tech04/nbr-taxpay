@@ -142,7 +142,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
               </button>
             ))}
           </div>
-          {verifiedUser || previewAccount ? <p className="tax-service-choice__signed-in">{tr('Continue with your signed-in account', 'সাইন ইন করা অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</p> : <>
+          {payerForSelf !== null && (verifiedUser || previewAccount ? <p className="tax-service-choice__signed-in">{tr('Continue with your signed-in account', 'সাইন ইন করা অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</p> : <>
             <h3 className="tax-service-choice__access-heading">{tr('How you want to settle it?', 'কীভাবে পরিশোধ করতে চান?')}</h3>
             <div className="tax-service-choice__access-options" role="group" aria-label={tr('Payment access', 'পেমেন্টের মাধ্যম')}>
               {[
@@ -156,7 +156,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                 </button>
               ))}
             </div>
-          </>}
+          </>)}
         </> : view === 'choice' ? <>
         <p className="tax-service-choice__selected-service">
           <span>{tr('Paying for', 'যার জন্য পরিশোধ')}</span>

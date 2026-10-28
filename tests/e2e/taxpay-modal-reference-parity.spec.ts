@@ -9,6 +9,10 @@ test('payer and access match requested modal wording and button placement', asyn
   await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toContainText('Pay tax for myself.');
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toContainText('Pay on behalf of another taxpayer.');
+  await expect(dialog.getByRole('heading', { name: 'How you want to settle it?' })).toHaveCount(0);
+  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
+  await dialog.locator('[data-payer-relationship="OTHER"]').click();
   await expect(dialog.getByRole('heading', { name: 'How you want to settle it?' })).toBeVisible();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   await expect(guest).toContainText('As a guest User');
@@ -21,7 +25,6 @@ test('payer and access match requested modal wording and button placement', asyn
   expect(title).not.toBeNull();
   expect(modal).not.toBeNull();
   expect(Math.abs(title!.x + title!.width/2 - (modal!.x + modal!.width/2))).toBeLessThan(3);
-  await dialog.locator('[data-payer-relationship="OTHER"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.taxpay-modal__back')).toBeVisible();
   await dialog.locator('.taxpay-modal__back').click();
@@ -37,4 +40,20 @@ test('standalone login retains divided eTIN-style form and existing credentials'
   await expect(dialog.getByRole('button',{name:'Sign In'})).toBeVisible();
   await expect(dialog.locator('.taxpayer-login-heading')).toHaveCSS('display','grid');
   await expect(dialog.locator('.taxpayer-login-actions')).toHaveCSS('border-top-style','solid');
+});
+
+test('access choices appear only after either payer selection and retain the chosen mode on change', async ({ page }) => {
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const access = dialog.locator('[data-payment-access]');
+  await expect(access).toHaveCount(0);
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await expect(access).toHaveCount(2);
+  await dialog.locator('[data-payment-access="ACCOUNT"]').click();
+  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await dialog.locator('[data-payer-relationship="OTHER"]').click();
+  await expect(access).toHaveCount(2);
+  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
 });
