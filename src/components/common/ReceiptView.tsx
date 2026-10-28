@@ -160,7 +160,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         {/* Challan Identifiers Ribbon */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 my-5 text-xs">
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</span>
+            <span className="text-slate-700 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono-plex font-bold text-sm text-emerald-950">
                 {receipt.challanNo}
@@ -170,7 +170,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                 type="button"
                 aria-label={labels.copy}
                 title={labels.copy}
-                className="no-print grid min-h-11 min-w-11 place-items-center rounded text-slate-500 hover:text-slate-900"
+                className="no-print grid min-h-11 min-w-11 place-items-center rounded text-slate-700 hover:text-slate-900"
               >
                 <Copy className="w-3.5 h-3.5" />
               </button>
@@ -178,14 +178,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
 
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
+            <span className="text-slate-700 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
               {receipt.tokenNumber}
             </span>
           </div>
 
           <div>
-            <span className="text-slate-500 block">{embedded ? (bn ? 'তারিখ ও সময়' : 'Date & time') : labels.timestamp}:</span>
+            <span className="text-slate-700 block">{embedded ? (bn ? 'তারিখ ও সময়' : 'Date & time') : labels.timestamp}:</span>
             <span className="font-mono-plex font-medium text-slate-800 mt-0.5 block">
               {receipt.completedAt || receipt.createdAt}
             </span>
@@ -199,27 +199,27 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               {labels.payerDetails}
             </h3>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.payer}:</span>
+              <span className="text-slate-700">{labels.payer}:</span>
               <span className="col-span-2 font-semibold text-slate-900">{receipt.payerName}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.tin}:</span>
+              <span className="text-slate-700">{labels.tin}:</span>
               <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{receipt.taxpayerTin || receipt.payerTin}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.service}:</span>
+              <span className="text-slate-700">{labels.service}:</span>
               <span className="col-span-2 font-semibold text-slate-900">{bn ? (CATEGORY_LABELS[receipt.paymentCategory]?.bn ?? receipt.paymentCategory) : (CATEGORY_LABELS[receipt.paymentCategory]?.en ?? receipt.paymentCategory)}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.year}:</span>
+              <span className="text-slate-700">{labels.year}:</span>
               <span className="col-span-2 font-bold text-slate-800">{receipt.assessmentYear}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.zone}:</span>
+              <span className="text-slate-700">{labels.zone}:</span>
               <span className="col-span-2 text-slate-800">{receipt.taxZone}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.circle}:</span>
+              <span className="text-slate-700">{labels.circle}:</span>
               <span className="col-span-2 text-slate-800">{receipt.taxCircle}</span>
             </div>
           </div>
@@ -229,23 +229,23 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               {labels.treasurySection}
             </h3>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.paymentMethod}:</span>
+              <span className="text-slate-700">{labels.paymentMethod}:</span>
               <span className="col-span-2 font-medium text-slate-900">{paymentMethodLabels}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.transaction}:</span>
+              <span className="text-slate-700">{labels.transaction}:</span>
               <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
             </div>
             {receipt.taxEventId && <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
+              <span className="text-slate-700">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
               <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</span>
             </div>}
             {receipt.paymentTransactionId && <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
+              <span className="text-slate-700">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
               <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</span>
             </div>}
             <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">{labels.scroll}:</span>
+              <span className="text-slate-700">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
                 {receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
@@ -276,7 +276,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               {receipt.items.map((item, idx) => (
                 <article key={idx} className="p-3 space-y-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{labels.headCode}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-700">{labels.headCode}</p>
                     <p className="break-all font-mono-plex text-xs font-semibold text-emerald-900">{item.economicCode}</p>
                   </div>
                   <div>
@@ -284,10 +284,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                     {item.note && <p className="mt-1 break-words text-[11px] leading-snug text-slate-600">{item.note}</p>}
                   </div>
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-200 pt-3 text-xs">
-                    <div><dt className="text-slate-500">{labels.tax}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.taxAmount, language)}</dd></div>
-                    <div><dt className="text-slate-500">{labels.penalty}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.penaltyAmount, language)}</dd></div>
-                    <div><dt className="text-slate-500">{labels.surcharge}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.surchargeAmount, language)}</dd></div>
-                    <div><dt className="text-slate-500">{labels.interest}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.interestAmount, language)}</dd></div>
+                    <div><dt className="text-slate-700">{labels.tax}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.taxAmount, language)}</dd></div>
+                    <div><dt className="text-slate-700">{labels.penalty}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.penaltyAmount, language)}</dd></div>
+                    <div><dt className="text-slate-700">{labels.surcharge}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.surchargeAmount, language)}</dd></div>
+                    <div><dt className="text-slate-700">{labels.interest}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.interestAmount, language)}</dd></div>
                   </dl>
                   <div className="flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 font-semibold text-emerald-950">
                     <span>{labels.total}</span><span className="shrink-0 font-mono-plex">{formatCurrency(item.totalAmount, language)}</span>
@@ -321,7 +321,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                       <div className="font-medium">
                         {itemName(item)}
                       </div>
-                      {item.note && <div className="text-[11px] text-slate-500 italic">{item.note}</div>}
+                      {item.note && <div className="text-[11px] text-slate-700 italic">{item.note}</div>}
                     </td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.taxAmount, language)}</td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.penaltyAmount, language)}</td>
