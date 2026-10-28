@@ -32,7 +32,7 @@ test('User1 charts use TaxPay blue tokens, and category filters work by keyboard
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
 });
 
-test('User1 overview fits narrow phones, tablets and large desktops, using Sobaike Public's 900px reading column', async ({page},info) => {
+test('User1 overview fits narrow phones, tablets and large desktops at Sobaike 900px width', async ({page},info) => {
   test.skip(info.project.name !== 'mobile-375','One worker measures eleven explicit viewport widths');
   test.setTimeout(120000);
   for (const width of [320,360,375,390,600,768,900,1024,1280,1440,1600,1920]) {
