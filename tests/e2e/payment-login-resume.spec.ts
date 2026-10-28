@@ -5,11 +5,11 @@ test('account sign-in at the breakpoint retains the selected service and starts 
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await enterTaxPayService(payment, 'OTHER_TAX_PAYMENT', 'SELF');
   const selectedService = payment.locator('.tax-service-choice__selected-service strong');
   await expect(selectedService).toHaveText('Other Tax Payment');
 
-  await payment.getByRole('button', { name: 'Continue with my account' }).click();
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await expect(page.getByRole('dialog')).toHaveCount(1);
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
@@ -39,7 +39,6 @@ test('guest payment continues directly from the breakpoint without opening accou
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'OTHER_TAX_PAYMENT', 'OTHER');
-  await payment.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(payment).toBeVisible();
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
@@ -53,8 +52,8 @@ test('payment account login stays in the same dialog when returning Back, reject
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'OTHER');
-  await payment.getByRole('button', { name: 'Continue with my account' }).click();
 
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await expect(page.getByRole('dialog')).toHaveCount(1);
@@ -68,9 +67,9 @@ test('payment account login stays in the same dialog when returning Back, reject
 
   await login.getByRole('button', { name: 'Back' }).click();
   await expect(payment).toBeVisible();
-  await expect(payment.getByRole('button', { name: 'Continue with my account' })).toBeVisible();
+  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('Tax with Return');
-  await payment.getByRole('button', { name: 'Continue with my account' }).click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   const retry = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await expect(retry.getByRole('textbox', { name: 'User ID' })).toHaveValue('');
   await page.keyboard.press('Escape');
