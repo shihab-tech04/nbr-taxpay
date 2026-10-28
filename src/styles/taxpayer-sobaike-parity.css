@@ -459,3 +459,12 @@
     background: var(--color-taxpay-primary);
   }
 }
+
+/* Welcome greeting is editorial content, not another white dashboard card. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace > section[aria-label="Welcome"],
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace > section[aria-label="স্বাগতম"] {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
