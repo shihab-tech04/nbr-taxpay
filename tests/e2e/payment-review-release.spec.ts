@@ -236,7 +236,6 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
-  await services.getByRole('button', { name: 'Continue without signing in' }).click();
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
