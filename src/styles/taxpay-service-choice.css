@@ -854,3 +854,20 @@
   }
   .taxpay-citizen-shell .tax-service-choice__access-radio { margin-top: 0; }
 }
+
+/* The tax-choice question lives in the shared modal heading. Keep the
+   taxpayer context visible after, not before, the two payment options. */
+.taxpay-citizen-shell .tax-service-choice__selected-service--below {
+  border-top: 1px solid var(--citizen-border);
+  padding-top: 1rem;
+  margin: 1rem 0 0;
+}
+.taxpay-citizen-shell .tax-service-choice__actions .tax-service-choice__continue:disabled {
+  opacity: 1;
+  background: var(--color-taxpay-border);
+  color: var(--citizen-muted);
+  cursor: not-allowed;
+}
+.taxpay-citizen-shell .tax-service-choice__actions .tax-service-choice__continue:not(:disabled):active {
+  transform: translateY(1px);
+}
