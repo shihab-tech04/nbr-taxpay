@@ -497,13 +497,13 @@
    Results stay in the normal document flow, never overlapping the next card. */
 .public-record-discovery {
   min-width: 0;
-  padding: clamp(1rem, 2.5vw, 1.5rem);
+  padding: clamp(1rem, 3vw, 1.35rem);
   border: 1px solid var(--citizen-border);
   border-radius: 1rem;
   background: var(--citizen-surface);
 }
 .public-record-discovery__heading { margin-bottom: 1rem; min-width: 0; }
-.public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.25rem; line-height: 1.4; font-weight: 800; }
+.public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.15rem; line-height: 1.4; font-weight: 800; }
 .public-record-discovery__heading p { margin: .3rem 0 0; color: var(--citizen-muted); font-size: .875rem; line-height: 1.5; }
 .public-record-discovery__interactive { min-width: 0; }
 .public-record-search {
@@ -567,7 +567,7 @@
 .public-record-suggestions__link:hover, .public-record-suggestions__link:focus-visible { color: var(--citizen-primary); }
 @media (max-width: 600px) {
   .public-record-discovery { padding: 1rem; }
-  .public-record-discovery__heading h2 { font-size: 1.125rem; }
+  .public-record-discovery__heading h2 { font-size: 1.05rem; }
   .public-record-search { min-height: 56px; padding: .25rem; }
   .public-record-search input { padding-inline: .7rem; font-size: 1rem; }
   .public-record-search button { flex-basis: 48px; }
