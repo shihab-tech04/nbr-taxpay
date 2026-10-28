@@ -132,7 +132,13 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
       {/* Payment record generated from the app's local transaction state. */}
       <div className="receipt-view__paper print-card bg-white border border-slate-300 rounded-xl shadow-md p-4 sm:p-8 relative overflow-hidden text-slate-800 font-sans" lang={language}>
-        {!embedded && (
+        {embedded ? (
+          <header className="receipt-view__header">
+            <div className="receipt-view__heading">
+              <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
+            </div>
+          </header>
+        ) : (
           <div className="text-center pb-6 border-b-2 border-taxpay-primary space-y-1 relative">
             <div className="flex items-center justify-center gap-2 text-taxpay-dark">
               <Building2 className="w-8 h-8 text-emerald-800" />
