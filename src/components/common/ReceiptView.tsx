@@ -14,6 +14,7 @@ import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
+import { TaxPayModal } from '../ui/TaxPayModal';
 
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
@@ -88,6 +89,15 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const itemName = (item: ChallanReceipt['items'][number]) => bn
     ? MASTER_PAYMENT_HEADS.find(head => head.id === item.headId && head.nameEn === item.headNameEn)?.nameBn || item.headNameEn
     : item.headNameEn;
+
+  // A standalone receipt also uses the same modal as public lookup and account history.
+  // This covers legacy direct guest-payment entry without editing parallel payment-form code.
+  if (!embedded) return (
+    <TaxPayModal title={labels.title} service="status" className="receipt-modal" footer={<></>}
+      onClose={onBack ?? (() => navigate('history'))}>
+      <ReceiptView receipt={receipt} embedded />
+    </TaxPayModal>
+  );
 
   return (
     <div className={`receipt-view ${embedded ? 'receipt-view--embedded' : 'receipt-view--page'} space-y-4 max-w-4xl mx-auto${bn ? ' font-bengali' : ''}`} lang={language}>
