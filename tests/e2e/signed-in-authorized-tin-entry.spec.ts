@@ -1,0 +1,102 @@
+import { test, expect, type Page } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
+
+type Status = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'REVOKED';
+function authorization(taxpayerId: 'user2' | 'user3', status: Status, activeUntil: number | null = null) {
+  return { id: taxpayerId === 'user2' ? '11111111-1111-4111-8111-111111111111' : '22222222-2222-4222-8222-222222222222',
+    payerId: 'user1', taxpayerId, status, requestedAt: Date.now() - 10000, codeExpiresAt: Date.now() + 60000,
+    consentCode: null, confirmedAt: status === 'ACTIVE' ? Date.now() - 5000 : null, activeUntil, attempts: 0, revokedAt: null };
+}
+async function mockAuthorizations(page: Page, records: ReturnType<typeof authorization>[] | null) {
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', route => route.fulfill({
+    status: records ? 200 : 503, contentType: 'application/json',
+    body: JSON.stringify(records ? { success: true, data: records, simulationOnly: true } : { success: false, error: 'AUTHORIZATION_READ_FAILED' })
+  }));
+}
+async function openSignedInOtherTax(page: Page) {
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await login.getByLabel('Password', { exact: true }).fill('user1');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  return dialog;
+}
+
+test('recognized, actively authorized demo TINs are not truncated', async ({ page }) => {
+  await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
+  const dialog = await openSignedInOtherTax(page);
+  const tin = dialog.locator('#guest-tin');
+  await tin.fill('2222222222222');
+  await expect(tin).toHaveValue('2222222222222');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+});
+
+for (const state of ['PENDING', 'EXPIRED', 'REVOKED', 'ACTIVE_EXPIRED'] as const) {
+  test(`${state} consent cannot authorize a demo beneficiary`, async ({ page }) => {
+    const status = state === 'ACTIVE_EXPIRED' ? 'ACTIVE' : state;
+    await mockAuthorizations(page, [authorization('user2', status, state === 'ACTIVE_EXPIRED' ? Date.now() - 1000 : null)]);
+    const dialog = await openSignedInOtherTax(page);
+    await dialog.locator('#guest-tin').fill('2222222222222');
+    await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+    await expect(dialog.getByText(/not approved for payment through your account/)).toBeVisible();
+    await expect(dialog.getByText('Step 2 of 4')).toHaveCount(0);
+  });
+}
+
+test('each additional demo taxpayer needs separate active consent', async ({ page }) => {
+  await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
+  const dialog = await openSignedInOtherTax(page);
+  await dialog.locator('#guest-tin').fill('2222222222222');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const otherTin = dialog.locator('input[id^="other-tax-tin-"]');
+  await otherTin.fill('3333333333333');
+  await expect(otherTin).toHaveValue('3333333333333');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText(/Taxpayer 2 .* is not approved for payment/)).toBeVisible();
+  await expect(dialog.getByText('Step 2 of 4')).toHaveCount(0);
+});
+
+test('an authorization read failure cannot expose a request action or continue', async ({ page }) => {
+  await mockAuthorizations(page, null);
+  const dialog = await openSignedInOtherTax(page);
+  await dialog.locator('#guest-tin').fill('2222222222222');
+  await expect(dialog.getByText(/Authorizations could not be verified/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByText(/Authorization could not be verified/)).toBeVisible();
+});
+
+test('guest TIN input stays limited to twelve digits', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const tin = dialog.locator('#guest-tin');
+  await expect(tin).toHaveAttribute('maxlength', '12');
+  await tin.fill('1234567890123');
+  await expect(tin).toHaveValue('123456789012');
+});
+
+test('a taxpayer with saved heads cannot silently be changed to another TIN', async ({ page }) => {
+  await mockAuthorizations(page, [authorization('user2', 'ACTIVE'), authorization('user3', 'ACTIVE')]);
+  const dialog = await openSignedInOtherTax(page);
+  const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await choices.getByRole('button', { name: /2222222222222/ }).click();
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1234.50');
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
+  await expect(dialog.getByText(/first remove this taxpayer’s selected payment heads/)).toBeVisible();
+  await choices.getByRole('button', { name: /3333333333333/ }).click();
+  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
+  await expect(dialog.locator('input[id^="other-tax-tin-"]')).toHaveValue('3333333333333');
+  await expect(dialog.getByTestId('grouped-taxpayer-calculation').locator('details').first()).toContainText('1,234.5');
+});

@@ -36,6 +36,7 @@ import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
 import { SignedInTaxpayerCard, AuthorizedTaxpayerChoices, AccountPaymentSuggestions } from './SignedInPaymentEnhancements';
 import { activeAuthorizedTaxpayers } from '../../services/signedInPaymentContext';
 import { getHostedAuthorizations, userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
+import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import type { DemoUserId } from '../../data/demoUsers';
 import type { DemoServiceCode } from '../../services/demoSqlProfiles';
@@ -205,6 +206,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // A verified Auth account can use its approved synthetic profile binding;
   // this ID is still strictly demo-only and never a real taxpayer entitlement.
   const demoConsentActor = previewAccount?.id ?? (signedInProfile ? userIdForHostedTin(signedInProfile.tin) : null);
+  const allowSyntheticDemoTin = Boolean(signedInAccount && forSelf === false && demoConsentActor);
   const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName : payerName;
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = signedInProfile?.receiptMobile ?? phone;
@@ -430,25 +432,28 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'এই অ্যাকাউন্টের সঙ্গে করদাতার তথ্য যুক্ত নেই।' : 'No taxpayer profile is linked to this account.', 'tin');
       return false;
     }
-    if (!/^\d{12,13}$/.test(taxpayerTin)) {
-      setValidationError(copy.invalidTin, 'tin');
+    if (!(ownAccountTax ? /^\d{12,13}$/.test(taxpayerTin) : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin))) {
+      if (otherBatch) setInvalidBatchTaxpayerId('primary');
+      setValidationError(allowSyntheticDemoTin
+        ? (language === 'bn' ? '১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার ডেমো টিআইএন দিন।' : 'Enter a 12-digit TIN or a recognized 13-digit demo TIN.')
+        : copy.invalidTin, 'tin');
       return false;
     }
     if (otherBatch) {
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
-        const syntheticAuthorized = signedInAccount && forSelf === false && Boolean(userIdForHostedTin(person.tin));
         const tinValid = person.id === 'primary' && ownAccountTax
           ? /^\d{12,13}$/.test(person.tin)
-          : syntheticAuthorized ? /^\d{13}$/.test(person.tin) : /^\d{12}$/.test(person.tin);
+          : isSupportedBeneficiaryTin(person.tin, allowSyntheticDemoTin);
         if (!tinValid || seenTins.has(person.tin)) return true;
         seenTins.add(person.tin);
         return false;
       });
       if (invalidPerson) {
         setInvalidBatchTaxpayerId(invalidPerson.id);
-        setValidationError(language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন দিন। নাম ঐচ্ছিক।' :
-          'Enter a different 12-digit TIN for each taxpayer. Names are optional.', 'tin');
+        setValidationError(allowSyntheticDemoTin
+          ? (language === 'bn' ? 'প্রত্যেক করদাতার জন্য পৃথক ১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার ডেমো টিআইএন দিন।' : 'Enter a unique 12-digit TIN or recognized 13-digit demo TIN for each taxpayer.')
+          : (language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন দিন। নাম ঐচ্ছিক।' : 'Enter a different 12-digit TIN for each taxpayer. Names are optional.'), 'tin');
         return false;
       }
     }
@@ -909,10 +914,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={demoConsentActor} language={language}
               selectedTin={taxpayerTin}
               addedTins={otherBatch ? batchTaxpayers.map(person => person.tin).filter(Boolean) : [taxpayerTin]}
-              allowAdd={Boolean(otherBatch && authorizedTaxpayerId)}
+              allowAdd={Boolean(otherBatch && taxpayerTin && (authorizedTaxpayerId || otherTaxLines.some(line => line.taxpayerId === 'primary')))}
               onSelect={(nextTin, nextName) => {
                 clearReferenceSelection();
-                if (otherBatch && authorizedTaxpayerId && taxpayerTin && taxpayerTin !== nextTin) {
+                if (otherBatch && taxpayerTin && taxpayerTin !== nextTin &&
+                    (authorizedTaxpayerId || otherTaxLines.some(line => line.taxpayerId === 'primary'))) {
                   if (!batchTaxpayers.some(person => person.tin === nextTin)) {
                     setAdditionalTaxpayers(people => [...people, { id: crypto.randomUUID(), tin: nextTin, name: nextName }]);
                   }
@@ -934,11 +940,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   type="text"
                   aria-invalid={isFieldInvalid('tin') || undefined}
                   aria-describedby={errorDescription('tin')}
-                  placeholder={ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
+                  placeholder={allowSyntheticDemoTin ? (language === 'bn' ? '১২ সংখ্যার টিআইএন বা ১৩ সংখ্যার ডেমো টিআইএন' : '12-digit TIN or 13-digit demo TIN') : ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
                   value={taxpayerTin}
-                  inputMode="numeric" maxLength={ownAccountTax ? 13 : 12} autoComplete="off" required
+                  inputMode="numeric" maxLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
                   readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
-                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(e.target.value.replace(/\D/g, '').slice(0, 12)); }}
+                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
                   className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('tin')}
@@ -996,7 +1002,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
                 onPrimaryTin={value => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(value); }}
-                onPrimaryName={setOtherTaxpayerName} onAdditional={setAdditionalTaxpayers}
+                onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={setAdditionalTaxpayers}
                 onAllocations={setOtherTaxLines} onClearError={clearValidationError} />
             </PaymentFormSection>}
 

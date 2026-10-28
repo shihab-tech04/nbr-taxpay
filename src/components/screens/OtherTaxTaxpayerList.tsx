@@ -8,6 +8,7 @@ interface Props {
   primaryName: string;
   lockedPrimary?: boolean;
   allowAdditional?: boolean;
+  allowSyntheticDemoTin?: boolean;
   additional: OtherTaxTaxpayer[];
   allocations: OtherTaxAllocation[];
   invalidId: string | null;
@@ -20,13 +21,15 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, allowSyntheticDemoTin = false, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
   const [addedId, setAddedId] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
   const count = additional.length + 1;
+  const primaryAssigned = allocations.some(line => line.taxpayerId === 'primary');
+  const lockedTinHelp = bn ? 'টিআইএন বদলাতে আগে এই করদাতার নির্বাচিত পেমেন্ট খাত সরান।' : 'To change this TIN, first remove this taxpayer’s selected payment heads.';
   useEffect(() => {
     if (addedId) document.getElementById('other-tax-tin-' + addedId)?.focus();
   }, [addedId]);
@@ -52,12 +55,13 @@ export function OtherTaxTaxpayerList({
       <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary ? 13 : 12} autoComplete="off" required
-            readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
-            value={primaryTin} placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
+            readOnly={lockedPrimary || primaryAssigned} aria-readonly={lockedPrimary || primaryAssigned || undefined}
+            value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ সংখ্যার বা ডেমো টিআইএন' : '12-digit or demo TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
-            aria-describedby={tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : undefined}
-            onChange={event => { if (!lockedPrimary) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, 12)); onClearError(); } }} />
+            aria-describedby={[tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : '', primaryAssigned && !lockedPrimary ? 'other-tax-primary-tin-help' : ''].filter(Boolean).join(' ') || undefined}
+            onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onClearError(); } }} />
+          {primaryAssigned && !lockedPrimary && <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p>}
         </div>
         <div>
           <label htmlFor="other-tax-primary-name">{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
@@ -85,11 +89,13 @@ export function OtherTaxTaxpayerList({
         <div className="taxpay-taxpayer-row__fields">
           <div>
             <label htmlFor={'other-tax-tin-' + person.id}>{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-            <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={12}
-              value={person.tin} required autoComplete="off" placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+            <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={allowSyntheticDemoTin ? 13 : 12}
+              value={person.tin} required autoComplete="off" placeholder={allowSyntheticDemoTin ? (bn ? '১২ সংখ্যার বা ডেমো টিআইএন' : '12-digit or demo TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+              readOnly={assigned > 0} aria-readonly={assigned > 0 || undefined}
               aria-invalid={Boolean(tinError && invalidId === person.id) || undefined}
-              aria-describedby={tinError && invalidId === person.id ? 'guest-payment-error-tin' : undefined}
-              onChange={event => edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, 12) })} />
+              aria-describedby={[tinError && invalidId === person.id ? 'guest-payment-error-tin' : '', assigned > 0 ? 'other-tax-tin-help-' + person.id : ''].filter(Boolean).join(' ') || undefined}
+              onChange={event => { if (!assigned) edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12) }); }} />
+            {assigned > 0 && <p id={'other-tax-tin-help-' + person.id} className="text-xs text-slate-600">{lockedTinHelp}</p>}
           </div>
           <div>
             <label htmlFor={'other-tax-name-' + person.id}>{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
