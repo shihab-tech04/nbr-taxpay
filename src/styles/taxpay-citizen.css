@@ -2069,7 +2069,7 @@
  .receipt-modal .receipt-view__action{min-width:0;flex:1;padding:.6rem .5rem}
 }
 @media(max-width:390px){
- .receipt-modal .receipt-view__back{width:100%;min-height:36px;padding:.15rem 0;justify-content:flex-start}
+ .receipt-modal .receipt-view__back{width:100%;min-height:44px;padding:.15rem 0;justify-content:flex-start}
  .receipt-modal .receipt-view__action-group{width:100%;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  .receipt-modal .receipt-view__action{width:100%;font-size:14px;padding:.55rem .25rem}
 }
