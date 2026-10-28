@@ -46,8 +46,9 @@ export function SignedInTaxpayerCard({ profile, language, id = 'guest-tin' }: {
 }
 
 /** Hosted demonstration consent only. This component does not grant payment authorization. */
-export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSelect, onManage }: {
+export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedTins = [], allowAdd = false, onSelect, onManage }: {
   actor: DemoUserId | null; language: Language; selectedTin: string;
+  addedTins?: readonly string[]; allowAdd?: boolean;
   onSelect: (tin: string, name: string) => void; onManage: () => void;
 }) {
   const [records, setRecords] = useState<HostedAuthorization[]>([]);
@@ -102,10 +103,15 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, onSele
     {status === 'ready' && choices.length > 0 && <p className="mt-3 text-sm font-semibold text-taxpay-dark">{tr('You can pay for these taxpayers', 'এই করদাতাদের জন্য পরিশোধ করতে পারবেন')}: {choices.length}</p>}
     {choices.length > 0 && <div role="group" aria-label={tr('Choose authorized taxpayer', 'অনুমোদিত করদাতা নির্বাচন')} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
       {choices.map(choice => <button key={choice.authorizationId} type="button" aria-pressed={selectedTin === choice.tin}
+        disabled={addedTins.includes(choice.tin) && choice.tin !== selectedTin}
         onClick={() => onSelect(choice.tin, language === 'bn' ? choice.nameBn : choice.nameEn)}
         className={`min-h-16 rounded-lg border p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary ${selectedTin === choice.tin ? 'border-taxpay-primary bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
         <p className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? choice.nameBn : choice.nameEn}</p>
         <p className="mt-1 text-xs text-slate-600">{tr('TIN', 'টিআইএন')}: {choice.tin}</p>
+        <p className="mt-1 text-xs font-semibold text-taxpay-primary">{addedTins.includes(choice.tin)
+          ? tr('Already in this payment', 'এই পেমেন্টে ইতিমধ্যে যুক্ত')
+          : allowAdd ? tr('Add to this payment', 'এই পেমেন্টে যোগ করুন')
+          : tr('Use this taxpayer', 'এই করদাতাকে নির্বাচন করুন')}</p>
       </button>)}
     </div>}
     {status === 'ready' && !choices.length && <div className="account-authorizations__empty" role="status">
