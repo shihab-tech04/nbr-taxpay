@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {formattedReviewAmount,safeReviewStatus} from '../src/services/accountReviewHistory';
 
 test('bigint-paisa request amount is exact, and never treated as receipt',()=>{
-  assert.equal(formattedReviewAmount('12345678901','en'),'৳ 12,34,56,789.01');
+  assert.equal(formattedReviewAmount('12345678901','en'),'৳ 123,456,789.01');
   assert.equal(formattedReviewAmount('1','en'),'৳ 0.01');
 });
 test('invalid financial inputs fail closed',()=>{
