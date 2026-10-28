@@ -160,7 +160,6 @@ export const PublicLanding: React.FC = () => {
                 setActiveSuggestion(index => index <= 0 ? matchedOptions.length - 1 : index - 1);
               }
             }}
-            role="combobox"
             aria-autocomplete="list"
             aria-controls="public-record-suggestions"
             aria-expanded={searchOpen && Boolean(cleanReference)}
