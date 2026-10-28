@@ -49,7 +49,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
   // Change relationship through the existing Back controls; the category remains selected.
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
@@ -60,7 +60,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await payment.locator('#guest-tin').fill('123456789012');
   await expect(payment.locator('#guest-tin')).toHaveValue('123456789012');
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
