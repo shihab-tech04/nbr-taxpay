@@ -87,7 +87,7 @@ test('Sobaike-style desktop rail remains aligned at three breakpoints without a 
     await expect(rail).toHaveCSS('width',`${expectedRailWidth}px`);
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
     await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
-    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow',/0px 1px/);
+    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
     await expect(page.locator('.citizen-pay')).toBeHidden();
     const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(overflow,`sidebar overflow at ${width}px`).toBeLessThanOrEqual(1);
