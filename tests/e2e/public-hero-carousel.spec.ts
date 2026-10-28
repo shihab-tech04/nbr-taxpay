@@ -547,3 +547,43 @@ test('introductory banner payment button typography respects the 14px floor', as
     elements.map(element => Number.parseFloat(getComputedStyle(element).fontSize)));
   for (const size of fontSizes) expect(size).toBeGreaterThanOrEqual(14);
 });
+
+
+test('public record search has clear accessible emphasis on desktop and mobile without changing its workflow', async ({ page }) => {
+  await page.goto('/?action=landing');
+  const form = page.locator('form.public-record-search');
+  const input = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const submit = form.getByRole('button', { name: 'Search records' });
+  await expect(form).toBeVisible();
+  await expect(input).toBeVisible();
+  await expect(submit).toBeDisabled();
+
+  const appearance = await form.evaluate(element => {
+    const style = getComputedStyle(element);
+    const button = element.querySelector('button')!;
+    const buttonStyle = getComputedStyle(button);
+    const bounds = element.getBoundingClientRect();
+    return {
+      height: bounds.height,
+      borderColor: style.borderTopColor,
+      baseBorder: getComputedStyle(document.documentElement).getPropertyValue('--citizen-border').trim(),
+      shadow: style.boxShadow,
+      buttonFill: buttonStyle.backgroundColor,
+      withinViewport: bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth + 1,
+      noHorizontalOverflow: document.documentElement.scrollWidth <= innerWidth + 1,
+    };
+  });
+  expect(appearance.height).toBeGreaterThanOrEqual(56);
+  expect(appearance.shadow).not.toBe('none');
+  expect(appearance.buttonFill).not.toBe('rgba(0, 0, 0, 0)');
+  expect(appearance.withinViewport).toBe(true);
+  expect(appearance.noHorizontalOverflow).toBe(true);
+
+  await input.fill('TEST-REFERENCE-123');
+  await expect(submit).toBeEnabled();
+  await input.clear();
+  await expect(submit).toBeDisabled();
+
+  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await expect(page.getByRole('searchbox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
+});
