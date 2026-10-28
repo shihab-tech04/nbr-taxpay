@@ -98,6 +98,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
   await page.goto(demo);
   const workspace=page.getByTestId('user1-synthetic-workspace');
   await expect(workspace).toBeVisible();
+  await expect(workspace.locator('section[aria-label="Welcome"]')).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
   const desktop=await page.evaluate(()=>{
     const shell=document.querySelector('.taxpay-citizen-shell.taxpay-taxpayer-reference');
     const rail=document.querySelector('.taxpayer-reference-rail');
