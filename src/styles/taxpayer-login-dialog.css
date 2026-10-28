@@ -212,3 +212,42 @@
   .taxpayer-login-backdrop, .taxpayer-login-dialog--reference,
   .taxpayer-login-dialog * { animation:none !important; transition:none !important; }
 }
+
+/* One footer action and visual hierarchy for standalone and embedded TaxPay login. */
+.taxpay-citizen-shell .taxpayer-login-dialog--reference {
+  width: min(100%, 720px);
+  border-radius: var(--taxpay-radius-modal);
+  box-shadow: var(--taxpay-shadow-modal);
+}
+.taxpay-citizen-shell .taxpayer-login-dialog--reference .taxpayer-login-heading h2 {
+  font-family: inherit;
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  font-weight: 700;
+}
+.taxpay-citizen-shell .taxpayer-login-dialog--reference .taxpayer-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: .5rem;
+}
+.taxpay-citizen-shell .taxpayer-login-dialog--reference .taxpayer-login-submit {
+  width: auto;
+  min-width: 160px;
+  min-height: 48px;
+  height: 48px;
+  padding: .65rem 1rem;
+  border-radius: 10px;
+  font-size: .9rem;
+  font-weight: 700;
+}
+.taxpay-citizen-shell .taxpayer-login-submit:disabled {
+  opacity: 1;
+  background: var(--color-taxpay-border);
+  color: var(--citizen-muted);
+  cursor: not-allowed;
+}
+.taxpay-citizen-shell .taxpayer-login-submit:hover:not(:disabled) {
+  background: var(--citizen-primary-dark);
+}
+.taxpay-citizen-shell .taxpayer-login-submit:not(:disabled):active {
+  transform: translateY(1px);
+}
