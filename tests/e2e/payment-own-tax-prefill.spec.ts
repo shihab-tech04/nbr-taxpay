@@ -54,7 +54,8 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).not.toHaveAttribute('readonly');
-  await expect(payment.locator('#guest-phone')).not.toHaveAttribute('readonly');
+  await expect(payment.locator('#guest-phone')).toHaveValue('01700000001');
+  await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly');
   await payment.locator('#guest-tin').fill('123456789012');
   await expect(payment.locator('#guest-tin')).toHaveValue('123456789012');
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
