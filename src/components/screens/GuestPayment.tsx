@@ -202,12 +202,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const ownProfile = ownAccountTax ? signedInProfile : null;
   const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
   const signedInPayerName = signedInProfile ? language === 'bn' ? signedInProfile.nameBn : signedInProfile.nameEn : '';
+  // A verified Auth account can use its approved synthetic profile binding;
+  // this ID is still strictly demo-only and never a real taxpayer entitlement.
+  const demoConsentActor = previewAccount?.id ?? (signedInProfile ? userIdForHostedTin(signedInProfile.tin) : null);
   const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName : payerName;
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = signedInProfile?.receiptMobile ?? phone;
   const [authorizedTaxpayerId, setAuthorizedTaxpayerId] = useState<DemoUserId | null>(null);
   const [authorizationChecking, setAuthorizationChecking] = useState(false);
-  const suggestionUserId = ownAccountTax ? previewAccount?.id ?? null : authorizedTaxpayerId;
+  const suggestionUserId = ownAccountTax ? demoConsentActor : authorizedTaxpayerId;
   const taxZone = ownProfile?.taxZone ?? '—';
   const taxCircle = ownProfile?.taxCircle ?? '—';
   const [noticeReference, setNoticeReference] = useState('');
@@ -483,7 +486,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (signedInAccount && forSelf === false) {
       setAuthorizationChecking(true);
       try {
-        const actor = previewAccount?.id;
+        const actor = demoConsentActor;
         if (!actor) throw new Error('An account-linked authorization is required for a facilitated payment.');
         const active = activeAuthorizedTaxpayers(await getHostedAuthorizations(actor), actor);
         const recipients = otherBatch ? batchTaxpayers : [{ id: 'primary', tin: taxpayerTin }];
@@ -553,7 +556,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!pending) { setPaymentPhase('failed'); setIsProcessing(false); return; }
     try {
       if (signedInAccount && forSelf === false) {
-        const actor = previewAccount?.id;
+        const actor = demoConsentActor;
         if (!actor) throw new Error('Account authorization unavailable');
         const active = activeAuthorizedTaxpayers(await getHostedAuthorizations(actor), actor);
         const recipients = otherBatch ? batchTaxpayers : [{ id: 'primary', tin: taxpayerTin }];
@@ -878,7 +881,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection> : null}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer & receipt details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'করদাতাদের টিআইএন নিচের তালিকায় যোগ করুন।' : 'Add taxpayer TINs in the list below.') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} />}
-            {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={previewAccount?.id ?? null} language={language}
+            {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={demoConsentActor} language={language}
               selectedTin={taxpayerTin}
               onSelect={(nextTin, nextName) => { clearReferenceSelection(); setTin(nextTin); setOtherTaxpayerName(nextName);
                 setAuthorizedTaxpayerId(userIdForHostedTin(nextTin)); clearValidationError(); }}
