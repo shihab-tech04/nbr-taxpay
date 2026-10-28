@@ -158,7 +158,7 @@ export const PublicLanding: React.FC = () => {
               }
             }}
             aria-expanded={searchOpen}
-            aria-controls="public-record-suggestions"
+            aria-controls={searchOpen ? "public-record-suggestions" : undefined}
             aria-activedescendant={searchOpen && activeSuggestion >= 0 ? `public-search-option-${activeSuggestion}` : undefined}
             aria-describedby="public-record-search-help"
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
