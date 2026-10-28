@@ -8,6 +8,7 @@
 @import "./styles/taxpay-service-choice.css";
 @import "./styles/taxpay-hero-carousel.css";
 @import './styles/taxpay-payment-form.css';
+@import './styles/taxpayer-sobaike-parity.css';
 
 @theme {
   /* Locked Amar Kor primary: never replace this with a service/status color. */
