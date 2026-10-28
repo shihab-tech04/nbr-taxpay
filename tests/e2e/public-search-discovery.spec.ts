@@ -20,7 +20,7 @@ test('search uses the established icon-free section heading and concise single-l
   await expect(page.locator('.public-record-suggestions')).toHaveCount(0);
 });
 
-test('typing opens a floating two-part dropdown without changing the card height', async ({ page }) => {
+test('typing opens a clean floating dropdown without changing the card height', async ({ page }) => {
   await page.goto('/?action=landing');
   const section = page.getByRole('region', { name: 'Find a payment record' });
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
@@ -32,9 +32,9 @@ test('typing opens a floating two-part dropdown without changing the card height
   });
   await search.fill('DEMO-REF-001');
   await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
-  await expect(section.getByRole('heading', { name: 'Sample references (demo only)' })).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
   await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
-  await expect(section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ })).toBeVisible();
+  await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
   const geometry = await section.evaluate(element => {
     const dropdown = element.querySelector<HTMLElement>('.public-record-suggestions')!;
     const searchField = element.querySelector<HTMLElement>('.public-record-search')!;
@@ -53,15 +53,13 @@ test('typing opens a floating two-part dropdown without changing the card height
   expect(geometry.dropdownOutsideCard).toBe(true);
   expect(Math.abs(geometry.cardHeight - cardHeightBefore)).toBeLessThan(2);
   expect(Math.abs(geometry.nextGap - nextGapBefore)).toBeLessThan(2);
-  const demoLink = section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ });
-  await expect(demoLink).toHaveCSS('text-decoration-line', 'none');
-  await demoLink.hover();
-  await expect(demoLink).toHaveCSS('text-decoration-line', 'none');
-  await demoLink.focus();
-  await expect(demoLink).toHaveCSS('text-decoration-line', 'none');
+  const resultOption = section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ });
+  await expect(resultOption).toHaveCSS('text-decoration-line', 'none');
+  await resultOption.focus();
+  await expect(resultOption).toBeFocused();
   await search.fill('not-a-real-reference');
   await expect(section.getByText(/No matching samples/)).toBeVisible();
-  await expect(section.getByRole('link', { name: /Try sample reference/ }).first()).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
   await expect(section.getByRole('button', { name: 'Search records' })).toBeEnabled();
 });
 
@@ -74,16 +72,19 @@ test('keyboard can select a matching synthetic reference without leaking it into
   await search.press('Enter');
   await expect(page).toHaveURL(/action=verify/);
   expect(page.url()).not.toContain('TKN-882190');
-  await expect(page.getByRole('textbox', { name: /Challan, token or transaction reference/ })).toHaveValue('TKN-882190');
+  await expect(page.getByRole('dialog', { name: 'Payment status & receipt' }).locator('.receipt-view--embedded')).toContainText('TKN-882190');
 });
 
-test('sample links use the existing receipt lookup without URL reference exposure', async ({ page }) => {
+test('matching reference opens the receipt modal without exposing the reference in the URL', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('searchbox', { name: 'Search payment records by reference' }).fill('DEMO');
-  await page.getByRole('link', { name: /Try sample reference: AC-2025-06-DEMO-REF-003/ }).click();
+  await page.getByRole('searchbox', { name: 'Search payment records by reference' }).fill('DEMO-REF-003');
+  await page.getByRole('button', { name: /AC-2025-06-DEMO-REF-003/ }).click();
   await expect(page).toHaveURL(/action=verify/);
   expect(page.url()).not.toContain('DEMO-REF');
-  await expect(page.getByRole('textbox', { name: /Challan, token or transaction reference/ })).toHaveValue('AC-2025-06-DEMO-REF-003');
+  const modal = page.getByRole('dialog', { name: 'Payment status & receipt' });
+  await expect(modal.locator('.receipt-view--embedded')).toContainText('AC-2025-06-DEMO-REF-003');
+  await modal.getByRole('button', { name: 'Back to search' }).click();
+  await expect(modal.getByRole('textbox', { name: 'Challan, token or transaction reference' })).toHaveValue('AC-2025-06-DEMO-REF-003');
 });
 
 test('suggestions close on Escape or outside click, and translate cleanly into Bangla', async ({ page }) => {
@@ -99,7 +100,7 @@ test('suggestions close on Escape or outside click, and translate cleanly into B
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
   await page.getByRole('searchbox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' }).fill('DEMO');
-  await expect(page.getByRole('heading', { name: 'নমুনা রেফারেন্স (শুধু ডেমো)' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'মিলে যাওয়া নমুনা রেফারেন্স' })).toBeVisible();
 });
 
 test('dropdown overlays following content without resizing the card or overflowing narrow screens', async ({ page }) => {
