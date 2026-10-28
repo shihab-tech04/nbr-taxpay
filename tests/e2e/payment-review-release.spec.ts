@@ -210,6 +210,17 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
 
+  // The new receipt opens in an animated modal. Run the contrast audit after
+  // the overlay and dialog finish their entrance animation, not mid-opacity.
+  // Keep the full axe audit; do not suppress or whitelist color-contrast errors.
+  const receiptOverlay = page.locator('.taxpay-modal__overlay:has(.receipt-view__paper)');
+  await expect(receiptOverlay).toBeVisible();
+  await receiptOverlay.evaluate(async overlay => {
+    const dialog = overlay.querySelector('.taxpay-modal');
+    const animations = [overlay, dialog].flatMap(node => node ? node.getAnimations({ subtree: false }) : []);
+    await Promise.all(animations.map(animation => animation.finished.catch(() => undefined)));
+  });
+
   if (info.project.name === 'mobile-320') {
     const axe = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
     expect(axe.violations.map(({ id, impact, nodes }) => ({ id, impact, count: nodes.length, targets: nodes.flatMap(node => node.target) }))).toEqual([]);
