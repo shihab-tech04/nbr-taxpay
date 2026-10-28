@@ -28,6 +28,7 @@ import { TaxLedger } from './components/screens/TaxLedger';
 import { TaxJourney } from './components/screens/TaxJourney';
 import { CertificatesView } from './components/screens/CertificatesView';
 import { CorrectionRequests } from './components/screens/CorrectionRequests';
+import { CorrectionInquiries } from './components/screens/CorrectionInquiries';
 import { NotificationsView } from './components/screens/NotificationsView';
 import { AccountCenter } from './components/screens/AccountCenter';
 import { ManageAuthorization } from './components/screens/ManageAuthorization';
@@ -151,7 +152,12 @@ const MainRouter: React.FC = () => {
       case 'certificates':
         return <CertificatesView activityTabs={showActivitySections} />;
       case 'corrections':
-        return <CorrectionRequests activityTabs={showActivitySections} />;
+        // An authenticated account can submit an RLS-owned, non-financial
+        // correction inquiry without a TIN binding. Fictional previews keep
+        // their separate, local-only correction journey.
+        return verifiedApplicationUser
+          ? <CorrectionInquiries authenticatedUserId={verifiedApplicationUser.id} language={language} />
+          : <CorrectionRequests activityTabs={showActivitySections} />;
       case 'notifications':
         return <NotificationsView />;
       case 'payment_notifications':

@@ -4,9 +4,10 @@ import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { useTaxState } from '../../services/taxState';
 import { hasVerifiedTaxLedgerSource } from '../../services/taxpayerEvidence';
 import { formatCurrency } from '../../services/numberFormat';
+import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
 
 export const TaxLedger: React.FC = () => {
-  const { ledgerEntries, language } = useTaxState();
+  const { ledgerEntries, language, previewAccount } = useTaxState();
   const bn = language === 'bn';
 
   const visibleEntries = hasVerifiedTaxLedgerSource ? ledgerEntries : [];
@@ -137,6 +138,16 @@ export const TaxLedger: React.FC = () => {
           </table>
         </div>
       </div>
+      {previewAccount && (
+        <section aria-label={bn ? 'পরীক্ষামূলক সেবার রেকর্ড' : 'Demonstration service activity'}>
+          <p className="mb-3 text-sm text-taxpay-muted">
+            {bn
+              ? 'নিচের SQL-ভিত্তিক রেকর্ডগুলো কেবল পরীক্ষামূলক সেবার কার্যক্রম। এগুলো স্বীকৃত কর ক্রেডিট, দায় বা সরকারি লেজারের প্রমাণ নয়।'
+              : 'The SQL-backed records below show demonstration service activity only. They do not establish certified tax credit, liability, or an official ledger balance.'}
+          </p>
+          <DemoServiceRecordsPanel userId={previewAccount.id} language={language} />
+        </section>
+      )}
     </div>
   );
 };
