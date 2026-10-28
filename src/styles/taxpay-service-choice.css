@@ -871,3 +871,86 @@
 .taxpay-citizen-shell .tax-service-choice__actions .tax-service-choice__continue:not(:disabled):active {
   transform: translateY(1px);
 }
+
+
+/* Payment journey: a single connected progression track, not floating labels. */
+.tax-service-choice__progress {
+  position: relative;
+  padding: .85rem .65rem 1rem;
+  margin: 0 0 1rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: .75rem;
+  background: var(--citizen-surface);
+  gap: 0;
+}
+.tax-service-choice__progress li {
+  padding: .2rem .3rem;
+  gap: .45rem;
+  font-weight: 650;
+  justify-content: flex-start;
+}
+.tax-service-choice__progress li:not(:last-child)::after {
+  top: 20px;
+  left: calc(50% + 20px);
+  width: calc(100% - 40px);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--citizen-border);
+}
+.tax-service-choice__progress li.tax-service-choice__stage--complete::after {
+  background: var(--citizen-primary);
+}
+.tax-service-choice__progress .tax-service-choice__stage-number {
+  flex-basis: 34px;
+  width: 34px; height: 34px;
+  border-width: 2px;
+  font-size: 14px;
+}
+.tax-service-choice__progress li.tax-service-choice__stage--current .tax-service-choice__stage-label {
+  font-weight: 800;
+}
+.tax-service-choice__progress li.tax-service-choice__stage--upcoming .tax-service-choice__stage-number {
+  color: var(--citizen-muted);
+  background: var(--citizen-surface);
+}
+.account-taxpayer-summary {
+  display: grid;
+  gap: .6rem;
+  padding: 0 0 .75rem;
+  border-bottom: 1px solid var(--citizen-border);
+  background: transparent;
+}
+.account-taxpayer-summary__heading { margin: 0; }
+.account-taxpayer-summary__source {
+  color: var(--citizen-primary-dark);
+  font-size: 14px;
+  font-weight: 650;
+  margin: 0;
+}
+.account-taxpayer-summary__fields dt { font-size: 14px; }
+.account-authorizations {
+  display: grid;
+  gap: .6rem;
+  min-width: 0;
+  padding: 0 0 .75rem;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.account-authorizations button { text-decoration: none; }
+.account-authorizations button:hover,
+.account-authorizations button:focus-visible { text-decoration: none; }
+.account-authorizations__empty {
+  display: grid; gap: .35rem; padding: .7rem 0;
+  color: var(--citizen-muted); font-size: 14px;
+}
+.account-authorizations__empty p { margin: 0; }
+.account-authorizations__selection-note {
+  margin: 0; font-size: 14px;
+  color: var(--citizen-muted);
+}
+@media(max-width:600px) {
+  .tax-service-choice__progress { padding: .75rem .2rem; }
+  .tax-service-choice__progress li { padding: .2rem .1rem; }
+  .tax-service-choice__progress li:not(:last-child)::after {
+    left: calc(50% + 19px); width: calc(100% - 38px);
+  }
+}
