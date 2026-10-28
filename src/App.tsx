@@ -212,7 +212,7 @@ const MainRouter: React.FC = () => {
         </>}
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
-      {publicInformationRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
+      {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
       {receiptOverlayRoute && (currentRoute === 'verify'
         ? <PublicServiceModal service="status" onClose={() => navigate('landing')} />
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
