@@ -73,6 +73,9 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
     return () => { mounted = false; window.clearInterval(timer); };
   }, [actor]);
   const choices = actor && status === 'ready' ? activeAuthorizedTaxpayers(records, actor, now) : [];
+  const pending = actor && status === 'ready'
+    ? records.filter(record => record.payerId === actor && (record.status === 'PENDING' || record.status === 'CODE_ISSUED'))
+    : [];
   const candidate = userIdForHostedTin(selectedTin);
   const canRequest = actor && candidate && actor !== candidate &&
     !records.some(record => record.payerId === actor && record.taxpayerId === candidate &&
@@ -113,6 +116,19 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
           : allowAdd ? tr('Add to this payment', 'এই পেমেন্টে যোগ করুন')
           : tr('Use this taxpayer', 'এই করদাতাকে নির্বাচন করুন')}</p>
       </button>)}
+    </div>}
+    {pending.length > 0 && <div className="account-authorizations__pending" aria-label={tr('Requests awaiting approval', 'অনুমোদনের অপেক্ষায় থাকা অনুরোধ')}>
+      <h4>{tr('Awaiting authorization', 'অনুমোদনের অপেক্ষায়')}: {pending.length}</h4>
+      {pending.map(record => {
+        const taxpayer = getDemoUser(record.taxpayerId);
+        return <p key={record.id} className="account-authorizations__pending-item">
+          <strong>{taxpayer ? (language === 'bn' ? taxpayer.nameBn : taxpayer.nameEn) : record.taxpayerId}</strong>
+          {taxpayer && <span>{tr('TIN', 'টিআইএন')}: {taxpayer.tin}</span>}
+          <span>{record.status === 'CODE_ISSUED'
+            ? tr('Awaiting your code confirmation', 'আপনার কোড নিশ্চিত করার অপেক্ষায়')
+            : tr('Awaiting taxpayer approval', 'করদাতার অনুমোদনের অপেক্ষায়')}</span>
+        </p>;
+      })}
     </div>}
     {status === 'ready' && !choices.length && <div className="account-authorizations__empty" role="status">
       <p className="font-semibold">{tr('You have no approved taxpayers yet', 'এখনও কোনো অনুমোদিত করদাতা নেই')}</p>
