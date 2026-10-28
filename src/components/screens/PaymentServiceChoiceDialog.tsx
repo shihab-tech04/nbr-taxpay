@@ -54,7 +54,6 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
   const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
-  const stageIcons = [UserRound, ClipboardCheck, WalletCards, ReceiptText];
   const shortStages = [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
@@ -125,11 +124,11 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => {
-              const StageIcon = stageIcons[index];
               return (
-              <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : ''}
-                aria-label={`${index + 1}. ${name}`} aria-current={index + 1 === stage ? 'step' : undefined}>
-                <span className="tax-service-choice__stage-number">{index + 1 < stage ? <Check size={16} aria-hidden="true" /> : <StageIcon size={17} strokeWidth={1.9} aria-hidden="true" />}</span>
+              <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : 'tax-service-choice__stage--upcoming'}
+                aria-label={`${index + 1}. ${name}. ${index + 1 < stage ? tr('Completed', 'সম্পন্ন') : index + 1 === stage ? tr('Current step', 'বর্তমান ধাপ') : tr('Not started', 'শুরু হয়নি')}`}
+                aria-current={index + 1 === stage ? 'step' : undefined}>
+                <span className="tax-service-choice__stage-number">{index + 1 < stage ? <Check size={16} aria-hidden="true" /> : index + 1}</span>
                 <span className="tax-service-choice__stage-label tax-service-choice__stage-label--full" aria-hidden="true">{name}</span>
                 <span className="tax-service-choice__stage-label tax-service-choice__stage-label--short" aria-hidden="true">{shortStages[index]}</span>
               </li>
