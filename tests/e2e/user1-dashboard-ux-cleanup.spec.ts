@@ -91,3 +91,59 @@ test('mobile and desktop dashboard have no duplicate panel or horizontal clippin
     }
   }
 });
+
+
+test('signed-in workspace mirrors Sobaike Public design tokens without changing Amar Kor primary', async ({page}) => {
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto(demo);
+  const workspace=page.getByTestId('user1-synthetic-workspace');
+  await expect(workspace).toBeVisible();
+  const desktop=await page.evaluate(()=>{
+    const shell=document.querySelector('.taxpay-citizen-shell.taxpay-taxpayer-reference');
+    const rail=document.querySelector('.taxpayer-reference-rail');
+    const cta=document.querySelector('.taxpayer-reference-main-action');
+    const heading=document.querySelector('.taxpayer-dashboard-header h1');
+    const card=document.querySelector('.taxpayer-dashboard-kpi');
+    if(!shell||!rail||!cta||!heading||!card)throw Error('Taxpayer presentation elements unavailable');
+    const shellStyles=getComputedStyle(shell);
+    const railStyles=getComputedStyle(rail);
+    const buttonStyles=getComputedStyle(cta);
+    const cardStyles=getComputedStyle(card);
+    return {
+      font:shellStyles.fontFamily,
+      page:shellStyles.backgroundColor,
+      ink:shellStyles.color,
+      railWidth:railStyles.width,
+      headingFont:getComputedStyle(heading).fontSize,
+      cardBorder:cardStyles.borderTopColor,
+      cardRadius:cardStyles.borderTopLeftRadius,
+      brandButton:buttonStyles.backgroundColor,
+      brandVariable:shellStyles.getPropertyValue('--color-taxpay-primary').trim()
+    };
+  });
+  expect(desktop.font).toContain('Noto Sans');
+  expect(desktop.page).toBe('rgb(240, 242, 245)');
+  expect(desktop.ink).toBe('rgb(5, 5, 5)');
+  expect(desktop.railWidth).toBe('250px');
+  expect(desktop.headingFont).toBe('30px');
+  expect(desktop.cardBorder).toBe('rgb(228, 230, 235)');
+  expect(desktop.cardRadius).toBe('16px');
+  expect(desktop.brandButton).toBe('rgb(44, 94, 173)');
+  expect(desktop.brandVariable.toUpperCase()).toBe('#2C5EAD');
+
+  await page.setViewportSize({width:360,height:820});
+  await expect(workspace).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  const mobile=await page.evaluate(()=>{
+    const shell=document.querySelector('.taxpay-citizen-shell.taxpay-taxpayer-reference');
+    const heading=document.querySelector('.taxpayer-dashboard-header h1');
+    return {
+      font:shell?getComputedStyle(shell).fontFamily:'',
+      heading:heading?getComputedStyle(heading).fontSize:'',
+      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
+    };
+  });
+  expect(mobile.font).toContain('Noto Sans');
+  expect(mobile.heading).toBe('26px');
+  expect(mobile.overflow).toBeLessThanOrEqual(2);
+});
