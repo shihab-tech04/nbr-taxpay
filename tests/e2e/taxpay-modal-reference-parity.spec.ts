@@ -18,8 +18,9 @@ test('payer and access match requested modal wording and button placement', asyn
   await expect(guest).toContainText('As a guest User');
   await expect(guest).toContainText('Enter your details and make this payment');
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Sign in to use your account details and records');
-  await expect(dialog.locator('.tax-service-choice__access-arrow')).toHaveCount(2);
-  await expect(dialog.locator('.tax-service-choice__access-options .tax-service-choice__radio')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__access-arrow')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__access-radio')).toHaveCount(2);
+  await expect(dialog.locator('[data-payment-access="GUEST"] .tax-service-choice__access-radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   const title = await dialog.locator('.taxpay-modal__title').boundingBox();
   const modal = await dialog.boundingBox();
   expect(title).not.toBeNull();
@@ -56,4 +57,46 @@ test('access choices appear only after either payer selection and retain the cho
   await expect(access).toHaveCount(2);
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
+});
+
+test('access cards align side by side on desktop and stack on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  const guest = dialog.locator('[data-payment-access="GUEST"]');
+  const login = dialog.locator('[data-payment-access="ACCOUNT"]');
+  const first = await guest.boundingBox();
+  const second = await login.boundingBox();
+  expect(first).not.toBeNull();
+  expect(second).not.toBeNull();
+  expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
+  expect(Math.abs(first!.width - second!.width)).toBeLessThan(2);
+  await login.click();
+  await expect(login).toHaveAttribute('aria-pressed', 'true');
+  await expect(login.locator('.tax-service-choice__access-radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await page.setViewportSize({ width: 375, height: 812 });
+  const mobileFirst = await guest.boundingBox();
+  const mobileSecond = await login.boundingBox();
+  expect(mobileFirst).not.toBeNull();
+  expect(mobileSecond).not.toBeNull();
+  expect(mobileSecond!.y).toBeGreaterThanOrEqual(mobileFirst!.y + mobileFirst!.height);
+});
+
+test('conditional modal resize uses standard motion and supports reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await expect(dialog).toHaveAttribute('data-size-motion', 'true');
+  await expect.poll(async () => dialog.evaluate(el => getComputedStyle(el).height)).not.toBe('auto');
+  const initialHeight = (await dialog.boundingBox())!.height;
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
+  await expect.poll(async () => (await dialog.boundingBox())!.height).toBeGreaterThan(initialHeight + 75);
+  await expect(dialog).toHaveCSS('transition-property', /height/);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(dialog).toHaveCSS('animation-name', 'none');
+  await expect(dialog).toHaveCSS('transition-property', 'none');
 });

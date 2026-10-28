@@ -87,6 +87,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       ariaLabel={view === 'payer' ? tr('Pay Tax', 'কর পরিশোধ') : undefined}
       onClose={close}
       className={view === 'login' ? 'tax-service-choice-modal--access' : ''}
+      animateSize={view === 'payer' || view === 'choice' || view === 'login'}
       onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView(initialService ? 'payer' : 'choice') : undefined}
       backLabel={tr('Back', 'ফিরুন')}
       service={view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
@@ -102,7 +103,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </div>
       )}
     >
-      <section ref={flowRef} className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+      <section key={view} ref={flowRef} data-view={view} className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
           <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
@@ -152,7 +153,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                 <button type="button" key={id} className="tax-service-choice__access-option" aria-pressed={entryAccess === id} data-payment-access={id.toUpperCase()} onClick={() => setEntryAccess(id)}>
                   <span className="tax-service-choice__access-icon"><Icon size={20} aria-hidden="true" /></span>
                   <span className="tax-service-choice__access-copy"><strong>{tr(en, bangla)}</strong><small>{tr(detailEn, detailBn)}</small></span>
-                  <ArrowRight className="tax-service-choice__access-arrow" size={19} aria-hidden="true" />
+                  <span className="tax-service-choice__access-radio" aria-hidden="true"><span /></span>
                 </button>
               ))}
             </div>
