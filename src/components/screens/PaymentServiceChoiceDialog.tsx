@@ -126,7 +126,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             {stages.map((name, index) => {
               return (
               <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : 'tax-service-choice__stage--upcoming'}
-                aria-label={`${index + 1}. ${name}. ${index + 1 < stage ? tr('Completed', 'সম্পন্ন') : index + 1 === stage ? tr('Current step', 'বর্তমান ধাপ') : tr('Not started', 'শুরু হয়নি')}`}
+                aria-label={`${index + 1}. ${name}`} data-progress-status={index + 1 < stage ? 'complete' : index + 1 === stage ? 'current' : 'upcoming'}
                 aria-current={index + 1 === stage ? 'step' : undefined}>
                 <span className="tax-service-choice__stage-number">{index + 1 < stage ? <Check size={16} aria-hidden="true" /> : index + 1}</span>
                 <span className="tax-service-choice__stage-label tax-service-choice__stage-label--full" aria-hidden="true">{name}</span>
