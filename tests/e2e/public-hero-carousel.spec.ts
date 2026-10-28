@@ -440,11 +440,11 @@ test('each service-specific banner action skips repeated service selection', asy
       // The CTA has already selected the service. Keep that exact service
       // but do not ask the taxpayer to make the same decision a second time.
       await expect(dialog.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
-      await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+      await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
       await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
         .toHaveAttribute('data-payment-service', code);
       // Back keeps the chosen taxpayer and never reintroduces a second chooser.
-      await dialog.locator('.tax-service-choice__actions')
+      await dialog.locator('.payment-flow-embedded__footer-actions')
         .getByRole('button', { name: 'Back', exact: true }).click();
       await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
       await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
