@@ -19,11 +19,12 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   // The same four-stage journey uses a display card, not read-only text boxes.
-  const card = payment.getByTestId('other-tax-primary-taxpayer');
-  await expect(card).toBeVisible();
-  await expect(card.locator('dl#guest-tin')).toContainText('2222222222222');
-  await expect(card.locator('dl#guest-tin')).toContainText('Meghna Trading Ltd.');
+  const card = payment.getByRole('region', { name: 'Account taxpayer details' });
+  await expect(card).toContainText('2222222222222');
+  await expect(card).toContainText('Meghna Trading Ltd.');
+  await expect(card).toContainText('01700000002');
   await expect(card.locator('input')).toHaveCount(0);
+  await expect(payment.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await expect(payment.locator('#guest-phone')).toHaveCount(0);
   await expect(payment.locator('#guest-tax-zone')).toHaveCount(0);
@@ -61,7 +62,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
+  await expect(payment.locator('#guest-tin')).toContainText('1111111111111');
   await expect(payment.locator('#guest-tin')).toHaveCount(1);
 });
 
