@@ -2095,6 +2095,7 @@
   background:var(--citizen-primary-light);
   border-radius:.55rem;
 }
+.receipt-modal .receipt-view--embedded .receipt-view__header {display:none;}
 .receipt-modal .receipt-view--embedded .receipt-view__paper {
   border:0;
   border-radius:0;
