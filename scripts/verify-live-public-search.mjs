@@ -25,6 +25,21 @@ try {
     await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
     await expect(section.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
     await expect(section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ })).toBeVisible();
+    await expect(section.locator('.public-record-discovery__heading svg')).toHaveCount(0);
+    await expect(section.getByText('Search by challan, token or transaction reference.')).toBeVisible();
+    await expect(section.getByText(/For guest-payment records/)).toHaveCount(0);
+    const flow = await section.evaluate(element => {
+      const list = element.querySelector('.public-record-suggestions');
+      const field = element.querySelector('.public-record-search');
+      return {
+        inFlow: getComputedStyle(list).position === 'static',
+        belowInput: list.getBoundingClientRect().top >= field.getBoundingClientRect().bottom,
+        contained: element.getBoundingClientRect().bottom >= list.getBoundingClientRect().bottom,
+      };
+    });
+    if (!flow.inFlow || !flow.belowInput || !flow.contained) {
+      throw new Error(`Live ${name} search suggestions overlap or escape the section`);
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (overflow > 2) throw new Error(`Live ${name} public search horizontal overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-search-${name}.png`, fullPage: true });

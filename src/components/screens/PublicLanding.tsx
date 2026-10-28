@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, FileSearch, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -112,11 +112,8 @@ export const PublicLanding: React.FC = () => {
 
     <section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
       <div className="public-record-discovery__heading">
-        <span className="public-record-discovery__icon" aria-hidden="true"><FileSearch size={23} /></span>
-        <div>
-          <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
-          <p>{t('Search by challan number, payment token, or transaction reference to view its recorded details.', 'চালান নম্বর, পেমেন্ট টোকেন বা লেনদেনের রেফারেন্স দিয়ে রেকর্ডের বিস্তারিত দেখুন।')}</p>
-        </div>
+        <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
+        <p>{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
       </div>
       <div className="public-record-discovery__interactive" ref={searchRegionRef}>
         <form
@@ -145,7 +142,13 @@ export const PublicLanding: React.FC = () => {
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
             onKeyDown={event => {
-              if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setSearchOpen(false); setActiveSuggestion(-1); return; }
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                setSearchOpen(false);
+                setActiveSuggestion(-1);
+                return;
+              }
               if (event.key === 'ArrowDown' && matchedOptions.length) {
                 event.preventDefault();
                 setSearchOpen(true);
@@ -157,18 +160,17 @@ export const PublicLanding: React.FC = () => {
                 setActiveSuggestion(index => index <= 0 ? matchedOptions.length - 1 : index - 1);
               }
             }}
-            aria-describedby="public-record-search-help"
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
           />
           <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
             <Search size={23} aria-hidden="true" />
           </button>
         </form>
-        {searchOpen && (
+        {searchOpen && cleanReference && (
           <div className="public-record-suggestions" id="public-record-suggestions">
             <div className="public-record-suggestions__group">
               <h3>{t('Matching sample references', 'মিলে যাওয়া নমুনা রেফারেন্স')}</h3>
-              {cleanReference && matchedOptions.length > 0 ? (
+              {matchedOptions.length > 0 ? (
                 <ul className="public-record-suggestions__list">
                   {matchedOptions.map((option, index) => (
                     <li key={option.kind + option.value}>
@@ -179,28 +181,20 @@ export const PublicLanding: React.FC = () => {
                         onMouseDown={event => event.preventDefault()}
                         onClick={() => chooseReference(option.value)}
                       >
-                        <Search size={17} aria-hidden="true" />
-                        <div className="public-record-suggestions__option-copy">
-                          <p className="public-record-suggestions__value">{option.value}</p>
-                          <p className="public-record-suggestions__kind">
-                            {option.kind === 'challan' ? t('Sample challan reference', 'নমুনা চালান রেফারেন্স') : option.kind === 'token' ? t('Sample payment token', 'নমুনা পেমেন্ট টোকেন') : t('Sample transaction reference', 'নমুনা লেনদেন রেফারেন্স')}
-                          </p>
-                        </div>
-                        <ArrowRight size={16} aria-hidden="true" />
+                        <p className="public-record-suggestions__value">{option.value}</p>
+                        <p className="public-record-suggestions__kind">
+                          {option.kind === 'challan' ? t('Challan', 'চালান') : option.kind === 'token' ? t('Token', 'টোকেন') : t('Transaction', 'লেনদেন')}
+                        </p>
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="public-record-suggestions__empty">
-                  {cleanReference
-                    ? t('No sample suggestions match. You can still search your full reference.', 'নমুনায় মিল নেই। তবুও আপনার সম্পূর্ণ রেফারেন্স দিয়ে খুঁজতে পারবেন।')
-                    : t('Start typing to see matching sample references.', 'মিলে যাওয়া নমুনা রেফারেন্স দেখতে টাইপ করুন।')}
-                </p>
+                <p className="public-record-suggestions__empty">{t('No matching samples. You can still search this reference.', 'নমুনায় মিল নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
               )}
             </div>
             <div className="public-record-suggestions__group public-record-suggestions__examples">
-              <h3>{t('Try a sample number', 'নমুনা নম্বর দিয়ে দেখুন')}</h3>
+              <h3>{t('Sample references (demo only)', 'নমুনা রেফারেন্স (শুধু ডেমো)')}</h3>
               <div className="public-record-suggestions__links">
                 {sampleReceipts.map(receipt => (
                   <a
@@ -210,19 +204,14 @@ export const PublicLanding: React.FC = () => {
                     className="public-record-suggestions__link"
                     aria-label={t('Try sample reference', 'নমুনা রেফারেন্স দেখুন') + ': ' + receipt.challanNo}
                   >
-                    <p>{receipt.challanNo}</p>
-                    <ArrowRight size={16} aria-hidden="true" />
+                    {receipt.challanNo}
                   </a>
                 ))}
               </div>
-              <p>{t('Demonstration references only — not official payment evidence.', 'শুধু প্রদর্শনের নমুনা — সরকারি পেমেন্টের প্রমাণ নয়।')}</p>
             </div>
           </div>
         )}
       </div>
-      <p id="public-record-search-help" className="public-record-discovery__note">
-        {t('For guest-payment records, you may also need the mobile number used on the receipt.', 'অতিথি পেমেন্টের রেকর্ডের জন্য রসিদে দেওয়া মোবাইল নম্বরও লাগতে পারে।')}
-      </p>
     </section>
 
     <section id="public-how-it-works" className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
