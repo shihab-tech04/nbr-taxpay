@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDemoNextActions, nextActionDescription } from '../src/services/demoNextActions';
+import { buildDemoNextActions, nextActionDescription, nextActionDestination } from '../src/services/demoNextActions';
 import type { DemoSqlServiceRecord } from '../src/services/demoSqlProfiles';
 
 function row(id: string, state: DemoSqlServiceRecord['state'], serviceCode: DemoSqlServiceRecord['serviceCode'], recordedAt='2026-10-20T12:00:00Z'): DemoSqlServiceRecord {
@@ -31,4 +31,12 @@ test('previous payments only produce service navigation; never liability estimat
   assert.deepEqual(a,[{id:'previous-TAX_WITH_RETURN',kind:'explore',serviceCode:'TAX_WITH_RETURN',reason:'previous'}]);
   assert.ok(!('amount' in a[0]));
   assert.ok(nextActionDescription(a[0],'bn').length>0);
+});
+
+test('suggestion review opens source record, not an unsupported activity route',()=>{
+  const pending=buildDemoNextActions([row('source-record-20','PENDING','PENALTY')])[0];
+  assert.equal(pending.id,'source-record-20');
+  assert.equal(nextActionDestination(pending),'record');
+  const previous=buildDemoNextActions([row('old','SIMULATED','PENALTY')])[0];
+  assert.equal(nextActionDestination(previous),'services');
 });
