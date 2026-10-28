@@ -494,8 +494,10 @@
 
 
 /* The public search follows the same icon-free card heading as adjacent sections.
-   Results stay in the normal document flow, never overlapping the next card. */
+   The suggestion popover is anchored to the input and never changes card height. */
 .public-record-discovery {
+  position: relative;
+  z-index: 2;
   min-width: 0;
   padding: clamp(1rem, 3vw, 1.35rem);
   border: 1px solid var(--citizen-border);
@@ -505,7 +507,7 @@
 .public-record-discovery__heading { margin-bottom: 1rem; min-width: 0; }
 .public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.15rem; line-height: 1.4; font-weight: 800; }
 .public-record-discovery__heading p { margin: .3rem 0 0; color: var(--citizen-muted); font-size: .875rem; line-height: 1.5; }
-.public-record-discovery__interactive { min-width: 0; }
+.public-record-discovery__interactive { position: relative; min-width: 0; }
 .public-record-search {
   display: flex; align-items: stretch; min-width: 0; width: 100%; min-height: 60px;
   padding: .35rem; border: 1px solid var(--citizen-border);
@@ -534,12 +536,13 @@
 .public-record-search button:disabled { opacity: .78; cursor: not-allowed; }
 .public-record-search button:focus-visible { outline: 3px solid var(--citizen-primary); outline-offset: 2px; }
 .public-record-suggestions {
-  position: static; min-width: 0; max-height: min(380px, 48vh);
-  margin-top: .5rem; overflow-y: auto; overscroll-behavior: contain;
-  border-top: 1px solid var(--citizen-border);
-  background: transparent;
+  position: absolute; z-index: 30; top: calc(100% + .4rem); left: 0; right: 0;
+  min-width: 0; max-height: min(330px, 48vh);
+  overflow-y: auto; overscroll-behavior: contain;
+  border: 1px solid var(--citizen-border); border-radius: .65rem;
+  background: var(--citizen-surface); box-shadow: var(--taxpay-shadow-raised);
 }
-.public-record-suggestions__group { padding: .6rem 0; }
+.public-record-suggestions__group { padding: .65rem .75rem; }
 .public-record-suggestions__group + .public-record-suggestions__group { border-top: 1px solid var(--citizen-border); }
 .public-record-suggestions__group h3 { margin: 0 0 .4rem; color: var(--citizen-muted); font-size: .875rem; font-weight: 650; line-height: 1.45; }
 .public-record-suggestions__empty { margin: 0; padding: .3rem 0; color: var(--citizen-muted); font-size: .875rem; line-height: 1.5; }
@@ -562,9 +565,14 @@
   display: inline-flex; align-items: center; max-width: 100%; min-height: 36px;
   padding: .2rem 0; color: var(--citizen-primary-dark);
   font-family: var(--font-numeric); font-size: .875rem; font-weight: 650;
-  text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere;
+  text-decoration: none; overflow-wrap: anywhere;
 }
-.public-record-suggestions__link:hover, .public-record-suggestions__link:focus-visible { color: var(--citizen-primary); }
+.public-record-suggestions__link:hover, .public-record-suggestions__link:focus-visible {
+  color: var(--citizen-primary); text-decoration: none;
+}
+.public-record-suggestions a, .public-record-suggestions a:hover, .public-record-suggestions a:focus-visible {
+  text-decoration: none;
+}
 @media (max-width: 600px) {
   .public-record-discovery { padding: 1rem; }
   .public-record-discovery__heading h2 { font-size: 1.05rem; }
