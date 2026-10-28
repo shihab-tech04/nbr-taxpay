@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowRight, BookOpen, ChevronDown, FileSearch, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
+import { INITIAL_RECEIPTS } from '../../data/mockData';
+
+// Only publicly shipped fictional fixtures may appear in public autocomplete.
+// Never suggest account receipts or hosted payment records.
+const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
+const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
+  { value: receipt.challanNo, kind: 'challan' as const },
+  { value: receipt.tokenNumber, kind: 'token' as const },
+  { value: receipt.gatewayTransactionId, kind: 'transaction' as const },
+]);
 
 export const PublicLanding: React.FC = () => {
   const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen, previewAccount } = useTaxState();
@@ -11,6 +21,30 @@ export const PublicLanding: React.FC = () => {
   const signedIn = Boolean(user || previewAccount);
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const searchRegionRef = useRef<HTMLDivElement>(null);
+  const cleanReference = paymentReference.trim().toLowerCase();
+  const matchedOptions = cleanReference
+    ? sampleSearchOptions.filter(option => option.value.toLowerCase().includes(cleanReference)).slice(0, 5)
+    : [];
+  const chooseReference = (reference: string) => {
+    setSearchOpen(false);
+    setActiveSuggestion(-1);
+    setPaymentReference(reference);
+    // Preserve existing in-memory navigation; never expose references in the URL.
+    navigate('verify', { initialReference: reference });
+  };
+  useEffect(() => {
+    const handleOutside = (event: PointerEvent) => {
+      if (!searchRegionRef.current?.contains(event.target as Node)) {
+        setSearchOpen(false);
+        setActiveSuggestion(-1);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
+  }, []);
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
@@ -75,32 +109,124 @@ export const PublicLanding: React.FC = () => {
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
-    <form
-      className="public-record-search"
-      role="search"
-      onSubmit={event => {
-        event.preventDefault();
-        const reference = paymentReference.trim();
-        if (reference) navigate('verify', { initialReference: reference });
-      }}
-    >
-      <label className="sr-only" htmlFor="public-payment-reference">
-        {t('Search payment records by reference', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন')}
-      </label>
-      <input
-        id="public-payment-reference"
-        type="search"
-        autoComplete="off"
-        spellCheck={false}
-        maxLength={120}
-        value={paymentReference}
-        onChange={event => setPaymentReference(event.target.value)}
-        placeholder={t('Search payment records', 'পেমেন্ট রেকর্ড খুঁজুন')}
-      />
-      <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
-        <Search size={23} aria-hidden="true" />
-      </button>
-    </form>
+
+    <section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
+      <div className="public-record-discovery__heading">
+        <span className="public-record-discovery__icon" aria-hidden="true"><FileSearch size={23} /></span>
+        <div>
+          <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
+          <p>{t('Search by challan number, payment token, or transaction reference to view its recorded details.', 'চালান নম্বর, পেমেন্ট টোকেন বা লেনদেনের রেফারেন্স দিয়ে রেকর্ডের বিস্তারিত দেখুন।')}</p>
+        </div>
+      </div>
+      <div className="public-record-discovery__interactive" ref={searchRegionRef}>
+        <form
+          className="public-record-search"
+          role="search"
+          onSubmit={event => {
+            event.preventDefault();
+            if (searchOpen && activeSuggestion >= 0 && matchedOptions[activeSuggestion]) {
+              chooseReference(matchedOptions[activeSuggestion].value);
+            } else if (paymentReference.trim()) {
+              chooseReference(paymentReference.trim());
+            }
+          }}
+        >
+          <label className="sr-only" htmlFor="public-payment-reference">
+            {t('Search payment records by reference', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন')}
+          </label>
+          <input
+            id="public-payment-reference"
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={120}
+            value={paymentReference}
+            onFocus={() => setSearchOpen(true)}
+            onClick={() => setSearchOpen(true)}
+            onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
+            onKeyDown={event => {
+              if (event.key === 'Escape') { setSearchOpen(false); setActiveSuggestion(-1); }
+              if (event.key === 'ArrowDown' && matchedOptions.length) {
+                event.preventDefault();
+                setSearchOpen(true);
+                setActiveSuggestion(index => (index + 1) % matchedOptions.length);
+              }
+              if (event.key === 'ArrowUp' && matchedOptions.length) {
+                event.preventDefault();
+                setSearchOpen(true);
+                setActiveSuggestion(index => index <= 0 ? matchedOptions.length - 1 : index - 1);
+              }
+            }}
+            aria-expanded={searchOpen}
+            aria-controls="public-record-suggestions"
+            aria-activedescendant={searchOpen && activeSuggestion >= 0 ? `public-search-option-${activeSuggestion}` : undefined}
+            aria-describedby="public-record-search-help"
+            placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
+          />
+          <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
+            <Search size={23} aria-hidden="true" />
+          </button>
+        </form>
+        {searchOpen && (
+          <div className="public-record-suggestions" id="public-record-suggestions">
+            <div className="public-record-suggestions__group">
+              <h3>{t('Matching sample references', 'মিলে যাওয়া নমুনা রেফারেন্স')}</h3>
+              {cleanReference && matchedOptions.length > 0 ? (
+                <ul className="public-record-suggestions__list">
+                  {matchedOptions.map((option, index) => (
+                    <li key={option.kind + option.value}>
+                      <button
+                        id={`public-search-option-${index}`}
+                        className={activeSuggestion === index ? 'public-record-suggestions__option is-active' : 'public-record-suggestions__option'}
+                        type="button"
+                        onMouseDown={event => event.preventDefault()}
+                        onClick={() => chooseReference(option.value)}
+                      >
+                        <Search size={17} aria-hidden="true" />
+                        <span className="public-record-suggestions__option-copy">
+                          <span className="public-record-suggestions__value">{option.value}</span>
+                          <span className="public-record-suggestions__kind">
+                            {option.kind === 'challan' ? t('Sample challan reference', 'নমুনা চালান রেফারেন্স') : option.kind === 'token' ? t('Sample payment token', 'নমুনা পেমেন্ট টোকেন') : t('Sample transaction reference', 'নমুনা লেনদেন রেফারেন্স')}
+                          </span>
+                        </span>
+                        <ArrowRight size={16} aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="public-record-suggestions__empty">
+                  {cleanReference
+                    ? t('No sample suggestions match. You can still search your full reference.', 'নমুনায় মিল নেই। তবুও আপনার সম্পূর্ণ রেফারেন্স দিয়ে খুঁজতে পারবেন।')
+                    : t('Start typing to see matching sample references.', 'মিলে যাওয়া নমুনা রেফারেন্স দেখতে টাইপ করুন।')}
+                </p>
+              )}
+            </div>
+            <div className="public-record-suggestions__group public-record-suggestions__examples">
+              <h3>{t('Try a sample number', 'নমুনা নম্বর দিয়ে দেখুন')}</h3>
+              <div className="public-record-suggestions__links">
+                {sampleReceipts.map(receipt => (
+                  <a
+                    key={receipt.id}
+                    href="?action=verify"
+                    onClick={event => { event.preventDefault(); chooseReference(receipt.challanNo); }}
+                    className="public-record-suggestions__link"
+                    aria-label={t('Try sample reference', 'নমুনা রেফারেন্স দেখুন') + ': ' + receipt.challanNo}
+                  >
+                    <span>{receipt.challanNo}</span>
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+              <p>{t('Demonstration references only — not official payment evidence.', 'শুধু প্রদর্শনের নমুনা — সরকারি পেমেন্টের প্রমাণ নয়।')}</p>
+            </div>
+          </div>
+        )}
+      </div>
+      <p id="public-record-search-help" className="public-record-discovery__note">
+        {t('For guest-payment records, you may also need the mobile number used on the receipt.', 'অতিথি পেমেন্টের রেকর্ডের জন্য রসিদে দেওয়া মোবাইল নম্বরও লাগতে পারে।')}
+      </p>
+    </section>
 
     <section id="public-how-it-works" className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
       <div className="citizen-hub-section__heading">
