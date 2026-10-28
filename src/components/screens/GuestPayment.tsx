@@ -935,7 +935,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${signedInProfile ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('phone')}
-              </div>
+              </div>}
 
 
 
