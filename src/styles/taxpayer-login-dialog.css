@@ -192,3 +192,23 @@
   .taxpayer-login-dialog--reference .taxpayer-login-heading .taxpayer-login-heading__close {width:40px;height:40px;}
   .taxpayer-login-dialog--reference form {padding:1.15rem 1rem;}
 }
+
+/* The standalone eTIN-style login shares the same entry and control motion. */
+.taxpayer-login-backdrop {
+  animation: taxpay-overlay-enter 280ms ease-out both;
+}
+.taxpayer-login-dialog--reference {
+  animation: taxpay-dialog-enter 280ms cubic-bezier(.22, 1, .36, 1) both;
+}
+.taxpayer-login-dialog .taxpayer-login-input-wrap input,
+.taxpayer-login-dialog .taxpayer-login-password-toggle,
+.taxpayer-login-dialog .taxpayer-login-submit {
+  transition: border-color 160ms ease-in-out,
+              background-color 160ms ease-in-out,
+              color 160ms ease-in-out,
+              box-shadow 160ms ease-in-out;
+}
+@media (prefers-reduced-motion:reduce) {
+  .taxpayer-login-backdrop, .taxpayer-login-dialog--reference,
+  .taxpayer-login-dialog * { animation:none !important; transition:none !important; }
+}

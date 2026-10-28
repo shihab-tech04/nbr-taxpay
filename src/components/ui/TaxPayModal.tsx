@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useId, useRef, useState } from 'react';
+import React, { createContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 /** Portal target for workflow-owned footer actions; the modal still owns its close control. */
 export const TaxPayModalFooterTarget = createContext<HTMLDivElement | null>(null);
@@ -17,6 +17,10 @@ export interface TaxPayModalProps {
   backLabel?: string;
   /** Stable workflow identity while the visible title changes per step. */
   ariaLabel?: string;
+  /** Animate compact content-height changes without changing payment-stage scrolling. */
+  animateSize?: boolean;
+  /** Current inner screen; re-observe when the screen's element changes. */
+  motionKey?: string;
 }
 
 /**
@@ -36,10 +40,16 @@ export function TaxPayModal({
   onBack,
   backLabel = 'Back',
   ariaLabel,
+  animateSize = false,
+  motionKey,
 }: TaxPayModalProps) {
   const titleId = useId();
   const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -88,6 +98,38 @@ export function TaxPayModal({
     };
   }, []);
 
+  useLayoutEffect(() => {
+    if (!animateSize) {
+      setContentHeight(null);
+      return;
+    }
+    const body = bodyRef.current;
+    const header = headerRef.current;
+    const footer = footerRef.current;
+    const content = body?.firstElementChild as HTMLElement | null;
+    if (!body || !header || !footer || !content) return;
+    // Observe natural content height, not the scrollable body's constrained height.
+    // This allows the modal to animate both expansion and contraction.
+    const measure = () => {
+      const styles = getComputedStyle(body);
+      const padding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+      const available = Math.max(0, window.innerHeight - (window.innerWidth <= 650 ? 0 : 32));
+      const natural = Math.ceil(header.offsetHeight + footer.offsetHeight + content.scrollHeight + padding + 2);
+      const next = Math.min(available, natural);
+      setContentHeight(previous => previous === next ? previous : next);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(content);
+    observer.observe(header);
+    observer.observe(footer);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [animateSize, motionKey]);
+
   return (
     <TaxPayModalFooterTarget.Provider value={footerTarget}>
     <div
@@ -103,9 +145,11 @@ export function TaxPayModal({
         aria-label={ariaLabel}
         aria-labelledby={ariaLabel ? undefined : titleId}
         data-public-service={service}
+        data-size-motion={animateSize ? 'true' : undefined}
+        style={animateSize && contentHeight !== null ? { height: contentHeight } : undefined}
         ref={dialogRef}
       >
-        <header className="taxpay-modal__header public-service-dialog__header">
+        <header ref={headerRef} className="taxpay-modal__header public-service-dialog__header">
           {onBack ? <button type="button" className="taxpay-modal__back" aria-label={backLabel} onClick={onBack}><ArrowLeft size={20} aria-hidden="true" /></button> : <span className="taxpay-modal__back-placeholder" aria-hidden="true" />}
           <h2 className="taxpay-modal__title" id={titleId}>{title}</h2>
           <button
@@ -118,10 +162,10 @@ export function TaxPayModal({
             <X size={20} aria-hidden="true" />
           </button>
         </header>
-        <div className="taxpay-modal__body public-service-dialog__body">
+        <div ref={bodyRef} className="taxpay-modal__body public-service-dialog__body">
           {children}
         </div>
-        <footer className="taxpay-modal__footer">
+        <footer ref={footerRef} className="taxpay-modal__footer">
           {footer ?? (
             <button className="taxpay-modal__footer-close" type="button" onClick={onClose}>
               {closeLabel}

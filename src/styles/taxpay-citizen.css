@@ -2006,3 +2006,49 @@
   .taxpay-reference-dialog__body {padding:1rem;}
   .citizen-dialog__title {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}
 }
+
+
+/* TaxPay modal motion standard: consistent easing, content-sized dialogs and
+   immediately accessible controls. Payment stage scrollers retain their height. */
+.taxpay-citizen-shell {
+  --taxpay-motion-fast: 160ms;
+  --taxpay-motion-normal: 280ms;
+  --taxpay-motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes taxpay-overlay-enter { from { opacity:0; } to { opacity:1; } }
+@keyframes taxpay-dialog-enter {
+  from { opacity:0; transform:translateY(10px) scale(.99); }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes taxpay-content-enter {
+  from { opacity:0; transform:translateY(5px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.taxpay-citizen-shell .taxpay-modal__overlay {
+  animation: taxpay-overlay-enter var(--taxpay-motion-normal) ease-out both;
+}
+.taxpay-citizen-shell .taxpay-modal {
+  animation: taxpay-dialog-enter var(--taxpay-motion-normal) var(--taxpay-motion-ease) both;
+  transition: height var(--taxpay-motion-normal) var(--taxpay-motion-ease),
+              width var(--taxpay-motion-normal) var(--taxpay-motion-ease);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__close,
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__back,
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer button {
+  transition: background-color var(--taxpay-motion-fast) ease-in-out,
+              border-color var(--taxpay-motion-fast) ease-in-out,
+              color var(--taxpay-motion-fast) ease-in-out;
+}
+@media (max-width:650px) {
+  /* Keep the existing full-height mobile layout; never constrain it via inline height. */
+  .taxpay-citizen-shell .taxpay-modal[data-size-motion="true"] { height:100dvh !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .taxpay-citizen-shell .taxpay-modal__overlay,
+  .taxpay-citizen-shell .taxpay-modal,
+  .taxpay-citizen-shell .taxpay-modal * {
+    animation:none !important;
+    transition:none !important;
+    scroll-behavior:auto !important;
+  }
+}
