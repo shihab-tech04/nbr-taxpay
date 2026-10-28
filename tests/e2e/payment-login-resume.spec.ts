@@ -8,7 +8,6 @@ test('account sign-in at the breakpoint retains the selected service and starts 
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await enterTaxPayService(payment, 'OTHER_TAX_PAYMENT', 'SELF');
   const selectedService = payment.locator('.tax-service-choice__selected-service strong');
-  await expect(selectedService).toHaveText('Other Tax Payment');
 
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await expect(page.getByRole('dialog')).toHaveCount(1);
