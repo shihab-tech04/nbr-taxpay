@@ -59,6 +59,12 @@ const descriptions: Record<DemoNextAction['reason'], { en: string; bn: string }>
   previous: { en: 'You used this service in a demonstration. Review available options only if you need a new payment.', bn: 'প্রদর্শনীতে আপনি এই সেবা ব্যবহার করেছেন। নতুন পরিশোধ প্রয়োজন হলে বিকল্পগুলো দেখুন।' },
   first: { en: 'There is no stored service activity for this example. Explore payment types and choose only what applies.', bn: 'এই উদাহরণে সেবার রেকর্ড নেই। পরিশোধের ধরন দেখুন এবং প্রযোজ্য হলে বেছে নিন।' }
 };
+/** Review stays within the exact SQL record view; it must not navigate to an
+ * unrelated activity feed or an unregistered router destination. */
+export function nextActionDestination(action: DemoNextAction): 'record' | 'services' {
+  return action.kind === 'review' ? 'record' : 'services';
+}
+
 export function nextActionDescription(action: DemoNextAction, language: Language): string {
   return descriptions[action.reason][language];
 }
