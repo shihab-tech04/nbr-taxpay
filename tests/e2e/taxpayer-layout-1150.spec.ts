@@ -32,7 +32,7 @@ test('User1 charts use TaxPay blue tokens, and category filters work by keyboard
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
 });
 
-test('User1 overview fits narrow phones, tablets and large desktops, widening to 1150px', async ({page},info) => {
+test('User1 overview fits narrow phones, tablets and large desktops at Sobaike 900px width', async ({page},info) => {
   test.skip(info.project.name !== 'mobile-375','One worker measures eleven explicit viewport widths');
   test.setTimeout(120000);
   for (const width of [320,360,375,390,600,768,900,1024,1280,1440,1600,1920]) {
@@ -48,8 +48,8 @@ test('User1 overview fits narrow phones, tablets and large desktops, widening to
     expect(dims.overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
     expect(dims.width,'too wide at '+width).toBeLessThanOrEqual(width);
     if (width>=1600) {
-      expect(dims.width,'too narrow at '+width).toBeGreaterThanOrEqual(1100);
-      expect(dims.width,'exceeds target 1150 at '+width).toBeLessThanOrEqual(1152);
+      expect(dims.width,'too narrow at '+width).toBeGreaterThanOrEqual(890);
+      expect(dims.width,'exceeds Sobaike 900px target at '+width).toBeLessThanOrEqual(902);
     }
     if (width<=390) {
       await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
@@ -73,8 +73,8 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
         content:(document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement).getBoundingClientRect().width}));
       expect(dims.overflow,route+' overflow at '+width).toBeLessThanOrEqual(2);
       if(width>=1600) {
-        expect(dims.content,route+' too narrow at '+width).toBeGreaterThanOrEqual(1100);
-        expect(dims.content,route+' overflows target at '+width).toBeLessThanOrEqual(1152);
+        expect(dims.content,route+' too narrow at '+width).toBeGreaterThanOrEqual(890);
+        expect(dims.content,route+' exceeds Sobaike target at '+width).toBeLessThanOrEqual(902);
       }
       await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
     }
