@@ -1,6 +1,22 @@
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
+// These are disconnected layout checks: never write synthetic UI fixtures to
+// the hosted payment database from a browser regression.
+async function mockPayment(page: import('@playwright/test').Page, expectedMinor: number) {
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const input = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number };
+    expect(input.origin).toBe('QA_BROWSER');
+    expect(input.service).toBe('OTHER_TAX_PAYMENT');
+    expect(input.amountMinor).toBe(expectedMinor);
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, id: '10000000-0000-4000-8000-000000000002', status: 'SIMULATED_SUCCESS',
+      mirrored: true, simulationOnly: true,
+    }) });
+  });
+}
+
 test('mobile service gate and four payment steps remain compact and usable', async ({ page }, info) => {
   test.skip(info.project.name === 'desktop-1280', 'Mobile regression at 320px and 375px');
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -56,6 +72,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
 });
 test('Step 2 guest form groups inputs and recalculates the right-hand summary', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Two-column geometry on desktop');
+  await mockPayment(page, 1200000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const originalUrl = page.url();
@@ -151,6 +168,7 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
 });
 test('multiple Other Tax heads keep distinct amounts through searching and into one accurate simulated receipt', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
+  await mockPayment(page, 150000);
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
