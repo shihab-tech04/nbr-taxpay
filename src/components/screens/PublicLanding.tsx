@@ -193,22 +193,6 @@ export const PublicLanding: React.FC = () => {
                 <p className="public-record-suggestions__empty">{t('No matching samples. You can still search this reference.', 'নমুনায় মিল নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
               )}
             </div>
-            <div className="public-record-suggestions__group public-record-suggestions__examples">
-              <h3>{t('Sample references (demo only)', 'নমুনা রেফারেন্স (শুধু ডেমো)')}</h3>
-              <div className="public-record-suggestions__links">
-                {sampleReceipts.map(receipt => (
-                  <a
-                    key={receipt.id}
-                    href="?action=verify"
-                    onClick={event => { event.preventDefault(); chooseReference(receipt.challanNo); }}
-                    className="public-record-suggestions__link"
-                    aria-label={t('Try sample reference', 'নমুনা রেফারেন্স দেখুন') + ': ' + receipt.challanNo}
-                  >
-                    {receipt.challanNo}
-                  </a>
-                ))}
-              </div>
-            </div>
           </div>
         )}
       </div>
