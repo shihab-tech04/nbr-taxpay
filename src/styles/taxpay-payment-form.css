@@ -211,3 +211,55 @@
 .other-tax-row--invalid{background:#fff7f7;box-shadow:inset 3px 0 0 #c8374c}
 .other-tax-row--invalid input[aria-invalid="true"]{border-color:#b82d43;box-shadow:0 0 0 1px #b82d43}
 .other-tax-total{min-width:0;max-width:70%;text-align:right;overflow-wrap:anywhere}
+
+
+/* Grouped taxpayer calculations use the actual in-form allocation amounts. */
+.payment-form-summary__taxpayers {
+  min-width: 0; display: grid; gap: .45rem;
+  padding: .75rem .85rem 1rem;
+  border-top: 1px solid var(--citizen-border, #dce5f0);
+}
+.payment-form-summary__taxpayers > h3 {
+  margin: 0 0 .2rem; font-size: 14px; font-weight: 750;
+  color: var(--citizen-text, #172b4d);
+}
+.payment-form-summary__taxpayer {
+  min-width: 0; border: 1px solid var(--citizen-border, #dce5f0);
+  border-radius: .55rem; overflow: hidden; background: var(--citizen-surface, white);
+}
+.payment-form-summary__taxpayer > summary {
+  display: flex; align-items: center; gap: .45rem;
+  min-width: 0; padding: .75rem .65rem;
+  cursor: pointer; list-style: none;
+}
+.payment-form-summary__taxpayer > summary::-webkit-details-marker { display: none; }
+.payment-form-summary__taxpayer > summary:focus-visible {
+  outline: 2px solid var(--citizen-primary, #2c5ead); outline-offset: -2px;
+}
+.payment-form-summary__taxpayer-name {
+  display: grid; gap: .2rem; min-width: 0; flex: 1;
+}
+.payment-form-summary__taxpayer-name strong { font-size: 14px; overflow-wrap: anywhere; }
+.payment-form-summary__taxpayer-name small { color: var(--citizen-muted, #526880); font-size: 14px; overflow-wrap: anywhere; }
+.payment-form-summary__taxpayer-total {
+  flex: none; color: var(--citizen-primary-dark, #245aa0);
+  font-size: 14px; font-weight: 800; white-space: nowrap;
+}
+.payment-form-summary__taxpayer > summary > svg { flex: none; transition: transform .15s ease; }
+.payment-form-summary__taxpayer[open] > summary > svg { transform: rotate(180deg); }
+.payment-form-summary__taxpayer-items {
+  display: grid; gap: .55rem; padding: .65rem;
+  border-top: 1px solid var(--citizen-border, #dce5f0);
+}
+.payment-form-summary__taxpayer-item {
+  display: grid; grid-template-columns: minmax(0,1fr) auto;
+  gap: .5rem; align-items: start;
+}
+.payment-form-summary__taxpayer-item p { margin: 0; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.payment-form-summary__taxpayer-item small { display:block; color: var(--citizen-muted, #526880); font-size:14px; }
+.payment-form-summary__taxpayer-item strong { font-size:14px; white-space:nowrap; }
+.payment-form-summary__taxpayer-empty { margin: 0; color: var(--citizen-muted, #526880); font-size:14px; }
+.payment-flow-embedded .payment-form-summary__taxpayers { display:grid; }
+@media(max-width:900px) {
+  .payment-flow-embedded .payment-form-summary__taxpayers { display:grid; }
+}
