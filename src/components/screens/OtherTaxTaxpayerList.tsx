@@ -8,6 +8,8 @@ interface Props {
   primaryName: string;
   lockedPrimary?: boolean;
   allowAdditional?: boolean;
+  /** Fictional signed-in accounts use 13-digit scenario TINs; guests still use 12 digits. */
+  allowSyntheticDemoTin?: boolean;
   additional: OtherTaxTaxpayer[];
   allocations: OtherTaxAllocation[];
   invalidId: string | null;
@@ -20,7 +22,7 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, allowSyntheticDemoTin = false, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
@@ -52,12 +54,12 @@ export function OtherTaxTaxpayerList({
       <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary ? 13 : 12} autoComplete="off" required
+          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
             readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
             value={primaryTin} placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
             aria-describedby={tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : undefined}
-            onChange={event => { if (!lockedPrimary) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, 12)); onClearError(); } }} />
+            onChange={event => { if (!lockedPrimary) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onClearError(); } }} />
         </div>
         <div>
           <label htmlFor="other-tax-primary-name">{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
@@ -85,11 +87,11 @@ export function OtherTaxTaxpayerList({
         <div className="taxpay-taxpayer-row__fields">
           <div>
             <label htmlFor={'other-tax-tin-' + person.id}>{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-            <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={12}
+            <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={allowSyntheticDemoTin ? 13 : 12}
               value={person.tin} required autoComplete="off" placeholder={bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
               aria-invalid={Boolean(tinError && invalidId === person.id) || undefined}
               aria-describedby={tinError && invalidId === person.id ? 'guest-payment-error-tin' : undefined}
-              onChange={event => edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, 12) })} />
+              onChange={event => edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12) })} />
           </div>
           <div>
             <label htmlFor={'other-tax-name-' + person.id}>{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
