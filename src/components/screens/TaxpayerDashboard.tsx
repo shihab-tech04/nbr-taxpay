@@ -9,6 +9,7 @@ import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ServiceCategoryTag, type ServiceCategoryCode } from '../ui/ServiceCategoryTag';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { taxpayerGreeting, isReturningTaxpayer } from '../../services/taxpayerGreeting';
+import { AccountActivitySummary } from './AccountActivitySummary';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -82,6 +83,8 @@ export const TaxpayerDashboard: React.FC = () => {
         </label>
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>} />
+    {user && <AccountActivitySummary ownerUid={user.id} language={language}
+      onNavigate={(route) => navigate(route)} />}
     {previewAccount && demoUser && !user && <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>

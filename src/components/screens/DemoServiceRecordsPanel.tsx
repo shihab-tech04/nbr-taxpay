@@ -1,7 +1,7 @@
 import React from 'react';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { useTaxState } from '../../services/taxState';
-import { buildDemoNextActions, nextActionDescription } from '../../services/demoNextActions';
+import { buildDemoNextActions, nextActionDescription, nextActionDestination } from '../../services/demoNextActions';
 import type { DemoUserId } from '../../data/demoUsers';
 import type { Language } from '../../types/tax';
 import {
@@ -77,6 +77,10 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
   const summary = simulationSummary(records);
   const { navigate } = useTaxState();
   const nextActions = buildDemoNextActions(records);
+  const [selectedRecordId, setSelectedRecordId] = React.useState<string | null>(null);
+  React.useEffect(() => { setSelectedRecordId(null); }, [userId]);
+  const selectedRecord = records.find(record =>
+    record.userId === userId && record.recordId === selectedRecordId) ?? null;
   const sumMinor = (rows: readonly DemoSqlServiceRecord[]) =>
     rows.reduce((total, record) => total + BigInt(record.amountMinor), 0n);
   const renderDate = (value: string) => new Intl.DateTimeFormat(locale, {
@@ -189,13 +193,46 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                   </h4>
                   <p className="text-sm text-taxpay-muted">{nextActionDescription(action, language)}</p>
                   <button type="button" className="mt-auto min-h-10 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
-                    onClick={() => navigate(action.kind === 'review' ? 'activity' : 'services')}>
-                    {action.kind === 'review' ? tr('Review activity', 'কার্যক্রম পর্যালোচনা') : tr('View service options', 'সেবার বিকল্প দেখুন')}
+                    onClick={() => nextActionDestination(action) === 'record' ? setSelectedRecordId(action.id) : navigate('services')}>
+                    {action.kind === 'review' ? tr('View this record', 'এই রেকর্ড দেখুন') : tr('View service options', 'সেবার বিকল্প দেখুন')}
                   </button>
                 </li>
               ))}
             </ul>
           </section>
+          {selectedRecord && (
+            <section aria-label={tr('Selected service record details', 'নির্বাচিত সেবার রেকর্ডের বিস্তারিত')}
+              data-testid="demo-service-record-detail" className="rounded-xl border border-taxpay-primary bg-white p-4" aria-live="polite">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-taxpay-text">
+                    {tr('Recorded activity details', 'নথিভুক্ত কার্যক্রমের বিস্তারিত')}
+                  </h3>
+                  <p className="mt-1 break-all text-sm text-taxpay-muted">{selectedRecord.recordId}</p>
+                </div>
+                <button type="button" className="min-h-10 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary"
+                  onClick={() => setSelectedRecordId(null)}>{tr('Close details', 'বিস্তারিত বন্ধ করুন')}</button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <ServiceCategoryTag code={selectedRecord.serviceCode}>{label(serviceLabels[selectedRecord.serviceCode])}</ServiceCategoryTag>
+                {renderState(selectedRecord)}
+              </div>
+              <dl className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                <div><dt className="text-taxpay-muted">{tr('Recorded amount', 'নথিভুক্ত পরিমাণ')}</dt>
+                  <dd className="font-semibold tabular-nums text-taxpay-text">{amount(selectedRecord.amountMinor, locale)}</dd></div>
+                <div><dt className="text-taxpay-muted">{tr('Assessment year', 'করবর্ষ')}</dt>
+                  <dd className="font-medium text-taxpay-text">{selectedRecord.assessmentYear ?? tr('Not applicable', 'প্রযোজ্য নয়')}</dd></div>
+                <div><dt className="text-taxpay-muted">{tr('Recorded date', 'রেকর্ডের তারিখ')}</dt>
+                  <dd className="font-medium text-taxpay-text"><time dateTime={selectedRecord.recordedAt}>{renderDate(selectedRecord.recordedAt)}</time></dd></div>
+                <div><dt className="text-taxpay-muted">{tr('Participation', 'অংশগ্রহণ')}</dt>
+                  <dd className="font-medium text-taxpay-text">{participant(selectedRecord)}</dd></div>
+              </dl>
+              <p className="mt-4 rounded-lg bg-taxpay-light p-3 text-sm text-taxpay-muted">
+                {tr('This is a fictional SQL service record, not a government challan, Treasury settlement, assessed balance or eligible tax credit. Its state is shown as stored; no official payment status is inferred.',
+                  'এটি একটি পরীক্ষামূলক SQL সেবার রেকর্ড; সরকারি চালান, ট্রেজারি নিষ্পত্তি, নির্ধারিত বকেয়া বা স্বীকৃত কর ক্রেডিট নয়। সংরক্ষিত অবস্থাই দেখানো হচ্ছে; সরকারি পরিশোধের অবস্থা অনুমান করা হয়নি।')}
+              </p>
+            </section>
+          )}
           {records.length === 0 ? (
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-taxpay-muted" role="status">
               {tr('No stored service activity is available for this account.', 'এই অ্যাকাউন্টে কোনো সংরক্ষিত সেবার কার্যক্রম নেই।')}
@@ -219,7 +256,9 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                       <tr key={record.recordId} className="align-top">
                         <td className="px-3 py-3">
                           <ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag>
-                          <p className="mt-1 break-all text-xs text-taxpay-muted">{record.recordId}</p>
+                          <button type="button" className="mt-1 min-h-9 break-all text-left text-xs font-medium text-taxpay-primary underline underline-offset-2"
+                            onClick={() => setSelectedRecordId(record.recordId)}
+                            aria-label={tr('View record', 'রেকর্ড দেখুন') + ': ' + record.recordId}>{record.recordId}</button>
                         </td>
                         <td className="px-3 py-3 text-taxpay-text">
                           <p>{record.assessmentYear ?? tr('Not applicable', 'প্রযোজ্য নয়')}</p>
@@ -240,7 +279,9 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                       <h4 className="min-w-0 text-sm"><ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag></h4>
                       {renderState(record)}
                     </div>
-                    <p className="mt-1 break-all text-xs text-taxpay-muted">{record.recordId}</p>
+                    <button type="button" className="mt-1 min-h-9 break-all text-left text-xs font-medium text-taxpay-primary underline underline-offset-2"
+                            onClick={() => setSelectedRecordId(record.recordId)}
+                            aria-label={tr('View record', 'রেকর্ড দেখুন') + ': ' + record.recordId}>{record.recordId}</button>
                     <p className="mt-3 text-lg font-semibold tabular-nums text-taxpay-text">{amount(record.amountMinor, locale)}</p>
                     <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-taxpay-muted">
                       <p>{record.assessmentYear ?? tr('No assessment year', 'করবর্ষ প্রযোজ্য নয়')}</p>
