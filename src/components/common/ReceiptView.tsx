@@ -94,6 +94,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   // This covers legacy direct guest-payment entry without editing parallel payment-form code.
   if (!embedded) return (
     <TaxPayModal title={labels.title} service="status" className="receipt-modal" footer={<></>}
+      closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       onClose={onBack ?? (() => navigate('history'))}>
       <ReceiptView receipt={receipt} embedded />
     </TaxPayModal>
