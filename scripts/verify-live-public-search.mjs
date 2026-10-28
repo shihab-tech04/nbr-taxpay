@@ -21,6 +21,11 @@ try {
     const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
     const section = page.getByRole('region', { name: 'Find a payment record' });
     await expect(section).toBeVisible({ timeout: 30_000 });
+    const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
+    const gapBefore = await page.evaluate(() => {
+      const card = document.querySelector('.public-record-discovery').getBoundingClientRect();
+      return document.querySelector('#public-how-it-works').getBoundingClientRect().top - card.bottom;
+    });
     await search.fill('TKN-882190');
     await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
     await expect(section.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
@@ -32,14 +37,22 @@ try {
       const list = element.querySelector('.public-record-suggestions');
       const field = element.querySelector('.public-record-search');
       return {
-        inFlow: getComputedStyle(list).position === 'static',
+        floating: getComputedStyle(list).position === 'absolute',
         belowInput: list.getBoundingClientRect().top >= field.getBoundingClientRect().bottom,
-        contained: element.getBoundingClientRect().bottom >= list.getBoundingClientRect().bottom,
+        cardHeight: element.getBoundingClientRect().height,
+        gapToNext: document.querySelector('#public-how-it-works').getBoundingClientRect().top - element.getBoundingClientRect().bottom,
+        dropdownOutsideCard: list.getBoundingClientRect().bottom > element.getBoundingClientRect().bottom,
       };
     });
-    if (!flow.inFlow || !flow.belowInput || !flow.contained) {
-      throw new Error(`Live ${name} search suggestions overlap or escape the section`);
+    if (!flow.floating || !flow.belowInput || !flow.dropdownOutsideCard ||
+        Math.abs(flow.cardHeight - cardHeightBefore) > 1 ||
+        Math.abs(flow.gapToNext - gapBefore) > 1) {
+      throw new Error(`Live ${name} search dropdown resized the card or detached from input: ${JSON.stringify(flow)}`);
     }
+    const link = section.getByRole('link', { name: /Try sample reference: AC-2025-09-DEMO-REF-001/ });
+    await expect(link).toHaveCSS('text-decoration-line', 'none');
+    await link.hover();
+    await expect(link).toHaveCSS('text-decoration-line', 'none');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (overflow > 2) throw new Error(`Live ${name} public search horizontal overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-search-${name}.png`, fullPage: true });
