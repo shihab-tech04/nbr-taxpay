@@ -46,7 +46,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
 
   await payment.getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
@@ -56,7 +56,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(tin).not.toHaveAttribute('readonly', '');
   await tin.fill('123456789012');
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();

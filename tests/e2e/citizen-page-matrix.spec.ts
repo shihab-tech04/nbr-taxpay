@@ -51,7 +51,6 @@ test.describe('read-only citizen screen matrix',()=>{
         await page.getByRole('button',{name:'Pay — select payment type'}).click();
         const services=page.getByRole('dialog',{name:'Pay Tax'});
         await enterTaxPayService(services, 'TAX_WITH_RETURN');
-        await services.getByRole('button',{name:'Continue without signing in'}).click();
       } else if(choice.kind==='button'){
         await page.getByRole('button',{name:new RegExp(choice.button)}).first().click();
       }

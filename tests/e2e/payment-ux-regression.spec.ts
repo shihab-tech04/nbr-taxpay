@@ -15,7 +15,6 @@ async function beginGuestPayment(page: Page, service: string) {
     await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   }
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   return dialog;
 }
 

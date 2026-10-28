@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useId, useRef, useState } from 'react'
 
 /** Portal target for workflow-owned footer actions; the modal still owns its close control. */
 export const TaxPayModalFooterTarget = createContext<HTMLDivElement | null>(null);
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 
 export interface TaxPayModalProps {
   title: string;
@@ -13,6 +13,8 @@ export interface TaxPayModalProps {
   closeIconLabel?: string;
   className?: string;
   service?: string;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
 /**
@@ -29,6 +31,8 @@ export function TaxPayModal({
   closeIconLabel = 'Close modal',
   className = '',
   service,
+  onBack,
+  backLabel = 'Back',
 }: TaxPayModalProps) {
   const titleId = useId();
   const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
@@ -98,6 +102,7 @@ export function TaxPayModal({
         ref={dialogRef}
       >
         <header className="taxpay-modal__header public-service-dialog__header">
+          {onBack ? <button type="button" className="taxpay-modal__back" aria-label={backLabel} onClick={onBack}><ArrowLeft size={20} aria-hidden="true" /></button> : <span className="taxpay-modal__back-placeholder" aria-hidden="true" />}
           <h2 className="taxpay-modal__title" id={titleId}>{title}</h2>
           <button
             ref={closeRef}

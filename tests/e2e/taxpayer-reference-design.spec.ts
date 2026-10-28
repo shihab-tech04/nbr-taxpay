@@ -122,7 +122,6 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     await page.getByRole('button',{name:'Pay — select payment type'}).click();
     const services=page.getByRole('dialog',{name:'Pay Tax'});
     await enterTaxPayService(services, 'TAX_WITH_RETURN');
-    await services.getByRole('button',{name:'Continue without signing in'}).click();
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
     const payment=services.locator('.payment-flow-embedded');
     await expect(payment).toBeVisible();
@@ -229,7 +228,6 @@ test('Public and Taxpayer use one family and legible payment controls', async ({
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
-  await services.getByRole('button',{name:'Continue without signing in'}).click();
   const field=services.locator('#guest-tin');
   if (await field.count()) expect(parseFloat(await field.evaluate(el=>getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });

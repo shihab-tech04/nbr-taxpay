@@ -665,3 +665,87 @@
   :is(.text-xs, [class~="text-[10px]"], [class~="text-[11px]"], [class~="text-[12px]"], [class~="text-[13px]"]) {
   font-size: 14px;
 }
+
+
+/* Unified eTIN-inspired modal shell: centered title, top-left Back and top-right Close.
+   Payment calculations, login actions and the four-stage payment footer remain unchanged. */
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  column-gap: .75rem;
+  align-items: center;
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__header .taxpay-modal__title {
+  grid-column: 2;
+  text-align: center;
+  font-weight: 650;
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__back,
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--citizen-border);
+  border-radius: .65rem;
+  color: var(--citizen-text);
+  background: var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__back { grid-column: 1; grid-row: 1; }
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__back-placeholder { grid-column: 1; grid-row: 1; width: 44px; }
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__close { grid-column: 3; grid-row: 1; }
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__back:hover { background: var(--citizen-primary-light); }
+.taxpay-citizen-shell .taxpay-modal .taxpay-modal__back:focus-visible { outline: 3px solid var(--citizen-primary); outline-offset: 2px; }
+
+/* Keep both entry decisions in one simple selection screen. */
+.tax-service-choice__access-heading {
+  margin: 1rem 0 .7rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--citizen-border);
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--citizen-text);
+}
+.tax-service-choice__access-options {
+  display: grid;
+  gap: .65rem;
+}
+.tax-service-choice__access-option {
+  min-height: 68px;
+  gap: .75rem;
+  padding: .7rem .9rem;
+  border-radius: .7rem;
+  box-shadow: none;
+}
+.tax-service-choice__access-option[aria-pressed="true"] {
+  background: var(--citizen-primary-light);
+  border-color: var(--citizen-primary);
+}
+.tax-service-choice__access-option[aria-pressed="true"] .tax-service-choice__radio {
+  border-color: var(--citizen-primary);
+}
+.tax-service-choice__access-option[aria-pressed="true"] .tax-service-choice__radio > span {
+  background: var(--citizen-primary);
+}
+.tax-service-choice__signed-in {
+  margin-top: .8rem;
+  color: var(--citizen-muted);
+  font-size: 14px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__body {
+  padding: 1rem 1.25rem;
+}
+@media (max-width: 560px) {
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__header {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    column-gap: .5rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__back,
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__close,
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__back-placeholder {
+    width: 40px;
+    height: 40px;
+  }
+  .tax-service-choice__access-option { min-height: 64px; }
+}

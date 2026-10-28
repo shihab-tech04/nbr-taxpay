@@ -6,7 +6,6 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   return dialog;
 };
 
@@ -233,7 +232,6 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', relationship);
-    await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
     await dialog.locator('#guest-tin').fill('111111111111');
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');

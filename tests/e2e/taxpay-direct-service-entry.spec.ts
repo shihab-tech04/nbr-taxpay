@@ -28,10 +28,10 @@ for (const { slide, cta, selected } of [
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Only where the taxpayer has authorized you.');
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-    await expect(modal.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+    await expect(modal.getByText('Step 1 of 4')).toBeVisible();
     await expect(modal.locator('[data-payment-entry]')).toHaveCount(0);
     await expect(modal.locator('[data-payment-service]').first()).toHaveAttribute('data-payment-service', selected);
-    await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+    await modal.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
     await expect(modal.getByRole('heading', { name: 'Who are you paying for?' })).toBeVisible();
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   });

@@ -10,7 +10,6 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   const footer = dialog.locator('.taxpay-modal__footer');
   const progress = dialog.locator('.tax-service-choice__progress');
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(progress.locator('li')).toHaveCount(4);
   await expect(progress.locator('[aria-current="step"]')).toHaveAttribute('aria-label', '1. Taxpayer details');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
@@ -63,7 +62,6 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   const summary = dialog.locator('.payment-form-summary');
   await expect(summary).toContainText('Payment calculation');
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -102,7 +100,6 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'OTHER');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-payer-name').fill('Test Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
@@ -115,7 +112,6 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -136,7 +132,6 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -160,7 +155,6 @@ test('multiple Other Tax heads keep distinct amounts through searching and into 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -197,7 +191,6 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN');
-  await payment.getByRole('button', { name: 'Continue without signing in' }).click();
 
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
