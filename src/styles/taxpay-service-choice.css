@@ -963,3 +963,5 @@
 .account-authorizations__pending-item span { color:var(--citizen-muted); overflow-wrap:anywhere; }
 .account-authorizations__pending-item span:last-child { grid-column:1/-1; }
 @media(max-width:600px){.account-authorizations__pending-item{grid-template-columns:minmax(0,1fr)}}
+
+.account-authorizations__expired { margin:0; padding:.55rem 0; border-top:1px solid var(--citizen-border); color:var(--citizen-muted); font-size:14px; line-height:1.5; }
