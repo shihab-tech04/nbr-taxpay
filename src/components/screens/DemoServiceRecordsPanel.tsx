@@ -1,5 +1,7 @@
 import React from 'react';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
+import { useTaxState } from '../../services/taxState';
+import { buildDemoNextActions, nextActionDescription } from '../../services/demoNextActions';
 import type { DemoUserId } from '../../data/demoUsers';
 import type { Language } from '../../types/tax';
 import {
@@ -73,6 +75,8 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const label = (value: Bilingual) => value[language];
   const summary = simulationSummary(records);
+  const { navigate } = useTaxState();
+  const nextActions = buildDemoNextActions(records);
   const sumMinor = (rows: readonly DemoSqlServiceRecord[]) =>
     rows.reduce((total, record) => total + BigInt(record.amountMinor), 0n);
   const renderDate = (value: string) => new Intl.DateTimeFormat(locale, {
@@ -169,6 +173,29 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
               </article>
             ))}
           </div>
+          <section aria-labelledby={`taxpayer-next-actions-${userId}`} data-testid="taxpayer-next-actions" className="rounded-xl border border-taxpay-border bg-taxpay-light p-3 sm:p-4">
+            <h3 id={`taxpayer-next-actions-${userId}`} className="text-base font-semibold text-taxpay-text">
+              {tr('Next steps from your activity', 'আপনার কার্যক্রম অনুযায়ী পরবর্তী ধাপ')}
+            </h3>
+            <p className="mt-1 text-sm text-taxpay-muted">
+              {tr('Based on recorded demonstration activity only. These are not assessed dues, certified credits or instructions to pay again.',
+                'শুধু প্রদর্শনী কার্যক্রমের তথ্যের ভিত্তিতে। এগুলো নির্ধারিত বকেয়া, স্বীকৃত কর ক্রেডিট বা আবার পরিশোধের নির্দেশ নয়।')}
+            </p>
+            <ul className="mt-3 grid gap-3 md:grid-cols-2">
+              {nextActions.map(action => (
+                <li key={action.id} className="flex min-w-0 flex-col items-start gap-2 rounded-lg border border-taxpay-border bg-white p-3">
+                  <h4 className="text-sm font-semibold text-taxpay-text">
+                    {action.serviceCode ? label(serviceLabels[action.serviceCode]) : tr('Explore tax payment services', 'কর পরিশোধ সেবা দেখুন')}
+                  </h4>
+                  <p className="text-sm text-taxpay-muted">{nextActionDescription(action, language)}</p>
+                  <button type="button" className="mt-auto min-h-10 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+                    onClick={() => navigate(action.kind === 'review' ? 'activity' : 'services')}>
+                    {action.kind === 'review' ? tr('Review activity', 'কার্যক্রম পর্যালোচনা') : tr('View service options', 'সেবার বিকল্প দেখুন')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
           {records.length === 0 ? (
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-taxpay-muted" role="status">
               {tr('No stored service activity is available for this account.', 'এই অ্যাকাউন্টে কোনো সংরক্ষিত সেবার কার্যক্রম নেই।')}
