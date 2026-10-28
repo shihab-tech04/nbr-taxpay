@@ -16,7 +16,7 @@ function record(recordId:string,serviceCode:DemoSqlServiceRecord['serviceCode'],
 
 test('only payer-owned active unexpired authorizations appear and a duplicate beneficiary is counted once',()=>{
   const rows=[
-    authorization('a','user1','user2','ACTIVE',now+30000),
+    authorization('a','user1','user2','ACTIVE',null),
     authorization('duplicate','user1','user2','ACTIVE',now+20000),
     authorization('expired','user1','user3','ACTIVE',now-100),
     authorization('revoked','user1','user3','REVOKED',now+20000),
