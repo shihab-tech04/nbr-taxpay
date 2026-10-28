@@ -719,8 +719,13 @@
 .receipt-view__parties .text-emerald-900{color:var(--citizen-primary-dark)}
 .receipt-view__breakdown{margin:0;padding:1.35rem 0;border-bottom:1px solid var(--citizen-border)}
 .receipt-view__breakdown-content{border:1px solid var(--citizen-border);border-radius:.65rem;overflow:hidden;background:var(--citizen-surface)}
-.receipt-view__table{display:block;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
-.receipt-view__cards{display:none}
+.receipt-view__table{display:none;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.receipt-view__cards{display:block}
+/* Wider public receipt dialogs can show the table; embedded Pay Tax dialogs use readable cards. */
+@media(min-width:651px){
+ .receipt-modal .receipt-view__table{display:block}
+ .receipt-modal .receipt-view__cards{display:none}
+}
 .receipt-view__financial-table{width:100%;min-width:720px;border-collapse:collapse;font-size:14px;line-height:1.5}
 .receipt-view__financial-table thead{background:var(--citizen-bg);color:var(--citizen-text);font-weight:700}
 .receipt-view__financial-table :is(th,td){padding:.8rem .6rem;vertical-align:top;border-bottom:1px solid var(--citizen-border)}
