@@ -60,7 +60,6 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(services).toBeVisible();
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
-  await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
@@ -92,7 +91,6 @@ test('guest menus and bell route to their named services; contextual payment cho
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
-  await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=payment_notifications/);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
@@ -150,7 +148,6 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await rail.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
-  await services.getByRole('button',{name:'Continue without signing in'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await expect(services.getByText('Step 1 of 4')).toBeVisible();
@@ -186,7 +183,6 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
-  await services.getByRole('button',{name:'Continue without signing in'}).click();
   // Payment services remain reachable through the Pay action without adding duplicate menu items.
   await expect(page).toHaveURL(/action=ledger/);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
