@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
-import { AccountReviewHistory } from './AccountReviewHistory';
+import { AuthenticatedHistorySwitch } from './AuthenticatedHistorySwitch';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
@@ -61,7 +61,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 
-  if (authenticatedUser) return <AccountReviewHistory ownerUid={authenticatedUser.id}
+  if (authenticatedUser) return <AuthenticatedHistorySwitch ownerUid={authenticatedUser.id}
     language={language} activityTabs={activityTabs} />;
   if (demoUser) return <DemoPaymentActivity activityTabs={activityTabs} />;
 
