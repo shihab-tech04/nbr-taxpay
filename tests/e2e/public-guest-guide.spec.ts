@@ -303,7 +303,7 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
  await expect(search).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
- await expect(lookup).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
  await search.fill('SYNTHETIC-NO-MATCH-2026');
  await search.press('Enter');
  await expect(page).toHaveURL(/action=verify/);
@@ -318,7 +318,7 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  expect(dimensions.paper).toBeLessThanOrEqual(dimensions.viewport);
  const a11y=await new AxeBuilder({page}).include('.receipt-modal').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
  expect(a11y.violations).toEqual([]);
- await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
+ await expect(lookup).toBeVisible();
 });
 
 test('remaining Travel Tax modal keeps title, close icon, dividers, content and fixed footer',async({page})=>{
