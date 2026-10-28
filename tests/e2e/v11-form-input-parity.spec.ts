@@ -10,7 +10,6 @@ test('payer relationship is required at entry and head choice is still validated
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
