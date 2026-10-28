@@ -112,7 +112,7 @@
   border-color: var(--color-taxpay-border);
   color: var(--color-taxpay-text);
   font-weight: 600;
-  box-shadow: var(--taxpay-shadow-control);
+  box-shadow: none;
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom {
   border-color: var(--color-taxpay-border);
