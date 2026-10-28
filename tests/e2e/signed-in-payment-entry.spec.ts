@@ -61,6 +61,6 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(tin).toHaveValue('2222222222222');
-  await expect(tin).toHaveAttribute('readonly', '');
+  await expect(payment.getByRole('region', { name: 'Account taxpayer details' })).toContainText('2222222222222');
+  await expect(payment.locator('input#guest-tin')).toHaveCount(0);
 });
