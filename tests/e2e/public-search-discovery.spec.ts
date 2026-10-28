@@ -28,7 +28,7 @@ test('matched suggestions support keyboard selection and original in-memory veri
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   await search.fill('TKN-882190');
   await search.press('ArrowDown');
-  await expect(search).toHaveAttribute('aria-activedescendant', 'public-search-option-0');
+  await expect(page.locator('#public-search-option-0')).toHaveClass(/is-active/);
   await search.press('Enter');
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('textbox', { name: /Challan, token or transaction reference/ })).toHaveValue('TKN-882190');
