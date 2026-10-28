@@ -40,10 +40,13 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
 
   const returnService = cards.nth(0);
   const advanceService = cards.nth(1);
+  // Revealing the second decision increases dialog height and intentionally recenters it.
+  // Keep icon/text/radio alignment stable *within the card*, not in viewport coordinates.
   const coordinates = () => returnService.evaluate(card => {
+    const cardRect = card.getBoundingClientRect();
     const getOrigin = (element: Element) => {
       const rect = element.getBoundingClientRect();
-      return { x: rect.x, y: rect.y };
+      return { x: rect.x - cardRect.x, y: rect.y - cardRect.y };
     };
     return {
       icon: getOrigin(card.querySelector('.tax-service-choice__icon')!),
