@@ -1,5 +1,7 @@
 /** Display stored request amount exactly in paisa, never as a paid amount. */
 export function formattedReviewAmount(minor: string|number, language:'en'|'bn'):string {
+  if(typeof minor==='number' && !Number.isSafeInteger(minor))
+    throw Error('Unsafe precision for stored request amount');
   const value=String(minor);
   if(!/^\d{1,19}$/.test(value))throw Error('Invalid request amount');
   const paisa=BigInt(value);
