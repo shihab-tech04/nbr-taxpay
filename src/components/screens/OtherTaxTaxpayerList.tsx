@@ -49,7 +49,10 @@ export function OtherTaxTaxpayerList({
       <div className="taxpay-taxpayer-row__header">
         <h3>{bn ? 'করদাতা ১' : 'Taxpayer 1'} <span>{bn ? 'প্রাথমিক' : 'Default'}</span></h3>
       </div>
-      <div className="taxpay-taxpayer-row__fields">
+      {lockedPrimary ? <dl id="guest-tin" tabIndex={-1} className="grid grid-cols-1 gap-x-4 gap-y-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2" aria-label={bn ? 'অ্যাকাউন্টের করদাতার তথ্য' : 'Taxpayer from your account'}>
+        <div><dt className="text-xs font-medium text-slate-500">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'}</dt><dd className="mt-1 break-all text-sm font-semibold text-taxpay-text">{primaryTin}</dd></div>
+        <div><dt className="text-xs font-medium text-slate-500">{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd className="mt-1 text-sm font-semibold text-taxpay-text">{primaryName || '—'}</dd></div>
+      </dl> : <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
           <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary ? 13 : 12} autoComplete="off" required
@@ -65,7 +68,7 @@ export function OtherTaxTaxpayerList({
             placeholder={bn ? 'নাম জানা থাকলে লিখুন' : 'Enter name if known'} readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
             onChange={event => { if (!lockedPrimary) onPrimaryName(event.target.value); }} />
         </div>
-      </div>
+      </div>}
       {tinError && (!invalidId || invalidId === 'primary') &&
         <p id="guest-payment-error-tin" className="payment-form-field-error" role="alert">{tinError}</p>}
     </article>
