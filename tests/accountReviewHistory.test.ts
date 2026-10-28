@@ -7,7 +7,7 @@ test('bigint-paisa request amount is exact, and never treated as receipt',()=>{
   assert.equal(formattedReviewAmount('1','en'),'৳ 0.01');
 });
 test('invalid financial inputs fail closed',()=>{
-  for(const value of ['-100','10.009','abc',0,Number.NaN,'9223372036854775808']){
+  for(const value of ['-100','10.009','abc',0,Number.NaN,Number.MAX_SAFE_INTEGER+2,'9223372036854775808']){
     assert.throws(()=>formattedReviewAmount(value,'en'));
   }
 });
