@@ -1176,3 +1176,11 @@
   .taxpay-taxpayer-reference .taxpayer-service-directory__grid { grid-template-columns:minmax(0,1fr); }
   .taxpay-taxpayer-reference .taxpayer-service-directory__primary { width:100%; }
 }
+
+
+/* Keep taxpayer transaction details aligned with the shared modal heading. */
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:.75rem;align-items:center;min-height:76px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading::before {content:'';grid-column:1;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading > div {grid-column:2;text-align:center;}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail__close {grid-column:3;grid-row:1;}
+@media(max-width:440px) {.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}}

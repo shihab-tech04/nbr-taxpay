@@ -749,3 +749,18 @@
   }
   .tax-service-choice__access-option { min-height: 64px; }
 }
+
+
+/* Reference parity: the question is in the centered modal title, not duplicated. */
+.tax-service-choice__payer-focus {position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__header {min-height:76px;padding-block:1rem;}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__body {padding:1.15rem 1.35rem;}
+.tax-service-choice__access-heading {margin-top:.9rem;padding-top:.9rem;}
+.tax-service-choice__access-option {min-height:72px;padding:.8rem 1rem;}
+.tax-service-choice__access-arrow {color:var(--citizen-primary-dark);flex:0 0 auto;}
+.tax-service-choice__access-option[aria-pressed="true"] {border-color:var(--citizen-primary);background:var(--color-taxpay-surface-subtle);}
+.tax-service-choice__access-option[aria-pressed="true"] .tax-service-choice__access-arrow {transform:translateX(2px);}
+@media(max-width:560px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__body {padding:1rem;}
+  .tax-service-choice__access-option {min-height:64px;padding:.65rem .75rem;}
+}

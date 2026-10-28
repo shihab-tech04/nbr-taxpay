@@ -290,9 +290,9 @@ export const ParityRegisterModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-300">
+      <div className="taxpay-parity-dialog bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-300">
         {/* Header */}
-        <div className="bg-emerald-950 text-white px-6 py-4 flex items-center justify-between border-b border-emerald-800">
+        <div className="taxpay-parity-dialog__header bg-emerald-950 text-white px-6 py-4 flex items-center justify-between border-b border-emerald-800">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-amber-400" />
             <div>
@@ -306,7 +306,8 @@ export const ParityRegisterModal: React.FC = () => {
           </div>
           <button
             onClick={() => setIsParityModalOpen(false)}
-            className="text-slate-300 hover:text-white p-1 rounded hover:bg-emerald-800 cursor-pointer"
+            aria-label="Close register"
+            className="taxpay-parity-dialog__close text-slate-300 hover:text-white p-1 rounded hover:bg-emerald-800 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

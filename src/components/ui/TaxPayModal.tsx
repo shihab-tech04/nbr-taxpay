@@ -15,6 +15,8 @@ export interface TaxPayModalProps {
   service?: string;
   onBack?: () => void;
   backLabel?: string;
+  /** Stable workflow identity while the visible title changes per step. */
+  ariaLabel?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export function TaxPayModal({
   service,
   onBack,
   backLabel = 'Back',
+  ariaLabel,
 }: TaxPayModalProps) {
   const titleId = useId();
   const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
@@ -97,7 +100,8 @@ export function TaxPayModal({
         className={`taxpay-modal public-service-dialog ${className}`.trim()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabel ? undefined : titleId}
         data-public-service={service}
         ref={dialogRef}
       >

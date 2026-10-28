@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {ShieldCheck,X} from 'lucide-react';
+import {X} from 'lucide-react';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
 import {
@@ -54,12 +54,13 @@ export function AuthorizationRequestPopup(){
   };
   return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4" role="presentation">
     <section role="dialog" aria-modal="true" aria-labelledby="auth-popup-title"
-      className="w-full max-w-md rounded-2xl border border-blue-100 bg-white p-6 shadow-2xl" lang={language}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2 text-blue-800"><ShieldCheck size={24} aria-hidden="true"/>
-          <h2 id="auth-popup-title" className="text-lg font-bold">{bn?'পেমেন্ট অনুমোদনের অনুরোধ':'Payment authorization request'}</h2></div>
-        <button type="button" aria-label={bn?'বন্ধ':'Close'} onClick={dismiss} className="rounded-lg p-2 text-slate-600"><X size={20}/></button>
-      </div>
+      className="taxpay-reference-dialog taxpay-authorization-popup" lang={language}>
+      <header className="taxpay-reference-dialog__header">
+        <span className="taxpay-reference-dialog__back-placeholder" aria-hidden="true" />
+        <h2 id="auth-popup-title">{bn?'পেমেন্ট অনুমোদনের অনুরোধ':'Payment authorization request'}</h2>
+        <button type="button" aria-label={bn?'বন্ধ':'Close'} onClick={dismiss} className="taxpay-reference-dialog__close"><X size={20} aria-hidden="true"/></button>
+      </header>
+      <div className="taxpay-reference-dialog__body">
       {displayedCode?<div className="mt-4 space-y-3">
         <p className="text-sm text-slate-700">{incoming.status==='CODE_ISSUED'
           ?(bn?'নতুন কোড এসেছে। আগের কোড বাতিল হয়েছে। সর্বশেষ কোডটি অনুরোধকারীকে দিন।':'New code received. The previous code is invalid. Share this latest code with the requester.')
@@ -79,6 +80,7 @@ export function AuthorizationRequestPopup(){
           <button type="button" disabled={busy} className="flex-1 rounded-lg border border-blue-200 px-4 py-3 font-semibold text-blue-800 disabled:opacity-50" onClick={()=>void act('decline')}>{bn?'প্রত্যাখ্যান':'Decline'}</button>
         </div>
       </div>}
+      </div>
     </section>
   </div>;
 }

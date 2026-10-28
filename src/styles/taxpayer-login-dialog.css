@@ -174,3 +174,21 @@
   .taxpayer-login-recovery-row { font-size: 14px; }
   .taxpayer-login-submit { min-height: 56px; }
 }
+
+
+/* Standalone login: the same centered-heading, divided-body and single action frame. */
+.taxpayer-login-dialog--reference {padding:0;overflow:hidden;max-height:min(90dvh,760px);}
+.taxpayer-login-dialog--reference .taxpayer-login-heading {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:.75rem;align-items:center;min-height:76px;margin:0;padding:1rem 1.35rem;border-bottom:1px solid var(--color-taxpay-border);}
+.taxpayer-login-dialog--reference .taxpayer-login-heading::before {content:'';grid-column:1;}
+.taxpayer-login-dialog--reference .taxpayer-login-heading h2 {grid-column:2;margin:0;font-size:clamp(18px,2vw,23px);font-weight:500;}
+.taxpayer-login-dialog--reference .taxpayer-login-heading .taxpayer-login-heading__close {position:static;grid-column:3;grid-row:1;width:44px;height:44px;}
+.taxpayer-login-dialog--reference form {padding:1.4rem 1.35rem 1.35rem;overflow-y:auto;}
+.taxpayer-login-dialog--reference .taxpayer-login-field + .taxpayer-login-field {margin-top:1.35rem;}
+.taxpayer-login-dialog--reference .taxpayer-login-recovery-row {padding:1rem 0 1.35rem;}
+.taxpayer-login-dialog--reference .taxpayer-login-actions {padding-top:1.35rem;}
+.taxpayer-login-dialog--reference .taxpayer-login-submit {min-height:56px;}
+@media(max-width:560px) {
+  .taxpayer-login-dialog--reference .taxpayer-login-heading {padding:.8rem 1rem;grid-template-columns:40px minmax(0,1fr) 40px;}
+  .taxpayer-login-dialog--reference .taxpayer-login-heading .taxpayer-login-heading__close {width:40px;height:40px;}
+  .taxpayer-login-dialog--reference form {padding:1.15rem 1rem;}
+}
