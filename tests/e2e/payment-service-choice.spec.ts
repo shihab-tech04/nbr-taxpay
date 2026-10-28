@@ -99,8 +99,10 @@ test('Payer, access and service choices use centered header, top-left Back and o
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const next = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue' });
   await expect(next).toBeDisabled();
-  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
+  await expect(dialog.getByRole('heading', { name: 'How you want to settle it?' })).toHaveCount(0);
   await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(next).toBeEnabled();
   await next.click();
   const back = dialog.locator('.taxpay-modal__back');
@@ -206,13 +208,14 @@ test('Combined payer and account choices retain selection through login and Back
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   const account = dialog.locator('[data-payment-access="ACCOUNT"]');
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
   await account.click();
   await expect(account).toHaveAttribute('aria-pressed', 'true');
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
