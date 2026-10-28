@@ -690,96 +690,79 @@
 .public-service-dialog__body{overflow:auto;overscroll-behavior:contain;padding:1rem;flex:1;min-height:0;}
 .public-service-dialog__body > div{padding-bottom:0;}
 .public-service-dialog :focus-visible{outline:3px solid var(--citizen-primary);outline-offset:2px;}
-/* Streamlined receipt view inside the guest lookup modal. */
-.public-service-dialog[data-public-service="status"] .public-service-dialog__body {
-  padding-top:1.15rem;
+/* The same receipt document in guest lookup, payment history and completed payment.
+   Reuse citizen tokens, not legacy emerald receipt styling or a second layout system. */
+.receipt-view--embedded{max-width:none;width:100%;min-width:0;color:var(--citizen-text);font-family:inherit;font-size:14px;line-height:1.55}
+.receipt-view__paper{min-width:0;margin:0;padding:0;background:var(--citizen-surface);color:var(--citizen-text);border:0;border-radius:0;box-shadow:none}
+.receipt-view__summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.5rem;align-items:center;padding:0 0 1.25rem;border-bottom:1px solid var(--citizen-border)}
+.receipt-view__eyebrow{margin:0 0 .35rem;color:var(--citizen-primary-dark);font-size:14px;font-weight:750;letter-spacing:.015em}
+.receipt-view__summary h3{margin:0;color:var(--citizen-text);font-size:clamp(20px,2.3vw,24px);font-weight:750;line-height:1.35;letter-spacing:-.02em}
+.receipt-view__summary-subtitle{margin:.4rem 0 0;color:var(--citizen-muted);font-size:14px;line-height:1.55}
+.receipt-view__amount{display:grid;justify-items:end;gap:.2rem;min-width:0;text-align:right}
+.receipt-view__amount span,.receipt-view__amount small{font-size:14px;font-weight:600;color:var(--citizen-muted)}
+.receipt-view__amount strong{font-size:clamp(23px,3.15vw,32px);font-weight:800;letter-spacing:-.025em;line-height:1.3;color:var(--citizen-primary-dark);font-variant-numeric:tabular-nums;white-space:nowrap}
+.receipt-view__notice{margin:1rem 0 0;padding:.7rem .9rem;border:1px solid var(--citizen-border);border-left:3px solid var(--citizen-primary);border-radius:.5rem;background:var(--citizen-primary-light);color:var(--citizen-text);font-size:14px;font-weight:550;line-height:1.55}
+.receipt-view__reference-strip{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,.85fr) minmax(0,1fr);align-items:start;gap:1.2rem;margin:0;padding:1.2rem 0;border-bottom:1px solid var(--citizen-border)}
+.receipt-view__reference-strip>div{min-width:0}
+.receipt-view__reference-strip>div>span:first-child{display:block;margin:0 0 .35rem;font-size:14px;font-weight:600;color:var(--citizen-muted)}
+.receipt-view__reference-strip .font-mono-plex{font-size:14px;line-height:1.5;overflow-wrap:anywhere;word-break:normal}
+.receipt-view__reference-number{font-weight:750;color:var(--citizen-primary-dark)}
+.receipt-view__copy{display:grid;place-items:center;flex:none;width:40px;height:40px;min-width:40px;min-height:40px;border:1px solid var(--citizen-border);border-radius:.55rem;color:var(--citizen-primary-dark);background:var(--citizen-surface)}
+.receipt-view__copy:hover{background:var(--citizen-primary-light)}
+.receipt-view__parties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem;padding:1.4rem 0;border-bottom:1px solid var(--citizen-border)}
+.receipt-view__parties>div{min-width:0}
+.receipt-view__section-title{margin:0 0 .9rem;padding:0 0 .55rem;border-bottom:1px solid var(--citizen-border);font-size:15px;font-weight:750;line-height:1.45;color:var(--citizen-text);letter-spacing:0;text-transform:none}
+.receipt-view__detail{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:.7rem;align-items:start;padding:.32rem 0;font-size:14px;line-height:1.55}
+.receipt-view__detail>span:first-child{min-width:0;color:var(--citizen-muted);font-weight:550;overflow-wrap:anywhere}
+.receipt-view__detail>span:last-child{grid-column:2;min-width:0;color:var(--citizen-text);font-weight:650;overflow-wrap:anywhere}
+.receipt-view__detail .font-mono-plex{font-size:14px;overflow-wrap:anywhere}
+.receipt-view__parties .text-emerald-900{color:var(--citizen-primary-dark)}
+.receipt-view__breakdown{margin:0;padding:1.35rem 0;border-bottom:1px solid var(--citizen-border)}
+.receipt-view__breakdown-content{border:1px solid var(--citizen-border);border-radius:.65rem;overflow:hidden;background:var(--citizen-surface)}
+.receipt-view__table{display:block;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.receipt-view__cards{display:none}
+.receipt-view__financial-table{width:100%;min-width:720px;border-collapse:collapse;font-size:14px;line-height:1.5}
+.receipt-view__financial-table thead{background:var(--citizen-bg);color:var(--citizen-text);font-weight:700}
+.receipt-view__financial-table :is(th,td){padding:.8rem .6rem;vertical-align:top;border-bottom:1px solid var(--citizen-border)}
+.receipt-view__financial-table th{font-size:14px;text-align:left;white-space:normal}
+.receipt-view__financial-table :is(th,td):nth-child(n+3){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.receipt-view__financial-table tbody td:nth-child(2){min-width:190px;overflow-wrap:anywhere}
+.receipt-view__financial-table td .font-mono-plex{font-size:14px}
+.receipt-view__financial-table tfoot{background:var(--citizen-primary-light);color:var(--citizen-primary-dark)}
+.receipt-view__financial-table tfoot td{border-bottom:0;font-weight:750}
+.receipt-view__status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;margin:0;padding:1.15rem 0 .2rem;background:transparent;border:0;border-radius:0}
+.receipt-view__status-card{display:flex;align-items:flex-start;gap:.75rem;min-width:0}
+.receipt-view__status-card>div:last-child{min-width:0}
+.receipt-view__status-card>div:last-child>span:first-child{display:block;margin:0 0 .35rem;font-size:14px;color:var(--citizen-muted);font-weight:650}
+.receipt-view__status-card>div:last-child>span:last-child{display:inline-block;border-radius:.45rem;padding:.3rem .5rem;font-size:14px;font-weight:750;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.receipt-view__status-card>div:first-child{flex:none}
+@media(max-width:760px){
+ .receipt-view__summary{grid-template-columns:minmax(0,1fr);gap:.7rem}
+ .receipt-view__amount{justify-items:start;text-align:left}
+ .receipt-view__reference-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+ .receipt-view__reference-strip>div:first-child{grid-column:1/-1}
+ .receipt-view__parties{gap:1.1rem}
 }
-.receipt-lookup--embedded .receipt-lookup__found {margin-top:1.15rem;}
-.receipt-view--embedded {max-width:none;width:100%;min-width:0;}
-.receipt-view--embedded .receipt-view__actions {
-  justify-content:flex-end;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
+@media(max-width:650px){
+ .receipt-view__parties{grid-template-columns:minmax(0,1fr);padding:1rem 0}
+ .receipt-view__breakdown{padding:1rem 0}
+ .receipt-view__cards{display:block}
+ .receipt-view__table{display:none}
+ .receipt-view__cards article{padding:1rem}
+ .receipt-view__cards article :is(p,h4,dt,dd,span){font-size:14px;line-height:1.5}
+ .receipt-view__status{grid-template-columns:minmax(0,1fr);gap:1rem}
+ .receipt-view__detail{grid-template-columns:minmax(0,40%) minmax(0,1fr)}
 }
-.receipt-view--embedded .receipt-view__action-group {
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-  align-items:center;
-  gap:.55rem;
-}
-.receipt-view--embedded .receipt-view__action-group button {
-  display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:.55rem;
-  padding:.65rem .95rem;border-radius:.6rem;
-  font-family:'Manrope',sans-serif;font-size:.8rem;font-weight:750;line-height:1.4;
-  box-shadow:none;
-}
-.receipt-view--embedded .receipt-view__action-group button:first-child {
-  color:white;background:var(--citizen-primary);
-  border:1px solid var(--citizen-primary);
-}
-.receipt-view--embedded .receipt-view__action-group button:first-child:hover {
-  background:var(--citizen-primary-dark);
-}
-.receipt-view--embedded .receipt-view__action-group button:last-child {
-  color:var(--citizen-primary-dark);
-  background:var(--citizen-surface);
-  border:1px solid var(--citizen-border);
-}
-.receipt-view--embedded .receipt-view__action-group button:last-child:hover {
-  background:var(--citizen-primary-light);
-}
-.receipt-view--embedded .receipt-view__paper {
-  padding:clamp(.9rem,2.8vw,1.35rem);
-  border:1px solid var(--citizen-border);
-  border-radius:.85rem;
-  box-shadow:none;
-  background:var(--citizen-surface);
-}
-.receipt-view--embedded .receipt-view__header {
-  padding:0 0 1rem;
-  border-bottom:1px solid var(--citizen-border);
-}
-.receipt-view--embedded .receipt-view__heading {
-  display:flex;align-items:center;justify-content:space-between;gap:.65rem;
-  flex-wrap:wrap;min-width:0;
-}
-.receipt-view--embedded .receipt-view__heading h3 {
-  margin:0;color:var(--citizen-text);
-  font-family:'Manrope',sans-serif;
-  font-size:clamp(1rem,2vw,1.13rem);font-weight:800;line-height:1.4;
-  letter-spacing:-.01em;
-}
-.receipt-view--embedded .receipt-view__paper > .grid:first-of-type {margin:1rem 0 1.25rem;}
-.receipt-view--embedded .receipt-view__paper .font-mono-plex {
-  overflow-wrap:anywhere;word-break:normal;
-}
-.receipt-view--embedded .receipt-view__paper h3 {
-  line-height:1.5;
-}
-.receipt-view--embedded .receipt-view__cards {display:block;}
-.receipt-view--embedded .receipt-view__table {display:none;}
-.receipt-view--embedded .receipt-view__paper .grid-cols-3 > span,
-.receipt-view--embedded .receipt-view__paper .grid-cols-3 > p {overflow-wrap:anywhere;}
-@media(max-width:650px) {
-  .receipt-view--embedded .receipt-view__actions {display:block;}
-  .receipt-view--embedded .receipt-view__action-group {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
-  .receipt-view--embedded .receipt-view__action-group button {width:100%;min-width:0;padding:.65rem .45rem;font-size:.73rem;white-space:normal;}
-  .receipt-view--embedded .receipt-view__paper > .grid:first-of-type {grid-template-columns:minmax(0,1fr);}
-  .receipt-view--embedded .receipt-view__paper > .grid:first-of-type > div {min-width:0;}
-  .receipt-view--embedded .receipt-view__paper .grid-cols-3 {grid-template-columns:minmax(100px,1fr) minmax(0,1.8fr);}
-  .receipt-view--embedded .receipt-view__paper .grid-cols-3 > .col-span-2 {grid-column:2 / span 1;}
-}
-@media print {
-  .public-service-overlay:has(.receipt-view--embedded) {position:static;display:block;padding:0;background:transparent;overflow:visible;}
-  .public-service-dialog[data-public-service="status"] {max-height:none;width:100%;border:0;box-shadow:none;overflow:visible;}
-  .public-service-dialog[data-public-service="status"] .public-service-dialog__header {display:none;}
-  .public-service-dialog[data-public-service="status"] .public-service-dialog__body {overflow:visible;padding:0;}
-  .receipt-lookup--embedded .receipt-lookup__form {display:none;}
-  .receipt-view--embedded .receipt-view__paper {border:0;box-shadow:none;padding:0;}
+@media print{
+ .receipt-view__paper{border:0!important;box-shadow:none!important;overflow:visible!important}
+ .receipt-view__summary{grid-template-columns:minmax(0,1fr) auto}
+ .receipt-view__amount{justify-items:end;text-align:right}
+ .receipt-view__parties{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .receipt-view__table{display:block!important;overflow:visible!important}
+ .receipt-view__cards{display:none!important}
+ .receipt-view__financial-table{min-width:0;font-size:11px}
+ .receipt-view__financial-table :is(th,td){font-size:11px;padding:.4rem}
+ .receipt-view__breakdown,.receipt-view__parties,.receipt-view__status{break-inside:avoid}
 }
 
 /* Guest payment-reference lookup: one purposeful modal surface, never a nested card. */
@@ -2054,104 +2037,51 @@
 }
 
 
-/* Receipt route consolidation: use the existing modal, never the legacy full-page blue header. */
-.taxpay-citizen-shell .taxpay-modal.receipt-modal {
-  width:min(100%,960px);
-  max-height:calc(100dvh - 2rem);
+/* Receipt modal: one fixed header, one document, one persistent action footer. */
+.taxpay-citizen-shell .taxpay-modal.receipt-modal{width:min(100%,920px);max-height:calc(100dvh - 2rem)}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header{flex:none;min-height:72px;padding:1rem 1.4rem;border-bottom:1px solid var(--citizen-border)}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__title{font-size:20px;line-height:1.4;font-weight:750;letter-spacing:-.02em}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body{flex:1;min-height:0;overflow-y:auto;padding:1.4rem 1.65rem}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer{display:none;min-height:76px;flex:none;padding:.8rem 1.65rem;border-top:1px solid var(--citizen-border);background:var(--citizen-surface)}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal:has(.receipt-view) .taxpay-modal__footer{display:flex}
+.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer-actions{display:block;flex:1;min-width:0}
+.receipt-modal .receipt-view__actions{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-width:0}
+.receipt-modal .receipt-view__back{display:inline-flex;align-items:center;gap:.5rem;min-height:44px;padding:.5rem .65rem;border:0;border-radius:.55rem;background:transparent;color:var(--citizen-primary-dark);font-family:inherit;font-size:14px;font-weight:700}
+.receipt-modal .receipt-view__back:hover{background:var(--citizen-primary-light)}
+.receipt-modal .receipt-view__action-group{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:.65rem}
+.receipt-modal .receipt-view__action{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;min-width:118px;padding:.65rem 1rem;border-radius:.6rem;font-family:inherit;font-size:14px;font-weight:700;line-height:1.4;white-space:nowrap;box-shadow:none}
+.receipt-modal .receipt-view__action--primary{background:var(--citizen-primary);color:white;border:1px solid var(--citizen-primary)}
+.receipt-modal .receipt-view__action--primary:hover{background:var(--citizen-primary-dark)}
+.receipt-modal .receipt-view__action--secondary{background:var(--citizen-surface);color:var(--citizen-primary-dark);border:1px solid var(--citizen-border)}
+.receipt-modal .receipt-view__action--secondary:hover{background:var(--citizen-primary-light)}
+.receipt-modal .receipt-lookup__form{max-width:100%;gap:1rem}
+.receipt-modal .receipt-lookup__found,.receipt-modal .receipt-lookup--embedded .receipt-lookup__found{margin:0}
+.receipt-modal .receipt-lookup__back{display:none}
+.receipt-modal .receipt-view__paper .font-mono-plex{overflow-wrap:anywhere}
+@media(max-width:650px){
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal{width:100%;max-width:100%;height:100dvh;max-height:100dvh}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header{min-height:64px;padding:.75rem 1rem}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__title{font-size:18px}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body{padding:1rem}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer{padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom))}
+ .receipt-modal .receipt-view__actions{flex-wrap:wrap;gap:.45rem}
+ .receipt-modal .receipt-view__action-group{flex:1;min-width:0}
+ .receipt-modal .receipt-view__action{min-width:0;flex:1;padding:.6rem .5rem}
 }
-.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header {
-  border-bottom:1px solid var(--citizen-border);
-  padding:1rem 1.35rem;
+@media(max-width:390px){
+ .receipt-modal .receipt-view__back{width:100%;min-height:36px;padding:.15rem 0;justify-content:flex-start}
+ .receipt-modal .receipt-view__action-group{width:100%;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .receipt-modal .receipt-view__action{width:100%;font-size:14px;padding:.55rem .25rem}
 }
-.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body {
-  padding:clamp(1rem,2vw,1.5rem);
-}
-.taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer {
-  display:none;
-}
-.receipt-modal .receipt-lookup__form {
-  max-width:100%;
-  gap:1rem;
-}
-.receipt-modal .receipt-lookup__found,
-.receipt-modal .receipt-lookup--embedded .receipt-lookup__found {
-  margin-top:0;
-}
-.receipt-modal .receipt-lookup__back {
-  display:inline-flex;
-  align-items:center;
-  gap:.45rem;
-  min-height:44px;
-  margin-bottom:.75rem;
-  padding:.4rem .65rem;
-  border:0;
-  background:transparent;
-  color:var(--citizen-primary-dark);
-  font-family:inherit;
-  font-size:.86rem;
-  font-weight:750;
-}
-.receipt-modal .receipt-lookup__back:hover {
-  background:var(--citizen-primary-light);
-  border-radius:.55rem;
-}
-.receipt-modal .receipt-view--embedded .receipt-view__header {display:none;}
-.receipt-modal .receipt-view--embedded .receipt-view__paper {
-  border:0;
-  border-radius:0;
-  padding:.25rem 0 0;
-  box-shadow:none;
-}
-.receipt-modal .receipt-view--embedded .receipt-view__actions {
-  margin:0 0 .75rem;
-}
-.receipt-modal .receipt-view--embedded .receipt-view__status--simulation > div:first-child > div:first-child {
-  background:var(--citizen-primary-light);
-  color:var(--citizen-primary-dark);
-}
-.receipt-modal .receipt-view--embedded .receipt-view__status--simulation > div:first-child .bg-emerald-100 {
-  color:var(--citizen-primary-dark);
-  background:var(--citizen-primary-light);
-  border-color:var(--citizen-border);
-}
-.receipt-modal .receipt-view__paper .font-mono-plex {
-  overflow-wrap:anywhere;
-}
-@media (min-width:651px) {
-  .receipt-modal .receipt-view--embedded .receipt-view__cards {display:none;}
-  .receipt-modal .receipt-view--embedded .receipt-view__table {display:block;}
-}
-@media (max-width:650px) {
-  .taxpay-citizen-shell .taxpay-modal.receipt-modal {
-    width:100%;
-    max-width:100%;
-    height:100dvh;
-    max-height:100dvh;
-  }
-  .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body {
-    padding:1rem;
-  }
-  .receipt-modal .receipt-lookup__back {margin-bottom:.4rem;}
-}
-@media print {
-  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header,
-  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)),
-  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer,
-  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-help-chat {
-    display:none!important;
-  }
-  .taxpay-citizen-shell .taxpay-modal.receipt-modal {
-    position:static!important;
-    width:100%!important;
-    max-width:none!important;
-    height:auto!important;
-    max-height:none!important;
-    border:0!important;
-    box-shadow:none!important;
-    overflow:visible!important;
-  }
-  .taxpay-citizen-shell > main:has(.receipt-modal) > div:has(.receipt-modal) > :not(.taxpay-modal__overlay) {display:none!important;}
-  .receipt-modal .receipt-view__actions,
-  .receipt-modal .receipt-lookup__back {display:none!important;}
-  .receipt-modal .receipt-view--embedded .receipt-view__paper {border:0;box-shadow:none;}
+@media print{
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header,
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)),
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer,
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-help-chat{display:none!important}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal{position:static!important;width:100%!important;max-width:none!important;height:auto!important;max-height:none!important;border:0!important;box-shadow:none!important;overflow:visible!important}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body{overflow:visible!important;padding:0!important}
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header,
+ .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer{display:none!important}
+ .taxpay-citizen-shell > main:has(.receipt-modal) > div:has(.receipt-modal) > :not(.taxpay-modal__overlay){display:none!important}
+ .receipt-modal .receipt-view__actions{display:none!important}
 }
