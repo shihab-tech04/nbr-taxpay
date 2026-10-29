@@ -68,7 +68,7 @@ export const TaxpayerDashboard: React.FC = () => {
     const body=[['Reference','Category','Assessment year','Amount BDT','Treasury status'],...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?'Treasury status not verified':r.treasuryStatus])]
       .map(r=>r.map(esc).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='TaxPay_transactions.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
   return <div className={`mx-auto max-w-[1150px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
     <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">

@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
-import {TaxPayModal} from '../ui/TaxPayModal';
+import {KorbrittoModal} from '../ui/KorbrittoModal';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
@@ -142,7 +142,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     const lines=[['SYNTHETIC EXAMPLE ONLY','Reference','Assessment year','Kind','Amount BDT','Status','Event date','Challan sample'],
       ...filtered.map(x=>['NOT GOVERNMENT DATA',x.ref,x.year,x.kind,x.amount,x.state,x.date,x.challan||''])].map(x=>x.map(clean).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+lines],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='TaxPay_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Korbritto_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
     <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
@@ -413,7 +413,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
-    {selected && <TaxPayModal
+    {selected && <KorbrittoModal
       title={selected.title}
       onClose={() => setSelected(null)}
       closeIconLabel={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}
@@ -428,6 +428,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
           [tr('Channel','মাধ্যম'),selected.channel],[tr('Challan reference','চালান রেফারেন্স'),selected.challan||tr('Unavailable','পাওয়া যায়নি')],[tr('Meaning','বিবরণ'),selected.detail]
         ].map(x=><div key={x[0]}><dt>{x[0]}</dt><dd>{x[1]}</dd></div>)}</dl>
       </div>
-    </TaxPayModal>}
+    </KorbrittoModal>}
   </div>;
 };

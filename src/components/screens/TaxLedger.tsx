@@ -27,7 +27,7 @@ export const TaxLedger: React.FC = () => {
                 const element = document.createElement('a');
                 const file = new Blob([JSON.stringify(visibleEntries, null, 2)], { type: 'application/json' });
                 element.href = URL.createObjectURL(file);
-                element.download = 'TaxPay_shared_ledger_sample_NOT_OFFICIAL.json';
+                element.download = 'Korbritto_shared_ledger_sample_NOT_OFFICIAL.json';
                 document.body.appendChild(element);
                 element.click();
                 document.body.removeChild(element);
