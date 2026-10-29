@@ -19,9 +19,13 @@ test('payer, tax and access appear progressively in one shared modal', async ({ 
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
-  await expect(guest).toContainText('Continue as guest');
+  await expect(guest).toContainText('Walk-in Payment');
   await expect(guest).toContainText('Enter your details and make this payment');
+  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Sign-in Payment');
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Use your account details and records');
+  // Sign-in precedes walk-in in the approved access decision order.
+  await expect(dialog.locator('[data-payment-access]').first()).toHaveAttribute('data-payment-access', 'ACCOUNT');
+  await expect(dialog.locator('[data-payment-access]').last()).toHaveAttribute('data-payment-access', 'GUEST');
   await expect(dialog.locator('.tax-service-choice__access-arrow')).toHaveCount(0);
   await expect(dialog.locator('.tax-service-choice__access-radio')).toHaveCount(2);
   await expect(guest).toHaveAttribute('aria-pressed', 'false');
@@ -179,11 +183,12 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   await expect(login).toHaveAttribute('aria-pressed', 'true');
   await expect(login.locator('.tax-service-choice__access-radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await page.setViewportSize({ width: 375, height: 812 });
-  const mobileFirst = await guest.boundingBox();
-  const mobileSecond = await login.boundingBox();
-  expect(mobileFirst).not.toBeNull();
-  expect(mobileSecond).not.toBeNull();
-  expect(mobileSecond!.y).toBeGreaterThanOrEqual(mobileFirst!.y + mobileFirst!.height);
+  // The approved order is account first and walk-in second; wait for responsive layout to settle.
+  await expect.poll(async () => {
+    const mobileFirst = await login.boundingBox();
+    const mobileSecond = await guest.boundingBox();
+    return mobileFirst && mobileSecond ? mobileSecond.y - (mobileFirst.y + mobileFirst.height) : -Infinity;
+  }).toBeGreaterThanOrEqual(0);
 });
 
 test('conditional modal resize uses standard motion and supports reduced motion', async ({ page }) => {
