@@ -54,7 +54,7 @@ test('both login entry points use the identical reusable login modal variant', a
   const standalone=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await expect(standalone).toHaveAttribute('data-public-service','login');
   await expect(standalone).toHaveClass(/taxpayer-login-modal/);
-  const standaloneWidth=await standalone.evaluate(el=>el.getBoundingClientRect().width);
+  const standaloneWidth=await standalone.evaluate(el=>getComputedStyle(el).width);
   const standaloneBodyPadding=await standalone.locator('.taxpay-modal__body').evaluate(el=>getComputedStyle(el).padding);
   await standalone.getByRole('button',{name:'Close modal'}).click();
   await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
@@ -70,7 +70,8 @@ test('both login entry points use the identical reusable login modal variant', a
   await expect(embedded.locator('.taxpay-modal__footer')).toBeVisible();
   await expect(embedded.locator('.taxpay-modal__back')).toBeVisible();
   await expect(embedded.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
-  expect(Math.abs(await embedded.evaluate(el=>el.getBoundingClientRect().width)-standaloneWidth)).toBeLessThanOrEqual(2);
+  // Compare CSS layout widths, not an animated bounding-box frame during modal entry.
+  await expect.poll(() => embedded.evaluate(el=>getComputedStyle(el).width)).toBe(standaloneWidth);
   expect(await embedded.locator('.taxpay-modal__body').evaluate(el=>getComputedStyle(el).padding)).toBe(standaloneBodyPadding);
   await embedded.getByRole('button',{name:'Back'}).click();
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed','true');
