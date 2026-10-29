@@ -202,7 +202,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByRole('radio', { name: 'bKash' }).check();
   await page.getByRole('checkbox', { name: /টিআইএন, খাত/ }).check();
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
-  await expect(page.getByRole('heading', { name: 'পেমেন্ট প্রক্রিয়া সম্পন্ন' })).toBeVisible({ timeout: 12000 });
+  await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড সংরক্ষিত' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
