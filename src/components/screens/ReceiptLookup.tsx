@@ -177,7 +177,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <p className="sr-only" role="status">
               {t('Receipt details loaded.', 'রসিদের তথ্য দেখানো হয়েছে।')}
             </p>
-            <ReceiptView receipt={searchResult} embedded={embedded} backLabel={t("Back to search", "অনুসন্ধানে ফিরুন")} onBack={() => {
+            <ReceiptView receipt={searchResult} embedded={embedded} onBack={() => {
               setSearchResult(null);
               setSearchedReference('');
             }} />
