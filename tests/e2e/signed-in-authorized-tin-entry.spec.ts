@@ -167,7 +167,7 @@ test('signed-in facilitated payments save one record per selected taxpayer item'
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 50/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
   expect(submitted.map(record => record.details.taxpayerTin)).toEqual(['2222222222222', '3333333333333']);
   expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
