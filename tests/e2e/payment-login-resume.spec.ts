@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
-test('account sign-in comes before tax choice and resumes payment Step 1', async ({ page }) => {
+test('account sign-in preserves tax and payer selections and resumes payment Step 1', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
@@ -24,11 +25,9 @@ test('account sign-in comes before tax choice and resumes payment Step 1', async
 
   await expect(login).toHaveCount(0);
   await expect(payment).toBeVisible();
-  await expect(payment.locator('.taxpay-modal__title')).toHaveText('Which tax would you like to pay?');
-  await expect(payment.locator('[data-payment-entry]')).toHaveCount(2);
-  await expect(payment.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
-  await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
+  await expect(payment.locator('[data-payment-entry]')).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.locator('.tax-service-choice__selected-service strong').first()).toHaveText('Other Tax Payment');
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
@@ -60,6 +59,7 @@ test('payment account login preserves payer and access on Back, errors and close
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="OTHER"]').click();
+  await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
@@ -72,6 +72,7 @@ test('payment account login preserves payer and access on Back, errors and close
 
   await login.getByRole('button', { name: 'Back' }).click();
   await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   const retry = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
@@ -82,23 +83,25 @@ test('payment account login preserves payer and access on Back, errors and close
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(0);
 });
 
-test('taxpayer summary follows tax options and both selection actions have distinct states', async ({ page }) => {
+test('Tax and access decisions appear beneath payer and are both required', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   const next = payment.getByRole('button', { name: 'Continue', exact: true });
   await expect(next).toBeDisabled();
   await payment.locator('[data-payer-relationship="SELF"]').click();
-  await expect(next).toBeEnabled();
-  await next.click();
-  await expect(payment.locator('.taxpay-modal__title')).toHaveText('Which tax would you like to pay?');
-  await expect(next).toBeDisabled();
-  const lastCard = payment.locator('[data-payment-entry]').last();
-  const summary = payment.locator('.tax-service-choice__selected-service--below');
-  await expect(summary).toContainText('My tax liability');
-  const cardBounds = await lastCard.boundingBox();
-  const summaryBounds = await summary.boundingBox();
-  expect(summaryBounds!.y).toBeGreaterThan(cardBounds!.y + cardBounds!.height);
+  const lastTax = payment.locator('[data-payment-entry]').last();
+  await expect(lastTax).toBeVisible();
+  await expect(payment.locator('[data-payment-access]')).toHaveCount(0);
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  const firstAccess = payment.locator('[data-payment-access]').first();
+  const taxBounds = await lastTax.boundingBox();
+  const accessBounds = await firstAccess.boundingBox();
+  expect(accessBounds!.y).toBeGreaterThan(taxBounds!.y + taxBounds!.height);
+  const secondAccess = await payment.locator('[data-payment-access]').last().boundingBox();
+  expect(Math.abs(accessBounds!.y - secondAccess!.y)).toBeLessThan(2);
+  await expect(next).toBeDisabled();
+  await firstAccess.click();
   await expect(next).toBeEnabled();
 });
