@@ -16,6 +16,8 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   // The access decision appears after the tax-choice Continue.
   const guest = dialog.locator('[data-payment-access="GUEST"]');
-  if (await guest.count()) await guest.click();
-  await dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  if (await guest.count()) {
+    await guest.click();
+    await dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  }
 }
