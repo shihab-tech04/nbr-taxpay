@@ -81,7 +81,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts
+        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts tests/e2e/travel-receipt-modal-parity.spec.ts
 
       - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
         env:
