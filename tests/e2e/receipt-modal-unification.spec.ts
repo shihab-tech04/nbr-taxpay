@@ -23,7 +23,9 @@ test('public payment status opens in the existing light-shell modal, not the leg
   await expect(modal.locator('.receipt-lookup__form')).toHaveCount(0);
   await expect(modal.getByRole('button', { name: 'Print receipt' })).toBeVisible();
   await expect(modal.getByRole('button', { name: 'Download' })).toBeVisible();
-  await expect(modal.locator('.receipt-view__paper')).toContainText('Demo receipt only');
+  await expect(modal.locator('.receipt-view__paper')).not.toContainText('Demo receipt only');
+  await expect(modal.locator('.receipt-view__paper')).not.toContainText('Simulation record');
+  await expect(modal.locator('.receipt-view__paper')).toContainText('Receipt details');
   await expect(modal.getByRole('button', { name: 'Back to search' })).toHaveCount(0);
   await expect(modal.locator('.receipt-view__action-group button')).toHaveCount(2);
   await modal.getByRole('button', { name: 'Close modal' }).click();
