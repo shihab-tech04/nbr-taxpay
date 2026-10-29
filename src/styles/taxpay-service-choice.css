@@ -969,3 +969,52 @@
   background: transparent;
   box-shadow: none;
 }
+
+/* Progressive entry: only the relationship uses stacked full-width cards.
+   Tax type and access are compact two-column choices within the same dialog.
+   Keep the shared modal, payment wizard, and scoped design tokens unchanged. */
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__payer-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__progressive-section {
+  min-width: 0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__entry-heading {
+  margin: 0 0 .75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__tax-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__tax-grid .tax-service-choice__card {
+  min-width: 0;
+  min-height: 108px;
+  gap: .7rem;
+  padding: .85rem .8rem;
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__tax-grid .tax-service-choice__icon {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__tax-grid .tax-service-choice__radio {
+  margin-inline-start: auto;
+}
+@media (max-width: 620px) {
+  /* Preserve readable controls and the established mobile modal pattern. */
+  .taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__tax-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .65rem;
+  }
+  .taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__tax-grid .tax-service-choice__card {
+    min-height: 76px;
+    padding: .7rem .75rem;
+  }
+}

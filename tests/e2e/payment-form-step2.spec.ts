@@ -110,8 +110,13 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
+  // The unified entry replaces the old extra Back screen. Preserve the guest
+  // access choice and let the taxpayer relationship and service change in place.
+  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

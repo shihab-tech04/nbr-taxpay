@@ -287,7 +287,6 @@ test('service banners preserve distinctive palette and readable CTA with payer-f
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue' }).click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
 });
 
@@ -436,10 +435,12 @@ test('each service-specific banner action skips repeated service selection', asy
       const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
       await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
       await dialog.locator('[data-payer-relationship="SELF"]').click();
-      await dialog.getByRole('button', { name: 'Continue' }).click();
-      // The CTA has already selected the service. Keep that exact service
-      // but do not ask the taxpayer to make the same decision a second time.
-      await expect(dialog.locator('[data-payment-entry], #tax-service-other-type')).toHaveCount(0);
+      // The CTA has already selected the service inside the unified chooser.
+      const taxChoice = code === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX';
+      await expect(dialog.locator(`[data-payment-entry="${taxChoice}"]`)).toHaveAttribute('aria-pressed', 'true');
+      await dialog.locator('[data-payment-access="GUEST"]').click();
+      await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
       await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
       await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
         .toHaveAttribute('data-payment-service', code);
@@ -447,7 +448,7 @@ test('each service-specific banner action skips repeated service selection', asy
       await dialog.locator('.payment-flow-embedded__footer-actions')
         .getByRole('button', { name: 'Back', exact: true }).click();
       await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
-      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
+      await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
       await dialog.getByRole('button', { name: 'Close payment services' }).click();
     }
   }
