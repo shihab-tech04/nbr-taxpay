@@ -1,6 +1,26 @@
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
+// These are disconnected layout checks: never write synthetic UI fixtures to
+// the hosted payment database from a browser regression.
+async function mockPayment(page: import('@playwright/test').Page, expectedMinor: number | number[]) {
+  const expected = Array.isArray(expectedMinor) ? expectedMinor : [expectedMinor];
+  const received: number[] = [];
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const input = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number };
+    expect(input.origin).toBe('QA_BROWSER');
+    expect(input.service).toBe('OTHER_TAX_PAYMENT');
+    expect(input.amountMinor).toBe(expected[received.length]);
+    received.push(input.amountMinor!);
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, id: `10000000-0000-4000-8000-${String(received.length + 1).padStart(12, '0')}`, status: 'SIMULATED_SUCCESS',
+      mirrored: true, simulationOnly: true,
+    }) });
+  });
+  return received;
+}
+
 test('mobile service gate and four payment steps remain compact and usable', async ({ page }, info) => {
   test.skip(info.project.name === 'desktop-1280', 'Mobile regression at 320px and 375px');
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -56,6 +76,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
 });
 test('Step 2 guest form groups inputs and recalculates the right-hand summary', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Two-column geometry on desktop');
+  await mockPayment(page, 1200000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const originalUrl = page.url();
@@ -156,6 +177,7 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
 });
 test('multiple Other Tax heads retain distinct amounts and produce separate payment records and receipts', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
+  const submitted = await mockPayment(page, [120000, 30000]);
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -186,15 +208,22 @@ test('multiple Other Tax heads retain distinct amounts and produce separate paym
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 1,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
-  const records = dialog.getByTestId('other-tax-batch-result');
-  await expect(records).toHaveCount(2);
-  await expect(records.first()).toContainText('1,200');
-  await expect(records.first()).toContainText('Advance tax on cigarrete manufacturer');
-  await expect(records.nth(1)).toContainText('300');
-  await expect(records.nth(1)).toContainText('private motor car');
-  await records.first().getByRole('button', { name: /View receipt for/ }).click();
-  await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
+  expect(submitted).toEqual([120000, 30000]);
+  const results = dialog.getByTestId('other-tax-batch-result');
+  await expect(results).toHaveCount(2);
+  await expect(results.first()).toContainText('1,200');
+  await expect(results.first()).toContainText('Advance tax on cigarrete manufacturer');
+  await expect(results.last()).toContainText('300');
+  await expect(results.last()).toContainText('private motor car');
+  await results.first().getByRole('button', { name: /View receipt/ }).click();
+  await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('BDT 1,200');
   await expect(dialog.locator('.receipt-view__paper')).not.toContainText('1,500');
+  await dialog.getByRole('button', { name: 'Close payment services' }).click();
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const reopened = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(reopened, 'OTHER_TAX_PAYMENT');
+  await reopened.getByTestId('other-tax-batch-result').last().getByRole('button', { name: /View receipt/ }).click();
+  await expect(reopened.locator('.receipt-view__amount strong')).toHaveText('BDT 300');
 });
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');
