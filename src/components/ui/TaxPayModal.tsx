@@ -23,6 +23,8 @@ export interface TaxPayModalProps {
   motionKey?: string;
   /** Focus the first meaningful form control; otherwise the header close button receives focus. */
   initialFocusSelector?: string;
+  /** Read-only information dialogs may omit an otherwise empty action footer. */
+  hideFooter?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export function TaxPayModal({
   animateSize = false,
   motionKey,
   initialFocusSelector,
+  hideFooter = false,
 }: TaxPayModalProps) {
   const titleId = useId();
   const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
@@ -169,14 +172,14 @@ export function TaxPayModal({
         <div ref={bodyRef} className="taxpay-modal__body public-service-dialog__body">
           {children}
         </div>
-        <footer ref={footerRef} className="taxpay-modal__footer">
+        {!hideFooter && <footer ref={footerRef} className="taxpay-modal__footer">
           {footer ?? (
             <button className="taxpay-modal__footer-close" type="button" onClick={onClose}>
               {closeLabel}
             </button>
           )}
           <div className="taxpay-modal__footer-actions" ref={setFooterTarget} />
-        </footer>
+        </footer>}
       </div>
     </div>
     </TaxPayModalFooterTarget.Provider>
