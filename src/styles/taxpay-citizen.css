@@ -2050,6 +2050,9 @@
 .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer{display:none;min-height:76px;flex:none;padding:.8rem 1.65rem;border-top:1px solid var(--citizen-border);background:var(--citizen-surface)}
 .taxpay-citizen-shell .taxpay-modal.receipt-modal:has(.receipt-view) .taxpay-modal__footer{display:flex}
 .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__footer-actions{display:block;flex:1;min-width:0}
+/* Certificate summaries supply their own document footer: no empty portal spacer. */
+.taxpay-citizen-shell .taxpay-modal.certificate-summary-modal .taxpay-modal__footer-actions{display:none}
+.taxpay-citizen-shell .taxpay-modal.certificate-summary-modal .receipt-view__actions{flex:1 1 auto;width:100%;justify-content:flex-end}
 /* Receipt actions also appear in the normal Pay Tax modal: share this footer layout. */
 .taxpay-citizen-shell .taxpay-modal:has(.receipt-view) .taxpay-modal__footer-actions{flex:1 1 auto;min-width:0}
 .taxpay-citizen-shell .taxpay-modal .receipt-view__actions{display:flex;align-items:center;justify-content:flex-end;gap:1rem;min-width:0}
