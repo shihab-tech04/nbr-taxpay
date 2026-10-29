@@ -5,7 +5,6 @@ import {
   Download,
   CheckCircle,
   ShieldCheck,
-  ArrowLeft,
   Copy,
   Info
 } from 'lucide-react';
@@ -23,7 +22,7 @@ interface ReceiptViewProps {
   backLabel?: string;
 }
 
-export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, backLabel }) => {
+export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false }) => {
   const { language, navigate } = useTaxState();
   const footerTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
@@ -95,9 +94,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   // The existing shared modal owns the action footer. The receipt supplies its controls.
   const receiptActions = (
     <div className="receipt-view__actions no-print">
-      {onBack && <button type="button" className="receipt-view__back" onClick={onBack}>
-        <ArrowLeft size={18} aria-hidden="true" /><span>{backLabel ?? labels.back}</span>
-      </button>}
       <div className="receipt-view__action-group">
         <button type="button" className="receipt-view__action receipt-view__action--secondary"
           onClick={() => downloadDisplayedCertificate(receipt)}>
@@ -115,7 +111,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <TaxPayModal title={labels.title} service="status" className="receipt-modal" footer={<></>}
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       onClose={onBack ?? (() => navigate('history'))}>
-      <ReceiptView receipt={receipt} embedded onBack={onBack} backLabel={backLabel} />
+      <ReceiptView receipt={receipt} embedded />
     </TaxPayModal>
   );
 
