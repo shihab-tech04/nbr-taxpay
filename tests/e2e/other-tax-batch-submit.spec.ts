@@ -60,7 +60,7 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   dialog = await openOtherTax(page);
   await expect(dialog.getByRole('heading', { name: 'Payment records pending' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Retry pending records' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
   await expect(dialog.getByTestId('other-tax-batch-result').last()).toContainText('Record saved');
   expect(stored.size).toBe(2);
@@ -79,7 +79,7 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   await expect(dialog.getByText('222222222222', { exact: true })).toBeVisible();
   await expect(dialog.getByText('2025-26', { exact: true })).toBeVisible();
   dialog = await openOtherTax(page);
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
   await expect(dialog.getByText('Payment progress details')).toContainText('7 / 7');
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
   expect(calls).toHaveLength(3);
@@ -113,7 +113,7 @@ test('a bank-branch request remains pending across reload until continued', asyn
   await expect(dialog.getByRole('heading', { name: 'Bank payment slip ready' })).toBeVisible();
   expect(calls).toHaveLength(0);
   await dialog.getByRole('button', { name: 'Continue bank payment' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
   expect(calls).toHaveLength(1);
   expect(calls[0].amountMinor).toBe(2500);
   await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('Record saved');

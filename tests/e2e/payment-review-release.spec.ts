@@ -318,7 +318,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('radio', { name: 'Nagad' }).check();
   await services.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
-  await expect(services.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(services.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await services.getByRole('button', { name: 'Receipt details' }).click();
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();

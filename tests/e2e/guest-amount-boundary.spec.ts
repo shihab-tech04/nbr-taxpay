@@ -37,6 +37,6 @@ test('payment amount matches the endpoint limit and preserves the last paisa', a
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(sentMinor).toBe(999999999999);
 });

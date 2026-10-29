@@ -108,7 +108,6 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await dialog.locator('.tax-service-choice__actions button').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('.tax-service-choice__actions button').click();
   const tin = dialog.locator('#guest-tin');
@@ -167,7 +166,7 @@ test('signed-in facilitated payments save one record per selected taxpayer item'
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 50/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
   expect(submitted.map(record => record.details.taxpayerTin)).toEqual(['2222222222222', '3333333333333']);
   expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
