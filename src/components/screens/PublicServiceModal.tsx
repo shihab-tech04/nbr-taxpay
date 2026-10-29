@@ -19,7 +19,8 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
       closeLabel={bn ? 'বন্ধ করুন' : 'Close'}
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       className={service === 'status' ? 'receipt-modal' : ''}
-      footer={service === 'status' ? <></> : undefined}
+      // Closing uses the shared top-right X; journeys and receipts own the footer actions.
+      footer={<></>}
       service={service}
       onClose={onClose}
     >
