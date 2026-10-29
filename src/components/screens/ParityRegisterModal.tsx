@@ -251,7 +251,7 @@ export const ROUTE_PARITY_REGISTER: RouteParityEntry[] = [
     nameBn: 'অপরিবর্তনীয় কর্মকর্তা অডিট রেজিস্টার',
     actionKey: 'audit_trail',
     status: 'PASS',
-    notes: 'Demonstration only: illustrative in-memory log; persistence, cryptographic verification and tamper resistance are not established.'
+    notes: 'In-memory log; persistence, cryptographic verification and tamper resistance are not established.'
   },
   {
     id: '27',
