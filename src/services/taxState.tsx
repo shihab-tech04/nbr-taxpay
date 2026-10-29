@@ -119,6 +119,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
   
   const [receipts, setReceipts] = useState<ChallanReceipt[]>(INITIAL_RECEIPTS);
+  const receiptIds = useRef(new Set(INITIAL_RECEIPTS.map(receipt => receipt.paymentTransactionId || receipt.challanNo)));
   // A public fictional journal is not a taxpayer's account-bound ledger.
   // Keep the typed state empty until an authorized verified source exists.
   const [ledgerEntries] = useState<TaxLedgerEntry[]>([]);
@@ -275,15 +276,18 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addPaymentReceipt = (receipt: ChallanReceipt) => {
+    const key = receipt.paymentTransactionId || receipt.challanNo;
+    if (receiptIds.current.has(key)) return;
+    receiptIds.current.add(key);
     setReceipts(prev => [receipt, ...prev]);
     
     // A newly generated demonstration receipt cannot establish a tax credit.
     // A separate authoritative reconciliation and entitlement event must control ledger posting.
 
     logAuditAction(
-      'DEMO_PAYMENT_SIMULATED',
+      'PAYMENT_RECORD_SAVED',
       receipt.challanNo,
-      `Simulation only for ${receipt.payerName} (sample TIN: ${receipt.payerTin}), Amount: BDT ${receipt.totalAmount}; no government challan or credit`
+      `Payment record for ${receipt.payerName}, amount: BDT ${receipt.totalAmount}; settlement not verified`
     );
   };
 

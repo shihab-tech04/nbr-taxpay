@@ -138,3 +138,37 @@ test('a taxpayer with saved heads cannot silently be changed to another TIN', as
   await expect(dialog.locator('input[id^="other-tax-tin-"]')).toHaveValue('3333333333333');
   await expect(dialog.getByTestId('grouped-taxpayer-calculation').locator('details').first()).toContainText('1,234.5');
 });
+
+test('signed-in facilitated payments save one record per selected taxpayer item', async ({ page }) => {
+  await mockAuthorizations(page, [authorization('user2', 'ACTIVE'), authorization('user3', 'ACTIVE')]);
+  const submitted: Array<Record<string, any>> = [];
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    submitted.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, id: `00000000-0000-4000-8000-${String(400 + submitted.length).padStart(12, '0')}`,
+      status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+    }) });
+  });
+  const dialog = await openSignedInOtherTax(page);
+  await dialog.locator('#guest-tin').fill('2222222222222');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  await dialog.locator('input[id^="other-tax-tin-"]').fill('3333333333333');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('15');
+  await batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button').nth(1).click();
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
+  await dialog.getByRole('radio', { name: 'bKash' }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
+  await dialog.getByRole('button', { name: /Pay BDT 50/ }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  expect(submitted.map(record => record.details.taxpayerTin)).toEqual(['2222222222222', '3333333333333']);
+  expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
+});
