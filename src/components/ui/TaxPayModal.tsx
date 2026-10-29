@@ -9,7 +9,6 @@ export interface TaxPayModalProps {
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  closeLabel?: string;
   closeIconLabel?: string;
   className?: string;
   service?: string;
@@ -29,15 +28,15 @@ export interface TaxPayModalProps {
 
 /**
  * Shared TaxPay modal shell.
- * Header/title + close, fixed header/footer with dividers, scrolling body.
+ * Header/title + one close control; optional action footer and scrolling body.
  * Feature-specific forms and actions remain with their respective screens.
+ * No default bottom Close action: the header X dismisses read-only dialogs.
  */
 export function TaxPayModal({
   title,
   onClose,
   children,
   footer,
-  closeLabel = 'Close',
   closeIconLabel = 'Close modal',
   className = '',
   service,
@@ -114,14 +113,14 @@ export function TaxPayModal({
     const header = headerRef.current;
     const footer = footerRef.current;
     const content = body?.firstElementChild as HTMLElement | null;
-    if (!body || !header || !footer || !content) return;
+    if (!body || !header || !content) return;
     // Observe natural content height, not the scrollable body's constrained height.
     // This allows the modal to animate both expansion and contraction.
     const measure = () => {
       const styles = getComputedStyle(body);
       const padding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
       const available = Math.max(0, window.innerHeight - (window.innerWidth <= 650 ? 0 : 32));
-      const natural = Math.ceil(header.offsetHeight + footer.offsetHeight + content.scrollHeight + padding + 2);
+      const natural = Math.ceil(header.offsetHeight + (footer?.offsetHeight ?? 0) + content.scrollHeight + padding + 2);
       const next = Math.min(available, natural);
       setContentHeight(previous => previous === next ? previous : next);
     };
@@ -129,7 +128,7 @@ export function TaxPayModal({
     const observer = new ResizeObserver(measure);
     observer.observe(content);
     observer.observe(header);
-    observer.observe(footer);
+    if (footer) observer.observe(footer);
     window.addEventListener('resize', measure);
     return () => {
       observer.disconnect();
@@ -172,12 +171,8 @@ export function TaxPayModal({
         <div ref={bodyRef} className="taxpay-modal__body public-service-dialog__body">
           {children}
         </div>
-        {!hideFooter && <footer ref={footerRef} className="taxpay-modal__footer">
-          {footer ?? (
-            <button className="taxpay-modal__footer-close" type="button" onClick={onClose}>
-              {closeLabel}
-            </button>
-          )}
+        {!hideFooter && footer != null && <footer ref={footerRef} className="taxpay-modal__footer">
+          {footer}
           <div className="taxpay-modal__footer-actions" ref={setFooterTarget} />
         </footer>}
       </div>
