@@ -81,6 +81,8 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(action).toBeEnabled();
   await action.click();
   await expect(dialog.getByText('Step 4 of 4')).toBeVisible();
+  await expect(dialog.locator('.tax-service-choice__progress li[data-progress-status="complete"]')).toHaveCount(3);
+  await expect(dialog.locator('.tax-service-choice__progress li[data-progress-status="current"]')).toHaveCount(1);
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await expect(dialog.getByText('Payment record saved; settlement is not verified.')).toBeVisible();
   await dialog.getByText('Payment progress and references').click();
