@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Clock3, Plus, RefreshCw, ShieldCheck, ShieldX, Trash2, UsersRound } from 'lucide-react';
 import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
@@ -24,6 +24,7 @@ export function ManageAuthorization() {
   const [busy, setBusy] = useState(false);
   const [syncPending, setSyncPending] = useState<string|null>(null);
   const [adding, setAdding] = useState(false);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
   const [tin, setTin] = useState('');
   const [codes, setCodes] = useState<Record<string, string>>({});
   const [removeId, setRemoveId] = useState<string | null>(null);
@@ -166,7 +167,7 @@ export function ManageAuthorization() {
             ? tr('Ask a taxpayer for consent or review existing permissions.', 'নতুন সম্মতি চান অথবা বিদ্যমান অনুমোদন দেখুন।')
             : tr('Review incoming requests and remove access whenever necessary.', 'অনুরোধ দেখুন এবং প্রয়োজনে অনুমোদন বাতিল করুন।')}</p>
         </div>
-        {tab === 'outgoing' && !adding && <button type="button" className="taxpay-auth-primary" onClick={() => { setAdding(true); setFeedback(null); }} aria-controls="new-auth-form" aria-expanded={false}>
+        {tab === 'outgoing' && !adding && <button ref={addButtonRef} type="button" className="taxpay-auth-primary" onClick={() => { setAdding(true); setFeedback(null); }}>
           <Plus size={17} aria-hidden="true"/>{tr('Add taxpayer', 'করদাতা যোগ করুন')}
         </button>}
       </div>
@@ -174,13 +175,13 @@ export function ManageAuthorization() {
       {adding && tab === 'outgoing' && <form id="new-auth-form" className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
         <label htmlFor="new-auth-tin">{tr('Taxpayer TIN', 'করদাতার টিআইএন')}</label>
         <div className="taxpay-auth-inline">
-          <input id="new-auth-tin" value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 13))}
+          <input id="new-auth-tin" autoFocus value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 13))}
             inputMode="numeric" autoComplete="off" placeholder={tr('Enter 13-digit test TIN', '১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন')} required maxLength={13} />
           <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization', 'অনুমোদন চান')}</button>
         </div>
         <div className="taxpay-auth-add__footer">
           <p>{tr('The taxpayer accepts from their account, then shares a four-digit code with you to confirm.', 'করদাতা নিজের অ্যাকাউন্ট থেকে গ্রহণ করে আপনার সঙ্গে চার সংখ্যার কোড শেয়ার করবেন।')}</p>
-          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setFeedback(null); }}>{tr('Cancel', 'বাতিল')}</button>
+          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Cancel', 'বাতিল')}</button>
         </div>
       </form>}
 
