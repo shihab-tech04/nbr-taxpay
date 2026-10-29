@@ -45,3 +45,15 @@ The homepage Account Login route rendered a standalone `TaxpayerLoginDialog` bac
 
 ## Release
 Do not classify LIVE before protected PR merge, exact-head CI, independent full history/source backup with checksum & isolated restore, verified private Drive copy, production deployment and live browser readback. Review older parallel branches (#287/#289) only for conflict; do not mix their feature changes.
+
+## Follow-up source sweep after PR #308 (2026-10-29)
+
+- Source baseline: `a1ce248b3e0fef1b89de3684f4e990c78a24be04`, the merged shared-login-modal release candidate.
+- Inspected all 79 `src/**/*.tsx` files. Ten caller files use `TaxPayModal`, including standalone sign-in, payment-journey sign-in, payment choice, receipt/certificate views, authorization, transaction details, and route parity.
+- `src/components/layout/CitizenNavigation.tsx` is a mobile navigation dialog, not a payment modal. `src/components/office-ui/OfficeControls.tsx` is an independent officer design system. Neither is migrated into the citizen TaxPay shell.
+- Both sign-in entry points use the same `taxpayer-login-modal` class, the same `service="login"` variant, the same form, and the same footer action component; payment retains contextual Back only.
+- Removed the duplicate login CSS definitions so a single `.taxpayer-login-modal` rule set owns width, padding and footer alignment. Kept the approved responsive values unchanged.
+- Removed the generic fallback bottom **Close** button from `TaxPayModal`. No footer is rendered unless the caller supplies actual workflow actions; receipt and travel consumers continue supplying a portal footer, while read-only dialogs can remain footerless.
+- Added regression assertions for one overlay and no redundant footer Close at both sign-in entry points; existing desktop/mobile, EN/BN, payment continuity and document export tests remain authoritative for functional acceptance.
+- Pre-release current-main backup: [Google Drive verified archive](https://drive.google.com/file/d/1_5kymPEvrMT55VJOTNzJT6U2-kzIfYp-/view); recovered Git bundle: 339 refs, SHA `a1ce248b`, independent restore and `git fsck --full --strict` PASS, Drive ZIP SHA-256 `3d7a791530f43611d73cecc2f3fc872a7221b9a58a643ff663a1f898af8e09c1`, re-downloaded ZIP byte-for-byte PASS.
+- Remaining release acceptance is based on actual new PR exact-head CI, merged SHA and deployed Pages/browser checks; do not infer a live deployment from this source audit.
