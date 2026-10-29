@@ -112,7 +112,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           <div className="receipt-view__amount">
             <span>{bn ? 'সর্বমোট অর্থ' : 'Total amount'}</span>
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
-            <small>{bn ? 'পেমেন্ট রেকর্ড' : 'Payment record'}</small>
           </div>
         </header>
 

@@ -202,7 +202,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await page.getByRole('radio', { name: 'bKash' }).check();
   await page.getByRole('checkbox', { name: /টিআইএন, খাত/ }).check();
   await page.getByRole('button', { name: /১৫,০০০ পরিশোধ করুন/ }).click();
-  await expect(page.getByRole('heading', { name: 'পেমেন্ট প্রক্রিয়া সম্পন্ন' })).toBeVisible({ timeout: 12000 });
+  await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড সংরক্ষিত' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
@@ -272,7 +272,10 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   const progress = services.locator('.tax-service-choice__progress');
   await expect(progress.locator('li')).toHaveCount(4);
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
-  expect(progressHeight).toBeLessThanOrEqual(info.project.name.startsWith('mobile') ? 84 : 52);
+  // The now-connected progress track provides 30px status circles plus 14px labels at all widths.
+  // Guard against excessive expansion rather than enforcing the obsolete single-row 52px layout.
+  expect(progressHeight).toBeGreaterThanOrEqual(60);
+  expect(progressHeight).toBeLessThanOrEqual(96);
   // Compactness must never come from shrinking the step labels below the approved 14px floor.
   const stepTextSize = await progress.locator('.tax-service-choice__stage--current .tax-service-choice__stage-label:visible').first()
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
@@ -318,7 +321,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('radio', { name: 'Nagad' }).check();
   await services.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
-  await expect(services.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(services.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await services.getByRole('button', { name: 'Receipt details' }).click();
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();

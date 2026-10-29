@@ -3,8 +3,7 @@ import { expect, test, type Locator } from '@playwright/test';
 
 async function choosePayer(dialog: Locator, mode: 'SELF' | 'OTHER' = 'SELF') {
   await dialog.locator(`[data-payer-relationship="${mode}"]`).click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(dialog.locator('.tax-service-choice__card')).toHaveCount(2);
+  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
 }
 
 test('Service selector preserves geometry and uses icon, text and radio cues for selection', async ({ page }) => {
@@ -12,7 +11,7 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
 
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
-  const cards = chooser.locator('.tax-service-choice__card');
+  const cards = chooser.locator('[data-payer-relationship]');
   await expect(cards).toHaveCount(2);
   // The approved dialog intentionally opens at 99% scale before easing to
   // 100%. Capture the baseline only after that entrance animation finishes.
@@ -107,33 +106,75 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
   await expect(advanceService.locator('.tax-service-choice__radio > span')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 });
 
-test('Payer, access and service choices use centered header, top-left Back and one footer action', async ({ page }) => {
+test('Three progressive decisions toggle independently and finish in one modal', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  const next = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue' });
+  const next = dialog.getByRole('button', { name: 'Continue', exact: true });
+  const self = dialog.locator('[data-payer-relationship="SELF"]');
+  const other = dialog.locator('[data-payer-relationship="OTHER"]');
+  const returnTax = dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]');
+  const otherTax = dialog.locator('[data-payment-entry="OTHER_TAX"]');
+  const guest = dialog.locator('[data-payment-access="GUEST"]');
+  const account = dialog.locator('[data-payment-access="ACCOUNT"]');
   await expect(next).toBeDisabled();
-  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
-  await expect(dialog.getByRole('heading', { name: 'How you want to settle it?' })).toHaveCount(0);
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(next).toBeEnabled();
-  await next.click();
-  const back = dialog.locator('.taxpay-modal__back');
-  await expect(back).toBeVisible();
-  await expect(back).toHaveAttribute('aria-label', 'Back');
+  await expect(returnTax).toHaveCount(0);
+  await expect(guest).toHaveCount(0);
+
+  await self.click();
+  await expect(returnTax).toBeVisible();
+  await expect(otherTax).toBeVisible();
+  await expect(guest).toHaveCount(0);
   await expect(next).toBeDisabled();
-  await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  // Wait for the shared modal's approved content/height animation to finish
+  // before asserting final two-column geometry. All Playwright projects here
+  // explicitly use the desktop viewport set above.
+  await expect.poll(async () => {
+    const [first, second] = await Promise.all([returnTax.boundingBox(), otherTax.boundingBox()]);
+    return first && second ? Math.abs(first.y - second.y) : Infinity;
+  }, { timeout: 6000 }).toBeLessThan(2);
+  const first = await returnTax.boundingBox();
+  const second = await otherTax.boundingBox();
+  expect(first).not.toBeNull();
+  expect(second).not.toBeNull();
+  expect(second!.x).toBeGreaterThan(first!.x + first!.width - 1);
+
+  await returnTax.click();
+  await expect(returnTax).toHaveAttribute('aria-pressed', 'true');
+  await expect(guest).toBeVisible();
+  await expect(account).toBeVisible();
+  await expect(guest).toHaveAttribute('aria-pressed', 'false');
+  await expect(next).toBeDisabled();
+  await returnTax.click();
+  await expect(returnTax).toHaveAttribute('aria-pressed', 'false');
+  await expect(guest).toHaveCount(0);
+  await expect(next).toBeDisabled();
+
+  await otherTax.click();
+  await guest.click();
+  await expect(guest).toHaveAttribute('aria-pressed', 'true');
   await expect(next).toBeEnabled();
-  await back.click();
-  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
+  await guest.click();
+  await expect(guest).toHaveAttribute('aria-pressed', 'false');
+  await expect(next).toBeDisabled();
+  await account.click();
+  await expect(next).toBeEnabled();
+
+  await self.click();
+  await expect(self).toHaveAttribute('aria-pressed', 'false');
+  await expect(otherTax).toHaveCount(0);
+  await expect(next).toBeDisabled();
+  await other.click();
+  await expect(otherTax).toHaveAttribute('aria-pressed', 'true');
+  await expect(account).toHaveAttribute('aria-pressed', 'true');
+  await expect(next).toBeEnabled();
 });
 
 test('Every selected payment service has readable title, description and icon contrast', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const cards = page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card');
+  const cards = page.getByRole('dialog', { name: 'Pay Tax' }).locator('[data-payer-relationship]');
 
   for (let index = 0; index < 2; index++) {
     const card = cards.nth(index);
@@ -173,6 +214,7 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await choosePayer(dialog, 'OTHER');
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await expect(dialog.getByText('Other tax payment type')).toHaveCount(0);
@@ -197,6 +239,7 @@ test('Tax with Return still proceeds with its unchanged service ID', async ({ pa
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
   await expect(dialog.locator('#guest-tin')).toBeVisible();
@@ -209,12 +252,13 @@ test('Back preserves payer and Other Tax choice without restoring the removed dr
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
-  await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Combined payer and account choices retain selection through login and Back', async ({ page }) => {
@@ -224,10 +268,11 @@ test('Combined payer and account choices retain selection through login and Back
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
   await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   const account = dialog.locator('[data-payment-access="ACCOUNT"]');
-  await expect(guest).toHaveAttribute('aria-pressed', 'true');
+  await expect(guest).toHaveAttribute('aria-pressed', 'false');
   await account.click();
   await expect(account).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -238,6 +283,7 @@ test('Combined payer and account choices retain selection through login and Back
   await login.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Other Tax keeps the v11 guest reference and four payment stages', async ({ page }) => {
@@ -246,6 +292,7 @@ test('Other Tax keeps the v11 guest reference and four payment stages', async ({
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await dialog.locator('#guest-tin').fill('123456789012');

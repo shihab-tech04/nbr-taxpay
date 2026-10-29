@@ -117,7 +117,7 @@ test('other-tax allocations create individual records with their own receipts', 
   const pay = dialog.getByRole('button', { name: /Pay BDT 2,500/ });
   await expect(pay).toBeEnabled();
   await pay.click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(1);
   await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('111111111111');
   await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('Record saved');

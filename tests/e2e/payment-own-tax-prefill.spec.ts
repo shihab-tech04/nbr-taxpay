@@ -45,11 +45,10 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
   await expect(payment.locator('#guest-tin')).toContainText('1111111111111');
-  // Change relationship through the existing Back controls; the category remains selected.
+  // Back returns to the unified chooser; its tax selection is preserved.
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
@@ -59,9 +58,8 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await payment.locator('#guest-tin').fill('123456789012');
   await expect(payment.locator('#guest-tin')).toHaveValue('123456789012');
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('#guest-tin')).toContainText('1111111111111');
   await expect(payment.locator('#guest-tin')).toHaveCount(1);

@@ -110,7 +110,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,000/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
@@ -131,8 +131,13 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
+  // The unified entry replaces the old extra Back screen. Preserve the guest
+  // access choice and let the taxpayer relationship and service change in place.
+  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -170,7 +175,7 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
   await page.setViewportSize({ width: 375, height: 812 });
   expect(await batch.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
-test('multiple Other Tax heads keep distinct amounts through searching and into separate receipts', async ({ page }, info) => {
+test('multiple Other Tax heads retain distinct amounts and produce separate payment records and receipts', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
   const submitted = await mockPayment(page, [120000, 30000]);
   await page.goto('/');
@@ -202,14 +207,17 @@ test('multiple Other Tax heads keep distinct amounts through searching and into 
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 1,500/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(submitted).toEqual([120000, 30000]);
   const results = dialog.getByTestId('other-tax-batch-result');
   await expect(results).toHaveCount(2);
   await expect(results.first()).toContainText('1,200');
+  await expect(results.first()).toContainText('Advance tax on cigarrete manufacturer');
   await expect(results.last()).toContainText('300');
+  await expect(results.last()).toContainText('private motor car');
   await results.first().getByRole('button', { name: /View receipt/ }).click();
   await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('BDT 1,200');
+  await expect(dialog.locator('.receipt-view__paper')).not.toContainText('1,500');
   await dialog.getByRole('button', { name: 'Close payment services' }).click();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const reopened = page.getByRole('dialog', { name: 'Pay Tax' });

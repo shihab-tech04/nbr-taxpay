@@ -46,9 +46,8 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
 
   await payment.getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
@@ -57,9 +56,8 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(manualTin).not.toHaveAttribute('readonly', '');
   await manualTin.fill('123456789012');
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.getByRole('region', { name: 'Account taxpayer details' })).toContainText('2222222222222');
   await expect(payment.locator('input#guest-tin')).toHaveCount(0);
