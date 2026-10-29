@@ -95,7 +95,7 @@
 
 /* Standalone and payment-embedded login share TaxPayModal. Form fields are identical. */
 .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal {
-  width: min(100%, 760px);
+  width: min(100%, 700px);
 }
 .taxpay-citizen-shell .taxpayer-login-dialog--embedded .taxpayer-login-field + .taxpayer-login-field {
   margin-top: 1.35rem;
