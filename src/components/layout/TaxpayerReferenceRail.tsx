@@ -14,7 +14,7 @@ const links: RailLink[] = [
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell }
 ];
 
-const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
+const activityRoutes = new Set(['history', 'activity_track', 'corrections', 'certificates']);
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
