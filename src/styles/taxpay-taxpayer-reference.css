@@ -609,6 +609,9 @@
   border-radius:12px;background:var(--color-taxpay-background);
 }
 .taxpay-taxpayer-reference .taxpay-auth-add label { font-size:14px;font-weight:650; }
+.taxpay-taxpayer-reference .taxpay-auth-add__footer {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.taxpay-taxpayer-reference .taxpay-auth-add__footer > p {flex:1 1 260px;min-width:0;}
+.taxpay-taxpayer-reference .taxpay-auth-add__footer > button {flex:none;}
 .taxpay-taxpayer-reference .taxpay-auth-inline { display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0; }
 .taxpay-taxpayer-reference .taxpay-auth-inline input {
   flex:1 1 180px;width:auto;min-width:0;max-width:100%;min-height:44px;border:1px solid var(--color-taxpay-border);
@@ -922,6 +925,14 @@
 .taxpay-taxpayer-reference .taxpayer-transaction-filter__search input {
   width:100%; min-width:0; height:100%; outline:none; border:0; background:transparent;
   color:var(--color-taxpay-text); font-size:14px; font-weight:400;
+}
+/* One control owns the search border and focus ring. Do not let the global
+   taxpayer input styles draw a second inset field on focus. */
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-filter__search > input[type="search"],
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-filter__search > input[type="search"]:focus-visible {
+  flex:1; width:100%; min-width:0; height:100%; padding:0;
+  border:0; border-radius:0; outline:none; box-shadow:none;
+  appearance:none; background:transparent;
 }
 .taxpay-taxpayer-reference .taxpayer-transaction-filter__search:focus-within,
 .taxpay-taxpayer-reference .taxpayer-transaction-filter > select:focus-visible {
