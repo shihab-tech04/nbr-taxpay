@@ -306,7 +306,12 @@ test('signed-in activity tracking stays inside the taxpayer workspace', async ({
 
   // Existing receipt lookup remains functional without taking over the public shell.
   await page.locator('.receipt-lookup__sample').first().click();
-  await expect(page.locator('.receipt-view')).toBeVisible();
+  const receiptDialog = page.getByRole('dialog', { name: /Receipt details/ });
+  await expect(receiptDialog).toBeVisible();
+  await expect(receiptDialog.locator('.receipt-view')).toBeVisible();
+  // Receipt details intentionally use the shared modal; close it before switching activity tabs.
+  await receiptDialog.getByRole('button', { name: 'Close modal' }).click();
+  await expect(receiptDialog).toHaveCount(0);
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
   await page.getByRole('navigation', { name: 'Activity sections' })
     .getByRole('button', { name: 'Transactions' }).click();
