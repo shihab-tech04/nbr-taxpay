@@ -1,5 +1,5 @@
 import { useSyncExternalStore, useState, type ImgHTMLAttributes } from 'react';
-import defaultWordmark from '../../assets/amar-kor-wordmark-no-wave-20261018.png';
+import defaultWordmark from '../../assets/korbritto-brand-locked.svg';
 import { supabase } from '../../services/supabaseClient';
 
 // One shared logo source for the public header/footer and taxpayer navigation.
