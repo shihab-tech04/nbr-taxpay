@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound, X } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react';
+import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
@@ -21,39 +22,14 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const [error, setError] = useState<'invalid'|'already_signed_in'|null>(null);
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
-  const dialogRef = useRef<HTMLElement>(null);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
   const credentialsReady = Boolean(userId.trim() && password.trim());
   useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
-  useEffect(() => {
-    const lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    inputRef.current?.focus();
-    // In the payment stepper, the existing TaxPayModal owns Escape and focus containment.
-    if (embedded) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        close();
-      }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const controls = [...dialogRef.current.querySelectorAll<HTMLElement>('input:not([disabled]), button:not([disabled])')];
-      if (!controls.length) return;
-      if (event.shiftKey && document.activeElement === controls[0]) {
-        event.preventDefault();
-        controls[controls.length - 1].focus();
-      } else if (!event.shiftKey && document.activeElement === controls[controls.length - 1]) {
-        event.preventDefault();
-        controls[0].focus();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      lastFocused?.focus();
-    };
-  }, [embedded]);
+  // The shared TaxPayModal owns Escape, focus containment, overlay and focus restoration.
+  // Embedded login still focuses the first field when entered from the payment stepper.
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -70,16 +46,9 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     }
   };
 
-  const content = <section ref={dialogRef} role={embedded ? undefined : 'dialog'}
-      aria-modal={embedded ? undefined : true} aria-labelledby={embedded ? undefined : 'taxpayer-login-title'}
-      className={embedded ? 'taxpayer-login-dialog taxpayer-login-dialog--embedded' : 'taxpayer-login-dialog taxpayer-login-dialog--reference'}>
-      {!embedded && <div className="taxpayer-login-heading">
-        <h2 id="taxpayer-login-title">{bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`}</h2>
-        <button type="button" onClick={close} aria-label={bn ? 'বন্ধ করুন' : 'Close'} className="taxpayer-login-heading__close">
-          <X size={24} aria-hidden="true" />
-        </button>
-      </div>}
-      <form id={embedded ? 'taxpay-embedded-login-form' : undefined} onSubmit={submit} noValidate>
+  const title = bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`;
+  const content = <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
+      <form id={embedded ? 'taxpay-embedded-login-form' : 'taxpay-standalone-login-form'} onSubmit={submit} noValidate>
         <div className="taxpayer-login-field">
           <label htmlFor="taxpayer-login-user-id">{bn ? 'ইউজার আইডি' : 'User ID'}</label>
           <div className="taxpayer-login-input-wrap">
@@ -120,15 +89,21 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
             ? (bn ? 'আগে বর্তমান অ্যাকাউন্ট থেকে সাইন আউট করুন।' : 'Sign out of the current account before switching users.')
             : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
         </p>}
-        {!embedded && <div className="taxpayer-login-actions">
-          <button className="taxpayer-login-submit" type="submit" disabled={!credentialsReady}>
-            {bn ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={19} aria-hidden="true" />
-          </button>
-        </div>}
       </form>
     </section>;
   if (embedded) return content;
-  return <div className="taxpayer-login-backdrop" onMouseDown={event => {
-    if (event.target === event.currentTarget) close();
-  }}>{content}</div>;
+  return <TaxPayModal
+    title={title}
+    onClose={close}
+    closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
+    className="taxpayer-login-modal"
+    service="login"
+    initialFocusSelector="#taxpayer-login-user-id"
+    footer={<button className="tax-service-choice__continue" type="submit"
+      form="taxpay-standalone-login-form" disabled={!credentialsReady}>
+      {bn ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={18} aria-hidden="true" />
+    </button>}
+  >
+    {content}
+  </TaxPayModal>;
 }
