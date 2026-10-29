@@ -108,7 +108,7 @@ test('online method categories reveal only relevant providers and reset the prev
   await expect(dialog.getByRole('button', { name: 'Back to confirmation' })).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Download' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Print receipt' })).toBeVisible();
-  await dialog.getByRole('button', { name: 'Close modal' }).click();
+  await dialog.getByRole('button', { name: 'Close payment services' }).click();
   await expect(dialog).toHaveCount(0);
 });
 
