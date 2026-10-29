@@ -1,3 +1,4 @@
+.taxpayer-login-dialog form { display:flex; flex-direction:column; }
 .taxpayer-login-dialog label { display: block; font-size: 14px; margin-bottom: 8px; font-weight: 400; }
 .taxpayer-login-input-wrap { position: relative; }
 .taxpayer-login-input-wrap > svg {
