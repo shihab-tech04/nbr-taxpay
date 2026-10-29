@@ -24,8 +24,9 @@ test('citizen design locks the primary blue, differentiated icons and the preser
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
 });
