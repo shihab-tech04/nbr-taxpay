@@ -4,9 +4,11 @@ on:
     branches: [main]
     paths:
       - 'src/services/simulatedPaymentStory.ts'
+      - 'src/services/otherTaxBatchSubmission.ts'
       - 'src/components/screens/GuestPayment.tsx'
       - 'supabase/functions/demo-story1-taxpay/**'
       - 'tests/external/story1-hosted.mjs'
+      - 'tests/external/story1-batch-hosted.ts'
       - '.github/workflows/story1-hosted.yml'
   workflow_dispatch:
 permissions:
@@ -18,5 +20,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Check both hosted Supabase simulations
         run: node tests/external/story1-hosted.mjs
+      - name: Check two-item payment synchronization and retry
+        run: node --import tsx tests/external/story1-batch-hosted.ts

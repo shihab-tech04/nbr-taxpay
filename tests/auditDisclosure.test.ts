@@ -15,7 +15,7 @@ test('audit surfaces do not claim unverified immutability or cryptographic integ
   const copy = files.join('\n');
   assert.doesNotMatch(copy, /Immutable Audit Register|SHA-256 Hashed Logs|Cryptographically hashed immutable|timestamped in the immutable audit register/i);
   assert.match(copy, /auditDemoDetail/);
-  assert.match(copy, /Demonstration actions appear in an in-memory log/);
+  assert.match(copy, /Actions appear in an in-memory log/);
 });
 
 test('audit demonstration disclosure is available in English and Bengali', () => {

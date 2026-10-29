@@ -55,7 +55,7 @@ export const NotificationsView:React.FC=()=>{
         ]);
         const records=reconcileDemoSimulationActivity(previewAccount.id,payerRows,beneficiaryRows);
         if(active){setPreviewPaymentEvents(records);setPreviewPaymentError('');}
-      }catch(e){if(active){setPreviewPaymentEvents([]);setPreviewPaymentError(e instanceof Error?e.message:'Simulation updates unavailable');}}
+      }catch(e){if(active){setPreviewPaymentEvents([]);setPreviewPaymentError(e instanceof Error?e.message:'Payment updates unavailable');}}
     };
     void refresh();const timer=window.setInterval(()=>void refresh(),7000);
     return()=>{active=false;window.clearInterval(timer);};
@@ -69,7 +69,7 @@ export const NotificationsView:React.FC=()=>{
         const verified=reconcileStoryPaymentNotices(events,payments);
         if(active){setGuestNotices(verified);setGuestError('');}
       }
-      catch{if(active){setGuestNotices([]);setGuestError(language==='bn'?'সিমুলেশন বিজ্ঞপ্তির পরিমাণ যাচাই করা যায়নি।':'Could not verify the simulated amount for these notifications.');}}
+      catch{if(active){setGuestNotices([]);setGuestError(language==='bn'?'বিজ্ঞপ্তির পরিমাণ যাচাই করা যায়নি।':'Could not verify the amount for these notifications.');}}
     };
     void refresh();
     const timer=window.setInterval(()=>void refresh(),7000);
@@ -131,17 +131,17 @@ export const NotificationsView:React.FC=()=>{
           onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
       </li>)}</ul>}
     </section>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment simulation updates','পেমেন্ট সিমুলেশন হালনাগাদ')}>
-      <h2 className="font-semibold text-taxpay-text">{label('Payment simulation updates','পেমেন্ট সিমুলেশন হালনাগাদ')}</h2>
+    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
+      <h2 className="font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
-       !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No simulated payment activity yet.','এখনো কোনো পেমেন্ট সিমুলেশন নেই।')}</p>:
+       !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
        <ul className="divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-3">
          <p className="font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.amountMinor)}</p>
          <p className="text-sm text-taxpay-muted">{payment.perspective==='beneficiary'
-           ?label(`Allocated to you in a simulation by ${payment.payer}`,`${payment.payer}-এর সিমুলেশনে আপনার জন্য বরাদ্দ`)
-           :label('Simulation you recorded','আপনার সংরক্ষিত সিমুলেশন')}</p>
-         <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Simulation status','সিমুলেশনের অবস্থা')}: {payment.state}</p>
+           ?label(`Allocated to you by ${payment.payer}`,`${payment.payer} আপনার জন্য বরাদ্দ করেছেন`)
+           :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>
+         <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : payment.state}</p>
        </li>)}</ul>}
     </section>
     <SessionPaymentNotifications language={language}/>
@@ -160,8 +160,8 @@ export const NotificationsView:React.FC=()=>{
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
         <ul className="divide-y divide-taxpay-border">{guestNotices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment simulation recorded · No money transferred','পেমেন্ট সিমুলেশন সংরক্ষিত · কোনো অর্থ স্থানান্তর হয়নি')}</h2>
-          <p className="font-semibold tabular-nums text-taxpay-text">{label('Simulated amount','সিমুলেশনের পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
+          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>
+          <p className="font-semibold tabular-nums text-taxpay-text">{label('Amount','পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
           <p className="break-all text-sm text-taxpay-muted">{n.paymentId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
         </li>)}</ul>}
     </section>
@@ -185,9 +185,9 @@ export const NotificationsView:React.FC=()=>{
             SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
             SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
           } as Record<string,string>)[n.messageCode] ??
-          label('Simulation record added · No money transferred','সিমুলেশন রেকর্ড যোগ হয়েছে · কোনো অর্থ স্থানান্তর হয়নি')}</h2>
-          {n.amountMinor!==null?<p className="font-semibold tabular-nums text-taxpay-text">{label(n.perspective==='beneficiary'?'Your simulated allocation':'Simulated amount',n.perspective==='beneficiary'?'আপনার সিমুলেশনের বরাদ্দ':'সিমুলেশনের পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>:
-            <p className="text-sm text-taxpay-muted">{label('Simulation amount not verified','সিমুলেশনের পরিমাণ যাচাই করা যায়নি')}</p>}
+          label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে')}</h2>
+          {n.amountMinor!==null?<p className="font-semibold tabular-nums text-taxpay-text">{label(n.perspective==='beneficiary'?'Your allocation':'Amount',n.perspective==='beneficiary'?'আপনার বরাদ্দ':'পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>:
+            <p className="text-sm text-taxpay-muted">{label('Amount not verified','পরিমাণ যাচাই করা যায়নি')}</p>}
           <p className="break-all text-sm text-taxpay-muted">{n.transactionId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
           <p className="text-xs text-taxpay-muted">{n.isRead?label('Read','পঠিত'):label('Unread','অপঠিত')}</p>
           {privateMode&&<button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50" disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}

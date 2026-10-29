@@ -245,6 +245,22 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 });
 
 test('taxpayer Pay Tax modal preserves amounts through review and simulated receipt', async ({ page }, info) => {
+  // Keep this UI regression independent of the hosted database and verify the
+  // exact simulated request rather than creating a hosted QA payment.
+  let paymentPosts = 0;
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const payload = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number; sessionId?: string };
+    expect(payload.origin).toBe('QA_BROWSER');
+    expect(payload.service).toBe('TAX_WITH_RETURN');
+    expect(payload.amountMinor).toBe(2500000);
+    expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    paymentPosts += 1;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, status: 'SIMULATED_SUCCESS', id: '10000000-0000-4000-8000-000000000002',
+      mirrored: true, simulationOnly: true,
+    }) });
+  });
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
@@ -303,6 +319,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
   await services.getByRole('button', { name: /Pay BDT 25,000/ }).click();
   await expect(services.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  expect(paymentPosts).toBe(1);
   await services.getByRole('button', { name: 'Receipt details' }).click();
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);
