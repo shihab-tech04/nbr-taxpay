@@ -22,8 +22,8 @@ test('public payment status opens in the existing light-shell modal, not the leg
   await expect(modal.getByRole('button', { name: 'Print receipt' })).toBeVisible();
   await expect(modal.getByRole('button', { name: 'Download' })).toBeVisible();
   await expect(modal.locator('.receipt-view__notice')).toHaveCount(0);
-  await modal.getByRole('button', { name: 'Back to search' }).click();
-  await expect(modal.getByRole('textbox', { name: 'Challan, token or transaction reference' })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'Back to search' })).toHaveCount(0);
+  await expect(modal.locator('.receipt-view__action-group button')).toHaveCount(2);
   await modal.getByRole('button', { name: 'Close modal' }).click();
   await expect(page).toHaveURL(/action=landing/);
 });
@@ -66,13 +66,13 @@ test('receipt modal has exactly one action footer and a readable reference on ea
   await expect(modal.locator('.receipt-view__amount strong')).not.toBeEmpty();
   await expect(modal.locator('.receipt-view__reference-strip')).toBeVisible();
   const footer = modal.locator('.taxpay-modal__footer');
-  await expect(footer.getByRole('button', { name: 'Back to search' })).toBeVisible();
+  await expect(footer.getByRole('button', { name: 'Back to search' })).toHaveCount(0);
   await expect(footer.getByRole('button', { name: 'Print receipt' })).toBeVisible();
   await expect(footer.getByRole('button', { name: 'Download' })).toBeVisible();
   await expect(modal.locator('.receipt-view__actions')).toHaveCount(1);
   await expect(modal.locator('.receipt-lookup__back')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
-  await footer.getByRole('button', { name: 'Back to search' }).click();
-  await expect(modal.locator('.receipt-lookup__form')).toBeVisible();
-  await expect(footer).toBeHidden();
+  await expect(footer.locator('.receipt-view__action-group button')).toHaveCount(2);
+  await modal.getByRole('button', { name: 'Close modal' }).click();
+  await expect(page).toHaveURL(/action=landing/);
 });

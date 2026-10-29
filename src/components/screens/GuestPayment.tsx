@@ -913,9 +913,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
         <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)} />
-        {embedded && modalFooterTarget && createPortal(<div className="payment-flow-embedded__footer-actions">
-          <button type="button" className="tax-service-choice__cancel" onClick={() => setShowReceiptDetails(false)}><ArrowLeft size={17} />{language === 'bn' ? 'নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>
-        </div>, modalFooterTarget)}
       </div>
     );
     return (

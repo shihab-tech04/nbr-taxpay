@@ -73,8 +73,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(receiptDialog).toBeVisible();
   await receiptDialog.getByRole('button',{name:/Use reference:/}).first().click();
   await expect(receiptDialog.locator('.receipt-view--embedded')).toBeVisible();
-  await receiptDialog.getByRole('button',{name:'Back to search'}).click();
-  await expect(receiptDialog.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeVisible();
+  await expect(receiptDialog.getByRole('button',{name:'Back to search'})).toHaveCount(0);
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
   await receiptDialog.getByRole('button',{name:'Close modal'}).click();
