@@ -439,7 +439,7 @@ test('each service-specific banner action skips repeated service selection', asy
       const taxChoice = code === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX';
       await expect(dialog.locator(`[data-payment-entry="${taxChoice}"]`)).toHaveAttribute('aria-pressed', 'true');
       await dialog.locator('[data-payment-access="GUEST"]').click();
-      await dialog.getByRole('button', { name: 'Continue' }).click();
+      await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
       await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
       await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
       await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
