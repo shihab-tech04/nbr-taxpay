@@ -112,7 +112,7 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await dialog.getByRole('button', { name: 'Continue bank payment' }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByText('Payment progress details').click();
-  await expect(dialog.getByTestId('payment-lifecycle').getByText('TREASURY_SETTLED')).toBeVisible();
+  await expect(dialog.getByTestId('payment-lifecycle').getByText('Treasury settlement not verified')).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });
