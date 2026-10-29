@@ -653,8 +653,8 @@
   }
   .tax-service-choice:has(.payment-flow-embedded) > .tax-service-choice__progress li {
     flex-direction: column;
-    gap: .15rem;
-    padding: .15rem 0;
+    gap: .25rem;
+    padding: .25rem 0;
     font-size:14px;
   }
 }
@@ -876,8 +876,8 @@
 /* Payment journey: a single connected progression track, not floating labels. */
 .tax-service-choice__progress {
   position: relative;
-  padding: .85rem .65rem 1rem;
-  margin: 0 0 1rem;
+  padding: .8rem .65rem;
+  margin: 0 0 .9rem;
   border: 1px solid var(--citizen-border);
   border-radius: .75rem;
   background: var(--citizen-surface);
