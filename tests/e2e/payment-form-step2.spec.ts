@@ -189,9 +189,9 @@ test('multiple Other Tax heads retain distinct amounts and produce separate paym
   const records = dialog.getByTestId('other-tax-batch-result');
   await expect(records).toHaveCount(2);
   await expect(records.first()).toContainText('1,200');
-  await expect(records.first()).toContainText('68A');
+  await expect(records.first()).toContainText('Advance tax on cigarrete manufacturer');
   await expect(records.nth(1)).toContainText('300');
-  await expect(records.nth(1)).toContainText('68B');
+  await expect(records.nth(1)).toContainText('private motor car');
   await records.first().getByRole('button', { name: /View receipt for/ }).click();
   await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
   await expect(dialog.locator('.receipt-view__paper')).not.toContainText('1,500');
