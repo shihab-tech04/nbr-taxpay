@@ -78,23 +78,23 @@
 .payment-review__rows dd{margin:0;overflow-wrap:anywhere;font-size:14px;font-weight:750;line-height:1.6;color:#183353}
 .payment-review__note{background:#f5f8fd;border-radius:9px;padding:12px;font-size:14px;color:#516884;margin:15px 0 0;overflow-wrap:anywhere}
 .payment-review__channels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-.payment-review__channel{display:flex;text-align:left;align-items:center;gap:12px;min-height:84px;border:1.5px solid #dfe8f3;border-radius:12px;padding:13px;background:#fbfdff;color:#285a9c;cursor:pointer}
+.payment-review__channel{display:flex;text-align:left;align-items:center;gap:12px;min-height:72px;border:1px solid var(--citizen-border);border-radius:10px;padding:12px;background:var(--citizen-surface);color:var(--citizen-primary-dark);cursor:pointer}
 .payment-review__channel>span:nth-child(2){display:grid;gap:7px;flex:1;min-width:0}
 .payment-review__channel strong{font-size:14px;color:#1b395d}
 .payment-review__channel small{font-size:14px;line-height:1.5;color:#405a74}
-.payment-review__channel--selected{border-color:#2b64af;background:#edf5ff;box-shadow:0 0 0 2px #d9e9ff}
+.payment-review__channel--selected{border-color:var(--citizen-primary);background:var(--citizen-primary-light);box-shadow:inset 0 0 0 1px var(--citizen-primary)}
 .payment-review__radio{width:17px;height:17px;border:1.5px solid #a9bad0;border-radius:100%;flex:none;margin-top:2px}
 .payment-review__channel--selected .payment-review__radio{border:5px solid #2d64a9;background:white}
 .payment-review__methods{border-top:1px solid #e5edf6;margin-top:18px;padding-top:17px;display:grid;gap:15px}
 .payment-review__methods fieldset{min-width:0}
 .payment-review__methods legend{font-size:14px;color:#405a74;font-weight:600;margin-bottom:9px}
 .payment-review__method-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.payment-review__method-group{display:flex;align-items:center;justify-content:center;gap:8px;min-height:58px;padding:10px 8px;border:1.5px solid #dce5ef;border-radius:10px;background:#fff;color:#385370;font-size:14px;font-weight:600;cursor:pointer;line-height:1.4;text-align:center}
+.payment-review__method-group{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:8px;border:1px solid var(--citizen-border);border-radius:9px;background:var(--citizen-surface);color:var(--citizen-text);font-size:14px;font-weight:600;cursor:pointer;line-height:1.4;text-align:center}
 .payment-review__method-group svg{flex:none;color:#2c5ead}
-.payment-review__method-group--selected{background:#eef5ff;border-color:#2c5ead;color:#214e85}
+.payment-review__method-group--selected{background:var(--citizen-primary-light);border-color:var(--citizen-primary);color:var(--citizen-primary-dark)}
 .payment-review__provider-fieldset{border-top:1px solid #e5edf6;padding-top:15px}
 .payment-review__method-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
-.payment-review__method{display:flex;align-items:center;gap:10px;min-height:60px;border:1px solid #dce5ef;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;color:#385370;background:#fff;cursor:pointer}
+.payment-review__method{display:flex;align-items:center;gap:9px;min-height:48px;border:1px solid var(--citizen-border);border-radius:9px;padding:8px 10px;font-size:14px;font-weight:600;color:var(--citizen-text);background:var(--citizen-surface);cursor:pointer}
 .payment-review__brand{display:grid;place-items:center;flex:0 0 auto;min-width:47px;min-height:31px;border-radius:6px;background:#f3f6fb;color:#244e82;font-size:14px;font-weight:700;font-style:italic;letter-spacing:-.025em;padding:3px 5px}
 .payment-review__brand--bkash{background:#fff0f6;color:#d71966}
 .payment-review__brand--nagad{background:#fff5e8;color:#d45b18}
@@ -148,14 +148,14 @@
 .payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
 .payment-lifecycle__heading--failed .payment-lifecycle__symbol{color:#b64242}
 .payment-lifecycle__heading--complete .payment-lifecycle__symbol{color:#147957}
-.payment-lifecycle__details{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:21px}
-.payment-lifecycle__references{display:grid;gap:14px;margin:0}
+.payment-lifecycle__details{display:flex;flex-direction:column-reverse;gap:20px;padding:20px 21px}
+.payment-lifecycle__references{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;margin:0;padding-top:16px;border-top:1px solid var(--citizen-border)}
 .payment-lifecycle__references>div{display:grid;gap:4px;min-width:0}
 .payment-lifecycle__references dt{font-size:14px;color:#405a74;font-weight:650}
 .payment-lifecycle__references dd{font-size:14px;font-weight:800;font-family:ui-monospace,monospace;overflow-wrap:anywhere;margin:0;color:#204269}
 .payment-lifecycle__timeline{list-style:none;margin:0;padding:0;display:grid;gap:11px}
-.payment-lifecycle__timeline li{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:14px;font-weight:750;color:#285a82}
-.payment-lifecycle__timeline small{font-size:14px;color:#405a74;font-family:ui-monospace,monospace;margin-left:auto;overflow-wrap:anywhere}
+.payment-lifecycle__timeline li{display:grid;grid-template-columns:23px minmax(0,1fr);align-items:start;gap:10px;font-size:14px;font-weight:650;line-height:1.55;color:var(--citizen-text)}
+.payment-lifecycle__timeline small{display:none}
 .payment-lifecycle__event-dot{display:grid;place-items:center;background:#e0f4eb;color:#167651;border-radius:50%;height:23px;width:23px;flex:none;font-size:14px;font-weight:800}
 .payment-lifecycle__event--failed .payment-lifecycle__event-dot{background:#fee4e4;color:#a92424}
 .payment-lifecycle__waiting{color:#405a74!important;font-weight:550!important}
@@ -170,7 +170,7 @@
 .payment-lifecycle__actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 21px 20px}
 @media(max-width:900px){.payment-review{grid-template-columns:minmax(0,1fr)}.payment-review__aside{position:static;grid-row:1}.payment-review__rows{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.payment-radio-card-grid{grid-template-columns:1fr}.payment-radio-card{min-height:56px;padding:11px 12px}.payment-review__method-groups{grid-template-columns:1fr}.payment-review__method-group{justify-content:flex-start;padding:11px 14px;min-height:49px}.payment-review__method-list{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-review__method{flex-wrap:wrap;gap:7px;min-width:0}.payment-review__brand{min-width:40px}.payment-form-summary__breakdown{padding:13px 14px}}
-@media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{grid-template-columns:minmax(0,1fr);padding:16px;gap:20px}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{width:100%;margin-left:33px}}
+@media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{padding:16px;gap:16px}.payment-lifecycle__references{grid-template-columns:minmax(0,1fr)}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{display:none}}
 
 
 /* Other Tax: one clearly numbered taxpayer per row, responsive and keyboard-friendly. */
