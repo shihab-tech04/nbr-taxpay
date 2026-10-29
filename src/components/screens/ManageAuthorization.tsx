@@ -181,7 +181,7 @@ export function ManageAuthorization() {
         </div>
         <div className="taxpay-auth-add__footer">
           <p>{tr('The taxpayer accepts from their account, then shares a four-digit code with you to confirm.', 'করদাতা নিজের অ্যাকাউন্ট থেকে গ্রহণ করে আপনার সঙ্গে চার সংখ্যার কোড শেয়ার করবেন।')}</p>
-          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Cancel request', 'অনুরোধ বাতিল')}</button>
+          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Discard', 'বাদ দিন')}</button>
         </div>
       </form>}
 
