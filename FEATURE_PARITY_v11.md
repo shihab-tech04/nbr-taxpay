@@ -20,6 +20,7 @@
 | dashboard | src/components/screens/TaxpayerDashboard.tsx |
 | wizard | src/components/screens/PaymentWizard.tsx |
 | history | src/components/screens/PaymentHistory.tsx |
+| activity_track | src/components/screens/ReceiptLookup.tsx |
 | payment_details | src/components/screens/PaymentDetailView.tsx |
 | ledger | src/components/screens/TaxLedger.tsx |
 | journey | src/components/screens/TaxJourney.tsx |
