@@ -32,16 +32,47 @@ test('payer and access match requested modal wording and button placement', asyn
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('standalone login retains divided eTIN-style form and existing credentials', async ({ page }) => {
+test('standalone login uses exactly the shared TaxPayModal header, body and right-aligned footer', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
-  await expect(dialog.locator('.taxpayer-login-heading__close')).toBeVisible();
-  await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
+  await expect(dialog).toHaveClass(/taxpay-modal/);
+  await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__footer')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
+  await expect(dialog.locator('.taxpayer-login-heading,.taxpayer-login-backdrop')).toHaveCount(0);
+  await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeFocused();
   await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
-  await expect(dialog.getByRole('button',{name:'Sign In'})).toBeVisible();
-  await expect(dialog.locator('.taxpayer-login-heading')).toHaveCSS('display','grid');
-  await expect(dialog.locator('.taxpayer-login-actions')).toHaveCSS('border-top-style','solid');
+  await expect(dialog.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
+  await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await dialog.getByLabel('Password',{exact:true}).fill('user1');
+  await expect(dialog.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeEnabled();
 });
+test('homepage Login and payment journey account login use the same modal chrome', async ({ page }) => {
+  await page.goto('/?action=landing');
+  await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
+  const standalone=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  await expect(standalone.locator('.taxpay-modal__header')).toBeVisible();
+  await expect(standalone.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
+  await expect(standalone.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeVisible();
+  await standalone.getByRole('button',{name:'Close modal'}).click();
+  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  const payment=page.getByRole('dialog',{name:'Pay Tax'});
+  await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.locator('[data-payment-access="ACCOUNT"]').click();
+  await payment.getByRole('button',{name:'Continue',exact:true}).click();
+  await expect(payment.locator('.taxpay-modal__title')).toContainText('Sign In To Your Amar Kor Account');
+  await expect(payment.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
+  await expect(payment.locator('.taxpay-modal__back')).toBeVisible();
+  await expect(payment.getByRole('dialog')).toHaveCount(0);
+  await payment.locator('.taxpay-modal__back').click();
+  await expect(payment.locator('[data-payer-relationship="SELF"]')).toBeVisible();
+  await payment.locator('.taxpay-modal__close').click();
+  await expect(payment).toHaveCount(0);
+});
+
 
 test('access choices appear only after either payer selection and retain the chosen mode on change', async ({ page }) => {
   await page.goto('/?action=landing');
