@@ -254,10 +254,13 @@ test('Back preserves payer and Other Tax choice without restoring the removed dr
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
+  const back = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true });
+  await back.click();
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+  await back.click();
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Combined payer and account choices retain selection through login and Back', async ({ page }) => {
@@ -283,8 +286,11 @@ test('Combined payer and account choices retain selection through login and Back
   await expect(login.getByRole('button', { name: 'Sign In' })).toBeDisabled();
   await login.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
+  const back = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true });
+  await back.click();
   await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
+  await back.click();
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Other Tax keeps the v11 guest reference and four payment stages', async ({ page }) => {
