@@ -26,12 +26,14 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   if (category === 'Tax with Return') {
     await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   } else {
     await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
     await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   }
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
