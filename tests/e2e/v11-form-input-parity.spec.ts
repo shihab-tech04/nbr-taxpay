@@ -6,8 +6,8 @@ test('payer relationship is required at entry and head choice is still validated
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
