@@ -78,11 +78,11 @@ export function ManageAuthorization() {
     if (!actor) return;
     const target = userIdForHostedTin(tin);
     if (!/^\d{13}$/.test(tin.trim())) {
-      setFeedback({ error: true, message: tr('Enter a 13-digit test taxpayer TIN.', 'করদাতার ১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন।') });
+      setFeedback({ error: true, message: tr('Enter a 13-digit taxpayer account reference.', 'করদাতার ১৩ সংখ্যার অ্যাকাউন্ট রেফারেন্স লিখুন।') });
       return;
     }
     if (!target) {
-      setFeedback({ error: true, message: tr('No test taxpayer matches this TIN.', 'এই টিআইএন-এ কোনো পরীক্ষামূলক করদাতা নেই।') });
+      setFeedback({ error: true, message: tr('No eligible taxpayer account matches this reference.', 'এই রেফারেন্সের সঙ্গে কোনো উপযুক্ত করদাতার অ্যাকাউন্ট মেলেনি।') });
       return;
     }
     await runAction(async()=>{
@@ -156,8 +156,8 @@ export function ManageAuthorization() {
       <ShieldX size={28} aria-hidden="true" />
       <h2>{tr('Account authorization', 'অ্যাকাউন্ট অনুমোদন')}</h2>
       <p>{applicationUser
-        ? tr('Authorization management is currently available for the ten test taxpayers. The verified-account API is not connected to this test feature.', 'এই পরীক্ষামূলক সুবিধাটি আপাতত দশটি টেস্ট করদাতার জন্য উপলভ্য।')
-        : tr('Sign in as user1–user10 to manage test authorizations.', 'পরীক্ষামূলক অনুমোদন পরিচালনা করতে user1–user10 দিয়ে সাইন ইন করুন।')}</p>
+        ? tr('Authorization management is not available for this account yet.', 'এই অ্যাকাউন্টে এখনো অনুমোদন পরিচালনার সুবিধা নেই।')
+        : tr('Sign in with an eligible account to manage payment authorizations.', 'পেমেন্টের অনুমোদন পরিচালনা করতে উপযুক্ত অ্যাকাউন্ট দিয়ে সাইন ইন করুন।')}</p>
       {!applicationUser && <button type="button" className="taxpay-auth-primary" onClick={() => navigate('taxpayer_login')}>{tr('Sign in', 'সাইন ইন')}</button>}
     </section> : <section className="taxpayer-account-panel">
       <div className="taxpay-auth-heading-row">
@@ -173,10 +173,10 @@ export function ManageAuthorization() {
       </div>
 
       {adding && tab === 'outgoing' && <form id="new-auth-form" className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
-        <label htmlFor="new-auth-tin">{tr('Taxpayer TIN', 'করদাতার টিআইএন')}</label>
+        <label htmlFor="new-auth-tin">{tr('Taxpayer account reference', 'করদাতার অ্যাকাউন্ট রেফারেন্স')}</label>
         <div className="taxpay-auth-inline">
           <input id="new-auth-tin" autoFocus value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 13))}
-            inputMode="numeric" autoComplete="off" placeholder={tr('Enter 13-digit test TIN', '১৩ সংখ্যার পরীক্ষামূলক টিআইএন লিখুন')} required maxLength={13} />
+            inputMode="numeric" autoComplete="off" placeholder={tr('Enter 13-digit account reference', '১৩ সংখ্যার অ্যাকাউন্ট রেফারেন্স লিখুন')} required maxLength={13} />
           <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization', 'অনুমোদন চান')}</button>
         </div>
         <div className="taxpay-auth-add__footer">
@@ -204,7 +204,7 @@ export function ManageAuthorization() {
             <div className="taxpay-auth-person">
               <div>
                 <h3>{bn ? person.nameBn : person.nameEn}</h3>
-                <p>{person.id} · TIN <span className="taxpay-auth-tin">{person.tin}</span></p>
+                <p>{tr('Taxpayer reference', 'করদাতার রেফারেন্স')} <span className="taxpay-auth-tin">{person.tin}</span></p>
               </div>
               <span className={`taxpay-auth-status taxpay-auth-status--${status.toLowerCase()}`}>{statusLabel(status)}</span>
             </div>
