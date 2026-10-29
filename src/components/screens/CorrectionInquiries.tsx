@@ -7,6 +7,7 @@ import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
 type Row=Readonly<{
  inquiry_id:string; original_reference:string; evidence_state:string; created_at:string;
  reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
+ office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
 type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn'};
 const t={
@@ -25,6 +26,9 @@ const t={
  history:'My review inquiries',
  empty:'No correction inquiries for this account.',
  state:'Pending evidence — not an approved correction',
+ officeReview:'Office review status',
+ officeReviewUpdated:'Last updated by Office',officeReviewRevision:'Review revision',
+ officeReviewStates:{PENDING_OFFICER:'Waiting for Office review',MAKER_ACKNOWLEDGED:'Maker acknowledged',REVIEWER_VERIFIED:'Reviewer verified',APPROVER_CLOSED:'Review closed — no financial record changed',REJECTED:'Review rejected — no financial record changed'},
  statusUnavailable:'Status unavailable',details:'Request details',reasonLabel:'Reason provided',outcomeLabel:'Requested outcome',
  changeLabel:'Unverified attribution proposal',oldValueLabel:'Previous value (unverified)',newValueLabel:'Requested value (unverified)',
  changeKinds:{ASSESSMENT_YEAR:'Assessment year',CIRCLE:'Circle',PAYMENT_HEAD:'Payment head',ATTRIBUTION:'Payment attribution'},
@@ -45,6 +49,9 @@ const t={
  history:'আমার পর্যালোচনার অনুসন্ধান',
  empty:'এই অ্যাকাউন্টে কোনো অনুসন্ধান নেই।',
  state:'প্রমাণের অপেক্ষায় — অনুমোদিত সংশোধন নয়',
+ officeReview:'অফিস পর্যালোচনার অবস্থা',
+ officeReviewUpdated:'অফিসের সর্বশেষ হালনাগাদ',officeReviewRevision:'পর্যালোচনা সংস্করণ',
+ officeReviewStates:{PENDING_OFFICER:'অফিস পর্যালোচনার অপেক্ষায়',MAKER_ACKNOWLEDGED:'মেকার গ্রহণ করেছেন',REVIEWER_VERIFIED:'রিভিউয়ার যাচাই করেছেন',APPROVER_CLOSED:'পর্যালোচনা বন্ধ — আর্থিক রেকর্ড বদলায়নি',REJECTED:'পর্যালোচনা প্রত্যাখ্যাত — আর্থিক রেকর্ড বদলায়নি'},
  statusUnavailable:'অবস্থা অনুপলব্ধ',details:'অনুরোধের বিবরণ',reasonLabel:'প্রদত্ত কারণ',outcomeLabel:'অনুরোধের ফলাফল',
  changeLabel:'যাচাই না হওয়া পরিচিতি প্রস্তাব',oldValueLabel:'পূর্বের মান (যাচাই হয়নি)',newValueLabel:'অনুরোধের মান (যাচাই হয়নি)',
  changeKinds:{ASSESSMENT_YEAR:'করবর্ষ',CIRCLE:'কর সার্কেল',PAYMENT_HEAD:'কর খাত',ATTRIBUTION:'পরিশোধের পরিচিতি'},
@@ -69,17 +76,27 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
   if(!supabase) throw new Error(labels.fail);
   const {data:who,error:idError}=await supabase.auth.getUser();
   if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId))throw new Error(labels.auth);
-  const {data,error}=await supabase.from('taxpay_correction_inquiries')
+  let {data,error}=await supabase.from('taxpay_correction_inquiries')
+    .select('inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value,office_review_state,office_review_revision,office_review_updated_at')
+    .eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
+  if(error && (error.code==='42703'||error.code==='PGRST204') && /office_review_state/i.test(error.message)){
+   const fallback=await supabase.from('taxpay_correction_inquiries')
     .select('inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value')
     .eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
+   if(fallback.error)throw fallback.error;
+   data=(fallback.data??[]).map(row=>({...row,office_review_state:null,office_review_revision:null,office_review_updated_at:null}));
+   error=null;
+  }
   if(error)throw error;
   if(isActive())setRows((data??[]) as Row[]);
  };
  useEffect(()=>{
   let active=true;setRows([]);setLoading(true);setLoadError(false);
-  load(()=>active).catch(()=>{if(active){setMessage(labels.fail);setLoadError(true)}})
+  const refresh=()=>load(()=>active).catch(()=>{if(active){setMessage(labels.fail);setLoadError(true)}})
    .finally(()=>{if(active)setLoading(false)});
-  return ()=>{active=false;};
+  void refresh();
+  const timer=window.setInterval(()=>void refresh(),15000);
+  return ()=>{active=false;window.clearInterval(timer);};
  },[authenticatedUserId]);
  const retryLoad=async()=>{
   if(loading)return;
@@ -153,7 +170,12 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
    <h3 id="inquiry-history-title" className="font-serif-fraunces text-lg font-bold">{labels.history}</h3>
    {loading?<p role="status">{labels.loading}</p>:loadError?<div className="space-y-2"><p className="text-sm text-amber-900">{labels.fail}</p><UiButton type="button" onClick={retryLoad}>{labels.retry}</UiButton></div>:rows.length===0?<p className="text-sm text-slate-600">{labels.empty}</p>:
     <ul className="divide-y divide-slate-200">{rows.map(r=><li key={r.inquiry_id} className="py-3">
-     <p className="text-sm font-semibold text-slate-900 break-words">{r.original_reference} — {r.evidence_state==='PENDING_EVIDENCE'?labels.state:labels.statusUnavailable}</p>
+      <p className="text-sm font-semibold text-slate-900 break-words">{r.original_reference} — {r.evidence_state==='PENDING_EVIDENCE'?labels.state:labels.statusUnavailable}</p>
+      <div aria-live="polite" aria-atomic="true">
+       <p className="text-sm text-slate-600">{labels.officeReview}: {labels.officeReviewStates[r.office_review_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable}</p>
+       {r.office_review_revision!==null&&<p className="text-xs text-slate-600">{labels.officeReviewRevision}: {r.office_review_revision}</p>}
+       {r.office_review_updated_at&&<p className="text-xs text-slate-600">{labels.officeReviewUpdated}: {r.office_review_updated_at}</p>}
+      </div>
      <p className="text-xs text-slate-600">{r.created_at}</p>
      <details className="mt-2 rounded-lg border border-slate-200 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-emerald-900">{labels.details}</summary>
