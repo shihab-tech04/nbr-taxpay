@@ -37,11 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -51,7 +46,6 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm run test:domain
-      - uses: actions/configure-pages@v6
       - name: Build live SQL-backed TaxPay
         env:
           GITHUB_PAGES: 'true'
@@ -64,9 +58,5 @@ jobs:
           test -s dist/index.html
           grep -RFq 'taxpay_site_banners' dist/assets
           grep -RFq 'taxpay_site_logo' dist/assets
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-      - name: Publish
-        id: deployment
-        uses: actions/deploy-pages@v5.0.1
+      # Deployment is owned exclusively by pages.yml. Publishing twice on main
+      # races against GitHub Pages and causes HTTP 400 "in progress deployment".
