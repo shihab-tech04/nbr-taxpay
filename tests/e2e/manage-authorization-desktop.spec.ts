@@ -57,7 +57,7 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await expect(directions.getByRole('button',{name:'I can pay for'})).toBeVisible();
   await expect(directions.getByRole('button',{name:'Can pay for me'})).toBeVisible();
   await authorization.getByRole('button',{name:'Add'}).click();
-  await authorization.getByLabel('Taxpayer TIN').fill('2222222222222');
+  await authorization.getByLabel('Taxpayer account reference').fill('2222222222222');
   await authorization.getByRole('button',{name:'Request authorization'}).click();
   await expect(authorization.getByRole('status')).toContainText('Request sent');
   await page.getByRole('button',{name:'Sign out'}).click();
