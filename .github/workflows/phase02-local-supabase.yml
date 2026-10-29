@@ -181,14 +181,22 @@ jobs:
           git -C "$OFFICE_CURRENT_DIR" checkout --detach "$OFFICE_CURRENT_SHA"
           test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
-          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_CURRENT_DIR/supabase/functions/payment-sync-bridge/index.ts"
-          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_CURRENT_DIR/supabase/functions/payment-command-bridge/index.ts"
+          OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
+          OFFICE_BRIDGE_REF="main"
+          if git ls-remote --exit-code --heads "$OFFICE_REPO" codex/correction-bridge-20261029 >/dev/null 2>&1; then
+            OFFICE_BRIDGE_REF="codex/correction-bridge-20261029"
+          fi
+          OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
+          git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
+          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
+          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-command-bridge/index.ts"
           npm ci --prefix "$OFFICE_CURRENT_DIR" --no-audit --no-fund
           npm run build --prefix "$OFFICE_CURRENT_DIR"
-          echo "Current Office main: $OFFICE_CURRENT_SHA; contracts and app build PASS"
+          echo "Current Office main: $OFFICE_CURRENT_SHA; shared contract and app build PASS"
+          echo "Matching Office bridge source: $OFFICE_BRIDGE_REF"
           echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
-          echo "Current Office main: \`$OFFICE_CURRENT_SHA\` — shared contracts and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
-          echo "Current Office intentionally has no three-officer prototype UI; the separate archived three-role E2E below remains unchanged." >> "$GITHUB_STEP_SUMMARY"
+          echo "Current Office main: \`$OFFICE_CURRENT_SHA\` — shared contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
+          echo "Matching Office bridge source: \`$OFFICE_BRIDGE_REF\`; the paired correction bridge files are byte-identical." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify certified historical three-officer TaxPay Office E2E with real disposable SQL
         env:
@@ -209,11 +217,18 @@ jobs:
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_DIR/src/app/contracts/paymentSimulationContract.ts"
-          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-sync-bridge/index.ts"
-          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_DIR/supabase/functions/payment-command-bridge/index.ts"
+          # Confirm the pinned historical Office app matched the pre-correction
+          # TaxPay bridge source; the additive correction routes are exercised
+          # against the paired Office bridge branch in the step above.
+          TAXPAY_HISTORICAL_SHA="8159a80d584cc28194bf1e3efe0e304e0f2bd9fd"
+          git fetch --depth 1 origin "$TAXPAY_HISTORICAL_SHA"
+          for bridge in payment-sync-bridge payment-command-bridge; do
+            git show "$TAXPAY_HISTORICAL_SHA:supabase/functions/$bridge/index.ts" > "$RUNNER_TEMP/$bridge-historical.ts"
+            cmp -s "$RUNNER_TEMP/$bridge-historical.ts" "$OFFICE_DIR/supabase/functions/$bridge/index.ts"
+          done
           test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 16
           test "$(find "$OFFICE_DIR/supabase/hosted_migration_history" -name '*.sql' | wc -l)" = 17
-          echo "PASS: shared contracts and deployed bridge source byte-identical; both hosted migration recovery sets present"
+          echo "PASS: shared contract, historical bridge base, paired correction bridge, and both hosted migration recovery sets"
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           (
             cd "$OFFICE_DIR"
