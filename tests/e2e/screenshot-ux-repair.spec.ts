@@ -165,14 +165,15 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
 
 test('signed-in Track payment stays in Activity with search, selected tab and return to Transactions',async({page})=>{
   await enterUser1(page);
-  await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Activity'}).click();
+  // Use the canonical Activity route: desktop rail is not present on small-screen layouts.
+  await page.goto('/?action=history');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await tabs.getByRole('button',{name:'Track payment'}).click();
   await expect(page).toHaveURL(/action=history/);
   await expect(page).toHaveURL(/trackPayment=1/);
   await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
   await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
-  await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await expect(page.locator('#public-home-title')).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
