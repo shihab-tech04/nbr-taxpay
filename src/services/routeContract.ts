@@ -19,7 +19,7 @@ export const validRoute = (value: string | null | undefined): string =>
   value && registered.has(value) && !officeManagementAliases.has(value) ? value : 'landing';
 
 /** Only navigation context and public synthetic fixture selectors belong in the URL. */
-const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt', 'transactionId', 'docAction'] as const;
+const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt', 'transactionId', 'docAction', 'trackPayment'] as const;
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
 const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home']);
 
@@ -48,6 +48,7 @@ export function routeContextFromUrl(route: string, search: URLSearchParams): Rec
   }
   if (route !== 'history') return {};
   const result: Record<string, unknown> = {};
+  if (search.get('trackPayment') === '1') result.trackPayment = true;
   if (search.has('categoryFilter')) result.categoryFilter = search.get('categoryFilter');
   const statuses = search.get('reviewStatuses')?.split(',').filter(value => reviewStatuses.has(value));
   if (statuses?.length) result.reviewStatuses = statuses;
@@ -73,6 +74,7 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
     }
   }
   if (route === 'history') {
+    if (params.trackPayment === true) search.set('trackPayment', '1');
     put('categoryFilter', params.categoryFilter);
     if (Array.isArray(params.reviewStatuses)) {
       const statuses = params.reviewStatuses.filter((value: unknown) => typeof value === 'string' && reviewStatuses.has(value));

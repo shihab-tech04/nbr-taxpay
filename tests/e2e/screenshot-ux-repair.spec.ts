@@ -163,3 +163,37 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
     help!.y < identity!.y+identity!.height && help!.y+help!.height > identity!.y;
   expect(overlap).toBe(false);
 });
+
+test('signed-in Track payment stays in Activity with search, selected tab and return to Transactions',async({page})=>{
+  await enterUser1(page);
+  // Use the canonical Activity route: desktop rail is not present on small-screen layouts.
+  await page.goto('/?action=history');
+  const tabs=page.getByRole('navigation',{name:'Activity sections'});
+  await tabs.getByRole('button',{name:'Track payment'}).click();
+  await expect(page).toHaveURL(/action=history/);
+  await expect(page).toHaveURL(/trackPayment=1/);
+  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.locator('#public-home-title')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
+  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-PAY-23-01');
+  await expect(page.locator('.taxpayer-transaction-row')).toHaveCount(1);
+  await page.locator('.taxpayer-transaction-row__action').first().click();
+  await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
+  await page.getByRole('button',{name:'Close transaction details'}).click();
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
+  await expect(page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
+  await tabs.getByRole('button',{name:'Transactions'}).click();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
+  await expect(page).not.toHaveURL(/trackPayment=1/);
+});
+
+test('guest Track payment still uses the established public lookup modal',async({page})=>{
+  await page.goto('/?action=verify');
+  await expect(page.locator('#public-home-title')).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
+});
