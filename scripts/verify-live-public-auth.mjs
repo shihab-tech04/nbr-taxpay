@@ -30,6 +30,14 @@ try {
     await expect(page).toHaveURL(/action=taxpayer_login/);
     const dialog = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
     await expect(dialog).toBeVisible();
+    // Production must render the same reusable TaxPayModal as payment entry.
+    await expect(dialog).toHaveClass(/taxpay-modal/);
+    await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
+    await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
+    await expect(dialog.locator('.taxpay-modal__footer').getByRole('button', { name: 'Sign In' })).toBeDisabled();
+    await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
+    await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
+    await expect(page.locator('.taxpayer-login-backdrop')).toHaveCount(0);
     await expect(dialog.getByRole('textbox', { name: 'User ID' })).toBeVisible();
     await expect(dialog.getByLabel('Password', { exact: true })).toHaveAttribute('type','password');
     await dialog.getByRole('textbox', { name: 'User ID' }).fill('user1');

@@ -1184,3 +1184,30 @@
 .taxpay-taxpayer-reference .taxpayer-transaction-detail__heading > div {grid-column:2;text-align:center;}
 .taxpay-taxpayer-reference .taxpayer-transaction-detail__close {grid-column:3;grid-row:1;}
 @media(max-width:440px) {.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}}
+
+/* Shared modal shell for read-only taxpayer transaction details. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
+  width: min(100%, 576px);
+  height: auto;
+  max-height: min(85dvh, 750px);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpay-modal__body {
+  overflow-y: auto;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpayer-transaction-detail__body {
+  padding: 0;
+  overflow: visible;
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal__overlay:has(.taxpayer-transaction-detail) {
+    align-items: center;
+    padding: 1rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
+    width: min(100%, 576px);
+    height: auto;
+    max-height: 85dvh;
+    border: 1px solid var(--citizen-border);
+    border-radius: var(--taxpay-radius-modal);
+  }
+}

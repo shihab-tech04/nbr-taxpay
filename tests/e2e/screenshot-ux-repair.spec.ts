@@ -18,12 +18,13 @@ test('mobile transaction details use a contained sheet with a visible close cont
   await page.goto('/?action=history');
   await page.locator('.taxpayer-transaction-row__action').first().click();
   const dialog=page.locator('.taxpayer-transaction-detail');
+  await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.getByRole('button',{name:'Close transaction details'})).toBeVisible();
   const geometry=await dialog.evaluate(element=>{
     const rect=element.getBoundingClientRect();
-    const body=element.querySelector('.taxpayer-transaction-detail__body')!;
+    const body=element.querySelector('.taxpay-modal__body')!;
     return {left:rect.left,right:rect.right,bottom:rect.bottom,viewportWidth:innerWidth,viewportHeight:innerHeight,
-      scrolls:getComputedStyle(body).overflowY,headerWidth:element.querySelector('.taxpayer-transaction-detail__heading')!.getBoundingClientRect().width};
+      scrolls:getComputedStyle(body).overflowY,headerWidth:element.querySelector('.taxpay-modal__header')!.getBoundingClientRect().width};
   });
   expect(geometry.left).toBeGreaterThanOrEqual(-1);
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth+1);

@@ -2086,6 +2086,16 @@
  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions{display:none!important}
 }
 
+/* The same shared TaxPayModal shell also covers login, consent and the route register. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal {
+  width: min(100%, 640px);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-parity-dialog {
+  width: min(100%, 1024px);
+}
+.taxpay-citizen-shell .taxpay-parity-dialog .taxpay-modal__body table {
+  min-width: 760px;
+}
 
 /* Travel Tax settled receipts use the identical document layout as TaxPay receipts.
    The form's independent scrollbar and payment-calculation sidebar must not survive
