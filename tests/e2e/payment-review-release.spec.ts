@@ -8,7 +8,7 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
   const receiptTitle = embedded
     ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
-    : language === 'bn' ? 'আমার কর — রসিদের বিবরণ' : 'Amar Kor — Receipt details';
+    : language === 'bn' ? 'করবৃত্ত — রসিদের বিবরণ' : 'Korbritto — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280' && !embedded) {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
@@ -205,7 +205,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড সংরক্ষিত' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
-  await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'করবৃত্ত — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
@@ -237,10 +237,10 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   // A receipt modal blocks the page-level language control until it is closed.
-  await page.getByRole('dialog', { name: 'আমার কর — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  await page.getByRole('dialog', { name: 'করবৃত্ত — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
   await page.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(page.getByRole('dialog', { name: 'Amar Kor — Receipt details' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Korbritto — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
@@ -361,7 +361,7 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' }).click();
   await expect(page.getByText('ভ্রমণ করের তথ্য প্রস্তুত')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'আমার কর — রসিদের বিবরণ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'করবৃত্ত — রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toHaveCount(0);
 

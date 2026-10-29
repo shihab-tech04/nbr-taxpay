@@ -14,7 +14,7 @@ export function CitizenFooter(){
   const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
   const isPublic=['landing','user_guide','guidance','incident','verify','payment_details'].includes(currentRoute);
-  if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'আমার কর ফুটার':'Amar Kor footer'}>
+  if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'করবৃত্ত ফুটার':'Korbritto footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
         <SiteLogo className="public-footer__wordmark" alt={taxpayerBrandName(language)}/>
@@ -27,7 +27,7 @@ export function CitizenFooter(){
         <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
       </nav>
       <div className="public-footer__bottom">
-        <p>{bn?'© ২০২৬ আমার কর':'© 2026 Amar Kor'}</p>
+        <p>{bn?'© ২০২৬ করবৃত্ত':'© 2026 Korbritto'}</p>
       </div>
     </div>
   </footer>;
@@ -37,7 +37,7 @@ export function CitizenFooter(){
     {route:'user_guide',en:'Help',bn:'সহায়তা'},
     {route:'incident',en:'Report a security concern',bn:'নিরাপত্তা সমস্যা জানান'},
   ];
-  return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'আমার কর সহায়তা ও তথ্য':'Amar Kor support and information'}>
+  return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'করবৃত্ত সহায়তা ও তথ্য':'Korbritto support and information'}>
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
         <div><SiteLogo className="citizen-footer__wordmark" alt={taxpayerBrandName(language)}/><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>

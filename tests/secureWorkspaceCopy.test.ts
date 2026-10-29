@@ -31,8 +31,8 @@ function assertNonEmptyStrings(value: unknown, path = 'copy') {
 test('secure workspace English and Bengali copy have matching coverage', () => {
   assertSameKeys(SECURE_WORKSPACE_COPY.en, SECURE_WORKSPACE_COPY.bn);
   assertNonEmptyStrings(SECURE_WORKSPACE_COPY.bn, 'bn');
-  assert.equal(getSecureWorkspaceCopy('bn').workspaceTitle, 'নিরাপদ আমার কর ওয়ার্কস্পেস');
-  assert.equal(getSecureWorkspaceCopy('en').workspaceTitle, 'Secure Amar Kor workspace');
+  assert.equal(getSecureWorkspaceCopy('bn').workspaceTitle, 'নিরাপদ করবৃত্ত ওয়ার্কস্পেস');
+  assert.equal(getSecureWorkspaceCopy('en').workspaceTitle, 'Secure Korbritto workspace');
 });
 
 test('draft validation errors use Bengali copy while English copy remains unchanged', () => {

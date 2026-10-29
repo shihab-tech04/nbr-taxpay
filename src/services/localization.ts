@@ -3,7 +3,7 @@ import { Language } from '../types/tax';
 export const UI_STRINGS: Record<Language, Record<string, string>> = {
   en: {
     // Brand & Header
-    portalTitle: 'Amar Kor',
+    portalTitle: 'Korbritto',
     portalSubtitle: 'Independent Tax Payment Workspace',
     govBadge: 'Government of the People\'s Republic of Bangladesh',
     
@@ -73,7 +73,7 @@ export const UI_STRINGS: Record<Language, Record<string, string>> = {
   },
   bn: {
     // Brand & Header
-    portalTitle: 'আমার কর',
+    portalTitle: 'করবৃত্ত',
     portalSubtitle: 'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস',
     govBadge: 'গণপ্রজাতন্ত্রী বাংলাদেশ সরকার',
     

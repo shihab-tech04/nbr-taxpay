@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const signIn = async (page: import('@playwright/test').Page, userId: string) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await dialog.getByRole('textbox', { name: 'User ID' }).fill(userId);
   await dialog.getByLabel('Password', { exact: true }).fill(userId);
   await dialog.getByRole('button', { name: 'Sign In' }).click();

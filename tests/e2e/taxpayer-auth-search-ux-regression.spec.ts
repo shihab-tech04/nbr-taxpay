@@ -6,7 +6,7 @@ test('authorization request uses Add taxpayer and inline Cancel, never a large C
     status:200, contentType:'application/json', body:JSON.stringify({success:true,data:[]})
   }));
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByRole('textbox',{name:'Password'}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();

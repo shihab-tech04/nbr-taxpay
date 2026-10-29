@@ -1,7 +1,7 @@
 /** Public and taxpayer-facing product identity. Keep API and repository identifiers unchanged. */
 export const TAXPAYER_BRAND = {
-  bn: 'আমার কর',
-  en: 'Amar Kor',
+  bn: 'করবৃত্ত',
+  en: 'Korbritto',
   tagline: {
     bn: 'আপনার কর, আপনার হিসাব',
     en: 'Your tax, your records',

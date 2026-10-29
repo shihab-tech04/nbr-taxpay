@@ -35,6 +35,6 @@ test('invalid ID and password cannot open a taxpayer profile',async({page},info)
 test('TaxPay retains a separate authenticated email access screen',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One backend boundary check');
   await page.goto('/?action=secure_workspace');
-  await expect(page.getByRole('heading',{name:'Secure Amar Kor workspace'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Secure Korbritto workspace'})).toBeVisible();
   await expect(page.locator('.office-auth')).toHaveCount(0);
 });

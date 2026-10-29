@@ -10,7 +10,7 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(page.getByRole('dialog')).toHaveCount(1);
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
   await expect(page.locator('.taxpayer-login-backdrop')).toHaveCount(0);
@@ -62,7 +62,7 @@ test('payment account login preserves payer and access on Back, errors and close
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(page.getByRole('dialog')).toHaveCount(1);
   await expect(login.locator('.taxpayer-login-dialog--embedded')).toBeVisible();
   await login.getByRole('textbox', { name: 'User ID' }).fill('invalid-user');
@@ -75,7 +75,7 @@ test('payment account login preserves payer and access on Back, errors and close
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-  const retry = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const retry = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(retry.getByRole('textbox', { name: 'User ID' })).toHaveValue('');
   await expect(retry.getByRole('button', { name: 'Sign In' })).toBeDisabled();
   await page.keyboard.press('Escape');

@@ -12,7 +12,7 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
   await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/action=taxpayer_login/);
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'User ID' }).fill('not-a-user');
   await page.getByLabel('Password', { exact: true }).fill('not-a-user');
@@ -43,6 +43,6 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await page.locator('.citizen-account-gate').getByRole('button', { name: 'সাইন ইন' }).click();
   await expect(page).toHaveURL(/action=taxpayer_login/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('dialog', { name: 'আপনার আমার কর অ্যাকাউন্টে সাইন ইন করুন' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন' })).toBeVisible();
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });

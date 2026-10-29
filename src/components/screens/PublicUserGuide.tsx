@@ -96,7 +96,7 @@ export const PublicUserGuide:React.FC=()=>{
   <div className="public-guide-overview">
     <header className="public-guide-intro">
       <p className="citizen-hub-eyebrow">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</p>
-      <h1>{bn?'আমার কর ব্যবহার নির্দেশিকা':'Amar Kor user guide'}</h1>
+      <h1>{bn?'করবৃত্ত ব্যবহার নির্দেশিকা':'Korbritto user guide'}</h1>
       <p>{bn?'পেমেন্টের ধাপ, রসিদ ও সাধারণ প্রশ্ন।':'Clear steps, payment references and common questions.'}</p>
     </header>
     <section className="public-guide-find" aria-labelledby="guide-search-title">

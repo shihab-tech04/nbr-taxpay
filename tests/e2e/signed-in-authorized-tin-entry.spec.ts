@@ -15,7 +15,7 @@ async function mockAuthorizations(page: Page, records: ReturnType<typeof authori
 }
 async function openSignedInOtherTax(page: Page, service = 'OTHER_TAX_PAYMENT') {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -99,7 +99,7 @@ test('guest TIN input stays limited to twelve digits', async ({ page }) => {
 test('Bengali entry rejects an unknown demo TIN and accepts an approved one', async ({ page }) => {
   await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
-/** Regression contract: preserve Amar Kor primary while signed-in styling uses Sobaike Public tokens. */
+/** Regression contract: preserve Korbritto primary while signed-in styling uses Sobaike Public tokens. */
 const exactReference = {
   primary: 'rgb(44, 94, 173)',
   background: 'rgb(240, 242, 245)',

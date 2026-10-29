@@ -293,7 +293,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
 
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -321,7 +321,7 @@ test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitu
     status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [], simulationOnly: true }),
   }));
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
