@@ -1,34 +1,38 @@
 import { expect, test } from '@playwright/test';
 
-test('payer, tax and access appear progressively in one shared modal', async ({ page }) => {
+test('one decision per shared modal screen with selection retained on Back', async ({ page }) => {
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Whose tax liability are you settling?');
+  const next = dialog.getByRole('button', { name: 'Continue', exact: true });
+  const back = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true });
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
   await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toContainText('Pay tax for myself.');
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toContainText('Pay on behalf of another taxpayer.');
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
-  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
+  await expect(next).toBeDisabled();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
+  await expect(next).toBeEnabled();
+  await next.click();
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
   await expect(dialog.getByRole('heading', { name: 'Which tax would you like to pay?' })).toBeVisible();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
+  await expect(next).toBeDisabled();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await next.click();
   await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
+  const account = dialog.locator('[data-payment-access="ACCOUNT"]');
   await expect(guest).toContainText('Walk-in Payment');
   await expect(guest).toContainText('Enter your details and make this payment');
-  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Sign-in Payment');
-  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Use your account details and records');
-  // Sign-in precedes walk-in in the approved access decision order.
+  await expect(account).toContainText('Sign-in Payment');
   await expect(dialog.locator('[data-payment-access]').first()).toHaveAttribute('data-payment-access', 'ACCOUNT');
   await expect(dialog.locator('[data-payment-access]').last()).toHaveAttribute('data-payment-access', 'GUEST');
-  await expect(dialog.locator('.tax-service-choice__access-arrow')).toHaveCount(0);
-  await expect(dialog.locator('.tax-service-choice__access-radio')).toHaveCount(2);
-  await expect(guest).toHaveAttribute('aria-pressed', 'false');
+  await expect(next).toBeDisabled();
   const title = await dialog.locator('.taxpay-modal__title').boundingBox();
   const modal = await dialog.boundingBox();
   expect(title).not.toBeNull();
@@ -36,11 +40,17 @@ test('payer, tax and access appear progressively in one shared modal', async ({ 
   expect(Math.abs(title!.x + title!.width/2 - (modal!.x + modal!.width/2))).toBeLessThan(3);
   await guest.click();
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await back.click();
+  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await back.click();
+  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
+  await next.click();
+  await next.click();
+  await expect(guest).toHaveAttribute('aria-pressed', 'true');
+  await next.click();
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(guest).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('standalone login uses exactly the shared TaxPayModal header, body and right-aligned footer', async ({ page }) => {
@@ -82,7 +92,9 @@ test('both login entry points use the identical reusable login modal variant', a
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   const embedded = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
@@ -123,7 +135,9 @@ test('homepage Login and payment journey account login use the same modal chrome
   await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
   await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   // The shared modal stays mounted but its accessible name changes with the workflow step.
@@ -140,22 +154,25 @@ test('homepage Login and payment journey account login use the same modal chrome
 });
 
 
-test('access choices appear only after either payer selection and retain the chosen mode on change', async ({ page }) => {
+test('changing payer via Back preserves chosen access and tax service', async ({ page }) => {
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  const access = dialog.locator('[data-payment-access]');
-  await expect(access).toHaveCount(0);
+  const next = dialog.getByRole('button', { name: 'Continue', exact: true });
+  const back = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await expect(access).toHaveCount(0);
+  await next.click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await expect(access).toHaveCount(2);
+  await next.click();
   await dialog.locator('[data-payment-access="ACCOUNT"]').click();
-  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await back.click();
+  await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await back.click();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await expect(access).toHaveCount(2);
+  await next.click();
+  await next.click();
   await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
+  await expect(next).toBeEnabled();
 });
 
 test('access cards align side by side on desktop and stack on mobile', async ({ page }) => {
@@ -164,7 +181,9 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   const login = dialog.locator('[data-payment-access="ACCOUNT"]');
   // The dialog itself is deliberately animating its height and vertical position.
@@ -191,20 +210,21 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   }).toBeGreaterThanOrEqual(0);
 });
 
-test('conditional modal resize uses standard motion and supports reduced motion', async ({ page }) => {
+test('compact modal animates between decisions and respects reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toHaveAttribute('data-size-motion', 'true');
-  await expect.poll(async () => dialog.evaluate(el => getComputedStyle(el).height)).not.toBe('auto');
-  const initialHeight = (await dialog.boundingBox())!.height;
+  await expect(dialog.locator('[data-decision-step="1"]')).toBeVisible();
   await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
-  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
-  await expect.poll(async () => (await dialog.boundingBox())!.height).toBeGreaterThan(initialHeight + 75);
+  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.locator('[data-decision-step="2"]')).toBeVisible();
   await expect(dialog).toHaveCSS('transition-property', /height/);
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.locator('[data-decision-step="3"]')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(dialog).toHaveCSS('animation-name', 'none');
   await expect(dialog).toHaveCSS('transition-property', 'none');
