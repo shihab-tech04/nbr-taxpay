@@ -17,9 +17,12 @@ interface ReceiptViewProps {
   receipt: ChallanReceipt;
   onBack?: () => void;
   embedded?: boolean;
+  backLabel?: string;
+  /** Optional receipt-only restart, aligned opposite download and print. */
+  onNewPayment?: () => void;
 }
 
-export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false }) => {
+export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment }) => {
   const { language, navigate } = useTaxState();
   const footerTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
@@ -67,6 +70,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   // The existing shared modal owns the action footer. The receipt supplies its controls.
   const receiptActions = (
     <div className="receipt-view__actions no-print">
+      {onNewPayment && <button type="button"
+        className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+        onClick={onNewPayment}>{bn ? 'নতুন পেমেন্ট' : 'New payment'}</button>}
       <div className="receipt-view__action-group">
         <button type="button" className="receipt-view__action receipt-view__action--secondary"
           onClick={() => downloadDisplayedCertificate(receipt)}>

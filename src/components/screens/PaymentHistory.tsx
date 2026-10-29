@@ -34,7 +34,8 @@ const escapeCsv = (value: unknown) => {
 };
 
 export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
-  const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser } = useTaxState();
+  const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser, routeParams } = useTaxState();
+  const trackingActivity=Boolean(routeParams.trackPayment);
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('ALL');
@@ -71,8 +72,8 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
 
   return (
     <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
-      <TaxpayerPageHeading title={label('Payments & activity','পেমেন্ট ও লেনদেন')}
-        description={label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
+      <TaxpayerPageHeading title={trackingActivity?label('Track payment','পেমেন্ট অনুসন্ধান'):label('Payments & activity','পেমেন্ট ও লেনদেন')}
+        description={trackingActivity?label('Find a payment by its reference.','রেফারেন্স দিয়ে পেমেন্ট খুঁজুন।'):label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
       {activityTabs && <TaxpayerActivityTabs />}
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -81,7 +82,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             <div className="relative">
               <Search aria-hidden="true" size={17} className="absolute left-3 top-3.5 text-taxpay-muted"/>
               <input id="activity-search" type="search" value={query} onChange={e=>setQuery(e.target.value)}
-                placeholder={label('Reference or payer','রেফারেন্স বা পরিশোধকারী')}
+                placeholder={trackingActivity?label('Enter challan or transaction reference','চালান বা লেনদেন রেফারেন্স লিখুন'):label('Reference or payer','রেফারেন্স বা পরিশোধকারী')}
                 className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white pl-10 pr-3 text-sm text-taxpay-text focus-visible:outline-taxpay-primary"/>
             </div>
           </div>

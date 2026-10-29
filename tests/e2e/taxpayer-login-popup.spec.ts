@@ -11,6 +11,9 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   }
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveClass(/taxpay-modal/);
+  await expect(dialog.locator('.taxpay-modal__footer .tax-service-choice__continue')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeFocused();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
   await expect(dialog.getByText('Forgot your details?')).toBeVisible();

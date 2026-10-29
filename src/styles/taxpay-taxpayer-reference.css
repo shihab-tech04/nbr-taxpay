@@ -609,6 +609,9 @@
   border-radius:12px;background:var(--color-taxpay-background);
 }
 .taxpay-taxpayer-reference .taxpay-auth-add label { font-size:14px;font-weight:650; }
+.taxpay-taxpayer-reference .taxpay-auth-add__footer {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.taxpay-taxpayer-reference .taxpay-auth-add__footer > p {flex:1 1 260px;min-width:0;}
+.taxpay-taxpayer-reference .taxpay-auth-add__footer > button {flex:none;}
 .taxpay-taxpayer-reference .taxpay-auth-inline { display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0; }
 .taxpay-taxpayer-reference .taxpay-auth-inline input {
   flex:1 1 180px;width:auto;min-width:0;max-width:100%;min-height:44px;border:1px solid var(--color-taxpay-border);
@@ -923,6 +926,14 @@
   width:100%; min-width:0; height:100%; outline:none; border:0; background:transparent;
   color:var(--color-taxpay-text); font-size:14px; font-weight:400;
 }
+/* One control owns the search border and focus ring. Do not let the global
+   taxpayer input styles draw a second inset field on focus. */
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-filter__search > input[type="search"],
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-filter__search > input[type="search"]:focus-visible {
+  flex:1; width:100%; min-width:0; height:100%; padding:0;
+  border:0; border-radius:0; outline:none; box-shadow:none;
+  appearance:none; background:transparent;
+}
 .taxpay-taxpayer-reference .taxpayer-transaction-filter__search:focus-within,
 .taxpay-taxpayer-reference .taxpayer-transaction-filter > select:focus-visible {
   outline:2px solid var(--color-taxpay-primary); outline-offset:2px;
@@ -1184,3 +1195,30 @@
 .taxpay-taxpayer-reference .taxpayer-transaction-detail__heading > div {grid-column:2;text-align:center;}
 .taxpay-taxpayer-reference .taxpayer-transaction-detail__close {grid-column:3;grid-row:1;}
 @media(max-width:440px) {.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}}
+
+/* Shared modal shell for read-only taxpayer transaction details. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
+  width: min(100%, 576px);
+  height: auto;
+  max-height: min(85dvh, 750px);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpay-modal__body {
+  overflow-y: auto;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpayer-transaction-detail__body {
+  padding: 0;
+  overflow: visible;
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal__overlay:has(.taxpayer-transaction-detail) {
+    align-items: center;
+    padding: 1rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
+    width: min(100%, 576px);
+    height: auto;
+    max-height: 85dvh;
+    border: 1px solid var(--citizen-border);
+    border-radius: var(--taxpay-radius-modal);
+  }
+}

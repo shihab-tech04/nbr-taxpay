@@ -2085,3 +2085,78 @@
  .taxpay-citizen-shell > main:has(.receipt-modal) > div:has(.receipt-modal) > :not(.taxpay-modal__overlay){display:none!important}
  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions{display:none!important}
 }
+
+/* The same shared TaxPayModal shell also covers login, consent and the route register. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal {
+  width: min(100%, 640px);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-parity-dialog {
+  width: min(100%, 1024px);
+}
+.taxpay-citizen-shell .taxpay-parity-dialog .taxpay-modal__body table {
+  min-width: 760px;
+}
+
+/* Travel Tax settled receipts use the identical document layout as TaxPay receipts.
+   The form's independent scrollbar and payment-calculation sidebar must not survive
+   the transition from the payment wizard to its completed receipt. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) {
+  width: min(100%, 920px);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) .taxpay-modal__body {
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.4rem 1.65rem;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) .taxpay-modal__footer-actions {
+  display: block;
+  flex: 1 1 auto;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions > .receipt-view__restart {
+  margin-right: auto;
+  flex: 0 0 auto;
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) .taxpay-modal__body {
+    padding: 1rem;
+  }
+  .taxpay-citizen-shell .taxpay-modal:has(> .taxpay-modal__body > .receipt-view--embedded) .receipt-view__actions:has(.receipt-view__restart) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .5rem;
+    width: 100%;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions > .receipt-view__restart {
+    justify-self: start;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions:has(.receipt-view__restart) .receipt-view__action-group {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+/* Document printing must not inherit the interactive Travel Tax scroll viewport. */
+@media print {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) {
+    position: static;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) .taxpay-modal__body {
+    display: block;
+    padding: 0;
+    overflow: visible;
+    max-height: none;
+  }
+}

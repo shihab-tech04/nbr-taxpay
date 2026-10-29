@@ -340,6 +340,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       <span className="payment-flow-embedded__action-short" aria-hidden="true">{bn ? 'এগিয়ে যান' : 'Continue'}</span><ArrowRight size={17} aria-hidden="true" />
     </button>
   );
+  // Once settled, leave the two-column calculation wizard: a receipt is a full-width
+  // document with its own single footer action owner, not a form inside a sidebar.
+  if (embedded && createdReceipt && !bankSlipPending) {
+    return <ReceiptView receipt={createdReceipt} embedded onNewPayment={reset} />;
+  }
+
   return (
     <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
       <div className="travel-flow__main">

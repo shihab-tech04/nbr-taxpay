@@ -1,6 +1,7 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards, X} from 'lucide-react';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
+import {TaxPayModal} from '../ui/TaxPayModal';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
@@ -82,6 +83,7 @@ export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','his
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=({route,activityTabs=false})=>{
   const {navigate,language,setLanguage,routeParams}=useTaxState();
   const bn=language==='bn';
+  const trackingActivity=route==='history' && Boolean(routeParams.trackPayment);
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [year,setYear]=useState<string>(()=>{
@@ -110,21 +112,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
   const [selected,setSelected]=useState<RecordItem|null>(null);
-  const detailCloseRef=useRef<HTMLButtonElement>(null);
-  useEffect(()=>{
-    if(!selected)return;
-    const trigger=document.activeElement instanceof HTMLElement?document.activeElement:null;
-    const previousOverflow=document.body.style.overflow;
-    document.body.style.overflow='hidden';
-    detailCloseRef.current?.focus();
-    const onKeyDown=(event:KeyboardEvent)=>{
-      if(event.key==='Escape'){event.preventDefault();setSelected(null);}
-      // Close is the only interactive element in this detail dialog.
-      if(event.key==='Tab'){event.preventDefault();detailCloseRef.current?.focus();}
-    };
-    document.addEventListener('keydown',onKeyDown);
-    return()=>{document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',onKeyDown);if(trigger?.isConnected)trigger.focus();};
-  },[selected]);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(!reviewFilter||reviewFilter.includes(x.state))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,query]);
@@ -166,7 +153,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <button type="button" onClick={csv} className={action}><Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>
     </div>
     <div className="taxpayer-transaction-filters">
-      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
+      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={trackingActivity?tr('Enter challan or transaction reference','চালান বা লেনদেন রেফারেন্স লিখুন'):tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
       </select></label>
@@ -192,7 +179,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     </div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
     actions={!['account_profile','account_settings'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
@@ -426,17 +413,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
-    {selected&&<div role="presentation" className="taxpayer-transaction-detail__overlay" onMouseDown={e=>{if(e.currentTarget===e.target)setSelected(null);}}>
-      <section role="dialog" aria-modal="true" aria-labelledby="user1-detail-title" className="taxpayer-transaction-detail">
-        <header className="taxpayer-transaction-detail__heading"><div><p>{tr('Transaction details','লেনদেনের বিস্তারিত')}</p><h2 id="user1-detail-title">{selected.title}</h2></div><button type="button" ref={detailCloseRef} className="taxpayer-transaction-detail__close" aria-label={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')} onClick={()=>setSelected(null)}><X size={20} aria-hidden="true"/></button></header>
-        <div className="taxpayer-transaction-detail__body">
+    {selected && <TaxPayModal
+      title={selected.title}
+      onClose={() => setSelected(null)}
+      closeIconLabel={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}
+      className="taxpayer-transaction-detail"
+      hideFooter
+    >
+      <div className="taxpayer-transaction-detail__body">
+        <p className="text-sm font-semibold text-taxpay-muted">{tr('Transaction details','লেনদেনের বিস্তারিত')}</p>
         <div className="taxpayer-transaction-detail__summary"><p className="text-xl font-semibold tabular-nums text-taxpay-text">{money(selected.amount)}</p>{tag(selected.state)}</div>
         <dl className="taxpayer-transaction-detail__facts">{[
           [tr('Reference','রেফারেন্স'),selected.ref],[tr('Assessment year','করবর্ষ'),selected.year],[tr('Date','তারিখ'),formatDate(selected.date)],[tr('Category','ধরন'),tr(...labels[selected.kind])],
           [tr('Channel','মাধ্যম'),selected.channel],[tr('Challan reference','চালান রেফারেন্স'),selected.challan||tr('Unavailable','পাওয়া যায়নি')],[tr('Meaning','বিবরণ'),selected.detail]
         ].map(x=><div key={x[0]}><dt>{x[0]}</dt><dd>{x[1]}</dd></div>)}</dl>
-        </div>
-      </section>
-    </div>}
+      </div>
+    </TaxPayModal>}
   </div>;
 };

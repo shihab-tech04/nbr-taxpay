@@ -8,12 +8,6 @@
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"] .taxpay-modal__title {
   font-family: inherit;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"].tax-service-choice-modal--access {
-  width: min(100%, 700px);
-}
-.tax-service-choice-modal--access .taxpay-modal__footer {
-  justify-content: flex-start !important;
-}
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.payment-flow-embedded) {
   width: min(100%, 1160px);
   /* Short payment steps shrink to their content instead of leaving an empty page. */
@@ -546,7 +540,6 @@
     max-height: 100dvh;
     border-radius: 0;
   }
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"].tax-service-choice-modal--access {width:100%;}
   .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.payment-flow-embedded) {
     height: 100dvh;
     max-height: 100dvh;

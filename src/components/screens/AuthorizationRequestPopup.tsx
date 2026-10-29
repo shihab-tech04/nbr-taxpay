@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {X} from 'lucide-react';
+import {TaxPayModal} from '../ui/TaxPayModal';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
 import {
@@ -52,35 +52,40 @@ export function AuthorizationRequestPopup(){
     }catch(e){setError(e instanceof Error?e.message:'Authorization unavailable');}
     finally{setBusy(false);}
   };
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4" role="presentation">
-    <section role="dialog" aria-modal="true" aria-labelledby="auth-popup-title"
-      className="taxpay-reference-dialog taxpay-authorization-popup" lang={language}>
-      <header className="taxpay-reference-dialog__header">
-        <span className="taxpay-reference-dialog__back-placeholder" aria-hidden="true" />
-        <h2 id="auth-popup-title">{bn?'পেমেন্ট অনুমোদনের অনুরোধ':'Payment authorization request'}</h2>
-        <button type="button" aria-label={bn?'বন্ধ':'Close'} onClick={dismiss} className="taxpay-reference-dialog__close"><X size={20} aria-hidden="true"/></button>
-      </header>
-      <div className="taxpay-reference-dialog__body">
+  const viewAuthorization = () => {
+    try { sessionStorage.setItem('taxpay-authorization-open-tab', 'incoming'); }
+    catch { /* Optional navigation hint. */ }
+    dismiss();
+    navigate('manage_authorization');
+  };
+  return <TaxPayModal
+    title={bn ? 'পেমেন্ট অনুমোদনের অনুরোধ' : 'Payment authorization request'}
+    onClose={dismiss}
+    closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
+    className="taxpayer-authorization-modal"
+    footer={displayedCode ? (
+      <button type="button" className="tax-service-choice__continue" onClick={viewAuthorization}>
+        {bn ? 'অনুমোদন দেখুন' : 'View authorization'}
+      </button>
+    ) : (
+      <div className="tax-service-choice__actions">
+        <button type="button" disabled={busy} className="taxpay-modal__footer-close"
+          onClick={() => void act('decline')}>{bn ? 'প্রত্যাখ্যান' : 'Decline'}</button>
+        <button type="button" disabled={busy} className="tax-service-choice__continue"
+          onClick={() => void act('accept')}>{bn ? 'গ্রহণ করুন' : 'Accept'}</button>
+      </div>
+    )}
+  >
       {displayedCode?<div className="mt-4 space-y-3">
         <p className="text-sm text-slate-700">{incoming.status==='CODE_ISSUED'
           ?(bn?'নতুন কোড এসেছে। আগের কোড বাতিল হয়েছে। সর্বশেষ কোডটি অনুরোধকারীকে দিন।':'New code received. The previous code is invalid. Share this latest code with the requester.')
           :(bn?'অনুরোধ গ্রহণ করা হয়েছে। এই কোডটি অনুরোধকারীকে দিন।':'Request accepted. Share this code with the requester.')}</p>
         <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center font-mono text-3xl font-bold tracking-[0.3em] text-blue-900">{displayedCode}</p>
         <p className="text-xs text-slate-600">{bn?'কোডটি ১৫ মিনিট কার্যকর। অনুরোধকারী কোড লিখলে অনুমোদন সম্পূর্ণ হবে।':'This four-digit code expires in 15 minutes. Authorization completes when the requester enters it.'}</p>
-        <button type="button" className="w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white" onClick={()=>{
-          try{sessionStorage.setItem('taxpay-authorization-open-tab','incoming');}catch{/* optional navigation hint */}
-          dismiss();navigate('manage_authorization');
-        }}>{bn?'অনুমোদন দেখুন':'View authorization'}</button>
       </div>:<div className="mt-4 space-y-4">
         <p className="text-sm leading-6 text-slate-700"><strong>{bn?requester.nameBn:requester.nameEn}</strong> ({requester.id}) {bn?'আপনার টিআইএনের কর পরিশোধের অনুমতি চাইছেন।':'wants permission to make tax payments for your TIN.'}</p>
         <p className="text-sm text-slate-600">{bn?'TIN:':'TIN:'} {DEMO_USERS[actor].tin}</p>
         {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
-        <div className="flex gap-3">
-          <button type="button" disabled={busy} className="flex-1 rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50" onClick={()=>void act('accept')}>{bn?'গ্রহণ করুন':'Accept'}</button>
-          <button type="button" disabled={busy} className="flex-1 rounded-lg border border-blue-200 px-4 py-3 font-semibold text-blue-800 disabled:opacity-50" onClick={()=>void act('decline')}>{bn?'প্রত্যাখ্যান':'Decline'}</button>
-        </div>
       </div>}
-      </div>
-    </section>
-  </div>;
+  </TaxPayModal>;
 }
