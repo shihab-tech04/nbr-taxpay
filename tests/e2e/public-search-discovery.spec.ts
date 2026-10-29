@@ -83,8 +83,10 @@ test('matching reference opens the receipt modal without exposing the reference 
   expect(page.url()).not.toContain('DEMO-REF');
   const modal = page.getByRole('dialog', { name: 'Payment status & receipt' });
   await expect(modal.locator('.receipt-view--embedded')).toContainText('AC-2025-06-DEMO-REF-003');
-  await modal.getByRole('button', { name: 'Back to search' }).click();
-  await expect(modal.getByRole('textbox', { name: 'Challan, token or transaction reference' })).toHaveValue('AC-2025-06-DEMO-REF-003');
+  await expect(modal.getByRole('button', { name: 'Back to search' })).toHaveCount(0);
+  await modal.getByRole('button', { name: 'Close modal' }).click();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
 });
 
 test('suggestions close on Escape or outside click, and translate cleanly into Bangla', async ({ page }) => {
