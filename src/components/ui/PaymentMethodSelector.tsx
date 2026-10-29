@@ -55,7 +55,7 @@ export function PaymentMethodSelector({ language, channel, methodGroup, method, 
           <span className={`payment-review__brand payment-review__brand--${option.id.toLowerCase()}`} aria-hidden="true">{option.id === 'MASTERCARD' ? <span className="payment-review__mastercard-mark" /> : ['BKASH', 'NAGAD', 'ROCKET', 'VISA'].includes(option.id) ? option.name : methodGroup === 'bank' ? <Landmark size={18} /> : <CreditCard size={18} />}</span><span>{option.name}</span>
         </label>)}</div>
       </fieldset>}
-      <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={event => onSimulateDeclineChange(event.target.checked)} />{bn ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>
+      {import.meta.env.DEV && <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={event => onSimulateDeclineChange(event.target.checked)} />{bn ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>}
     </div>}
     {channel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{bn ? 'ব্যাংক নিষ্পত্তি সংযুক্ত নেই; কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement is not connected; tax credit is not confirmed.'}</p>}
   </>;
