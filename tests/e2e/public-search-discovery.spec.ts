@@ -31,7 +31,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
     return next.top - card.bottom;
   });
   await search.fill('DEMO-REF-001');
-  await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
+  await expect(section.getByRole('heading', { name: 'Matching references' })).toBeVisible();
   await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
   await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
   await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
@@ -58,7 +58,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
   await resultOption.focus();
   await expect(resultOption).toBeFocused();
   await search.fill('not-a-real-reference');
-  await expect(section.getByText(/No matching samples/)).toBeVisible();
+  await expect(section.getByText(/No matching references/)).toBeVisible();
   await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
   await expect(section.getByRole('button', { name: 'Search records' })).toBeEnabled();
 });
@@ -102,7 +102,7 @@ test('suggestions close on Escape or outside click, and translate cleanly into B
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
   await page.getByRole('searchbox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' }).fill('DEMO');
-  await expect(page.getByRole('heading', { name: 'মিলে যাওয়া নমুনা রেফারেন্স' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'মিলে যাওয়া রেফারেন্স' })).toBeVisible();
 });
 
 test('dropdown overlays following content without resizing the card or overflowing narrow screens', async ({ page }) => {

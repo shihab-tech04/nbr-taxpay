@@ -15,16 +15,16 @@ test('authorization request uses Add taxpayer and inline Cancel, never a large C
   const add=panel.getByRole('button',{name:'Add taxpayer'});
   await expect(add).toBeVisible();
   await add.click();
-  await expect(panel.getByLabel('Taxpayer TIN')).toBeFocused();
+  await expect(panel.getByLabel('Taxpayer account reference')).toBeFocused();
   await expect(panel.getByRole('button',{name:'Close',exact:true})).toHaveCount(0);
   await expect(panel.getByRole('button',{name:'Request authorization'})).toBeVisible();
-  await panel.getByLabel('Taxpayer TIN').fill('2222222222222');
+  await panel.getByLabel('Taxpayer account reference').fill('2222222222222');
   await panel.getByRole('button',{name:'Discard',exact:true}).click();
-  await expect(panel.getByLabel('Taxpayer TIN')).toHaveCount(0);
+  await expect(panel.getByLabel('Taxpayer account reference')).toHaveCount(0);
   await expect(add).toBeVisible();
   await expect(add).toBeFocused();
   await add.click();
-  await expect(panel.getByLabel('Taxpayer TIN')).toHaveValue('');
+  await expect(panel.getByLabel('Taxpayer account reference')).toHaveValue('');
 });
 
 test('transaction search has one outer focus boundary at mobile and desktop widths',async({page},info)=>{

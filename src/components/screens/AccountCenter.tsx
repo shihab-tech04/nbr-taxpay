@@ -216,7 +216,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                     <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{previewAccount?.role ?? demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
                     {(previewAccount || demoSql.profile) && <>
                       <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{previewAccount ? (language === 'bn' ? previewAccount.focusBn : previewAccount.focusEn) : ((language === 'bn' ? demoSql.profile?.focusBn : demoSql.profile?.focusEn) ?? '—')}</dd></div>
-                      <div><dt>{language === 'bn' ? 'পরীক্ষামূলক টিআইএন' : 'Test TIN'}</dt><dd>{previewAccount?.tin ?? demoSql.profile?.tinStub ?? '—'}</dd></div>
+                      <div><dt>{language === 'bn' ? 'করদাতা রেফারেন্স' : 'Taxpayer reference'}</dt><dd>{previewAccount?.tin ?? demoSql.profile?.tinStub ?? '—'}</dd></div>
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>

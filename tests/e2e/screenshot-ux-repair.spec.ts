@@ -76,7 +76,7 @@ test('authorization input and compact delete confirmation remain within mobile v
   const auth=page.getByTestId('manage-authorization');
   await auth.getByRole('button',{name:'Add'}).click();
   const form=auth.locator('.taxpay-auth-add');
-  await expect(form.getByLabel('Taxpayer TIN')).toBeVisible();
+  await expect(form.getByLabel('Taxpayer account reference')).toBeVisible();
   await expect(form.getByRole('button',{name:'Request authorization'})).toBeVisible();
   await auth.getByRole('button',{name:'Delete',exact:true}).click();
   const confirm=auth.getByRole('button',{name:'Confirm delete'});

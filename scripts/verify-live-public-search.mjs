@@ -27,7 +27,7 @@ try {
       return document.querySelector('#public-how-it-works').getBoundingClientRect().top - card.bottom;
     });
     await search.fill('TKN-882190');
-    await expect(section.getByRole('heading', { name: 'Matching sample references' })).toBeVisible();
+    await expect(section.getByRole('heading', { name: 'Matching references' })).toBeVisible();
     await expect(section.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
     await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
     await expect(section.locator('.public-record-discovery__heading svg')).toHaveCount(0);
