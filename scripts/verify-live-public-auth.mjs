@@ -77,8 +77,10 @@ try {
     await expect(notificationBell).toBeVisible();
     await notificationBell.click();
     await expect(guest).toHaveURL(/action=payment_notifications/);
-    await expect(guest.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
-    await expect(guest.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
+    await expect(guest.getByRole('heading', { name: 'Payment notifications', level: 1 })).toBeVisible();
+    await expect(guest.getByRole('heading', { name: 'Payment record saved', level: 2 })).toBeVisible();
+    await expect(guest.getByText('Amount: ৳1,250.50')).toBeVisible();
+    await expect(guest.getByText(paymentId, { exact: false })).toBeVisible();
     await expect(guest.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     await guest.screenshot({ path: `test-results/live-auth-notification-${name}.png`, fullPage: true });
     await guest.close();
