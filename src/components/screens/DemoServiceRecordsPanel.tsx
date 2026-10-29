@@ -182,8 +182,8 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
               {tr('Next steps from your activity', 'আপনার কার্যক্রম অনুযায়ী পরবর্তী ধাপ')}
             </h3>
             <p className="mt-1 text-sm text-taxpay-muted">
-              {tr('Based on recorded demonstration activity only. These are not assessed dues, certified credits or instructions to pay again.',
-                'শুধু প্রদর্শনী কার্যক্রমের তথ্যের ভিত্তিতে। এগুলো নির্ধারিত বকেয়া, স্বীকৃত কর ক্রেডিট বা আবার পরিশোধের নির্দেশ নয়।')}
+              {tr('Based on recorded activity. Dues and tax credits are not verified.',
+                'সংরক্ষিত কার্যক্রমের ভিত্তিতে। বকেয়া ও কর ক্রেডিট যাচাই করা হয়নি।')}
             </p>
             <ul className="mt-3 grid gap-3 md:grid-cols-2">
               {nextActions.map(action => (
@@ -228,8 +228,8 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                   <dd className="font-medium text-taxpay-text">{participant(selectedRecord)}</dd></div>
               </dl>
               <p className="mt-4 rounded-lg bg-taxpay-light p-3 text-sm text-taxpay-muted">
-                {tr('This is a fictional SQL service record, not a government challan, Treasury settlement, assessed balance or eligible tax credit. Its state is shown as stored; no official payment status is inferred.',
-                  'এটি একটি পরীক্ষামূলক SQL সেবার রেকর্ড; সরকারি চালান, ট্রেজারি নিষ্পত্তি, নির্ধারিত বকেয়া বা স্বীকৃত কর ক্রেডিট নয়। সংরক্ষিত অবস্থাই দেখানো হচ্ছে; সরকারি পরিশোধের অবস্থা অনুমান করা হয়নি।')}
+                {tr('The stored record is shown here. Treasury settlement, assessed balance and tax credit are not verified.',
+                  'এখানে সংরক্ষিত রেকর্ড দেখানো হয়েছে। ট্রেজারি নিষ্পত্তি, নির্ধারিত বকেয়া ও কর ক্রেডিট যাচাই করা হয়নি।')}
               </p>
             </section>
           )}

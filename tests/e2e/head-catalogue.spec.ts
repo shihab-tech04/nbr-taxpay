@@ -30,7 +30,13 @@ test('seven source group filter and Bengali translation are available by keyboar
   const selector = page.getByLabel('Original source group');
   await selector.selectOption('Source Tax');
   await expect(page.getByText('Matching source records: 127 / 170')).toBeVisible();
+  if (!(await page.getByRole('button', { name: 'বাংলা' }).isVisible())) {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+  }
   await page.getByRole('button', { name: 'বাংলা' }).click();
+  if (await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).isVisible()) {
+    await page.getByRole('button', { name: 'বন্ধ করুন' }).click();
+  }
   await expect(page.getByRole('heading', { name: 'মূল v11 কর পরিশোধের খাতের তালিকা' })).toBeVisible();
   await expect(page.getByText('অনুসন্ধানে পাওয়া খাত: 127 / 170')).toBeVisible();
 });

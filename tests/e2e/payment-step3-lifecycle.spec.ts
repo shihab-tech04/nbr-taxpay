@@ -81,18 +81,18 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(action).toBeEnabled();
   await action.click();
   await expect(dialog.getByText('Step 4 of 4')).toBeVisible();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
-  await expect(dialog.getByText('Demo simulation only — no money transferred, government challan or tax credit issued.')).toBeVisible();
-  await expect(dialog.getByText('Payment simulation recorded — no money transferred.')).toBeVisible();
-  await dialog.getByText('Payment progress details').click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByText('Payment record saved; settlement is not verified.')).toBeVisible();
+  await expect(dialog.locator('.payment-lifecycle__reference-value')).not.toBeEmpty();
+  await dialog.locator('.payment-lifecycle__progress-detail summary').click();
   const timeline = dialog.getByTestId('payment-lifecycle');
-  for (const stage of ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED', 'PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED']) {
+  for (const stage of ['Payment request started', 'Request details prepared', 'Reference generated', 'Preparing payment record', 'Treasury settlement not verified', 'Ledger entry not confirmed', 'Tax credit not confirmed']) {
     await expect(timeline.getByText(stage, { exact: true })).toBeVisible();
   }
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
-  await expect(dialog.getByRole('note')).toContainText('Demo receipt only — no money transferred');
+  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
   await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
   await expect(dialog.getByText('Simulation only. No actual money transfer, government challan or tax credit has occurred.')).toHaveCount(0);
@@ -105,14 +105,14 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await dialog.getByRole('button', { name: 'Get payment slip' }).click();
   await expect(dialog.getByRole('heading', { name: 'Bank payment slip ready' })).toBeVisible();
   await expect(dialog.getByText('This is not tax paid yet')).toBeVisible();
-  await expect(dialog.getByText('Demo slip only; not valid at a bank. No money was deposited, settled by Treasury or credited.')).toBeVisible();
-  await dialog.getByText('Payment progress details').click();
-  await expect(dialog.getByTestId('payment-lifecycle').getByText('ACS_REFERENCE_CREATED')).toBeVisible();
+  await expect(dialog.getByText('Bank settlement and tax credit are not confirmed.')).toBeVisible();
+  await dialog.locator('.payment-lifecycle__progress-detail summary').click();
+  await expect(dialog.getByTestId('payment-lifecycle').getByText('Reference generated')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue bank payment' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
-  await dialog.getByText('Payment progress details').click();
-  await expect(dialog.getByTestId('payment-lifecycle').getByText('TREASURY_SETTLED')).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
+  await dialog.locator('.payment-lifecycle__progress-detail summary').click();
+  await expect(dialog.getByTestId('payment-lifecycle').getByText('Treasury settlement not verified')).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });
@@ -126,8 +126,8 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment request declined' })).toBeVisible({ timeout: 12000 });
-  await dialog.getByText('Payment progress details').click();
-  await expect(dialog.getByTestId('payment-lifecycle').getByText('FAILED')).toBeVisible();
+  await dialog.locator('.payment-lifecycle__progress-detail summary').click();
+  await expect(dialog.getByTestId('payment-lifecycle').getByText('Request declined')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Try another method' }).click();
   await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
@@ -137,7 +137,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('radio', { name: 'Nagad' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });

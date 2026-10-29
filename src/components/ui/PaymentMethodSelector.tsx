@@ -39,7 +39,7 @@ export function PaymentMethodSelector({ language, channel, methodGroup, method, 
   return <>
     <div className="payment-review__channels" role="group" aria-label={bn ? 'পেমেন্ট চ্যানেল' : 'Payment channel'}>
       <button type="button" aria-label={bn ? 'অনলাইনে পরিশোধ' : 'Pay online'} aria-pressed={channel === 'NOW'} className={`payment-review__channel ${channel === 'NOW' ? 'payment-review__channel--selected' : ''}`} onClick={() => onChannelChange('NOW', null)}><CreditCard size={23} aria-hidden="true" /><span><strong>{bn ? 'অনলাইনে পরিশোধ' : 'Pay online'}</strong><small>{bn ? 'মোবাইল ব্যাংকিং, ইন্টারনেট ব্যাংকিং বা কার্ড' : 'Mobile banking, internet banking or card'}</small></span><span className="payment-review__radio" /></button>
-      <button type="button" aria-label={bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'} aria-pressed={channel === 'OTC'} className={`payment-review__channel ${channel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => onChannelChange('OTC', 'BANK_BRANCH')}><Building2 size={23} aria-hidden="true" /><span><strong>{bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'}</strong><small>{bn ? 'আগে চালান স্লিপ, পরে ব্যাংকে পরিশোধ' : 'Get a payment slip for the bank'}</small></span><span className="payment-review__radio" /></button>
+      <button type="button" aria-label={bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'} aria-pressed={channel === 'OTC'} className={`payment-review__channel ${channel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => onChannelChange('OTC', 'BANK_BRANCH')}><Building2 size={23} aria-hidden="true" /><span><strong>{bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'}</strong><small>{bn ? 'ব্যাংক পেমেন্টের রেফারেন্স' : 'Bank payment reference'}</small></span><span className="payment-review__radio" /></button>
     </div>
     {channel === 'NOW' && <div className="payment-review__methods">
       <fieldset><legend>{bn ? 'অনলাইন পেমেন্টের ধরন' : 'Select payment type'}</legend>
@@ -55,8 +55,8 @@ export function PaymentMethodSelector({ language, channel, methodGroup, method, 
           <span className={`payment-review__brand payment-review__brand--${option.id.toLowerCase()}`} aria-hidden="true">{option.id === 'MASTERCARD' ? <span className="payment-review__mastercard-mark" /> : ['BKASH', 'NAGAD', 'ROCKET', 'VISA'].includes(option.id) ? option.name : methodGroup === 'bank' ? <Landmark size={18} /> : <CreditCard size={18} />}</span><span>{option.name}</span>
         </label>)}</div>
       </fieldset>}
-      <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={event => onSimulateDeclineChange(event.target.checked)} />{bn ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>
+      {import.meta.env.DEV && <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={event => onSimulateDeclineChange(event.target.checked)} />{bn ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>}
     </div>}
-    {channel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{bn ? 'চালান তৈরি হওয়া মানেই কর পরিশোধ নয়। ব্যাংকের অর্থ ট্রেজারিতে নিষ্পন্ন হলে তবেই কর ক্রেডিট।' : 'Generating a challan does not mean tax is paid. Tax credit follows bank payment and Treasury settlement.'}</p>}
+    {channel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{bn ? 'ব্যাংক নিষ্পত্তি সংযুক্ত নেই; কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement is not connected; tax credit is not confirmed.'}</p>}
   </>;
 }
