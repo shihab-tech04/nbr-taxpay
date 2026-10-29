@@ -99,10 +99,12 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     className="taxpayer-login-modal"
     service="login"
     initialFocusSelector="#taxpayer-login-user-id"
-    footer={<button className="tax-service-choice__continue" type="submit"
-      form="taxpay-standalone-login-form" disabled={!credentialsReady}>
-      {bn ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={18} aria-hidden="true" />
-    </button>}
+    footer={<div className="tax-service-choice__actions">
+      <button className="tax-service-choice__continue" type="submit"
+        form="taxpay-standalone-login-form" disabled={!credentialsReady}>
+        {bn ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={18} aria-hidden="true" />
+      </button>
+    </div>}
   >
     {content}
   </TaxPayModal>;
