@@ -24,6 +24,19 @@ test('approved Amar Kor branding stays consistent across public and taxpayer she
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' })).toBeVisible();
 });
 
+test('Korbritto primary logo stays solid brand blue and 20 percent smaller across header breakpoints', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/?action=landing');
+  const logo = page.locator('.public-home-wordmark');
+  await expect(logo).toHaveAttribute('src', /korbritto-brand-locked-/);
+  await expect(logo).toHaveCSS('width', '123px');
+  await expect(logo).toHaveCSS('height', '42px');
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(logo).toHaveCSS('width', '98px');
+  await expect(logo).toHaveCSS('height', '34px');
+});
+
 test('flat wordmark footer stays readable without horizontal overflow', async ({ page }) => {
   for (const width of [320, 375, 768, 1280]) {
     await page.setViewportSize({ width, height: 812 });
