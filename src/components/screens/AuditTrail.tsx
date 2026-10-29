@@ -34,10 +34,10 @@ export const AuditTrail: React.FC = () => {
             </div>
             <div>
               <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-                Demonstration Officer Action Log
+                Officer Action Log
               </h1>
               <p className="text-xs text-slate-500">
-                Illustrative in-memory actions. No cryptographically verifiable or tamper-resistant audit chain has been established.
+                Actions are held in memory. No cryptographically verifiable or tamper-resistant audit chain has been established.
               </p>
             </div>
           </div>
@@ -45,7 +45,7 @@ export const AuditTrail: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded border border-emerald-300 font-bold flex items-center gap-1">
               <Lock className="w-3.5 h-3.5" />
-              <span>UNVERIFIED DEMO LOG</span>
+              <span>UNVERIFIED LOG</span>
             </span>
           </div>
         </div>
@@ -71,7 +71,7 @@ export const AuditTrail: React.FC = () => {
                 <th className="px-3 py-2.5">Action Code</th>
                 <th className="px-3 py-2.5">Target ID</th>
                 <th className="px-3 py-2.5">Details</th>
-                <th className="px-3 py-2.5 font-mono">Demo Token (not SHA-256)</th>
+                <th className="px-3 py-2.5 font-mono">Record Token (not SHA-256)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">

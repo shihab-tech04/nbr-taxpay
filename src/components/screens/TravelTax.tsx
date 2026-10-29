@@ -124,22 +124,20 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
 
     setTimeout(async () => {
       if (paymentChannel === 'NOW' && simulateDecline) {
-        setError(bn ? 'সিমুলেটেড পেমেন্ট প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।' : 'Simulated payment declined. Please try again.');
+        setError(bn ? 'পেমেন্টের অনুরোধ প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।' : 'Payment request declined. Please try again.');
         setIsProcessing(false);
         return;
       }
-      const year = new Date().getFullYear();
-      const randChallan = Math.floor(10000000 + Math.random() * 90000000);
-      const randToken = Math.floor(100000 + Math.random() * 900000);
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
       const pendingBank = paymentChannel === 'OTC';
-      const paymentReference = `PT-${year}-${randToken}`;
+      // Reuse the idempotency nonce so retries keep the same synthetic reference.
+      const paymentReference = `SIM-TOKEN-${paymentNonce}`;
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-trv-${Date.now()}`,
-        taxEventId: `TE-${year}-${Math.floor(100000 + Math.random() * 900000)}`,
+        taxEventId: `SIM-EVENT-${paymentNonce}`,
         paymentTransactionId: paymentReference,
-        challanNo: `ACS-${year}-${randChallan}`,
+        challanNo: `SIM-${paymentNonce}`,
         tokenNumber: paymentReference,
         paymentCategory: 'TRAVEL_TAX',
         assessmentYear: '2026-27',
@@ -165,10 +163,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         ],
         totalAmount,
         paymentMethod,
-        gatewayTransactionId: `${paymentMethod.substring(0, 4)}-TRV-${Math.floor(10000000 + Math.random() * 90000000)}`,
-        treasuryScrollNo: pendingBank ? undefined : `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
-        treasuryDate: pendingBank ? undefined : now,
-        treasuryStatus: pendingBank ? 'INITIATED' : 'TREASURY_SCROLLED',
+        gatewayTransactionId: `SIM-TXN-${paymentNonce}`,
+        treasuryStatus: pendingBank ? 'INITIATED' : 'GATEWAY_SUCCESS',
         taxCreditStatus: 'NOT_APPLICABLE',
         createdAt: now,
         completedAt: pendingBank ? undefined : now,
@@ -289,9 +285,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       const at = new Date().toISOString();
       let receipt: ChallanReceipt = {
         ...createdReceipt,
-        treasuryStatus: 'TREASURY_SCROLLED',
-        treasuryScrollNo: `DEMO-BANK-${Date.now()}`,
-        treasuryDate: at,
+        treasuryStatus: 'GATEWAY_SUCCESS',
         completedAt: at,
       };
       if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
@@ -303,7 +297,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
             receiptMobile:phone,travelDate,travelRoute:route?.route,ageBand,
             passengerName:passengerName.trim(),
             passportNumber:isDomestic ? null : passportNumber.trim(),
-            lines:receipt.items},
+            lines:receipt.items,receiptSnapshot:receipt},
         });
         receipt={...receipt,paymentTransactionId:ack.id};
       }
@@ -324,7 +318,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     </button>
   ) : bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip}>
-      <Building2 size={17} aria-hidden="true" />{bn ? 'ব্যাংক পরিশোধ নিশ্চিত করুন' : 'Confirm bank payment'}
+      <Building2 size={17} aria-hidden="true" />{bn ? 'চালিয়ে যান' : 'Continue'}
     </button>
   ) : createdReceipt ? (
     <button type="button" className="travel-flow__primary" onClick={reset}>
@@ -460,13 +454,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               {ageBand === 'UNDER5' && !createdReceipt && <p>{bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট প্রয়োজন নেই।' : 'This passenger is exempt — no payment is required.'}</p>}
             </header>
             {createdReceipt && bankSlipPending ? <div className="travel-flow__receipt" role="status">
-              <p className="travel-flow__receipt-label"><Building2 size={18} aria-hidden="true" />{bn ? 'ব্যাংকে পরিশোধের অপেক্ষায় — এখনো কর পরিশোধিত নয়' : 'Awaiting bank payment — tax is not paid yet'}</p>
+              <p className="travel-flow__receipt-label"><Building2 size={18} aria-hidden="true" />{bn ? 'ব্যাংক স্লিপ প্রস্তুত — পরিশোধ নিশ্চিত হয়নি' : 'Bank slip ready — payment not confirmed'}</p>
               <dl className="travel-flow__review">
                 <div><dt>{bn ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</dt><dd>{createdReceipt.paymentTransactionId}</dd></div>
-                <div><dt>{bn ? 'চালান রেফারেন্স' : 'Challan reference'}</dt><dd>{createdReceipt.challanNo}</dd></div>
+                <div><dt>{bn ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</dt><dd>{createdReceipt.challanNo}</dd></div>
                 <div><dt>{bn ? 'পরিমাণ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
               </dl>
-              <p>{bn ? 'তফসিলি ব্যাংকে স্লিপের রেফারেন্স দিয়ে পরিশোধ করুন। ব্যাংকে জমা নিশ্চিত হলে রসিদ তৈরি হবে।' : 'Take this payment-slip reference to a scheduled bank branch. The receipt becomes available after bank settlement.'}</p>
+              <p>{bn ? 'ব্যাংক নিষ্পত্তি সংযুক্ত নেই; পরিশোধ ও কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement is not connected; payment and tax credit are not confirmed.'}</p>
             </div> : createdReceipt ? <div className="travel-flow__receipt">
               <p className="travel-flow__receipt-label" role="status">
                 <CheckCircle size={18} aria-hidden="true" />{workflow.ready} · {t.ref}: {createdReceipt.tokenNumber}

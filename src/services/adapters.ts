@@ -74,18 +74,8 @@ export class AcsTreasuryAdapter {
     assessmentYear: string;
     method: string;
   }): Promise<AcsChallanSubmissionResult> {
-    await new Promise(res => setTimeout(res, 500));
-    const year = new Date().getFullYear();
-    const rand = Math.floor(10000000 + Math.random() * 90000000);
-    return {
-      success: true,
-      challanNo: `AC-${year}-${rand}`,
-      tokenNumber: `TKN-${Math.floor(100000 + Math.random() * 900000)}`,
-      treasuryScrollNo: `BB-SCRL-${year}-${Math.floor(10000 + Math.random() * 90000)}`,
-      scrolledAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      clearingBank: 'Sonali Bank PLC (Dhaka Treasury Branch)',
-      status: 'SCROLLED'
-    };
+    void payload;
+    throw new Error('Official A-Challan and Treasury provider is not configured.');
   }
 }
 

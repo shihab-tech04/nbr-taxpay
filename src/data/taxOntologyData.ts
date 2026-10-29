@@ -158,7 +158,7 @@ export const TAX_ONTOLOGY_NODES: OntologyNode[] = [
     statutoryReference: 'Income Tax Rules & Delegation of Financial Powers',
     rules: [
       'No single officer can initiate and finalize a taxpayer ledger correction.',
-      'Demonstration actions appear in an in-memory log; persistence and tamper resistance are not established.'
+      'Actions appear in an in-memory log; persistence and tamper resistance are not established.'
     ],
     relationships: [
       { target: 'CORRECTION_REQUEST', relation: 'adjudicates' },

@@ -72,7 +72,7 @@ export function AuthorizationRequestPopup(){
           dismiss();navigate('manage_authorization');
         }}>{bn?'অনুমোদন দেখুন':'View authorization'}</button>
       </div>:<div className="mt-4 space-y-4">
-        <p className="text-sm leading-6 text-slate-700"><strong>{bn?requester.nameBn:requester.nameEn}</strong> ({requester.id}) {bn?'আপনার টিআইএনের কর পরিশোধের অনুমতি চাইছেন।':'wants permission to make simulated tax payments for your TIN.'}</p>
+        <p className="text-sm leading-6 text-slate-700"><strong>{bn?requester.nameBn:requester.nameEn}</strong> ({requester.id}) {bn?'আপনার টিআইএনের কর পরিশোধের অনুমতি চাইছেন।':'wants permission to make tax payments for your TIN.'}</p>
         <p className="text-sm text-slate-600">{bn?'TIN:':'TIN:'} {DEMO_USERS[actor].tin}</p>
         {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
         <div className="flex gap-3">

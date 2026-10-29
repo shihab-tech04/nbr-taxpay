@@ -50,14 +50,18 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   const categoryText = (value: PaymentCategory) =>
     bn ? (CATEGORY_LABELS[value]?.bn || value) : (CATEGORY_LABELS[value]?.en || value);
   const statusLabel = (value:string) => statusText[value] ? (bn ? statusText[value].bn : statusText[value].en) : value;
+  const treasuryLabel = (receipt:ChallanReceipt) => receipt.isSimulatedDemo && receipt.treasuryStatus === 'TREASURY_SCROLLED'
+    ? label('Treasury status not verified','ট্রেজারির অবস্থা যাচাই হয়নি')
+    : receipt.isSimulatedDemo && receipt.treasuryStatus === 'GATEWAY_SUCCESS'
+      ? label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত') : statusLabel(receipt.treasuryStatus);
   const exportDemo = () => {
-    const headings=['DEMONSTRATION ONLY','Reference','Token','Payment category','Assessment year','Payer TIN (not credit owner)','Amount BDT','Treasury sample status','Credit sample status'];
+    const headings=['Reference','Token','Payment category','Assessment year','Payer TIN','Amount BDT','Treasury status','Credit status'];
     const lines = filtered.map((r:ChallanReceipt)=>[
-      'Not government payment evidence',r.challanNo,r.tokenNumber,r.paymentCategory,r.assessmentYear,r.payerTin,r.totalAmount,r.treasuryStatus,r.taxCreditStatus
+      r.challanNo,r.tokenNumber,r.paymentCategory,r.assessmentYear,r.payerTin,r.totalAmount,treasuryLabel(r),statusLabel(r.taxCreditStatus)
     ].map(escapeCsv).join(','));
     const csv=[headings.map(escapeCsv).join(','),...lines].join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='TaxPay_sample_payment_activity.csv';
+    const a=document.createElement('a');a.href=url;a.download='TaxPay_payment_activity.csv';
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 
@@ -121,7 +125,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                   <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
                 </div>
                 <p className="mt-1 text-xs text-taxpay-muted"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag> · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
-                <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {statusLabel(r.treasuryStatus)}</p>
+                <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {treasuryLabel(r)}</p>
                 <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
                 <button type="button" onClick={()=>selectReceipt(r.id)}
                   className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
@@ -148,7 +152,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                   <td className="px-3 py-3"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag></td>
                   <td className="whitespace-nowrap px-3 py-3">{r.assessmentYear}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">{formatCurrency(r.totalAmount,language)}</td>
-                  <td className="px-3 py-3">{statusLabel(r.treasuryStatus)}</td>
+                  <td className="px-3 py-3">{treasuryLabel(r)}</td>
                   <td className="px-3 py-3"><button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button></td>
                 </tr>)}
               </tbody>

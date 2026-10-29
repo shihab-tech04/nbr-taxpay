@@ -66,9 +66,9 @@ export const UI_STRINGS: Record<Language, Record<string, string>> = {
     date: 'Date & Time',
     status: 'Status',
     category: 'Payment Category',
-    auditDemoTitle: 'Demonstration Audit Log',
-    auditDemoStatus: 'Demo only',
-    auditDemoDetail: 'Illustrative in-memory entries; persistence, cryptographic verification, and tamper resistance are not established.',
+    auditDemoTitle: 'Audit log',
+    auditDemoStatus: 'Not verified',
+    auditDemoDetail: 'In-memory entries; persistence, cryptographic verification, and tamper resistance are not established.',
     headCode: 'Economic Head Code'
   },
   bn: {
@@ -136,9 +136,9 @@ export const UI_STRINGS: Record<Language, Record<string, string>> = {
     date: 'তারিখ ও সময়',
     status: 'স্থিতি',
     category: 'প্রদেয় করের শ্রেণি',
-    auditDemoTitle: 'নমুনা নিরীক্ষা লগ',
-    auditDemoStatus: 'শুধু প্রদর্শনী',
-    auditDemoDetail: 'মেমোরিতে রাখা উদাহরণমূলক এন্ট্রি; স্থায়ী সংরক্ষণ, ক্রিপ্টোগ্রাফিক যাচাই বা পরিবর্তন-প্রতিরোধ প্রতিষ্ঠিত নয়।',
+    auditDemoTitle: 'নিরীক্ষা লগ',
+    auditDemoStatus: 'যাচাই হয়নি',
+    auditDemoDetail: 'মেমোরিতে রাখা এন্ট্রি; স্থায়ী সংরক্ষণ, ক্রিপ্টোগ্রাফিক যাচাই বা পরিবর্তন-প্রতিরোধ প্রতিষ্ঠিত নয়।',
     headCode: 'অর্থনৈতিক কোড'
   }
 };

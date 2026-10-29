@@ -17,7 +17,6 @@ interface ReceiptViewProps {
   receipt: ChallanReceipt;
   onBack?: () => void;
   embedded?: boolean;
-  backLabel?: string;
 }
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false }) => {
@@ -28,7 +27,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const labels = bn ? {
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'ডাউনলোড',
     title: 'আমার কর — রসিদের বিবরণ',
-    challan: 'চালান নম্বর', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'চালান নম্বর কপি করুন',
+    challan: 'পেমেন্ট রেফারেন্স', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'রেফারেন্স কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ', service: 'পেমেন্টের ধরন',
     zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
     paymentMethod: 'পেমেন্ট পদ্ধতি', transaction: 'লেনদেন রেফারেন্স',
@@ -41,7 +40,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   } : {
     back: 'Back to records', print: 'Print receipt', export: 'Download',
     title: 'Amar Kor — Receipt details',
-    challan: 'Challan reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
+    challan: 'Payment reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year', service: 'Payment service',
     zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',
     paymentMethod: 'Payment method', transaction: 'Transaction reference',
@@ -55,7 +54,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const paymentMethodLabels = {
     BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', SONALI_E_SHEBA: 'Sonali e-Sheba',
     A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS',
-    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch', SIMULATED: 'Simulated payment'
+    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch', SIMULATED: bn ? 'পেমেন্ট' : 'Payment'
   }[receipt.paymentMethod];
 
   const handleCopy = (text: string) => {
@@ -107,18 +106,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           <div className="receipt-view__amount">
             <span>{bn ? 'সর্বমোট অর্থ' : 'Total amount'}</span>
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
-            <small>{receipt.isSimulatedDemo ? (bn ? 'সিমুলেশন রেকর্ড' : 'Simulation record')
-              : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</small>
+            <small>{bn ? 'পেমেন্ট রেকর্ড' : 'Payment record'}</small>
           </div>
         </header>
-
-        {receipt.isSimulatedDemo === true && (
-          <p role="note" className="receipt-view__notice">
-            {bn
-              ? 'শুধু ডেমো রসিদ — কোনো অর্থ স্থানান্তর, সরকারি চালান বা কর ক্রেডিট হয়নি।'
-              : 'Demo receipt only — no money transferred, government challan or tax credit issued.'}
-          </p>
-        )}
 
         {/* Challan Identifiers Ribbon */}
         <div className="receipt-view__reference-strip">
@@ -210,7 +200,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
-                {receipt.treasuryScrollNo || labels.pendingScroll}
+                {receipt.isSimulatedDemo ? (bn ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued') : receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
             </div>
 
