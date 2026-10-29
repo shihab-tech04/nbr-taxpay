@@ -413,14 +413,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {content}
     {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
-      title={tr('Transaction details','লেনদেনের বিস্তারিত')}
+      title={selected.title}
       onClose={() => setSelected(null)}
       closeIconLabel={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}
       className="taxpayer-transaction-detail"
       hideFooter
     >
       <div className="taxpayer-transaction-detail__body">
-        <h3 className="text-base font-semibold text-taxpay-text">{selected.title}</h3>
+        <p className="text-sm font-semibold text-taxpay-muted">{tr('Transaction details','লেনদেনের বিস্তারিত')}</p>
         <div className="taxpayer-transaction-detail__summary"><p className="text-xl font-semibold tabular-nums text-taxpay-text">{money(selected.amount)}</p>{tag(selected.state)}</div>
         <dl className="taxpayer-transaction-detail__facts">{[
           [tr('Reference','রেফারেন্স'),selected.ref],[tr('Assessment year','করবর্ষ'),selected.year],[tr('Date','তারিখ'),formatDate(selected.date)],[tr('Category','ধরন'),tr(...labels[selected.kind])],
