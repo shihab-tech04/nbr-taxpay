@@ -760,6 +760,7 @@
  .receipt-view__cards{display:none!important}
  .receipt-view__financial-table{min-width:0;font-size:11px}
  .receipt-view__financial-table :is(th,td){font-size:11px;padding:.4rem}
+ .receipt-view__breakdown,.receipt-view__parties{break-inside:avoid}
 }
 
 /* Guest payment-reference lookup: one purposeful modal surface, never a nested card. */
