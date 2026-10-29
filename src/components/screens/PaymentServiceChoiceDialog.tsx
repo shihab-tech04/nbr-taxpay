@@ -166,7 +166,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                    <h3 id="tax-service-access-heading" className="tax-service-choice__entry-heading">{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
                    <div className="tax-service-choice__access-options" role="group" aria-labelledby="tax-service-access-heading">
                      {[
-                       { id: 'account' as const, Icon: UserRound, en: 'Sign-in Payment', bn: 'সাইন-ইন পেমেন্ট', detailEn: 'Use your account details and records.', detailBn: 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করুন।' }
+                       { id: 'account' as const, Icon: UserRound, en: 'Sign-in Payment', bn: 'সাইন-ইন পেমেন্ট', detailEn: 'Use your account details and records.', detailBn: 'অ্যাকাউন্টের তথ্য ও রেকর্ড ব্যবহার করুন।' },
                        { id: 'guest' as const, Icon: WalletCards, en: 'Walk-in Payment', bn: 'ওয়াক-ইন পেমেন্ট', detailEn: 'Enter your details and make this payment.', detailBn: 'আপনার তথ্য দিয়ে এই কর পরিশোধ করুন।' },
                      ].map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
                        <button type="button" key={id} className="tax-service-choice__access-option"
