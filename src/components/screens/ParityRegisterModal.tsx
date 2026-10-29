@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, CheckCircle2, ShieldCheck, ArrowRight, ExternalLink } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 
 interface RouteParityEntry {
@@ -289,30 +290,16 @@ export const ParityRegisterModal: React.FC = () => {
   if (!isParityModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="taxpay-parity-dialog bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-300">
-        {/* Header */}
-        <div className="taxpay-parity-dialog__header bg-emerald-950 text-white px-6 py-4 flex items-center justify-between border-b border-emerald-800">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-6 h-6 text-amber-400" />
-            <div>
-              <h2 className="font-serif-fraunces text-lg font-bold">
-                Route-to-Component Parity Register (v11 Baseline)
-              </h2>
-              <p className="text-xs text-emerald-200">
-                Official source-mapped register verifying reconstruction of all 29 original page renderers.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsParityModalOpen(false)}
-            aria-label="Close register"
-            className="taxpay-parity-dialog__close text-slate-300 hover:text-white p-1 rounded hover:bg-emerald-800 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <TaxPayModal
+      title="Route-to-Component Parity Register (v11 Baseline)"
+      onClose={() => setIsParityModalOpen(false)}
+      closeIconLabel="Close register"
+      className="taxpay-parity-dialog"
+      hideFooter
+    >
+      <p className="text-sm text-taxpay-muted">
+        Original source-mapped page register and implementation evidence.
+      </p>
         {/* Metrics Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-xs">
           <div className="p-3 bg-white rounded border border-slate-200">
@@ -334,7 +321,7 @@ export const ParityRegisterModal: React.FC = () => {
         </div>
 
         {/* Register Table */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="min-w-0 overflow-x-auto pt-4">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0 z-10">
               <tr>
@@ -396,19 +383,6 @@ export const ParityRegisterModal: React.FC = () => {
           </table>
         </div>
 
-        {/* Footer */}
-        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-          <div>
-            Verified against <strong className="text-slate-700">NBR_TaxPay_v11_Full_Inspection_Baseline_2026-10-10.md</strong>
-          </div>
-          <button
-            onClick={() => setIsParityModalOpen(false)}
-            className="px-4 py-1.5 bg-slate-800 text-white font-medium rounded hover:bg-slate-900 cursor-pointer"
-          >
-            Close Register
-          </button>
-        </div>
-      </div>
-    </div>
+    </TaxPayModal>
   );
 };
