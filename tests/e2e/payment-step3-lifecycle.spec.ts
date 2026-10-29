@@ -81,9 +81,9 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(action).toBeEnabled();
   await action.click();
   await expect(dialog.getByText('Step 4 of 4')).toBeVisible();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await expect(dialog.getByText('Payment record saved; settlement is not verified.')).toBeVisible();
-  await dialog.getByText('Payment progress details').click();
+  await dialog.getByText('Payment progress and references').click();
   const timeline = dialog.getByTestId('payment-lifecycle');
   for (const stage of ['Payment request started', 'Request details prepared', 'Reference generated', 'Preparing payment record', 'Treasury settlement not verified', 'Ledger entry not confirmed', 'Tax credit not confirmed']) {
     await expect(timeline.getByText(stage, { exact: true })).toBeVisible();
@@ -105,12 +105,12 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await expect(dialog.getByRole('heading', { name: 'Bank payment slip ready' })).toBeVisible();
   await expect(dialog.getByText('This is not tax paid yet')).toBeVisible();
   await expect(dialog.getByText('Bank settlement and tax credit are not confirmed.')).toBeVisible();
-  await dialog.getByText('Payment progress details').click();
+  await dialog.getByText('Payment progress and references').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Reference generated')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue bank payment' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
-  await dialog.getByText('Payment progress details').click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByText('Payment progress and references').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Treasury settlement not verified')).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
@@ -125,7 +125,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment request declined' })).toBeVisible({ timeout: 12000 });
-  await dialog.getByText('Payment progress details').click();
+  await dialog.getByText('Payment progress and references').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Request declined')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Try another method' }).click();
@@ -136,7 +136,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('radio', { name: 'Nagad' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });
