@@ -8,7 +8,7 @@ import type { BannerPaymentService } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
-import { TaxpayerLoginDialog } from './TaxpayerLoginDialog';
+import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { taxpayerBrandName } from '../../config/brand';
@@ -93,7 +93,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       backLabel={tr('Back', 'ফিরুন')}
       service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
-      footer={(
+      footer={view === 'login'
+        ? <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} />
+        : (
         <div className="tax-service-choice__actions">
           {view === 'payer' && <button type="button" className="tax-service-choice__continue"
              disabled={payerForSelf === null || !selected || (accountLoading && !previewAccount)
@@ -101,7 +103,6 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              onClick={advanceToPayment}>
              {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
            </button>}
-           {view === 'login' && <button type="submit" form="taxpay-embedded-login-form" className="tax-service-choice__continue" disabled={!loginReady}>{tr('Sign In', 'সাইন ইন')} <ArrowRight size={18} aria-hidden="true" /></button>}
         </div>
       )}
     >
