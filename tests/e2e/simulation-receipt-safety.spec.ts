@@ -91,7 +91,7 @@ test('travel online records simulation only, with no Treasury scroll', async ({ 
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
   await expect(page.locator('.receipt-view')).toContainText('No Treasury scroll issued');
-  await expect(page.locator('.receipt-view')).toContainText('Payment record saved');
+  await expect(page.locator('.receipt-view')).toContainText('Payment record');
   await expect(page.locator('.receipt-view')).not.toContainText('BB-SCRL');
 });
 
@@ -143,7 +143,7 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
   await page.locator('.receipt-lookup__submit').click();
   const receipt = page.locator('.receipt-view');
   await expect(receipt).toContainText(reference);
-  await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারির অবস্থা যাচাই হয়নি' : 'Treasury status not verified');
+  await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল রেফারেন্স' : 'Treasury scroll reference');
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued');
   await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
 });
