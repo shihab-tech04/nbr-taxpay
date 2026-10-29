@@ -148,6 +148,9 @@ test('homepage Login and payment journey account login use the same modal chrome
   await expect(paymentLogin.locator('.taxpay-modal__back')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(1);
   await paymentLogin.locator('.taxpay-modal__back').click();
+  await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(payment.locator('[data-payer-relationship="SELF"]')).toBeVisible();
   await payment.locator('.taxpay-modal__close').click();
   await expect(payment).toHaveCount(0);
