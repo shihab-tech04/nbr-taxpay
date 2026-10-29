@@ -21,6 +21,8 @@ export interface TaxPayModalProps {
   animateSize?: boolean;
   /** Current inner screen; re-observe when the screen's element changes. */
   motionKey?: string;
+  /** Focus the first meaningful form control; otherwise the header close button receives focus. */
+  initialFocusSelector?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ export function TaxPayModal({
   ariaLabel,
   animateSize = false,
   motionKey,
+  initialFocusSelector,
 }: TaxPayModalProps) {
   const titleId = useId();
   const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
@@ -58,7 +61,8 @@ export function TaxPayModal({
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
+    const initialControl = initialFocusSelector ? dialogRef.current?.querySelector<HTMLElement>(initialFocusSelector) : null;
+    (initialControl ?? closeRef.current)?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       // A login opened by this payment flow owns keyboard focus until it closes.
