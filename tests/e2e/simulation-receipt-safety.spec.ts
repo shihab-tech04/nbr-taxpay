@@ -41,9 +41,12 @@ test('guest submission and receipt use only synthetic references', async ({ page
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  const ownPayer = dialog.locator('[data-payer-relationship="SELF"]');
+  await ownPayer.click();
+  await expect(ownPayer).toHaveAttribute('aria-pressed', 'true');
+  const withReturn = dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]');
+  await withReturn.click();
+  await expect(withReturn).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
