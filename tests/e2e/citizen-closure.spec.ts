@@ -103,13 +103,23 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(page.getByText('Deputy Commissioner of Taxes')).toHaveCount(0);
 
   await page.getByRole('button',{name:'Withholding deposit summary',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Withholding deposit summary'})).toBeVisible();
-  await expect(page.getByText('Deductee ownership')).toBeVisible();
-  await expect(page.getByText('Not verified',{exact:true}).first()).toBeVisible();
+  const documentModal = page.getByRole('dialog',{name:'Certificate summary'});
+  await expect(documentModal.locator('[data-testid="certificate-summary-document"]')).toBeVisible();
+  await expect(documentModal.getByRole('heading',{name:'Withholding deposit summary'})).toBeVisible();
+  await expect(documentModal.getByText('Deductee ownership')).toBeVisible();
+  await expect(documentModal.getByText('Not verified',{exact:true}).first()).toBeVisible();
+  await expect(documentModal.locator('.taxpay-modal__footer .receipt-view__actions')).toBeVisible();
+  await expect(documentModal.getByRole('button',{name:'Back to search'})).toHaveCount(0);
+  await expect(documentModal.getByRole('button',{name:'Download'})).toBeVisible();
+  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeVisible();
+  await documentModal.getByRole('button',{name:'Close modal'}).click();
+  await expect(documentModal).toHaveCount(0);
 
   await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'উৎসে কর জমার সারসংক্ষেপ'})).toBeVisible();
+  await page.getByRole('button',{name:'উৎসে কর জমার সারসংক্ষেপ',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'সনদের সারসংক্ষেপ'}).locator('[data-testid="certificate-summary-document"]')).toBeVisible();
   await expect(page.getByText('এই প্রদর্শনী থেকে কোনো সরকারি সনদ ইস্যু করা হয় না।')).toHaveCount(0);
 
   if (testInfo.project.name === 'mobile-320' || testInfo.project.name === 'desktop-1280') {
