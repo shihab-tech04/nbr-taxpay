@@ -51,7 +51,12 @@ test('standalone login uses exactly the shared TaxPayModal header, body and righ
 });
 test('homepage Login and payment journey account login use the same modal chrome', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
+  if (page.viewportSize()!.width <= 900) {
+    await page.getByRole('button',{name:'Menu'}).click();
+    await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Login'}).click();
+  } else {
+    await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
+  }
   const standalone=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
   await expect(standalone.locator('.taxpay-modal__header')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
@@ -62,12 +67,14 @@ test('homepage Login and payment journey account login use the same modal chrome
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
-  await expect(payment.locator('.taxpay-modal__title')).toContainText('Sign In To Your Amar Kor Account');
-  await expect(payment.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
-  await expect(payment.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
-  await expect(payment.locator('.taxpay-modal__back')).toBeVisible();
-  await expect(payment.getByRole('dialog')).toHaveCount(0);
-  await payment.locator('.taxpay-modal__back').click();
+  // The shared modal stays mounted but its accessible name changes with the workflow step.
+  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Amar Kor Account');
+  await expect(paymentLogin.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
+  await expect(paymentLogin.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
+  await expect(paymentLogin.locator('.taxpay-modal__back')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await paymentLogin.locator('.taxpay-modal__back').click();
   await expect(payment.locator('[data-payer-relationship="SELF"]')).toBeVisible();
   await payment.locator('.taxpay-modal__close').click();
   await expect(payment).toHaveCount(0);
