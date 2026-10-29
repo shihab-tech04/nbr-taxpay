@@ -49,6 +49,34 @@ test('standalone login uses exactly the shared TaxPayModal header, body and righ
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await expect(dialog.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeEnabled();
 });
+test('both login entry points use the identical reusable login modal variant', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const standalone=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  await expect(standalone).toHaveAttribute('data-public-service','login');
+  await expect(standalone).toHaveClass(/taxpayer-login-modal/);
+  const standaloneWidth=await standalone.evaluate(el=>getComputedStyle(el).width);
+  const standaloneBodyPadding=await standalone.locator('.taxpay-modal__body').evaluate(el=>getComputedStyle(el).padding);
+  await standalone.getByRole('button',{name:'Close modal'}).click();
+  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  const payment=page.getByRole('dialog',{name:'Pay Tax'});
+  await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.locator('[data-payment-access="ACCOUNT"]').click();
+  await payment.getByRole('button',{name:'Continue',exact:true}).click();
+  const embedded=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  await expect(embedded).toHaveAttribute('data-public-service','login');
+  await expect(embedded).toHaveClass(/taxpayer-login-modal/);
+  await expect(embedded).toHaveClass(/taxpay-modal/);
+  await expect(embedded.locator('.taxpay-modal__header')).toBeVisible();
+  await expect(embedded.locator('.taxpay-modal__footer')).toBeVisible();
+  await expect(embedded.locator('.taxpay-modal__back')).toBeVisible();
+  await expect(embedded.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
+  // Compare CSS layout widths, not an animated bounding-box frame during modal entry.
+  await expect.poll(() => embedded.evaluate(el=>getComputedStyle(el).width)).toBe(standaloneWidth);
+  expect(await embedded.locator('.taxpay-modal__body').evaluate(el=>getComputedStyle(el).padding)).toBe(standaloneBodyPadding);
+  await embedded.getByRole('button',{name:'Back'}).click();
+  await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed','true');
+});
+
 test('homepage Login and payment journey account login use the same modal chrome', async ({ page }) => {
   await page.goto('/?action=landing');
   if (page.viewportSize()!.width <= 900) {
