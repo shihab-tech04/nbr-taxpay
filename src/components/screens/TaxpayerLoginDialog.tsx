@@ -6,6 +6,19 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
+/** One footer action for both standalone and in-journey sign-in modals. */
+export function TaxpayerLoginFooter({ formId, disabled, language }: {
+  formId: string;
+  disabled: boolean;
+  language: 'en' | 'bn';
+}) {
+  return <div className="tax-service-choice__actions taxpayer-login-actions">
+    <button className="tax-service-choice__continue" type="submit" form={formId} disabled={disabled}>
+      {language === 'bn' ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={18} aria-hidden="true" />
+    </button>
+  </div>;
+}
+
 export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange }: {
   onClose?: () => void;
   onSuccess?: () => void;
@@ -99,12 +112,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     className="taxpayer-login-modal"
     service="login"
     initialFocusSelector="#taxpayer-login-user-id"
-    footer={<div className="tax-service-choice__actions">
-      <button className="tax-service-choice__continue" type="submit"
-        form="taxpay-standalone-login-form" disabled={!credentialsReady}>
-        {bn ? 'সাইন ইন' : 'Sign In'} <ArrowRight size={18} aria-hidden="true" />
-      </button>
-    </div>}
+    footer={<TaxpayerLoginFooter formId="taxpay-standalone-login-form" disabled={!credentialsReady} language={language} />}
   >
     {content}
   </TaxPayModal>;
