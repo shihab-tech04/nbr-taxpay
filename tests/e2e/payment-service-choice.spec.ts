@@ -127,12 +127,17 @@ test('Three progressive decisions toggle independently and finish in one modal',
   await expect(otherTax).toBeVisible();
   await expect(guest).toHaveCount(0);
   await expect(next).toBeDisabled();
-  // Both tax choices share one row at desktop width.
+  // Wait for the shared modal's approved content/height animation to finish
+  // before asserting final two-column geometry. All Playwright projects here
+  // explicitly use the desktop viewport set above.
+  await expect.poll(async () => {
+    const [first, second] = await Promise.all([returnTax.boundingBox(), otherTax.boundingBox()]);
+    return first && second ? Math.abs(first.y - second.y) : Infinity;
+  }, { timeout: 6000 }).toBeLessThan(2);
   const first = await returnTax.boundingBox();
   const second = await otherTax.boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
-  expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
   expect(second!.x).toBeGreaterThan(first!.x + first!.width - 1);
 
   await returnTax.click();
