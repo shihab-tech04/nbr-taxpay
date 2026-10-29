@@ -2,7 +2,7 @@
 export const ROUTES = [
   'landing', 'user_guide', 'secure_workspace', 'head_catalogue', 'guest', 'guestwh',
   'travel', 'verify', 'incident', 'architecture', 'taxpayer_home', 'dashboard',
-  'wizard', 'history', 'payment_details', 'ledger', 'journey', 'certificates',
+  'wizard', 'history', 'activity_track', 'payment_details', 'ledger', 'journey', 'certificates',
   'corrections', 'notifications', 'payment_notifications', 'account_notifications', 'account_profile',
   'account_settings', 'manage_authorization', 'services', 'taxpayer_login', 'office_login', 'ontology', 'glossary', 'guidance'
 ] as const;

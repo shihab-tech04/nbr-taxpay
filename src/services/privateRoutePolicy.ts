@@ -1,7 +1,7 @@
 import type { UserRole } from '../types/tax';
 
 const accountRoutes = new Set([
-  'taxpayer_home', 'dashboard', 'wizard', 'history', 'ledger', 'journey',
+  'taxpayer_home', 'dashboard', 'wizard', 'history', 'activity_track', 'ledger', 'journey',
   'certificates', 'corrections', 'notifications', 'account_notifications',
   'account_profile', 'account_settings', 'manage_authorization', 'services'
 ]);

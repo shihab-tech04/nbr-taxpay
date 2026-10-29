@@ -25,6 +25,7 @@ import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
 import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
 import { PaymentWizard } from './components/screens/PaymentWizard';
 import { PaymentHistory } from './components/screens/PaymentHistory';
+import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { PaymentDetailView } from './components/screens/PaymentDetailView';
 import { TaxLedger } from './components/screens/TaxLedger';
 import { TaxJourney } from './components/screens/TaxJourney';
@@ -44,12 +45,12 @@ import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/priva
 import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
 
 const previewReadOnlyRoutes = new Set([
-  'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
+  'taxpayer_home', 'dashboard', 'history', 'activity_track', 'ledger', 'journey', 'certificates', 'corrections',
   'notifications', 'account_notifications', 'account_profile', 'account_settings', 'services', 'manage_authorization',
   'wizard', 'payment_details'
 ]);
 
-const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
+const activityRoutes = new Set(['history', 'activity_track', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
@@ -147,6 +148,9 @@ const MainRouter: React.FC = () => {
         return <PaymentWizard />;
       case 'history':
         return <PaymentHistory activityTabs={showActivitySections} />;
+      case 'activity_track':
+        // Signed-in tracking stays in Payments & Activity; public verify remains a modal.
+        return <ReceiptLookup activityTabs={showActivitySections} />;
       case 'payment_details':
         return <PublicLanding />; // Receipt content opens over the public shell.
       case 'ledger':

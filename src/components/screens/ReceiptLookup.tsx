@@ -78,11 +78,14 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   return (
     <section className={embedded ? 'receipt-lookup receipt-lookup--embedded' : 'receipt-lookup receipt-lookup--page'}>
       {!embedded && activityTabs && <>
-        <TaxpayerPageHeading title={t('Receipt lookup', 'রসিদ অনুসন্ধান')}
-          description={t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')} />
+        <TaxpayerPageHeading title={t('Payments & activity', 'পেমেন্ট ও লেনদেন')} />
         <TaxpayerActivityTabs />
       </>}
       <div className="receipt-lookup__content">
+        {!embedded && activityTabs && <header className="receipt-lookup__page-header">
+          <h2 className="text-lg font-semibold">{t('Track payment', 'পেমেন্ট অনুসন্ধান')}</h2>
+          <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
+        </header>}
         {!embedded && !activityTabs && <header className="receipt-lookup__page-header">
           <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
           <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
@@ -166,7 +169,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
-              <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate('incident')}>
+              <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate(activityTabs ? 'corrections' : 'incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>
             </div>
