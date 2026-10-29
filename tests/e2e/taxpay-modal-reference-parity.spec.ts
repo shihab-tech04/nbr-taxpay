@@ -72,6 +72,8 @@ test('both login entry points use the identical reusable login modal variant', a
     width: Math.round(el.getBoundingClientRect().width),
   }));
   await expect(standalone.locator('.taxpayer-login-actions')).toHaveCount(1);
+  await expect(standalone.locator('.taxpay-modal__footer-close')).toHaveCount(0);
+  await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
   await standalone.getByRole('button', { name: 'Close modal' }).click();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -87,6 +89,8 @@ test('both login entry points use the identical reusable login modal variant', a
   await expect.poll(() => embedded.evaluate(el => getComputedStyle(el).width)).toBe(width);
   expect(await embedded.locator('.taxpay-modal__body').evaluate(el => getComputedStyle(el).padding)).toBe(padding);
   await expect(embedded.locator('.taxpayer-login-actions')).toHaveCount(1);
+  await expect(embedded.locator('.taxpay-modal__footer-close')).toHaveCount(0);
+  await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
   expect(await embedded.locator('.taxpayer-login-actions').evaluate(el => ({
     display: getComputedStyle(el).display,
     justify: getComputedStyle(el).justifyContent,

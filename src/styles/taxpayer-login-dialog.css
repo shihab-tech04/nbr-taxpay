@@ -93,22 +93,6 @@
 }
 
 
-/* Standalone and payment-embedded login share TaxPayModal. Form fields are identical. */
-/* One login modal shell for header entry and Pay Tax account entry.
-   The shared TaxPayModal owns header, footer, keyboard and responsive behavior. */
-.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal {
-  width: min(100%, 700px);
-}
-.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body {
-  padding: 1.25rem 1.35rem;
-}
-.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__footer {
-  justify-content: flex-end;
-}
-@media (max-width: 650px) {
-  .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal { width: 100%; }
-  .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body { padding: 1rem; }
-}
 .taxpay-citizen-shell .taxpayer-login-dialog--embedded .taxpayer-login-field + .taxpayer-login-field {
   margin-top: 1.35rem;
 }
@@ -118,27 +102,27 @@
 
 
 /* Shared sign-in modal layout: the trigger must not change its footer or fields. */
-.taxpay-citizen-shell .taxpay-modal[data-public-service="login"] {
+.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal {
   width: min(100%, 700px);
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="login"] .taxpay-modal__body {
+.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body {
   padding: 1.25rem 1.35rem;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="login"] .taxpay-modal__footer {
+.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__footer {
   justify-content: flex-end;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="login"] .taxpayer-login-actions {
+.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpayer-login-actions {
   width: 100%;
   flex: 1 1 auto;
   justify-content: flex-end;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="login"] .taxpayer-login-actions .tax-service-choice__continue {
+.taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpayer-login-actions .tax-service-choice__continue {
   width: auto;
   min-width: 160px;
   flex: 0 0 auto;
   margin-inline-start: auto;
 }
 @media (max-width: 650px) {
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="login"] { width: 100%; }
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="login"] .taxpay-modal__body { padding: 1rem; }
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal { width: 100%; }
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body { padding: 1rem; }
 }
