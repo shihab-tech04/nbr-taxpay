@@ -154,7 +154,7 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
   await page.setViewportSize({ width: 375, height: 812 });
   expect(await batch.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
-test('multiple Other Tax heads keep distinct amounts through searching and into one accurate simulated receipt', async ({ page }, info) => {
+test('multiple Other Tax heads retain distinct amounts and produce separate payment records and receipts', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
@@ -186,9 +186,15 @@ test('multiple Other Tax heads keep distinct amounts through searching and into 
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay BDT 1,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
-  await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.locator('.receipt-view')).toContainText('1,500');
-  await expect(dialog.locator('.receipt-view')).toContainText('300');
+  const records = dialog.getByTestId('other-tax-batch-result');
+  await expect(records).toHaveCount(2);
+  await expect(records.first()).toContainText('1,200');
+  await expect(records.first()).toContainText('68A');
+  await expect(records.nth(1)).toContainText('300');
+  await expect(records.nth(1)).toContainText('68B');
+  await records.first().getByRole('button', { name: /View receipt for/ }).click();
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
+  await expect(dialog.locator('.receipt-view__paper')).not.toContainText('1,500');
 });
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');
