@@ -3,7 +3,7 @@ import { useTaxState } from '../../services/taxState';
 
 const activitySections = [
   { route: 'history', en: 'Transactions', bn: 'লেনদেনসমূহ' },
-  { route: 'verify', en: 'Track payment', bn: 'পেমেন্ট অনুসন্ধান' },
+  { route: 'history', trackPayment: true, en: 'Track payment', bn: 'পেমেন্ট অনুসন্ধান' },
   { route: 'corrections', en: 'Issues & corrections', bn: 'সমস্যা ও সংশোধন' },
   { route: 'certificates', en: 'Receipts & certificates', bn: 'রসিদ ও সনদপত্র' },
 ] as const;
@@ -26,10 +26,10 @@ export function TaxpayerPageHeading({ title, description, actions, id, className
 }
 
 export function TaxpayerActivityTabs() {
-  const { currentRoute, language, navigate } = useTaxState();
+  const { currentRoute, routeParams, language, navigate } = useTaxState();
   return <nav className="taxpayer-activity-sections" aria-label={language === 'bn' ? 'লেনদেনের বিভাগ' : 'Activity sections'}>
     {activitySections.map(section => <button key={section.route} type="button"
-      onClick={() => navigate(section.route)} aria-current={currentRoute === section.route ? 'page' : undefined}>
+      onClick={() => navigate(section.route, section.route === 'history' ? {trackPayment: 'trackPayment' in section} : {})} aria-current={currentRoute === section.route && (section.route !== 'history' || Boolean(routeParams.trackPayment) === ('trackPayment' in section)) ? 'page' : undefined}>
       {language === 'bn' ? section.bn : section.en}
     </button>)}
   </nav>;
