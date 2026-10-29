@@ -99,8 +99,15 @@ test('Tax and access decisions appear beneath payer and are both required', asyn
   const taxBounds = await lastTax.boundingBox();
   const accessBounds = await firstAccess.boundingBox();
   expect(accessBounds!.y).toBeGreaterThan(taxBounds!.y + taxBounds!.height);
-  const secondAccess = await payment.locator('[data-payment-access]').last().boundingBox();
-  expect(Math.abs(accessBounds!.y - secondAccess!.y)).toBeLessThan(2);
+  // The chooser animates its content height. Inspect settled positions rather
+  // than intermediate frames during the new access-row reveal.
+  await expect.poll(async () => {
+    const [guestBox, accountBox] = await Promise.all([
+      payment.locator('[data-payment-access]').first().boundingBox(),
+      payment.locator('[data-payment-access]').last().boundingBox()
+    ]);
+    return guestBox && accountBox ? Math.abs(guestBox.y - accountBox.y) : Infinity;
+  }, { timeout: 6000 }).toBeLessThan(2);
   await expect(next).toBeDisabled();
   await firstAccess.click();
   await expect(next).toBeEnabled();
