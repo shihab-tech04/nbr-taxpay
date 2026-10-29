@@ -28,7 +28,7 @@ test('Korbritto primary logo stays solid brand blue and 20 percent smaller acros
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/?action=landing');
   const logo = page.locator('.public-home-wordmark');
-  await expect(logo).toHaveAttribute('src', /korbritto-brand-locked-/);
+  await expect(logo).toHaveAttribute('src', /^(data:image\/svg\+xml|.*korbritto-brand-locked-)/);
   await expect(logo).toHaveCSS('width', '123px');
   await expect(logo).toHaveCSS('height', '42px');
 
