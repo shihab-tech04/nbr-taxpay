@@ -558,11 +558,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         setValidationError(message, 'headId');
         return;
       }
-      if (!storyAmountSupported) {
-        const limit = formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language);
-        setValidationError(language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${limit}।` : `The maximum supported total is ${limit}.`, 'headId');
-        return;
-      }
       clearValidationError();
       setStep(3);
       return;
@@ -583,11 +578,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!amountsValid) {
       const firstInvalid = selectedHeads.find(head => parseGuestAmount(amountInputs[head.id] || '') === null);
       setValidationError(firstInvalid ? `${copy.positiveAmount} ${firstInvalid.economicCode} — ${language === 'bn' ? firstInvalid.nameBn : firstInvalid.nameEn}` : (language === 'bn' ? 'মোট পরিমাণ অনেক বেশি।' : 'The combined payment amount is too large.'), 'taxAmount', firstInvalid?.id);
-      return;
-    }
-    if (!storyAmountSupported) {
-      const limit = formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language);
-      setValidationError(language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${limit}।` : `The maximum supported total is ${limit}.`, 'taxAmount');
       return;
     }
     clearValidationError();
@@ -1244,6 +1234,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-review__main">
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
+                {!storyAmountSupported && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                  {language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language)}।`
+                    : `The maximum supported total is ${formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language)}.`}
+                </p>}
                 {otherBatch && forSelf === false && <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-taxpay-dark mb-3">
                   {language === 'bn' ? 'একাধিক করদাতার খাত ও পরিমাণ দেখা যাচ্ছে। ব্যাচ পেমেন্টের বাস্তব নিষ্পত্তি ভবিষ্যতে A-Challan ইন্টিগ্রেশনে হবে।' :
                     'Taxpayer allocations are ready for review. Batch settlement is reserved for the future A-Challan integration; this screen does not submit a combined challan.'}
@@ -1261,7 +1255,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing || (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid))}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={!paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid))}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -1288,7 +1282,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged || (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid))} aria-busy={isProcessing}>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && (forSelf !== true || batchTaxpayers.length !== 1 || !batchValid))} aria-busy={isProcessing}>
               {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}
