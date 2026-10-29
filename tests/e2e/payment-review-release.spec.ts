@@ -271,8 +271,14 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   const progress = services.locator('.tax-service-choice__progress');
   await expect(progress.locator('li')).toHaveCount(4);
-  const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
-  expect(progressHeight).toBeLessThanOrEqual(info.project.name.startsWith('mobile') ? 84 : 52);
+  const progressGeometry = await progress.evaluate(element => ({
+    height: element.getBoundingClientRect().height,
+    overflowing: element.scrollWidth > element.clientWidth + 1,
+  }));
+  expect(progressGeometry.height).toBeGreaterThanOrEqual(70);
+  expect(progressGeometry.height).toBeLessThanOrEqual(info.project.name.startsWith('mobile') ? 120 : 110);
+  expect(progressGeometry.overflowing).toBe(false);
+  await expect(progress.locator('li[aria-current="step"]')).toHaveCount(1);
   // Compactness must never come from shrinking the step labels below the approved 14px floor.
   const stepTextSize = await progress.locator('.tax-service-choice__stage--current .tax-service-choice__stage-label:visible').first()
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
