@@ -169,7 +169,7 @@ export const PublicLanding: React.FC = () => {
         {searchOpen && cleanReference && (
           <div className="public-record-suggestions" id="public-record-suggestions">
             <div className="public-record-suggestions__group">
-              <h3>{t('Matching sample references', 'মিলে যাওয়া নমুনা রেফারেন্স')}</h3>
+              <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>
               {matchedOptions.length > 0 ? (
                 <ul className="public-record-suggestions__list">
                   {matchedOptions.map((option, index) => (
@@ -190,7 +190,7 @@ export const PublicLanding: React.FC = () => {
                   ))}
                 </ul>
               ) : (
-                <p className="public-record-suggestions__empty">{t('No matching samples. You can still search this reference.', 'নমুনায় মিল নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
+                <p className="public-record-suggestions__empty">{t('No matching references. You can still search using this reference.', 'মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
               )}
             </div>
           </div>
