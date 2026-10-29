@@ -29,14 +29,12 @@ permissions:
 
 
 concurrency:
-  group: taxpay-content-cms-validation
+  group: taxpay-content-cms-release
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # The canonical pages.yml workflow is the sole production publisher.
-    # This job validates CMS assets only, avoiding competing Pages deployments.
     permissions:
       contents: read
     steps:
@@ -60,3 +58,5 @@ jobs:
           test -s dist/index.html
           grep -RFq 'taxpay_site_banners' dist/assets
           grep -RFq 'taxpay_site_logo' dist/assets
+      # Deployment is owned exclusively by pages.yml. Publishing twice on main
+      # races against GitHub Pages and causes HTTP 400 "in progress deployment".
