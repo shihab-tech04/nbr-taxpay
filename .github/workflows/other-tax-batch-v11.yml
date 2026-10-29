@@ -6,14 +6,20 @@ on:
     paths:
       - 'src/components/screens/GuestPayment.tsx'
       - 'src/components/screens/OtherTaxBatchComposer.tsx'
+      - 'src/services/otherTaxBatchSubmission.ts'
+      - 'tests/otherTaxBatchSubmission.test.ts'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - 'tests/e2e/other-tax-batch-submit.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
   push:
     branches: [main]
     paths:
       - 'src/components/screens/GuestPayment.tsx'
       - 'src/components/screens/OtherTaxBatchComposer.tsx'
+      - 'src/services/otherTaxBatchSubmission.ts'
+      - 'tests/otherTaxBatchSubmission.test.ts'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - 'tests/e2e/other-tax-batch-submit.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
 
 permissions:
@@ -38,12 +44,12 @@ jobs:
           npm run test:domain
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: Test v11 43 grouped heads, 2+ taxpayers, per-head amount/year and fail-closed A-Challan boundary
+      - name: Test grouped heads, individual records and retry recovery
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-batch-submit.spec.ts
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4

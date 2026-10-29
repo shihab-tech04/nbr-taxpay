@@ -90,7 +90,14 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 1,000');
 });
 
-test('other-tax allocations can be reviewed in Step 3 but never create a combined challan', async ({ page }) => {
+test('other-tax allocations create individual records with their own receipts', async ({ page }) => {
+  const submitted: Record<string, unknown>[] = [];
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    submitted.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      success: true, id: '00000000-0000-4000-8000-000000000101', status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+    }) });
+  });
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
@@ -102,13 +109,20 @@ test('other-tax allocations can be reviewed in Step 3 but never create a combine
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
-  await expect(dialog.getByText(/Batch settlement is reserved for the future A-Challan integration/)).toBeVisible();
+  await expect(dialog.getByText('A separate payment record will be created for each selected head.')).toBeVisible();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
-  await expect(dialog.getByRole('button', { name: /Pay BDT 2,500/ })).toBeDisabled();
-  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toHaveCount(0);
+  const pay = dialog.getByRole('button', { name: /Pay BDT 2,500/ });
+  await expect(pay).toBeEnabled();
+  await pay.click();
+  await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 15000 });
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(1);
+  await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('111111111111');
+  await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('Record saved');
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].amountMinor).toBe(250000);
 });
 
 test('Other Tax starts with one TIN and an optional name, and added rows remain clear on mobile', async ({ page }) => {
@@ -206,6 +220,27 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
   await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
 });
 
+test('every added taxpayer needs a selected head before review', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Payer Name');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('15');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Select at least one payment head for taxpayer 2.');
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button').nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(dialog.getByTestId('payment-review')).toBeVisible();
+});
+
 test('long BDT amounts and taxpayer descriptions stay inside the calculation panel', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const dialog = await getFlow(page);
@@ -282,6 +317,9 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
 });
 
 test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitutes the account TIN', async ({ page }) => {
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [], simulationOnly: true }),
+  }));
   await page.goto('/?action=taxpayer_login');
   const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');

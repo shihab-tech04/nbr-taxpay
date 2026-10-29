@@ -61,7 +61,7 @@ export const PaymentSearch: React.FC = () => {
             <label className="block text-slate-600 mb-1 font-semibold">Search Query (Challan, Token, TIN, Name)</label>
             <input
               type="text"
-              placeholder="e.g. AC-2025... or DEMO-TIN-001"
+              placeholder="Transaction reference or TIN"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex"

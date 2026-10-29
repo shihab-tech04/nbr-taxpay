@@ -139,11 +139,11 @@ export const TaxLedger: React.FC = () => {
         </div>
       </div>
       {previewAccount && (
-        <section aria-label={bn ? 'পরীক্ষামূলক সেবার রেকর্ড' : 'Demonstration service activity'}>
+        <section aria-label={bn ? 'সেবার কার্যক্রম' : 'Service activity'}>
           <p className="mb-3 text-sm text-taxpay-muted">
             {bn
-              ? 'নিচের SQL-ভিত্তিক রেকর্ডগুলো কেবল পরীক্ষামূলক সেবার কার্যক্রম। এগুলো স্বীকৃত কর ক্রেডিট, দায় বা সরকারি লেজারের প্রমাণ নয়।'
-              : 'The SQL-backed records below show demonstration service activity only. They do not establish certified tax credit, liability, or an official ledger balance.'}
+              ? 'নিচের রেকর্ডে সেবার কার্যক্রম দেখানো হয়েছে। কর ক্রেডিট, দায় ও লেজারের পরিমাণ যাচাই করা হয়নি।'
+              : 'The records below show service activity. Tax credit, liability and ledger balances are not verified.'}
           </p>
           <DemoServiceRecordsPanel userId={previewAccount.id} language={language} />
         </section>

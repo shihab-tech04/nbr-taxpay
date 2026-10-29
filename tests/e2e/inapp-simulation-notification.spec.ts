@@ -25,8 +25,8 @@ test('in-app notice shows the exact SQL amount and says no funds moved',async({p
   test.skip(info.project.name!=='mobile-375','Session-notice regression on mobile layout');
   await mockSessionNotifications(page,125050);
   await page.goto('/?action=notifications');
-  await expect(page.getByRole('heading',{name:'Payment simulation recorded · No money transferred'})).toBeVisible();
-  await expect(page.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
+  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
   await expect(page.getByText('Payment completed successfully')).toHaveCount(0);
 });
 
@@ -34,8 +34,8 @@ test('in-app notice fails closed if stored payment amount cannot be verified',as
   test.skip(info.project.name!=='mobile-375','Session-notice regression on mobile layout');
   await mockSessionNotifications(page,null);
   await page.goto('/?action=notifications');
-  await expect(page.getByRole('alert')).toContainText('Could not verify the simulated amount');
-  await expect(page.getByText(/Simulated amount:/)).toHaveCount(0);
+  await expect(page.getByRole('alert')).toContainText('Could not verify the amount');
+  await expect(page.getByText(/Amount:/)).toHaveCount(0);
 });
 
 test('preview account notifications show only the payer’s recorded simulation amounts',async({page},info)=>{
@@ -55,7 +55,7 @@ test('preview account notifications show only the payer’s recorded simulation 
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[]})});
   });
   await page.goto('/?action=notifications');
-  await expect(page.getByRole('heading',{name:'Payment simulation updates'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment updates'})).toBeVisible();
   await expect(page.getByText('৳2,345.67')).toBeVisible();
   await expect(page.getByText('৳9,999.99')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
@@ -78,9 +78,9 @@ test('beneficiary in-app notification shows only allocated demo amount, not paye
       body:JSON.stringify(body.p_view==='beneficiary'?[beneficiary]:[])});
   });
   await page.goto('/?action=notifications');
-  await expect(page.getByRole('heading',{name:'Payment simulation updates'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment updates'})).toBeVisible();
   await expect(page.getByText('৳32.50')).toBeVisible();
-  await expect(page.getByText('Allocated to you in a simulation by user4')).toBeVisible();
+  await expect(page.getByText('Allocated to you by user4')).toBeVisible();
   await expect(page.getByText('৳1,250.00')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
 });
@@ -107,7 +107,7 @@ test('guest bell opens a public session-only SQL payment notification without ac
   await page.goto('/?action=head_catalogue');
   await page.getByRole('button', { name: 'Notifications' }).first().click();
   await expect(page).toHaveURL(/action=payment_notifications/);
-  await expect(page.getByRole('heading', { name: 'Payment simulation recorded · No money transferred' })).toBeVisible();
-  await expect(page.getByText('Simulated amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
+  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
   await expect(page.getByText('No stored draft activity for this account.')).toHaveCount(0);
 });
