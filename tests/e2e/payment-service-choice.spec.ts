@@ -144,6 +144,14 @@ test('Three progressive decisions toggle independently and finish in one modal',
   await expect(returnTax).toHaveAttribute('aria-pressed', 'true');
   await expect(guest).toBeVisible();
   await expect(account).toBeVisible();
+  // The signed-in path is option 1 and the walk-in path is option 2.
+  // Preserve data-payment-access identifiers and their existing navigation behavior.
+  const accessOptions = dialog.locator('[data-payment-access]');
+  await expect(accessOptions).toHaveCount(2);
+  await expect(accessOptions.nth(0)).toHaveAttribute('data-payment-access', 'ACCOUNT');
+  await expect(accessOptions.nth(1)).toHaveAttribute('data-payment-access', 'GUEST');
+  await expect(account.locator('strong')).toHaveText('Sign-in Payment');
+  await expect(guest.locator('strong')).toHaveText('Walk-in Payment');
   await expect(guest).toHaveAttribute('aria-pressed', 'false');
   await expect(next).toBeDisabled();
   await returnTax.click();
