@@ -102,7 +102,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
-      animateSize={view === 'payer' || view === 'choice' || view === 'login'}
+      animateSize={view === 'payer' || view === 'choice'}
       motionKey={view}
       onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView('payer') : undefined}
       backLabel={tr('Back', 'ফিরুন')}
