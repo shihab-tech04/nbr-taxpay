@@ -62,7 +62,9 @@ test('status lookup restores a same-session simulated receipt after a page reloa
   await page.getByRole('dialog', { name: 'Payment status & receipt' }).getByRole('button', { name: 'Search records' }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   await expect(page.locator('.receipt-view')).toContainText(reference);
-  await expect(page.locator('.receipt-view')).toContainText('Payment record saved');
+  // The receipt is recovered without reintroducing the redundant status/credit badges.
+  await expect(page.locator('.receipt-view__status')).toHaveCount(0);
+  await expect(page.locator('.receipt-view__paper')).toContainText('12,500');
 });
 
 test('a matching reference does not expose a receipt with the wrong mobile', async ({ page }) => {

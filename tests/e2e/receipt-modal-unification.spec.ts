@@ -16,6 +16,8 @@ test('public payment status opens in the existing light-shell modal, not the leg
   await expect(modal.locator('.receipt-view__amount strong')).not.toBeEmpty();
   await expect(modal.locator('.receipt-view__reference-strip')).toBeVisible();
   await expect(modal.locator('.receipt-view__parties')).toBeVisible();
+  await expect(modal.locator('.receipt-view__status')).toHaveCount(0);
+  await expect(modal.locator('.receipt-view__paper')).not.toContainText('Tax credit recognition');
   await expect(modal.locator('.taxpay-modal__footer .receipt-view__actions')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__body .receipt-view__actions')).toHaveCount(0);
   await expect(modal.locator('.receipt-lookup__form')).toHaveCount(0);
