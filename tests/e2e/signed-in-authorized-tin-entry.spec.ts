@@ -108,7 +108,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await dialog.locator('.tax-service-choice__actions button').click();
+  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('.tax-service-choice__actions button').click();
   const tin = dialog.locator('#guest-tin');
