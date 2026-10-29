@@ -63,6 +63,15 @@ test('both login entry points use the identical reusable login modal variant', a
   await expect(standalone).toHaveClass(/taxpayer-login-modal/);
   const width = await standalone.evaluate(el => getComputedStyle(el).width);
   const padding = await standalone.locator('.taxpay-modal__body').evaluate(el => getComputedStyle(el).padding);
+  const standaloneFooter = await standalone.locator('.taxpayer-login-actions').evaluate(el => ({
+    display: getComputedStyle(el).display,
+    justify: getComputedStyle(el).justifyContent,
+  }));
+  const standaloneButton = await standalone.getByRole('button',{name:'Sign In'}).evaluate(el => ({
+    height: Math.round(el.getBoundingClientRect().height),
+    width: Math.round(el.getBoundingClientRect().width),
+  }));
+  await expect(standalone.locator('.taxpayer-login-actions')).toHaveCount(1);
   await standalone.getByRole('button', { name: 'Close modal' }).click();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -77,6 +86,15 @@ test('both login entry points use the identical reusable login modal variant', a
   await expect(embedded.locator('.taxpay-modal__footer').getByRole('button', { name: 'Sign In' })).toBeDisabled();
   await expect.poll(() => embedded.evaluate(el => getComputedStyle(el).width)).toBe(width);
   expect(await embedded.locator('.taxpay-modal__body').evaluate(el => getComputedStyle(el).padding)).toBe(padding);
+  await expect(embedded.locator('.taxpayer-login-actions')).toHaveCount(1);
+  expect(await embedded.locator('.taxpayer-login-actions').evaluate(el => ({
+    display: getComputedStyle(el).display,
+    justify: getComputedStyle(el).justifyContent,
+  }))).toEqual(standaloneFooter);
+  expect(await embedded.getByRole('button',{name:'Sign In'}).evaluate(el => ({
+    height: Math.round(el.getBoundingClientRect().height),
+    width: Math.round(el.getBoundingClientRect().width),
+  }))).toEqual(standaloneButton);
   await embedded.getByRole('button', { name: 'Back' }).click();
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
 });
