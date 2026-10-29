@@ -2130,3 +2130,23 @@
     margin-left: 0;
   }
 }
+
+/* Document printing must not inherit the interactive Travel Tax scroll viewport. */
+@media print {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) {
+    position: static;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) .taxpay-modal__body {
+    display: block;
+    padding: 0;
+    overflow: visible;
+    max-height: none;
+  }
+}
