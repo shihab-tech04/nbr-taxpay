@@ -112,6 +112,9 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal.getByRole('button',{name:'Back to search'})).toHaveCount(0);
   await expect(documentModal.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeVisible();
+  const summaryDownload = page.waitForEvent('download');
+  await documentModal.getByRole('button',{name:'Download'}).click();
+  expect((await summaryDownload).suggestedFilename()).toBe('TaxPay-WITHHOLDING_PROOF-summary.html');
   await documentModal.getByRole('button',{name:'Close modal'}).click();
   await expect(documentModal).toHaveCount(0);
 
