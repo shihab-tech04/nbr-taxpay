@@ -52,12 +52,12 @@ export function buildDemoNextActions(records: readonly DemoSqlServiceRecord[]): 
 }
 
 const descriptions: Record<DemoNextAction['reason'], { en: string; bn: string }> = {
-  failed: { en: 'A simulated attempt failed. Check its record before deciding whether any new payment is necessary.', bn: 'একটি পরীক্ষামূলক লেনদেন ব্যর্থ হয়েছে। নতুন পরিশোধের সিদ্ধান্তের আগে রেকর্ডটি দেখুন।' },
-  reversed: { en: 'A simulated payment was reversed. Review its timeline; no credit or outstanding amount is assumed.', bn: 'একটি পরীক্ষামূলক লেনদেন প্রত্যাবর্তিত হয়েছে। সময়রেখা দেখুন; কোনো ক্রেডিট বা বকেয়া ধরে নেওয়া হয়নি।' },
-  review: { en: 'A simulated service record needs review. Check its details and status first.', bn: 'একটি পরীক্ষামূলক সেবার রেকর্ড পর্যালোচনা প্রয়োজন। আগে বিস্তারিত ও অবস্থা দেখুন।' },
-  pending: { en: 'A simulated payment is pending. Track the existing attempt; do not pay twice without checking.', bn: 'একটি পরীক্ষামূলক লেনদেন অপেক্ষমাণ। পুনরায় পরিশোধের আগে বিদ্যমান লেনদেনটি যাচাই করুন।' },
-  previous: { en: 'You used this service in a demonstration. Review available options only if you need a new payment.', bn: 'প্রদর্শনীতে আপনি এই সেবা ব্যবহার করেছেন। নতুন পরিশোধ প্রয়োজন হলে বিকল্পগুলো দেখুন।' },
-  first: { en: 'There is no stored service activity for this example. Explore payment types and choose only what applies.', bn: 'এই উদাহরণে সেবার রেকর্ড নেই। পরিশোধের ধরন দেখুন এবং প্রযোজ্য হলে বেছে নিন।' }
+  failed: { en: 'A payment request failed. Check its record before deciding whether another payment is necessary.', bn: 'একটি পেমেন্ট অনুরোধ ব্যর্থ হয়েছে। নতুন পরিশোধের সিদ্ধান্তের আগে রেকর্ডটি দেখুন।' },
+  reversed: { en: 'A payment record was reversed. Review its timeline; credit and outstanding amounts are not verified.', bn: 'একটি পেমেন্ট রেকর্ড প্রত্যাবর্তিত হয়েছে। সময়রেখা দেখুন; ক্রেডিট ও বকেয়া যাচাই হয়নি।' },
+  review: { en: 'A service record needs review. Check its details and status first.', bn: 'একটি সেবার রেকর্ড পর্যালোচনা প্রয়োজন। আগে বিস্তারিত ও অবস্থা দেখুন।' },
+  pending: { en: 'A payment request is pending. Check the existing record before paying again.', bn: 'একটি পেমেন্ট অনুরোধ অপেক্ষমাণ। পুনরায় পরিশোধের আগে রেকর্ডটি যাচাই করুন।' },
+  previous: { en: 'This service has an earlier record. Review available options if you need a new payment.', bn: 'এই সেবার আগের রেকর্ড আছে। নতুন পরিশোধ প্রয়োজন হলে বিকল্পগুলো দেখুন।' },
+  first: { en: 'There is no stored service activity. Explore payment types and choose only what applies.', bn: 'সেবার কোনো রেকর্ড নেই। পরিশোধের ধরন দেখুন এবং প্রযোজ্য হলে বেছে নিন।' }
 };
 /** Review stays within the exact SQL record view; it must not navigate to an
  * unrelated activity feed or an unregistered router destination. */

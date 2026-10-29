@@ -83,7 +83,7 @@ export function AuthorizationRequestPopup(){
         <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center font-mono text-3xl font-bold tracking-[0.3em] text-blue-900">{displayedCode}</p>
         <p className="text-xs text-slate-600">{bn?'কোডটি ১৫ মিনিট কার্যকর। অনুরোধকারী কোড লিখলে অনুমোদন সম্পূর্ণ হবে।':'This four-digit code expires in 15 minutes. Authorization completes when the requester enters it.'}</p>
       </div>:<div className="mt-4 space-y-4">
-        <p className="text-sm leading-6 text-slate-700"><strong>{bn?requester.nameBn:requester.nameEn}</strong> ({requester.id}) {bn?'আপনার টিআইএনের কর পরিশোধের অনুমতি চাইছেন।':'wants permission to make simulated tax payments for your TIN.'}</p>
+        <p className="text-sm leading-6 text-slate-700"><strong>{bn?requester.nameBn:requester.nameEn}</strong> ({requester.id}) {bn?'আপনার টিআইএনের কর পরিশোধের অনুমতি চাইছেন।':'wants permission to make tax payments for your TIN.'}</p>
         <p className="text-sm text-slate-600">{bn?'TIN:':'TIN:'} {DEMO_USERS[actor].tin}</p>
         {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
       </div>}

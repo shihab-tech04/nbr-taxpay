@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGuestAmount, sumGuestAmounts } from '../src/services/guestAmount';
+import { parseGuestAmount, parseGuestMinorUnits, sumGuestAmounts, sumGuestMinorUnits } from '../src/services/guestAmount';
 
 test('guest amount accepts positive BDT values with at most two decimals', () => {
   assert.equal(parseGuestAmount('1200'), 1200);
@@ -9,6 +9,13 @@ test('guest amount accepts positive BDT values with at most two decimals', () =>
   assert.equal(parseGuestAmount('111122241212'), 111122241212);
   assert.equal(parseGuestAmount('12214124442.75'), 12214124442.75);
   assert.equal(sumGuestAmounts(['111122241212', '12214124442.75', '10.25']), 123336365665);
+});
+
+test('minor-unit arithmetic preserves exact paisa before conversion for display', () => {
+  assert.equal(parseGuestMinorUnits('90071992547400.01'), 9007199254740001n);
+  assert.equal(parseGuestMinorUnits('9999999999.99'), 999999999999n);
+  assert.equal(sumGuestMinorUnits(['0.01', '9999999999.98']), 999999999999n);
+  assert.equal(sumGuestMinorUnits(['0.01', 'bad']), null);
 });
 
 test('guest amount rejects negative, invalid, zero and unsafe-looking amounts', () => {

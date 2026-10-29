@@ -63,18 +63,20 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
     !OTHER_TAX_YEARS.some(year => year === line.assessmentYear);
   const invalidLines = error ? lines.filter(isIncomplete) : [];
   const firstInvalid = invalidLines[0];
+  const firstMissingTaxpayer = error ? taxpayers.find(person => !lines.some(line => line.taxpayerId === person.id)) : undefined;
 
   useEffect(() => {
     if (!error) return;
     setQuery('');
-    if (firstInvalid && firstInvalid.taxpayerId !== activeId) {
-      setActiveTaxpayer(firstInvalid.taxpayerId);
+    const target = firstInvalid?.taxpayerId ?? firstMissingTaxpayer?.id;
+    if (target && target !== activeId) {
+      setActiveTaxpayer(target);
       return;
     }
     rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]').forEach(group => {
       if (group.querySelector('[data-invalid="true"]')) group.open = true;
     });
-  }, [error, activeId, firstInvalid?.id, query]);
+  }, [error, activeId, firstInvalid?.id, firstMissingTaxpayer?.id, query]);
 
   // One selection per taxpayer and source head. Selecting a different taxpayer
   // does not change, duplicate or remove another taxpayer's allocations.
@@ -115,14 +117,16 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                   const selectedCount = lines.filter(line => line.taxpayerId === person.id).length;
                   const active = activeId === person.id;
                   const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
+                  const noHead = firstMissingTaxpayer?.id === person.id && !firstInvalid;
                   return <button key={person.id} type="button"
                     aria-pressed={active} onClick={() => setActiveTaxpayer(person.id)}
-                    className={`min-h-11 rounded-lg border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ${active
+                    className={`min-h-11 rounded-lg border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ${noHead ? 'border-rose-400 bg-rose-50 text-taxpay-dark' : active
                       ? 'border-taxpay-primary bg-blue-50 text-taxpay-dark font-semibold'
                       : 'border-slate-300 bg-white text-slate-700'}`}>
                     <span className="block">{person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1)}</span>
                     <span className="block text-xs font-mono-plex">{person.tin} · {selectedCount} {tx('selected', 'নির্বাচিত')}</span>
                     {issues > 0 && <span className="block text-xs font-semibold text-rose-700">{issues} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
+                    {noHead && <p className="text-sm font-semibold text-rose-700">{tx('Choose a head', 'খাত নির্বাচন করুন')}</p>}
                   </button>;
                 })}
               </div>

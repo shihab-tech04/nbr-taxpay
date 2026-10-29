@@ -8,7 +8,7 @@ const PER_PAGE = 20;
 const labels = {
   en: {
     title: 'Original v11 payment-head reference', source: 'Controlled source snapshot — not legally verified',
-    intro: 'These 170 records are preserved exactly from the v11 prototype, not from an official ACS workbook. Section references here are source labels, NOT Treasury economic account codes.',
+    intro: 'These 170 records are preserved exactly from the v11 source and have not been verified against an official ACS workbook. Section references here are source labels, not Treasury economic account codes.',
     back: 'Back to public portal', search: 'Search by head ID, English/Bangla name or original section reference',
     searchPlaceholder: 'Example: 16A, Surcharge, সারচার্জ', group: 'Original source group',
     all: 'All groups', matching: 'Matching source records', noMatch: 'No source records match this search. Nothing has been automatically selected.',
