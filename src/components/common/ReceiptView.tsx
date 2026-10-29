@@ -57,7 +57,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const paymentMethodLabels = {
     BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', SONALI_E_SHEBA: 'Sonali e-Sheba',
     A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS',
-    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch', SIMULATED: 'Simulated payment'
+    INTERNET_BANKING: 'Internet Banking', VISA: 'Visa', MASTERCARD: 'Mastercard', BANK_BRANCH: 'Bank branch', SIMULATED: 'Payment'
   }[receipt.paymentMethod];
 
   const handleCopy = (text: string) => {
@@ -112,18 +112,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           <div className="receipt-view__amount">
             <span>{bn ? 'সর্বমোট অর্থ' : 'Total amount'}</span>
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
-            <small>{receipt.isSimulatedDemo ? (bn ? 'সিমুলেশন রেকর্ড' : 'Simulation record')
-              : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</small>
+            <small>{bn ? 'পেমেন্ট রেকর্ড' : 'Payment record'}</small>
           </div>
         </header>
-
-        {receipt.isSimulatedDemo === true && (
-          <p role="note" className="receipt-view__notice">
-            {bn
-              ? 'শুধু ডেমো রসিদ — কোনো অর্থ স্থানান্তর, সরকারি চালান বা কর ক্রেডিট হয়নি।'
-              : 'Demo receipt only — no money transferred, government challan or tax credit issued.'}
-          </p>
-        )}
 
         {/* Challan Identifiers Ribbon */}
         <div className="receipt-view__reference-strip">
