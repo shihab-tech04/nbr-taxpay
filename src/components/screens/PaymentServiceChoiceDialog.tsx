@@ -101,12 +101,12 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : view === 'payer' ? tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?') : view === 'choice' ? tr('Which tax would you like to pay?', 'কোন ধরনের কর পরিশোধ করতে চান?') : tr('Pay Tax', 'কর পরিশোধ')}
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
-      className={view === 'login' ? 'tax-service-choice-modal--access' : ''}
+      className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer' || view === 'choice' || view === 'login'}
       motionKey={view}
       onBack={view === 'choice' ? () => setView('payer') : view === 'login' ? () => setView('payer') : undefined}
       backLabel={tr('Back', 'ফিরুন')}
-      service={view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
+      service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={(
         <div className="tax-service-choice__actions">
