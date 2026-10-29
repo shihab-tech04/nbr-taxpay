@@ -735,12 +735,6 @@
 .receipt-view__financial-table td .font-mono-plex{font-size:14px}
 .receipt-view__financial-table tfoot{background:var(--citizen-primary-light);color:var(--citizen-primary-dark)}
 .receipt-view__financial-table tfoot td{border-bottom:0;font-weight:750}
-.receipt-view__status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;margin:0;padding:1.15rem 0 .2rem;background:transparent;border:0;border-radius:0}
-.receipt-view__status-card{display:flex;align-items:flex-start;gap:.75rem;min-width:0}
-.receipt-view__status-card>div:last-child{min-width:0}
-.receipt-view__status-card>div:last-child>span:first-child{display:block;margin:0 0 .35rem;font-size:14px;color:var(--citizen-muted);font-weight:650}
-.receipt-view__status-card>div:last-child>span:last-child{display:inline-block;border-radius:.45rem;padding:.3rem .5rem;font-size:14px;font-weight:750;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
-.receipt-view__status-card>div:first-child{flex:none}
 @media(max-width:760px){
  .receipt-view__summary{grid-template-columns:minmax(0,1fr);gap:.7rem}
  .receipt-view__amount{justify-items:start;text-align:left}
@@ -755,7 +749,6 @@
  .receipt-view__table{display:none}
  .receipt-view__cards article{padding:1rem}
  .receipt-view__cards article :is(p,h4,dt,dd,span){font-size:14px;line-height:1.5}
- .receipt-view__status{grid-template-columns:minmax(0,1fr);gap:1rem}
  .receipt-view__detail{grid-template-columns:minmax(0,40%) minmax(0,1fr)}
 }
 @media print{
@@ -767,7 +760,7 @@
  .receipt-view__cards{display:none!important}
  .receipt-view__financial-table{min-width:0;font-size:11px}
  .receipt-view__financial-table :is(th,td){font-size:11px;padding:.4rem}
- .receipt-view__breakdown,.receipt-view__parties,.receipt-view__status{break-inside:avoid}
+ .receipt-view__breakdown,.receipt-view__parties{break-inside:avoid}
 }
 
 /* Guest payment-reference lookup: one purposeful modal surface, never a nested card. */

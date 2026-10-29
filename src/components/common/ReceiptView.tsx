@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import {
   Printer,
   Download,
-  CheckCircle,
-  ShieldCheck,
   Copy,
   Info
 } from 'lucide-react';
@@ -39,9 +37,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     noAgentCredit: 'এই রেকর্ডে কর কর্তনকারীর ব্যক্তিগত কর ক্রেডিট প্রতিষ্ঠিত হয় না।',
     breakdown: 'পেমেন্টের বিবরণ ও খাত', headCode: 'অর্থনৈতিক খাত কোড', description: 'খাতের বিবরণ',
     tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'মোট অর্থ:',
-    treasuryStatus: 'পেমেন্টের অবস্থা',
-    credit: 'কর ক্রেডিট স্বীকৃতি', notApplicable: 'প্রযোজ্য নয়', pending: 'সমন্বয়ের অপেক্ষায়',
-    credited: 'লেজার ক্রেডিট যাচাইয়ের অপেক্ষায়', claimed: 'রিটার্নের দাবি যাচাইয়ের অপেক্ষায়', disputed: 'বিরোধপূর্ণ',
     noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।'
   } : {
     back: 'Back to records', print: 'Print receipt', export: 'Download',
@@ -55,29 +50,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
     breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
     tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Total amount:',
-    treasuryStatus: 'Payment status',
-    credit: 'Tax credit recognition', notApplicable: 'NOT APPLICABLE', pending: 'PENDING RECONCILIATION',
-    credited: 'LEDGER CREDIT UNVERIFIED', claimed: 'RETURN CLAIM UNVERIFIED', disputed: 'DISPUTED',
     noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.'
   };
-  const creditStatusLabel = {
-    NOT_APPLICABLE: labels.notApplicable,
-    PENDING_RECONCILIATION: labels.pending,
-    CREDITED_TO_LEDGER: labels.credited,
-    CLAIMED_IN_RETURN: labels.claimed,
-    DISPUTED: labels.disputed
-  }[receipt.taxCreditStatus];
-  const treasuryStatusLabels = {
-    INITIATED: bn ? 'শুরু হয়েছে' : 'INITIATED',
-    GATEWAY_PENDING: bn ? 'গেটওয়েতে অপেক্ষমাণ' : 'GATEWAY_PENDING',
-    GATEWAY_SUCCESS: bn ? 'সিমুলেটেড পেমেন্ট সফল' : 'Simulated payment successful',
-    TREASURY_SCROLLED: receipt.isSimulatedDemo
-      ? (bn ? 'সিমুলেশন সংরক্ষিত' : 'Simulation recorded')
-      : (bn ? 'ট্রেজারিতে নথিভুক্ত' : 'Treasury recorded'),
-    FAILED: bn ? 'ব্যর্থ' : 'FAILED',
-    EXPIRED: bn ? 'মেয়াদ শেষ' : 'EXPIRED',
-    REVERSED: bn ? 'প্রত্যাবর্তিত' : 'REVERSED'
-  }[receipt.treasuryStatus];
   const paymentMethodLabels = {
     BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', SONALI_E_SHEBA: 'Sonali e-Sheba',
     A_CHALLAN_CARD: 'A-Challan card', BEFTN_RTGS: 'BEFTN / RTGS',
@@ -337,40 +311,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
         </div>
 
-        {/* Dual Financial Status Indicators */}
-        <div className={`receipt-view__status ${receipt.isSimulatedDemo ? 'receipt-view__status--simulation' : ''}`}>
-          {/* Payment record status; the simulation is not a Treasury settlement. */}
-          <div className="receipt-view__status-card">
-            <div className="p-1.5 rounded-full bg-emerald-100 text-emerald-800 mt-0.5">
-              <CheckCircle className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-semibold text-slate-700 block">{receipt.isSimulatedDemo ? (bn ? 'রেকর্ডের অবস্থা' : 'Record status') : labels.treasuryStatus}:</span>
-              <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {treasuryStatusLabels}
-              </span>
-            </div>
-          </div>
-
-          {/* Tax Credit Entitlement Status */}
-          <div className="receipt-view__status-card">
-            <div className="p-1.5 rounded-full bg-blue-100 text-blue-800 mt-0.5">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-semibold text-slate-700 block">{labels.credit}:</span>
-              <span className={`inline-block px-2 py-0.5 mt-0.5 rounded text-[11px] font-bold border ${
-                receipt.taxCreditStatus === 'CREDITED_TO_LEDGER'
-                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                  : receipt.taxCreditStatus === 'NOT_APPLICABLE'
-                  ? 'bg-slate-200 text-slate-700 border-slate-300'
-                  : 'bg-amber-100 text-amber-800 border-amber-300'
-              }`}>
-                {creditStatusLabel}
-              </span>
-            </div>
-          </div>
-        </div>
 
       </div>
     </div>
