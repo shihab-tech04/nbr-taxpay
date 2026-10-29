@@ -152,14 +152,14 @@ const governmentAccountingCode = (category: PaymentCategory, taxType: 'NON_COMPA
 };
 
 const statusLabels: Record<LifecycleStage, { en: string; bn: string }> = {
-  INITIATED: { en: 'Payment simulation started', bn: 'পেমেন্ট সিমুলেশন শুরু হয়েছে' },
-  AUTHORIZED: { en: 'Demo authorization step simulated', bn: 'ডেমো অনুমোদন ধাপ সিমুলেট করা হয়েছে' },
-  ACS_REFERENCE_CREATED: { en: 'Demo reference generated — not a government challan', bn: 'ডেমো রেফারেন্স তৈরি হয়েছে — সরকারি চালান নয়' },
-  PROCESSING: { en: 'Payment simulation processing', bn: 'পেমেন্ট সিমুলেশন প্রক্রিয়াধীন' },
-  TREASURY_SETTLED: { en: 'Treasury step simulated — no funds received', bn: 'ট্রেজারি ধাপ সিমুলেট করা হয়েছে — কোনো অর্থ গ্রহণ করা হয়নি' },
-  NBR_LEDGER_POSTED: { en: 'Ledger step simulated — no posting', bn: 'লেজার ধাপ সিমুলেট করা হয়েছে — কোনো পোস্টিং হয়নি' },
-  CREDITED: { en: 'Simulated credit step — no tax credit issued', bn: 'ক্রেডিট ধাপ সিমুলেট করা হয়েছে — কর ক্রেডিট দেওয়া হয়নি' },
-  FAILED: { en: 'Simulation request declined', bn: 'সিমুলেশন অনুরোধ প্রত্যাখ্যাত' }
+  INITIATED: { en: 'Payment request started', bn: 'পেমেন্টের অনুরোধ শুরু হয়েছে' },
+  AUTHORIZED: { en: 'Request details prepared', bn: 'অনুরোধের তথ্য প্রস্তুত' },
+  ACS_REFERENCE_CREATED: { en: 'Reference generated', bn: 'রেফারেন্স তৈরি হয়েছে' },
+  PROCESSING: { en: 'Preparing payment record', bn: 'পেমেন্ট রেকর্ড প্রস্তুত হচ্ছে' },
+  TREASURY_SETTLED: { en: 'Treasury settlement not verified', bn: 'ট্রেজারি নিষ্পত্তি যাচাই হয়নি' },
+  NBR_LEDGER_POSTED: { en: 'Ledger entry not confirmed', bn: 'লেজার এন্ট্রি নিশ্চিত হয়নি' },
+  CREDITED: { en: 'Tax credit not confirmed', bn: 'কর ক্রেডিট নিশ্চিত হয়নি' },
+  FAILED: { en: 'Request declined', bn: 'অনুরোধ প্রত্যাখ্যাত' }
 };
 
 interface GuestPaymentProps {
@@ -790,8 +790,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           <div className={`payment-lifecycle__heading payment-lifecycle__heading--${declined ? 'failed' : bankPending ? 'pending' : completed ? 'complete' : 'running'}`}>
             <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
             <div>
-              <h2 id="payment-lifecycle-title">{declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? (language === 'bn' ? 'পেমেন্ট প্রক্রিয়া সম্পন্ন' : 'Payment process complete') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}</h2>
-              <p>{language === 'bn' ? 'শুধু ডেমো সিমুলেশন — কোনো অর্থ স্থানান্তর, সরকারি চালান বা কর ক্রেডিট হয়নি।' : 'Demo simulation only — no money transferred, government challan or tax credit issued.'}</p>
+              <h2 id="payment-lifecycle-title">{declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? (language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত' : 'Payment record saved') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}</h2>
+              <p>{language === 'bn' ? 'রেফারেন্স ও রেকর্ডের বর্তমান অবস্থা নিচে দেখুন।' : 'Review the payment reference and current record status below.'}</p>
             </div>
           </div>
           <div className="payment-lifecycle__overview">
@@ -823,11 +823,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <FileText size={21} aria-hidden="true" />
             <div>
               <strong>{language === 'bn' ? 'এটি এখনো পরিশোধিত কর নয়' : 'This is not tax paid yet'}</strong>
-              <p>{language === 'bn' ? 'এটি শুধু ডেমো স্লিপ। ব্যাংকে ব্যবহারযোগ্য নয়। কোনো অর্থ জমা, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট হয়নি।' : 'Demo slip only; not valid at a bank. No money was deposited, settled by Treasury or credited.'}</p>
+              <p>{language === 'bn' ? 'ব্যাংক নিষ্পত্তি অপেক্ষমাণ। কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement is pending. Tax credit has not been confirmed.'}</p>
             </div>
           </div>}
           {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{errorMessage || (language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.')}</p></div>}
-          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট সিমুলেশন সংরক্ষিত হয়েছে — কোনো অর্থ স্থানান্তর হয়নি।' : 'Payment simulation recorded — no money transferred.'}</p></div>}
+          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে। নিচে রেফারেন্স ও বর্তমান অবস্থা দেখুন।' : 'Payment record saved. Reference and current status are available below.'}</p></div>}
           <div className="payment-lifecycle__actions no-print">
             {bankPending && <><button type="button" className="payment-lifecycle__secondary" onClick={() => window.print()}><FileText size={16} />{language === 'bn' ? 'স্লিপ প্রিন্ট করুন' : 'Print payment slip'}</button>{!embedded && <button type="button" className="payment-lifecycle__primary" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'}</button>}</>}
             {declined && !embedded && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment}>{language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা করুন' : 'Try another payment method'}</button>}
