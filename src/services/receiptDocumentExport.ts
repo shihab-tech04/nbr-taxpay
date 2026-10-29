@@ -1,7 +1,7 @@
 import type { ChallanReceipt } from '../types/tax';
 
 /**
- * Receipts and certificate summaries export the same TaxPay document surface
+ * Receipts and certificate summaries export the same Korbritto document surface
  * shown in the shared modal, with the same approved typography and layout.
  * This is an HTML export, not an invented PDF or a different Office template.
  */
@@ -40,5 +40,5 @@ export function downloadDisplayedCertificate(receipt: ChallanReceipt) {
 /** Save a selected certificate *summary*, never fabricate a payment receipt. */
 export function downloadDisplayedCertificateSummary(summaryType: string) {
   const safe = summaryType.replace(/[^A-Z_]/g, '').slice(0, 50);
-  downloadDisplayedPaper('TaxPay-' + safe + '-summary.html', 'TaxPay certificate summary');
+  downloadDisplayedPaper('Korbritto-' + safe + '-summary.html', 'Korbritto certificate summary');
 }

@@ -47,7 +47,7 @@ test('anonymous browser key cannot select or insert personal drafts', async ({ r
 
 test('secure workspace shows actual sign-in, never a fake signed-in state', async ({ page }) => {
   await page.goto('/?action=secure_workspace');
-  await expect(page.getByRole('heading', { name:'Secure Amar Kor workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name:'Secure Korbritto workspace' })).toBeVisible();
   await expect(page.getByRole('heading', { name:'Sign in with email' })).toBeVisible();
   await expect(page.getByRole('heading',{name:'Dedicated database is not configured yet'})).toHaveCount(0);
   await expect(page.getByRole('textbox',{name:'Email address'})).toBeVisible();
@@ -81,7 +81,7 @@ test('secure workspace fails closed when email sign-in network request fails', a
 
 test('secure workspace starts without a presumed legal AY and remains usable on narrow screens', async ({ page }) => {
   await page.goto('/?action=secure_workspace');
-  await expect(page.getByRole('heading', { name: 'Secure Amar Kor workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
   const email = page.getByRole('textbox', { name: 'Email address' });
   const bounds = await email.boundingBox();
   expect(bounds).not.toBeNull();
@@ -90,16 +90,16 @@ test('secure workspace starts without a presumed legal AY and remains usable on 
   expect(main).not.toBeNull();
   expect(main!.x + main!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2);
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('heading', { name: 'নিরাপদ আমার কর ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'নিরাপদ করবৃত্ত ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();
 });
 
 test('legacy help URL uses the current guide and cannot offer unverified calculated payments', async ({ page }) => {
   await page.goto('/?action=guidance');
-  await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Korbritto user guide' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Proceed to Pay Estimated Tax' })).toHaveCount(0);
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('heading', { name: 'আমার কর ব্যবহার নির্দেশিকা' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'করবৃত্ত ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
 test('travel-tax page presents the service without repeated prototype disclaimers', async ({ page }) => {

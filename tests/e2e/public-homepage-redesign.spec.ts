@@ -44,7 +44,7 @@ test('public FAQ offers readable answers and the full guide without a large foot
   });
   expect(gap, 'FAQ and footer should have a compact transition').toBeLessThanOrEqual(80);
   await faq.getByRole('button', { name: 'Open user guide' }).click();
-  await expect(page.getByRole('heading', { name: 'Amar Kor user guide' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Korbritto user guide' })).toBeVisible();
 });
 
 test('Report follows heading then compact content with no redundant warnings', async ({ page }) => {

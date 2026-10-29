@@ -3,7 +3,7 @@ import { enterTaxPayService } from './pay-tax-entry-helper';
 
 test('an already signed-in taxpayer starts payment without a second login prompt', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -18,12 +18,12 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
 });
 
 test('signed-in own-tax payment uses the account TIN read-only and never carries it into someone else’s tax', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();

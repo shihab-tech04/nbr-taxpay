@@ -114,7 +114,7 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeVisible();
   const summaryDownload = page.waitForEvent('download');
   await documentModal.getByRole('button',{name:'Download'}).click();
-  expect((await summaryDownload).suggestedFilename()).toBe('TaxPay-WITHHOLDING_PROOF-summary.html');
+  expect((await summaryDownload).suggestedFilename()).toBe('Korbritto-WITHHOLDING_PROOF-summary.html');
   await documentModal.getByRole('button',{name:'Close modal'}).click();
   await expect(documentModal).toHaveCount(0);
 

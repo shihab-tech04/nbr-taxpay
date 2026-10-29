@@ -28,7 +28,7 @@ export function PublicHelpChat(){
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };
- return <aside className="public-help-widget" aria-label={bn?'আমার কর সহায়তা':'Amar Kor help'}>
+ return <aside className="public-help-widget" aria-label={bn?'করবৃত্ত সহায়তা':'Korbritto help'}>
   {open&&<section className="public-help-panel" aria-labelledby="public-help-title">
    <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
      <button onClick={()=>setOpen(false)} type="button" aria-label={bn?'চ্যাট বন্ধ করুন':'Close chat'}><X size={18}/></button></header>

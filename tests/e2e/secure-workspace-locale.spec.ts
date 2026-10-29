@@ -13,11 +13,11 @@ test('secure workspace sign-in copy stays localized and fits the viewport', asyn
   await page.goto('/?action=secure_workspace');
   const workspace = page.locator('section[lang]').first();
   await expect(workspace).toHaveAttribute('lang', 'en');
-  await expect(page.getByRole('heading', { name: 'Secure Amar Kor workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
 
   await setWorkspaceLanguage(page, 'bn');
   await expect(workspace).toHaveAttribute('lang', 'bn');
-  await expect(page.getByRole('heading', { name: 'নিরাপদ আমার কর ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'নিরাপদ করবৃত্ত ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByText('ইমেইলে সাইন-ইন লিংক পাঠানো হবে।')).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'সাইন ইন লিংক পাঠান' })).toBeVisible();

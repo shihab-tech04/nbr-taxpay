@@ -280,7 +280,7 @@ test('Combined payer and account choices retain selection through login and Back
   await account.click();
   await expect(account).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(login).toBeVisible();
   await expect(login.locator('.taxpay-modal__back')).toBeVisible();
   await expect(login.getByRole('button', { name: 'Sign In' })).toBeDisabled();

@@ -26,7 +26,7 @@ export const ArchitectureView: React.FC = () => {
           </div>
           <div>
             <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              NBR TaxPay System Architecture & Integration Topology
+              NBR Korbritto System Architecture & Integration Topology
             </h1>
             <p className="text-xs text-slate-500">
               Technical boundaries, integration contracts, security controls, and separation of financial vs tax credit state.
@@ -35,7 +35,7 @@ export const ArchitectureView: React.FC = () => {
         </div>
 
         <p className="text-xs text-slate-600 leading-relaxed">
-          The NBR TaxPay platform operates as a secure intermediary payment gateway orchestrator between citizens/deducting entities and the central Bangladesh Treasury (A-Challan). It enforces strict architectural separation between <strong>financial transaction settlement</strong> (cash clearing) and <strong>statutory tax credit entitlement</strong> (ledger posting).
+          The NBR Korbritto platform operates as a secure intermediary payment gateway orchestrator between citizens/deducting entities and the central Bangladesh Treasury (A-Challan). It enforces strict architectural separation between <strong>financial transaction settlement</strong> (cash clearing) and <strong>statutory tax credit entitlement</strong> (ledger posting).
         </p>
       </div>
 

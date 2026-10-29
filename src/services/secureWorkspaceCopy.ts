@@ -2,7 +2,7 @@ export type SecureWorkspaceLanguage = 'en' | 'bn';
 
 export const SECURE_WORKSPACE_COPY = {
   en: {
-    workspaceTitle: 'Secure Amar Kor workspace',
+    workspaceTitle: 'Secure Korbritto workspace',
     workspaceDescription: 'Manage your account and saved drafts.',
     paymentLock: 'Payment submission is not available.',
     databaseUnavailableTitle: 'Account unavailable',
@@ -55,7 +55,7 @@ export const SECURE_WORKSPACE_COPY = {
     messages: {
       couldNotLoadDrafts: 'Could not load private drafts:',
       signInRequestFailed: 'Sign-in request failed:',
-      signInSuccess: 'Check your email for the secure sign-in link. This creates only an Amar Kor application account, not a verified taxpayer identity.',
+      signInSuccess: 'Check your email for the secure sign-in link. This creates only an Korbritto application account, not a verified taxpayer identity.',
       signInUnavailable: 'Sign-in service unavailable. No account session was created. Please retry.',
       sessionExpiredLoad: 'Session expired. Sign in again to access your private drafts.',
       sessionExpiredSave: 'Session expired. Sign in again before saving a private draft.',
@@ -82,7 +82,7 @@ export const SECURE_WORKSPACE_COPY = {
     },
   },
   bn: {
-    workspaceTitle: 'নিরাপদ আমার কর ওয়ার্কস্পেস',
+    workspaceTitle: 'নিরাপদ করবৃত্ত ওয়ার্কস্পেস',
     workspaceDescription: 'অ্যাকাউন্ট এবং সংরক্ষিত খসড়া পরিচালনা করুন।',
     paymentLock: 'এখানে পেমেন্ট জমা দেওয়া যায় না।',
     databaseUnavailableTitle: 'অ্যাকাউন্ট আপাতত চালু নেই',
@@ -135,7 +135,7 @@ export const SECURE_WORKSPACE_COPY = {
     messages: {
       couldNotLoadDrafts: 'ব্যক্তিগত খসড়া লোড করা যায়নি:',
       signInRequestFailed: 'সাইন-ইন অনুরোধ ব্যর্থ হয়েছে:',
-      signInSuccess: 'নিরাপদ সাইন-ইন লিংকের জন্য আপনার ইমেইল দেখুন। এতে শুধু আমার কর অ্যাপ অ্যাকাউন্ট তৈরি হবে, যাচাইকৃত করদাতা পরিচয় নয়।',
+      signInSuccess: 'নিরাপদ সাইন-ইন লিংকের জন্য আপনার ইমেইল দেখুন। এতে শুধু করবৃত্ত অ্যাপ অ্যাকাউন্ট তৈরি হবে, যাচাইকৃত করদাতা পরিচয় নয়।',
       signInUnavailable: 'সাইন-ইন সেবা পাওয়া যাচ্ছে না। কোনো অ্যাকাউন্ট সেশন তৈরি হয়নি। আবার চেষ্টা করুন।',
       sessionExpiredLoad: 'সেশনের মেয়াদ শেষ। ব্যক্তিগত খসড়া দেখতে আবার সাইন ইন করুন।',
       sessionExpiredSave: 'সেশনের মেয়াদ শেষ। ব্যক্তিগত খসড়া সংরক্ষণের আগে আবার সাইন ইন করুন।',

@@ -15,7 +15,7 @@ const API = 'https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-t
 type ResponseEnvelope<T>={success?:boolean;data?:T;error?:string;requestId?:string;mirrored?:boolean};
 export class AuthorizationSyncError extends Error {
   constructor(public readonly requestId: string) {
-    super('TaxPay saved this request, but Office synchronization is pending. Please retry sync.');
+    super('Korbritto saved this request, but Office synchronization is pending. Please retry sync.');
   }
 }
 async function unwrap<T>(response:Response):Promise<T>{

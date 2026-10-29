@@ -29,7 +29,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
     back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'ডাউনলোড',
-    title: 'আমার কর — রসিদের বিবরণ',
+    title: 'করবৃত্ত — রসিদের বিবরণ',
     challan: 'পেমেন্ট রেফারেন্স', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'রেফারেন্স কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ', service: 'পেমেন্টের ধরন',
     zone: 'কর অঞ্চল', circle: 'কর সার্কেল', treasurySection: 'নিষ্পত্তির তথ্য',
@@ -42,7 +42,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।'
   } : {
     back: 'Back to records', print: 'Print receipt', export: 'Download',
-    title: 'Amar Kor — Receipt details',
+    title: 'Korbritto — Receipt details',
     challan: 'Payment reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year', service: 'Payment service',
     zone: 'Taxes zone', circle: 'Taxes circle', treasurySection: 'Settlement details',

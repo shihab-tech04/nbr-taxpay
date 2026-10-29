@@ -11,7 +11,7 @@
 @import './styles/taxpayer-sobaike-parity.css';
 
 @theme {
-  /* Locked Amar Kor primary: never replace this with a service/status color. */
+  /* Locked Korbritto primary: never replace this with a service/status color. */
   --color-taxpay-primary: #2C5EAD;
   --color-taxpay-dark: #1E4484;
   --color-taxpay-light: #EAF2FF;

@@ -1,5 +1,5 @@
 /*
- * Signed-in Amar Kor <-> Sobaike Janao Public visual parity.
+ * Signed-in Korbritto <-> Sobaike Janao Public visual parity.
  * Source of truth: Sobaike-janao-public/main, src/index.css,
  * src/components/layout/DesktopLeftRail.tsx, src/components/ui/Button.tsx.
  * Scope: authenticated / fictional taxpayer workspace presentation only.
@@ -8,7 +8,7 @@
  * inherited without modification. Neither payment logic nor Office UI changes.
  */
 
-/* Sobaike Public semantic surfaces and typography; Amar Kor primary stays locked. */
+/* Sobaike Public semantic surfaces and typography; Korbritto primary stays locked. */
 .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
   --color-taxpay-background: #F0F2F5;
   --color-taxpay-surface: #FFFFFF;
@@ -80,7 +80,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 600;
-  /* Preserve the Amar Kor brand action, not Sobaike's teal primary. */
+  /* Preserve the Korbritto brand action, not Sobaike's teal primary. */
   background: var(--color-taxpay-primary);
   color: #FFFFFF;
 }

@@ -81,7 +81,7 @@ test('a signed-in account returning to public home sees notification and profile
   const guideLink=header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'});
   await expect(guideLink).toBeVisible();
   await guideLink.click();
-  await expect(page.getByRole('heading',{name:'Amar Kor user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
   await header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Home'}).click();
   await expect(page.getByRole('button',{name:'Help'})).toHaveCount(0);
   await header.getByRole('button',{name:'Profile menu'}).click();

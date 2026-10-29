@@ -28,7 +28,7 @@ try {
     await page.screenshot({ path: `test-results/live-auth-${name}.png`, fullPage: true });
     await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/action=taxpayer_login/);
-    const dialog = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+    const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
     await expect(dialog).toBeVisible();
     // Production must render the same reusable TaxPayModal as payment entry.
     await expect(dialog).toHaveClass(/taxpay-modal/);

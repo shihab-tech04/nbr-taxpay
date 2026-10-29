@@ -93,7 +93,7 @@ test('mobile and desktop dashboard have no duplicate panel or horizontal clippin
 });
 
 
-test('signed-in workspace mirrors Sobaike Public design tokens without changing Amar Kor primary', async ({page}) => {
+test('signed-in workspace mirrors Sobaike Public design tokens without changing Korbritto primary', async ({page}) => {
   await page.setViewportSize({width:1600,height:900});
   await page.goto(demo);
   const workspace=page.getByTestId('user1-synthetic-workspace');

@@ -55,7 +55,7 @@ test('one decision per shared modal screen with selection retained on Back', asy
 
 test('standalone login uses exactly the shared TaxPayModal header, body and right-aligned footer', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
@@ -72,7 +72,7 @@ test('standalone login uses exactly the shared TaxPayModal header, body and righ
 });
 test('both login entry points use the identical reusable login modal variant', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const standalone = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const standalone = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(standalone).toHaveAttribute('data-public-service', 'login');
   await expect(standalone).toHaveClass(/taxpayer-login-modal/);
   const width = await standalone.evaluate(el => getComputedStyle(el).width);
@@ -97,7 +97,7 @@ test('both login entry points use the identical reusable login modal variant', a
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-  const embedded = page.getByRole('dialog', { name: 'Sign In To Your Amar Kor Account' });
+  const embedded = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(embedded).toHaveAttribute('data-public-service', 'login');
   await expect(embedded).toHaveClass(/taxpayer-login-modal/);
   await expect(embedded.locator('.taxpay-modal__back')).toBeVisible();
@@ -127,7 +127,7 @@ test('homepage Login and payment journey account login use the same modal chrome
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
-  const standalone=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
+  const standalone=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await expect(standalone.locator('.taxpay-modal__header')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeVisible();
@@ -141,8 +141,8 @@ test('homepage Login and payment journey account login use the same modal chrome
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   // The shared modal stays mounted but its accessible name changes with the workflow step.
-  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Amar Kor Account'});
-  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Amar Kor Account');
+  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Korbritto Account');
   await expect(paymentLogin.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(paymentLogin.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
   await expect(paymentLogin.locator('.taxpay-modal__back')).toBeVisible();
