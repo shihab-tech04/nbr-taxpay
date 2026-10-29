@@ -48,7 +48,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts
+        run: npx playwright test tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts
 
       - name: Verify v11 form input parity on mobile and desktop
         env:

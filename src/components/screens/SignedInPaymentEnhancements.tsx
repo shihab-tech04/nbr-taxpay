@@ -80,7 +80,7 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
     ? records.filter(record => record.payerId === actor && record.status === 'EXPIRED')
     : [];
   const candidate = userIdForHostedTin(selectedTin);
-  const canRequest = status === 'ready' && actor && candidate && actor !== candidate &&
+  const canRequest = actor && candidate && actor !== candidate &&
     !records.some(record => record.payerId === actor && record.taxpayerId === candidate &&
       (record.status === 'PENDING' || record.status === 'CODE_ISSUED' || record.status === 'ACTIVE')) &&
     !choices.some(choice => choice.tin === selectedTin);

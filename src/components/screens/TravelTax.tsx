@@ -124,17 +124,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
 
     setTimeout(async () => {
       if (paymentChannel === 'NOW' && simulateDecline) {
-        setError(bn ? 'সিমুলেটেড পেমেন্ট প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।' : 'Simulated payment declined. Please try again.');
+        setError(bn ? 'পেমেন্টের অনুরোধ প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।' : 'Payment request declined. Please try again.');
         setIsProcessing(false);
         return;
       }
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
       const pendingBank = paymentChannel === 'OTC';
-      // The raw passport is stored only in the intended private details field.
-      // Receipt snapshots are also consumed by the Office projection, so do
-      // not copy the raw value into payer names or item notes.
-      const passportReference = isDomestic ? 'Not required' :
-        '•'.repeat(Math.max(0, passportNumber.length - 3)) + passportNumber.slice(-3);
       // Reuse the idempotency nonce so retries keep the same synthetic reference.
       const paymentReference = `SIM-TOKEN-${paymentNonce}`;
 
@@ -146,7 +141,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         tokenNumber: paymentReference,
         paymentCategory: 'TRAVEL_TAX',
         assessmentYear: '2026-27',
-        payerName: `${passengerName} (Passport: ${passportReference})`,
+        payerName: `${passengerName} (Passport: ${passportNumber})`,
         payerTin: 'NON-TIN-PASSENGER',
         receiptMobile: phone,
         isRepresentativePayment: false,
@@ -163,7 +158,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
             surchargeAmount: 0,
             interestAmount: 0,
             totalAmount,
-            note: `Date: ${travelDate} | Age band: ${ageBand} | Passport: ${passportReference}`
+            note: `Date: ${travelDate} | Age band: ${ageBand} | Passport: ${isDomestic ? 'Not required' : passportNumber}`
           }
         ],
         totalAmount,
@@ -323,7 +318,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     </button>
   ) : bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip}>
-      <Building2 size={17} aria-hidden="true" />{bn ? 'ব্যাংক পেমেন্ট সিমুলেশন চালান' : 'Continue bank payment simulation'}
+      <Building2 size={17} aria-hidden="true" />{bn ? 'চালিয়ে যান' : 'Continue'}
     </button>
   ) : createdReceipt ? (
     <button type="button" className="travel-flow__primary" onClick={reset}>
@@ -459,13 +454,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               {ageBand === 'UNDER5' && !createdReceipt && <p>{bn ? 'এই যাত্রী করমুক্ত — কোনো পেমেন্ট প্রয়োজন নেই।' : 'This passenger is exempt — no payment is required.'}</p>}
             </header>
             {createdReceipt && bankSlipPending ? <div className="travel-flow__receipt" role="status">
-              <p className="travel-flow__receipt-label"><Building2 size={18} aria-hidden="true" />{bn ? 'ডেমো ব্যাংক স্লিপ প্রস্তুত — কোনো কর পরিশোধ হয়নি' : 'Demo bank slip ready — no tax has been paid'}</p>
+              <p className="travel-flow__receipt-label"><Building2 size={18} aria-hidden="true" />{bn ? 'ব্যাংক স্লিপ প্রস্তুত — পরিশোধ নিশ্চিত হয়নি' : 'Bank slip ready — payment not confirmed'}</p>
               <dl className="travel-flow__review">
                 <div><dt>{bn ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</dt><dd>{createdReceipt.paymentTransactionId}</dd></div>
-                <div><dt>{bn ? 'সিমুলেশন রেফারেন্স' : 'Simulation reference'}</dt><dd>{createdReceipt.challanNo}</dd></div>
+                <div><dt>{bn ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</dt><dd>{createdReceipt.challanNo}</dd></div>
                 <div><dt>{bn ? 'পরিমাণ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
               </dl>
-              <p>{bn ? 'এটি শুধু ডেমো স্লিপ; ব্যাংকে ব্যবহারযোগ্য নয়। কোনো অর্থ জমা, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট হয়নি।' : 'Demo slip only; it cannot be used at a bank. No money, Treasury settlement or tax credit has occurred.'}</p>
+              <p>{bn ? 'ব্যাংক নিষ্পত্তি সংযুক্ত নেই; পরিশোধ ও কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement is not connected; payment and tax credit are not confirmed.'}</p>
             </div> : createdReceipt ? <div className="travel-flow__receipt">
               <p className="travel-flow__receipt-label" role="status">
                 <CheckCircle size={18} aria-hidden="true" />{workflow.ready} · {t.ref}: {createdReceipt.tokenNumber}

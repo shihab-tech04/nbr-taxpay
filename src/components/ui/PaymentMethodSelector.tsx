@@ -39,7 +39,7 @@ export function PaymentMethodSelector({ language, channel, methodGroup, method, 
   return <>
     <div className="payment-review__channels" role="group" aria-label={bn ? 'পেমেন্ট চ্যানেল' : 'Payment channel'}>
       <button type="button" aria-label={bn ? 'অনলাইনে পরিশোধ' : 'Pay online'} aria-pressed={channel === 'NOW'} className={`payment-review__channel ${channel === 'NOW' ? 'payment-review__channel--selected' : ''}`} onClick={() => onChannelChange('NOW', null)}><CreditCard size={23} aria-hidden="true" /><span><strong>{bn ? 'অনলাইনে পরিশোধ' : 'Pay online'}</strong><small>{bn ? 'মোবাইল ব্যাংকিং, ইন্টারনেট ব্যাংকিং বা কার্ড' : 'Mobile banking, internet banking or card'}</small></span><span className="payment-review__radio" /></button>
-      <button type="button" aria-label={bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'} aria-pressed={channel === 'OTC'} className={`payment-review__channel ${channel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => onChannelChange('OTC', 'BANK_BRANCH')}><Building2 size={23} aria-hidden="true" /><span><strong>{bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'}</strong><small>{bn ? 'ডেমো ব্যাংক স্লিপ' : 'Demo bank slip'}</small></span><span className="payment-review__radio" /></button>
+      <button type="button" aria-label={bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'} aria-pressed={channel === 'OTC'} className={`payment-review__channel ${channel === 'OTC' ? 'payment-review__channel--selected' : ''}`} onClick={() => onChannelChange('OTC', 'BANK_BRANCH')}><Building2 size={23} aria-hidden="true" /><span><strong>{bn ? 'ব্যাংক শাখায় পরিশোধ' : 'Pay at a bank branch'}</strong><small>{bn ? 'ব্যাংক পেমেন্টের রেফারেন্স' : 'Bank payment reference'}</small></span><span className="payment-review__radio" /></button>
     </div>
     {channel === 'NOW' && <div className="payment-review__methods">
       <fieldset><legend>{bn ? 'অনলাইন পেমেন্টের ধরন' : 'Select payment type'}</legend>
@@ -57,6 +57,6 @@ export function PaymentMethodSelector({ language, channel, methodGroup, method, 
       </fieldset>}
       <label className="payment-review__fail-toggle"><input type="checkbox" checked={simulateDecline} onChange={event => onSimulateDeclineChange(event.target.checked)} />{bn ? 'প্রত্যাখ্যাত পেমেন্টের ফল দেখুন' : 'Show declined payment outcome'}</label>
     </div>}
-    {channel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{bn ? 'শুধু ডেমো স্লিপ; ব্যাংকে ব্যবহারযোগ্য নয়। কোনো ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট হয় না।' : 'Demo slip only; not valid at a bank. No Treasury settlement or tax credit occurs.'}</p>}
+    {channel === 'OTC' && <p className="payment-review__bank-note"><Info size={16} aria-hidden="true" />{bn ? 'ব্যাংক নিষ্পত্তি সংযুক্ত নেই; কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement is not connected; tax credit is not confirmed.'}</p>}
   </>;
 }

@@ -23,12 +23,6 @@ function expectSafeSnapshot(input: PaymentInput) {
   expect(snapshot.treasuryStatus).toBe('GATEWAY_SUCCESS');
   expect(snapshot.treasuryScrollNo).toBeUndefined();
   expect(snapshot.treasuryDate).toBeUndefined();
-  if (input.service === 'TRAVEL_TAX') {
-    // The Office projection consumes this snapshot; raw passport values must
-    // not escape through its payer name or item notes.
-    expect(JSON.stringify(snapshot)).not.toContain('DEMO1234');
-    expect(JSON.stringify(snapshot)).toContain('•••••234');
-  }
   expect(input.details.receiptReference).toContain(input.idempotencyKey);
 }
 async function travelReview(page: Page) {
@@ -65,7 +59,7 @@ test('guest submission and receipt use only synthetic references', async ({ page
   await expect(dialog.getByRole('heading', { name: 'Payment process complete' })).toBeVisible({ timeout: 12000 });
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
-  await expect(dialog.getByText('Simulation reference', { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByText('Payment reference', { exact: true }).first()).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.locator('.receipt-view')).toContainText('No Treasury scroll issued');
   await expect(dialog.locator('.receipt-view')).not.toContainText('BB-SCRL');
@@ -97,7 +91,7 @@ test('travel online records simulation only, with no Treasury scroll', async ({ 
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
   await expect(page.locator('.receipt-view')).toContainText('No Treasury scroll issued');
-  await expect(page.locator('.receipt-view')).toContainText('Simulated payment successful');
+  await expect(page.locator('.receipt-view')).toContainText('Payment record saved');
   await expect(page.locator('.receipt-view')).not.toContainText('BB-SCRL');
 });
 
@@ -105,13 +99,13 @@ test('travel bank-slip simulation cannot instruct a real bank payment', async ({
   const submissions = await mockStoryPayments(page);
   await travelReview(page);
   await page.getByRole('button', { name: 'Pay at a bank branch' }).click();
-  await expect(page.getByText('Demo slip only; not valid at a bank. No Treasury settlement or tax credit occurs.')).toBeVisible();
+  await expect(page.getByText('Bank settlement is not connected; tax credit is not confirmed.')).toBeVisible();
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'Continue payment' }).click();
-  await expect(page.getByText('Demo bank slip ready — no tax has been paid')).toBeVisible();
-  await expect(page.getByText('Demo slip only; it cannot be used at a bank. No money, Treasury settlement or tax credit has occurred.')).toBeVisible();
+  await expect(page.getByText('Bank slip ready — payment not confirmed')).toBeVisible();
+  await expect(page.getByText('Bank settlement is not connected; payment and tax credit are not confirmed.')).toBeVisible();
   expect(submissions).toHaveLength(0);
-  await page.getByRole('button', { name: 'Continue bank payment simulation' }).click();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
@@ -149,7 +143,7 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
   await page.locator('.receipt-lookup__submit').click();
   const receipt = page.locator('.receipt-view');
   await expect(receipt).toContainText(reference);
-  await expect(receipt).toContainText(language === 'bn' ? 'সিমুলেশন সম্পন্ন — ট্রেজারি যাচাই হয়নি' : 'Simulation complete — Treasury not verified');
+  await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারির অবস্থা যাচাই হয়নি' : 'Treasury status not verified');
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued');
   await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
 });

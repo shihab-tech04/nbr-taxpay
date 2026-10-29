@@ -25,7 +25,7 @@ import { PaymentRadioCard } from '../ui/PaymentRadioCard';
 import { PaymentMethodSelector } from '../ui/PaymentMethodSelector';
 import { PaymentJourneyFooter } from '../ui/PaymentJourneyFooter';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
-import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
+import { parseGuestAmount, parseGuestMinorUnits, sumGuestAmounts, sumGuestMinorUnits, normalizeGuestAmountInput } from '../../services/guestAmount';
 import { paymentAmountRowColumns } from '../../services/paymentAmountLayout';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
@@ -126,6 +126,8 @@ type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PR
 type PaymentPhase = 'review' | 'processing' | 'pending-bank' | 'failed' | 'settled';
 const ONLINE_LIFECYCLE: LifecycleStage[] = ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED', 'PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED'];
 const BANK_LIFECYCLE: LifecycleStage[] = ['INITIATED', 'AUTHORIZED', 'ACS_REFERENCE_CREATED'];
+// The current Story 1 endpoint accepts at most twelve digits of minor units.
+const MAX_STORY_AMOUNT_MINOR = 999999999999n;
 const BANK_SETTLEMENT: LifecycleStage[] = ['PROCESSING', 'TREASURY_SETTLED', 'NBR_LEDGER_POSTED', 'CREDITED'];
 // v11 IT_TYPES: descriptions and government accounting codes are independent
 // of the legacy payment-head codes in the 170-row NBR law master.
@@ -153,14 +155,14 @@ const governmentAccountingCode = (category: PaymentCategory, taxType: 'NON_COMPA
 };
 
 const statusLabels: Record<LifecycleStage, { en: string; bn: string }> = {
-  INITIATED: { en: 'Payment simulation started', bn: 'পেমেন্ট সিমুলেশন শুরু হয়েছে' },
-  AUTHORIZED: { en: 'Demo authorization step simulated', bn: 'ডেমো অনুমোদন ধাপ সিমুলেট করা হয়েছে' },
-  ACS_REFERENCE_CREATED: { en: 'Demo reference generated — not a government challan', bn: 'ডেমো রেফারেন্স তৈরি হয়েছে — সরকারি চালান নয়' },
-  PROCESSING: { en: 'Payment simulation processing', bn: 'পেমেন্ট সিমুলেশন প্রক্রিয়াধীন' },
-  TREASURY_SETTLED: { en: 'Treasury step simulated — no funds received', bn: 'ট্রেজারি ধাপ সিমুলেট করা হয়েছে — কোনো অর্থ গ্রহণ করা হয়নি' },
-  NBR_LEDGER_POSTED: { en: 'Ledger step simulated — no posting', bn: 'লেজার ধাপ সিমুলেট করা হয়েছে — কোনো পোস্টিং হয়নি' },
-  CREDITED: { en: 'Simulated credit step — no tax credit issued', bn: 'ক্রেডিট ধাপ সিমুলেট করা হয়েছে — কর ক্রেডিট দেওয়া হয়নি' },
-  FAILED: { en: 'Simulation request declined', bn: 'সিমুলেশন অনুরোধ প্রত্যাখ্যাত' }
+  INITIATED: { en: 'Payment request started', bn: 'পেমেন্টের অনুরোধ শুরু হয়েছে' },
+  AUTHORIZED: { en: 'Request details prepared', bn: 'অনুরোধের তথ্য প্রস্তুত' },
+  ACS_REFERENCE_CREATED: { en: 'Reference generated', bn: 'রেফারেন্স তৈরি হয়েছে' },
+  PROCESSING: { en: 'Preparing payment record', bn: 'পেমেন্ট রেকর্ড প্রস্তুত হচ্ছে' },
+  TREASURY_SETTLED: { en: 'Treasury settlement not verified', bn: 'ট্রেজারি নিষ্পত্তি যাচাই হয়নি' },
+  NBR_LEDGER_POSTED: { en: 'Ledger entry not confirmed', bn: 'লেজার এন্ট্রি নিশ্চিত হয়নি' },
+  CREDITED: { en: 'Tax credit not confirmed', bn: 'কর ক্রেডিট নিশ্চিত হয়নি' },
+  FAILED: { en: 'Request declined', bn: 'অনুরোধ প্রত্যাখ্যাত' }
 };
 
 interface GuestPaymentProps {
@@ -369,6 +371,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const summedAmount = verifiedReference && selectedHeads.length > 1 ? null : sumGuestAmounts(validAmountInputs);
   const amountsValid = selectedHeads.length > 0 && validAmountInputs.length === selectedHeads.length && summedAmount !== null;
   const totalAmount = otherBatch ? batchAmount ?? 0 : summedAmount ?? 0;
+  const storyAmountMinor = sumGuestMinorUnits(otherBatch
+    ? otherTaxLines.map(line => line.amount)
+    : selectedHeads.map(head => amountRawForHead(head.id)));
+  const storyAmountSupported = storyAmountMinor !== null && storyAmountMinor > 0n && storyAmountMinor <= MAX_STORY_AMOUNT_MINOR;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
@@ -435,7 +441,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!(ownAccountTax ? /^\d{12,13}$/.test(taxpayerTin) : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin))) {
       if (otherBatch) setInvalidBatchTaxpayerId('primary');
       setValidationError(allowSyntheticDemoTin
-        ? (language === 'bn' ? '১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার ডেমো টিআইএন দিন।' : 'Enter a 12-digit TIN or a recognized 13-digit demo TIN.')
+        ? (language === 'bn' ? '১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার টিআইএন দিন।' : 'Enter a 12-digit TIN or a recognized 13-digit TIN.')
         : copy.invalidTin, 'tin');
       return false;
     }
@@ -452,7 +458,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       if (invalidPerson) {
         setInvalidBatchTaxpayerId(invalidPerson.id);
         setValidationError(allowSyntheticDemoTin
-          ? (language === 'bn' ? 'প্রত্যেক করদাতার জন্য পৃথক ১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার ডেমো টিআইএন দিন।' : 'Enter a unique 12-digit TIN or recognized 13-digit demo TIN for each taxpayer.')
+          ? (language === 'bn' ? 'প্রত্যেক করদাতার জন্য পৃথক ১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার টিআইএন দিন।' : 'Enter a unique 12-digit TIN or recognized 13-digit TIN for each taxpayer.')
           : (language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন দিন। নাম ঐচ্ছিক।' : 'Enter a different 12-digit TIN for each taxpayer. Names are optional.'), 'tin');
         return false;
       }
@@ -552,6 +558,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         setValidationError(message, 'headId');
         return;
       }
+      if (!storyAmountSupported) {
+        const limit = formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language);
+        setValidationError(language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${limit}।` : `The maximum supported total is ${limit}.`, 'headId');
+        return;
+      }
       clearValidationError();
       setStep(3);
       return;
@@ -572,6 +583,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!amountsValid) {
       const firstInvalid = selectedHeads.find(head => parseGuestAmount(amountInputs[head.id] || '') === null);
       setValidationError(firstInvalid ? `${copy.positiveAmount} ${firstInvalid.economicCode} — ${language === 'bn' ? firstInvalid.nameBn : firstInvalid.nameEn}` : (language === 'bn' ? 'মোট পরিমাণ অনেক বেশি।' : 'The combined payment amount is too large.'), 'taxAmount', firstInvalid?.id);
+      return;
+    }
+    if (!storyAmountSupported) {
+      const limit = formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language);
+      setValidationError(language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${limit}।` : `The maximum supported total is ${limit}.`, 'taxAmount');
       return;
     }
     clearValidationError();
@@ -641,7 +657,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (otherBatch && (batchTaxpayers.length !== 1 || !batchValid ||
       (forSelf !== true && !(signedInAccount && forSelf === false &&
         authorizedTaxpayerId === userIdForHostedTin(taxpayerTin))))) return;
-    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !(otherBatch ? batchValid : amountsValid) || !(totalAmount > 0)) return;
+    if (isProcessing || !acknowledged || !paymentChannel || !paymentMethod || !(otherBatch ? batchValid : amountsValid) || !storyAmountSupported || storyAmountMinor === null) return;
     setIsProcessing(true);
     setPaymentPhase('processing');
     setLifecycleStages([]);
@@ -661,7 +677,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           taxAmount: head.category === 'PENALTY' ? 0 : amount,
           penaltyAmount: head.category === 'PENALTY' ? amount : 0,
           surchargeAmount: 0, interestAmount: 0, totalAmount: amount,
-          note: `Preview allocation: taxpayer TIN ${taxpayer.tin}; AY ${line.assessmentYear}`
+          note: `Allocation: taxpayer TIN ${taxpayer.tin}; AY ${line.assessmentYear}`
         };
       }) : selectedHeads.map(head => {
         const amount = headAmount(head.id);
@@ -716,7 +732,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           idempotencyKey: attemptId,
           sessionId: getStorySessionId(),
           service: category,
-          amountMinor: Math.round(totalAmount * 100),
+          amountMinor: Number(storyAmountMinor),
           details: {
             receiptReference: newReceipt.challanNo,
             taxpayerTin,
@@ -735,7 +751,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
               return { taxpayerTin: taxpayer.tin, taxpayerName: taxpayer.name,
                 headId: line.headId, assessmentYear: line.assessmentYear,
-                amountMinor: Math.round((otherTaxAllocationTotal([line]) || 0) * 100) };
+                amountMinor: Number(parseGuestMinorUnits(line.amount)) };
             }) } : {}),
             totalAmount,
             taxCreditStatus: newReceipt.taxCreditStatus,
@@ -798,12 +814,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
             <div>
               <h2 id="payment-lifecycle-title">{declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? (language === 'bn' ? 'পেমেন্ট প্রক্রিয়া সম্পন্ন' : 'Payment process complete') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}</h2>
-              <p>{language === 'bn' ? 'শুধু ডেমো সিমুলেশন — কোনো অর্থ স্থানান্তর, সরকারি চালান বা কর ক্রেডিট হয়নি।' : 'Demo simulation only — no money transferred, government challan or tax credit issued.'}</p>
             </div>
           </div>
           <div className="payment-lifecycle__overview">
             <div><span>{language === 'bn' ? 'মোট পরিশোধ' : 'Amount'}</span><strong>{formatCurrency(totalAmount, language)}</strong></div>
-            <div><span>{language === 'bn' ? 'সিমুলেশন রেফারেন্স' : 'Simulation reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>
+            <div><span>{language === 'bn' ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>
           </div>
           <details className="payment-lifecycle__progress-detail" open={!completed && !bankPending && !declined}>
             <summary>{language === 'bn' ? 'পেমেন্টের বিস্তারিত অগ্রগতি' : 'Payment progress details'} <span>{lifecycleStages.length} / {paymentChannel === 'OTC' ? 7 : ONLINE_LIFECYCLE.length}</span></summary>
@@ -811,16 +826,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <dl className="payment-lifecycle__references">
               <div><dt>{language === 'bn' ? 'কর ইভেন্ট আইডি' : 'Tax event ID'}</dt><dd>{attemptReceipt?.taxEventId || '—'}</dd></div>
               <div><dt>{language === 'bn' ? 'পেমেন্ট ট্রানজেকশন আইডি' : 'Payment transaction ID'}</dt><dd>{attemptReceipt?.paymentTransactionId || '—'}</dd></div>
-              <div><dt>{language === 'bn' ? 'সিমুলেশন রেফারেন্স' : 'Simulation reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</dd></div>
+              <div><dt>{language === 'bn' ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</dt><dd>{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</dd></div>
               <div><dt>{language === 'bn' ? 'মোট অর্থ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
             </dl>
             <ol className="payment-lifecycle__timeline" aria-label={language === 'bn' ? 'পরিশোধের অবস্থা' : 'Payment lifecycle'} aria-live="polite" data-testid="payment-lifecycle">
               {lifecycleStages.map((status, index) => <li key={`${status}-${index}`} className={status === 'FAILED' ? 'payment-lifecycle__event--failed' : ''}>
                 <span className="payment-lifecycle__event-dot" aria-hidden="true">{status === 'FAILED' ? '!' : '✓'}</span>
                 <span>{status === 'CREDITED' && category === 'SOURCE_TAX_DEPOSIT'
-                  ? (language === 'bn' ? 'উৎসে কর জমা সিমুলেট করা হয়েছে — eTDS বরাদ্দ বা কর ক্রেডিট হয়নি' : 'Withholding deposit simulated — no eTDS allocation or tax credit')
+                  ? (language === 'bn' ? 'eTDS বরাদ্দ বা কর ক্রেডিট নিশ্চিত হয়নি' : 'eTDS allocation and tax credit not confirmed')
                   : statusLabels[status][language]}</span>
-                <small>{status}</small>
               </li>)}
               {isProcessing && <li className="payment-lifecycle__waiting"><span className="payment-lifecycle__event-dot" aria-hidden="true">·</span>{language === 'bn' ? 'পরবর্তী নিশ্চিতকরণের অপেক্ষায়…' : 'Waiting for the next confirmation…'}</li>}
             </ol>
@@ -830,11 +844,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <FileText size={21} aria-hidden="true" />
             <div>
               <strong>{language === 'bn' ? 'এটি এখনো পরিশোধিত কর নয়' : 'This is not tax paid yet'}</strong>
-              <p>{language === 'bn' ? 'এটি শুধু ডেমো স্লিপ। ব্যাংকে ব্যবহারযোগ্য নয়। কোনো অর্থ জমা, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট হয়নি।' : 'Demo slip only; not valid at a bank. No money was deposited, settled by Treasury or credited.'}</p>
+              <p>{language === 'bn' ? 'ব্যাংক নিষ্পত্তি ও কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement and tax credit are not confirmed.'}</p>
             </div>
           </div>}
           {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{errorMessage || (language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.')}</p></div>}
-          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট সিমুলেশন সংরক্ষিত হয়েছে — কোনো অর্থ স্থানান্তর হয়নি।' : 'Payment simulation recorded — no money transferred.'}</p></div>}
+          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে; নিষ্পত্তি যাচাই হয়নি।' : 'Payment record saved; settlement is not verified.'}</p></div>}
           <div className="payment-lifecycle__actions no-print">
             {bankPending && <><button type="button" className="payment-lifecycle__secondary" onClick={() => window.print()}><FileText size={16} />{language === 'bn' ? 'স্লিপ প্রিন্ট করুন' : 'Print payment slip'}</button>{!embedded && <button type="button" className="payment-lifecycle__primary" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'}</button>}</>}
             {declined && !embedded && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment}>{language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা করুন' : 'Try another payment method'}</button>}
@@ -939,7 +953,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   type="text"
                   aria-invalid={isFieldInvalid('tin') || undefined}
                   aria-describedby={errorDescription('tin')}
-                  placeholder={allowSyntheticDemoTin ? (language === 'bn' ? '১২ সংখ্যার টিআইএন বা ১৩ সংখ্যার ডেমো টিআইএন' : '12-digit TIN or 13-digit demo TIN') : ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
+                  placeholder={allowSyntheticDemoTin ? (language === 'bn' ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
                   value={taxpayerTin}
                   inputMode="numeric" maxLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
                   readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}

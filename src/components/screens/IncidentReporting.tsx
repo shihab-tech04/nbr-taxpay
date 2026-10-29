@@ -159,7 +159,7 @@ export const IncidentReporting: React.FC = () => {
               </label>
               <input
                 type="text"
-                placeholder="Demo transaction or bank reference."
+                placeholder="Transaction or bank reference"
                 value={transactionReference}
                 onChange={(e) => setTransactionReference(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex"

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Search, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Search, AlertCircle } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
@@ -174,14 +174,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
         )}
         {searchResult && searchResult !== 'NOT_FOUND' && (
           <div className="receipt-lookup__found">
-            <button type="button" className="receipt-lookup__back no-print" onClick={() => {
-              resetLookup();
-              setSearchedReference("");
-            }}><ArrowLeft size={17} aria-hidden="true" />{t("Back to search", "অনুসন্ধানে ফিরুন")}</button>
             <p className="sr-only" role="status">
               {t('Receipt details loaded.', 'রসিদের তথ্য দেখানো হয়েছে।')}
             </p>
-            <ReceiptView receipt={searchResult} embedded={embedded} onBack={() => {
+            <ReceiptView receipt={searchResult} embedded={embedded} backLabel={t("Back to search", "অনুসন্ধানে ফিরুন")} onBack={() => {
               setSearchResult(null);
               setSearchedReference('');
             }} />

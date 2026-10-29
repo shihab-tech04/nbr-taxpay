@@ -62,7 +62,7 @@ test('status lookup restores a same-session simulated receipt after a page reloa
   await page.getByRole('dialog', { name: 'Payment status & receipt' }).getByRole('button', { name: 'Search records' }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   await expect(page.locator('.receipt-view')).toContainText(reference);
-  await expect(page.locator('.receipt-view')).toContainText('Simulated payment successful');
+  await expect(page.locator('.receipt-view')).toContainText('Payment record saved');
 });
 
 test('a matching reference does not expose a receipt with the wrong mobile', async ({ page }) => {

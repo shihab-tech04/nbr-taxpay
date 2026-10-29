@@ -57,7 +57,7 @@ export function OtherTaxTaxpayerList({
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
           <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
             readOnly={lockedPrimary || primaryAssigned} aria-readonly={lockedPrimary || primaryAssigned || undefined}
-            value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ সংখ্যার বা ডেমো টিআইএন' : '12-digit or demo TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+            value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
             aria-describedby={[tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : '', primaryAssigned && !lockedPrimary ? 'other-tax-primary-tin-help' : ''].filter(Boolean).join(' ') || undefined}
             onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onClearError(); } }} />
@@ -90,7 +90,7 @@ export function OtherTaxTaxpayerList({
           <div>
             <label htmlFor={'other-tax-tin-' + person.id}>{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
             <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={allowSyntheticDemoTin ? 13 : 12}
-              value={person.tin} required autoComplete="off" placeholder={allowSyntheticDemoTin ? (bn ? '১২ সংখ্যার বা ডেমো টিআইএন' : '12-digit or demo TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+              value={person.tin} required autoComplete="off" placeholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
               readOnly={assigned > 0} aria-readonly={assigned > 0 || undefined}
               aria-invalid={Boolean(tinError && invalidId === person.id) || undefined}
               aria-describedby={[tinError && invalidId === person.id ? 'guest-payment-error-tin' : '', assigned > 0 ? 'other-tax-tin-help-' + person.id : ''].filter(Boolean).join(' ') || undefined}

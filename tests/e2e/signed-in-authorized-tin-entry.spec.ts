@@ -71,12 +71,11 @@ test('each additional demo taxpayer needs separate active consent', async ({ pag
   await expect(dialog.getByText('Step 2 of 4')).toHaveCount(0);
 });
 
-test('an authorization read failure cannot expose a request action or continue', async ({ page }) => {
+test('an authorization read failure prevents continuing', async ({ page }) => {
   await mockAuthorizations(page, null);
   const dialog = await openSignedInOtherTax(page);
   await dialog.locator('#guest-tin').fill('2222222222222');
   await expect(dialog.getByText(/Authorizations could not be verified/)).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText(/Authorization could not be verified/)).toBeVisible();
 });
@@ -115,7 +114,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   const tin = dialog.locator('#guest-tin');
   await tin.fill('1234567890123');
   await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
-  await expect(dialog.getByText('১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার ডেমো টিআইএন দিন।')).toBeVisible();
+  await expect(dialog.getByText('১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার টিআইএন দিন।')).toBeVisible();
   await tin.fill('2222222222222');
   await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();

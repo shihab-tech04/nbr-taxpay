@@ -43,11 +43,11 @@ export const SessionPaymentNotifications: React.FC<{ language: 'en' | 'bn' }> = 
   if (!knownSession && notices.length === 0) return null;
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('This browser’s payment notifications', 'এই ব্রাউজারের পেমেন্ট বিজ্ঞপ্তি')}>
     <h2 className="font-semibold text-taxpay-text">{label('This browser’s payment notifications', 'এই ব্রাউজারের পেমেন্ট বিজ্ঞপ্তি')}</h2>
-    <p className="mt-1 text-sm text-taxpay-muted">{label('Session-scoped simulation records only. These do not establish taxpayer ownership, money transfer or tax credit.', 'শুধু এই ব্রাউজার সেশনের সিমুলেশন রেকর্ড। এগুলো করদাতার মালিকানা, অর্থ স্থানান্তর বা কর ক্রেডিট নিশ্চিত করে না।')}</p>
+    <p className="mt-1 text-sm text-taxpay-muted">{label('Records from this browser session. Settlement and tax credit are not confirmed.', 'এই ব্রাউজার সেশনের রেকর্ড। নিষ্পত্তি ও কর ক্রেডিট নিশ্চিত হয়নি।')}</p>
     {error ? <p role="alert" className="mt-2 text-sm text-red-700">{error}</p> :
       notices.length === 0 ? <p className="mt-2 text-sm text-taxpay-muted">{label('No payment notifications in this session.', 'এই সেশনে কোনো পেমেন্ট বিজ্ঞপ্তি নেই।')}</p> :
       <ul className="divide-y divide-taxpay-border">{notices.map(notice => <li key={notice.id} className="py-3">
-        <p className="font-semibold text-taxpay-text">{label('Simulated payment recorded', 'পেমেন্ট সিমুলেশন সংরক্ষিত')}</p>
+        <p className="font-semibold text-taxpay-text">{label('Payment record saved', 'পেমেন্ট রেকর্ড সংরক্ষিত')}</p>
         <p className="font-semibold tabular-nums text-taxpay-text">{label('Amount', 'পরিমাণ')}: {formatSimulatedAmount(notice.amountMinor)}</p>
         <p className="break-all text-sm text-taxpay-muted">{notice.paymentId} · <time dateTime={notice.createdAt}>{new Date(notice.createdAt).toLocaleString(bn ? 'bn-BD' : 'en-GB')}</time></p>
       </li>)}</ul>}
