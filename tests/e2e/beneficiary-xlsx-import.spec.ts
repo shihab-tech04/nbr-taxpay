@@ -98,6 +98,10 @@ test('genuine compressed Excel with text TINs parses both rows without losing le
 test('guest Beneficiaries supports independent lists, Excel import, responsive CRUD, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries');
+  const recordList=info.project.name==='desktop-1280'
+    ?page.locator('table:visible tbody')
+    :page.locator('ul[aria-label="Saved beneficiaries"]:visible');
+  const expectRecord=async(name:string)=>expect(recordList.getByText(name,{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
   await expect(page.getByRole('link',{name:/Sign in/})).toHaveCount(0);
 
@@ -119,7 +123,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Synthetic Guest One');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await expect(page.getByText('Synthetic Guest One')).toBeVisible();
+  await expectRecord('Synthetic Guest One');
 
   const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
   await page.getByRole('button',{name:'Import Excel',exact:true}).first().click();
@@ -130,7 +134,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await expect(dialog.getByText('1 valid, 1 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Finish import'}).click();
-  await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
+  await expectRecord('Local Beneficiary Two');
 
   const noMatch=page.getByRole('searchbox',{name:'Search this list'});
   await noMatch.fill('no matching name');
@@ -156,7 +160,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await dialog.locator('#beneficiary-edit-name').fill('Synthetic Guest Renamed');
   await dialog.getByRole('button',{name:'Save changes'}).click();
-  await expect(page.getByText('Synthetic Guest Renamed')).toBeVisible();
+  await expectRecord('Synthetic Guest Renamed');
 
   const secondRecord=isDesktop?page.getByRole('row').filter({hasText:'987654321098'}):page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'987654321098'});
   await secondRecord.getByRole('button',{name:isDesktop?'Remove Local Beneficiary Two':'Remove beneficiary'}).click();
@@ -165,7 +169,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByText('Synthetic Guest Renamed')).toBeVisible();
+  await expectRecord('Synthetic Guest Renamed');
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'Beneficiaries viewport overflow').toBeLessThanOrEqual(2);
