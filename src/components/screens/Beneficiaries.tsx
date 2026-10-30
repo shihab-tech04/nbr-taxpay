@@ -4,6 +4,7 @@ import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {UiButton,UiInput,UiSelect} from '../ui/Controls';
 import {addBeneficiaries,createBeneficiaryList,loadBeneficiaries,removeBeneficiary,updateBeneficiary,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 
@@ -133,9 +134,6 @@ export function Beneficiaries(){
     link.href=url;link.download='Korbritto_Beneficiaries_Template.xlsx';document.body.append(link);link.click();link.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
-  const formInput='min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-taxpay-primary';
-  const action='taxpay-auth-primary';
-  const secondary='taxpay-auth-outline';
 
   return <section className="taxpayer-account-center" lang={language} data-testid="beneficiaries-page">
     <TaxpayerPageHeading title={tr('Beneficiaries','উপকারভোগী')} description={tr('Save taxpayer details to make payments for others faster.','অন্যের হয়ে দ্রুত কর পরিশোধের জন্য করদাতার তথ্য সংরক্ষণ করুন।')}/>
@@ -144,8 +142,8 @@ export function Beneficiaries(){
         <div><h2 className="text-base font-bold">{tr('Saved beneficiary lists','সংরক্ষিত উপকারভোগীর তালিকা')}</h2>
           <p className="text-sm text-slate-600">{tr('Saving a beneficiary does not grant access to their private tax information.','উপকারভোগী সংরক্ষণ করলে তাঁর ব্যক্তিগত করতথ্যে প্রবেশাধিকার পাওয়া যায় না।')}</p></div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={secondary} disabled={checkingIdentity} onClick={()=>open('single')}><Plus size={16} aria-hidden="true"/> {tr('Add single','একজন যোগ করুন')}</button>
-          <button type="button" className={action} disabled={checkingIdentity} onClick={()=>open('bulk')}><Upload size={16} aria-hidden="true"/> {tr('Bulk add','একাধিক যোগ করুন')}</button>
+          <UiButton type="button" variant="outline" disabled={checkingIdentity} onClick={()=>open('single')}><Plus size={16} aria-hidden="true"/> {tr('Add single','একজন যোগ করুন')}</UiButton>
+          <UiButton type="button" variant="primary" disabled={checkingIdentity} onClick={()=>open('bulk')}><Upload size={16} aria-hidden="true"/> {tr('Bulk add','একাধিক যোগ করুন')}</UiButton>
         </div>
       </div>
       <p className="text-xs text-slate-600">{tr('Lists are saved in this browser. Clearing site data removes access to guest lists. A signed-in account keeps its own private lists.','তালিকা এই ব্রাউজারে সংরক্ষিত হয়। সাইটের তথ্য মুছে ফেললে অতিথি তালিকায় প্রবেশ হারাবেন। সাইন-ইন করা অ্যাকাউন্টের তালিকা আলাদাভাবে ব্যক্তিগত থাকে।')}</p>
@@ -155,9 +153,9 @@ export function Beneficiaries(){
       {loading&&<p role="status">{tr('Loading beneficiaries…','উপকারভোগী লোড হচ্ছে…')}</p>}
       {!!lists.length&&<div className="max-w-sm">
         <label htmlFor="beneficiary-list" className="block mb-1 text-sm font-semibold">{tr('List name','তালিকার নাম')}</label>
-        <select id="beneficiary-list" className={formInput} value={activeList} onChange={e=>setActiveList(e.target.value)}>
+        <UiSelect id="beneficiary-list" value={activeList} onChange={e=>setActiveList(e.target.value)}>
           {lists.map(list=><option value={list.id} key={list.id}>{list.name} ({people.filter(p=>p.list_id===list.id).length})</option>)}
-        </select>
+        </UiSelect>
       </div>}
       {!checkingIdentity&&!loading&&(!lists.length||!visible.length)&&<div className="rounded-lg border border-slate-200 p-6 text-center">
         <UsersRound className="mx-auto mb-2 text-slate-500" size={30}/>
@@ -169,34 +167,34 @@ export function Beneficiaries(){
           <thead><tr className="border-b border-slate-200"><th className="p-3">{tr('TIN','টিআইএন')}</th><th className="p-3">{tr('User Name','নাম')}</th><th className="p-3 text-right">{tr('Actions','কার্যক্রম')}</th></tr></thead>
           <tbody>{visible.map(person=><tr key={person.id} className="border-b border-slate-100">
             <td className="p-3 font-mono whitespace-nowrap">{person.tin}</td>
-            <td className="p-3">{editId===person.id?<input aria-label={tr('Edit name','নাম সম্পাদনা')} className={formInput} value={editName} onChange={e=>setEditName(e.target.value)}/>:person.display_name}</td>
+            <td className="p-3">{editId===person.id?<UiInput aria-label={tr('Edit name','নাম সম্পাদনা')} value={editName} onChange={e=>setEditName(e.target.value)}/>:person.display_name}</td>
             <td className="p-3"><div className="flex flex-wrap justify-end gap-2">
-              {editId===person.id?<><button className={secondary} onClick={()=>void rename(person)}>{tr('Save','সংরক্ষণ')}</button><button className={secondary} onClick={()=>setEditId('')}>{tr('Cancel','বাতিল')}</button></>
-                :<button className={secondary} onClick={()=>{setEditId(person.id);setEditName(person.display_name);setDeleteId('');}}>{tr('Edit','সম্পাদনা')}</button>}
-              <button type="button" className={secondary} onClick={()=>{setPaymentBeneficiaryPrefill({tin:person.tin,name:person.display_name});setPaymentServiceChoiceOpen(true);}}>
+              {editId===person.id?<><UiButton variant="outline" onClick={()=>void rename(person)}>{tr('Save','সংরক্ষণ')}</UiButton><UiButton variant="outline" onClick={()=>setEditId('')}>{tr('Cancel','বাতিল')}</UiButton></>
+                :<UiButton variant="outline" onClick={()=>{setEditId(person.id);setEditName(person.display_name);setDeleteId('');}}>{tr('Edit','সম্পাদনা')}</UiButton>}
+              <UiButton type="button" variant="outline" onClick={()=>{setPaymentBeneficiaryPrefill({tin:person.tin,name:person.display_name});setPaymentServiceChoiceOpen(true);}}>
                 <CreditCard size={16} aria-hidden="true"/> {tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
-              </button>
-              {deleteId===person.id?<><button className={secondary} onClick={()=>void remove(person)}>{tr('Confirm remove','অপসারণ নিশ্চিত করুন')}</button><button className={secondary} onClick={()=>setDeleteId('')}>{tr('Cancel','বাতিল')}</button></>
-                :<button type="button" className={secondary} onClick={()=>{setDeleteId(person.id);setEditId('');}} aria-label={tr('Remove '+person.display_name,person.display_name+' সরান')}><Trash2 size={16}/></button>}
+              </UiButton>
+              {deleteId===person.id?<><UiButton variant="outline" onClick={()=>void remove(person)}>{tr('Confirm remove','অপসারণ নিশ্চিত করুন')}</UiButton><UiButton variant="outline" onClick={()=>setDeleteId('')}>{tr('Cancel','বাতিল')}</UiButton></>
+                :<UiButton type="button" variant="outline" onClick={()=>{setDeleteId(person.id);setEditId('');}} aria-label={tr('Remove '+person.display_name,person.display_name+' সরান')}><Trash2 size={16}/></UiButton>}
             </div></td>
           </tr>)}</tbody>
         </table>
       </div>}
-      <button type="button" className={secondary} onClick={()=>navigate('manage_authorization')}>{tr('Manage taxpayer authorizations','করদাতার অনুমোদন পরিচালনা')}</button>
+      <UiButton type="button" variant="outline" onClick={()=>navigate('manage_authorization')}>{tr('Manage taxpayer authorizations','করদাতার অনুমোদন পরিচালনা')}</UiButton>
     </div>
 
     {flow&&<TaxPayModal title={flow==='single'?tr('Add beneficiary','উপকারভোগী যোগ করুন'):tr('Import beneficiaries','উপকারভোগী আমদানি করুন')}
       onClose={close} ariaLabel={tr('Beneficiary entry','উপকারভোগী যোগ')} motionKey={flow+phase}
       footer={<div className="flex w-full flex-wrap items-center justify-between gap-2">
-        <div>{flow==='bulk'&&<button type="button" className={secondary} onClick={template}><Download size={16}/>{tr('Download Template','টেমপ্লেট ডাউনলোড')}</button>}</div>
+        <div>{flow==='bulk'&&<UiButton type="button" variant="outline" onClick={template}><Download size={16}/>{tr('Download Template','টেমপ্লেট ডাউনলোড')}</UiButton>}</div>
         <div className="flex gap-2">
-          <button type="button" className={secondary} disabled={busy} onClick={()=>{if(flow==='bulk'&&phase!=='upload'){setPhase(phase==='confirm'?'preview':'upload');setImportError('');}else close();}}>
+          <UiButton type="button" variant="outline" disabled={busy} onClick={()=>{if(flow==='bulk'&&phase!=='upload'){setPhase(phase==='confirm'?'preview':'upload');setImportError('');}else close();}}>
             {flow==='bulk'&&phase!=='upload'?tr('Back','পেছনে'):tr('Cancel','বাতিল')}
-          </button>
-          {flow==='single'?<button form="beneficiary-single-form" type="submit" className={action} disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Add beneficiary','যোগ করুন')}</button>
-            :phase==='upload'?<button type="button" className={action} disabled={!filename||busy} onClick={()=>setPhase('preview')}>{tr('Next','পরবর্তী')}</button>
-            :phase==='preview'?<button type="button" className={action} disabled={!chosen.length||busy||(!targetList||targetList==='new'&&!listName.trim())} onClick={()=>setPhase('confirm')}>{tr('Next','পরবর্তী')}</button>
-            :<button type="button" className={action} disabled={!chosen.length||busy} onClick={()=>void finishImport()}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Finish Import','আমদানি সম্পন্ন')}</button>}
+          </UiButton>
+          {flow==='single'?<UiButton form="beneficiary-single-form" type="submit" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Add beneficiary','যোগ করুন')}</UiButton>
+            :phase==='upload'?<UiButton type="button" variant="primary" disabled={!filename||busy} onClick={()=>setPhase('preview')}>{tr('Next','পরবর্তী')}</UiButton>
+            :phase==='preview'?<UiButton type="button" variant="primary" disabled={!chosen.length||busy||(!targetList||targetList==='new'&&!listName.trim())} onClick={()=>setPhase('confirm')}>{tr('Next','পরবর্তী')}</UiButton>
+            :<UiButton type="button" variant="primary" disabled={!chosen.length||busy} onClick={()=>void finishImport()}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Finish Import','আমদানি সম্পন্ন')}</UiButton>}
         </div>
       </div>}>
       <div className="space-y-4 py-2" data-testid="beneficiary-import">
@@ -207,17 +205,17 @@ export function Beneficiaries(){
         </div>}
         <div>
           <label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('List name','তালিকার নাম')} *</label>
-          <select id="beneficiary-target-list" value={targetList} className={formInput} onChange={e=>setTargetList(e.target.value)}>
+          <UiSelect id="beneficiary-target-list" value={targetList} onChange={e=>setTargetList(e.target.value)}>
             <option value="new">{tr('Create new list','নতুন তালিকা তৈরি')}</option>
             {lists.map(list=><option key={list.id} value={list.id}>{list.name}</option>)}
-          </select>
-          {targetList==='new'&&<input id="beneficiary-new-list-name" className={formInput+' mt-2'} maxLength={80} required value={listName} placeholder={tr('e.g. Family, Clients','যেমন পরিবার, ক্লায়েন্ট')} onChange={e=>setListName(e.target.value)}/>}
+          </UiSelect>
+          {targetList==='new'&&<UiInput id="beneficiary-new-list-name" className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family, Clients','যেমন পরিবার, ক্লায়েন্ট')} onChange={e=>setListName(e.target.value)}/>}
         </div>
         {flow==='single'?<form id="beneficiary-single-form" className="space-y-3" onSubmit={e=>void saveSingle(e)}>
           <div><label className="block mb-1 text-sm font-semibold" htmlFor="beneficiary-tin">{tr('Beneficiary TIN','উপকারভোগীর টিআইএন')} *</label>
-            <input id="beneficiary-tin" className={formInput} inputMode="numeric" maxLength={12} required value={tin} onChange={e=>setTin(e.target.value.replace(/\D/g,'').slice(0,12))}/></div>
+            <UiInput id="beneficiary-tin" inputMode="numeric" maxLength={12} required value={tin} onChange={e=>setTin(e.target.value.replace(/\D/g,'').slice(0,12))}/></div>
           <div><label className="block mb-1 text-sm font-semibold" htmlFor="beneficiary-name">{tr('Beneficiary name','উপকারভোগীর নাম')} *</label>
-            <input id="beneficiary-name" className={formInput} maxLength={160} required value={name} onChange={e=>setName(e.target.value)}/></div>
+            <UiInput id="beneficiary-name" maxLength={160} required value={name} onChange={e=>setName(e.target.value)}/></div>
         </form>:phase==='upload'?<div className="space-y-3">
           <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
           <div className="rounded-lg border-2 border-dashed border-slate-300 p-5 text-center"
@@ -225,7 +223,7 @@ export function Beneficiaries(){
             <FileSpreadsheet className="mx-auto text-taxpay-primary" size={30}/>
             <p className="my-2 text-sm">{tr('Drag and drop an Excel file here','এখানে এক্সেল ফাইল টেনে আনুন')}</p>
             <input ref={fileRef} id="beneficiary-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={e=>{void receive(e.target.files?.[0]);e.target.value='';}}/>
-            <button className={secondary} type="button" onClick={()=>fileRef.current?.click()}>{tr('Browse Excel','এক্সেল নির্বাচন')}</button>
+            <UiButton variant="outline" type="button" onClick={()=>fileRef.current?.click()}>{tr('Browse Excel','এক্সেল নির্বাচন')}</UiButton>
           </div>
           {filename&&<p role="status" className="flex items-center gap-2 text-sm text-taxpay-primary"><Check size={17}/>{tr('Upload successful: ','আপলোড সফল: ')}{filename}</p>}
           <p className="text-xs text-slate-600">{tr('Use columns TIN and User Name. Only .xlsx files, maximum 2 MB and 1,000 rows.','TIN এবং User Name কলাম ব্যবহার করুন। শুধু .xlsx, সর্বোচ্চ ২ এমবি ও ১০০০ সারি।')}</p>
@@ -233,15 +231,15 @@ export function Beneficiaries(){
           <h3 className="font-semibold">{tr('Preview and select','পূর্বরূপ ও নির্বাচন')}</h3>
           <p className="text-sm text-slate-600">{tr(String(valid.length)+' valid, '+String(reviewed.length-valid.length)+' needing attention',String(valid.length)+'টি সঠিক, '+String(reviewed.length-valid.length)+'টি সংশোধন প্রয়োজন')}</p>
           <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={valid.length>0&&chosen.length===valid.length}
-            onChange={e=>setRows(old=>old.map(row=>({...row,selected:e.target.checked})))} />{tr('Select all valid rows','সব সঠিক সারি নির্বাচন')}</label>
+  onChange={e=>setRows(old=>old.map(row=>({...row,selected:e.target.checked})))} />{tr('Select all valid rows','সব সঠিক সারি নির্বাচন')}</label>
           <div className="max-h-80 overflow-auto rounded-lg border border-slate-200">
             <table className="w-full text-sm"><thead><tr className="sticky top-0 bg-white text-left"><th className="p-2">{tr('Add','যোগ')}</th><th className="p-2">{tr('TIN','টিআইএন')}</th><th className="p-2">{tr('User Name','নাম')}</th><th className="p-2">{tr('Validation','যাচাই')}</th></tr></thead>
               <tbody>{reviewed.map((row,i)=><tr key={row.sourceRow} className="border-t border-slate-100">
                 <td className="p-2"><input type="checkbox" aria-label={tr('Include row ','সারি যোগ করুন ')+row.sourceRow} checked={!row.error&&row.selected} disabled={!!row.error}
-                  onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,selected:e.target.checked}:r))}/></td>
-                <td className="p-2"><input aria-label={tr('TIN row ','টিআইএন সারি ')+row.sourceRow} className="w-36 rounded border p-2 font-mono" value={row.tin} onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,tin:e.target.value.replace(/\D/g,'').slice(0,12)}:r))}/></td>
-                <td className="p-2"><input aria-label={tr('Name row ','নাম সারি ')+row.sourceRow} className="min-w-36 rounded border p-2" maxLength={160} value={row.name}
-                  onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,name:e.target.value}:r))}/></td>
+  onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,selected:e.target.checked}:r))}/></td>
+                <td className="p-2"><UiInput aria-label={tr('TIN row ','টিআইএন সারি ')+row.sourceRow} className="max-w-36 font-mono" value={row.tin} onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,tin:e.target.value.replace(/\D/g,'').slice(0,12)}:r))}/></td>
+                <td className="p-2"><UiInput aria-label={tr('Name row ','নাম সারি ')+row.sourceRow} className="min-w-36" maxLength={160} value={row.name}
+  onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,name:e.target.value}:r))}/></td>
                 <td className={'p-2 text-xs '+(row.error?'text-red-700':'text-taxpay-primary')}>{row.error||tr('Ready','প্রস্তুত')}</td>
               </tr>)}</tbody></table>
           </div>
