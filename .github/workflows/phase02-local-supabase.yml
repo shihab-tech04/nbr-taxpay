@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 29
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 30
           test "$(psql -X -Atqc "select count(*) from public.taxpay_site_banners")" = 5
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_site_banners'")" = 9
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_transactions') is not null")" = t
@@ -78,7 +78,10 @@ jobs:
           test "$(psql -X -Atqc "select to_regclass('demo_payment.mirror_outbox') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
-          echo "PASS: twenty-nine ordered migrations installed, including durable Story1 retry queue, correction review readback, authorization, CMS and owner-update grants"
+          test "$(psql -X -Atqc "select to_regclass('public.taxpay_beneficiaries') is not null and to_regclass('public.taxpay_beneficiary_lists') is not null")" = t
+          test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename in ('taxpay_beneficiaries','taxpay_beneficiary_lists')")" = 8
+          test "$(psql -X -Atqc "select not has_table_privilege('anon','public.taxpay_beneficiaries','SELECT') and not has_table_privilege('anon','public.taxpay_beneficiary_lists','INSERT')")" = t
+          echo "PASS: thirty ordered migrations installed, including private beneficiary owner-scoped lists, corrections, authorization, CMS and owner-update grants"
 
       - name: Verify TaxPay correction intake, Office review state transitions and owner readback
         run: |

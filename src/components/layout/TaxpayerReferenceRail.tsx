@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, CirclePlus, CircleUserRound, Home, LogOut, ShieldCheck } from 'lucide-react';
+import { Activity, Bell, BookOpen, CirclePlus, CircleUserRound, Home, LogOut, UsersRound } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { SiteLogo } from './SiteLogo';
@@ -8,7 +8,7 @@ type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentTy
 
 const links: RailLink[] = [
   { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা', Icon: Home },
-  { route: 'manage_authorization', en: 'Manage Authorization', bn: 'অনুমোদন পরিচালনা', Icon: ShieldCheck },
+  { route: 'beneficiaries', en: 'Beneficiaries', bn: 'উপকারভোগী', Icon: UsersRound },
   { route: 'history', en: 'Activity', bn: 'লেনদেন', Icon: Activity },
   { route: 'ledger', en: 'Tax ledger', bn: 'কর লেজার', Icon: BookOpen },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell }
