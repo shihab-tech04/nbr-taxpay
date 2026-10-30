@@ -227,11 +227,11 @@
     "current_checkpoint": {
       "taxpay_main": "61a7fd4957d24e33790852881e937f3a402d7b0a",
       "office_main": "ba2d0b60070d5bde1b2f598607329e10e11f3307",
-      "issue_230":     {
+      "issue_230":         {
       "url": "https://github.com/shihab-tech04/nbr-taxpay/issues/230",
       "state": "open",
-      "updated_at": "2026-10-30T20:31:11Z",
-      "comments_count": 59,
+      "updated_at": "2026-10-30T20:35:59Z",
+      "comments_count": 60,
       "relevant_comment_ids": [
         6531873727,
         6532005116,
@@ -241,9 +241,10 @@
         6532506133,
         6532637630,
         6532696472,
-        6532853968
+        6532853968,
+        6532939973
       ],
-      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery workflow #41121203954 passed at 61a7fd4957d24e33790852881e937f3a402d7b0a; it is not a hosted Supabase backup/restore. Latest #6532853968 reports Pages version 61a7 published and public home/Pay Tax entry readback, but the overall workflow remains red on stale WS01-owned verify-live-public-auth.mjs Add single assertion; no payment was submitted. #6532637630 reports current-main synthetic per-item persistence evidence and #289 supersession; these are not per-story acceptance. WS02 performed no live check."
+      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery workflow #41121203954 passed at 61a7fd4957d24e33790852881e937f3a402d7b0a; it is not a hosted Supabase backup/restore. #6532853968 reports Pages version 61a7 published and public-home/Pay Tax-entry readback, but the overall main workflow remains red on the stale WS01-owned verify-live-public-auth.mjs Add single assertion; no payment was submitted. Latest #6532939973 reports #343 exact-head checks and WS05 review passed with no hosted deployment; its hosted backup/restore, migration authorization, schema/function, real officer identity, service-role caller authorization and protected live-acceptance blockers remain. #6532637630 reports synthetic per-item persistence evidence and #289 supersession, not per-story acceptance. WS02 performed no live check."
     },
       "pr_341": {
         "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/341",
@@ -252,7 +253,54 @@
         "merged_at": "2026-10-30T19:09:39Z",
         "scope": "PR #341 merged at f4663ccc241490825c69ed88ce90594111f61f45; compare confirms current TaxPay main is 4 commits ahead and 0 behind. Later issue comment #6531873727 reports limited Pages/Beneficiaries behavior; WS02 did not re-run and did not edit WS01 files."
       },
-      "test_inventory": {
+      "pr_343":     {
+      "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/343",
+      "state": "open",
+      "merged": false,
+      "draft": false,
+      "mergeable": true,
+      "base_branch": "main",
+      "base_sha": "61a7fd4957d24e33790852881e937f3a402d7b0a",
+      "head_sha": "33e6bce97738ae3dbf02bbc598264e3a56e3182e",
+      "changed_paths": [
+        "supabase/migrations/20261029170000_taxpay_correction_office_readback.sql",
+        "tests/integration/correctionOfficeReadback.sql"
+      ],
+      "exact_head_workflows": [
+        {
+          "run_id": 41121203946,
+          "name": "TaxPay Phase 02 - disposable Auth, RLS and draft persistence",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41121203946"
+        },
+        {
+          "run_id": 41121203879,
+          "name": "TaxPay - build and GitHub Pages",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41121203879"
+        },
+        {
+          "run_id": 41121203954,
+          "name": "Verified pre-release source recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41121203954"
+        }
+      ],
+      "scope": "GitHub Actions run objects were refreshed for exact head 33e6bce97738ae3dbf02bbc598264e3a56e3182e; all three listed PR workflows completed successfully and Pages publish was skipped on the PR run. Issue comment #6532939973 records WS05 review of the two-file diff with no concrete source defect. These PR-level/disposable checks do not establish hosted production release or per-story acceptance.",
+      "production_blockers": [
+        "Verified backup/restore for both hosted Supabase projects and explicit migration authorization are still required",
+        "Compatible Office correction-review/per-officer notice read-state schemas and TaxPay correction outbox/readback schema plus matching bridge functions are not installed",
+        "No authorized active Office officer identities/roles are provisioned for hosted acceptance",
+        "Caller-side authorization for the service-role correction RPC still requires verification",
+        "Protected live officer-to-taxpayer notice/read-state acceptance remains untested"
+      ],
+      "release_status": "BLOCKED",
+      "review_provenance": "WS05 independent source/CI review is reported in issue comment #6532939973 and the refreshed #343 PR body; no formal GitHub review submission or inline thread was present at the fetched review state."
+    },
+    "test_inventory": {
         "repo_commit": "61a7fd4957d24e33790852881e937f3a402d7b0a",
         "tree_test_path_count": 147,
         "interpretation": "Exact current-main tree contains 147 paths beneath test directories; path presence is not execution evidence. WS02 ran no tests."
