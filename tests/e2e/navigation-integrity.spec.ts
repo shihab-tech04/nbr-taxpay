@@ -90,7 +90,7 @@ test('Track payment stays in the sample taxpayer workspace and uses the existing
     const url=new URL(page.url());
     return {action:url.searchParams.get('action'),trackPayment:url.searchParams.get('trackPayment')};
   }).toEqual({action:'history',trackPayment:'1'});
-  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment status & receipt'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Track payment'})).toBeVisible();
   await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
@@ -108,6 +108,7 @@ test('Track payment stays in the sample taxpayer workspace and uses the existing
     return {action:url.searchParams.get('action'),trackPayment:url.searchParams.get('trackPayment')};
   }).toEqual({action:'history',trackPayment:null});
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
 });
 
 test('Track payment lookup keeps Bengali sample workspace labels', async ({page}) => {

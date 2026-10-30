@@ -6,9 +6,9 @@ import { ReceiptView } from '../common/ReceiptView';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { findSessionReceiptByReference } from '../../services/simulatedPaymentStory';
 
-type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean };
+type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean };
 
-export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false }) => {
+export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false }) => {
   const { language, lookupReceipt, receipts, navigate, routeParams } = useTaxState();
   // Homepage reference is kept in in-memory navigation state, never in a public URL.
   const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
@@ -86,7 +86,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
           <h2>{t('Track payment', 'পেমেন্ট অনুসন্ধান')}</h2>
           <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
         </header>}
-        {!embedded && !activityTabs && <header className="receipt-lookup__page-header">
+        {!embedded && !activityTabs && !hidePageHeading && <header className="receipt-lookup__page-header">
           <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
           <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
         </header>}

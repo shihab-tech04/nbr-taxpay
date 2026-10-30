@@ -114,8 +114,9 @@ const MainRouter: React.FC = () => {
     if(previewAccount&&currentRoute==='account_notifications'&&!verifiedApplicationUser){
       return <NotificationsView />;
     }
-    // Track payment uses the existing in-page lookup inside the private activity workspace.
-    if (currentRoute === 'history' && Boolean(routeParams.trackPayment) && showActivitySections) {
+    // Track payment uses the in-page lookup for verified accounts. Synthetic
+    // preview accounts keep their established transaction workspace below.
+    if (currentRoute === 'history' && Boolean(routeParams.trackPayment) && showActivitySections && verifiedApplicationUser) {
       return <ReceiptLookup activityTabs />;
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.

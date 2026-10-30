@@ -6,6 +6,7 @@ import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
+import {ReceiptLookup} from './ReceiptLookup';
 
 /**
  * Public synthetic storybook dataset for fictional "user1" only.
@@ -403,7 +404,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
-  const content=route==='ledger'?ledger:route==='history'?<>{transactionList}{journey}</>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  const content=route==='ledger'?ledger:route==='history'?<>
+    {trackingActivity && <section className="space-y-3" aria-labelledby="taxpayer-receipt-lookup-heading">
+      <h2 id="taxpayer-receipt-lookup-heading" className="text-base font-semibold">{tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')}</h2>
+      <ReceiptLookup hidePageHeading />
+    </section>}
+    {transactionList}{journey}
+  </>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
