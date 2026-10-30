@@ -121,7 +121,7 @@ test('Track payment lookup keeps Bengali sample workspace labels', async ({page}
     const url=new URL(page.url());
     return {action:url.searchParams.get('action'),trackPayment:url.searchParams.get('trackPayment'),lang:url.searchParams.get('lang')};
   }).toEqual({action:'history',trackPayment:'1',lang:'bn'});
-  await expect(page.getByRole('heading',{name:'পেমেন্ট ও লেনদেন'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'পেমেন্ট অনুসন্ধান'})).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
   await expect(page.getByRole('textbox',{name:'চালান, টোকেন বা লেনদেনের রেফারেন্স'})).toBeVisible();
