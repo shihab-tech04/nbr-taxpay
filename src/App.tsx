@@ -204,12 +204,12 @@ const MainRouter: React.FC = () => {
             <p>{currentRoute === 'beneficiaries'
               ? (language === 'bn' ? 'উপকারভোগীর তালিকা পরিচালনা করতে ইমেইলের মাধ্যমে সাইন ইন করুন।' : 'Sign in with your email to manage saved beneficiaries.')
               : sampleJourneysEnabled ? (language === 'bn' ? 'করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।' : 'Explore the taxpayer payment screens and activity.') : (language === 'bn' ? 'আপনার অ্যাকাউন্টে প্রবেশ করতে সাইন ইন করুন।' : 'Sign in to access your taxpayer account.')}</p>
-            {sampleJourneysEnabled && <a className="citizen-account-gate__preview" href={language === 'bn'
+            {sampleJourneysEnabled && currentRoute !== 'beneficiaries' && <a className="citizen-account-gate__preview" href={language === 'bn'
               ? '?action=taxpayer_home&demoUser=user1&lang=bn'
               : '?action=taxpayer_home&demoUser=user1'}>
               {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
             </a>}
-            {sampleJourneysEnabled ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
+            {sampleJourneysEnabled && currentRoute !== 'beneficiaries' ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
               <button type="button" onClick={() => currentRoute === 'beneficiaries'
                 ? navigate('secure_workspace', {returnTo:'beneficiaries'})
                 : navigate('taxpayer_login')}>{currentRoute === 'beneficiaries'
