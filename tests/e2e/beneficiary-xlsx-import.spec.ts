@@ -19,3 +19,13 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
   expect(result.spreadsheetBytes).toBeGreaterThan(500);
   expect(result.unsupported).toContain('.xlsx');
 });
+
+test('signed-out Beneficiaries action leads to existing real email authentication instead of preview login',async({page})=>{
+  await page.goto('/?action=beneficiaries&lang=bn');
+  await expect(page.getByRole('heading',{name:'উপকারভোগী'})).toBeVisible();
+  await page.getByRole('button',{name:'ইমেইলে সাইন ইন'}).click();
+  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page).toHaveURL(/returnTo=beneficiaries/);
+  await expect(page).toHaveURL(/lang=bn/);
+  await expect(page.getByRole('dialog',{name:/Sign In To Your Korbritto Account/})).toHaveCount(0);
+});

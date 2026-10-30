@@ -156,7 +156,7 @@ export const SecureWorkspace: React.FC = () => {
     setBusy(true); setMessage(null);
     try {
       const redirect = authRedirectUrl(window.location.origin, import.meta.env.BASE_URL,
-        selectedDraftCategory ?? undefined);
+        selectedDraftCategory ?? undefined, routeParams?.returnTo, language);
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { emailRedirectTo: redirect, shouldCreateUser: true }
