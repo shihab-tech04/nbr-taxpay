@@ -54,7 +54,7 @@ const previewReadOnlyRoutes = new Set([
 const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -210,6 +210,19 @@ const MainRouter: React.FC = () => {
               href={`?action=secure_workspace&returnTo=${signInReturnRoute}${language === 'bn' ? '&lang=bn' : ''}`}>
               {language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email'}
             </a>
+            {/* Local-only synthetic workspace links retain existing UX regression coverage.
+                The production bundle removes this entire branch; private routes still require
+                verified Supabase Auth, and Beneficiaries never use synthetic preview access. */}
+            {sampleJourneysEnabled && currentRoute !== 'beneficiaries' && <>
+              <a className="citizen-account-gate__preview" href={language === 'bn'
+                ? '?action=taxpayer_home&demoUser=user1&lang=bn'
+                : '?action=taxpayer_home&demoUser=user1'}>
+                {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
+              </a>
+              <button type="button" onClick={() => { setUserRole('TAXPAYER_INDIVIDUAL'); navigate('taxpayer_home'); }}>
+                {language === 'bn' ? 'করদাতা ওয়ার্কস্পেস দেখুন' : 'Explore taxpayer workspace'}
+              </button>
+            </>}
             {currentRoute !== 'beneficiaries' && <button type="button" onClick={() => navigate('taxpayer_login')}>
               {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
             </button>}
