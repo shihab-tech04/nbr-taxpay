@@ -13,7 +13,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,userRole}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -41,6 +41,7 @@ export function Beneficiaries(){
   const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const owner=user?.id??null;
+  const canManageAuthorizations=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
 
   const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
@@ -200,6 +201,7 @@ export function Beneficiaries(){
         <UiButton type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
         <UiButton type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>open('bulk')}><Upload size={17} aria-hidden="true"/>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
         <UiButton type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
+        {canManageAuthorizations&&<UiButton type="button" variant="outline" onClick={()=>navigate('manage_authorization')}>{tr('Manage taxpayer authorizations','করদাতার অনুমোদন পরিচালনা')}</UiButton>}
       </div>
     </header>
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice}</p>}

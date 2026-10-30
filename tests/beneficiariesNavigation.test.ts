@@ -18,7 +18,9 @@ test('guests can manage Beneficiaries without being routed into restricted autho
   assert.doesNotMatch(policy,/['"]beneficiaries['"]/, 'Beneficiaries must not be an account-only route');
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.doesNotMatch(page,/Sign in to manage saved beneficiaries|Sign in with your email/);
-  assert.doesNotMatch(page,/navigate\(['"]manage_authorization['"]\)/,'authorization is kept in its protected route');
+  assert.ok(page.includes("const canManageAuthorizations=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);"));
+  assert.ok(page.includes('{canManageAuthorizations&&<UiButton'));
+  assert.ok(page.includes("onClick={()=>navigate('manage_authorization')"),'account authorization shortcut stays behind the non-guest condition');
   assert.ok(page.includes('Create list'));
   assert.ok(page.includes('Search name or TIN'));
   assert.ok(page.includes('Pay Tax for Others'));

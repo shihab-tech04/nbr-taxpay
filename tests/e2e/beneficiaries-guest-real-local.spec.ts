@@ -13,6 +13,7 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create list', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Manage taxpayer authorizations' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Create your first list' })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole('button', { name: 'Create list', exact: true }).first().click();
