@@ -24,7 +24,7 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
 
 test('signed-out visitors can open Beneficiaries without an email or sample-account gate',async({page})=>{
   await page.goto('/?action=beneficiaries&lang=bn');
-  await expect(page.getByRole('heading',{name:'উপকারভোগী'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:/একজন যোগ করুন/})).toBeVisible();
   await expect(page.getByRole('button',{name:/একাধিক যোগ করুন/})).toBeVisible();
   await expect(page.getByRole('button',{name:/Pay Tax for Others/})).toHaveCount(0);
