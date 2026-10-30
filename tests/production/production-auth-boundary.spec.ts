@@ -49,6 +49,6 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await expect(page).toHaveURL(/action=secure_workspace/);
   await expect(page).toHaveURL(/returnTo=taxpayer_home/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('heading', { name: 'সুরক্ষিত করবৃত্ত ওয়ার্কস্পেস' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'নিরাপদ করবৃত্ত ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });
