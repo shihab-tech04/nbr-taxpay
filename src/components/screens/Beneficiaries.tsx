@@ -155,7 +155,7 @@ export function Beneficiaries(){
       </div>
       {!owner&&<div role="status" className="rounded-lg border border-slate-200 p-4">
         <p>{tr('Sign in to manage saved beneficiaries.','উপকারভোগীর তালিকা পরিচালনা করতে সাইন ইন করুন।')}</p>
-        <button className={action} onClick={()=>navigate('taxpayer_login')}>{tr('Sign in','সাইন ইন')}</button>
+        <button className={action} onClick={()=>navigate('secure_workspace',{returnTo:'beneficiaries'})}>{tr('Sign in with email','ইমেইলে সাইন ইন')}</button>
       </div>}
       {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
       {notice&&<p role="status" className="text-sm text-taxpay-primary">{notice}</p>}
