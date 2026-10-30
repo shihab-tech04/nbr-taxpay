@@ -26,6 +26,7 @@ import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
 import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
 import { PaymentWizard } from './components/screens/PaymentWizard';
 import { PaymentHistory } from './components/screens/PaymentHistory';
+import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { PaymentDetailView } from './components/screens/PaymentDetailView';
 import { TaxLedger } from './components/screens/TaxLedger';
 import { TaxJourney } from './components/screens/TaxJourney';
@@ -112,6 +113,10 @@ const MainRouter: React.FC = () => {
     // Demo account notifications share the SQL authorization inbox used by the popup.
     if(previewAccount&&currentRoute==='account_notifications'&&!verifiedApplicationUser){
       return <NotificationsView />;
+    }
+    // Track payment uses the existing in-page lookup inside the private activity workspace.
+    if (currentRoute === 'history' && Boolean(routeParams.trackPayment) && showActivitySections) {
+      return <ReceiptLookup activityTabs />;
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.

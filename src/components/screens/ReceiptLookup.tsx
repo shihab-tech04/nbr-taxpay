@@ -78,11 +78,14 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   return (
     <section className={embedded ? 'receipt-lookup receipt-lookup--embedded' : 'receipt-lookup receipt-lookup--page'}>
       {!embedded && activityTabs && <>
-        <TaxpayerPageHeading title={t('Receipt lookup', 'রসিদ অনুসন্ধান')}
-          description={t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')} />
+        <TaxpayerPageHeading title={t('Payments & activity', 'পেমেন্ট ও লেনদেন')} />
         <TaxpayerActivityTabs />
       </>}
       <div className="receipt-lookup__content">
+        {!embedded && activityTabs && <header className="receipt-lookup__page-header">
+          <h2>{t('Track payment', 'পেমেন্ট অনুসন্ধান')}</h2>
+          <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>
+        </header>}
         {!embedded && !activityTabs && <header className="receipt-lookup__page-header">
           <h1>{t('Receipt lookup', 'রসিদ অনুসন্ধান')}</h1>
           <p>{t('Find a payment record by its reference.', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন।')}</p>

@@ -80,6 +80,43 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(page).toHaveURL(/action=landing/);
 });
 
+test('signed-in Track payment stays in the activity workspace and uses the existing lookup', async ({page}) => {
+  await page.goto('/?action=history&demoUser=user1');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  const tabs=page.getByRole('navigation',{name:'Activity sections'});
+  await tabs.getByRole('button',{name:'Track payment'}).click();
+
+  await expect(page).toHaveURL(/action=history&trackPayment=1/);
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Track payment'})).toBeVisible();
+  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
+  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
+  await expect(page.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeVisible();
+
+  await page.locator('.receipt-lookup__sample').first().click();
+  const receiptDialog=page.getByRole('dialog',{name:/Receipt details/});
+  await expect(receiptDialog.locator('.receipt-view--embedded')).toBeVisible();
+  await receiptDialog.getByRole('button',{name:'Close modal'}).click();
+  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
+  await tabs.getByRole('button',{name:'Transactions'}).click();
+  await expect(page).toHaveURL(/action=history/);
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+});
+
+test('Track payment lookup keeps Bengali workspace labels', async ({page}) => {
+  await page.goto('/?action=history&demoUser=user1&lang=bn');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  const tabs=page.getByRole('navigation',{name:'লেনদেনের বিভাগ'});
+  await tabs.getByRole('button',{name:'পেমেন্ট অনুসন্ধান'}).click();
+
+  await expect(page).toHaveURL(/action=history&trackPayment=1/);
+  await expect(page.getByRole('heading',{name:'পেমেন্ট ও লেনদেন'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'পেমেন্ট অনুসন্ধান'})).toBeVisible();
+  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'চালান, টোকেন বা লেনদেনের রেফারেন্স'})).toBeVisible();
+});
+
 test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=head_catalogue');
   // Guest visitors use the actual header bell on desktop and mobile;
