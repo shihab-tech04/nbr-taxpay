@@ -54,5 +54,11 @@ test('beneficiary email login returns only to the allowlisted private destinatio
   assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, 'https://evil.example','en'),
     'https://shihab-tech04.github.io/nbr-taxpay/?action=secure_workspace');
   assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, 'manage_authorization'),
-    'https://shihab-tech04.github.io/nbr-taxpay/?action=secure_workspace');
+    'https://shihab-tech04.github.io/nbr-taxpay/?action=manage_authorization');
+  assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, 'account_profile','bn'),
+    'https://shihab-tech04.github.io/nbr-taxpay/?action=account_profile&lang=bn');
+  for(const blocked of ['https://evil.example','../../escape','payment_details','taxpayer_login','office_login']) {
+    assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, blocked),
+      'https://shihab-tech04.github.io/nbr-taxpay/?action=secure_workspace');
+  }
 });
