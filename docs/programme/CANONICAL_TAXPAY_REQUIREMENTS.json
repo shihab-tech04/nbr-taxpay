@@ -137,24 +137,114 @@
       ],
       "scope": "The brief names conflict topics and current constraints; the exact versioned approved change documents and row-level crosswalk are not included."
     },
+    "contemporaneous_drive_archives":     [
+      {
+        "drive_document_id": "1fPkgxV04qJOkdJF4t_Z9hA2-QArsdf933PQs4NZHGMw",
+        "drive_revision_id": "AHj4eMT2bQhzcmBSo_bis0KkJSyNkPyzH7IetMEA-uyVoDc31mr6ArpOWvXGwp9iQmoQDsf-hDoaiYjLkeeT8LiOV8ZioL29R3oAP_5s1Uwr",
+        "drive_title": "NBR-TaxPay LIVE_PRE_PHASE1 ddcf4bdfe892 2026-10-10 SOURCE-ARCHIVE JSONL",
+        "drive_url": "https://docs.google.com/document/d/1fPkgxV04qJOkdJF4t_Z9hA2-QArsdf933PQs4NZHGMw/edit",
+        "manifest": {
+          "archive_format": "NBR_TAXPAY_SOURCE_JSONL_V1",
+          "repository": "shihab2-tech/NBR-Tax-Payment",
+          "role": "LIVE_PRE_PHASE1",
+          "source_commit_declared": "ddcf4bdfe892b4e9968fe5b95d18102674d229c2",
+          "file_count": 65,
+          "total_source_bytes": 531868,
+          "manifest_note": "No secrets or git history."
+        },
+        "integrity_verification": {
+          "method": "Recomputed Git blob SHA-1 with blob framing over each recovered UTF-8 file payload; all declared per-file hashes matched; recovered UTF-8 byte sum matched manifest.",
+          "file_hashes_verified": 65,
+          "file_hash_mismatches": 0,
+          "recovered_total_source_bytes": 531868,
+          "all_files_verified": true
+        },
+        "provenance_caveat": "Archive content is verified against embedded per-file Git blob SHA-1 values, but the archive contains no Git history. The source commit is manifest-declared, not independently authenticated by ancestry; historical repository access returns HTTP 403 suspended-account. This does not establish document authorship, approval, or current acceptance.",
+        "key_file_refs": [
+          {
+            "path": "docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
+            "git_blob_sha1": "28d879274370c7e795acf8554d915c820f1b186d",
+            "boundary": "Source-level review only; states DRAFT / PARTIAL — NOT CERTIFIED; no fresh execution or release certification."
+          },
+          {
+            "path": "RELEASE_GATE.md",
+            "git_blob_sha1": "9b740e786d794a0769ab15ff9e3bbb8f87342a0e",
+            "boundary": "Contains historical PASS/staging claims, explicitly qualified by its independent-review notice as UNVERIFIED; do not treat as acceptance."
+          }
+        ]
+      },
+      {
+        "drive_document_id": "1aVkjaOHeJz-fIPTbgKVWukW_VVjSxTxe1WwL8Issc4o",
+        "drive_revision_id": "AHj4eMQ85yGVgGFIlk5jPiHDSelD_lBldaZSmuyZ7QG8trsNy5lCEfm3AGBgsIUN92XYms_isvGR7VJPuKu5esZXLGP0saJoaOcRG5jJSKrl",
+        "drive_title": "NBR-TaxPay PHASE1_CANDIDATE 3c28a535fdba 2026-10-10 SOURCE-ARCHIVE JSONL",
+        "drive_url": "https://docs.google.com/document/d/1aVkjaOHeJz-fIPTbgKVWukW_VVjSxTxe1WwL8Issc4o/edit",
+        "manifest": {
+          "archive_format": "NBR_TAXPAY_SOURCE_JSONL_V1",
+          "repository": "shihab2-tech/NBR-Tax-Payment",
+          "role": "PHASE1_CANDIDATE",
+          "source_commit_declared": "3c28a535fdbadc45cf91fbf1ecaa38db74cb45bc",
+          "file_count": 85,
+          "total_source_bytes": 869217,
+          "manifest_note": "No secrets or git history."
+        },
+        "integrity_verification": {
+          "method": "Recomputed Git blob SHA-1 with blob framing over each recovered UTF-8 file payload; all declared per-file hashes matched; recovered UTF-8 byte sum matched manifest.",
+          "file_hashes_verified": 85,
+          "file_hash_mismatches": 0,
+          "recovered_total_source_bytes": 869217,
+          "all_files_verified": true
+        },
+        "provenance_caveat": "Archive content is verified against embedded per-file Git blob SHA-1 values, but the archive contains no Git history. The source commit is manifest-declared, not independently authenticated by ancestry; historical repository access returns HTTP 403 suspended-account. This does not establish document authorship, approval, or current acceptance.",
+        "key_file_refs": [
+          {
+            "path": "docs/STORY_EXECUTION_OVERLAY_v1.json",
+            "git_blob_sha1": "de9dfcfb3215ff94a0200d78eca06fe0ff6e8218",
+            "boundary": "14-entry historical overlay; status_default DRAFT_NOT_TESTED_NOT_CERTIFIED; release_gate DRAFT_PR_NO_AUTHENTICATED_E2E_NO_PRODUCTION_CERTIFICATION; points to 387-story source SHA already recorded separately."
+          },
+          {
+            "path": "docs/STORY_CAT002_SOURCE_INTEGRITY.md",
+            "git_blob_sha1": "d2a3d95d7dcda1da449dffde11a56b19b2feb73b",
+            "boundary": "Official ACS workbook not supplied; IDs 5 and 150 OWNER_REVIEW; does not infer legal approval, executable rates, payment/settlement/credit success or NBR authorization."
+          },
+          {
+            "path": "docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
+            "git_blob_sha1": "28d879274370c7e795acf8554d915c820f1b186d",
+            "boundary": "Source-level review only; states DRAFT / PARTIAL — NOT CERTIFIED; no fresh execution or release certification."
+          },
+          {
+            "path": "RELEASE_GATE.md",
+            "git_blob_sha1": "9b740e786d794a0769ab15ff9e3bbb8f87342a0e",
+            "boundary": "Contains historical PASS/staging claims, explicitly qualified by its independent-review notice as UNVERIFIED; do not treat as acceptance."
+          },
+          {
+            "path": "docs/UX_AGENT_DESIGN_SYSTEM_CONSTITUTION.md",
+            "git_blob_sha1": "bd20b72ddbb906fd8ff8a650d27edcde75623720",
+            "boundary": "Historical design/review criteria: established type/color baseline; 320/375/768/1280 responsive and EN/BN/accessibility gates. Explicitly says constitution is not proof an independent external agent ran; not approval or test result."
+          }
+        ]
+      }
+    ],
     "current_checkpoint": {
       "taxpay_main": "61a7fd4957d24e33790852881e937f3a402d7b0a",
       "office_main": "ba2d0b60070d5bde1b2f598607329e10e11f3307",
-      "issue_230": {
-        "url": "https://github.com/shihab-tech04/nbr-taxpay/issues/230",
-        "state": "open",
-        "updated_at": "2026-10-30T20:11:32Z",
-        "comments_count": 56,
-        "relevant_comment_ids": [
-          6531873727,
-          6532005116,
-          6532147449,
-          6532165036,
-          6532475742,
-          6532506133
-        ],
-        "scope": "Issue comments are stakeholder-reported release evidence, not WS02 live tests. Latest handoff #6532506133 records TaxPay #334 merged to current main 61a7fd4957d24e33790852881e937f3a402d7b0a and #343 refreshed from that base; the current #343 head/checks remain separate evidence and do not certify requirement acceptance."
-      },
+      "issue_230":     {
+      "url": "https://github.com/shihab-tech04/nbr-taxpay/issues/230",
+      "state": "open",
+      "updated_at": "2026-10-30T20:31:11Z",
+      "comments_count": 59,
+      "relevant_comment_ids": [
+        6531873727,
+        6532005116,
+        6532147449,
+        6532165036,
+        6532475742,
+        6532506133,
+        6532637630,
+        6532696472,
+        6532853968
+      ],
+      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery workflow #41121203954 passed at 61a7fd4957d24e33790852881e937f3a402d7b0a; it is not a hosted Supabase backup/restore. Latest #6532853968 reports Pages version 61a7 published and public home/Pay Tax entry readback, but the overall workflow remains red on stale WS01-owned verify-live-public-auth.mjs Add single assertion; no payment was submitted. #6532637630 reports current-main synthetic per-item persistence evidence and #289 supersession; these are not per-story acceptance. WS02 performed no live check."
+    },
       "pr_341": {
         "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/341",
         "state": "merged",
@@ -214,7 +304,7 @@
   "blockers": [
     {"id":"STORY_ACCEPTANCE_EVIDENCE","status":"BLOCKED","scope":"Per-story execution acceptance","detail":"Recovered source declares DRAFT_NOT_IMPLEMENTATION_CERTIFIED and test_status NOT_RUN; no current exact-ID acceptance evidence is mapped."},
     {"id":"FEATURE_ACCEPTANCE_EVIDENCE","status":"BLOCKED","scope":"Feature-level acceptance","detail":"The v1.1 register is source-studied, not certified, and not a story acceptance matrix."},
-    {"id":"LEGACY_REPOSITORY_HISTORY","status":"BLOCKED","scope":"Historical source and approval history","detail":"Referenced legacy repository shihab2-tech/NBR-Tax-Payment returns HTTP 403 with suspended-account response."},
+    {"id":"LEGACY_REPOSITORY_HISTORY","status":"BLOCKED","scope":"Historical source and approval history","detail":"Google Drive JSONL archives now recover historical files with matching embedded Git blob SHA-1 values, but contain no Git history and their source commit IDs are manifest-declared only. Full legacy ancestry and approval/change history remain unavailable; connected access to shihab2-tech/NBR-Tax-Payment returns HTTP 403 with a suspended-account response."},
     {"id":"PER_ID_SUPERSESSION_MAP","status":"BLOCKED","scope":"Approved change reconciliation","detail":"Conflict topics are known, but exact versioned decision-to-stable-ID crosswalk and replacement specifications are unavailable."},
     {"id":"CURRENT_IMPLEMENTATION_TRACE","status":"BLOCKED","scope":"Current UI/route/service/API/SQL/Office/test/production mapping","detail":"Current repo files/tests and issue evidence are not mapped per source ID; WS02 executed no tests and no per-ID live check."},
     {"id":"OFFICIAL_ACCOUNTING_SOURCE","status":"BLOCKED","scope":"Official legal/economic-code source","detail":"Original workbook not supplied; feature register says the embedded catalogue is not verified as official law; IDs 5 and 150 are owner-review."},
