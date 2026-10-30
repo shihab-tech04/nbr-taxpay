@@ -97,12 +97,17 @@ const parseRecord = (raw: unknown, requestedId: DemoUserId): DemoSqlServiceRecor
   }
   const recordedAt = requiredText(raw.recorded_at, 'recorded date');
   if (!Number.isFinite(Date.parse(recordedAt))) throw new Error('Invalid stored service date');
+  const assessmentYear=nullableText(raw.assessment_year,'assessment year');
+  if (raw.service_code === 'TRAVEL_TAX' ? assessmentYear !== null :
+      !assessmentYear || !/^20\d{2}-\d{2}$/.test(assessmentYear)) {
+    throw new Error('Invalid stored service assessment year');
+  }
 
   return {
     recordId: requiredText(raw.record_id, 'record reference'),
     userId: requestedId,
     serviceCode: raw.service_code,
-    assessmentYear: nullableText(raw.assessment_year, 'assessment year'),
+    assessmentYear,
     amountMinor,
     state: raw.record_state,
     participantRole: raw.participant_role,

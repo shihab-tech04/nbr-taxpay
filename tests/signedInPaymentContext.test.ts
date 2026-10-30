@@ -34,17 +34,30 @@ test('only relevant historical service categories are suggested, with no fabrica
     record('c','PENALTY','PENDING'),
     record('d','TRAVEL_TAX','SIMULATED'),
   ];
-  const own=accountPaymentSuggestions(rows,'TAX_WITH_RETURN');
+  const own=accountPaymentSuggestions(rows,'TAX_WITH_RETURN','user1');
   assert.deepEqual(own.map(x=>x.serviceCode),['TAX_WITH_RETURN']);
-  const others=accountPaymentSuggestions(rows,'OTHER_TAX_PAYMENT');
+  const others=accountPaymentSuggestions(rows,'OTHER_TAX_PAYMENT','user1');
   assert.deepEqual(others.map(x=>x.serviceCode),['ADVANCE_TAX','PENALTY']);
   assert.equal(others.find(x=>x.serviceCode==='PENALTY')?.requiresReview,true);
   assert.ok(others.every(x=>!('amount' in x) && !('amountMinor' in x)));
+  assert.equal(own[0].recordId,'a');
+  assert.equal(own[0].assessmentYear,'2026-27');
+  assert.ok(own.every(x=>!('reference' in x) && !('headId' in x)));
 });
 test('latest record state controls whether a repeated payment is blocked from suggestion actions',()=>{
   const rows=[
     record('old','PENALTY','SIMULATED','2026-10-01T00:00:00Z'),
     record('pending','PENALTY','PENDING','2026-10-28T00:00:00Z')
   ];
-  assert.equal(accountPaymentSuggestions(rows,'OTHER_TAX_PAYMENT')[0].requiresReview,true);
+  assert.equal(accountPaymentSuggestions(rows,'OTHER_TAX_PAYMENT','user1')[0].requiresReview,true);
+});
+
+test('source-tax suggestions are scoped to the selected taxpayer and retain scenario record identity',()=>{
+  const own=record('own-source','SOURCE_TAX_DEPOSIT','SIMULATED');
+  const other={...own,userId:'user2' as const,recordId:'other-source'};
+  const rows=accountPaymentSuggestions([other,own],'SOURCE_TAX_DEPOSIT','user1');
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].taxpayerId,'user1');
+  assert.equal(rows[0].recordId,'own-source');
+  assert.equal(rows[0].serviceCode,'SOURCE_TAX_DEPOSIT');
 });

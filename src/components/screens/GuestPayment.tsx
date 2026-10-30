@@ -42,7 +42,7 @@ import { getHostedAuthorizations, userIdForHostedTin } from '../../services/host
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import type { DemoUserId } from '../../data/demoUsers';
-import type { DemoServiceCode } from '../../services/demoSqlProfiles';
+import type {PaymentSuggestion} from '../../services/signedInPaymentContext';
 import { OtherTaxBatchComposer, otherTaxAllocationTotal, otherTaxAllocationHead, isOtherTaxHeadEligible, OTHER_TAX_YEARS, type OtherTaxTaxpayer, type OtherTaxAllocation } from './OtherTaxBatchComposer';
 
 const GUEST_COPY = {
@@ -199,6 +199,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>([]);
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
+  const [suggestedBatchYears,setSuggestedBatchYears]=useState<Record<string,string>>({});
+  const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   // The later approved UX supersedes v11's preselected self-tax default.
@@ -236,6 +238,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
   const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
+  const batchSuggestionTaxpayers = batchTaxpayers.flatMap(person => {
+    const userId = person.id === 'primary' && ownAccountTax
+      ? demoConsentActor
+      : authorizedTaxpayerIds[person.tin] ?? (person.id === 'primary' ? authorizedTaxpayerId : null);
+    return userId ? [{ person, userId }] : [];
+  });
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
@@ -533,22 +541,46 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return true;
   };
 
-  const chooseSuggestedHead = (code: DemoServiceCode) => {
-    // A service suggestion is not a verified accounting head. Display the
-    // matching catalogue group and require the taxpayer to select explicitly.
-    const group: Partial<Record<DemoServiceCode, string>> = {
-      ADVANCE_TAX: 'Advance Tax', ASSESSED_DEMAND: 'Tax against Demand',
-      PENALTY: 'Penalty', APPELLATE_TRIBUNAL: 'Appellate Tribunal',
-      OTHER_TAX_PAYMENT: 'Others'
+  const chooseSuggestedHead = (suggestion:PaymentSuggestion) => {
+    // Never apply another selected taxpayer's scenario record or a record that
+    // still needs review. This source has no exact legal head/notice reference.
+    const authorizedForCurrentFlow = otherBatch
+      ? batchTaxpayers.some(person => {
+        const authorizedId = person.id === 'primary' && ownAccountTax
+          ? demoConsentActor
+          : authorizedTaxpayerIds[person.tin] ?? (person.id === 'primary' ? authorizedTaxpayerId : null);
+        return authorizedId === suggestion.taxpayerId && userIdForHostedTin(person.tin) === suggestion.taxpayerId;
+      })
+      : suggestion.taxpayerId === suggestionUserId;
+    if (!authorizedForCurrentFlow || suggestion.requiresReview) return;
+    const supportedYear=suggestion.assessmentYear&&OTHER_TAX_YEARS.find(year=>year===suggestion.assessmentYear);
+    if(otherBatch){
+      const target=batchTaxpayers.find(person=>userIdForHostedTin(person.tin)===suggestion.taxpayerId);
+      if(target){
+        const targetTab=[...document.querySelectorAll<HTMLButtonElement>('[data-testid="other-tax-taxpayer-tabs"] button')]
+          .find(button=>button.dataset.taxpayerId===target.id);
+        targetTab?.click();
+        if(supportedYear)setSuggestedBatchYears(current=>({...current,[target.id]:supportedYear}));
+      }
+    }else if(supportedYear)setAssessmentYear(supportedYear);
+    const group:Partial<Record<PaymentSuggestion['serviceCode'],string>>={
+      ADVANCE_TAX:'Advance Tax',ASSESSED_DEMAND:'Tax against Demand',PENALTY:'Penalty',
+      APPELLATE_TRIBUNAL:'Appellate Tribunal',OTHER_TAX_PAYMENT:'Others',
     };
-    const name = group[code];
-    if (!name) return;
-    const section = [...document.querySelectorAll<HTMLDetailsElement>('details[data-head-group]')]
-      .find(item => item.dataset.headGroup === name);
-    if (!section) return;
-    section.open = true;
-    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    section.querySelector('summary')?.focus({ preventScroll: true });
+    const groupName=group[suggestion.serviceCode];
+    const section=groupName?[...document.querySelectorAll<HTMLDetailsElement>('details[data-head-group]')]
+      .find(item=>item.dataset.headGroup===groupName):undefined;
+    if(section){
+      section.open=true;
+      section.scrollIntoView({behavior:'smooth',block:'nearest'});
+      section.querySelector('summary')?.focus({preventScroll:true});
+      return;
+    }
+    const nextField=suggestion.serviceCode==='TAX_WITH_RETURN'
+      ?document.querySelector<HTMLInputElement>('input[name="guest-income-type"]')
+      :document.querySelector<HTMLInputElement>('input[name="guest-payment-head"]');
+    nextField?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    nextField?.focus({preventScroll:true});
   };
 
   const handleStep1Next = async () => {
@@ -900,7 +932,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     rememberBatch(null);
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
-    setOtherTaxLines([]); setAdditionalTaxpayers([]); setTin(''); setOtherTaxpayerName('');
+    setOtherTaxLines([]); setAdditionalTaxpayers([]); setSuggestedBatchYears({}); setAuthorizedTaxpayerIds({});
+    setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
     setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
   };
 
@@ -1049,7 +1082,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setAdditionalTaxpayers([]); setOtherTaxLines([]); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setAdditionalTaxpayers([]); setOtherTaxLines([]); setSuggestedBatchYears({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
@@ -1061,6 +1094,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               onChoose={selected => {
                 clearReferenceSelection();
                 setAuthorizedTaxpayerId(null); // Saving a beneficiary is never a consent grant.
+                setAuthorizedTaxpayerIds({});
+                setSuggestedBatchYears({});
                 const unique=selected.filter((person,index)=>selected.findIndex(p=>p.tin===person.tin)===index);
                 if(otherBatch){
                   const seen=new Set(batchTaxpayers.map(person=>person.tin).filter(Boolean));
@@ -1084,12 +1119,22 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 if (otherBatch && taxpayerTin && taxpayerTin !== nextTin &&
                     (authorizedTaxpayerId || otherTaxLines.some(line => line.taxpayerId === 'primary'))) {
                   if (!batchTaxpayers.some(person => person.tin === nextTin)) {
-                    setAdditionalTaxpayers(people => [...people, { id: crypto.randomUUID(), tin: nextTin, name: nextName }]);
+                    const emptySlot = additionalTaxpayers.find(person => !person.tin.trim());
+                    if (emptySlot) {
+                      setAdditionalTaxpayers(people => people.map(person => person.id === emptySlot.id
+                        ? { ...person, tin: nextTin, name: nextName } : person));
+                    } else {
+                      setAdditionalTaxpayers(people => [...people, { id: crypto.randomUUID(), tin: nextTin, name: nextName }]);
+                    }
                   }
+                  const scenarioId=userIdForHostedTin(nextTin);
+                  if(scenarioId)setAuthorizedTaxpayerIds(current=>({...current,[nextTin]:scenarioId}));
                 } else {
                   setTin(nextTin);
                   setOtherTaxpayerName(nextName);
-                  setAuthorizedTaxpayerId(userIdForHostedTin(nextTin));
+                  const scenarioId=userIdForHostedTin(nextTin);
+                  setAuthorizedTaxpayerId(scenarioId);
+                  if(scenarioId)setAuthorizedTaxpayerIds(current=>({...current,[nextTin]:scenarioId}));
                 }
                 clearValidationError();
               }}
@@ -1108,7 +1153,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   value={taxpayerTin}
                   inputMode="numeric" maxLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
                   readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
-                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
+                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
                   className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 {fieldError('tin')}
@@ -1165,8 +1210,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} allowAdditional={forSelf === false}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
-                onPrimaryTin={value => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setTin(value); }}
-                onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={setAdditionalTaxpayers}
+                onPrimaryTin={value => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(value); }}
+                onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={people => {
+                  setAdditionalTaxpayers(people);
+                  setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>
+                    knownTin===taxpayerTin||people.some(person=>person.tin===knownTin))));
+                  setSuggestedBatchYears(current=>Object.fromEntries(Object.entries(current).filter(([personId])=>
+                    personId==='primary'||people.some(person=>person.id===personId))));
+                }}
                 onAllocations={setOtherTaxLines} onClearError={clearValidationError} />
             </PaymentFormSection>}
 
@@ -1187,9 +1238,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          {signedInAccount && <AccountPaymentSuggestions userId={suggestionUserId} language={language} mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />}
+          {signedInAccount && (batchSuggestionTaxpayers.length > 0
+            ? batchSuggestionTaxpayers.map(({ person, userId }) => <AccountPaymentSuggestions key={person.id}
+              userId={userId} taxpayerLabel={person.name || person.tin} language={language}
+              mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)
+            : <AccountPaymentSuggestions userId={null} language={language} mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)}
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={paymentCalculation}
-            lines={otherTaxLines} onChange={next => {
+            lines={otherTaxLines} suggestedAssessmentYears={suggestedBatchYears} onChange={next => {
               setOtherTaxLines(next);
               // Keep the invalid-row indicators visible until every selected
               // head is corrected, instead of hiding them after the first edit.
@@ -1207,7 +1262,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
-            {signedInAccount && <AccountPaymentSuggestions userId={suggestionUserId} language={language} mode={category === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX_PAYMENT'} />}
+            {signedInAccount && <AccountPaymentSuggestions userId={suggestionUserId} language={language}
+              mode={isWithholdingMode?'SOURCE_TAX_DEPOSIT':category === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX_PAYMENT'}
+              onChoose={chooseSuggestedHead} />}
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={embedded && category === 'TAX_WITH_RETURN' ? (language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন' : 'Choose the income tax type') : (language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head')}>
             {verifiedReference && <p className="text-xs text-slate-600" role="status">{language === 'bn' ? `NBR রেফারেন্স ${verifiedReference.reference} থেকে করবর্ষ ও পরিমাণ পূরণ করা হয়েছে।` : `Assessment year and amount filled from NBR reference ${verifiedReference.reference}.`}</p>}
             {!isWithholdingMode && <fieldset className="payment-form-radio-fieldset">

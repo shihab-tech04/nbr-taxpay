@@ -70,6 +70,13 @@ export const TaxpayerDashboard: React.FC = () => {
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
+  const serviceShortcut=<section className="taxpayer-services-shortcut rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5" aria-labelledby="taxpayer-dashboard-services-title">
+    <div>
+      <h2 id="taxpayer-dashboard-services-title" className="text-lg font-semibold text-taxpay-text">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
+      <p className="mt-1 text-sm text-taxpay-muted">{tr('Choose Tax with Return or Other Tax, then select an applicable payment type.','প্রথমে রিটার্নসহ কর অথবা অন্যান্য কর বেছে নিন। এরপর প্রযোজ্য কর পরিশোধের ধরন নির্বাচন করুন।')}</p>
+    </div>
+    <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
+  </section>;
   return <div className={`mx-auto max-w-[1150px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
     <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
@@ -77,14 +84,17 @@ export const TaxpayerDashboard: React.FC = () => {
     </section>
     <TaxpayerPageHeading className="taxpayer-dashboard-header" title={tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}
       description={previewAccount ? `${tr('User ID','ইউজার আইডি')}: ${previewAccount.id}` : undefined}
-      actions={<div className="flex flex-wrap items-end gap-2">
+      actions={!user&&<div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
           <select value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800">{ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select>
         </label>
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>} />
-    {user && <AccountActivitySummary ownerUid={user.id} language={language}
-      onNavigate={(route) => navigate(route)} />}
+    {user ? <>
+      <AccountActivitySummary ownerUid={user.id} language={language}
+        onNavigate={(route) => navigate(route)} />
+      {serviceShortcut}
+    </> : <>
     {previewAccount && demoUser && !user && <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
@@ -98,13 +108,7 @@ export const TaxpayerDashboard: React.FC = () => {
         {tr('Tax Ledger','কর লেজার')}<ArrowRight size={14} aria-hidden="true"/>
       </button>
     </div>
-    <section className="taxpayer-services-shortcut rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5" aria-labelledby="taxpayer-dashboard-services-title">
-      <div>
-        <h2 id="taxpayer-dashboard-services-title" className="text-lg font-semibold text-taxpay-text">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
-        <p className="mt-1 text-sm text-taxpay-muted">{tr('Choose Tax with Return or Other Tax, then select an applicable payment type.','প্রথমে রিটার্নসহ কর অথবা অন্যান্য কর বেছে নিন। এরপর প্রযোজ্য কর পরিশোধের ধরন নির্বাচন করুন।')}</p>
-      </div>
-      <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
-    </section>
+    {serviceShortcut}
     <div className="grid gap-4 lg:grid-cols-[minmax(285px,1fr)_minmax(0,2.1fr)]">
       <section className={card} aria-labelledby="composition-heading">
         <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>
@@ -144,5 +148,6 @@ export const TaxpayerDashboard: React.FC = () => {
       <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another assessment year or category.','অন্য করবর্ষ বা খাত নির্বাচন করুন।'))}</div>}
       <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" onClick={()=>navigate('history')}>{tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')}<ArrowRight size={16}/></button>
     </section>
+    </>}
   </div>;
 };

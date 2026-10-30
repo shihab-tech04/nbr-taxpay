@@ -15,11 +15,15 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
     let unsupported='';
     try{await mod.parseBeneficiaryWorkbook(new File(['TIN,User Name'],'bad.csv',{type:'text/csv'}));}
     catch(error){unsupported=String(error);}
-    return {headerOnlyRows:data.length,spreadsheetBytes:blob.size,unsupported};
+    let legacyXls='';
+    try{await mod.parseBeneficiaryWorkbook(new File(['legacy workbook'],'beneficiaries.xls'));}
+    catch(error){legacyXls=String(error);}
+    return {headerOnlyRows:data.length,spreadsheetBytes:blob.size,unsupported,legacyXls};
   });
   expect(result.headerOnlyRows).toBe(0);
   expect(result.spreadsheetBytes).toBeGreaterThan(500);
   expect(result.unsupported).toContain('.xlsx');
+  expect(result.legacyXls).toContain('Convert older .xls files to .xlsx first');
 });
 
 test('signed-out Beneficiaries action leads to existing real email authentication instead of preview login',async({page})=>{
