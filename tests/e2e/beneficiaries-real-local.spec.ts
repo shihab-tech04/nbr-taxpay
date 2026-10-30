@@ -63,7 +63,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.reload();
   await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
 
-  const read=async token=>{
+  const read=async(token:string)=>{
     const response=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=owner_uid,tin,display_name',api.origin),{
       headers:{apikey:key,Authorization:'Bearer '+token},
     });
