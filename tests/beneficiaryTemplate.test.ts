@@ -11,7 +11,7 @@ test('beneficiary XLSX template has correct ZIP offsets and exactly two column h
   for(let i=bytes.length-22;i>=0;i--){if(u32(i)===0x06054b50){eocd=i;break;}}
   assert.ok(eocd>0,'ZIP end record');
   const count=u16(eocd+10),size=u32(eocd+12),start=u32(eocd+16);
-  assert.equal(count,5);
+  assert.equal(count,6);
   assert.equal(start+size,eocd);
   let pos=start;
   const parts=new Map<string,string>();
@@ -30,4 +30,6 @@ test('beneficiary XLSX template has correct ZIP offsets and exactly two column h
   assert.ok(parts.get('xl/worksheets/sheet1.xml')?.includes('<t>TIN</t>'));
   assert.ok(parts.get('xl/worksheets/sheet1.xml')?.includes('<t>User Name</t>'));
   assert.equal(parts.get('xl/worksheets/sheet1.xml')?.includes('<f>'),false);
+  assert.ok(parts.get('xl/worksheets/sheet1.xml')?.includes('style="1"'),'TIN column must inherit text number format');
+  assert.ok(parts.get('xl/styles.xml')?.includes('numFmtId="49"'),'text formatting preserves leading-zero TIN values');
 });
