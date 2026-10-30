@@ -25,6 +25,7 @@ type Claimed = {
   };
   claimToken: string;
 };
+type CorrectionClaimed = Claimed;
 
 const encoder = new TextEncoder();
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), {
@@ -74,9 +75,25 @@ async function rpc<T>(client: Client, name: string, parameters: Record<string, u
 
 async function dispatch(client: Client, config: BridgeConfig, key: CryptoKey) {
   const claimed = await rpc<Claimed[]>(client, 'payment_v1_internal_claim', { p_limit: 20 });
+  let correctionClaimed: CorrectionClaimed[] = [];
+  if (config.origin === 'TAXPAY_SQL') {
+    try {
+      correctionClaimed = await rpc<CorrectionClaimed[]>(client,
+        'taxpay_correction_internal_claim', { p_limit: 20 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (!/taxpay_correction_internal_claim/i.test(message) ||
+          !/(not found|schema cache|does not exist)/i.test(message)) throw error;
+      console.warn('Correction outbox migration is not installed yet; payment dispatch continues');
+    }
+  }
   let acknowledged = 0;
   let failed = 0;
-  for (const item of claimed) {
+  const deliveries = [
+    ...claimed.map(item => ({ ...item, correction: false })),
+    ...correctionClaimed.map(item => ({ ...item, correction: true })),
+  ];
+  for (const item of deliveries) {
     let errorText: string | null = null;
     let success = false;
     try {
@@ -98,14 +115,21 @@ async function dispatch(client: Client, config: BridgeConfig, key: CryptoKey) {
     } catch (error) {
       errorText = error instanceof Error ? error.message : 'Unknown bridge delivery failure';
     }
-    await rpc<boolean>(client, 'payment_v1_internal_ack', {
-      p_event_id: item.event.eventId, p_claim_token: item.claimToken,
-      p_success: success, p_error: errorText,
-    });
+    if (item.correction) {
+      await rpc<boolean>(client, 'taxpay_correction_internal_ack', {
+        p_event_id: item.event.eventId, p_claim_token: item.claimToken,
+        p_success: success, p_error: errorText,
+      });
+    } else {
+      await rpc<boolean>(client, 'payment_v1_internal_ack', {
+        p_event_id: item.event.eventId, p_claim_token: item.claimToken,
+        p_success: success, p_error: errorText,
+      });
+    }
     if (success) acknowledged += 1;
     else failed += 1;
   }
-  return { claimed: claimed.length, acknowledged, failed };
+  return { claimed: deliveries.length, acknowledged, failed };
 }
 
 Deno.serve(async (request: Request) => {
@@ -134,8 +158,15 @@ Deno.serve(async (request: Request) => {
       if (!event || typeof event !== 'object' || event.origin === config.origin) {
         return json({ error: 'Wrong event origin' }, 400);
       }
-      const stored = await rpc<{ eventId: string; stored: boolean }>(client,
-        'payment_v1_internal_ingest', { p_event: event });
+      if (event.eventType === 'CORRECTION_SUBMITTED' &&
+          (config.origin !== 'OFFICE_SQL' || event.origin !== 'TAXPAY_SQL')) {
+        return json({ error: 'Wrong correction event route' }, 400);
+      }
+      const stored = event.eventType === 'CORRECTION_SUBMITTED'
+        ? await rpc<{ eventId: string; stored: boolean }>(client,
+          'payment_v1_internal_ingest_correction', { p_event: event })
+        : await rpc<{ eventId: string; stored: boolean }>(client,
+          'payment_v1_internal_ingest', { p_event: event });
       return json(stored);
     }
     return json({ error: 'Unknown mode' }, 400);

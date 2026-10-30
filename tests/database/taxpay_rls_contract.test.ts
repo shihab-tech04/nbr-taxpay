@@ -12,6 +12,7 @@ const MIGRATIONS = [
   '202610100005_correction_inquiries.sql',
   '202610100006_correction_change_proposals.sql',
   '202610110001_taxpay_draft_owner_updates.sql',
+  '20261029170000_taxpay_correction_office_readback.sql',
 ];
 
 async function createDatabase() {
@@ -19,6 +20,7 @@ async function createDatabase() {
   await db.exec(`
     CREATE ROLE anon NOLOGIN;
     CREATE ROLE authenticated NOLOGIN;
+    CREATE ROLE service_role NOLOGIN;
     CREATE SCHEMA auth;
     CREATE TABLE auth.users (id uuid PRIMARY KEY, email text UNIQUE NOT NULL);
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
@@ -196,6 +198,130 @@ Deno.test('synthetic authenticated owners are isolated across private drafts, pr
     await expectPgError(db.query('UPDATE public.taxpay_payment_drafts SET memo = $1 WHERE id = $2', ['anonymous edit denied', draftB]), '42501');
     await expectPgError(db.query('SELECT proposal_id FROM public.taxpay_head_change_proposals'), '42501');
     await expectPgError(db.query('SELECT inquiry_id FROM public.taxpay_correction_inquiries'), '42501');
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test('correction submission syncs to a private Office outbox and review states read back without financial mutation', async () => {
+  const db = await createDatabase();
+  const ids = {
+    inquiry: '80000000-0000-4000-8000-000000000001',
+    maker: '80000000-0000-4000-8000-000000000011',
+    reviewer: '80000000-0000-4000-8000-000000000012',
+    approver: '80000000-0000-4000-8000-000000000013',
+    message1: '80000000-0000-4000-8000-000000000021',
+    message2: '80000000-0000-4000-8000-000000000022',
+    message3: '80000000-0000-4000-8000-000000000023',
+    idem1: '80000000-0000-4000-8000-000000000031',
+    idem2: '80000000-0000-4000-8000-000000000032',
+    idem3: '80000000-0000-4000-8000-000000000033',
+  };
+  const asJson = <T,>(value: unknown): T => typeof value === 'string' ? JSON.parse(value) as T : value as T;
+  const command = (input: {
+    messageId: string; action: string; officerUid: string; officerRole: string;
+    idempotencyKey: string; expectedReviewState: string;
+  }) => ({
+    schemaVersion: '1.0.0', commandType: 'CORRECTION_REVIEW',
+    messageId: input.messageId, requestId: ids.inquiry, origin: 'OFFICE_SQL',
+    action: input.action, officerUid: input.officerUid, officerRole: input.officerRole,
+    reason: 'Synthetic independent review note',
+    idempotencyKey: input.idempotencyKey,
+    expectedReviewState: input.expectedReviewState,
+    occurredAt: '2026-10-29T17:00:00.000Z',
+  });
+  const record = async (value: ReturnType<typeof command>) => {
+    const result = await db.query(
+      'SELECT public.taxpay_correction_record_office_decision($1::jsonb) AS result',
+      [JSON.stringify(value)],
+    );
+    return asJson<Record<string, unknown>>(typedRows<{ result: unknown }>(result.rows)[0].result);
+  };
+
+  try {
+    await assumeIdentity(db, 'authenticated', USER_A);
+    const inserted = await db.query(`
+      INSERT INTO public.taxpay_correction_inquiries
+        (requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)
+      VALUES ($1,'SYN-REF-003','Synthetic evidence-pending request',
+        'Review this synthetic payment reference','CIRCLE','Circle A','Circle B')
+      RETURNING inquiry_id,office_review_state,office_review_revision
+    `, [USER_A]);
+    ids.inquiry = typedRows<{ inquiry_id: string }>(inserted.rows)[0].inquiry_id;
+    assert.deepEqual(typedRows<{ inquiry_id: string; office_review_state: string; office_review_revision: number }>(inserted.rows), [
+      { inquiry_id: ids.inquiry, office_review_state: 'PENDING_OFFICER', office_review_revision: 1 },
+    ]);
+    const deniedStateWrite = db.query(
+      'UPDATE public.taxpay_correction_inquiries SET office_review_state=$1 WHERE inquiry_id=$2',
+      ['APPROVER_CLOSED', ids.inquiry],
+    );
+    await expectPgError(deniedStateWrite, '42501');
+
+    await db.exec('RESET ROLE');
+    const outbox = await db.query(`
+      SELECT delivery_state,event_payload FROM payment_sync.correction_outbox WHERE inquiry_id=$1
+    `, [ids.inquiry]);
+    const outboxRow = typedRows<{ delivery_state: string; event_payload: Record<string, unknown> }>(outbox.rows)[0];
+    assert.equal(outboxRow.delivery_state, 'PENDING');
+    assert.equal(outboxRow.event_payload.originalReference, 'SYN-REF-003');
+    assert.equal('requesterUid' in outboxRow.event_payload, false);
+    assert.equal('taxpayerTin' in outboxRow.event_payload, false);
+
+    await db.exec('SET ROLE service_role');
+    const claimedResult = await db.query('SELECT public.taxpay_correction_internal_claim(20) AS result');
+    const claimed = asJson<Array<{ claimToken: string; event: Record<string, unknown> }>>(
+      typedRows<{ result: unknown }>(claimedResult.rows)[0].result,
+    );
+    assert.equal(claimed.length, 1);
+    assert.deepEqual(claimed[0].event, {
+      schemaVersion: '1.0.0', eventId: claimed[0].event.eventId,
+      requestId: ids.inquiry, origin: 'TAXPAY_SQL', eventType: 'CORRECTION_SUBMITTED',
+      revision: 1, occurredAt: claimed[0].event.occurredAt,
+      payload: outboxRow.event_payload,
+    });
+    await db.query(`SELECT public.taxpay_correction_internal_ack($1,$2,true,NULL)`,
+      [claimed[0].event.eventId, claimed[0].claimToken]);
+
+    await db.exec('RESET ROLE');
+    await db.exec("SET ROLE authenticated");
+    await expectPgError(db.query(
+      'SELECT public.taxpay_correction_record_office_decision($1::jsonb)',
+      [JSON.stringify(command({messageId:ids.message1,action:'MAKER_ACKNOWLEDGE',officerUid:ids.maker,
+        officerRole:'MAKER',idempotencyKey:ids.idem1,expectedReviewState:'PENDING_OFFICER'}))],
+    ), '42501');
+    await db.exec('RESET ROLE');
+    await db.exec('SET ROLE service_role');
+
+    const maker = command({messageId:ids.message1,action:'MAKER_ACKNOWLEDGE',officerUid:ids.maker,
+      officerRole:'MAKER',idempotencyKey:ids.idem1,expectedReviewState:'PENDING_OFFICER'});
+    assert.equal((await record(maker)).reviewState, 'MAKER_ACKNOWLEDGED');
+    assert.equal((await record(maker)).duplicate, true);
+    await assert.rejects(record(command({messageId:'80000000-0000-4000-8000-000000000041',
+      action:'REVIEWER_VERIFY',officerUid:ids.maker,officerRole:'REVIEWER',
+      idempotencyKey:'80000000-0000-4000-8000-000000000042',expectedReviewState:'MAKER_ACKNOWLEDGED'})));
+
+    const reviewer = command({messageId:ids.message2,action:'REVIEWER_VERIFY',officerUid:ids.reviewer,
+      officerRole:'REVIEWER',idempotencyKey:ids.idem2,expectedReviewState:'MAKER_ACKNOWLEDGED'});
+    assert.equal((await record(reviewer)).reviewState, 'REVIEWER_VERIFIED');
+    const approver = command({messageId:ids.message3,action:'APPROVER_CLOSE',officerUid:ids.approver,
+      officerRole:'APPROVER',idempotencyKey:ids.idem3,expectedReviewState:'REVIEWER_VERIFIED'});
+    assert.equal((await record(approver)).reviewState, 'APPROVER_CLOSED');
+
+    await db.exec('RESET ROLE');
+    const finalState = await db.query(`
+      SELECT office_review_state,office_review_revision,evidence_state,claimant_verified,
+        original_receipt_verified,may_change_financial_records
+      FROM public.taxpay_correction_inquiries WHERE inquiry_id=$1
+    `, [ids.inquiry]);
+    assert.deepEqual(typedRows<Record<string, unknown>>(finalState.rows), [{
+      office_review_state: 'APPROVER_CLOSED',office_review_revision:4,
+      evidence_state:'PENDING_EVIDENCE',claimant_verified:false,
+      original_receipt_verified:false,may_change_financial_records:false,
+    }]);
+    assert.equal((await db.query(
+      'SELECT count(*) AS count FROM public.taxpay_correction_review_decisions WHERE inquiry_id=$1',
+      [ids.inquiry],
+    )).rows[0].count, 3);
   } finally {
     await db.close();
   }

@@ -15,7 +15,7 @@ type Command = {
   schemaVersion: '1.0.0'; messageId: string; requestId: string;
   origin: Origin; action: string; officerUid: string;
   officerRole: string; reason: string | null; expectedReviewState: string;
-  occurredAt: string;
+  occurredAt: string; commandType?: 'CORRECTION_REVIEW';
 };
 type Claimed = { claimToken: string; command: Command };
 
@@ -77,6 +77,7 @@ async function dispatch(client: Client, config: Config, key: CryptoKey) {
   for (const item of claimed) {
     let success = false;
     let failure: string | null = null;
+    let taxpayReviewState: string | null = null;
     try {
       if (item.command.origin !== 'OFFICE_SQL') throw new Error('Unexpected origin');
       const commandText = JSON.stringify(item.command);
@@ -87,17 +88,31 @@ async function dispatch(client: Client, config: Config, key: CryptoKey) {
         signal: AbortSignal.timeout(12000),
       });
       if (!response.ok) throw new Error(`Receiver HTTP ${response.status}`);
-      const result = await response.json();
+      const result = await response.json() as {
+        stored?: boolean; messageId?: string; reviewState?: string;
+      };
       if (result?.stored !== true || result.messageId !== item.command.messageId)
         throw new Error('Receiver did not confirm persistence');
+      if (item.command.commandType === 'CORRECTION_REVIEW' &&
+          typeof result.reviewState !== 'string')
+        throw new Error('TaxPay did not return correction review readback');
+      if (item.command.commandType === 'CORRECTION_REVIEW')
+        taxpayReviewState = result.reviewState!;
       success = true;
     } catch (error) {
       failure = error instanceof Error ? error.message : 'Delivery failed';
     }
-    await rpc<boolean>(client, 'payment_v1_internal_ack_command', {
-      p_message_id: item.command.messageId, p_claim_token: item.claimToken,
-      p_success: success, p_error: failure,
-    });
+    if (item.command.commandType === 'CORRECTION_REVIEW') {
+      await rpc<boolean>(client, 'payment_v1_internal_ack_correction_command', {
+        p_message_id: item.command.messageId, p_claim_token: item.claimToken,
+        p_success: success, p_review_state: success ? taxpayReviewState : null, p_error: failure,
+      });
+    } else {
+      await rpc<boolean>(client, 'payment_v1_internal_ack_command', {
+        p_message_id: item.command.messageId, p_claim_token: item.claimToken,
+        p_success: success, p_error: failure,
+      });
+    }
     if (success) acknowledged++;
     else failed++;
   }
@@ -129,8 +144,13 @@ Deno.serve(async (request: Request) => {
       const command = JSON.parse(message.commandText);
       if (!command || typeof command !== 'object' || command.origin !== 'OFFICE_SQL')
         return json({ error: 'Wrong command origin' }, 400);
-      const result = await rpc<{messageId: string; stored: boolean}>(
-        client, 'payment_v1_internal_ingest_command', { p_command: command });
+      if (command.commandType !== undefined && command.commandType !== 'CORRECTION_REVIEW')
+        return json({ error: 'Unsupported command type' }, 400);
+      const result = command.commandType === 'CORRECTION_REVIEW'
+        ? await rpc<{messageId: string; stored: boolean; reviewState: string}>(
+          client, 'taxpay_correction_record_office_decision', { p_command: command })
+        : await rpc<{messageId: string; stored: boolean}>(
+          client, 'payment_v1_internal_ingest_command', { p_command: command });
       return json(result);
     }
     return json({ error: 'Unknown mode' }, 400);
