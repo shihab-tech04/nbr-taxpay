@@ -82,6 +82,15 @@ jobs:
             fi
             sleep 2
           done
+          code=$(curl --silent --show-error --include --max-time 10 \
+            --request OPTIONS \
+            --header 'Origin: http://127.0.0.1:4173' \
+            --header 'Access-Control-Request-Method: POST' \
+            --header 'Access-Control-Request-Headers: apikey,content-type,x-taxpay-guest-capability' \
+            http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries 2>&1 || true)
+          echo "Final guest-function preflight response:"
+          echo "$code"
+          echo "Guest Edge Function startup log:"
           cat "$RUNNER_TEMP/guest-beneficiaries-edge.log"
           echo "FAIL: local guest beneficiary Edge Function did not start" >&2
           exit 1
