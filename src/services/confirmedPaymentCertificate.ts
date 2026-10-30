@@ -1,4 +1,5 @@
-import type { ChallanReceipt, PaymentCategory, PaymentLineItem } from '../types/tax';
+import { CATEGORY_LABELS } from '../data/paymentHeads';
+import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 
 /** Both Office and TaxPay link to this same TaxPay receipt route.
  * It reads SQL-confirmed Office records, never browser-local sample receipts. */
@@ -30,7 +31,57 @@ function toItems(value:unknown):PaymentLineItem[]{
     penaltyAmount:numberValue(v.penaltyAmount),surchargeAmount:numberValue(v.surchargeAmount),
     interestAmount:numberValue(v.interestAmount),totalAmount:numberValue(v.totalAmount),
     ...(typeof v.note==='string'?{note:v.note}:{})};
+  }).filter(item=>item.headNameEn.trim().length>0||item.economicCode.trim().length>0||
+   item.taxAmount!==0||item.penaltyAmount!==0||item.surchargeAmount!==0||
+   item.interestAmount!==0||item.totalAmount!==0);
+}
+const validMinorAmount=(value:unknown):value is number=>
+ typeof value==='number'&&Number.isSafeInteger(value)&&value>0;
+const validTin=(value:unknown):value is string=>
+ typeof value==='string'&&/^[0-9]{12,13}$/.test(value);
+
+function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
+ const d=tx.details??{};
+ const lines=Array.isArray(d.lines)
+  ?d.lines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+  :[];
+ const explicit=Array.isArray(d.allocations)
+  ?d.allocations.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)) as Array<Record<string,unknown>>
+  :[];
+ const synthetic=lines.some(line=>typeof line.beneficiary==='string');
+ let items:ReceiptAllocationItem[]=[];
+ if(synthetic){
+  if(explicit.length||lines.some(line=>typeof line.beneficiary!=='string'||
+    !validMinorAmount(line.amountMinor)||!serviceCodes.has(line.category as PaymentCategory)))return undefined;
+  items=lines.map(line=>{
+   const category=line.category as PaymentCategory;
+   const label=CATEGORY_LABELS[category];
+   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:undefined;
+   const name=stringValue(line.beneficiary).trim();
+   return {taxpayerName:name||'—',paymentServiceEn:label.en,
+    paymentServiceBn:label.bn,assessmentYear:stringValue(line.assessmentYear)||stringValue(d.assessmentYear)||'—',
+    amountMinor:line.amountMinor as number,...(tin?{taxpayerTin:tin}:{}),
+    ...(stringValue(line.economicCode)?{economicCode:stringValue(line.economicCode)}:{})};
   });
+ }else if(explicit.length){
+  if(explicit.some(item=>!validTin(item.taxpayerTin)||typeof item.headId!=='number'||
+    !Number.isSafeInteger(item.headId)||!validMinorAmount(item.amountMinor)||
+    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim()))return undefined;
+  items=explicit.map(item=>{
+   const head=lines.find(line=>line.headId===item.headId);
+   const name=stringValue(item.taxpayerName);
+   const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
+   const serviceBn=stringValue(head?.headNameBn).trim()||serviceEn;
+   return {taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
+    taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
+    assessmentYear:stringValue(item.assessmentYear),amountMinor:item.amountMinor as number,
+    ...(stringValue(head?.economicCode)?{economicCode:stringValue(head?.economicCode)}:{})};
+  });
+ }else return undefined;
+ if(!items.length)return undefined;
+ let total=0;
+ for(const item of items){total+=item.amountMinor;if(!Number.isSafeInteger(total))return undefined;}
+ return total===tx.amountMinor?items:undefined;
 }
 /** Validate snapshot against immutable database transaction identity and amount. */
 export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
@@ -57,17 +108,20 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  }
  const category=tx.service as PaymentCategory;
  const total=tx.amountMinor/100;
+ const allocationItems=toAllocationItems(tx);
+ const allocationYears=Array.from(new Set((allocationItems??[])
+  .map(item=>item.assessmentYear).filter(year=>year&&year!=='—')));
  const fallback:ChallanReceipt={
   id:tx.id,paymentTransactionId:tx.id,
   challanNo:stringValue(d.receiptReference)||tx.id,tokenNumber:'—',
-  paymentCategory:category,assessmentYear:stringValue(d.assessmentYear)||'—',
+  paymentCategory:category,assessmentYear:allocationYears.length?allocationYears.join(', '):stringValue(d.assessmentYear)||'—',
   payerName:stringValue(d.payerName)||'—',payerTin:stringValue(d.payerTin)||'—',
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
-  items:toItems(d.lines),totalAmount:total,
+  items:allocationItems?[]:toItems(d.lines),...(allocationItems?{allocationItems}:{}),totalAmount:total,
   paymentMethod:methods.has(method as ChallanReceipt['paymentMethod'])?
    method as ChallanReceipt['paymentMethod']:'SIMULATED',
   gatewayTransactionId:tx.id,treasuryStatus:'GATEWAY_SUCCESS',

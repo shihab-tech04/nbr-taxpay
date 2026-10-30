@@ -732,6 +732,9 @@
 .receipt-view__financial-table th{font-size:14px;text-align:left;white-space:normal}
 .receipt-view__financial-table :is(th,td):nth-child(n+3){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .receipt-view__financial-table tbody td:nth-child(2){min-width:190px;overflow-wrap:anywhere}
+.receipt-view__allocation-table{min-width:620px}
+.receipt-view__allocation-table :is(th,td):nth-child(3){text-align:left;white-space:normal}
+.receipt-view__allocation-table tbody td:first-child{min-width:150px;overflow-wrap:anywhere}
 .receipt-view__financial-table td .font-mono-plex{font-size:14px}
 .receipt-view__financial-table tfoot{background:var(--citizen-primary-light);color:var(--citizen-primary-dark)}
 .receipt-view__financial-table tfoot td{border-bottom:0;font-weight:750}
@@ -759,6 +762,7 @@
  .receipt-view__table{display:block!important;overflow:visible!important}
  .receipt-view__cards{display:none!important}
  .receipt-view__financial-table{min-width:0;font-size:11px}
+ .receipt-view__allocation-table{min-width:0}
  .receipt-view__financial-table :is(th,td){font-size:11px;padding:.4rem}
  .receipt-view__breakdown,.receipt-view__parties{break-inside:avoid}
 }
