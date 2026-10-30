@@ -106,7 +106,7 @@ export function Beneficiaries(){
       const imported=await parseBeneficiaryWorkbook(file);
       if(!imported.length)throw new Error(tr('The Excel file contains no beneficiaries.','এক্সেল ফাইলে কোনো উপকারভোগী নেই।'));
       setRows(imported.map(row=>({...row,selected:true})));setFilename(file.name);
-      setPhase('preview');
+      // Keep the uploaded-file confirmation visible. Next opens the preview.
     }catch(e){setImportError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
