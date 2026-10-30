@@ -89,6 +89,16 @@ export interface PaymentLineItem {
   note?: string;
 }
 
+export interface ReceiptAllocationItem {
+  taxpayerName: string;
+  taxpayerTin?: string;
+  paymentServiceEn: string;
+  paymentServiceBn: string;
+  assessmentYear: string;
+  amountMinor: number;
+  economicCode?: string;
+}
+
 export interface ChallanReceipt {
   id: string;
   taxEventId?: string;
@@ -111,6 +121,8 @@ export interface ChallanReceipt {
   deducteeTin?: string; // If withholding deposit
   deducteeName?: string;
   items: PaymentLineItem[];
+  /** Reconciled SQL allocations for combined payments; absent when source rows do not reconcile. */
+  allocationItems?: ReceiptAllocationItem[];
   totalAmount: number;
   paymentMethod: 'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD' | 'BEFTN_RTGS' | 'INTERNET_BANKING' | 'VISA' | 'MASTERCARD' | 'BANK_BRANCH' | 'SIMULATED';
   gatewayTransactionId: string;

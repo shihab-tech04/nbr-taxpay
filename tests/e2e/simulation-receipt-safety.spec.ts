@@ -78,10 +78,16 @@ test('legacy wizard submits only a synthetic receipt', async ({ page }) => {
   // Local visual-only role enables the old wizard without an authenticated account.
   await page.addInitScript(() => history.replaceState({ taxpayRoute: 'wizard', taxpaySampleRole: 'TAXPAYER_INDIVIDUAL' }, ''));
   await page.goto('/?action=wizard');
+  const progress = page.getByRole('list', { name: 'Payment steps' });
+  await expect(progress.locator('li')).toHaveCount(4);
+  await expect(progress.locator('li[data-progress-status="current"]')).toHaveCount(1);
   await page.getByRole('button', { name: 'Continue to amounts' }).click();
   await page.getByRole('button', { name: 'Continue to review' }).click();
   await page.getByRole('button', { name: /Continue payment/ }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
+  const receiptProgress = page.getByRole('list', { name: 'Payment steps' });
+  await expect(receiptProgress.locator('li')).toHaveCount(4);
+  await expect(receiptProgress.locator('li[data-progress-status="current"]')).toContainText('Receipt');
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
   await expect(page.locator('.receipt-view')).toContainText('No Treasury scroll issued');
@@ -154,4 +160,13 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল রেফারেন্স' : 'Treasury scroll reference');
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued');
   await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
+});
+
+
+test('legacy wizard progress labels include the receipt step in Bengali',async({page})=>{
+ await page.addInitScript(()=>history.replaceState({taxpayRoute:'wizard',taxpaySampleRole:'TAXPAYER_INDIVIDUAL'},''));
+ await page.goto('/?action=wizard&lang=bn');
+ const progress=page.getByRole('list',{name:'পেমেন্টের ধাপ'});
+ await expect(progress.locator('li')).toHaveCount(4);
+ await expect(progress.locator('li').nth(3)).toContainText('রসিদ');
 });
