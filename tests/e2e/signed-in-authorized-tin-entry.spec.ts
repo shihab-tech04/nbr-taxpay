@@ -39,7 +39,10 @@ test('recognized, actively authorized demo TINs are not truncated', async ({ pag
 test('signed-in consent requests wait for verification and explain taxpayer approval', async ({ page }) => {
   let releaseAuthorizationRead!: () => void;
   const authorizationRead = new Promise<void>(resolve => { releaseAuthorizationRead = resolve; });
+  let signalAuthorizationReadStarted!: () => void;
+  const authorizationReadStarted = new Promise<void>(resolve => { signalAuthorizationReadStarted = resolve; });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', async route => {
+    signalAuthorizationReadStarted();
     await authorizationRead;
     await route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ success: true, data: [], simulationOnly: true }) });
@@ -48,6 +51,7 @@ test('signed-in consent requests wait for verification and explain taxpayer appr
   const dialog = await openSignedInOtherTax(page);
   await dialog.locator('#guest-tin').fill('2222222222222');
   const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await authorizationReadStarted;
   await expect(choices.getByText('Checking authorizations…')).toBeVisible();
   await expect(choices.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
 
@@ -133,6 +137,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('.tax-service-choice__continue').click();
+  await expect(dialog.getByTestId('authorized-taxpayer-choices')).toContainText('নতুন ডেমো অনুমোদনের অনুরোধে পেমেন্টের আগে করদাতার সম্মতি প্রয়োজন।');
   const tin = dialog.locator('#guest-tin');
   await tin.fill('1234567890123');
   await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
