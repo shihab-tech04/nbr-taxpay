@@ -8,7 +8,6 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   if (!['localhost', '127.0.0.1', '[::1]'].includes(api.hostname))
     throw new Error('Refusing guest beneficiary acceptance outside loopback Supabase.');
 
-  await page.addInitScript(() => localStorage.clear());
   await page.goto('/?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add single' })).toBeVisible();
