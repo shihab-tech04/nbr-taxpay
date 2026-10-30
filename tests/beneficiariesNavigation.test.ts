@@ -34,3 +34,13 @@ test('all account-private beneficiary rows load beyond the first 1,000 in determ
   assert.deepEqual(await collectBeneficiaryPages(async()=>[]),[]);
   await assert.rejects(collectBeneficiaryPages(async()=>[],0),/page size/);
 });
+
+test('guest Beneficiaries styling is owned by shared citizen components',()=>{
+  const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  const shared=readFileSync('src/styles/taxpay-citizen.css','utf8');
+  const taxpayer=readFileSync('src/styles/taxpay-taxpayer-reference.css','utf8');
+  assert.match(shared,/\.taxpay-citizen-shell\s+\.taxpayer-account-center/);
+  assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
+  assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
+  assert.doesNotMatch(page,/taxpay-auth-(?:primary|outline)/);
+});
