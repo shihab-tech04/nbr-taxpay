@@ -100,7 +100,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await page.goto('/?action=beneficiaries');
   const recordList=info.project.name==='desktop-1280'
     ?page.locator('table:visible tbody')
-    :page.locator('ul[aria-label="Saved beneficiaries"]:visible');
+    :page.locator('[data-testid="beneficiaries-page"] ul:visible');
   const expectRecord=async(name:string)=>expect(recordList.getByText(name,{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
   await expect(page.getByRole('link',{name:/Sign in/})).toHaveCount(0);
