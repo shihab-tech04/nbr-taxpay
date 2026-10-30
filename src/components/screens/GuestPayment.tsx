@@ -35,6 +35,7 @@ import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } fr
 import { clearOtherTaxBatch, confirmedBatchReceipts, createOtherTaxBatch, loadOtherTaxBatch,
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
+import { SavedBeneficiaryPicker } from './SavedBeneficiaryPicker';
 import { SignedInTaxpayerCard, AuthorizedTaxpayerChoices, AccountPaymentSuggestions } from './SignedInPaymentEnhancements';
 import { activeAuthorizedTaxpayers } from '../../services/signedInPaymentContext';
 import { getHostedAuthorizations, userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
@@ -1056,6 +1057,24 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection> : null}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} />}
+            {authenticatedUser && forSelf === false && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
+              onChoose={selected => {
+                clearReferenceSelection();
+                setAuthorizedTaxpayerId(null); // Saving a beneficiary is never a consent grant.
+                const unique=selected.filter((person,index)=>selected.findIndex(p=>p.tin===person.tin)===index);
+                if(otherBatch){
+                  const seen=new Set(batchTaxpayers.map(person=>person.tin).filter(Boolean));
+                  const newcomers=unique.filter(person=>!seen.has(person.tin));
+                  if(!taxpayerTin&&newcomers.length){
+                    const first=newcomers.shift()!;
+                    setTin(first.tin);setOtherTaxpayerName(first.name);
+                  }
+                  if(newcomers.length)setAdditionalTaxpayers(old=>[...old,...newcomers.map(person=>({id:crypto.randomUUID(),tin:person.tin,name:person.name}))]);
+                }else if(unique[0]){
+                  setTin(unique[0].tin);setOtherTaxpayerName(unique[0].name);
+                }
+                clearValidationError();
+              }} />}
             {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={demoConsentActor} language={language}
               selectedTin={taxpayerTin}
               addedTins={otherBatch ? batchTaxpayers.map(person => person.tin).filter(Boolean) : [taxpayerTin]}

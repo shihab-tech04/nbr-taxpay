@@ -15,6 +15,7 @@ import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { PublicReport } from './components/screens/PublicReport';
 import { GuestPayment } from './components/screens/GuestPayment';
+import { Beneficiaries } from './components/screens/Beneficiaries';
 import { TravelTax } from './components/screens/TravelTax';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
 import { TaxPayModal } from './components/ui/TaxPayModal';
@@ -176,6 +177,8 @@ const MainRouter: React.FC = () => {
         return <AccountCenter page="settings" />;
       case 'manage_authorization':
         return <ManageAuthorization />;
+      case 'beneficiaries':
+        return <Beneficiaries />;
       case 'services':
         return <PaymentServicesPage />;
 
