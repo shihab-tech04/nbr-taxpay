@@ -175,7 +175,7 @@ interface GuestPaymentProps {
   initialCategory?: PaymentCategory;
   /** Payer relationship is chosen before service selection in the Pay Tax modal. */
   initialForSelf?: boolean;
-  initialBeneficiary?: { tin: string; name: string };
+  initialBeneficiary?: { tin: string; name: string; additional?: { tin: string; name: string }[] };
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
@@ -197,7 +197,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [tin, setTin] = useState(initialBeneficiary?.tin ?? '');
   const [payerName, setPayerName] = useState('');
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
-  const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>([]);
+  const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
+    (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
+  );
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [phone, setPhone] = useState('');

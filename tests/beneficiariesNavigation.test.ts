@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {ROUTES} from '../src/services/routeContract';
 import {collectBeneficiaryPages} from '../src/services/beneficiaries';
 
-test('guests can find Beneficiaries while authorization remains a distinct account route',()=>{
+test('guests can manage Beneficiaries without being routed into restricted authorization management',()=>{
   for (const path of ['src/components/layout/CitizenNavigation.tsx','src/components/layout/TaxpayerReferenceRail.tsx']) {
     const text=readFileSync(path,'utf8');
     assert.match(text,/\{\s*route:\s*'beneficiaries'/,path);
@@ -12,13 +12,17 @@ test('guests can find Beneficiaries while authorization remains a distinct accou
   const auth=readFileSync('src/components/screens/ManageAuthorization.tsx','utf8');
   assert.ok(auth.includes('Request authorization'));
   const beneficiary=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
-  assert.ok(beneficiary.includes("navigate('manage_authorization')"),'contextual access remains');
   assert.ok(ROUTES.includes('manage_authorization'));
   assert.ok(ROUTES.includes('beneficiaries'));
   const policy=readFileSync('src/services/privateRoutePolicy.ts','utf8');
   assert.doesNotMatch(policy,/['"]beneficiaries['"]/, 'Beneficiaries must not be an account-only route');
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.doesNotMatch(page,/Sign in to manage saved beneficiaries|Sign in with your email/);
+  assert.ok(page.includes("const canManageAuthorizations=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);"));
+  assert.ok(page.includes('{canManageAuthorizations&&<UiButton'));
+  assert.ok(page.includes("onClick={()=>navigate('manage_authorization')"),'account authorization shortcut stays behind the non-guest condition');
+  assert.ok(page.includes('Create list'));
+  assert.ok(page.includes('Search name or TIN'));
   assert.ok(page.includes('Pay Tax for Others'));
 });
 
@@ -35,7 +39,7 @@ test('all account-private beneficiary rows load beyond the first 1,000 in determ
   await assert.rejects(collectBeneficiaryPages(async()=>[],0),/page size/);
 });
 
-test('guest Beneficiaries styling is owned by shared citizen components',()=>{
+test('Beneficiaries uses shared controls without the retired two-card page structure',()=>{
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   const shared=readFileSync('src/styles/taxpay-citizen.css','utf8');
   const taxpayer=readFileSync('src/styles/taxpay-taxpayer-reference.css','utf8');
@@ -44,6 +48,9 @@ test('guest Beneficiaries styling is owned by shared citizen components',()=>{
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-page-heading/);
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
   assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
+  assert.doesNotMatch(page,/TaxpayerPageHeading|taxpayer-account-center|taxpayer-account-panel/);
+  assert.match(page,/md:hidden/);
+  assert.match(page,/md:block/);
   assert.doesNotMatch(page,/taxpay-auth-(?:primary|outline)/);
   assert.doesNotMatch(taxpayer,/--reference-primary-active/);
 });
