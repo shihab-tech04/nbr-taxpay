@@ -69,7 +69,7 @@ try {
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries' })).toBeVisible({ timeout: 30_000 });
+    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(beneficiaries.getByRole('button', { name: 'Use User ID (sample account)' })).toHaveCount(0);
     await expect(beneficiaries.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
     await expect(beneficiaries.getByRole('button', { name: 'Add single' })).toBeVisible();
@@ -90,7 +90,7 @@ try {
       await beneficiaries.getByRole('button', { name: 'বাংলা' }).click();
     }
     await expect(beneficiaries).toHaveURL(/action=beneficiaries.*lang=bn/);
-    await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী' })).toBeVisible();
+    await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী', exact: true })).toBeVisible();
     await expect(beneficiaries.getByRole('button', { name: 'একজন যোগ করুন' })).toBeVisible();
     if (isMobile) {
       await beneficiaries.getByRole('button', { name: 'English' }).click();
@@ -99,7 +99,7 @@ try {
     }
     await expect(beneficiaries).toHaveURL(/action=beneficiaries/);
     await expect(beneficiaries).not.toHaveURL(/lang=bn/);
-    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries' })).toBeVisible();
+    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
     await beneficiaries.close();
 
     // Exercise the *deployed* guest bell without changing hosted payment data.
