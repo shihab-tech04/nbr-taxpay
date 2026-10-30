@@ -227,11 +227,11 @@
     "current_checkpoint": {
       "taxpay_main": "61a7fd4957d24e33790852881e937f3a402d7b0a",
       "office_main": "ba2d0b60070d5bde1b2f598607329e10e11f3307",
-      "issue_230":         {
+      "issue_230":             {
       "url": "https://github.com/shihab-tech04/nbr-taxpay/issues/230",
       "state": "open",
-      "updated_at": "2026-10-30T20:35:59Z",
-      "comments_count": 60,
+      "updated_at": "2026-10-30T20:42:37Z",
+      "comments_count": 61,
       "relevant_comment_ids": [
         6531873727,
         6532005116,
@@ -242,9 +242,10 @@
         6532637630,
         6532696472,
         6532853968,
-        6532939973
+        6532939973,
+        6533053327
       ],
-      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery workflow #41121203954 passed at 61a7fd4957d24e33790852881e937f3a402d7b0a; it is not a hosted Supabase backup/restore. #6532853968 reports Pages version 61a7 published and public-home/Pay Tax-entry readback, but the overall main workflow remains red on the stale WS01-owned verify-live-public-auth.mjs Add single assertion; no payment was submitted. Latest #6532939973 reports #343 exact-head checks and WS05 review passed with no hosted deployment; its hosted backup/restore, migration authorization, schema/function, real officer identity, service-role caller authorization and protected live-acceptance blockers remain. #6532637630 reports synthetic per-item persistence evidence and #289 supersession, not per-story acceptance. WS02 performed no live check."
+      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery, not hosted DB backup/restore. #6532853968 reports Pages deployment/readback but the overall main workflow is red on the stale WS01-owned Add single assertion; no payment was submitted. #6532939973 records #343 exact-head checks/WS05 review PASS with hosted correction-release blockers. Latest #6533053327 reports stale #296/#303/#298 branches would delete the same 16 WS01-owned Beneficiaries files; leave them untouched. Its replacement #345 is draft on current main 61a7fd4957d24e33790852881e937f3a402d7b0a at head 9bd45a2b23b83f2c7d5bb84dd75c33881f1e6c56, changes only App.tsx, ReceiptLookup.tsx, and navigation-integrity E2E (0/16 WS01 paths), and has WS05 source/test review PASS. Refreshed Actions on #345 show Phase 02 and source/receipt recovery successful, with Pages/browser still in progress; no merge/deploy. These are stakeholder/tool status snapshots, not per-story acceptance or WS02 live tests."
     },
       "pr_341": {
         "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/341",
@@ -299,6 +300,60 @@
       ],
       "release_status": "BLOCKED",
       "review_provenance": "WS05 independent source/CI review is reported in issue comment #6532939973 and the refreshed #343 PR body; no formal GitHub review submission or inline thread was present at the fetched review state."
+    },
+    "pr_345":     {
+      "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/345",
+      "state": "open",
+      "merged": false,
+      "draft": true,
+      "base_branch": "main",
+      "base_sha": "61a7fd4957d24e33790852881e937f3a402d7b0a",
+      "head_sha": "9bd45a2b23b83f2c7d5bb84dd75c33881f1e6c56",
+      "changed_paths": [
+        "src/App.tsx",
+        "src/components/screens/ReceiptLookup.tsx",
+        "tests/e2e/navigation-integrity.spec.ts"
+      ],
+      "ws01_beneficiary_path_overlap_count": 0,
+      "stale_frontend_branches_with_16_ws01_conflicts": [
+        296,
+        303,
+        298
+      ],
+      "source_review": "Issue comment #6533053327 reports WS05 reviewed exact source/test scope without a source defect.",
+      "exact_head_workflows": [
+        {
+          "run_id": 41124724223,
+          "name": "TaxPay Phase 02 - disposable Auth, RLS and draft persistence",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41124724223"
+        },
+        {
+          "run_id": 41124724305,
+          "name": "TaxPay - build and GitHub Pages",
+          "status": "in_progress",
+          "conclusion": null,
+          "current_step": "Verify public routes and disconnected backend (13 of 26)",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41124724305"
+        },
+        {
+          "run_id": 41124724347,
+          "name": "Verified pre-release source recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41124724347"
+        },
+        {
+          "run_id": 41124724819,
+          "name": "TaxPay receipt session recovery acceptance",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41124724819"
+        }
+      ],
+      "scope": "Issue comment #6533053327 is the checkpoint for #345 scope and source review. Workflow statuses were refreshed from exact-head GitHub Actions objects; the Pages/browser run remains in progress, so no completion is claimed.",
+      "release_status": "DRAFT_PENDING_PAGES_AND_EXACT_HEAD_QA"
     },
     "test_inventory": {
         "repo_commit": "61a7fd4957d24e33790852881e937f3a402d7b0a",
