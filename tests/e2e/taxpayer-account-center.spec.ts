@@ -1,9 +1,10 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import { expect, test } from '@playwright/test';
 
 test('sample taxpayer can navigate a fictional profile and personal settings without impersonating a login',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','One end-to-end responsive sample journey');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Profile',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Profile',exact:true,level:1})).toBeVisible();
@@ -41,7 +42,7 @@ test('desktop taxpayer rail keeps profile and language above its final sign-out 
   test.skip(info.project.name!=='desktop-1280','Desktop rail tested on 1600px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   const bottom=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button')).toHaveCount(3);

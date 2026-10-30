@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import {expect, test} from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
@@ -104,7 +105,7 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   test.skip(info.project.name!=='desktop-1280','Desktop sidebar is presented above 900px');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   const pay=rail.getByRole('button',{name:'Pay — select payment type'});
   await expect(pay).toBeVisible();
@@ -144,7 +145,7 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   test.skip(info.project.name!=='desktop-1280','Wide desktop payment-entry check');
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await rail.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
@@ -173,7 +174,7 @@ test('desktop guest account access keeps the existing payment type chooser',asyn
 test('taxpayer mobile menu and payment action link to the correct routes in both languages',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Mobile navigation at 375px');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   const open=()=>page.getByRole('button',{name:'Open menu'}).first().click();
   await open();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Activity'}).click();
@@ -188,7 +189,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await expect(page).toHaveURL(/action=ledger/);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await open();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বিজ্ঞপ্তি',exact:true}).click();
@@ -199,7 +200,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
 test('taxpayer mobile menu matches the compact desktop destinations and keeps exit last',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Compact taxpayer menu is exercised at 375px');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   const destinations=[
     ['Home','taxpayer_home'],['Activity','history'],['Tax Ledger','ledger'],
     ['Notifications','account_notifications'],['Profile','account_profile']
@@ -232,7 +233,7 @@ test('unknown destination falls back to Home without leaving an incorrect URL',a
 test('a sample taxpayer preview restores only its own browser-history entry',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
@@ -257,7 +258,7 @@ test('Taxpayer receipt inspection is modal, preserves its deep link and returns 
   // The approved desktop reference rail appears at >=1440px, not at 1280px.
   if(info.project.name==='desktop-1280') await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=history');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Activity',exact:true}).first().click();
   await expect(page).toHaveURL(/action=history/);
   if(page.viewportSize()!.width >= 1440){

@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
@@ -27,7 +28,7 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await page.goto('/?action=ledger');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
 });
@@ -141,8 +142,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     await page.goto('/?action=taxpayer_home');
     // Re-entering the same history entry can retain its visual sample role.
     // A new entry remains gated; both paths must reach the same dashboard.
-    const enterSample = page.getByRole('button',{name:'Explore taxpayer workspace'});
-    if (await enterSample.isVisible()) await enterSample.click();
+    await enterLocalTaxpayerSample(page);
     await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
@@ -220,7 +220,7 @@ test('taxpayer mobile header, compact corners and two-tier full-width menu are a
  test.skip(info.project.name!=='mobile-375','One mobile workflow verifies requested navigation behavior');
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=taxpayer_home');
- await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+ await enterLocalTaxpayerSample(page);
  const header=page.locator('.citizen-header');
  await expect(header.getByRole('button',{name:'Open menu'})).toBeVisible();
  await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();

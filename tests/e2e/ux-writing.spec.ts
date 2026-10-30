@@ -1,9 +1,10 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import { expect, test } from '@playwright/test';
 
 test('taxpayer dashboard uses compact labels, no backend essays and no invented tax balance',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Run full copy journey on one mobile viewport');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Demo',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
@@ -34,7 +35,7 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
 test('tax journey has no fabricated completed legal obligations, dates or Treasury credit',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One navigation and content regression');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Full payment journey'}).click();
   await expect(page.getByRole('heading',{name:'My tax journey'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Saved payment drafts'})).toBeVisible();

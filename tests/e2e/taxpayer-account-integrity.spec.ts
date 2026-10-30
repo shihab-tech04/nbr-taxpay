@@ -1,8 +1,9 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import {expect,test} from '@playwright/test';
 
 test('generic taxpayer preview shows the same payer receipts in dashboard and activity but no invented ledger credits',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'No activity to summarize'})).toHaveCount(0);
   await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
@@ -42,7 +43,7 @@ test('other URL-selected fictional accounts do not inherit shared financial bala
 
 test('sample correction picker never lists another payer and does not claim official submission',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Issues & corrections'}).click();
   await expect(page.getByRole('heading',{name:'Tax Payment Challan Correction Requests'})).toBeVisible();

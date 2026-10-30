@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import { expect, test } from '@playwright/test';
 
 test('Public skip link and FAQ disclosure work with keyboard alone', async ({ page }) => {
@@ -49,7 +50,7 @@ test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return wh
 
 test('Taxpayer dashboard contains two-line section introductions and keyboard-operable filters', async ({ page }) => {
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByText('Taxpayer workspace / Dashboard')).toHaveCount(0);
   await expect(page.getByText('Currently showing assessment year')).toHaveCount(0);
@@ -79,7 +80,7 @@ test('Citizen route matrix never adds static text and containers to the Tab sequ
 test('Scrolled-away mobile header is inert rather than an invisible Tab trap', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  await enterLocalTaxpayerSample(page);
   const header = page.locator('.citizen-header');
   await page.evaluate(() => window.scrollTo(0, 650));
   await expect(header).toHaveAttribute('inert', '');

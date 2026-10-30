@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import {expect,test} from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
@@ -40,7 +41,7 @@ test.describe('read-only citizen screen matrix',()=>{
   for(const [route,choice] of Object.entries(privateRoutes)) {
     test('sample taxpayer '+route+' responsive route',async({page},info)=>{
       await page.goto('/?action=taxpayer_home');
-      await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+      await enterLocalTaxpayerSample(page);
       if(choice.kind==='menu'){
         await page.getByRole('button',{name:'Open menu'}).click();
         await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:choice.button,exact:true}).click();

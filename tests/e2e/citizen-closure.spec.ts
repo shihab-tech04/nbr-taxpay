@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import {expect,test} from '@playwright/test';
 import type { Page } from '@playwright/test';
 
@@ -25,7 +26,7 @@ test('root is a public information hub with a header Login and no payment action
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByText('Recognized TDS / AIT')).toBeVisible();
   await expect(page.getByText(/verified liability and tax credit not connected/i)).toHaveCount(0);
@@ -37,7 +38,7 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
 test('taxpayer mobile home and activity support Bangla without overflows',async({page})=>{
   await page.setViewportSize({width:320,height:740});
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
   await expect(page.getByText(/স্বীকৃত টিডিএস \/ এআইটি/)).toBeVisible();
@@ -52,7 +53,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
 });
 test('sample payment activity retains filtering and does not assert tax-credit owner',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByText('Activity overview',{exact:true})).toBeVisible();
@@ -77,7 +78,7 @@ test('public mobile navigation offers information anchors but no payment initiat
 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
@@ -91,7 +92,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
 
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
 

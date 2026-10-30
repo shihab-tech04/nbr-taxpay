@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
@@ -12,10 +13,8 @@ const exactReference = {
 
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
-  const enter = page.getByRole('button', { name: 'Explore taxpayer workspace' });
+  await enterLocalTaxpayerSample(page);
   const dashboard = page.getByRole('heading', { name: 'Dashboard summary' });
-  await expect(enter.or(dashboard).first()).toBeVisible();
-  if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
   await expect(dashboard).toBeVisible();
 }
@@ -195,7 +194,7 @@ test('private drafts receive reference inputs while backend remains disabled on 
 
 test('taxpayer home and ledger follow the shared Public theme without legacy emerald styling',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   const shell=page.locator('.taxpay-taxpayer-reference');
   await expect(shell).toHaveCount(1);
   await expect(shell).toHaveCSS('background-color',exactReference.background);
@@ -226,7 +225,7 @@ test('Guest retains its original font; signed-in taxpayer uses Sobaike Public No
   const taxpayerFont = await page.locator('.taxpay-taxpayer-reference').evaluate(el => getComputedStyle(el).fontFamily);
   expect(taxpayerFont).toContain('Noto Sans');
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');

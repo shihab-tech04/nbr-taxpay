@@ -1,3 +1,4 @@
+import { enterLocalTaxpayerSample } from './local-taxpayer-sample';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
@@ -88,7 +89,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
 
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  await enterLocalTaxpayerSample(page);
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
@@ -262,7 +263,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
     }) });
   });
   await page.goto('/?action=taxpayer_home');
-  await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  await enterLocalTaxpayerSample(page);
   await page.getByRole('button', { name: 'Pay — select payment type' }).click();
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
