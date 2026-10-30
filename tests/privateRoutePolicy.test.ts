@@ -14,6 +14,13 @@ test('a published visitor must sign in for every private taxpayer route', () => 
   }
 });
 
+test('Beneficiaries is public to guests and does not weaken neighboring account routes', () => {
+  assert.equal(isPrivateTaxpayerRoute('beneficiaries', false), false);
+  assert.equal(requiresTaxpayerSignIn('beneficiaries', false, false, false, 'GUEST'), false);
+  assert.equal(isPrivateTaxpayerRoute('manage_authorization', false), true);
+  assert.equal(requiresTaxpayerSignIn('manage_authorization', false, false, false, 'GUEST'), true);
+});
+
 test('local sample review remains testable, while authorized accounts may enter the shell', () => {
   assert.equal(requiresTaxpayerSignIn('taxpayer_home', false, false, true, 'TAXPAYER_INDIVIDUAL'), false);
   assert.equal(requiresTaxpayerSignIn('taxpayer_home', false, false, true, 'GUEST'), true);

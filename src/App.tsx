@@ -78,7 +78,10 @@ const MainRouter: React.FC = () => {
   const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
-  const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute || currentRoute === 'secure_workspace');
+  const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
+    currentRoute === 'secure_workspace' || (currentRoute === 'beneficiaries' && Boolean(
+      verifiedApplicationUser || (import.meta.env.DEV && taxpayerSession)
+    )));
   const showActivitySections = taxpayerSession && !privateSampleGate && activityRoutes.has(currentRoute);
 
   // Listen to browser URL search params for direct action links (?action=...)
@@ -202,18 +205,16 @@ const MainRouter: React.FC = () => {
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
           <section className="citizen-account-gate">
-            <h1>{currentRoute === 'beneficiaries' ? (language === 'bn' ? 'উপকারভোগী' : 'Beneficiaries') : (language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace')}</h1>
-            <p>{currentRoute === 'beneficiaries'
-              ? (language === 'bn' ? 'উপকারভোগীর তালিকা পরিচালনা করতে ইমেইলের মাধ্যমে সাইন ইন করুন।' : 'Sign in with your email to manage saved beneficiaries.')
-              : (language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.')}</p>
+            <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
+            <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>
             <a className="citizen-account-gate__preview"
               href={`?action=secure_workspace&returnTo=${signInReturnRoute}${language === 'bn' ? '&lang=bn' : ''}`}>
               {language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email'}
             </a>
             {/* Local-only synthetic workspace links retain existing UX regression coverage.
                 The production bundle removes this entire branch; private routes still require
-                verified Supabase Auth, and Beneficiaries never use synthetic preview access. */}
-            {sampleJourneysEnabled && currentRoute !== 'beneficiaries' && <>
+                verified Supabase Auth. */}
+            {sampleJourneysEnabled && <>
               <a className="citizen-account-gate__preview" href={language === 'bn'
                 ? '?action=taxpayer_home&demoUser=user1&lang=bn'
                 : '?action=taxpayer_home&demoUser=user1'}>
@@ -223,9 +224,9 @@ const MainRouter: React.FC = () => {
                 {language === 'bn' ? 'করদাতা ওয়ার্কস্পেস দেখুন' : 'Explore taxpayer workspace'}
               </button>
             </>}
-            {currentRoute !== 'beneficiaries' && <button type="button" onClick={() => navigate('taxpayer_login')}>
+            <button type="button" onClick={() => navigate('taxpayer_login')}>
               {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
-            </button>}
+            </button>
           </section>
         ) : <>
           {renderActiveScreen()}

@@ -383,6 +383,11 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+[functions.taxpay-guest-beneficiaries]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/taxpay-guest-beneficiaries/index.ts"
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
