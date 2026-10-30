@@ -1,5 +1,5 @@
 import React, {useEffect,useMemo,useRef,useState} from 'react';
-import {Check, Download, FileSpreadsheet, Plus, Trash2, Upload, UsersRound} from 'lucide-react';
+import {Check, CreditCard, Download, FileSpreadsheet, Plus, Trash2, Upload, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
@@ -12,8 +12,8 @@ type Phase='upload'|'preview'|'confirm';
 interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 export function Beneficiaries(){
-  const {language,navigate}=useTaxState();
-  const {user}=useAccountIdentity();
+  const {language,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
@@ -36,16 +36,15 @@ export function Beneficiaries(){
   const [editName,setEditName]=useState('');
   const [deleteId,setDeleteId]=useState('');
   const fileRef=useRef<HTMLInputElement>(null);
-  const owner=user?.id;
+  const owner=user?.id??null;
   const reload=async()=>{
-    if(!owner)return;
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
     setActiveList(current=>data.lists.some(x=>x.id===current)?current:(data.lists[0]?.id??''));
   };
   useEffect(()=>{
     let cancelled=false;
-    if(!owner){setLists([]);setPeople([]);return;}
+    if(checkingIdentity)return()=>{cancelled=true;};
     setLoading(true);setError('');
     loadBeneficiaries(owner).then(data=>{
       if(cancelled)return;
@@ -54,7 +53,7 @@ export function Beneficiaries(){
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
-  },[owner]);
+  },[owner,checkingIdentity]);
   const visible=people.filter(person=>person.list_id===activeList);
   const existing=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
   const reviewed=useMemo<ReviewedRow[]>(()=>{
@@ -82,13 +81,11 @@ export function Beneficiaries(){
       if(!list)throw new Error(tr('Choose a valid list.','সঠিক তালিকা নির্বাচন করুন।'));
       return list.id;
     }
-    if(!owner)throw new Error('Sign in to save beneficiaries.');
     const result=await createBeneficiaryList(owner,listName);
     return result.id;
   }
   async function saveSingle(e:React.FormEvent){
     e.preventDefault();
-    if(!owner)return;
     if(!/^\d{12}$/.test(tin)||!name.trim()){setImportError(tr('Enter a valid 12-digit TIN and beneficiary name.','সঠিক ১২ সংখ্যার টিআইএন ও উপকারভোগীর নাম লিখুন।'));return;}
     setBusy(true);setImportError('');
     try{
@@ -111,7 +108,7 @@ export function Beneficiaries(){
     finally{setBusy(false);}
   }
   async function finishImport(){
-    if(!owner||!chosen.length)return;
+    if(!chosen.length)return;
     setBusy(true);setImportError('');
     try{
       const id=await resolveList();
@@ -122,13 +119,11 @@ export function Beneficiaries(){
     finally{setBusy(false);}
   }
   async function rename(person:Beneficiary){
-    if(!owner)return;
     setError('');
     try{await updateBeneficiary(owner,person.id,editName);await reload();setEditId('');}
     catch(e){setError(e instanceof Error?e.message:String(e));}
   }
   async function remove(person:Beneficiary){
-    if(!owner)return;
     setError('');
     try{await removeBeneficiary(owner,person.id);await reload();setDeleteId('');setNotice(tr('Beneficiary removed.','উপকারভোগী সরানো হয়েছে।'));}
     catch(e){setError(e instanceof Error?e.message:String(e));}
@@ -148,17 +143,15 @@ export function Beneficiaries(){
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-base font-bold">{tr('Saved beneficiary lists','সংরক্ষিত উপকারভোগীর তালিকা')}</h2>
           <p className="text-sm text-slate-600">{tr('Saving a beneficiary does not grant access to their private tax information.','উপকারভোগী সংরক্ষণ করলে তাঁর ব্যক্তিগত করতথ্যে প্রবেশাধিকার পাওয়া যায় না।')}</p></div>
-        {owner&&<div className="flex flex-wrap gap-2">
-          <button type="button" className={secondary} onClick={()=>open('single')}><Plus size={16} aria-hidden="true"/> {tr('Add single','একজন যোগ করুন')}</button>
-          <button type="button" className={action} onClick={()=>open('bulk')}><Upload size={16} aria-hidden="true"/> {tr('Bulk add','একাধিক যোগ করুন')}</button>
-        </div>}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={secondary} disabled={checkingIdentity} onClick={()=>open('single')}><Plus size={16} aria-hidden="true"/> {tr('Add single','একজন যোগ করুন')}</button>
+          <button type="button" className={action} disabled={checkingIdentity} onClick={()=>open('bulk')}><Upload size={16} aria-hidden="true"/> {tr('Bulk add','একাধিক যোগ করুন')}</button>
+        </div>
       </div>
-      {!owner&&<div role="status" className="rounded-lg border border-slate-200 p-4">
-        <p>{tr('Sign in to manage saved beneficiaries.','উপকারভোগীর তালিকা পরিচালনা করতে সাইন ইন করুন।')}</p>
-        <button className={action} onClick={()=>navigate('secure_workspace',{returnTo:'beneficiaries'})}>{tr('Sign in with email','ইমেইলে সাইন ইন')}</button>
-      </div>}
+      <p className="text-xs text-slate-600">{tr('Lists are saved in this browser. Clearing site data removes access to guest lists. A signed-in account keeps its own private lists.','তালিকা এই ব্রাউজারে সংরক্ষিত হয়। সাইটের তথ্য মুছে ফেললে অতিথি তালিকায় প্রবেশ হারাবেন। সাইন-ইন করা অ্যাকাউন্টের তালিকা আলাদাভাবে ব্যক্তিগত থাকে।')}</p>
       {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
       {notice&&<p role="status" className="text-sm text-taxpay-primary">{notice}</p>}
+      {checkingIdentity&&<p role="status">{tr('Loading your saved lists…','সংরক্ষিত তালিকা লোড হচ্ছে…')}</p>}
       {loading&&<p role="status">{tr('Loading beneficiaries…','উপকারভোগী লোড হচ্ছে…')}</p>}
       {!!lists.length&&<div className="max-w-sm">
         <label htmlFor="beneficiary-list" className="block mb-1 text-sm font-semibold">{tr('List name','তালিকার নাম')}</label>
@@ -166,7 +159,7 @@ export function Beneficiaries(){
           {lists.map(list=><option value={list.id} key={list.id}>{list.name} ({people.filter(p=>p.list_id===list.id).length})</option>)}
         </select>
       </div>}
-      {owner&&!loading&&(!lists.length||!visible.length)&&<div className="rounded-lg border border-slate-200 p-6 text-center">
+      {!checkingIdentity&&!loading&&(!lists.length||!visible.length)&&<div className="rounded-lg border border-slate-200 p-6 text-center">
         <UsersRound className="mx-auto mb-2 text-slate-500" size={30}/>
         <h3 className="font-semibold">{tr('No beneficiaries in this list','এই তালিকায় কোনো উপকারভোগী নেই')}</h3>
         <p className="text-sm text-slate-600">{tr('Add one taxpayer or import an Excel file.','একজন করদাতা যোগ করুন অথবা এক্সেল ফাইল আমদানি করুন।')}</p>
@@ -180,6 +173,9 @@ export function Beneficiaries(){
             <td className="p-3"><div className="flex flex-wrap justify-end gap-2">
               {editId===person.id?<><button className={secondary} onClick={()=>void rename(person)}>{tr('Save','সংরক্ষণ')}</button><button className={secondary} onClick={()=>setEditId('')}>{tr('Cancel','বাতিল')}</button></>
                 :<button className={secondary} onClick={()=>{setEditId(person.id);setEditName(person.display_name);setDeleteId('');}}>{tr('Edit','সম্পাদনা')}</button>}
+              <button type="button" className={secondary} onClick={()=>{setPaymentBeneficiaryPrefill({tin:person.tin,name:person.display_name});setPaymentServiceChoiceOpen(true);}}>
+                <CreditCard size={16} aria-hidden="true"/> {tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+              </button>
               {deleteId===person.id?<><button className={secondary} onClick={()=>void remove(person)}>{tr('Confirm remove','অপসারণ নিশ্চিত করুন')}</button><button className={secondary} onClick={()=>setDeleteId('')}>{tr('Cancel','বাতিল')}</button></>
                 :<button type="button" className={secondary} onClick={()=>{setDeleteId(person.id);setEditId('');}} aria-label={tr('Remove '+person.display_name,person.display_name+' সরান')}><Trash2 size={16}/></button>}
             </div></td>

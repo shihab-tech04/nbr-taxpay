@@ -3,7 +3,7 @@ import type { UserRole } from '../types/tax';
 const accountRoutes = new Set([
   'taxpayer_home', 'dashboard', 'wizard', 'history', 'ledger', 'journey',
   'certificates', 'corrections', 'notifications', 'account_notifications',
-  'account_profile', 'account_settings', 'manage_authorization', 'beneficiaries', 'services'
+  'account_profile', 'account_settings', 'manage_authorization', 'services'
 ]);
 const reviewOnlySampleRoles = new Set<UserRole>([
   'TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'

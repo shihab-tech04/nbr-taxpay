@@ -22,14 +22,15 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
   expect(result.unsupported).toContain('.xlsx');
 });
 
-test('signed-out Beneficiaries action leads to existing real email authentication instead of preview login',async({page})=>{
+test('signed-out visitors can open Beneficiaries without an email or sample-account gate',async({page})=>{
   await page.goto('/?action=beneficiaries&lang=bn');
   await expect(page.getByRole('heading',{name:'উপকারভোগী'})).toBeVisible();
-  await page.getByRole('link',{name:'ইমেইলে সাইন ইন'}).click();
-  await expect(page).toHaveURL(/action=secure_workspace/);
-  await expect(page).toHaveURL(/returnTo=beneficiaries/);
-  await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('dialog',{name:/Sign In To Your Korbritto Account/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/একজন যোগ করুন/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/একাধিক যোগ করুন/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Pay Tax for Others/})).toHaveCount(0);
+  await expect(page.getByRole('link',{name:/সাইন ইন/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/Use User ID/})).toHaveCount(0);
+  await expect(page).toHaveURL(/action=beneficiaries/);
 });
 
 test('genuine compressed Excel with text TINs parses both rows without losing leading zeros',async({page})=>{

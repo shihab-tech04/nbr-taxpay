@@ -35,9 +35,9 @@ export const TAXPAY_ENTRY_CHOICES = [
 ] as const;
 
 export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
-  const { language, navigate, setPaymentServiceChoiceOpen, previewAccount } = useTaxState();
+  const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
-  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(null);
+  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(paymentBeneficiaryPrefill ? false : null);
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
@@ -46,7 +46,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [decisionStep, setDecisionStep] = useState<1 | 2 | 3>(1);
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [useAccount, setUseAccount] = useState(false);
-  const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
+  const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(paymentBeneficiaryPrefill ? 'guest' : null);
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -215,7 +215,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
          ) : selected === 'TRAVEL_TAX' ? (
           <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
         ) : selected ? (
-          <GuestPayment key={`${selected}-${payerForSelf}`} embedded initialCategory={selected} initialForSelf={payerForSelf ?? undefined} withAccount={useAccount}
+          <GuestPayment key={`${selected}-${payerForSelf}`} embedded initialCategory={selected} initialForSelf={payerForSelf ?? undefined}
+            initialBeneficiary={payerForSelf === false ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}

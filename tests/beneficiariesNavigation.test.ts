@@ -4,11 +4,10 @@ import {readFileSync} from 'node:fs';
 import {ROUTES} from '../src/services/routeContract';
 import {collectBeneficiaryPages} from '../src/services/beneficiaries';
 
-test('beneficiaries replace Authorization in desktop and mobile account navigation without deleting its protected route',()=>{
+test('guests can find Beneficiaries while authorization remains a distinct account route',()=>{
   for (const path of ['src/components/layout/CitizenNavigation.tsx','src/components/layout/TaxpayerReferenceRail.tsx']) {
     const text=readFileSync(path,'utf8');
     assert.match(text,/\{\s*route:\s*'beneficiaries'/,path);
-    assert.doesNotMatch(text,/\{\s*route:\s*'manage_authorization'/,path);
   }
   const auth=readFileSync('src/components/screens/ManageAuthorization.tsx','utf8');
   assert.ok(auth.includes('Request authorization'));
@@ -16,6 +15,11 @@ test('beneficiaries replace Authorization in desktop and mobile account navigati
   assert.ok(beneficiary.includes("navigate('manage_authorization')"),'contextual access remains');
   assert.ok(ROUTES.includes('manage_authorization'));
   assert.ok(ROUTES.includes('beneficiaries'));
+  const policy=readFileSync('src/services/privateRoutePolicy.ts','utf8');
+  assert.doesNotMatch(policy,/['"]beneficiaries['"]/, 'Beneficiaries must not be an account-only route');
+  const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  assert.doesNotMatch(page,/Sign in to manage saved beneficiaries|Sign in with your email/);
+  assert.ok(page.includes('Pay Tax for Others'));
 });
 
 test('all account-private beneficiary rows load beyond the first 1,000 in deterministic pages',async()=>{

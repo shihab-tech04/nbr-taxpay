@@ -9,6 +9,7 @@ type CitizenAction = { route: string; en: string; bn: string; category?: string 
 const guestLinks: CitizenAction[] = [
   { route: 'landing', en: 'Home', bn: 'মূল পাতা' },
   { route: 'verify', en: 'Payment Status', bn: 'পেমেন্টের অবস্থা' },
+  { route: 'beneficiaries', en: 'Beneficiaries', bn: 'উপকারভোগী' },
   { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' }
 ];
 const taxpayerLinks: CitizenAction[] = [
@@ -68,7 +69,7 @@ export function CitizenNavigation() {
     finally { setSigningOut(false); }
   };
   // An application session is sufficient for account navigation, not for tax-credit entitlement.
-  const isTaxpayer = Boolean(applicationUser) || taxpayerRoles.includes(userRole);
+  const isTaxpayer = Boolean(applicationUser) || (import.meta.env.DEV && (Boolean(previewAccount) || taxpayerRoles.includes(userRole)));
   // A guest must never be sent to the protected taxpayer account inbox.
   // The separate public route reads only SQL events for this browser session.
   const notificationRoute = applicationUser || previewAccount ? 'account_notifications' : 'payment_notifications';

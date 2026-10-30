@@ -48,7 +48,7 @@ jobs:
       - name: Start isolated disposable Supabase (no cloud link)
         run: |
           # Intentionally no `supabase link`, project reference, hosted credentials or db push.
-          supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+          supabase start -x studio,imgproxy,realtime,storage-api,logflare,vector,supavisor,postgres-meta
 
       - name: Export only local synthetic API and SQL endpoints
         shell: bash
@@ -64,13 +64,35 @@ jobs:
           grep -q '^TAXPAY_LOCAL_PG_DSN=' "$GITHUB_ENV"
           echo "TAXPAY_LOCAL_RECOVERY_FILE=$RUNNER_TEMP/taxpay-restart-$GITHUB_RUN_ID.json" >> "$GITHUB_ENV"
 
+      - name: Serve capability-scoped guest beneficiary function locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase functions serve taxpay-guest-beneficiaries --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            code=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --request OPTIONS \
+              --header 'Origin: http://127.0.0.1:4173' \
+              --header 'Access-Control-Request-Method: POST' \
+              --header 'Access-Control-Request-Headers: apikey,content-type,x-taxpay-guest-capability' \
+              http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries 2>/dev/null || true)
+            if [ "$code" = 204 ]; then
+              echo "PASS: local guest beneficiary Edge Function is serving with its capability boundary"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/guest-beneficiaries-edge.log"
+          echo "FAIL: local guest beneficiary Edge Function did not start" >&2
+          exit 1
+
       - name: Verify applied migration count and owner-update grants
         shell: bash
         run: |
           set -euo pipefail
           node -e "const u=new URL(process.env.TAXPAY_LOCAL_PG_DSN); if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname))process.exit(1)"
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
-          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 30
+          test "$(psql -X -Atqc 'select count(*) from supabase_migrations.schema_migrations')" = 31
           test "$(psql -X -Atqc "select count(*) from public.taxpay_site_banners")" = 5
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_site_banners'")" = 9
           test "$(psql -X -Atqc "select to_regclass('public.sim_payment_transactions') is not null")" = t
@@ -81,7 +103,12 @@ jobs:
           test "$(psql -X -Atqc "select to_regclass('public.taxpay_beneficiaries') is not null and to_regclass('public.taxpay_beneficiary_lists') is not null")" = t
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename in ('taxpay_beneficiaries','taxpay_beneficiary_lists')")" = 8
           test "$(psql -X -Atqc "select not has_table_privilege('anon','public.taxpay_beneficiaries','SELECT') and not has_table_privilege('anon','public.taxpay_beneficiary_lists','INSERT')")" = t
-          echo "PASS: thirty ordered migrations installed, including private beneficiary owner-scoped lists, corrections, authorization, CMS and owner-update grants"
+          echo "PASS: thirty-one ordered migrations installed, including private account and isolated guest beneficiary storage, corrections, authorization, CMS and owner-update grants"
+
+      - name: Verify capability-scoped guest beneficiary storage and owner isolation
+        run: |
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestBeneficiaryIsolation.sql
 
       - name: Verify TaxPay correction intake, Office review state transitions and owner readback
         run: |
@@ -166,6 +193,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts --project=mobile-375
+
+      - name: Verify guest beneficiary persistence, isolation, XLSX and Pay Tax prefill
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/beneficiaries-guest-real-local.spec.ts --project=mobile-375
 
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:
