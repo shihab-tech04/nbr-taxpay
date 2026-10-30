@@ -200,15 +200,21 @@ const MainRouter: React.FC = () => {
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
           <section className="citizen-account-gate">
-            <h1>{language === "bn" ? "করদাতার ব্যক্তিগত তথ্য" : "Private taxpayer workspace"}</h1>
-            <p>{sampleJourneysEnabled ? (language === "bn" ? "করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।" : "Explore the taxpayer payment screens and activity.") : (language === 'bn' ? 'আপনার অ্যাকাউন্টে প্রবেশ করতে সাইন ইন করুন।' : 'Sign in to access your taxpayer account.')}</p>
+            <h1>{currentRoute === 'beneficiaries' ? (language === 'bn' ? 'উপকারভোগী' : 'Beneficiaries') : (language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace')}</h1>
+            <p>{currentRoute === 'beneficiaries'
+              ? (language === 'bn' ? 'উপকারভোগীর তালিকা পরিচালনা করতে ইমেইলের মাধ্যমে সাইন ইন করুন।' : 'Sign in with your email to manage saved beneficiaries.')
+              : sampleJourneysEnabled ? (language === 'bn' ? 'করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।' : 'Explore the taxpayer payment screens and activity.') : (language === 'bn' ? 'আপনার অ্যাকাউন্টে প্রবেশ করতে সাইন ইন করুন।' : 'Sign in to access your taxpayer account.')}</p>
             {sampleJourneysEnabled && <a className="citizen-account-gate__preview" href={language === 'bn'
               ? '?action=taxpayer_home&demoUser=user1&lang=bn'
               : '?action=taxpayer_home&demoUser=user1'}>
               {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
             </a>}
             {sampleJourneysEnabled ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
-              <button type="button" onClick={() => navigate('taxpayer_login')}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</button>}
+              <button type="button" onClick={() => currentRoute === 'beneficiaries'
+                ? navigate('secure_workspace', {returnTo:'beneficiaries'})
+                : navigate('taxpayer_login')}>{currentRoute === 'beneficiaries'
+                  ? (language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email')
+                  : (language === 'bn' ? 'সাইন ইন' : 'Sign in')}</button>}
           </section>
         ) : <>
           {renderActiveScreen()}
