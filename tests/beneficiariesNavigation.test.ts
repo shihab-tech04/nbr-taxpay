@@ -43,4 +43,5 @@ test('guest Beneficiaries styling is owned by shared citizen components',()=>{
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
   assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
   assert.doesNotMatch(page,/taxpay-auth-(?:primary|outline)/);
+  assert.doesNotMatch(taxpayer,/--reference-primary-active/);
 });
