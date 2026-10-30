@@ -1,4 +1,5 @@
 import { DRAFT_CATEGORIES, type DraftCategory } from './draftValidation';
+import { safePrivateAuthReturnRoute } from './routeContract';
 
 /** Browser navigation and application-account protections. Never confers eTIN or tax officer authority. */
 /** Only approved planning categories may cross the auth redirect. Do not put amount, TIN or payer details in a URL. */
@@ -24,7 +25,7 @@ export function authRedirectUrl(origin: string, basePath: string, category?: Dra
       basePath.includes('?') || basePath.includes('#') || !basePath.endsWith('/')) {
     throw new Error('Invalid authentication redirect base path');
   }
-  const destination = returnTo === 'beneficiaries' ? 'beneficiaries' : 'secure_workspace';
+  const destination = safePrivateAuthReturnRoute(returnTo) ?? 'secure_workspace';
   const redirect = new URL(origin.replace(/\/$/, '') + basePath + '?action=' + destination);
   if (destination === 'secure_workspace' && category && Object.prototype.hasOwnProperty.call(DRAFT_CATEGORIES, category)) {
     redirect.searchParams.set('draftCategory', category);
