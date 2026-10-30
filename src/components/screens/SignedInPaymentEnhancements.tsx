@@ -5,6 +5,7 @@ import { getDemoUser, type DemoUserId } from '../../data/demoUsers';
 import { getHostedAuthorizations, performHostedAuthorization, userIdForHostedTin, type HostedAuthorization } from '../../services/hostedDemoAuthorizations';
 import { useDemoSqlProfileAndServiceRecords, type DemoServiceCode } from '../../services/demoSqlProfiles';
 import { activeAuthorizedTaxpayers, accountPaymentSuggestions } from '../../services/signedInPaymentContext';
+import type {PaymentSuggestion,PaymentSuggestionMode} from '../../services/signedInPaymentContext';
 
 const title: Record<DemoServiceCode, { en: string; bn: string }> = {
   TAX_WITH_RETURN: { en: 'Tax with Return', bn: 'রিটার্নসহ কর' },
@@ -151,36 +152,50 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
   </section>;
 }
 
-/** The SQL fixture shows prior activity, not legally payable amounts or credit. */
-export function AccountPaymentSuggestions({ userId, language, mode, onChoose }: {
-  userId: DemoUserId | null; language: Language; mode: 'TAX_WITH_RETURN' | 'OTHER_TAX_PAYMENT';
-  onChoose?: (code: DemoServiceCode) => void;
+/** Scenario history can suggest category/year, but cannot establish a current liability. */
+export function AccountPaymentSuggestions({ userId, language, mode, taxpayerLabel, onChoose }: {
+  userId: DemoUserId | null; language: Language; mode: PaymentSuggestionMode;
+  taxpayerLabel?: string;
+  onChoose?: (suggestion:PaymentSuggestion) => void;
 }) {
   const data = useDemoSqlProfileAndServiceRecords(userId);
-  const suggestions = data.userId === userId && data.status === 'ready'
-    ? accountPaymentSuggestions(data.records, mode) : [];
+  const suggestions = userId && data.userId === userId && data.status === 'ready'
+    ? accountPaymentSuggestions(data.records, mode, userId) : [];
   const tr = (en: string, bn: string) => language === 'bn' ? bn : en;
-  if (!userId || (data.status === 'ready' && suggestions.length === 0)) return null;
   return <section className="mb-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4"
     aria-label={tr('Payment suggestions', 'পরিশোধের পরামর্শ')} data-testid="payment-suggestions">
-    <h3 className="text-sm font-semibold text-taxpay-text">{tr('Suggested payment heads', 'প্রস্তাবিত পেমেন্ট খাত')}</h3>
-    <p className="mt-1 text-xs text-slate-600">{tr('Based on earlier records. Choose a head only if it applies to this payment.', 'আগের রেকর্ড অনুযায়ী। এই পেমেন্টে প্রযোজ্য হলে খাত নির্বাচন করুন।')}</p>
+    <h3 className="text-sm font-semibold text-taxpay-text">{tr('Payment suggestions from scenario history', 'সিনারিও ইতিহাস থেকে পেমেন্টের পরামর্শ')}</h3>
+    {taxpayerLabel && <p className="mt-1 text-xs font-medium text-slate-700">{tr('For taxpayer: ', 'করদাতা: ')}{taxpayerLabel}</p>}
+    <p className="mt-1 text-xs text-slate-600">{tr('Scenario records suggest category and year only; they provide no current payable amount, exact head or NBR reference. Confirm the head and enter any current reference and amount yourself.', 'সিনারিও রেকর্ড শুধু খাত ও করবর্ষের ইঙ্গিত দেয়; এতে বর্তমান প্রদেয় পরিমাণ, নির্দিষ্ট খাত বা এনবিআর রেফারেন্স নেই। খাত নিশ্চিত করে বর্তমান রেফারেন্স ও পরিমাণ নিজে লিখুন।')}</p>
     {data.status === 'loading' && <p className="mt-2 text-sm text-slate-600">{tr('Loading account records…', 'অ্যাকাউন্টের রেকর্ড লোড হচ্ছে…')}</p>}
     {data.status === 'error' && <p className="mt-2 text-sm text-slate-600">{tr('Record suggestions are unavailable. Continue by choosing a payment head below.', 'রেকর্ডভিত্তিক পরামর্শ পাওয়া যাচ্ছে না। নিচে পরিশোধ খাত নির্বাচন করুন।')}</p>}
+    {!userId&&<p className="mt-2 rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm text-slate-600" role="status">
+      {tr('No approved scenario taxpayer profile is linked to this application account. Choose a payment head manually.', 'এই অ্যাপ অ্যাকাউন্টে কোনো অনুমোদিত সিনারিও করদাতা প্রোফাইল সংযুক্ত নেই। নিজে পেমেন্ট খাত নির্বাচন করুন।')}
+    </p>}
+    {data.status === 'ready' && userId && !data.profile && <p role="status" className="mt-2 text-sm text-slate-600">
+      {tr('No scenario taxpayer profile is available. Choose a payment head manually.', 'কোনো সিনারিও করদাতা প্রোফাইল নেই। নিজে পেমেন্ট খাত নির্বাচন করুন।')}
+    </p>}
+    {data.status === 'ready' && userId && data.profile && <p className="mt-2 text-xs text-slate-600" data-testid="payment-suggestion-taxpayer">
+      {tr('Scenario profile: ', 'সিনারিও প্রোফাইল: ')}{language === 'bn' ? data.profile.nameBn || userId : data.profile.nameEn || userId}
+    </p>}
     {suggestions.length > 0 && <ul className="mt-3 grid list-none gap-2">
       {suggestions.map(suggestion => <li key={suggestion.serviceCode} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-800">{title[suggestion.serviceCode][language]}</p>
+          <p className="mt-1 text-xs text-slate-600">{tr('Scenario record: ','সিনারিও রেকর্ড: ')}<span className="font-mono">{suggestion.recordId}</span></p>
           <p className="mt-1 text-xs text-slate-600">{suggestion.requiresReview
             ? tr('Check the existing record before paying again.', 'আবার পরিশোধের আগে আগের রেকর্ডটি দেখুন।')
             : tr('Previously selected. Choose again if applicable.', 'আগে নির্বাচিত হয়েছিল। প্রযোজ্য হলে আবার বেছে নিন।')}
             {suggestion.assessmentYear ? ` · ${suggestion.assessmentYear}` : ''}
           </p>
         </div>
-        {!suggestion.requiresReview && onChoose && <button type="button" onClick={() => onChoose(suggestion.serviceCode)}
+        {!suggestion.requiresReview && onChoose && <button type="button" onClick={() => onChoose(suggestion)}
           className="min-h-10 rounded-lg border border-taxpay-primary px-3 text-xs font-semibold text-taxpay-primary hover:bg-blue-50">
-          {tr('View payment heads', 'পেমেন্ট খাত দেখুন')}</button>}
+          {tr('Use service and year', 'সেবা ও করবর্ষ ব্যবহার করুন')}</button>}
       </li>)}
     </ul>}
+    {data.status === 'ready' && userId && data.profile && suggestions.length === 0 && <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm text-slate-600" role="status">
+      {tr('No matching scenario history is available for this service. Choose a payment head manually.', 'এই সেবার কোনো মিল থাকা সিনারিও ইতিহাস নেই। নিজে পেমেন্ট খাত নির্বাচন করুন।')}
+    </p>}
   </section>;
 }
