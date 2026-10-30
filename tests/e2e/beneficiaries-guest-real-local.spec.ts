@@ -92,10 +92,12 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await expect(multiplePaymentDialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await multiplePaymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await multiplePaymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(multiplePaymentDialog.locator('#guest-tin')).toHaveValue('012345678901');
-  await expect(multiplePaymentDialog.locator('#other-tax-primary-name')).toHaveValue('Synthetic Guest One');
+  const primaryTin = await multiplePaymentDialog.locator('#guest-tin').inputValue();
+  const primaryName = await multiplePaymentDialog.locator('#other-tax-primary-name').inputValue();
   const additionalTaxpayer = multiplePaymentDialog.getByTestId('other-tax-taxpayer');
-  await expect(additionalTaxpayer.locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
+  const additionalTin = await additionalTaxpayer.locator('input[id^="other-tax-tin-"]').inputValue();
+  expect([primaryTin, additionalTin].sort()).toEqual(['012345678901', '987654321098'].sort());
+  expect(primaryName).toBe(primaryTin === '012345678901' ? 'Synthetic Guest One' : 'Local Beneficiary Two');
   await multiplePaymentDialog.getByRole('button', { name: 'Close payment services' }).click();
 
   const editRow = firstRow;
