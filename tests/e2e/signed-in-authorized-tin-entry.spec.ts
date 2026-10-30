@@ -36,6 +36,26 @@ test('recognized, actively authorized demo TINs are not truncated', async ({ pag
   await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
 });
 
+test('signed-in consent requests wait for verification and explain taxpayer approval', async ({ page }) => {
+  let releaseAuthorizationRead!: () => void;
+  const authorizationRead = new Promise<void>(resolve => { releaseAuthorizationRead = resolve; });
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', async route => {
+    await authorizationRead;
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, data: [], simulationOnly: true }) });
+  });
+
+  const dialog = await openSignedInOtherTax(page);
+  await dialog.locator('#guest-tin').fill('2222222222222');
+  const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await expect(choices.getByText('Checking authorizations…')).toBeVisible();
+  await expect(choices.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
+
+  releaseAuthorizationRead();
+  await expect(choices.getByText('New demo authorization requests require the taxpayer’s approval before you can pay.')).toBeVisible();
+  await expect(choices.getByRole('button', { name: 'Request authorization for this TIN' })).toBeVisible();
+});
+
 test('the single-beneficiary service also accepts an authorized fictional TIN', async ({ page }) => {
   await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
   const dialog = await openSignedInOtherTax(page, 'TAX_WITH_RETURN');
@@ -76,6 +96,7 @@ test('an authorization read failure prevents continuing', async ({ page }) => {
   const dialog = await openSignedInOtherTax(page);
   await dialog.locator('#guest-tin').fill('2222222222222');
   await expect(dialog.getByText(/Authorizations could not be verified/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText(/Authorization could not be verified/)).toBeVisible();
 });
