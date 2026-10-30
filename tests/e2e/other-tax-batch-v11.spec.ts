@@ -49,6 +49,49 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
   await expect(batch.getByRole('checkbox', { name: /Select 19AAAAA/ })).toBeDisabled();
 });
 
+test('all five Other Tax groups keep an editable year and amount through payment review', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+
+  const batch = dialog.getByTestId('other-tax-batch');
+  const groupNames = ['Advance Tax', 'Tax against Demand', 'Penalty', 'Appellate Tribunal', 'Others'];
+  const years = ['2027-28', '2026-27', '2025-26', '2024-25', '2027-28'];
+  for (let index = 0; index < groupNames.length; index += 1) {
+    const group = batch.locator(`[data-head-group="${groupNames[index]}"]`);
+    await group.locator('summary').click();
+    const candidates = group.getByRole('checkbox');
+    let selected = false;
+    for (let candidate = 0; candidate < await candidates.count(); candidate += 1) {
+      const checkbox = candidates.nth(candidate);
+      if (await checkbox.isEnabled()) {
+        await checkbox.check();
+        selected = true;
+        break;
+      }
+    }
+    expect(selected, `${groupNames[index]} must have a selectable head`).toBe(true);
+    const line = batch.getByTestId('other-tax-line').nth(index);
+    await line.locator('select[id^="other-tax-year"]').selectOption(years[index]);
+    await line.locator('input[id^="other-tax-amount"]').fill(String((index + 1) * 10));
+  }
+
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(5);
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 150');
+  for (let index = 0; index < groupNames.length; index += 1) {
+    const line = batch.getByTestId('other-tax-line').nth(index);
+    await expect(line.locator('select[id^="other-tax-year"]')).toHaveValue(years[index]);
+    await expect(line.locator('input[id^="other-tax-amount"]')).toHaveValue(String((index + 1) * 10));
+  }
+
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await expect(dialog.getByTestId('payment-review')).toBeVisible();
+  await expect(dialog.getByTestId('payment-review')).toContainText('BDT 150');
+  for (const year of [...new Set(years)]) await expect(dialog.getByTestId('payment-review')).toContainText(year);
+});
+
 test('switching taxpayer preserves each person’s head, year and amount without a target dropdown', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
@@ -88,6 +131,66 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await dialog.getByRole('button', { name: 'Yes, remove' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 1,000');
+});
+
+test('three taxpayers keep separate heads, years and amounts through combined review', async ({ page }) => {
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  for (const [tin, name] of [['222222222222', 'Taxpayer Beta'], ['333333333333', 'Taxpayer Gamma']]) {
+    await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+    const next = dialog.getByTestId('other-tax-taxpayer').last();
+    await next.locator('input[id^="other-tax-tin"]').fill(tin);
+    await next.locator('input[id^="other-tax-name"]').fill(name);
+  }
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+
+  const batch = dialog.getByTestId('other-tax-batch');
+  const tabs = batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
+  await expect(tabs).toHaveCount(3);
+  const plans = [
+    { group: 'Advance Tax', year: '2027-28', amount: '15' },
+    { group: 'Tax against Demand', year: '2025-26', amount: '25' },
+    { group: 'Penalty', year: '2024-25', amount: '35' },
+  ];
+  for (let index = 0; index < plans.length; index += 1) {
+    await tabs.nth(index).click();
+    const group = batch.locator(`[data-head-group="${plans[index].group}"]`);
+    await group.locator('summary').click();
+    const candidates = group.getByRole('checkbox');
+    let selected = false;
+    for (let candidate = 0; candidate < await candidates.count(); candidate += 1) {
+      const checkbox = candidates.nth(candidate);
+      if (await checkbox.isEnabled()) {
+        await checkbox.check();
+        selected = true;
+        break;
+      }
+    }
+    expect(selected, `${plans[index].group} must have a selectable head`).toBe(true);
+    const line = batch.getByTestId('other-tax-line').first();
+    await line.locator('select[id^="other-tax-year"]').selectOption(plans[index].year);
+    await line.locator('input[id^="other-tax-amount"]').fill(plans[index].amount);
+  }
+
+  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 75');
+  for (let index = 0; index < plans.length; index += 1) {
+    await tabs.nth(index).click();
+    const line = batch.getByTestId('other-tax-line').first();
+    await expect(line.locator('select[id^="other-tax-year"]')).toHaveValue(plans[index].year);
+    await expect(line.locator('input[id^="other-tax-amount"]')).toHaveValue(plans[index].amount);
+  }
+
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  const review = dialog.getByTestId('payment-review');
+  const calculation = review.getByTestId('grouped-taxpayer-calculation');
+  await expect(calculation.locator('details')).toHaveCount(3);
+  await expect(calculation).toContainText('111111111111');
+  await expect(calculation).toContainText('Taxpayer Beta');
+  await expect(calculation).toContainText('Taxpayer Gamma');
+  await expect(review.locator('.payment-form-summary__total')).toHaveText('BDT 75');
+  for (const plan of plans) await expect(review).toContainText(plan.year);
 });
 
 test('other-tax allocations create individual records with their own receipts', async ({ page }) => {

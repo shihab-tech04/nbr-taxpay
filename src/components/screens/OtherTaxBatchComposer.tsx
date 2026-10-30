@@ -40,12 +40,13 @@ type Props = {
   language: Language;
   taxpayers: OtherTaxTaxpayer[];
   lines: OtherTaxAllocation[];
+  suggestedAssessmentYears?: Readonly<Record<string,string>>;
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, error, summary }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAssessmentYears, onChange, error, summary }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -87,7 +88,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
     } else if (!lines.some(line => line.taxpayerId === activeId && line.headId === headId)) {
       onChange([...lines, {
         id: crypto.randomUUID(), taxpayerId: activeId, headId,
-        assessmentYear: '2026-27', amount: '',
+        assessmentYear: OTHER_TAX_YEARS.some(year=>year===suggestedAssessmentYears?.[activeId])
+          ? suggestedAssessmentYears![activeId] : '2026-27', amount: '',
       }]);
     }
   };
@@ -119,7 +121,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
                   const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
                   const noHead = firstMissingTaxpayer?.id === person.id && !firstInvalid;
                   return <button key={person.id} type="button"
-                    aria-pressed={active} onClick={() => setActiveTaxpayer(person.id)}
+                    aria-pressed={active} data-taxpayer-id={person.id} onClick={() => setActiveTaxpayer(person.id)}
                     className={`min-h-11 rounded-lg border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ${noHead ? 'border-rose-400 bg-rose-50 text-taxpay-dark' : active
                       ? 'border-taxpay-primary bg-blue-50 text-taxpay-dark font-semibold'
                       : 'border-slate-300 bg-white text-slate-700'}`}>
@@ -133,6 +135,11 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, onChange, er
               {taxpayers.length > 1 && <p className="mt-2 text-xs text-slate-600">
                 {tx('Switch taxpayers here to select different heads. Other taxpayers’ selections are preserved.',
                   'অন্য করদাতার খাত নির্বাচন করতে এখানে করদাতা বদলান। পূর্বের নির্বাচন অপরিবর্তিত থাকবে।')}
+              </p>}
+              {activeId&&OTHER_TAX_YEARS.some(year=>year===suggestedAssessmentYears?.[activeId])&&<p className="mt-2 text-xs text-taxpay-primary" role="note" data-testid="suggested-taxpayer-year">
+                {tx('This taxpayer’s previous scenario year will be used for new head selections. You can edit each line.',
+                  'এই করদাতার আগের সিনারিও করবর্ষ নতুন খাত নির্বাচনে ব্যবহৃত হবে। প্রতিটি সারির করবর্ষ সম্পাদনা করতে পারবেন।')}
+                {' '}{suggestedAssessmentYears?.[activeId]}
               </p>}
             </div>
             <div>
