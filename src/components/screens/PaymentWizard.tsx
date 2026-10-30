@@ -22,7 +22,7 @@ import {getStorySessionId,persistSimulatedPayment} from '../../services/simulate
 const COPY = {
   en: {
     title: 'Income tax payment', eyebrow: 'Payment details', taxpayer: 'Taxpayer', step: 'Step', of: 'of',
-    stages: ['Category and head', 'Amount breakdown', 'Review'],
+    stages: ['Category and head', 'Amount breakdown', 'Review', 'Receipt'],
     year: 'Assessment year', category: 'Payment category', head: 'Select a payment head', search: 'Filter by code or title', review: 'Review payment details',
     blocked: 'Unavailable for review', unverified: 'Under review', act: 'Act reference', legacy: 'Legacy reference', note: 'Note',
     continueAmounts: 'Continue to amounts', continueReview: 'Continue to review', back: 'Back',
@@ -36,7 +36,7 @@ const COPY = {
   },
   bn: {
     title: 'আয়কর পরিশোধ', eyebrow: 'পেমেন্টের তথ্য', taxpayer: 'করদাতা', step: 'ধাপ', of: '/',
-    stages: ['কর পরিশোধের ধরন ও খাত', 'পরিমাণের বিবরণ', 'পর্যালোচনা'],
+    stages: ['কর পরিশোধের ধরন ও খাত', 'পরিমাণের বিবরণ', 'পর্যালোচনা', 'রসিদ'],
     year: 'করবর্ষ', category: 'কর পরিশোধের ধরন', head: 'কর পরিশোধের খাত বাছুন', search: 'কোড বা শিরোনাম দিয়ে খুঁজুন', review: 'পেমেন্টের তথ্য পর্যালোচনা',
     blocked: 'পর্যালোচনা চলায় অনুপলব্ধ', unverified: 'পর্যালোচনাধীন', act: 'আইনের ধারা', legacy: 'পুরোনো রেফারেন্স', note: 'নোট',
     continueAmounts: 'পরিমাণে এগিয়ে যান', continueReview: 'পর্যালোচনায় এগিয়ে যান', back: 'ফিরে যান',
@@ -55,6 +55,36 @@ export const PaymentWizard: React.FC = () => {
   const {user:authenticatedUser}=useAccountIdentity();
   const bn = language === 'bn';
   const t = COPY[language];
+  const renderProgress = (currentStep: number) => (
+    <div>
+      {currentStep === 4 && (
+        <div className="mb-2 flex justify-end">
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+            {t.step} 4 {t.of} 4
+          </span>
+        </div>
+      )}
+      <ol aria-label={bn ? 'পেমেন্টের ধাপ' : 'Payment steps'}
+        className="mb-6 grid grid-cols-2 gap-2 text-center text-sm font-semibold sm:grid-cols-4">
+        {t.stages.map((label, index) => {
+          const stepNumber = index + 1;
+          const status = stepNumber < currentStep ? 'complete' : stepNumber === currentStep ? 'current' : 'upcoming';
+          return (
+            <li key={stepNumber} data-progress-status={status}
+              aria-current={status === 'current' ? 'step' : undefined}
+              className={`min-w-0 rounded border p-2 ${status === 'current'
+                ? 'bg-taxpay-primary text-white border-taxpay-primary'
+                : status === 'complete'
+                  ? 'bg-taxpay-light text-taxpay-dark border-taxpay-primary'
+                  : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+              {stepNumber}. {label}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+
   // Avoid presenting the old Ordinance payment-head code as a current Income Tax Act section.
   // The correct current-law section depends on filing facts, not AY alone.
   const returnLawLabel = bn
@@ -235,6 +265,7 @@ export const PaymentWizard: React.FC = () => {
           footer={<></>}
           onClose={() => navigate('taxpayer_home')}
         >
+          {renderProgress(4)}
           <ReceiptView receipt={createdReceipt} embedded />
         </TaxPayModal>
       </div>
@@ -257,22 +288,11 @@ export const PaymentWizard: React.FC = () => {
             </p>
           </div>
           <span className="text-sm px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            {t.step} {step} {t.of} 3
+            {t.step} {step} {t.of} 4
           </span>
         </div>
 
-        {/* Stepper Header */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm font-semibold text-center mb-6" aria-label={bn ? 'পেমেন্টের ধাপ' : 'Payment steps'}>
-          <div aria-current={step === 1 ? 'step' : undefined} className={`p-2 rounded border ${step >= 1 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            1. {t.stages[0]}
-          </div>
-          <div aria-current={step === 2 ? 'step' : undefined} className={`p-2 rounded border ${step >= 2 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            2. {t.stages[1]}
-          </div>
-          <div aria-current={step === 3 ? 'step' : undefined} className={`p-2 rounded border ${step >= 3 ? 'bg-taxpay-primary text-white border-taxpay-primary' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-            3. {t.stages[2]}
-          </div>
-        </div>
+        {renderProgress(step)}
 
         {errorMessage && (
           <div id="wizard-error" role="alert" aria-live="assertive" aria-atomic="true" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-2">

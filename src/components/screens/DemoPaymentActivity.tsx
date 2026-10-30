@@ -196,11 +196,13 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     {activityTabs && <TaxpayerActivityTabs />}
 
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
-      <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Make payment','পেমেন্ট'),txt('Review','পর্যালোচনা'),txt('Result','ফলাফল')].map((name,index)=>
-          <li key={name} aria-current={(paymentStage===0&&index===0)||(paymentStage===1&&index===1)||(paymentStage===2&&index===2)||(paymentStage===3&&index===4)?'step':undefined}
-            className={`rounded-lg border px-3 py-3 text-xs font-semibold ${(paymentStage===0&&index===0)||(paymentStage===1&&index===1)||(paymentStage===2&&(index===2||index===3))||(paymentStage===3&&index===4)?'border-taxpay-primary bg-taxpay-primary text-white':'border-taxpay-border bg-slate-50 text-taxpay-muted'}`}>
-            {index+1}. {name}</li>)}
+      <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Payment and review','পেমেন্ট ও পর্যালোচনা'),txt('Result','ফলাফল')].map((name,index)=>{
+          const status=paymentStage>index?'complete':paymentStage===index?'current':'upcoming';
+          return <li key={name} data-progress-status={status} aria-current={status==='current'?'step':undefined}
+            className={`rounded-lg border px-3 py-3 text-xs font-semibold ${status==='current'?'border-taxpay-primary bg-taxpay-primary text-white':status==='complete'?'border-taxpay-primary bg-taxpay-light text-taxpay-dark':'border-taxpay-border bg-slate-50 text-taxpay-muted'}`}>
+            {index+1}. {name}</li>;
+        })}
       </ol>
       {paymentStage===0&&<div className="space-y-4">
         <h2 className="text-xl font-bold text-taxpay-text">{txt('Choose payment category','পেমেন্টের শ্রেণি নির্বাচন করুন')}</h2>
