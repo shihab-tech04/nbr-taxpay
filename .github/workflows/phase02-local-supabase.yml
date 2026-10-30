@@ -70,25 +70,27 @@ jobs:
           set -euo pipefail
           supabase functions serve taxpay-guest-beneficiaries --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
           for attempt in $(seq 1 30); do
-            code=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-              --request OPTIONS \
+            code=$(curl --silent --show-error --output "$RUNNER_TEMP/guest-beneficiaries-probe.json" --write-out '%{http_code}' --max-time 5 \
+              --request POST \
+              --header "apikey: $TAXPAY_LOCAL_SUPABASE_ANON_KEY" \
+              --header 'Content-Type: application/json' \
               --header 'Origin: http://127.0.0.1:4173' \
-              --header 'Access-Control-Request-Method: POST' \
-              --header 'Access-Control-Request-Headers: apikey,content-type,x-taxpay-guest-capability' \
+              --data '{"action":"open"}' \
               http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries 2>/dev/null || true)
-            if [ "$code" = 204 ]; then
-              echo "PASS: local guest beneficiary Edge Function is serving with its capability boundary"
+            if [ "$code" = 400 ] && grep -q '"code":"INVALID_CAPABILITY"' "$RUNNER_TEMP/guest-beneficiaries-probe.json"; then
+              echo "PASS: local guest beneficiary Edge Function rejects missing capabilities before database access"
               exit 0
             fi
             sleep 2
           done
           code=$(curl --silent --show-error --include --max-time 10 \
-            --request OPTIONS \
+            --request POST \
+            --header "apikey: $TAXPAY_LOCAL_SUPABASE_ANON_KEY" \
+            --header 'Content-Type: application/json' \
             --header 'Origin: http://127.0.0.1:4173' \
-            --header 'Access-Control-Request-Method: POST' \
-            --header 'Access-Control-Request-Headers: apikey,content-type,x-taxpay-guest-capability' \
+            --data '{"action":"open"}' \
             http://127.0.0.1:54321/functions/v1/taxpay-guest-beneficiaries 2>&1 || true)
-          echo "Final guest-function preflight response:"
+          echo "Final guest-function response:"
           echo "$code"
           echo "Guest Edge Function startup log:"
           cat "$RUNNER_TEMP/guest-beneficiaries-edge.log"
