@@ -10,7 +10,12 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
   await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
-  await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
+  await page.locator('.citizen-account-gate').getByRole('link', { name: 'Sign in with email' }).click();
+  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page).toHaveURL(/returnTo=taxpayer_home/);
+  await expect(page.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
+  await page.goto(site + '?action=taxpayer_home');
+  await page.locator('.citizen-account-gate').getByRole('button', { name: 'Use User ID (sample account)' }).click();
   await expect(page).toHaveURL(/action=taxpayer_login/);
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
@@ -40,9 +45,10 @@ test('all private deep links fail closed without an authenticated session', asyn
 test('Bengali sign-in entry keeps the selected language without sample financial data', async ({ page }) => {
   await page.goto(site + '?action=taxpayer_home&demoUser=user1&lang=bn');
   await expect(page.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible();
-  await page.locator('.citizen-account-gate').getByRole('button', { name: 'সাইন ইন' }).click();
-  await expect(page).toHaveURL(/action=taxpayer_login/);
+  await page.locator('.citizen-account-gate').getByRole('link', { name: 'ইমেইলে সাইন ইন' }).click();
+  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page).toHaveURL(/returnTo=taxpayer_home/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('dialog', { name: 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'সুরক্ষিত করবৃত্ত ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });
