@@ -4,7 +4,7 @@ export const ROUTES = [
   'travel', 'verify', 'incident', 'architecture', 'taxpayer_home', 'dashboard',
   'wizard', 'history', 'payment_details', 'ledger', 'journey', 'certificates',
   'corrections', 'notifications', 'payment_notifications', 'account_notifications', 'account_profile',
-  'account_settings', 'manage_authorization', 'services', 'taxpayer_login', 'office_login', 'ontology', 'glossary', 'guidance'
+  'account_settings', 'manage_authorization', 'beneficiaries', 'services', 'taxpayer_login', 'office_login', 'ontology', 'glossary', 'guidance'
 ] as const;
 
 const registered = new Set<string>(ROUTES);
