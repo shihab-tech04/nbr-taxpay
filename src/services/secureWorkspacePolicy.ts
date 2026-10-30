@@ -18,16 +18,18 @@ export function draftSeedForCategory(category: DraftCategory | null) {
   } : null;
 }
 
-export function authRedirectUrl(origin: string, basePath: string, category?: DraftCategory): string {
+export function authRedirectUrl(origin: string, basePath: string, category?: DraftCategory, returnTo?: unknown, language?: 'en' | 'bn'): string {
   if (!/^https?:\/\//.test(origin)) throw new Error('Invalid authentication redirect origin');
   if (!basePath.startsWith('/') || basePath.startsWith('//') || basePath.includes('..') ||
       basePath.includes('?') || basePath.includes('#') || !basePath.endsWith('/')) {
     throw new Error('Invalid authentication redirect base path');
   }
-  const redirect = new URL(origin.replace(/\/$/, '') + basePath + '?action=secure_workspace');
-  if (category && Object.prototype.hasOwnProperty.call(DRAFT_CATEGORIES, category)) {
+  const destination = returnTo === 'beneficiaries' ? 'beneficiaries' : 'secure_workspace';
+  const redirect = new URL(origin.replace(/\/$/, '') + basePath + '?action=' + destination);
+  if (destination === 'secure_workspace' && category && Object.prototype.hasOwnProperty.call(DRAFT_CATEGORIES, category)) {
     redirect.searchParams.set('draftCategory', category);
   }
+  if (language === 'bn') redirect.searchParams.set('lang', 'bn');
   return redirect.toString();
 }
 export function sameAuthenticatedOwner(actualUserId: string | null | undefined, expectedUserId: string): boolean {
