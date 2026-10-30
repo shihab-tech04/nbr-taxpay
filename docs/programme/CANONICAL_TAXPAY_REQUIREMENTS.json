@@ -143,16 +143,17 @@
       "issue_230": {
         "url": "https://github.com/shihab-tech04/nbr-taxpay/issues/230",
         "state": "open",
-        "updated_at": "2026-10-30T20:09:42Z",
-        "comments_count": 55,
+        "updated_at": "2026-10-30T20:11:32Z",
+        "comments_count": 56,
         "relevant_comment_ids": [
           6531873727,
           6532005116,
           6532147449,
           6532165036,
-          6532475742
+          6532475742,
+          6532506133
         ],
-        "scope": "Issue comments are stakeholder-reported release evidence, not WS02 live tests. Latest handoff #6532475742 cites the earlier TaxPay main checkpoint f4663ccc; current refs were independently read at 61a7fd4957d24e33790852881e937f3a402d7b0a and ba2d0b60070d5bde1b2f598607329e10e11f3307."
+        "scope": "Issue comments are stakeholder-reported release evidence, not WS02 live tests. Latest handoff #6532506133 records TaxPay #334 merged to current main 61a7fd4957d24e33790852881e937f3a402d7b0a and #343 refreshed from that base; the current #343 head/checks remain separate evidence and do not certify requirement acceptance."
       },
       "pr_341": {
         "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/341",
