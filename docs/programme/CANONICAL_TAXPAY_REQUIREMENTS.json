@@ -285,8 +285,8 @@
       "issue_230":             {
       "url": "https://github.com/shihab-tech04/nbr-taxpay/issues/230",
       "state": "open",
-      "updated_at": "2026-10-30T20:42:37Z",
-      "comments_count": 61,
+      "updated_at": "2026-10-30T20:56:57Z",
+      "comments_count": 62,
       "relevant_comment_ids": [
         6531873727,
         6532005116,
@@ -298,9 +298,10 @@
         6532696472,
         6532853968,
         6532939973,
-        6533053327
+        6533053327,
+        6533297491
       ],
-      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery, not hosted DB backup/restore. #6532853968 reports Pages deployment/readback but the overall main workflow is red on the stale WS01-owned Add single assertion; no payment was submitted. #6532939973 records #343 exact-head checks/WS05 review PASS with hosted correction-release blockers. Latest #6533053327 reports stale #296/#303/#298 branches would delete the same 16 WS01-owned Beneficiaries files; leave them untouched. Its replacement #345 is draft on current main 61a7fd4957d24e33790852881e937f3a402d7b0a at head 9bd45a2b23b83f2c7d5bb84dd75c33881f1e6c56, changes only App.tsx, ReceiptLookup.tsx, and navigation-integrity E2E (0/16 WS01 paths), and has WS05 source/test review PASS. Refreshed Actions on #345 show Phase 02 and source/receipt recovery successful, with Pages/browser still in progress; no merge/deploy. These are stakeholder/tool status snapshots, not per-story acceptance or WS02 live tests."
+      "scope": "Stakeholder-reported release evidence, not WS02 tests. #6532696472 reports current-main Git source recovery, not hosted DB backup/restore. #6532853968 reports Pages deployment/readback but the overall main workflow is red on the stale WS01-owned Add single assertion; no payment was submitted. #6532939973 records #343 exact-head checks/WS05 review PASS with hosted correction-release blockers. The preceding #6533053327 reports stale #296/#303/#298 branches would delete the same 16 WS01-owned Beneficiaries files; leave them untouched. Its replacement #345 is draft on current main 61a7fd4957d24e33790852881e937f3a402d7b0a at head 9bd45a2b23b83f2c7d5bb84dd75c33881f1e6c56, changes only App.tsx, ReceiptLookup.tsx, and navigation-integrity E2E (0/16 WS01 paths), and has WS05 source/test review PASS. The #345 Actions snapshot in that comment showed Phase 02 and source/receipt recovery successful, with Pages/browser still in progress; this is a timestamped prior snapshot, not current workflow state. Latest #6533297491 records the #342 v11 Concept Prototype provenance checkpoint at then-head 07ee973dce6f25262855d9313bf86228197fb791: four full-byte-verified 860,546-byte Library copies share SHA-256 f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b, and the embedded ontology identifies a 0.6.0-demo draft, not an NBR-approved data standard. Original workbook bytes/provenance, screenshots, and approval remain unverified; requirement statuses remain BLOCKED and approval/production evidence and completion percentage remain null. No requirement count, denominator, or status changed. These are stakeholder/tool status snapshots, not per-story acceptance or WS02 live tests."
     },
       "pr_341": {
         "url": "https://github.com/shihab-tech04/nbr-taxpay/pull/341",
@@ -375,7 +376,7 @@
         303,
         298
       ],
-      "source_review": "Issue comment #6533053327 reports WS05 reviewed exact source/test scope without a source defect.",
+      "source_review": "Issue comment #6533053327 is the preceding #345-specific checkpoint and reports WS05 reviewed exact source/test scope without a source defect.",
       "exact_head_workflows": [
         {
           "run_id": 41124724223,
@@ -407,7 +408,7 @@
           "url": "https://github.com/shihab-tech04/nbr-taxpay/actions/runs/41124724819"
         }
       ],
-      "scope": "Issue comment #6533053327 is the checkpoint for #345 scope and source review. Workflow statuses were refreshed from exact-head GitHub Actions objects; the Pages/browser run remains in progress, so no completion is claimed.",
+      "scope": "Issue comment #6533053327 is the preceding #345-specific scope/source-review checkpoint; it is not the latest issue comment. Workflow statuses were captured from exact-head GitHub Actions objects at that checkpoint; the Pages/browser run was in progress then, so no completion is claimed here.",
       "release_status": "DRAFT_PENDING_PAGES_AND_EXACT_HEAD_QA"
     },
     "test_inventory": {
