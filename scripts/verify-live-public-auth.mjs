@@ -83,11 +83,24 @@ try {
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries entry overflow: ${beneficiaryOverflow}px`);
     await beneficiaries.screenshot({ path: 'test-results/live-auth-beneficiaries-' + name + '.png', fullPage: true });
-    await beneficiaries.getByRole('button', { name: 'বাংলা' }).click();
+    // On narrow screens the language switcher lives in the visible mobile menu.
+    // Desktop keeps it in the header. Exercise the visible control for each layout.
+    if (isMobile) {
+      await beneficiaries.getByRole('button', { name: 'Open menu' }).click();
+      const mobileMenu = beneficiaries.getByRole('dialog', { name: 'Services & menu' });
+      await expect(mobileMenu).toBeVisible();
+      await mobileMenu.getByRole('button', { name: 'বাংলা' }).click();
+    } else {
+      await beneficiaries.getByRole('button', { name: 'বাংলা' }).click();
+    }
     await expect(beneficiaries).toHaveURL(/returnTo=beneficiaries.*lang=bn/);
     await expect(beneficiaries.getByRole('heading', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
     await expect(beneficiaries.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
-    await beneficiaries.getByRole('button', { name: 'EN' }).click();
+    if (isMobile) {
+      await beneficiaries.getByRole('button', { name: 'English' }).click();
+    } else {
+      await beneficiaries.getByRole('button', { name: 'EN' }).click();
+    }
     await expect(beneficiaries).toHaveURL(/action=secure_workspace.*returnTo=beneficiaries/);
     await expect(beneficiaries.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
     await beneficiaries.close();
