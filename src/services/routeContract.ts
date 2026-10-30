@@ -23,6 +23,16 @@ const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categor
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
 const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home']);
 
+// These are destinations, never proof of access. All routes still require a real
+// Supabase user before displaying private account data after the OTP callback.
+const privateAuthReturnRoutes = new Set([
+  'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates',
+  'corrections', 'notifications', 'account_notifications', 'account_profile',
+  'account_settings', 'manage_authorization', 'beneficiaries', 'services'
+]);
+export const safePrivateAuthReturnRoute = (route: unknown): string | null =>
+  typeof route === 'string' && privateAuthReturnRoutes.has(route) ? route : null;
+
 /** A public deep link can restore *only* a fixed synthetic receipt, never a real payment identifier. */
 export const publicDemoReceiptId = (value: unknown): string | null =>
   typeof value === 'string' && /^rcpt-10[1-4]$/.test(value) ? value : null;
@@ -38,8 +48,9 @@ export function routeContextFromUrl(route: string, search: URLSearchParams): Rec
   if (route === 'secure_workspace') {
     const result: Record<string, unknown> = {};
     if (search.has('draftCategory')) result.draftCategory = search.get('draftCategory');
-    // Only a fixed registered private destination may survive the email sign-in handoff.
-    if (search.get('returnTo') === 'beneficiaries') result.returnTo = 'beneficiaries';
+    // Restore only a registered private destination after verified email sign-in.
+    const returnTo = safePrivateAuthReturnRoute(search.get('returnTo'));
+    if (returnTo) result.returnTo = returnTo;
     return result;
   }
   if (route === 'payment_details') {
@@ -70,7 +81,8 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
   if (route === 'guest' || route === 'wizard') put('initialCategory', params.initialCategory);
   if (route === 'secure_workspace') {
     put('draftCategory', params.draftCategory);
-    if (params.returnTo === 'beneficiaries') search.set('returnTo','beneficiaries');
+    const returnTo = safePrivateAuthReturnRoute(params.returnTo);
+    if (returnTo) search.set('returnTo', returnTo);
   }
   if (route === 'payment_details') {
     put('returnTo', receiptReturnRoute(params.returnTo));

@@ -43,6 +43,7 @@ import { SecureWorkspace } from './components/screens/SecureWorkspace';
 import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
+import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 const previewReadOnlyRoutes = new Set([
   'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
@@ -53,11 +54,12 @@ const previewReadOnlyRoutes = new Set([
 const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
   const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
+  const signInReturnRoute = safePrivateAuthReturnRoute(currentRoute) ?? 'taxpayer_home';
   const previewAccess = Boolean(previewAccount && previewReadOnlyRoutes.has(currentRoute));
   // A UUID linked to a mirrored simulated transaction is a public, read-only
   // receipt view. It grants no access to the taxpayer's private workspace.
@@ -203,18 +205,14 @@ const MainRouter: React.FC = () => {
             <h1>{currentRoute === 'beneficiaries' ? (language === 'bn' ? 'উপকারভোগী' : 'Beneficiaries') : (language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace')}</h1>
             <p>{currentRoute === 'beneficiaries'
               ? (language === 'bn' ? 'উপকারভোগীর তালিকা পরিচালনা করতে ইমেইলের মাধ্যমে সাইন ইন করুন।' : 'Sign in with your email to manage saved beneficiaries.')
-              : sampleJourneysEnabled ? (language === 'bn' ? 'করদাতার পেমেন্টের ধাপ ও লেনদেন দেখুন।' : 'Explore the taxpayer payment screens and activity.') : (language === 'bn' ? 'আপনার অ্যাকাউন্টে প্রবেশ করতে সাইন ইন করুন।' : 'Sign in to access your taxpayer account.')}</p>
-            {sampleJourneysEnabled && currentRoute !== 'beneficiaries' && <a className="citizen-account-gate__preview" href={language === 'bn'
-              ? '?action=taxpayer_home&demoUser=user1&lang=bn'
-              : '?action=taxpayer_home&demoUser=user1'}>
-              {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
-            </a>}
-            {sampleJourneysEnabled && currentRoute !== 'beneficiaries' ? <button type="button" onClick={() => {setUserRole("TAXPAYER_INDIVIDUAL");navigate("taxpayer_home");}}>{language === "bn" ? "করদাতা ওয়ার্কস্পেস দেখুন" : "Explore taxpayer workspace"}</button> :
-              <button type="button" onClick={() => currentRoute === 'beneficiaries'
-                ? navigate('secure_workspace', {returnTo:'beneficiaries'})
-                : navigate('taxpayer_login')}>{currentRoute === 'beneficiaries'
-                  ? (language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email')
-                  : (language === 'bn' ? 'সাইন ইন' : 'Sign in')}</button>}
+              : (language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.')}</p>
+            <a className="citizen-account-gate__preview"
+              href={`?action=secure_workspace&returnTo=${signInReturnRoute}${language === 'bn' ? '&lang=bn' : ''}`}>
+              {language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email'}
+            </a>
+            {currentRoute !== 'beneficiaries' && <button type="button" onClick={() => navigate('taxpayer_login')}>
+              {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
+            </button>}
           </section>
         ) : <>
           {renderActiveScreen()}
