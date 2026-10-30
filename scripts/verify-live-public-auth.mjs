@@ -17,16 +17,31 @@ try {
   ]) {
     const page = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const url = new URL(base);
-    url.searchParams.set('action', 'taxpayer_home');
-    url.searchParams.set('demoUser', 'user1');
+    url.searchParams.set('action', 'account_profile');
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 2) throw new Error(`Live ${name} private-entry overflow: ${overflow}px`);
-    await page.screenshot({ path: `test-results/live-auth-${name}.png`, fullPage: true });
-    await page.locator('.citizen-account-gate').getByRole('button', { name: 'Sign in' }).click();
+    const emailEntry = page.getByRole('link', { name: 'Sign in with email' });
+    await expect(emailEntry).toBeVisible();
+    await expect(emailEntry).toHaveAttribute('href', /returnTo=account_profile/);
+    await emailEntry.click();
+    await expect(page).toHaveURL(/action=secure_workspace.*returnTo=account_profile/);
+    await expect(page.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Email sign-in link' })).toBeVisible();
+    // Do not send an OTP here; this read-only acceptance verifies the visible
+    // email-auth route and the safe return target without using a mailbox.
+    await page.screenshot({ path: 'test-results/live-auth-email-' + name + '.png', fullPage: true });
+
+    // Keep the explicitly labeled synthetic sample journey separate from
+    // verified email auth, and exercise it only through its visible control.
+    await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const sampleEntry = page.getByRole('button', { name: 'Use User ID (sample account)' });
+    await expect(sampleEntry).toBeVisible();
+    await sampleEntry.click();
     await expect(page).toHaveURL(/action=taxpayer_login/);
     const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
     await expect(dialog).toBeVisible();
@@ -46,7 +61,36 @@ try {
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
     await expect(page).not.toHaveURL(/demoUser=/);
+    await page.screenshot({ path: 'test-results/live-auth-sample-' + name + '.png', fullPage: true });
     await page.close();
+
+    // Beneficiaries must remain email-gated and must not offer synthetic sample access.
+    const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const beneficiariesUrl = new URL(base);
+    beneficiariesUrl.searchParams.set('action', 'beneficiaries');
+    await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries' })).toBeVisible({ timeout: 30_000 });
+    await expect(beneficiaries.getByRole('button', { name: 'Use User ID (sample account)' })).toHaveCount(0);
+    await expect(beneficiaries.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
+    const beneficiaryEmailEntry = beneficiaries.getByRole('link', { name: 'Sign in with email' });
+    await expect(beneficiaryEmailEntry).toBeVisible();
+    await expect(beneficiaryEmailEntry).toHaveAttribute('href', /returnTo=beneficiaries/);
+    await beneficiaryEmailEntry.click();
+    await expect(beneficiaries).toHaveURL(/action=secure_workspace.*returnTo=beneficiaries/);
+    await expect(beneficiaries.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
+    await expect(beneficiaries.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+    await expect(beneficiaries.getByRole('button', { name: 'Email sign-in link' })).toBeVisible();
+    const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries entry overflow: ${beneficiaryOverflow}px`);
+    await beneficiaries.screenshot({ path: 'test-results/live-auth-beneficiaries-' + name + '.png', fullPage: true });
+    await beneficiaries.getByRole('button', { name: 'বাংলা' }).click();
+    await expect(beneficiaries).toHaveURL(/returnTo=beneficiaries.*lang=bn/);
+    await expect(beneficiaries.getByRole('heading', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
+    await expect(beneficiaries.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
+    await beneficiaries.getByRole('button', { name: 'EN' }).click();
+    await expect(beneficiaries).toHaveURL(/action=secure_workspace.*returnTo=beneficiaries/);
+    await expect(beneficiaries.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
+    await beneficiaries.close();
 
     // Exercise the *deployed* guest bell without changing hosted payment data.
     // Mock only the two SQL-backed read endpoints; never emulate a settlement.
