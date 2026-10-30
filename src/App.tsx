@@ -79,7 +79,9 @@ const MainRouter: React.FC = () => {
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
   const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
-    currentRoute === 'secure_workspace' || (currentRoute === 'beneficiaries' && Boolean(verifiedApplicationUser)));
+    currentRoute === 'secure_workspace' || (currentRoute === 'beneficiaries' && Boolean(
+      verifiedApplicationUser || (import.meta.env.DEV && taxpayerSession)
+    )));
   const showActivitySections = taxpayerSession && !privateSampleGate && activityRoutes.has(currentRoute);
 
   // Listen to browser URL search params for direct action links (?action=...)
