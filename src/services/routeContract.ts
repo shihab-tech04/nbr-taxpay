@@ -35,7 +35,13 @@ export function routeContextFromUrl(route: string, search: URLSearchParams): Rec
   if (route === 'user_guide' && search.has('category')) return {category: search.get('category')};
   if ((route === 'guest' || route === 'wizard') && search.has('initialCategory'))
     return {initialCategory: search.get('initialCategory')};
-  if (route === 'secure_workspace' && search.has('draftCategory')) return {draftCategory: search.get('draftCategory')};
+  if (route === 'secure_workspace') {
+    const result: Record<string, unknown> = {};
+    if (search.has('draftCategory')) result.draftCategory = search.get('draftCategory');
+    // Only a fixed registered private destination may survive the email sign-in handoff.
+    if (search.get('returnTo') === 'beneficiaries') result.returnTo = 'beneficiaries';
+    return result;
+  }
   if (route === 'payment_details') {
     const demoReceipt = publicDemoReceiptId(search.get('demoReceipt'));
     const transactionId=search.get('transactionId');
@@ -62,7 +68,10 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
   };
   if (route === 'user_guide') put('category', params.category);
   if (route === 'guest' || route === 'wizard') put('initialCategory', params.initialCategory);
-  if (route === 'secure_workspace') put('draftCategory', params.draftCategory);
+  if (route === 'secure_workspace') {
+    put('draftCategory', params.draftCategory);
+    if (params.returnTo === 'beneficiaries') search.set('returnTo','beneficiaries');
+  }
   if (route === 'payment_details') {
     put('returnTo', receiptReturnRoute(params.returnTo));
     const demoReceipt = publicDemoReceiptId(params.demoReceipt);
