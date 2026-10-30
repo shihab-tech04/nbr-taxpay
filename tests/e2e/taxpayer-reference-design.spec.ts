@@ -167,7 +167,7 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     }
     await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
     await expect(nav.getByRole('button',{name:'Notifications'})).toBeVisible();
-    await expect(nav.getByRole('button',{name:'Manage Authorization'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Payment services'})).toHaveCount(0);
     await dialog.getByRole('button',{name:'বাংলা'}).click();
