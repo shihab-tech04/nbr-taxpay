@@ -9,6 +9,7 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
     throw new Error('Refusing guest beneficiary acceptance outside loopback Supabase.');
 
   await page.goto('/?action=beneficiaries');
+  const records = page.locator('[data-testid="beneficiaries-page"] ul:visible');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create list', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
@@ -32,11 +33,11 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Synthetic Guest One');
   await addDialog.getByRole('button', { name: 'Add beneficiary', exact: true }).click();
-  await expect(page.getByText('Synthetic Guest One')).toBeVisible({ timeout: 15_000 });
+  await expect(records).toContainText('Synthetic Guest One', { timeout: 15_000 });
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText('Synthetic Guest One')).toBeVisible({ timeout: 15_000 });
+  await expect(records).toContainText('Synthetic Guest One', { timeout: 15_000 });
   await expect(page.locator('#beneficiary-list')).toContainText('Guest Family');
 
   await page.getByRole('button', { name: 'Import Excel', exact: true }).first().click();
@@ -52,7 +53,7 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await importDialog.getByRole('button', { name: 'Next', exact: true }).click();
   await importDialog.getByRole('button', { name: 'Finish import' }).click();
   await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
+  await expect(records).toContainText('Local Beneficiary Two');
 
   const otherContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   try {
@@ -65,7 +66,7 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
     await otherContext.close();
   }
 
-  const firstRow = page.getByRole('row').filter({ hasText: '012345678901' });
+  const firstRow = records.locator('li').filter({ hasText: '012345678901' });
   await firstRow.getByRole('button', { name: 'Pay Tax for Others' }).click();
   const paymentDialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(paymentDialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
@@ -79,11 +80,12 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await expect(paymentDialog.getByText('Sign-in Payment')).toHaveCount(0);
   await paymentDialog.getByRole('button', { name: 'Close payment services' }).click();
 
-  const firstSelect = page.getByRole('row').filter({ hasText: '012345678901' }).getByRole('checkbox');
-  const secondSelect = page.getByRole('row').filter({ hasText: '987654321098' }).getByRole('checkbox');
+  const secondRow = records.locator('li').filter({ hasText: '987654321098' });
+  const firstSelect = firstRow.getByRole('checkbox');
+  const secondSelect = secondRow.getByRole('checkbox');
   await firstSelect.check();
   await secondSelect.check();
-  await page.getByRole('button', { name: 'Pay Tax for Others' }).click();
+  await page.getByRole('button', { name: 'Pay Tax for Others' }).first().click();
   const multiplePaymentDialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(multiplePaymentDialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await multiplePaymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -96,16 +98,15 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await expect(additionalTaxpayer.locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
   await multiplePaymentDialog.getByRole('button', { name: 'Close payment services' }).click();
 
-  const editRow = page.getByRole('row').filter({ hasText: '012345678901' });
+  const editRow = firstRow;
   await editRow.getByRole('button', { name: 'Edit' }).click();
   const editDialog = page.getByRole('dialog', { name: 'Edit beneficiary' });
   await editDialog.locator('#beneficiary-edit-name').fill('Synthetic Guest Renamed');
   await editDialog.getByRole('button', { name: 'Save changes' }).click();
-  await expect(page.getByText('Synthetic Guest Renamed')).toBeVisible();
+  await expect(records).toContainText('Synthetic Guest Renamed');
 
-  const removeRow = page.getByRole('row').filter({ hasText: '987654321098' });
-  await removeRow.getByRole('button', { name: 'Remove Local Beneficiary Two' }).click();
+  await secondRow.getByRole('button', { name: 'Remove beneficiary' }).click();
   const removeDialog = page.getByRole('dialog', { name: 'Confirm beneficiary removal' });
   await removeDialog.getByRole('button', { name: 'Remove', exact: true }).click();
-  await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
+  await expect(records).not.toContainText('Local Beneficiary Two');
 });
