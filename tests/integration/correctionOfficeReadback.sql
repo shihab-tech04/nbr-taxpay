@@ -177,12 +177,19 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM<>'Correction inquiry not found' THEN RAISE; END IF;
   END;
+END;
+$command_rejections$;
+
+RESET ROLE;
+DO $command_rejections_persisted$
+BEGIN
   IF EXISTS (SELECT 1 FROM public.taxpay_correction_review_decisions
-             WHERE inquiry_id=v_inquiry) THEN
+             WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state)) THEN
     RAISE EXCEPTION 'Rejected commands changed persisted review state';
   END IF;
 END;
-$command_rejections$;
+$command_rejections_persisted$;
+SET LOCAL ROLE service_role;
 
 DO $maker_replay$
 DECLARE v_command jsonb; v_first jsonb; v_second jsonb;
