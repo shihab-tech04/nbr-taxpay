@@ -178,7 +178,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-en.png`,fullPage:true});
   await page.goto('/?action=beneficiaries&lang=bn');
   await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
-  await expect(page.getByText('Synthetic Guest Renamed')).toBeVisible();
+  await expectRecord('Synthetic Guest Renamed');
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-bn.png`,fullPage:true});
 
   const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
