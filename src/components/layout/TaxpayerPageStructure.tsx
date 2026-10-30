@@ -8,7 +8,7 @@ const activitySections = [
   { route: 'certificates', en: 'Receipts & certificates', bn: 'রসিদ ও সনদপত্র' },
 ] as const;
 
-/** Every signed-in page follows heading → optional tabs → page content. */
+/** Shared heading pattern for taxpayer pages and guest-accessible Beneficiaries. */
 export function TaxpayerPageHeading({ title, description, actions, id, className = '' }: {
   title: string;
   description?: string;

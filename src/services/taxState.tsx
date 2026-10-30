@@ -24,6 +24,7 @@ import {
 } from '../data/mockData';
 
 export type BannerPaymentService = 'TAX_WITH_RETURN' | 'ADVANCE_TAX' | 'SOURCE_TAX_DEPOSIT' | 'TRAVEL_TAX';
+export interface PaymentBeneficiaryPrefill { tin: string; name: string; additional?: { tin: string; name: string }[]; }
 
 export interface TaxStateContextType {
   currentRoute: string;
@@ -31,6 +32,8 @@ export interface TaxStateContextType {
   setPaymentServiceChoiceOpen: (open: boolean) => void;
   paymentServiceInitialSelection: BannerPaymentService | null;
   openPaymentServiceChoice: (service?: BannerPaymentService) => void;
+  paymentBeneficiaryPrefill: PaymentBeneficiaryPrefill | null;
+  setPaymentBeneficiaryPrefill: (value: PaymentBeneficiaryPrefill | null) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
   loginPreviewAccount: (userId: string, password: string, options?: { preserveRoute?: boolean }) => boolean;
@@ -83,11 +86,16 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
+  const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
   const setPaymentServiceChoiceOpen = (open: boolean) => {
-    if (!open) setPaymentServiceInitialSelection(null);
+    if (!open) {
+      setPaymentServiceInitialSelection(null);
+      setPaymentBeneficiaryPrefill(null);
+    }
     setPaymentServiceChoiceOpenState(open);
   };
   const openPaymentServiceChoice = (service?: BannerPaymentService) => {
+    setPaymentBeneficiaryPrefill(null);
     setPaymentServiceInitialSelection(service ?? null);
     setPaymentServiceChoiceOpenState(true);
   };
@@ -358,6 +366,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPaymentServiceChoiceOpen,
         paymentServiceInitialSelection,
         openPaymentServiceChoice,
+        paymentBeneficiaryPrefill,
+        setPaymentBeneficiaryPrefill,
         demoUser,
         previewAccount,
         loginPreviewAccount,

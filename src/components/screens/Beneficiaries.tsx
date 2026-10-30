@@ -1,9 +1,9 @@
-import React, {useEffect,useMemo,useRef,useState} from 'react';
-import {Check, Download, FileSpreadsheet, Plus, Trash2, Upload, UsersRound} from 'lucide-react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {Check, CreditCard, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
-import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {UiButton,UiInput,UiSelect} from '../ui/Controls';
 import {addBeneficiaries,createBeneficiaryList,loadBeneficiaries,removeBeneficiary,updateBeneficiary,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 
@@ -11,9 +11,10 @@ type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
 interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
+
 export function Beneficiaries(){
-  const {language,navigate}=useTaxState();
-  const {user}=useAccountIdentity();
+  const {language,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,userRole}=useTaxState();
+  const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
@@ -23,6 +24,7 @@ export function Beneficiaries(){
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
   const [flow,setFlow]=useState<Flow|null>(null);
+  const [createListOpen,setCreateListOpen]=useState(false);
   const [phase,setPhase]=useState<Phase>('upload');
   const [targetList,setTargetList]=useState('new');
   const [listName,setListName]=useState('');
@@ -31,39 +33,49 @@ export function Beneficiaries(){
   const [filename,setFilename]=useState('');
   const [rows,setRows]=useState<ImportRow[]>([]);
   const [busy,setBusy]=useState(false);
-  const [importError,setImportError]=useState('');
-  const [editId,setEditId]=useState('');
+  const [modalError,setModalError]=useState('');
+  const [search,setSearch]=useState('');
+  const [selectedIds,setSelectedIds]=useState<string[]>([]);
+  const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const [editName,setEditName]=useState('');
-  const [deleteId,setDeleteId]=useState('');
+  const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
   const fileRef=useRef<HTMLInputElement>(null);
-  const owner=user?.id;
-  const reload=async()=>{
-    if(!owner)return;
+  const owner=user?.id??null;
+  const canManageAuthorizations=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
+
+  const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
-    setActiveList(current=>data.lists.some(x=>x.id===current)?current:(data.lists[0]?.id??''));
+    setActiveList(current=>preferredList&&data.lists.some(list=>list.id===preferredList)
+      ?preferredList:data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??''));
+    setSelectedIds([]);
+    return data;
   };
+
   useEffect(()=>{
     let cancelled=false;
-    if(!owner){setLists([]);setPeople([]);return;}
-    setLoading(true);setError('');
+    if(checkingIdentity)return()=>{cancelled=true;};
+    setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
     loadBeneficiaries(owner).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(value=>data.lists.some(x=>x.id===value)?value:(data.lists[0]?.id??''));
+      setActiveList(data.lists[0]?.id??'');
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
-  },[owner]);
-  const visible=people.filter(person=>person.list_id===activeList);
-  const existing=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
+  },[owner,checkingIdentity]);
+
+  const listPeople=people.filter(person=>person.list_id===activeList);
+  const filteredPeople=listPeople.filter(person=>(person.display_name+' '+person.tin).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
+  const existingTins=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
   const reviewed=useMemo<ReviewedRow[]>(()=>{
     const seen=new Set<string>();
     return rows.map(row=>{
       let reason='';
       if(!/^\d{12}$/.test(row.tin))reason=tr('TIN must contain 12 digits.','টিআইএন ১২ সংখ্যার হতে হবে।');
-      else if(!row.name||row.name.length>160)reason=tr('Enter a name (up to 160 characters).','নাম লিখুন (সর্বোচ্চ ১৬০ অক্ষর)।');
-      else if(existing.has(row.tin))reason=tr('Already saved in this list.','এই তালিকায় ইতিমধ্যে আছে।');
+      else if(!row.name.trim()||row.name.length>160)reason=tr('Enter a name (up to 160 characters).','নাম লিখুন (সর্বোচ্চ ১৬০ অক্ষর)।');
+      else if(existingTins.has(row.tin))reason=tr('Already saved in this list.','এই তালিকায় ইতিমধ্যে আছে।');
       else if(seen.has(row.tin))reason=tr('Duplicate TIN in this upload.','আপলোডে একই টিআইএন একাধিকবার আছে।');
       seen.add(row.tin);
       return {...row,error:reason};
@@ -71,193 +83,303 @@ export function Beneficiaries(){
   },[rows,people,targetList,language]);
   const valid=reviewed.filter(row=>!row.error);
   const chosen=valid.filter(row=>row.selected);
-  function open(next:Flow) {
-    setFlow(next);setPhase('upload');setTargetList(activeList||'new');setListName('');
-    setTin('');setName('');setRows([]);setFilename('');setImportError('');setNotice('');
+  const allFilteredSelected=filteredPeople.length>0&&filteredPeople.every(person=>selectedIds.includes(person.id));
+
+  function open(next:Flow){
+    setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
+    setTin('');setName('');setRows([]);setFilename('');setModalError('');setNotice('');
   }
-  function close(){if(!busy){setFlow(null);setImportError('');}}
+  function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
+
+  async function saveList(event:React.FormEvent){
+    event.preventDefault();
+    if(!listName.trim()||listName.trim().length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
+    setBusy(true);setModalError('');
+    try{
+      const list=await createBeneficiaryList(owner,listName);
+      await reload(list.id);setCreateListOpen(false);setListName('');
+      setNotice(tr('List created.','তালিকা তৈরি হয়েছে।'));
+    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    finally{setBusy(false);}
+  }
+
   async function resolveList(){
     if(targetList!=='new'){
-      const list=lists.find(x=>x.id===targetList);
+      const list=lists.find(value=>value.id===targetList);
       if(!list)throw new Error(tr('Choose a valid list.','সঠিক তালিকা নির্বাচন করুন।'));
       return list.id;
     }
-    if(!owner)throw new Error('Sign in to save beneficiaries.');
-    const result=await createBeneficiaryList(owner,listName);
-    return result.id;
+    if(!listName.trim())throw new Error(tr('Enter a list name.','তালিকার নাম লিখুন।'));
+    return (await createBeneficiaryList(owner,listName)).id;
   }
-  async function saveSingle(e:React.FormEvent){
-    e.preventDefault();
-    if(!owner)return;
-    if(!/^\d{12}$/.test(tin)||!name.trim()){setImportError(tr('Enter a valid 12-digit TIN and beneficiary name.','সঠিক ১২ সংখ্যার টিআইএন ও উপকারভোগীর নাম লিখুন।'));return;}
-    setBusy(true);setImportError('');
+
+  async function saveSingle(event:React.FormEvent){
+    event.preventDefault();
+    if(!/^\d{12}$/.test(tin)||!name.trim()){
+      setModalError(tr('Enter a valid 12-digit TIN and beneficiary name.','সঠিক ১২ সংখ্যার টিআইএন ও উপকারভোগীর নাম লিখুন।'));return;
+    }
+    setBusy(true);setModalError('');
     try{
       const id=await resolveList();
       const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim()}]);
-      await reload();setActiveList(id);setFlow(null);
+      await reload(id);setFlow(null);
       setNotice(count?tr('Beneficiary saved.','উপকারভোগী সংরক্ষিত হয়েছে।'):tr('This beneficiary is already in the list.','এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'));
-    }catch(e){setImportError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
+    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    finally{setBusy(false);}
   }
+
   async function receive(file?:File){
     if(!file)return;
-    setImportError('');setFilename('');setRows([]);
-    setBusy(true);
+    setModalError('');setFilename('');setRows([]);setBusy(true);
     try{
       const imported=await parseBeneficiaryWorkbook(file);
       if(!imported.length)throw new Error(tr('The Excel file contains no beneficiaries.','এক্সেল ফাইলে কোনো উপকারভোগী নেই।'));
       setRows(imported.map(row=>({...row,selected:true})));setFilename(file.name);
-      // Keep the uploaded-file confirmation visible. Next opens the preview.
-    }catch(e){setImportError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
+
   async function finishImport(){
-    if(!owner||!chosen.length)return;
-    setBusy(true);setImportError('');
+    if(!chosen.length)return;
+    setBusy(true);setModalError('');
     try{
       const id=await resolveList();
-      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name})));
-      await reload();setActiveList(id);setFlow(null);
-      setNotice(tr(String(count)+' beneficiaries added to the list.',String(count)+' জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।'));
-    }catch(e){setImportError(e instanceof Error?e.message:String(e));}
+      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim()})));
+      await reload(id);setFlow(null);
+      setNotice(count?tr(`${count} beneficiaries added to the list.`,`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`):tr('No new beneficiaries were added.','নতুন কোনো উপকারভোগী যোগ হয়নি।'));
+    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
-  async function rename(person:Beneficiary){
-    if(!owner)return;
-    setError('');
-    try{await updateBeneficiary(owner,person.id,editName);await reload();setEditId('');}
-    catch(e){setError(e instanceof Error?e.message:String(e));}
+
+  async function saveEdit(event:React.FormEvent){
+    event.preventDefault();
+    if(!editPerson)return;
+    if(!editName.trim()||editName.trim().length>160){setModalError(tr('Enter a name of up to 160 characters.','সর্বোচ্চ ১৬০ অক্ষরের একটি নাম লিখুন।'));return;}
+    setBusy(true);setModalError('');
+    try{
+      await updateBeneficiary(owner,editPerson.id,editName);await reload();setEditPerson(null);
+      setNotice(tr('Beneficiary updated.','উপকারভোগীর তথ্য হালনাগাদ হয়েছে.'));
+    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    finally{setBusy(false);}
   }
-  async function remove(person:Beneficiary){
-    if(!owner)return;
-    setError('');
-    try{await removeBeneficiary(owner,person.id);await reload();setDeleteId('');setNotice(tr('Beneficiary removed.','উপকারভোগী সরানো হয়েছে।'));}
-    catch(e){setError(e instanceof Error?e.message:String(e));}
+
+  async function confirmRemove(){
+    if(!deletePerson)return;
+    setBusy(true);setError('');
+    try{
+      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);
+      setNotice(tr('Beneficiary removed.','উপকারভোগী সরানো হয়েছে।'));
+    }catch(e){setError(e instanceof Error?e.message:String(e));}
+    finally{setBusy(false);}
   }
+
+  function payWith(peopleToPrefill:Beneficiary[]){
+    if(!peopleToPrefill.length)return;
+    const [first,...additional]=peopleToPrefill;
+    setPaymentBeneficiaryPrefill({tin:first.tin,name:first.display_name,additional:additional.map(person=>({tin:person.tin,name:person.display_name}))});
+    setPaymentServiceChoiceOpen(true);
+  }
+
   const template=()=>{
     const link=document.createElement('a'),url=URL.createObjectURL(beneficiaryTemplate());
     link.href=url;link.download='Korbritto_Beneficiaries_Template.xlsx';document.body.append(link);link.click();link.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
-  const formInput='min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-taxpay-primary';
-  const action='taxpay-auth-primary';
-  const secondary='taxpay-auth-outline';
+  const reloadData=async()=>{
+    setLoading(true);setError('');
+    try{await reload();}catch(e){setError(e instanceof Error?e.message:String(e));}
+    finally{setLoading(false);}
+  };
 
-  return <section className="taxpayer-account-center" lang={language} data-testid="beneficiaries-page">
-    <TaxpayerPageHeading title={tr('Beneficiaries','উপকারভোগী')} description={tr('Save taxpayer details to make payments for others faster.','অন্যের হয়ে দ্রুত কর পরিশোধের জন্য করদাতার তথ্য সংরক্ষণ করুন।')}/>
-    <div className="taxpayer-account-panel space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-base font-bold">{tr('Saved beneficiary lists','সংরক্ষিত উপকারভোগীর তালিকা')}</h2>
-          <p className="text-sm text-slate-600">{tr('Saving a beneficiary does not grant access to their private tax information.','উপকারভোগী সংরক্ষণ করলে তাঁর ব্যক্তিগত করতথ্যে প্রবেশাধিকার পাওয়া যায় না।')}</p></div>
-        {owner&&<div className="flex flex-wrap gap-2">
-          <button type="button" className={secondary} onClick={()=>open('single')}><Plus size={16} aria-hidden="true"/> {tr('Add single','একজন যোগ করুন')}</button>
-          <button type="button" className={action} onClick={()=>open('bulk')}><Upload size={16} aria-hidden="true"/> {tr('Bulk add','একাধিক যোগ করুন')}</button>
-        </div>}
+  return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}</p>
       </div>
-      {!owner&&<div role="status" className="rounded-lg border border-slate-200 p-4">
-        <p>{tr('Sign in to manage saved beneficiaries.','উপকারভোগীর তালিকা পরিচালনা করতে সাইন ইন করুন।')}</p>
-        <button className={action} onClick={()=>navigate('secure_workspace',{returnTo:'beneficiaries'})}>{tr('Sign in with email','ইমেইলে সাইন ইন')}</button>
+      <div className="flex flex-wrap gap-2">
+        <UiButton type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
+        <UiButton type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>open('bulk')}><Upload size={17} aria-hidden="true"/>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
+        <UiButton type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
+        {canManageAuthorizations&&<UiButton type="button" variant="outline" onClick={()=>navigate('manage_authorization')}>{tr('Manage taxpayer authorizations','করদাতার অনুমোদন পরিচালনা')}</UiButton>}
+      </div>
+    </header>
+    {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice}</p>}
+
+    <section className="rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
+      {checkingIdentity&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Opening your beneficiary workspace…','উপকারভোগীর কর্মক্ষেত্র খোলা হচ্ছে…')}</p>}
+      {!checkingIdentity&&loading&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Loading saved lists…','সংরক্ষিত তালিকা লোড হচ্ছে…')}</p>}
+      {!checkingIdentity&&error&&<div className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p role="alert" className="text-sm text-red-800">{error}</p>
+        <UiButton type="button" variant="outline" onClick={()=>void reloadData()}>{tr('Try again','আবার চেষ্টা করুন')}</UiButton>
       </div>}
-      {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
-      {notice&&<p role="status" className="text-sm text-taxpay-primary">{notice}</p>}
-      {loading&&<p role="status">{tr('Loading beneficiaries…','উপকারভোগী লোড হচ্ছে…')}</p>}
-      {!!lists.length&&<div className="max-w-sm">
-        <label htmlFor="beneficiary-list" className="block mb-1 text-sm font-semibold">{tr('List name','তালিকার নাম')}</label>
-        <select id="beneficiary-list" className={formInput} value={activeList} onChange={e=>setActiveList(e.target.value)}>
-          {lists.map(list=><option value={list.id} key={list.id}>{list.name} ({people.filter(p=>p.list_id===list.id).length})</option>)}
-        </select>
-      </div>}
-      {owner&&!loading&&(!lists.length||!visible.length)&&<div className="rounded-lg border border-slate-200 p-6 text-center">
-        <UsersRound className="mx-auto mb-2 text-slate-500" size={30}/>
-        <h3 className="font-semibold">{tr('No beneficiaries in this list','এই তালিকায় কোনো উপকারভোগী নেই')}</h3>
-        <p className="text-sm text-slate-600">{tr('Add one taxpayer or import an Excel file.','একজন করদাতা যোগ করুন অথবা এক্সেল ফাইল আমদানি করুন।')}</p>
-      </div>}
-      {!!visible.length&&<div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead><tr className="border-b border-slate-200"><th className="p-3">{tr('TIN','টিআইএন')}</th><th className="p-3">{tr('User Name','নাম')}</th><th className="p-3 text-right">{tr('Actions','কার্যক্রম')}</th></tr></thead>
-          <tbody>{visible.map(person=><tr key={person.id} className="border-b border-slate-100">
-            <td className="p-3 font-mono whitespace-nowrap">{person.tin}</td>
-            <td className="p-3">{editId===person.id?<input aria-label={tr('Edit name','নাম সম্পাদনা')} className={formInput} value={editName} onChange={e=>setEditName(e.target.value)}/>:person.display_name}</td>
-            <td className="p-3"><div className="flex flex-wrap justify-end gap-2">
-              {editId===person.id?<><button className={secondary} onClick={()=>void rename(person)}>{tr('Save','সংরক্ষণ')}</button><button className={secondary} onClick={()=>setEditId('')}>{tr('Cancel','বাতিল')}</button></>
-                :<button className={secondary} onClick={()=>{setEditId(person.id);setEditName(person.display_name);setDeleteId('');}}>{tr('Edit','সম্পাদনা')}</button>}
-              {deleteId===person.id?<><button className={secondary} onClick={()=>void remove(person)}>{tr('Confirm remove','অপসারণ নিশ্চিত করুন')}</button><button className={secondary} onClick={()=>setDeleteId('')}>{tr('Cancel','বাতিল')}</button></>
-                :<button type="button" className={secondary} onClick={()=>{setDeleteId(person.id);setEditId('');}} aria-label={tr('Remove '+person.display_name,person.display_name+' সরান')}><Trash2 size={16}/></button>}
-            </div></td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
-      <button type="button" className={secondary} onClick={()=>navigate('manage_authorization')}>{tr('Manage taxpayer authorizations','করদাতার অনুমোদন পরিচালনা')}</button>
-    </div>
+      {!checkingIdentity&&!loading&&!error&&<>
+        <div className="flex flex-col gap-4 border-b border-taxpay-border pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <label id="beneficiary-list-heading" htmlFor="beneficiary-list" className="mb-1.5 block text-sm font-semibold text-taxpay-text">{tr('Selected list','নির্বাচিত তালিকা')}</label>
+            {lists.length>0?<UiSelect id="beneficiary-list" value={activeList} onChange={event=>{setActiveList(event.target.value);setSelectedIds([]);setSearch('');}} className="max-w-xl">
+              {lists.map(list=><option value={list.id} key={list.id}>{list.name}</option>)}
+            </UiSelect>:<p className="text-sm text-slate-600">{tr('Create a list to start saving taxpayer contacts.','করদাতার তথ্য সংরক্ষণ শুরু করতে একটি তালিকা তৈরি করুন।')}</p>}
+          </div>
+          {lists.length>0&&<div className="flex shrink-0 items-center gap-2 text-sm text-slate-600" aria-live="polite">
+            <UsersRound size={18} aria-hidden="true" className="text-taxpay-primary"/>
+            <span><strong className="text-taxpay-text">{listPeople.length}</strong> {tr(listPeople.length===1?'beneficiary':'beneficiaries','জন উপকারভোগী')}</span>
+          </div>}
+        </div>
+
+        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-8 text-center sm:py-10">
+          <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
+          <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
+          <p className="mt-1 text-sm text-slate-600">{tr('Keep taxpayer names and TINs together for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার নাম ও টিআইএন একসঙ্গে রাখুন।')}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <UiButton type="button" variant="primary" onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
+            <UiButton type="button" variant="outline" onClick={()=>open('single')}>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
+            <UiButton type="button" variant="outline" onClick={()=>open('bulk')}>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
+          </div>
+        </div>:<>
+          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <label className="relative block w-full sm:max-w-md">
+              <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/>
+              <span className="sr-only">{tr('Search this list','এই তালিকায় খুঁজুন')}</span>
+              <UiInput type="search" value={search} onChange={event=>setSearch(event.target.value)} placeholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')} className="pl-10"/>
+            </label>
+            {selectedPeople.length>0&&<div className="flex flex-wrap items-center gap-2 rounded-lg bg-taxpay-light p-2">
+              <span className="px-2 text-sm font-medium text-taxpay-text">{tr(`${selectedPeople.length} selected`,`${selectedPeople.length} জন নির্বাচিত`)}</span>
+              <UiButton type="button" variant="primary" onClick={()=>payWith(selectedPeople)}><CreditCard size={17} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যদের কর পরিশোধ')}</UiButton>
+              <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
+            </div>}
+          </div>
+
+          {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-8 text-center">
+            <h2 className="font-semibold text-taxpay-text">{tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
+            <p className="mt-1 text-sm text-slate-600">{tr('Add a taxpayer or import a spreadsheet into this list.','এই তালিকায় করদাতার তথ্য যোগ করুন অথবা স্প্রেডশিট আমদানি করুন।')}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2"><UiButton type="button" variant="primary" onClick={()=>open('single')}>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton><UiButton type="button" variant="outline" onClick={()=>open('bulk')}>{tr('Import Excel','এক্সেল আমদানি')}</UiButton></div>
+          </div>:filteredPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-8 text-center">
+            <p className="font-medium text-taxpay-text">{tr('No matching beneficiaries','কোনো উপকারভোগী মেলেনি')}</p>
+            <UiButton type="button" variant="quiet" className="mt-2" onClick={()=>setSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</UiButton>
+          </div>:<>
+            <div className="hidden overflow-hidden rounded-lg border border-taxpay-border md:block">
+              <table className="w-full table-fixed text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600"><tr>
+                  <th className="w-12 p-3"><input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
+                    onChange={event=>setSelectedIds(current=>event.target.checked?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)])):current.filter(id=>!filteredPeople.some(person=>person.id===id)))}/></th>
+                  <th className="w-44 p-3">{tr('TIN','টিআইএন')}</th><th className="p-3">{tr('Name','নাম')}</th><th className="w-[23rem] p-3 text-right">{tr('Actions','কার্যক্রম')}</th>
+                </tr></thead>
+                <tbody>{filteredPeople.map(person=><tr key={person.id} className="border-t border-taxpay-border">
+                  <td className="p-3"><input type="checkbox" aria-label={tr(`Select ${person.display_name}`,`${person.display_name} নির্বাচন`)} checked={selectedIds.includes(person.id)} onChange={event=>setSelectedIds(current=>event.target.checked?[...current,person.id]:current.filter(id=>id!==person.id))}/></td>
+                  <td className="break-all p-3 font-mono text-slate-700">{person.tin}</td><td className="break-words p-3 font-medium text-taxpay-text">{person.display_name}</td>
+                  <td className="p-3"><div className="flex flex-wrap justify-end gap-2">
+                    <UiButton type="button" variant="outline" className="px-3 text-sm" onClick={()=>{setEditPerson(person);setEditName(person.display_name);setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" className="px-3 text-sm" onClick={()=>payWith([person])}><CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}</UiButton>
+                    <UiButton type="button" variant="quiet" className="px-3 text-sm text-red-700 hover:bg-red-50" aria-label={tr(`Remove ${person.display_name}`,`${person.display_name} সরান`)} onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
+                  </div></td>
+                </tr>)}</tbody>
+              </table>
+            </div>
+
+            <ul className="space-y-3 md:hidden" aria-label={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}>
+              {filteredPeople.map(person=><li key={person.id} className="rounded-lg border border-taxpay-border p-3">
+                <div className="flex items-start gap-3">
+                  <input className="mt-1" type="checkbox" aria-label={tr(`Select ${person.display_name}`,`${person.display_name} নির্বাচন`)} checked={selectedIds.includes(person.id)} onChange={event=>setSelectedIds(current=>event.target.checked?[...current,person.id]:current.filter(id=>id!==person.id))}/>
+                  <div className="min-w-0 flex-1"><p className="break-words font-semibold text-taxpay-text">{person.display_name}</p><p className="mt-1 break-all font-mono text-sm text-slate-600">{person.tin}</p></div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditName(person.display_name);setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
+                  <UiButton type="button" variant="outline" className="text-sm" onClick={()=>payWith([person])}><CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}</UiButton>
+                  <UiButton type="button" variant="quiet" className="col-span-2 text-sm text-red-700 hover:bg-red-50" onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove beneficiary','উপকারভোগী সরান')}</UiButton>
+                </div>
+              </li>)}
+            </ul>
+            <p className="pt-2 text-xs text-slate-500">{tr('Saved details are payment shortcuts only. They do not grant access to tax records or authorize a payment.','সংরক্ষিত তথ্য শুধু পেমেন্টে সহায়তার জন্য। এগুলো করতথ্যে প্রবেশাধিকার বা পেমেন্টের অনুমোদন দেয় না।')}</p>
+          </>}
+        </>}
+      </>}
+    </section>
+
+    {createListOpen&&<TaxPayModal title={tr('Create beneficiary list','উপকারভোগীর তালিকা তৈরি')} ariaLabel={tr('Create list','তালিকা তৈরি')}
+      onClose={()=>{if(!busy){setCreateListOpen(false);setModalError('');}}} initialFocusSelector="#beneficiary-create-list-name"
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setCreateListOpen(false)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-create-list-form" variant="primary" disabled={busy}>{busy?tr('Creating…','তৈরি হচ্ছে…'):tr('Create list','তালিকা তৈরি')}</UiButton></div>}>
+      <form id="beneficiary-create-list-form" className="space-y-3 py-2" onSubmit={event=>void saveList(event)}>
+        <div><label htmlFor="beneficiary-create-list-name" className="mb-1 block text-sm font-semibold">{tr('List name','তালিকার নাম')} *</label><UiInput id="beneficiary-create-list-name" maxLength={80} required value={listName} onChange={event=>setListName(event.target.value)} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')}/></div>
+        {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
+      </form>
+    </TaxPayModal>}
 
     {flow&&<TaxPayModal title={flow==='single'?tr('Add beneficiary','উপকারভোগী যোগ করুন'):tr('Import beneficiaries','উপকারভোগী আমদানি করুন')}
-      onClose={close} ariaLabel={tr('Beneficiary entry','উপকারভোগী যোগ')} motionKey={flow+phase}
+      onClose={closeFlow} ariaLabel={tr('Beneficiary entry','উপকারভোগী যোগ')} motionKey={flow+phase}
+      initialFocusSelector={flow==='single'?'#beneficiary-tin':'#beneficiary-file'}
       footer={<div className="flex w-full flex-wrap items-center justify-between gap-2">
-        <div>{flow==='bulk'&&<button type="button" className={secondary} onClick={template}><Download size={16}/>{tr('Download Template','টেমপ্লেট ডাউনলোড')}</button>}</div>
+        <div>{flow==='bulk'&&<UiButton type="button" variant="outline" onClick={template}><Download size={16} aria-hidden="true"/>{tr('Download template','টেমপ্লেট ডাউনলোড')}</UiButton>}</div>
         <div className="flex gap-2">
-          <button type="button" className={secondary} disabled={busy} onClick={()=>{if(flow==='bulk'&&phase!=='upload'){setPhase(phase==='confirm'?'preview':'upload');setImportError('');}else close();}}>
+          <UiButton type="button" variant="outline" disabled={busy} onClick={()=>{if(flow==='bulk'&&phase!=='upload'){setPhase(phase==='confirm'?'preview':'upload');setModalError('');}else closeFlow();}}>
             {flow==='bulk'&&phase!=='upload'?tr('Back','পেছনে'):tr('Cancel','বাতিল')}
-          </button>
-          {flow==='single'?<button form="beneficiary-single-form" type="submit" className={action} disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Add beneficiary','যোগ করুন')}</button>
-            :phase==='upload'?<button type="button" className={action} disabled={!filename||busy} onClick={()=>setPhase('preview')}>{tr('Next','পরবর্তী')}</button>
-            :phase==='preview'?<button type="button" className={action} disabled={!chosen.length||busy||(!targetList||targetList==='new'&&!listName.trim())} onClick={()=>setPhase('confirm')}>{tr('Next','পরবর্তী')}</button>
-            :<button type="button" className={action} disabled={!chosen.length||busy} onClick={()=>void finishImport()}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Finish Import','আমদানি সম্পন্ন')}</button>}
+          </UiButton>
+          {flow==='single'?<UiButton form="beneficiary-single-form" type="submit" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
+            :phase==='upload'?<UiButton type="button" variant="primary" disabled={!filename||busy} onClick={()=>setPhase('preview')}>{tr('Next','পরবর্তী')}</UiButton>
+            :phase==='preview'?<UiButton type="button" variant="primary" disabled={!chosen.length||busy||(!targetList||targetList==='new'&&!listName.trim())} onClick={()=>setPhase('confirm')}>{tr('Next','পরবর্তী')}</UiButton>
+            :<UiButton type="button" variant="primary" disabled={!chosen.length||busy} onClick={()=>void finishImport()}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Finish import','আমদানি সম্পন্ন')}</UiButton>}
         </div>
       </div>}>
       <div className="space-y-4 py-2" data-testid="beneficiary-import">
         {flow==='bulk'&&<div className="flex items-center gap-2" aria-label={tr('Import progress','আমদানির অগ্রগতি')}>
-          {(['upload','preview','confirm'] as Phase[]).map((p,index)=><div key={p} className={'flex-1 rounded-md border px-2 py-2 text-center text-xs '+(phase===p?'border-taxpay-primary bg-blue-50 text-taxpay-primary':'border-slate-200 text-slate-600')}>
-            {index+1}. {p==='upload'?tr('Upload','আপলোড'):p==='preview'?tr('Preview','পূর্বরূপ'):tr('Review & add','পর্যালোচনা ও যোগ')}
+          {(['upload','preview','confirm'] as Phase[]).map((value,index)=><div key={value} className={'flex-1 rounded-md border px-2 py-2 text-center text-xs '+(phase===value?'border-taxpay-primary bg-blue-50 text-taxpay-primary':'border-slate-200 text-slate-600')}>
+            {index+1}. {value==='upload'?tr('Upload','আপলোড'):value==='preview'?tr('Preview','পূর্বরূপ'):tr('Review and add','পর্যালোচনা ও যোগ')}
           </div>)}
         </div>}
-        <div>
-          <label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('List name','তালিকার নাম')} *</label>
-          <select id="beneficiary-target-list" value={targetList} className={formInput} onChange={e=>setTargetList(e.target.value)}>
-            <option value="new">{tr('Create new list','নতুন তালিকা তৈরি')}</option>
-            {lists.map(list=><option key={list.id} value={list.id}>{list.name}</option>)}
-          </select>
-          {targetList==='new'&&<input id="beneficiary-new-list-name" className={formInput+' mt-2'} maxLength={80} required value={listName} placeholder={tr('e.g. Family, Clients','যেমন পরিবার, ক্লায়েন্ট')} onChange={e=>setListName(e.target.value)}/>}
+        <div><label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('Add to list','তালিকায় যোগ করুন')} *</label>
+          <UiSelect id="beneficiary-target-list" value={targetList} onChange={event=>setTargetList(event.target.value)}>
+            <option value="new">{tr('Create new list','নতুন তালিকা তৈরি')}</option>{lists.map(list=><option key={list.id} value={list.id}>{list.name}</option>)}
+          </UiSelect>
+          {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
         </div>
-        {flow==='single'?<form id="beneficiary-single-form" className="space-y-3" onSubmit={e=>void saveSingle(e)}>
-          <div><label className="block mb-1 text-sm font-semibold" htmlFor="beneficiary-tin">{tr('Beneficiary TIN','উপকারভোগীর টিআইএন')} *</label>
-            <input id="beneficiary-tin" className={formInput} inputMode="numeric" maxLength={12} required value={tin} onChange={e=>setTin(e.target.value.replace(/\D/g,'').slice(0,12))}/></div>
-          <div><label className="block mb-1 text-sm font-semibold" htmlFor="beneficiary-name">{tr('Beneficiary name','উপকারভোগীর নাম')} *</label>
-            <input id="beneficiary-name" className={formInput} maxLength={160} required value={name} onChange={e=>setName(e.target.value)}/></div>
+        {flow==='single'?<form id="beneficiary-single-form" className="space-y-3" onSubmit={event=>void saveSingle(event)}>
+          <div><label className="mb-1 block text-sm font-semibold" htmlFor="beneficiary-tin">{tr('Beneficiary TIN','উপকারভোগীর টিআইএন')} *</label><UiInput id="beneficiary-tin" inputMode="numeric" maxLength={12} required value={tin} onChange={event=>setTin(event.target.value.replace(/\D/g,'').slice(0,12))}/></div>
+          <div><label className="mb-1 block text-sm font-semibold" htmlFor="beneficiary-name">{tr('Beneficiary name','উপকারভোগীর নাম')} *</label><UiInput id="beneficiary-name" maxLength={160} required value={name} onChange={event=>setName(event.target.value)}/></div>
         </form>:phase==='upload'?<div className="space-y-3">
-          <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
-          <div className="rounded-lg border-2 border-dashed border-slate-300 p-5 text-center"
-            onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();void receive(e.dataTransfer.files[0]);}}>
-            <FileSpreadsheet className="mx-auto text-taxpay-primary" size={30}/>
-            <p className="my-2 text-sm">{tr('Drag and drop an Excel file here','এখানে এক্সেল ফাইল টেনে আনুন')}</p>
-            <input ref={fileRef} id="beneficiary-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={e=>{void receive(e.target.files?.[0]);e.target.value='';}}/>
-            <button className={secondary} type="button" onClick={()=>fileRef.current?.click()}>{tr('Browse Excel','এক্সেল নির্বাচন')}</button>
+          <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload an Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
+          <div className="rounded-lg border-2 border-dashed border-slate-300 p-5 text-center" onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();void receive(event.dataTransfer.files[0]);}}>
+            <FileSpreadsheet className="mx-auto text-taxpay-primary" size={30} aria-hidden="true"/><p className="my-2 text-sm">{tr('Drag and drop an Excel file here','এখানে এক্সেল ফাইল টেনে আনুন')}</p>
+            <input ref={fileRef} id="beneficiary-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={event=>{void receive(event.target.files?.[0]);event.target.value='';}}/>
+            <UiButton variant="outline" type="button" onClick={()=>fileRef.current?.click()}>{tr('Browse files','ফাইল নির্বাচন')}</UiButton>
           </div>
-          {filename&&<p role="status" className="flex items-center gap-2 text-sm text-taxpay-primary"><Check size={17}/>{tr('Upload successful: ','আপলোড সফল: ')}{filename}</p>}
-          <p className="text-xs text-slate-600">{tr('Use columns TIN and User Name. Only .xlsx files, maximum 2 MB and 1,000 rows.','TIN এবং User Name কলাম ব্যবহার করুন। শুধু .xlsx, সর্বোচ্চ ২ এমবি ও ১০০০ সারি।')}</p>
+          {filename&&<p role="status" className="flex items-center gap-2 text-sm text-taxpay-primary"><Check size={17} aria-hidden="true"/>{tr('Upload ready: ','আপলোড প্রস্তুত: ')}{filename}</p>}
+          <p className="text-xs text-slate-600">{tr('Use TIN and User Name columns. .xlsx only, up to 2 MB and 1,000 rows.','TIN ও User Name কলাম ব্যবহার করুন। শুধু .xlsx, সর্বোচ্চ ২ এমবি ও ১,০০০ সারি।')}</p>
         </div>:phase==='preview'?<div>
-          <h3 className="font-semibold">{tr('Preview and select','পূর্বরূপ ও নির্বাচন')}</h3>
-          <p className="text-sm text-slate-600">{tr(String(valid.length)+' valid, '+String(reviewed.length-valid.length)+' needing attention',String(valid.length)+'টি সঠিক, '+String(reviewed.length-valid.length)+'টি সংশোধন প্রয়োজন')}</p>
-          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={valid.length>0&&chosen.length===valid.length}
-            onChange={e=>setRows(old=>old.map(row=>({...row,selected:e.target.checked})))} />{tr('Select all valid rows','সব সঠিক সারি নির্বাচন')}</label>
-          <div className="max-h-80 overflow-auto rounded-lg border border-slate-200">
-            <table className="w-full text-sm"><thead><tr className="sticky top-0 bg-white text-left"><th className="p-2">{tr('Add','যোগ')}</th><th className="p-2">{tr('TIN','টিআইএন')}</th><th className="p-2">{tr('User Name','নাম')}</th><th className="p-2">{tr('Validation','যাচাই')}</th></tr></thead>
-              <tbody>{reviewed.map((row,i)=><tr key={row.sourceRow} className="border-t border-slate-100">
-                <td className="p-2"><input type="checkbox" aria-label={tr('Include row ','সারি যোগ করুন ')+row.sourceRow} checked={!row.error&&row.selected} disabled={!!row.error}
-                  onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,selected:e.target.checked}:r))}/></td>
-                <td className="p-2"><input aria-label={tr('TIN row ','টিআইএন সারি ')+row.sourceRow} className="w-36 rounded border p-2 font-mono" value={row.tin} onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,tin:e.target.value.replace(/\D/g,'').slice(0,12)}:r))}/></td>
-                <td className="p-2"><input aria-label={tr('Name row ','নাম সারি ')+row.sourceRow} className="min-w-36 rounded border p-2" maxLength={160} value={row.name}
-                  onChange={e=>setRows(old=>old.map((r,j)=>i===j?{...r,name:e.target.value}:r))}/></td>
-                <td className={'p-2 text-xs '+(row.error?'text-red-700':'text-taxpay-primary')}>{row.error||tr('Ready','প্রস্তুত')}</td>
-              </tr>)}</tbody></table>
-          </div>
+          <h3 className="font-semibold">{tr('Review imported rows','আমদানি করা সারি পর্যালোচনা')}</h3>
+          <p className="text-sm text-slate-600">{tr(`${valid.length} valid, ${reviewed.length-valid.length} needing attention`,`${valid.length}টি সঠিক, ${reviewed.length-valid.length}টি সংশোধন প্রয়োজন`)}</p>
+          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={valid.length>0&&chosen.length===valid.length} onChange={event=>setRows(old=>old.map(row=>({...row,selected:event.target.checked})))}/>{tr('Select all valid rows','সব সঠিক সারি নির্বাচন')}</label>
+          <div className="max-h-80 overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead><tr className="sticky top-0 bg-white text-left"><th className="p-2">{tr('Add','যোগ')}</th><th className="p-2">{tr('TIN','টিআইএন')}</th><th className="p-2">{tr('Name','নাম')}</th><th className="p-2">{tr('Validation','যাচাই')}</th></tr></thead>
+            <tbody>{reviewed.map((row,index)=><tr key={row.sourceRow} className="border-t border-slate-100">
+              <td className="p-2"><input type="checkbox" aria-label={tr('Include row ','সারি যোগ করুন ')+row.sourceRow} checked={!row.error&&row.selected} disabled={!!row.error} onChange={event=>setRows(old=>old.map((value,rowIndex)=>index===rowIndex?{...value,selected:event.target.checked}:value))}/></td>
+              <td className="p-2"><UiInput aria-label={tr('TIN row ','টিআইএন সারি ')+row.sourceRow} className="max-w-36 font-mono" value={row.tin} onChange={event=>setRows(old=>old.map((value,rowIndex)=>index===rowIndex?{...value,tin:event.target.value.replace(/\D/g,'').slice(0,12)}:value))}/></td>
+              <td className="p-2"><UiInput aria-label={tr('Name row ','নাম সারি ')+row.sourceRow} className="min-w-36" maxLength={160} value={row.name} onChange={event=>setRows(old=>old.map((value,rowIndex)=>index===rowIndex?{...value,name:event.target.value}:value))}/></td>
+              <td className={'p-2 text-xs '+(row.error?'text-red-700':'text-taxpay-primary')}>{row.error||tr('Ready','প্রস্তুত')}</td>
+            </tr>)}</tbody></table></div>
         </div>:<div className="space-y-2 rounded-lg border border-slate-200 p-4">
-          <h3 className="font-semibold">{tr('Ready to add','যোগ করার জন্য প্রস্তুত')}</h3>
-          <p>{tr('Selected: ','নির্বাচিত: ')}<strong>{chosen.length}</strong></p>
+          <h3 className="font-semibold">{tr('Confirm import','আমদানি নিশ্চিত করুন')}</h3><p>{tr('Selected: ','নির্বাচিত: ')}<strong>{chosen.length}</strong></p>
           <p>{tr('Skipped or invalid: ','বাদ দেওয়া বা ভুল: ')}<strong>{reviewed.length-chosen.length}</strong></p>
-          <p className="text-sm text-slate-600">{tr('Only selected valid beneficiaries will be saved. This does not grant authorization.','শুধু নির্বাচিত সঠিক উপকারভোগী সংরক্ষিত হবে। এতে অনুমোদন দেওয়া হয় না।')}</p>
+          <p className="text-sm text-slate-600">{tr('Only selected valid beneficiaries will be saved. Saving a contact does not grant authorization.','শুধু নির্বাচিত সঠিক উপকারভোগী সংরক্ষিত হবে। তথ্য সংরক্ষণ করলে অনুমোদন দেওয়া হয় না।')}</p>
         </div>}
-        {busy&&<p role="status" className="text-sm text-taxpay-primary">{phase==='upload'?tr('Preparing preview…','পূর্বরূপ প্রস্তুত হচ্ছে…'):tr('Saving beneficiaries…','উপকারভোগী সংরক্ষণ হচ্ছে…')}</p>}
-        {importError&&<p role="alert" className="text-sm text-red-700">{importError}</p>}
+        {busy&&<p role="status" className="text-sm text-taxpay-primary">{tr('Saving beneficiaries…','উপকারভোগী সংরক্ষণ হচ্ছে…')}</p>}
+        {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
       </div>
+    </TaxPayModal>}
+
+    {editPerson&&<TaxPayModal title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
+      onClose={()=>{if(!busy){setEditPerson(null);setModalError('');}}} initialFocusSelector="#beneficiary-edit-name"
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setEditPerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
+      <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
+        <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
+        <div><label htmlFor="beneficiary-edit-name" className="mb-1 block text-sm font-semibold">{tr('Beneficiary name','উপকারভোগীর নাম')} *</label><UiInput id="beneficiary-edit-name" maxLength={160} required value={editName} onChange={event=>setEditName(event.target.value)}/></div>
+        {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
+      </form>
+    </TaxPayModal>}
+
+    {deletePerson&&<TaxPayModal title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
+      onClose={()=>{if(!busy)setDeletePerson(null);}}
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setDeletePerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
+      <p className="py-2 text-sm text-slate-700">{tr(`Remove ${deletePerson.display_name} (${deletePerson.tin}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${deletePerson.display_name} (${deletePerson.tin})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
+      {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
     </TaxPayModal>}
   </section>;
 }

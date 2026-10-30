@@ -32,38 +32,44 @@ test('real account saves private beneficiary, reopens it, isolates another owner
     (session.expires_at??Math.floor(Date.now()/1000)+3600);
   const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
   const page=await context.newPage();
+  const records=page.locator('[data-testid="beneficiaries-page"] ul:visible');
   await page.goto(loginUrl(ownerA.session));
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Add single'}).click();
-  await page.locator('#beneficiary-new-list-name').fill('Family');
-  await page.locator('#beneficiary-tin').fill('012345678901');
-  await page.locator('#beneficiary-name').fill('Local Beneficiary One');
-  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('button',{name:'Create list',exact:true}).first().click();
+  const listDialog=page.getByRole('dialog',{name:'Create list'});
+  await listDialog.locator('#beneficiary-create-list-name').fill('Family');
+  await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+  const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await addDialog.locator('#beneficiary-tin').fill('012345678901');
+  await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
+  await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
-  await expect(page.getByText('012345678901')).toBeVisible();
+  await expect(records).toContainText('012345678901');
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.getByText('Local Beneficiary One')).toBeVisible();
+  await expect(records).toContainText('Local Beneficiary One');
 
   // Import a genuine compressed Excel workbook: one duplicate and one valid new beneficiary.
-  await page.getByRole('button',{name:'Bulk add'}).click();
+  await page.getByRole('button',{name:'Import Excel',exact:true}).first().click();
   await page.locator('#beneficiary-file').setInputFiles({
     name:'beneficiaries-two-rows.xlsx',
     mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     buffer:Buffer.from(readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim(),'base64'),
   });
   const importAlerts=await page.locator('[role="alert"]').allTextContents();
-  await expect(page.getByText(/Upload successful:/),'Excel parser / import errors: '+JSON.stringify(importAlerts)).toBeVisible();
-  await page.getByRole('button',{name:'Next'}).click();
-  await expect(page.getByText('Already saved in this list.')).toBeVisible();
-  await expect(page.getByText('1 valid, 1 needing attention')).toBeVisible();
-  await page.getByRole('button',{name:'Next'}).click();
-  await page.getByRole('button',{name:'Finish Import'}).click();
+  const importDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(importDialog.getByText(/Upload ready:/),'Excel parser / import errors: '+JSON.stringify(importAlerts)).toBeVisible();
+  await importDialog.getByRole('button',{name:'Next',exact:true}).click();
+  await expect(importDialog.getByText('Already saved in this list.')).toBeVisible();
+  await expect(importDialog.getByText('1 valid, 1 needing attention')).toBeVisible();
+  await importDialog.getByRole('button',{name:'Next',exact:true}).click();
+  await importDialog.getByRole('button',{name:'Finish import'}).click();
   await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible({timeout:15000});
-  await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
+  await expect(records).toContainText('Local Beneficiary Two');
   await page.reload();
-  await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
+  await expect(records).toContainText('Local Beneficiary Two');
 
   const read=async(token:string)=>{
     const response=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=owner_uid,tin,display_name',api.origin),{
