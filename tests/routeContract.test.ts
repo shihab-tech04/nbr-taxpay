@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
-import {OFFICE_MANAGEMENT_ROUTE_ALIASES, ROUTES, publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext} from '../src/services/routeContract';
+import {OFFICE_MANAGEMENT_ROUTE_ALIASES, ROUTES, publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, safePrivateAuthReturnRoute, validRoute, writeRouteContext} from '../src/services/routeContract';
 
 test('the TaxPay route contract matches its public and taxpayer app router', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
@@ -117,6 +117,12 @@ test('Beneficiaries sign-in return target persists across reload without an open
   assert.equal(query.has('payerTin'),false);
   query.set('returnTo','../../unsafe');
   assert.deepEqual(routeContextFromUrl('secure_workspace',query),{});
+  writeRouteContext('secure_workspace',{returnTo:'account_profile'},query);
+  assert.equal(query.get('returnTo'),'account_profile');
+  assert.deepEqual(routeContextFromUrl('secure_workspace',query),{returnTo:'account_profile'});
+  assert.equal(safePrivateAuthReturnRoute('manage_authorization'),'manage_authorization');
+  for(const blocked of [null,undefined,'','payment_details','office_login','https://evil.example','../../escape'])
+    assert.equal(safePrivateAuthReturnRoute(blocked),null);
   writeRouteContext('landing',{},query);
   assert.equal(query.has('returnTo'),false);
 });
