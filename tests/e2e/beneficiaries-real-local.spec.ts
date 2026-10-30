@@ -35,8 +35,11 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.goto(loginUrl(ownerA.session));
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Add single'}).click();
-  await page.locator('#beneficiary-new-list-name').fill('Family');
+  await page.getByRole('button',{name:'Create list',exact:true}).first().click();
+  const listDialog=page.getByRole('dialog',{name:'Create list'});
+  await listDialog.locator('#beneficiary-create-list-name').fill('Family');
+  await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
   await page.locator('#beneficiary-tin').fill('012345678901');
   await page.locator('#beneficiary-name').fill('Local Beneficiary One');
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
@@ -47,7 +50,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByText('Local Beneficiary One')).toBeVisible();
 
   // Import a genuine compressed Excel workbook: one duplicate and one valid new beneficiary.
-  await page.getByRole('button',{name:'Bulk add'}).click();
+  await page.getByRole('button',{name:'Import Excel',exact:true}).first().click();
   await page.locator('#beneficiary-file').setInputFiles({
     name:'beneficiaries-two-rows.xlsx',
     mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -59,7 +62,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByText('Already saved in this list.')).toBeVisible();
   await expect(page.getByText('1 valid, 1 needing attention')).toBeVisible();
   await page.getByRole('button',{name:'Next'}).click();
-  await page.getByRole('button',{name:'Finish Import'}).click();
+  await page.getByRole('button',{name:'Finish import'}).click();
   await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible({timeout:15000});
   await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
   await page.reload();

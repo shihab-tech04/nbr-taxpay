@@ -45,8 +45,19 @@ jobs:
 
       - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
         env:
-          VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts --project=desktop-1280 --project=mobile-375
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
+
+      - name: Upload Beneficiaries English and Bengali screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beneficiaries-acceptance-screenshots
+          path: test-results/screenshots/beneficiaries-*.png
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Verify payment wizard UX and large-amount precision
         env:

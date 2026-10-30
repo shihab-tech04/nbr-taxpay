@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 27067)
+Total output lines: 1461
+
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -175,7 +178,7 @@ interface GuestPaymentProps {
   initialCategory?: PaymentCategory;
   /** Payer relationship is chosen before service selection in the Pay Tax modal. */
   initialForSelf?: boolean;
-  initialBeneficiary?: { tin: string; name: string };
+  initialBeneficiary?: { tin: string; name: string; additional?: { tin: string; name: string }[] };
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
@@ -197,7 +200,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [tin, setTin] = useState(initialBeneficiary?.tin ?? '');
   const [payerName, setPayerName] = useState('');
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
-  const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>([]);
+  const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
+    (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
+  );
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [phone, setPhone] = useState('');
@@ -756,173 +761,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
       const newReceipt: ChallanReceipt = {
         id: `rcpt-${Date.now()}`,
-        taxEventId: `SIM-EVENT-${attemptId}`,
-        paymentTransactionId: `SIM-PAYMENT-${attemptId}`,
-        challanNo: `SIM-${attemptId}`,
-        tokenNumber: `SIM-TOKEN-${attemptId}`,
-        paymentCategory: category,
-        assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
-        payerName: forSelf ? accountName || '—' : effectivePayerName.trim(),
-        payerTin: signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
-        taxpayerTin,
-        receiptMobile: receiptPhone,
-        noticeReference: noticeReference.trim() || undefined,
-        isRepresentativePayment: !forSelf,
-        representativeTin: undefined,
-        taxZone,
-        taxCircle,
-        isWithholding: isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT',
-        deducteeTin: undefined,
-        deducteeName: undefined,
-        items: lineItems,
-        totalAmount,
-        paymentMethod,
-        gatewayTransactionId: `SIM-TXN-${attemptId}`,
-        treasuryStatus: 'INITIATED',
-        // CRITICAL DOMAIN SEPARATION:
-        taxCreditStatus: (isWithholdingMode || category === 'SOURCE_TAX_DEPOSIT') 
-          ? 'NOT_APPLICABLE' 
-          : 'PENDING_RECONCILIATION',
-        createdAt: now,
-        isSimulatedDemo: true
-      };
-      pendingStoryRef.current = {
-        receipt: newReceipt,
-        payload: {
-          idempotencyKey: attemptId,
-          sessionId: getStorySessionId(),
-          service: category,
-          amountMinor: Number(storyAmountMinor),
-          details: {
-            receiptReference: newReceipt.challanNo,
-            taxpayerTin,
-            payerName: newReceipt.payerName,
-            payerTin: newReceipt.payerTin,
-            payerMode: forSelf ? 'SELF' : 'OTHER',
-            assessmentYear,
-            taxZone, taxCircle,
-            receiptMobile: receiptPhone,
-            noticeReference,
-            incomeTaxType,
-            isWithholding: isWithholdingMode,
-            paymentChannel, paymentMethod,
-            lines: lineItems,
-            ...(otherBatch ? { allocations: otherTaxLines.map(line => {
-              const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
-              return { taxpayerTin: taxpayer.tin, taxpayerName: taxpayer.name,
-                headId: line.headId, assessmentYear: line.assessmentYear,
-                amountMinor: Number(parseGuestMinorUnits(line.amount)) };
-            }) } : {}),
-            totalAmount,
-            taxCreditStatus: newReceipt.taxCreditStatus,
-            receiptSnapshot: {...newReceipt,treasuryStatus:'GATEWAY_SUCCESS'}
-          },
-        },
-      };
-      const splitItems = otherBatch && (forSelf === false || otherTaxLines.length > 1 || batchTaxpayers.length > 1);
-      if (splitItems && !(paymentChannel === 'NOW' && simulateDecline)) {
-        const batch = createOtherTaxBatch(pendingStoryRef.current.payload, newReceipt, otherTaxLines.map((line, index) => {
-          const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
-          return { sourceId: line.id, taxpayerTin: taxpayer.tin, taxpayerName: taxpayer.name,
-            assessmentYear: line.assessmentYear, amountMinor: Number(parseGuestMinorUnits(line.amount)), line: lineItems[index] };
-        }), paymentChannel === 'OTC' ? 'PENDING_BANK' : 'READY');
-        saveOtherTaxBatch(batch);
-        rememberBatch(batch);
-        pendingStoryRef.current = null;
-        setAttemptReceipt(batch.items[0].receipt);
-      } else {
-        rememberBatch(null);
-        setAttemptReceipt(newReceipt);
-      }
-      setStep(4);
-      runLifecycle(paymentChannel === 'OTC' ? BANK_LIFECYCLE : simulateDecline ? [...ONLINE_LIFECYCLE.slice(0, 4), 'FAILED'] : ONLINE_LIFECYCLE, newReceipt);
-    } catch (error) {
-      pendingStoryRef.current = null;
-      rememberBatch(null);
-      setIsProcessing(false);
-      setPaymentPhase('review');
-      setErrorMessage(error instanceof Error && error.message === 'PAYMENT_DETAILS_TOO_LONG'
-        ? (language === 'bn' ? 'পেমেন্টের তথ্য অনেক দীর্ঘ। নাম বা রেফারেন্স ছোট করে আবার চেষ্টা করুন।' : 'Payment details are too long. Shorten the name or reference and try again.')
-        : (language === 'bn' ? 'অনুরোধ সংরক্ষণ করা যায়নি। ব্রাউজারের স্টোরেজ পরীক্ষা করে আবার চেষ্টা করুন।'
-          : 'The request could not be saved. Check browser storage and try again.'));
-    }
-  };
-
-  const simulateBankSettlement = () => {
-    if (paymentPhase !== 'pending-bank' || !attemptReceipt || isProcessing) return;
-    if (batchAttemptRef.current) {
-      try {
-        const ready: OtherTaxBatch = { ...batchAttemptRef.current, phase: 'READY' };
-        saveOtherTaxBatch(ready);
-        rememberBatch(ready);
-      } catch {
-        setErrorMessage(language === 'bn' ? 'অনুরোধ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।' : 'The request could not be saved. Try again.');
-        return;
-      }
-    }
-    setIsProcessing(true);
-    setPaymentPhase('processing');
-    runLifecycle(BANK_SETTLEMENT, attemptReceipt);
-  };
-
-  const retryPayment = () => {
-    if (paymentPhase === 'failed' && batchAttemptRef.current?.phase === 'READY') {
-      setIsProcessing(true);
-      setPaymentPhase('processing');
-      void confirmOtherTaxBatch();
-      return;
-    }
-    if (paymentPhase === 'failed' && pendingStoryRef.current && !simulateDecline) {
-      setIsProcessing(true);
-      setPaymentPhase('processing');
-      void confirmSimulatedPayment(pendingStoryRef.current.receipt);
-      return;
-    }
-    pendingStoryRef.current = null;
-    lifecycleTimers.current.forEach(clearTimeout);
-    lifecycleTimers.current = [];
-    setPaymentPhase('review');
-    setLifecycleStages([]);
-    setAttemptReceipt(null);
-    setAcknowledged(false);
-    setSimulateDecline(false);
-    setPaymentChannel(null);
-    setPaymentMethod(null);
-    setMethodGroup(null);
-    setShowReceiptDetails(false);
-    setStep(3);
-  };
-
-  const startAnotherBatch = () => {
-    try { clearOtherTaxBatch(); } catch {
-      setErrorMessage(language === 'bn' ? 'অনুরোধ সংরক্ষণ পরিষ্কার করা যায়নি।' : 'The saved request could not be cleared.');
-      return;
-    }
-    rememberBatch(null);
-    setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
-    setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
-    setOtherTaxLines([]); setAdditionalTaxpayers([]); setTin(''); setOtherTaxpayerName('');
-    setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
-  };
-
-  if (step === 4) {
-    const completed = paymentPhase === 'settled';
-    const bankPending = paymentPhase === 'pending-bank';
-    const declined = paymentPhase === 'failed';
-    const referenceReady = lifecycleStages.includes('ACS_REFERENCE_CREATED');
-    const confirmedReceipts = batchAttempt ? confirmedBatchReceipts(batchAttempt) : [];
-    const shownTotal = batchAttempt ? batchAttempt.amountMinor / 100 : totalAmount;
-    if (showReceiptDetails && createdReceipt) return (
-      <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)} />
-      </div>
-    );
-    return (
-      <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
-        <div className="payment-flow-embedded__confirmation-layout">
-        <section className="payment-lifecycle" aria-labelledby="payment-lifecycle-title">
-          <div className={`payment-lifecycle__heading payment-lifecycle__heading--${declined ? 'failed' : bankPending ? 'pending' : completed ? 'complete' : 'running'}`}>
-            <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
+        taxEventId: `SIM-EVENT-${attemp…2067 tokens truncated…derCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
             <div>
               <h2 id="payment-lifecycle-title">{declined && batchAttempt ? (language === 'bn' ? 'পেমেন্ট রেকর্ড অপেক্ষমাণ' : 'Payment records pending') : declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? (language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত' : 'Payment record saved') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}</h2>
             </div>

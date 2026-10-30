@@ -24,7 +24,7 @@ import {
 } from '../data/mockData';
 
 export type BannerPaymentService = 'TAX_WITH_RETURN' | 'ADVANCE_TAX' | 'SOURCE_TAX_DEPOSIT' | 'TRAVEL_TAX';
-export interface PaymentBeneficiaryPrefill { tin: string; name: string; }
+export interface PaymentBeneficiaryPrefill { tin: string; name: string; additional?: { tin: string; name: string }[]; }
 
 export interface TaxStateContextType {
   currentRoute: string;

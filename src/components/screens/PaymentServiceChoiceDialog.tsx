@@ -37,8 +37,9 @@ export const TAXPAY_ENTRY_CHOICES = [
 export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
+  const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(paymentBeneficiaryPrefill ? false : null);
-  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
+  const [topLevel, setTopLevel] = useState<TopLevelService | null>(multiBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   const [view, setView] = useState<'payer' | 'login' | 'payment'>('payer');
@@ -120,7 +121,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
            </button>}
           {view === 'payer' && <button type="button" className="tax-service-choice__continue"
              disabled={decisionStep === 1 ? payerForSelf === null : decisionStep === 2
-               ? !selected || (accountLoading && !previewAccount)
+               ? !selected || (multiBeneficiaryPrefill && selected !== 'OTHER_TAX_PAYMENT') || (accountLoading && !previewAccount)
                : !entryAccess || (accountLoading && !previewAccount)}
              onClick={advanceDecision}>
              {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
@@ -176,12 +177,16 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              <div className="tax-service-choice__grid tax-service-choice__tax-grid" role="group" aria-labelledby="tax-service-type-heading">
                {TAXPAY_ENTRY_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
                  <button type="button" key={id} aria-pressed={topLevel === id} data-payment-entry={id} className="tax-service-choice__card"
-                   onClick={() => setTopLevel(current => current === id ? null : id)}>
+                   disabled={multiBeneficiaryPrefill && id !== 'OTHER_TAX'}
+                   onClick={() => { if (!multiBeneficiaryPrefill) setTopLevel(current => current === id ? null : id); }}>
                    <span className="tax-service-choice__icon"><Icon size={23} strokeWidth={1.9} aria-hidden="true" /></span>
                    <span className="tax-service-choice__copy"><strong>{tr(en, bangla)}</strong><span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span></span>
                    <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
                  </button>
                ))}
+               {multiBeneficiaryPrefill && <p role="status" className="col-span-full rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-taxpay-dark">
+                 {tr('Multiple saved taxpayers are selected. Their payment heads and amounts will be allocated separately in Other Tax.','একাধিক সংরক্ষিত করদাতা নির্বাচিত। Other Tax-এ প্রত্যেকের খাত ও পরিমাণ আলাদাভাবে নির্ধারণ করা হবে।')}
+               </p>}
              </div>
            </div>}
            {decisionStep === 3 && (
