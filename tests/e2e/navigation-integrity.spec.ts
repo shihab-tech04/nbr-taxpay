@@ -114,13 +114,13 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
   await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
   await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
-  await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Manage Authorization');
+  await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   const bottom=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button')).toHaveCount(3);
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
   for(const [label,route] of [
-    ['Manage Authorization','manage_authorization'],['Activity','history'],['Tax ledger','ledger'],['Notifications','account_notifications']
+    ['Beneficiaries','beneficiaries'],['Activity','history'],['Tax ledger','ledger'],['Notifications','account_notifications']
   ] as const){
     await rail.getByRole('button',{name:label,exact:true}).click();
     await expect(page).toHaveURL(new RegExp('action='+route+'(?:&|$)'));
@@ -208,7 +208,7 @@ test('taxpayer mobile menu matches the compact desktop destinations and keeps ex
     await page.getByRole('button',{name:'Open menu'}).first().click();
     const dialog=page.getByRole('dialog',{name:'Services & menu'});
     await expect(dialog.locator('.citizen-dialog__link:visible')).toHaveCount(6);
-    await expect(dialog.getByRole('button',{name:'Manage Authorization'})).toBeVisible();
+    await expect(dialog.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
     await expect(dialog.getByRole('button',{name:'Payment services'})).toHaveCount(0);
     await expect(dialog.getByRole('button',{name:'Help'})).toHaveCount(0);
     await expect(dialog.getByRole('button',{name:'Profile settings'})).toHaveCount(0);
