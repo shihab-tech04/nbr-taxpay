@@ -9,15 +9,31 @@ function client() {
   if (!supabase) throw new Error('Saved beneficiaries are unavailable. Please try again later.');
   return supabase;
 }
+/** Read every page instead of silently truncating beneficiaries across named lists. */
+export async function collectBeneficiaryPages<T>(
+  fetchPage:(from:number,to:number)=>Promise<T[]>, pageSize=500
+):Promise<T[]> {
+  if(!Number.isInteger(pageSize)||pageSize<1||pageSize>1000)throw new Error('Invalid beneficiary page size.');
+  const all:T[]=[];
+  for(let from=0;;from+=pageSize){
+    const page=await fetchPage(from,from+pageSize-1);
+    all.push(...page);
+    if(page.length<pageSize)return all;
+  }
+}
 export async function loadBeneficiaries(ownerUid: string): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
   const db=client();
-  const [listResult,peopleResult]=await Promise.all([
+  const [listResult,people]=await Promise.all([
     db.from('taxpay_beneficiary_lists').select('id,owner_uid,name,created_at').eq('owner_uid',ownerUid).order('name'),
-    db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,created_at,updated_at').eq('owner_uid',ownerUid).order('created_at',{ascending:false}).limit(1000),
+    collectBeneficiaryPages<Beneficiary>(async(from,to)=>{
+      const result=await db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,created_at,updated_at')
+        .eq('owner_uid',ownerUid).order('created_at',{ascending:false}).order('id',{ascending:false}).range(from,to);
+      if(result.error)throw result.error;
+      return (result.data??[]) as Beneficiary[];
+    }),
   ]);
-  if(listResult.error) throw listResult.error;
-  if(peopleResult.error) throw peopleResult.error;
-  return {lists:(listResult.data??[]) as BeneficiaryList[],people:(peopleResult.data??[]) as Beneficiary[]};
+  if(listResult.error)throw listResult.error;
+  return {lists:(listResult.data??[]) as BeneficiaryList[],people};
 }
 export async function createBeneficiaryList(ownerUid:string,name:string):Promise<BeneficiaryList> {
   const trimmed=name.trim();
