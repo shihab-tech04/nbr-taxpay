@@ -25,6 +25,21 @@ The recovered story source links **369 story rows** to all **150 feature IDs** b
 
 The feature register's raw `story_status: NOT_YET_AUTHORED` field is preserved inside its 2026-10-10 source record and repeated as `story_status_in_feature_register_as_of_2026_10_10`. It is historical baseline metadata, not a current story status; the 369 verified links come from the separately recovered story source.
 
+## Byte-verified v11 prototype copies and source limits
+
+Four Library copies of `NBR_Integrated_Income_Tax_Payment_Portal_Upgraded-v11.html` were materialized and full-byte SHA-256 checked by the WS02 coordinator. Each is 860,546 bytes and hashes to `f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b`, matching the v11 hash already recorded in the recovered story source-control metadata.
+
+| Capture date | Library file ID | Size | SHA-256 |
+|---|---|---:|---|
+| 2026-10-10 | `libfile_78ddfcb3fb9481919adb18f5467fd2a4` | 860,546 bytes | `f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b` |
+| 2026-10-11 | `libfile_8f7bf5933d18819187f134c8de9e7d77` | 860,546 bytes | `f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b` |
+| 2026-10-13 | `libfile_2c6688cf80508191a27a4022a6b3b3ce` | 860,546 bytes | `f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b` |
+| 2026-10-24 | `libfile_563c64b3f1d88191bdc9db3deb0bd7d8` | 860,546 bytes | `f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b` |
+
+Library text identifies the title as **Concept Prototype**. Its embedded ontology declares version `0.6.0-demo` and status `DRAFT — prototype scope only. Not an NBR-approved data standard.` The prototype's changelog says 170 active payment-head records came from an ACS section workbook, with a group-level crosswalk; it also says the screenshot-based ACS sample was removed. These are claims inside a draft demo. They do not prove that the workbook bytes or chain of custody were supplied, that the catalogue is legally valid or NBR-approved, or that original screenshots are available.
+
+The original ACS workbook bytes/provenance, original screenshots or approved visual baselines, and legal/owner approval were not recovered or verified in this update. The existing official-accounting and per-story acceptance blockers remain. The copies add no requirement IDs, do not change the 387-story or separate 150-feature source counts, and do not create a completion percentage.
+
 ## Contemporaneous 2026-10-10 archive and design boundaries
 
 Two Google Drive JSONL source archives were recovered and checked file by file. The LIVE_PRE_PHASE1 archive (Drive document [1fPkgxV04qJOkdJF4t_Z9hA2-QArsdf933PQs4NZHGMw](https://docs.google.com/document/d/1fPkgxV04qJOkdJF4t_Z9hA2-QArsdf933PQs4NZHGMw/edit), revision `AHj4eMT2bQhzcmBSo_bis0KkJSyNkPyzH7IetMEA-uyVoDc31mr6ArpOWvXGwp9iQmoQDsf-hDoaiYjLkeeT8LiOV8ZioL29R3oAP_5s1Uwr`) declares source commit `ddcf4bdfe892b4e9968fe5b95d18102674d229c2`, 65 files, and 531,868 source bytes. The PHASE1_CANDIDATE archive (Drive document [1aVkjaOHeJz-fIPTbgKVWukW_VVjSxTxe1WwL8Issc4o](https://docs.google.com/document/d/1aVkjaOHeJz-fIPTbgKVWukW_VVjSxTxe1WwL8Issc4o/edit), revision `AHj4eMQ85yGVgGFIlk5jPiHDSelD_lBldaZSmuyZ7QG8trsNy5lCEfm3AGBgsIUN92XYms_isvGR7VJPuKu5esZXLGP0saJoaOcRG5jJSKrl`) declares source commit `3c28a535fdbadc45cf91fbf1ecaa38db74cb45bc`, 85 files, and 869,217 source bytes. Recomputed Git blob SHA-1 checks matched all 65 and all 85 file records respectively, and the UTF-8 byte totals matched each manifest.

@@ -137,6 +137,61 @@
       ],
       "scope": "The brief names conflict topics and current constraints; the exact versioned approved change documents and row-level crosswalk are not included."
     },
+    "v11_prototype_copies":     {
+      "title": "NBR Integrated Income Tax Payment Portal (v11) — Concept Prototype",
+      "copies": [
+        {
+          "filename": "NBR_Integrated_Income_Tax_Payment_Portal_Upgraded-v11.html",
+          "library_file_id": "libfile_78ddfcb3fb9481919adb18f5467fd2a4",
+          "captured_at": "2026-10-10T03:05:21.000047Z",
+          "size_bytes": 860546,
+          "sha256": "f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b"
+        },
+        {
+          "filename": "NBR_Integrated_Income_Tax_Payment_Portal_Upgraded-v11.html",
+          "library_file_id": "libfile_8f7bf5933d18819187f134c8de9e7d77",
+          "captured_at": "2026-10-11T15:11:00.023023Z",
+          "size_bytes": 860546,
+          "sha256": "f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b"
+        },
+        {
+          "filename": "NBR_Integrated_Income_Tax_Payment_Portal_Upgraded-v11.html",
+          "library_file_id": "libfile_2c6688cf80508191a27a4022a6b3b3ce",
+          "captured_at": "2026-10-13T11:19:07.777305Z",
+          "size_bytes": 860546,
+          "sha256": "f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b"
+        },
+        {
+          "filename": "NBR_Integrated_Income_Tax_Payment_Portal_Upgraded-v11.html",
+          "library_file_id": "libfile_563c64b3f1d88191bdc9db3deb0bd7d8",
+          "captured_at": "2026-10-24T14:02:32.533992Z",
+          "size_bytes": 860546,
+          "sha256": "f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b"
+        }
+      ],
+      "full_byte_verification": {
+        "method": "Coordinator materialized each Library copy and computed SHA-256 over the full file bytes.",
+        "all_four_size_bytes": 860546,
+        "all_four_sha256": "f99f15b5e9f9234017da244a203fc7e632d66cbedaa978d12e852f4b1c1cda7b",
+        "matches_story_registry_source_control_sha256": true,
+        "verification_provenance": "Reported by the WS02 coordinator; this subtask independently confirmed Library file metadata and matching embedded text, not a fresh full-byte rehash."
+      },
+      "embedded_ontology": {
+        "version": "0.6.0-demo",
+        "status": "DRAFT — prototype scope only. Not an NBR-approved data standard."
+      },
+      "embedded_changelog_claim": {
+        "statement": "The v11 prototype 0.6.0 changelog says its 170 active payment-head records came from an ACS section workbook, with a group-level crosswalk; it also says the screenshot-based ACS sample was removed.",
+        "evidence_type": "Prototype-authored demo changelog text only; not workbook bytes, chain of custody, legal verification, approval, or screenshot evidence."
+      },
+      "not_verified_or_recovered_in_this_review": {
+        "original_acs_section_workbook_bytes_or_provenance": "NOT_VERIFIED",
+        "original_acs_screenshots": "NOT_RECOVERED_OR_VERIFIED",
+        "nbr_legal_or_owner_approval": "NOT_VERIFIED",
+        "current_legal_validity_or_acs_economic_code_identity": "NOT_VERIFIED"
+      },
+      "boundary": "The four copies establish byte identity to the recorded v11 source-control SHA-256 only. They do not establish source authorship/ancestry, legal approval, requirement acceptance, or screenshot baselines; no requirements or denominator were added."
+    },
     "contemporaneous_drive_archives":     [
       {
         "drive_document_id": "1fPkgxV04qJOkdJF4t_Z9hA2-QArsdf933PQs4NZHGMw",
@@ -404,15 +459,61 @@
     {"decision":"Old demo-specific content versus prohibition on adding such text to the UI","status":"SUPERSEDED","source_refs":["Master prompt §5.B line 248","Master prompt §5.F lines 561–566","User-approved project memory summary in WS02 task context"],"affected_story_ids":[],"mapping_status":"BLOCKED","replacement_specification":null,"note":"Maintain truthful payment/settlement/credit distinctions; no per-ID copy mapping inferred."},
     {"decision":"Older receipt implementations versus approved unified receipt/certificate template","status":"SUPERSEDED","source_refs":["Master prompt §5.B line 249","Master prompt §5.F lines 561–566","User-approved project memory summary in WS02 task context"],"affected_story_ids":[],"mapping_status":"BLOCKED","replacement_specification":null,"note":"Brief confirms required Download and Print actions; no per-ID view/field mapping inferred."}
   ],
-  "blockers": [
-    {"id":"STORY_ACCEPTANCE_EVIDENCE","status":"BLOCKED","scope":"Per-story execution acceptance","detail":"Recovered source declares DRAFT_NOT_IMPLEMENTATION_CERTIFIED and test_status NOT_RUN; no current exact-ID acceptance evidence is mapped."},
-    {"id":"FEATURE_ACCEPTANCE_EVIDENCE","status":"BLOCKED","scope":"Feature-level acceptance","detail":"The v1.1 register is source-studied, not certified, and not a story acceptance matrix."},
-    {"id":"LEGACY_REPOSITORY_HISTORY","status":"BLOCKED","scope":"Historical source and approval history","detail":"Google Drive JSONL archives now recover historical files with matching embedded Git blob SHA-1 values, but contain no Git history and their source commit IDs are manifest-declared only. Full legacy ancestry and approval/change history remain unavailable; connected access to shihab2-tech/NBR-Tax-Payment returns HTTP 403 with a suspended-account response."},
-    {"id":"PER_ID_SUPERSESSION_MAP","status":"BLOCKED","scope":"Approved change reconciliation","detail":"Conflict topics are known, but exact versioned decision-to-stable-ID crosswalk and replacement specifications are unavailable."},
-    {"id":"CURRENT_IMPLEMENTATION_TRACE","status":"BLOCKED","scope":"Current UI/route/service/API/SQL/Office/test/production mapping","detail":"Current repo files/tests and issue evidence are not mapped per source ID; WS02 executed no tests and no per-ID live check."},
-    {"id":"OFFICIAL_ACCOUNTING_SOURCE","status":"BLOCKED","scope":"Official legal/economic-code source","detail":"Original workbook not supplied; feature register says the embedded catalogue is not verified as official law; IDs 5 and 150 are owner-review."},
-    {"id":"OWNER_ASSIGNMENT","status":"BLOCKED","scope":"Requirement owner","detail":"No current owner assignment is documented per source ID."},
-    {"id":"REGRESSION_HISTORY","status":"BLOCKED","scope":"Per-requirement regression history","detail":"The 22-row overlay is historical and incomplete; no current per-ID regression record is available."}
+  "blockers":   [
+    {
+      "id": "STORY_ACCEPTANCE_EVIDENCE",
+      "status": "BLOCKED",
+      "scope": "Per-story execution acceptance",
+      "detail": "Recovered source declares DRAFT_NOT_IMPLEMENTATION_CERTIFIED and test_status NOT_RUN; no current exact-ID acceptance evidence is mapped."
+    },
+    {
+      "id": "FEATURE_ACCEPTANCE_EVIDENCE",
+      "status": "BLOCKED",
+      "scope": "Feature-level acceptance",
+      "detail": "The v1.1 register is source-studied, not certified, and not a story acceptance matrix."
+    },
+    {
+      "id": "LEGACY_REPOSITORY_HISTORY",
+      "status": "BLOCKED",
+      "scope": "Historical source and approval history",
+      "detail": "Google Drive JSONL archives now recover historical files with matching embedded Git blob SHA-1 values, but contain no Git history and their source commit IDs are manifest-declared only. Full legacy ancestry and approval/change history remain unavailable; connected access to shihab2-tech/NBR-Tax-Payment returns HTTP 403 with a suspended-account response."
+    },
+    {
+      "id": "PER_ID_SUPERSESSION_MAP",
+      "status": "BLOCKED",
+      "scope": "Approved change reconciliation",
+      "detail": "Conflict topics are known, but exact versioned decision-to-stable-ID crosswalk and replacement specifications are unavailable."
+    },
+    {
+      "id": "CURRENT_IMPLEMENTATION_TRACE",
+      "status": "BLOCKED",
+      "scope": "Current UI/route/service/API/SQL/Office/test/production mapping",
+      "detail": "Current repo files/tests and issue evidence are not mapped per source ID; WS02 executed no tests and no per-ID live check."
+    },
+    {
+      "id": "OFFICIAL_ACCOUNTING_SOURCE",
+      "status": "BLOCKED",
+      "scope": "Official legal/economic-code source",
+      "detail": "Original ACS section workbook bytes and provenance are not supplied or verified. The four byte-verified v11 prototype copies contain a demo changelog claim that 170 payment heads came from an ACS workbook; this is not official-source or legal approval evidence. The feature register says the embedded catalogue is not verified as official law; IDs 5 and 150 remain owner-review."
+    },
+    {
+      "id": "OWNER_ASSIGNMENT",
+      "status": "BLOCKED",
+      "scope": "Requirement owner",
+      "detail": "No current owner assignment is documented per source ID."
+    },
+    {
+      "id": "REGRESSION_HISTORY",
+      "status": "BLOCKED",
+      "scope": "Per-requirement regression history",
+      "detail": "The 22-row overlay is historical and incomplete; no current per-ID regression record is available."
+    },
+    {
+      "id": "ORIGINAL_PROTOTYPE_SCREENSHOT_EVIDENCE",
+      "status": "BLOCKED",
+      "scope": "Original source screenshots and visual acceptance baselines",
+      "detail": "No original ACS screenshots or screenshot-to-story/golden visual baseline were recovered or verified in this update. The v11 0.6.0 changelog says its screenshot-based ACS sample was removed; byte-verified prototype HTML is not screenshot or visual-acceptance evidence."
+    }
   ],
   "feature_discrepancy_findings": [
     {"id":"GAP-001","severity":"CRITICAL","affected_feature_ids":["TPAY-CAT-002","TPAY-CAT-004","TPAY-CAT-005","TPAY-CAT-006"],"title":"React 170-record payment-head catalogue is not an identity-preserving migration","source_evidence":"v11: const NBR_LAW_MASTER, line 4097; id 1=16A Surcharge, id 5=19AAAAA undisclosed investment, id 125=74 Tax with return","react_evidence":"main: src/data/paymentHeads.ts; ID 1 was generated as Tax with Return — Individual Taxpayers; ID 5 as Special Retrospective Revision Surcharge; makeCode() constructs unproven economic codes","remediation":"Keep original master bytes/identities intact, replace synthetic catalogue in a review branch only after a full 170-ID exact source comparison; no invented economic code reaches financial execution.","state":"SOURCE_CONFLICT_CONFIRMED_NO_REMEDIATION_YET"},
