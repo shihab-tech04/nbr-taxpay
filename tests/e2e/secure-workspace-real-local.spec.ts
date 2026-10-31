@@ -43,7 +43,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(pageA.locator('.taxpayer-reference-secure input').first()).toHaveCSS('border-color', 'rgb(228, 230, 235)');
   expect(await pageA.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await pageA.getByLabel('Assessment-year label (not verified)').fill('2026-27');
-  await pageA.getByLabel('Proposed amount (BDT)').fill('123.45');
+  await pageA.getByLabel('Proposed amount (৳)').fill('123.45');
   await pageA.getByLabel('Private note (optional)').fill('SYNTHETIC-OWNER-A-PERSISTENCE');
   await pageA.getByRole('button', { name: 'Save draft to database' }).click();
   await expect(pageA.getByRole('status').filter({ hasText: 'Private draft saved to Supabase' })).toBeVisible();
@@ -66,7 +66,7 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await expect(accountTab.getByRole('heading', { name: 'Account notifications' })).toBeVisible();
   await expect(accountTab.getByText('Draft saved')).toBeVisible();
   await expect(accountTab.getByText('No payment made.')).toBeVisible();
-  await expect(accountTab.getByText(/Demand Notice DN-|BDT 47,400/)).toHaveCount(0);
+  await expect(accountTab.getByText(/Demand Notice DN-|৳ 47,400/)).toHaveCount(0);
   await accountTab.getByRole('button', { name: 'Mark all as viewed' }).click();
   await expect(accountTab.getByRole('status').filter({ hasText: 'Notification viewing status saved' })).toBeVisible();
   await accountTab.getByRole('navigation', { name: 'Account pages' }).getByRole('button', { name: 'Profile settings' }).click();
@@ -94,16 +94,16 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   await otherTab.goto('/?action=secure_workspace');
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
   await otherTab.getByRole('button', { name: 'Resume draft' }).click();
-  await expect(otherTab.getByLabel('Proposed amount (BDT)')).toHaveValue('123.45');
-  await otherTab.getByLabel('Proposed amount (BDT)').fill('124.50');
+  await expect(otherTab.getByLabel('Proposed amount (৳)')).toHaveValue('123.45');
+  await otherTab.getByLabel('Proposed amount (৳)').fill('124.50');
   await otherTab.getByRole('button', { name: 'Save draft changes' }).click();
   await expect(otherTab.getByRole('status').filter({ hasText: 'Private draft changes saved' })).toBeVisible();
   await otherTab.reload();
   await expect(otherTab.getByText('SYNTHETIC-OWNER-A-PERSISTENCE')).toBeVisible();
-  await expect(otherTab.getByText('BDT 124.50 · Private draft only')).toBeVisible();
+  await expect(otherTab.getByText('৳ 124.50 · Private draft only')).toBeVisible();
 
   // Optimistic concurrency must fail closed when this first tab still holds old values.
-  await pageA.getByLabel('Proposed amount (BDT)').fill('125.00');
+  await pageA.getByLabel('Proposed amount (৳)').fill('125.00');
   await pageA.getByRole('button', { name: 'Save draft changes' }).click();
   await expect(pageA.getByRole('status').filter({ hasText: 'changed in another session' })).toBeVisible();
   await pageA.getByRole('button', { name: 'Retry loading drafts' }).click();

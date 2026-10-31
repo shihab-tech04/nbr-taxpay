@@ -14,14 +14,14 @@ test('generic taxpayer preview shows the same payer receipts in dashboard and ac
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(page.getByText('No ledger records are available for this account yet.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Export ledger data'})).toBeDisabled();
-  await expect(page.getByText('BDT 1,49,500')).toHaveCount(0);
+  await expect(page.getByText('৳ 1,49,500')).toHaveCount(0);
   await expect(page.getByText('AC-2025-09-DEMO-REF-001')).toHaveCount(0);
 });
 
 test('other URL-selected fictional accounts do not inherit shared financial balances, receipts or correction submissions',async({page})=>{
   await page.goto('/?action=ledger&demoUser=user2');
   await expect(page.getByText('No ledger records are available for this account yet.')).toBeVisible();
-  await expect(page.getByText('BDT 1,49,500')).toHaveCount(0);
+  await expect(page.getByText('৳ 1,49,500')).toHaveCount(0);
   await page.goto('/?action=history&demoUser=user2');
   await expect(page.getByRole('heading',{name:'Sign in to manage payments'})).toBeVisible();
   await page.goto('/?action=certificates&demoUser=user2');
@@ -30,8 +30,8 @@ test('other URL-selected fictional accounts do not inherit shared financial bala
   await page.getByRole('button',{name:'Annual payment summary',exact:true}).click();
   const certificate = page.getByRole('dialog',{name:'Certificate summary'});
   await expect(certificate.locator('[data-testid="certificate-summary-document"]')).toBeVisible();
-  await expect(certificate.locator('.receipt-view__amount strong')).toContainText(/BDT 0|Unavailable/);
-  await expect(certificate.getByText('BDT 1,49,500')).toHaveCount(0);
+  await expect(certificate.locator('.receipt-view__amount strong')).toContainText(/৳ 0|Unavailable/);
+  await expect(certificate.getByText('৳ 1,49,500')).toHaveCount(0);
   await certificate.getByRole('button',{name:'Close modal'}).click();
   await page.goto('/?action=corrections&demoUser=user2');
   await expect(page.getByText('No payment records are available for correction.')).toBeVisible();

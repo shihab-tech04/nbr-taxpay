@@ -115,7 +115,7 @@ for (const language of ['en', 'bn'] as const) {
     await dialog.locator('#guest-tax-amount').fill('25.00');
     await dialog.getByRole('button', { name: language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel' }).click();
     await expect(dialog.getByTestId('payment-review')).toBeVisible();
-    await expect(dialog.getByTestId('payment-review')).toContainText(language === 'bn' ? '৳ ২৫' : 'BDT 25');
+    await expect(dialog.getByTestId('payment-review')).toContainText(language === 'bn' ? '৳ ২৫' : '৳ 25');
     await expect(dialog).toContainText(language === 'bn' ? '2025-26' : '2025-26');
   });
 }
@@ -217,5 +217,5 @@ test('authorized taxpayer suggestion selects the matching batch row and preserve
   await expect(review).toBeVisible();
   await expect(review.getByTestId('grouped-taxpayer-calculation')).toContainText('Meghna Trading Ltd.');
   await expect(review.getByTestId('grouped-taxpayer-calculation')).toContainText('Rupali Textiles Ltd.');
-  await expect(review.locator('.payment-form-summary__total')).toHaveText('BDT 105.5');
+  await expect(review.locator('.payment-form-summary__total')).toHaveText('৳ 105.5');
 });

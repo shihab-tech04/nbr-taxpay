@@ -56,7 +56,7 @@ test('general authenticated taxpayer private draft to officer decisions to owner
  await expect(ownerUI.page.getByRole('heading',{name:'Signed-in application user'})).toBeVisible({timeout:16000});
  const draftForm=ownerUI.page.locator('.taxpayer-reference-secure form').filter({has:ownerUI.page.getByRole('heading',{name:'Save a private planning draft'})});
  await draftForm.getByLabel('Assessment-year label (not verified)').fill('2026-27');
- await draftForm.getByLabel('Proposed amount (BDT)').fill('134.75');
+ await draftForm.getByLabel('Proposed amount (৳)').fill('134.75');
  const nonce='ISOLATED-PRIVATE-REVIEW-'+randomUUID().slice(0,6);
  await draftForm.getByLabel('Private note (optional)').fill(nonce);
  await draftForm.getByRole('button',{name:'Save draft to database'}).click();

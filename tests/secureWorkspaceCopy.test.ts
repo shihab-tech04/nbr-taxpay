@@ -39,7 +39,7 @@ test('draft validation errors use Bengali copy while English copy remains unchan
   const errors = [
     'Withholding deposits and tax-liability categories cannot be mixed.',
     'Enter a correctly formatted assessment-year label such as 2026-27. This does not verify its legal applicability.',
-    'Enter a positive BDT amount with at most two decimal places.',
+    'Enter a positive ৳ amount with at most two decimal places.',
     'Amount is outside the permitted draft range.',
     'Notes must be 300 characters or fewer.',
   ];
@@ -49,7 +49,7 @@ test('draft validation errors use Bengali copy while English copy remains unchan
   }
   assert.equal(
     localizeDraftValidationError(errors[2], 'bn'),
-    'দশমিকের পরে সর্বোচ্চ দুই অঙ্কসহ শূন্যের বেশি BDT পরিমাণ লিখুন।',
+    'দশমিকের পরে সর্বোচ্চ দুই অঙ্কসহ শূন্যের বেশি ৳ পরিমাণ লিখুন।',
   );
   assert.equal(localizeDraftValidationError('New validation error', 'bn'), 'New validation error');
 });
