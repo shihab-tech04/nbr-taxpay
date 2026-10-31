@@ -54,3 +54,14 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.doesNotMatch(page,/taxpay-auth-(?:primary|outline)/);
   assert.doesNotMatch(taxpayer,/--reference-primary-active/);
 });
+
+test('saved-beneficiary payment action uses shared controls outside the account-only authorization shell',()=>{
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  const authorization=readFileSync('src/components/screens/ManageAuthorization.tsx','utf8');
+  const taxpayer=readFileSync('src/styles/taxpay-taxpayer-reference.css','utf8');
+  assert.match(picker,/import\s+\{\s*UiButton\s*\}\s+from\s+'\.\.\/ui\/Controls'/);
+  assert.match(picker,/<UiButton[^>]*variant="outline"/);
+  assert.doesNotMatch(picker,/taxpay-auth-outline/);
+  assert.match(authorization,/className="taxpay-auth-outline"/);
+  assert.match(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpay-auth-outline/);
+});
