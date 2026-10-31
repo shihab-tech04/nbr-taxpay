@@ -122,7 +122,7 @@ jobs:
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts tests/e2e/signed-in-authorized-tin-entry.spec.ts
+        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts tests/e2e/signed-in-authorized-tin-entry.spec.ts
 
       - name: Verify synthetic receipts and simulated bank slips
         env:
