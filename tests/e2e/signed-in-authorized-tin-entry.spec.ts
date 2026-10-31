@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
+import { setWorkspaceLanguage } from './workspace-language';
 
 type Status = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'REVOKED';
 function authorization(taxpayerId: 'user2' | 'user3', status: Status, activeUntil: number | null = null) {
@@ -128,7 +129,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'বাংলা', exact: true }).click();
+  await setWorkspaceLanguage(page, 'bn');
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
