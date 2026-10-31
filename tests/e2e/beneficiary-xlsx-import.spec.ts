@@ -73,19 +73,17 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
   expect(result.unsupported).toContain('.xlsx');
 });
 
-test('signed-out visitors can open Beneficiaries without an email or sample-account gate',async({page})=>{
+test('signed-out Beneficiaries deep link requires taxpayer sign-in in Bengali and English',async({page})=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&lang=bn');
-  await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
-  await expect(page.getByRole('button',{name:/তালিকা তৈরি/}).first()).toBeVisible();
-  await expect(page.getByRole('button',{name:/তালিকা তৈরি/})).toHaveCount(1);
-  await expect(page.getByRole('button',{name:/করদাতার অনুমোদন পরিচালনা/})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:/উপকারভোগী যোগ/})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:/এক্সেল আমদানি/})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:/Pay Tax for Others/})).toHaveCount(0);
-  await expect(page.getByRole('link',{name:/সাইন ইন/})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:/Use User ID/})).toHaveCount(0);
-  await expect(page).toHaveURL(/action=beneficiaries/);
+  await expect(page.getByRole('heading',{name:'করদাতার ব্যক্তিগত তথ্য'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'ইমেইলে সাইন ইন'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+  await page.goto('/?action=beneficiaries');
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Sign in with email'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
 });
 
 test('genuine compressed Excel with text TINs parses both rows without losing leading zeros',async({page})=>{
@@ -107,7 +105,7 @@ test('genuine compressed Excel with text TINs parses both rows without losing le
 
 test('failed new-list import stays recoverable and retries against the same created list',async({page})=>{
   const transport=await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries');
+  await page.goto('/?action=beneficiaries&demoUser=user1');
 
   await page.getByRole('button',{name:'Create list',exact:true}).click();
   let dialog=page.getByRole('dialog',{name:'Create list'});
@@ -145,9 +143,9 @@ test('failed new-list import stays recoverable and retries against the same crea
   await expect(visibleRecords.getByText('Local Beneficiary Two',{exact:true})).toBeVisible();
 });
 
-test('guest Beneficiaries supports independent lists, Excel import, responsive CRUD, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
+test('local sample taxpayer Beneficiaries supports independent lists, Excel import, responsive CRUD, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries');
+  await page.goto('/?action=beneficiaries&demoUser=user1');
   const recordList=info.project.name==='desktop-1280'
     ?page.locator('table:visible tbody')
     :page.locator('[data-testid="beneficiaries-page"] ul:visible');
@@ -227,14 +225,14 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
 
   mkdirSync('test-results/screenshots',{recursive:true});
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-en.png`,fullPage:true});
-  await page.goto('/?action=beneficiaries&lang=bn');
+  await page.goto('/?action=beneficiaries&demoUser=user1&lang=bn');
   await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
   await expectRecord('Synthetic Guest Renamed');
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-bn.png`,fullPage:true});
 
   const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
   try{
-    const other=await otherContext.newPage();await setupGuestTransport(other);await other.goto('/?action=beneficiaries');
+    const other=await otherContext.newPage();await setupGuestTransport(other);await other.goto('/?action=beneficiaries&demoUser=user1');
     await expect(other.getByRole('heading',{name:'Create your first list'})).toBeVisible();
     await expect(other.getByText('Synthetic Guest Renamed')).toHaveCount(0);
   }finally{await otherContext.close();}
@@ -242,7 +240,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
 
 test('signed-out guest payment hides saved beneficiaries even with stored entries in English and Bengali',async({page})=>{
   await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries');
+  await page.goto('/?action=beneficiaries&demoUser=user1');
 
   await page.getByRole('button',{name:'Create list',exact:true}).first().click();
   let dialog=page.getByRole('dialog',{name:'Create list'});
