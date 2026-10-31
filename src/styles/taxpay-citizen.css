@@ -339,9 +339,16 @@
 }
 @media print {.citizen-footer {display:none !important;}}
 
+/* The public desktop header is frozen; on mobile reuse the taxpayer navigation
+   component and its existing responsive styles instead of maintaining two shells. */
+.taxpay-public-desktop-navigation { display:contents; }
+.taxpay-public-mobile-navigation { display:none; }
+
 /* Expanded citizen navigation is a mobile dock. Pay remains an independent floating action. */
 .citizen-bottom-nav { display:none; }
 @media (max-width:900px) {
+  .taxpay-public-desktop-navigation {display:none;}
+  .taxpay-public-mobile-navigation {display:contents;}
   .citizen-bottom-nav {
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr)) 72px;
@@ -399,6 +406,14 @@
     bottom:calc(16px + env(safe-area-inset-bottom));
   }
   .taxpay-citizen-shell footer {padding-bottom:calc(85px + env(safe-area-inset-bottom));}
+  /* Keep the existing public help chat reachable without covering the shared Pay dock. */
+  .taxpay-citizen-shell:has(.taxpay-public-mobile-navigation) .public-help-widget {
+    bottom:calc(96px + env(safe-area-inset-bottom));
+  }
+  .taxpay-citizen-shell:has(.taxpay-public-mobile-navigation .citizen-overlay) .public-help-widget,
+  .taxpay-citizen-shell:has(.taxpay-modal__overlay) .public-help-widget {
+    display:none;
+  }
 }
 @media print {
   .citizen-bottom-nav { display:none !important; }
