@@ -9,6 +9,17 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
+// Reveal the mobile-only calculation in the sticky footer before checking
+// the existing exact amounts and per-taxpayer allocation detail.
+async function revealMobileCalculation(dialog: import('@playwright/test').Locator) {
+  const disclosure = dialog.getByTestId('mobile-payment-calculation');
+  if (await disclosure.count()) {
+    await expect(disclosure).not.toHaveAttribute('open', '');
+    await disclosure.getByTestId('mobile-payment-calculation-toggle').click();
+    await expect(disclosure).toHaveAttribute('open', '');
+  }
+}
+
 test('Step 1 primary action enables only after all required payment details are valid', async ({ page }) => {
   const dialog = await getFlow(page);
   const continueButton = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
@@ -116,8 +127,10 @@ test('all five Other Tax groups keep an editable year and amount through payment
 
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
-  await expect(dialog.getByTestId('payment-review')).toContainText('BDT 150');
-  for (const year of [...new Set(years)]) await expect(dialog.getByTestId('payment-review')).toContainText(year);
+  await revealMobileCalculation(dialog);
+  const liveCalculation = dialog.locator('.payment-form-summary');
+  await expect(liveCalculation).toContainText('BDT 150');
+  for (const year of [...new Set(years)]) await expect(liveCalculation).toContainText(year);
 });
 
 test('switching taxpayer preserves each person’s head, year and amount without a target dropdown', async ({ page }) => {
@@ -143,6 +156,7 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await batch.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
   await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+  await revealMobileCalculation(dialog);
   const groupedTotals = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(groupedTotals.locator('details')).toHaveCount(2);
   await expect(groupedTotals.locator('details').first().locator('summary')).toContainText('1,000');
@@ -214,13 +228,15 @@ test('three taxpayers keep separate heads, years and amounts through combined re
 
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   const review = dialog.getByTestId('payment-review');
-  const calculation = review.getByTestId('grouped-taxpayer-calculation');
+  await expect(review).toBeVisible();
+  await revealMobileCalculation(dialog);
+  const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(calculation.locator('details')).toHaveCount(3);
   await expect(calculation).toContainText('111111111111');
   await expect(calculation).toContainText('Taxpayer Beta');
   await expect(calculation).toContainText('Taxpayer Gamma');
-  await expect(review.locator('.payment-form-summary__total')).toHaveText('BDT 75');
-  for (const plan of plans) await expect(review).toContainText(plan.year);
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 75');
+  for (const plan of plans) await expect(calculation).toContainText(plan.year);
 });
 
 test('other-tax allocations create individual records with their own receipts', async ({ page }) => {

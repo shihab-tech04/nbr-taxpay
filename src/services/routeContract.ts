@@ -28,7 +28,7 @@ const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home']);
 const privateAuthReturnRoutes = new Set([
   'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates',
   'corrections', 'notifications', 'account_notifications', 'account_profile',
-  'account_settings', 'manage_authorization', 'services'
+  'account_settings', 'manage_authorization', 'beneficiaries', 'services'
 ]);
 export const safePrivateAuthReturnRoute = (route: unknown): string | null =>
   typeof route === 'string' && privateAuthReturnRoutes.has(route) ? route : null;

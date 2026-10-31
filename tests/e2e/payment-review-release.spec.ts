@@ -293,6 +293,13 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.locator('#guest-tin').fill('123456789012');
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  // Mobile: the same calculation is preserved inside an initially collapsed sticky footer.
+  // Expand it before asserting its detailed heading, context and exact values.
+  const mobileCalculation = services.getByTestId('mobile-payment-calculation');
+  if (await mobileCalculation.count()) {
+    await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
+    await expect(mobileCalculation).toHaveAttribute('open', '');
+  }
   await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
   await expect(services.locator('.payment-head-single')).toHaveCount(0);
   await expect(services.locator('.payment-form-section').last()).toContainText('Enter the amount from your return');
