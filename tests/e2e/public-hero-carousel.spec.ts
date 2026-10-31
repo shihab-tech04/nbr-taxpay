@@ -445,8 +445,7 @@ test('each service-specific banner action skips repeated service selection', asy
       await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
         .toHaveAttribute('data-payment-service', code);
       // Back keeps the chosen taxpayer and never reintroduces a second chooser.
-      await dialog.locator('.payment-flow-embedded__footer-actions')
-        .getByRole('button', { name: 'Back', exact: true }).click();
+      await dialog.locator('.taxpay-modal__back').click();
       await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
       await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
       await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
