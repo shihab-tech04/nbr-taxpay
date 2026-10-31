@@ -293,7 +293,17 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await services.locator('#guest-tin').fill('123456789012');
   await services.locator('#guest-phone').fill('01712345678');
   await services.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
+  // Approved mobile flow moves calculation to the expandable sticky footer;
+  // desktop retains the original in-body calculation heading.
+  if (info.project.name.startsWith('mobile-')) {
+    const mobileSummary = services.locator('.taxpay-modal__footer').getByTestId('mobile-payment-calculation');
+    await expect(mobileSummary).toBeVisible();
+    await expect(services.locator('.taxpay-modal__body .payment-form-summary')).toHaveCount(0);
+    await mobileSummary.getByTestId('mobile-payment-calculation-toggle').click();
+    await expect(mobileSummary).toHaveAttribute('open', '');
+  } else {
+    await expect(services.getByRole('heading', { name: 'Payment calculation' })).toBeVisible();
+  }
   await expect(services.locator('.payment-head-single')).toHaveCount(0);
   await expect(services.locator('.payment-form-section').last()).toContainText('Enter the amount from your return');
   await expect(services.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
