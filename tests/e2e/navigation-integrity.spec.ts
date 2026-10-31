@@ -13,6 +13,13 @@ test('public header, user-guide topics, footer links, language and browser histo
   }
   await expect(page).toHaveURL(/action=user_guide/);
   await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+  // The approved mobile Help action opens the security topic, while desktop
+  // User guide starts with Payment basics. Verify both destinations.
+  if(page.viewportSize()!.width<=900){
+    await expect(page).toHaveURL(/action=user_guide&category=security/);
+    await expect(page.getByRole('heading',{name:'Security & support'})).toBeVisible();
+    await page.getByRole('navigation',{name:'Guide topics'}).getByRole('button',{name:'Payment basics'}).click();
+  }
   await expect(page.getByRole('heading',{name:'Payment basics'})).toBeVisible();
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page).toHaveURL(/action=user_guide&category=travel/);
