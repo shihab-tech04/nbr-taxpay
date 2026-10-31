@@ -104,7 +104,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         if (back && !back.disabled) back.click();
         else if (stage === 1 || stage === 4) returnToService();
       } : undefined}
-      backLabel={view === 'payment' ? tr('Back to previous payment step', 'পূর্ববর্তী পেমেন্ট ধাপে ফিরুন') : tr('Back', 'ফিরুন')}
+      backLabel={tr('Back', 'ফিরুন')}
       service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'
