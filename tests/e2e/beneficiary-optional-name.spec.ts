@@ -88,10 +88,15 @@ test('guest users can add, edit, import and prefill a beneficiary without a name
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(3);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
-  await page.getByRole('checkbox',{name:'Select Name not provided'}).first().check();
-  await page.getByRole('button',{name:'Pay Tax for Others'}).first().click();
+  const intendedRecord=await page.locator('table').isVisible()
+    ?page.getByRole('row').filter({hasText:'012345678901'})
+    :page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'012345678901'});
+  await intendedRecord.getByRole('checkbox',{name:'Select Name not provided',exact:true}).check();
+  await intendedRecord.getByRole('button',{name:'Pay Tax for Others',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed','true');
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
+  await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
