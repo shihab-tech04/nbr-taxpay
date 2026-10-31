@@ -66,12 +66,11 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
-  await expect(dialog.locator('#guest-tin')).toHaveValue('1111111111111');
-  await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
-  await expect(dialog.locator('#guest-taxpayer-name')).toHaveValue('Md. Arif Rahman');
-  await expect(dialog.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
-  await dialog.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(dialog.locator('#guest-taxpayer-name')).toHaveValue('Md. Arif Rahman');
+  const card = dialog.locator('#signed-in-account-taxpayer-card');
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('Md. Arif Rahman');
+  await expect(dialog.locator('#guest-tin, #guest-taxpayer-name, #guest-phone')).toHaveCount(0);
+  await expect(dialog.locator('#guest-notice-ref')).toBeEditable();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText('Based on this taxpayer’s recorded demo activity.')).toHaveCount(0);
 });
