@@ -34,6 +34,8 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  // The same shared form stays borderless on narrow screens and never creates horizontal scroll.
+  await expect(dialog.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
   await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
   await expect(dialog.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveCSS('font-size', '14px');
@@ -82,6 +84,23 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   const summary = dialog.locator('.payment-form-summary');
   await expect(summary).toContainText('Payment calculation');
+  // Approved reference: the form is flat, while the calculation summary remains a card.
+  const section = dialog.locator('.payment-form-section--static').first();
+  await expect(section).toHaveCSS('border-top-width', '0px');
+  await expect(section.locator('.payment-form-section__body')).toHaveCSS('padding-top', '0px');
+  await expect(summary).toHaveCSS('border-top-style', 'solid');
+  const { formWidth, summaryWidth } = await dialog.locator('.payment-flow-embedded__identity').evaluate(element => {
+    const form = element.querySelector<HTMLElement>('.payment-form-layout__sections');
+    const summary = element.querySelector<HTMLElement>('.payment-form-summary');
+    return { formWidth: form?.getBoundingClientRect().width ?? 0, summaryWidth: summary?.getBoundingClientRect().width ?? 0 };
+  });
+  expect(formWidth).toBeGreaterThan(0);
+  expect(summaryWidth).toBeGreaterThan(0);
+  expect(Math.abs(formWidth / (formWidth + summaryWidth) - 0.6)).toBeLessThan(0.03);
+  const emptyResult = dialog.locator('.tin-lookup__result');
+  await expect(emptyResult).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(emptyResult).toHaveCSS('border-top-width', '0px');
+  expect(await emptyResult.evaluate(element => element.getBoundingClientRect().height)).toBeLessThan(48);
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

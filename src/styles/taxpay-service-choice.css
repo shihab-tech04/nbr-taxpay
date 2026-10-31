@@ -1124,3 +1124,49 @@
 
 .tin-lookup__row input { min-width: 0; width: 100%; }
 @media (max-width: 420px) { .tin-lookup__row .tin-lookup__search svg { display:none; } .tin-lookup__row .tin-lookup__search { padding-inline:8px; } }
+
+/* Approved flat four-stage form treatment: keep the calculation summary as the
+   only card. Shared with signed-in and walk-in payments; no new color values. */
+@media (min-width: 801px) {
+  .payment-flow-embedded__content {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .payment-flow-embedded__receipt-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+@media (min-width: 901px) {
+  .payment-flow-embedded .payment-review {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded .payment-form-section--static {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded .payment-form-section--static > .payment-form-section__heading {
+  min-height: 0;
+  padding: 0 0 10px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded .payment-form-section--static > .payment-form-section__body {
+  padding: 0;
+}
+/* A single quiet helper line replaces the old tinted dashed empty-state card.
+   Successful lookups remain readable without adding decorative backgrounds. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .tin-lookup__result {
+  min-height: 0;
+  margin-top: 8px;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--citizen-muted);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .tin-lookup__result[data-lookup-state="found"] {
+  padding-top: 12px;
+  border-top: 1px solid var(--citizen-border);
+}
