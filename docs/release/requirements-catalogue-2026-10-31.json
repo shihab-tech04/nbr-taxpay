@@ -2806,14 +2806,16 @@
     },
     {
       "id": "P5",
-      "name": "Source cleanup",
-      "status": "OPEN",
-      "acceptance": "Maintain a file-level cleanup register and verify each deletion or simplification against current consumers and exact-head CI.",
+      "name": "SavedBeneficiaryPicker source cleanup",
+      "status": "SCOPED_PASS_WITH_REMAINDER_OPEN",
+      "acceptance": "Remove the unused taxpayer-auth-outline dependency from SavedBeneficiaryPicker while preserving the shared CSS used by ManageAuthorization.",
       "evidence": [
-        "Prior narrow cleanup PR #347 merged at 83d03b6cca1a15d12473b0edaa75f4f09ab0ea5f; `.taxpay-auth-outline` CSS was preserved because Manage Authorization still uses it."
+        "PR #347 merged at 83d03b6cca1a15d12473b0edaa75f4f09ab0ea5f; exact-head source recovery, Auth/RLS, Pages and main deployment were recorded in controller issue #230.",
+        "Current main 4418bbe192e43a06aae4c94aee492707bb8bf587 source readback: SavedBeneficiaryPicker.tsx blob 935193bc1f4e319c793f7ec9133c51941abe5830 contains no taxpayer-auth-outline reference; ManageAuthorization.tsx blob 81137fe3007ac5a8dc7d68fda3544ba3b21d4089 still uses it; taxpay-taxpayer-reference.css blob 459d399c8ca37a45386ab465eda72e5e7bec9e18 retains the required rules."
       ],
       "limits": [
-        "This historical cleanup does not establish closure of the current P5 scope; no new deletion is certified by this catalogue."
+        "No whole-repository dead-code sweep or deletion was performed.",
+        "The broader P5 cleanup scope remains open; remove no shared CSS while ManageAuthorization still consumes it."
       ]
     }
   ],
