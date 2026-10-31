@@ -534,11 +534,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
-      {tinLookupState === 'idle' ? <p>{language === 'bn' ? 'টিআইএন তথ্য এখানে দেখানো হবে।' : 'TIN information will be displayed here.'}</p>
-        : sampleTaxpayer ? <div className="tin-lookup__details">
-          <p><strong>{language === 'bn' ? 'টিআইএন' : 'TIN'}:</strong> {sampleTaxpayer.tin}</p>
-          <p><strong>{language === 'bn' ? 'নাম' : 'Name'}:</strong> {language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn}</p>
-        </div> : <p>{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
+      {tinLookupState === 'idle' ? <p>{language === 'bn' ? 'টিআইএন খুঁজে নাম দেখুন।' : 'Search TIN to fill taxpayer name.'}</p>
+        : sampleTaxpayer ? <p className="sr-only">{language === 'bn' ? 'করদাতার নাম পাওয়া গেছে।' : 'Taxpayer name found.'}</p>
+        : <p>{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
     </div>
   );
 
@@ -1231,6 +1229,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 </button>
                 </div>
                 {fieldError('tin')}
+                <div className="tin-lookup__name mt-3">
+                  <label htmlFor="guest-taxpayer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
+                  <input id="guest-taxpayer-name" type="text" value={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
+                    placeholder={language === 'bn' ? 'টিআইএন খুঁজলে নাম এখানে দেখাবে' : 'Search TIN to fill name'} readOnly aria-readonly="true"
+                    className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-slate-100 text-slate-800" />
+                </div>
                 {taxpayerLookupResult}
               </div>}
 
@@ -1287,8 +1291,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} allowAdditional={forSelf === false}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
-                onPrimaryTin={value => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(value); }}
-                onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={people => {
+                onPrimaryTin={value => { clearReferenceSelection(); setOtherTaxpayerName(''); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(value); }}
+                onPrimarySearch={searchTin} onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={people => {
                   setAdditionalTaxpayers(people);
                   setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>
                     knownTin===taxpayerTin||people.some(person=>person.tin===knownTin))));
@@ -1296,12 +1300,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     personId==='primary'||people.some(person=>person.id===personId))));
                 }}
                 onAllocations={setOtherTaxLines} onClearError={clearValidationError} />
-              <div className="tin-lookup__batch">
-                <button type="button" className="tin-lookup__search" disabled={!/^\d{12,13}$/.test(taxpayerTin)} onClick={searchTin}>
-                  <Search size={17} aria-hidden="true" />{language === 'bn' ? 'টিআইএন খুঁজুন' : 'Search TIN'}
-                </button>
-                {taxpayerLookupResult}
-              </div>
+
             </PaymentFormSection>}
 
             {!embedded && <div className="flex justify-end pt-3">
