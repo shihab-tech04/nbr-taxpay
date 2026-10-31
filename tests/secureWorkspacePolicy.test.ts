@@ -48,9 +48,9 @@ test('selected payment purpose survives allowed email callback without private d
   assert.equal(draftSeedForCategory(null), null);
 });
 
-test('guest Beneficiaries is not sent through email authentication', () => {
+test('Beneficiaries may safely resume after account authentication', () => {
   assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, 'beneficiaries','bn'),
-    'https://shihab-tech04.github.io/nbr-taxpay/?action=secure_workspace&lang=bn');
+    'https://shihab-tech04.github.io/nbr-taxpay/?action=beneficiaries&lang=bn');
   assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, 'https://evil.example','en'),
     'https://shihab-tech04.github.io/nbr-taxpay/?action=secure_workspace');
   assert.equal(authRedirectUrl('https://shihab-tech04.github.io','/nbr-taxpay/', undefined, 'manage_authorization'),
