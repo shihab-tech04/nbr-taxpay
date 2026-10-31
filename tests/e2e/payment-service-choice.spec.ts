@@ -134,7 +134,7 @@ test('the approved three decisions progressively appear in one modal and retain 
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
-  await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
@@ -220,7 +220,7 @@ test('returning from payment preserves the three choices and the removed subtype
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');

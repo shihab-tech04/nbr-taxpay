@@ -38,7 +38,13 @@ test('the approved single modal progressively reveals all three choice groups an
   await expect(dialog.locator('[data-payment-access]').first()).toHaveAttribute('data-payment-access', 'ACCOUNT');
   await next.click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveClass(/sr-only/);
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toHaveText('Other Tax Payment › Facilitate another taxpayer’s payment');
+  await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuenow', '1');
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toHaveCSS('clip-path', 'inset(50%)');
+  await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toBeHidden();
+  await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__continue')).toBeVisible();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');

@@ -57,18 +57,17 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
   await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68A');
   const actions = footer.getByRole('button');
-  await expect(actions).toHaveCount(2);
-  await expect(actions.first()).toHaveAccessibleName('Back');
-  await expect(actions.last()).toHaveAccessibleName('Continue to payment channel');
+  await expect(actions).toHaveCount(1);
+  await expect(actions.first()).toHaveAccessibleName('Continue to payment channel');
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   await actions.last().click();
   await expect(progress).toHaveAttribute('aria-valuenow', '3');
-  await footer.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(progress).toHaveAttribute('aria-valuenow', '2');
   await expect(batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]')).toHaveValue('2100');
-  await footer.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
-  await footer.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(progress).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Close payment services' }).click();
   await expect(dialog).toHaveCount(0);
@@ -146,8 +145,8 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await dialog.locator('#guest-tax-amount').fill('1000');
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
+  await dialog.locator('.taxpay-modal__back').click();
   // Back returns to the shared chooser with all entry decisions still visible.
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');

@@ -35,7 +35,7 @@ for (const { slide, cta, selected } of [
     await expect(modal.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
     await expect(modal.locator('[data-payment-entry]')).toHaveCount(0);
     await expect(modal.locator('[data-payment-service]').first()).toHaveAttribute('data-payment-service', selected);
-    await modal.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+    await modal.locator('.taxpay-modal__back').click();
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
     await expect(modal.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
 
