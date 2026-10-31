@@ -86,6 +86,44 @@ try {
     }
     await page.close();
 
+    // Only the already-published Pages bundle can certify MOBILE public navigation LIVE.
+    // PR preflight must not assert this against the previously published version.
+    if (isMobile && process.env.GITHUB_EVENT_NAME !== 'pull_request') {
+      const publicMobile = await browser.newPage({ viewport, isMobile, hasTouch: true });
+      const mobileUrl = new URL(base);
+      mobileUrl.searchParams.set('action','landing');
+      await publicMobile.goto(mobileUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
+      const mobileNav = publicMobile.locator('.taxpay-public-mobile-navigation');
+      const menu = mobileNav.getByRole('button',{name:'Open menu'});
+      const wordmark = mobileNav.getByRole('button',{name:'Korbritto home'});
+      const bell = mobileNav.getByRole('button',{name:'Notifications'});
+      await expect(menu).toBeVisible({timeout:30_000});
+      await expect(wordmark).toBeVisible();
+      await expect(bell).toBeVisible();
+      await expect(publicMobile.locator('.public-home-header')).toBeHidden();
+      const dock = publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
+      await expect(dock).toBeVisible();
+      await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
+      await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
+      await expect(publicMobile.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+      const frame = await publicMobile.evaluate(()=>{
+        const header = document.querySelector('.taxpay-public-mobile-navigation .citizen-header').getBoundingClientRect();
+        const logo = document.querySelector('.taxpay-public-mobile-navigation .citizen-brand').getBoundingClientRect();
+        const menu = document.querySelector('.taxpay-public-mobile-navigation .citizen-mobile-menu-trigger').getBoundingClientRect();
+        const bell = document.querySelector('.taxpay-public-mobile-navigation .citizen-header__notification').getBoundingClientRect();
+        const help = document.querySelector('.public-help-launch')?.getBoundingClientRect();
+        const pay = document.querySelector('.citizen-pay')?.getBoundingClientRect();
+        const overlaps = help && pay && help.left < pay.right && help.right > pay.left && help.top < pay.bottom && help.bottom > pay.top;
+        return {center:Math.abs(logo.x+logo.width/2-header.x-header.width/2),
+          order:menu.x < logo.x && bell.x > logo.x,overlaps,
+          overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+      });
+      if(frame.center>3 || !frame.order || frame.overlaps || frame.overflow>2)
+        throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
+      await publicMobile.screenshot({path:'test-results/live-auth-public-mobile-nav-'+name+'.png',fullPage:false});
+      await publicMobile.close();
+    }
+
     // A post-deploy check of the actual published bundle, not a PR preview.
     // Keep the pre-merge readback compatible with the older currently-live UI.
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
