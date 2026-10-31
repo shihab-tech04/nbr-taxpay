@@ -407,7 +407,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const content=route==='ledger'?ledger:route==='history'?<>
     {trackingActivity && <section className="space-y-3" aria-labelledby="taxpayer-receipt-lookup-heading">
       <h2 id="taxpayer-receipt-lookup-heading" className="text-base font-semibold">{tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')}</h2>
-      <ReceiptLookup hidePageHeading />
+      <ReceiptLookup hidePageHeading accountContext />
     </section>}
     {transactionList}{journey}
   </>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;

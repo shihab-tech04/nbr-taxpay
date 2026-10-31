@@ -6,9 +6,9 @@ import { ReceiptView } from '../common/ReceiptView';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { findSessionReceiptByReference } from '../../services/simulatedPaymentStory';
 
-type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean };
+type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean; accountContext?: boolean };
 
-export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false }) => {
+export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false, accountContext = false }) => {
   const { language, lookupReceipt, receipts, navigate, routeParams } = useTaxState();
   // Homepage reference is kept in in-memory navigation state, never in a public URL.
   const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
@@ -169,7 +169,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
-              <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate('incident')}>
+              <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate(accountContext ? 'corrections' : 'incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>
             </div>

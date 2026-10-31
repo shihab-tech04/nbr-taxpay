@@ -127,6 +127,22 @@ test('Track payment lookup keeps Bengali sample workspace labels', async ({page}
   await expect(page.getByRole('textbox',{name:'চালান, টোকেন বা লেনদেনের রেফারেন্স'})).toBeVisible();
 });
 
+test('a missing Track payment record stays in the taxpayer correction workspace', async ({page}) => {
+  await page.goto('/?action=history&demoUser=user1');
+  const tabs=page.getByRole('navigation',{name:'Activity sections'});
+  await tabs.getByRole('button',{name:'Track payment'}).click();
+
+  const lookup=page.locator('.receipt-lookup');
+  await lookup.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('NO-SUCH-ACCOUNT-REFERENCE');
+  await lookup.getByRole('button',{name:'Search records'}).click();
+  await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
+  await lookup.getByRole('button',{name:'Report a payment issue'}).click();
+
+  await expect(page).toHaveURL(/action=corrections(?:&|$)/);
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Public Report'})).toHaveCount(0);
+});
+
 test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=head_catalogue');
   // Guest visitors use the actual header bell on desktop and mobile;
