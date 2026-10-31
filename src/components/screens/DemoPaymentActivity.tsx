@@ -258,7 +258,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                 {['2024-25','2025-26','2026-27','2027-28'].map(y=><option key={y} value={y}>{y}</option>)}
               </select>
             </label>
-            <label className="block text-sm font-semibold text-taxpay-text">{txt('Amount (BDT)','টাকার পরিমাণ (৳)')}
+            <label className="block text-sm font-semibold text-taxpay-text">{txt('Amount (৳)','টাকার পরিমাণ (৳)')}
               <input required inputMode="decimal" autoComplete="off" className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.amount} onChange={e=>modify(index,'amount',e.target.value)} placeholder="100.00"/>
             </label>
           </div>

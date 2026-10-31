@@ -76,13 +76,13 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(2);
   await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('1000');
   await batch.getByTestId('other-tax-line').last().locator('input[id^="other-tax-amount"]').fill('2000');
-  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 3,000');
   await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68A — Advance tax on cigarrete manufacturer');
   await expect(dialog.locator('.payment-form-summary__breakdown')).toContainText('68B — Advance tax for the owners of private motor car');
 
   await h68a.uncheck();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
-  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 2,000');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 2,000');
   await batch.locator('[data-head-group="Others"] summary').click();
   await expect(batch.getByRole('checkbox', { name: /Select 19AAAAA/ })).toBeDisabled();
 });
@@ -118,7 +118,7 @@ test('all five Other Tax groups keep an editable year and amount through payment
   }
 
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(5);
-  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 150');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 150');
   for (let index = 0; index < groupNames.length; index += 1) {
     const line = batch.getByTestId('other-tax-line').nth(index);
     await expect(line.locator('select[id^="other-tax-year"]')).toHaveValue(years[index]);
@@ -129,7 +129,7 @@ test('all five Other Tax groups keep an editable year and amount through payment
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
   await revealMobileCalculation(dialog);
   const liveCalculation = dialog.locator('.payment-form-summary');
-  await expect(liveCalculation).toContainText('BDT 150');
+  await expect(liveCalculation).toContainText('৳ 150');
   for (const year of [...new Set(years)]) await expect(liveCalculation).toContainText(year);
 });
 
@@ -156,7 +156,7 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
-  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 3,000');
   await revealMobileCalculation(dialog);
   const groupedTotals = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(groupedTotals.locator('details')).toHaveCount(2);
@@ -174,7 +174,7 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await dialog.getByRole('button', { name: 'Remove taxpayer 2' }).click();
   await dialog.getByRole('button', { name: 'Yes, remove' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 1,000');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 1,000');
 });
 
 test('three taxpayers keep separate heads, years and amounts through combined review', async ({ page }) => {
@@ -219,7 +219,7 @@ test('three taxpayers keep separate heads, years and amounts through combined re
     await line.locator('input[id^="other-tax-amount"]').fill(plans[index].amount);
   }
 
-  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 75');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 75');
   for (let index = 0; index < plans.length; index += 1) {
     await tabs.nth(index).click();
     const line = batch.getByTestId('other-tax-line').first();
@@ -236,7 +236,7 @@ test('three taxpayers keep separate heads, years and amounts through combined re
   await expect(calculation).toContainText('111111111111');
   await expect(calculation).toContainText('User 2');
   await expect(calculation).toContainText('User 3');
-  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 75');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 75');
   for (const plan of plans) await expect(calculation).toContainText(plan.year);
 });
 
@@ -265,7 +265,7 @@ test('other-tax allocations create individual records with their own receipts', 
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
-  const pay = dialog.getByRole('button', { name: /Pay BDT 2,500/ });
+  const pay = dialog.getByRole('button', { name: /Pay ৳ 2,500/ });
   await expect(pay).toBeEnabled();
   await pay.click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
@@ -373,7 +373,7 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
   await expect(batch.locator('[data-head-group="Advance Tax"]')).toHaveAttribute('open', '');
   await invalid.locator('input[id^="other-tax-amount"]').fill('1000');
   await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
-  await expect(batch.getByTestId('other-tax-combined-total')).toHaveText('BDT 3,000');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 3,000');
 });
 
 test('every added taxpayer needs a selected head before review', async ({ page }) => {
@@ -398,7 +398,7 @@ test('every added taxpayer needs a selected head before review', async ({ page }
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
 });
 
-test('long BDT amounts and taxpayer descriptions stay inside the calculation panel', async ({ page }) => {
+test('long ৳ amounts and taxpayer descriptions stay inside the calculation panel', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
@@ -446,7 +446,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     await dialog.locator('[data-head-group="Advance Tax"] summary').click();
     await dialog.getByRole('checkbox', { name: /Select 68A/ }).check();
     await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
-    await expect(dialog.getByTestId('other-tax-combined-total')).toHaveText('BDT 250');
+    await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 250');
   }
 });
 

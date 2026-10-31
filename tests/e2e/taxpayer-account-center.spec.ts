@@ -26,7 +26,7 @@ test('profile and notification routes protect private data; legacy Office links 
   await expect(page.getByRole('heading',{name:'Notifications'})).toBeVisible();
   await expect(page.getByText('Sign-in is currently unavailable.')).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
-  await expect(page.getByText(/Demand Notice DN-|BDT 47,400|Inspecting Joint Commissioner/)).toHaveCount(0);
+  await expect(page.getByText(/Demand Notice DN-|৳ 47,400|Inspecting Joint Commissioner/)).toHaveCount(0);
   await page.goto('/?action=account_settings');
   await expect(page.getByRole('heading',{name:'Profile settings'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Save preferences'})).toHaveCount(0);

@@ -3,7 +3,6 @@ import { Search } from 'lucide-react';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { BLOCKED_HEAD_IDS } from '../../data/paymentHeads';
-import { formatCurrency } from '../../services/numberFormat';
 import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import type { Language } from '../../types/tax';
 
@@ -44,13 +43,15 @@ type Props = {
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
+  focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAssessmentYears, onChange, error, summary }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAssessmentYears, onChange, error, summary, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
+  const lastFocusRequest = useRef<number>(0);
   const [activeTaxpayer, setActiveTaxpayer] = useState('primary');
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
@@ -79,22 +80,63 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
     });
   }, [error, activeId, firstInvalid?.id, firstMissingTaxpayer?.id, query]);
 
-  // One selection per taxpayer and source head. Selecting a different taxpayer
-  // does not change, duplicate or remove another taxpayer's allocations.
+  // Summary lines link back to the exact taxpayer, payment head and year.
+  useEffect(() => {
+    if (!focusRequest || lastFocusRequest.current === focusRequest.requestId) return;
+    const selected = lines.find(line => line.id === focusRequest.lineId);
+    if (!selected) return;
+    if (activeId !== selected.taxpayerId) {
+      setActiveTaxpayer(selected.taxpayerId);
+      return;
+    }
+    if (query) {
+      setQuery('');
+      return;
+    }
+    const row = rootRef.current?.querySelector<HTMLElement>(`[data-head-row="${selected.headId}"]`);
+    const group = row?.closest('details');
+    if (group) group.open = true;
+    lastFocusRequest.current = focusRequest.requestId;
+    const input = rootRef.current?.querySelector<HTMLInputElement>(`#other-tax-amount-${selected.id}`);
+    input?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    input?.focus({ preventScroll: true });
+  }, [focusRequest, activeId, query, lines]);
+
+  const defaultYear = OTHER_TAX_YEARS.some(year => year === suggestedAssessmentYears?.[activeId])
+    ? suggestedAssessmentYears![activeId] : '2026-27';
+  const newLine = (headId: number, assessmentYear = defaultYear): OtherTaxAllocation => ({
+    id: crypto.randomUUID(), taxpayerId: activeId!, headId, assessmentYear, amount: '',
+  });
+  const visibleEligible = grouped.flatMap(group => group.rows).filter(head =>
+    isOtherTaxHeadEligible(head.id) &&
+    (!search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
+  const selectAll = () => {
+    if (!activeId) return;
+    const additions = visibleEligible.filter(head => !activeLines.some(line => line.headId === head.id))
+      .map(head => newLine(head.id));
+    if (additions.length) onChange([...lines, ...additions]);
+  };
+  const unselectAll = () => {
+    if (activeId && activeLines.length) onChange(lines.filter(line => line.taxpayerId !== activeId));
+  };
+  // A head may be selected once per assessment year for each taxpayer.
   const toggleHead = (headId: number, checked: boolean) => {
     if (!activeId || !isOtherTaxHeadEligible(headId)) return;
-    if (!checked) {
-      onChange(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
-    } else if (!lines.some(line => line.taxpayerId === activeId && line.headId === headId)) {
-      onChange([...lines, {
-        id: crypto.randomUUID(), taxpayerId: activeId, headId,
-        assessmentYear: OTHER_TAX_YEARS.some(year=>year===suggestedAssessmentYears?.[activeId])
-          ? suggestedAssessmentYears![activeId] : '2026-27', amount: '',
-      }]);
-    }
+    if (!checked) onChange(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
+    else if (!activeLines.some(line => line.headId === headId)) onChange([...lines, newLine(headId)]);
   };
-  const edit = (id: string, update: Partial<OtherTaxAllocation>) =>
+  const addYear = (headId: number) => {
+    const chosen = new Set(activeLines.filter(line => line.headId === headId).map(line => line.assessmentYear));
+    const year = OTHER_TAX_YEARS.find(candidate => !chosen.has(candidate));
+    if (activeId && year && isOtherTaxHeadEligible(headId)) onChange([...lines, newLine(headId, year)]);
+  };
+  const edit = (id: string, update: Partial<OtherTaxAllocation>) => {
+    const current = lines.find(line => line.id === id);
+    if (!current) return;
+    if (update.assessmentYear && lines.some(line => line.id !== id && line.taxpayerId === current.taxpayerId &&
+      line.headId === current.headId && line.assessmentYear === update.assessmentYear)) return;
     onChange(lines.map(line => line.id === id ? { ...line, ...update } : line));
+  };
 
   return (
     <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment" data-testid="other-tax-batch">
@@ -154,9 +196,17 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                   className="w-full min-w-0 text-sm bg-transparent outline-none" />
               </div>
             </div>
+            <div className="other-tax-bulk-actions" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
+              <button type="button" onClick={selectAll} disabled={!visibleEligible.some(head => !activeLines.some(line => line.headId === head.id))}>
+                {search ? tx('Select all matching', 'মিল থাকা সব নির্বাচন করুন') : tx('Select all', 'সব নির্বাচন করুন')}
+              </button>
+              <button type="button" onClick={unselectAll} disabled={!activeLines.length}>
+                {tx('Unselect all', 'সব নির্বাচন বাতিল করুন')}
+              </button>
+            </div>
             <p className="text-xs text-slate-600" role="status">
-              {tx(`${activeLines.length} heads selected for ${activePerson?.name || activePerson?.tin || 'this taxpayer'} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
-                `এই করদাতার জন্য ${activeLines.length}টি খাত নির্বাচিত · অন্যান্য করের জন্য ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
+              {tx(`${new Set(activeLines.map(line => line.headId)).size} heads, ${activeLines.length} year allocations selected for ${activePerson?.name || activePerson?.tin || 'this taxpayer'} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
+                `এই করদাতার জন্য ${new Set(activeLines.map(line => line.headId)).size}টি খাত, ${activeLines.length}টি করবর্ষ নির্বাচন · অন্যান্য করের ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
             </p>
             {error && <div className="other-tax-error-summary" role="alert" data-testid="other-tax-validation-summary">
               <strong>{tx('Check highlighted payment entries', 'চিহ্নিত পরিশোধের তথ্য পরীক্ষা করুন')}</strong>
@@ -186,13 +236,16 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                   <ul className="divide-y divide-slate-200 list-none m-0 p-0">
                     {matched.map(head => {
                       const blocked = !isOtherTaxHeadEligible(head.id);
-                      const selectedLine = activeLines.find(line => line.headId === head.id);
-                      const invalid = Boolean(error && selectedLine && isIncomplete(selectedLine));
-                      const amountId = selectedLine ? 'other-tax-amount-' + selectedLine.id : '';
-                      return <li key={head.id} data-invalid={invalid ? 'true' : undefined} className={invalid ? 'other-tax-row--invalid' : selectedLine ? 'bg-blue-50/40' : 'bg-white'}>
+                      const headLines = activeLines.filter(line => line.headId === head.id);
+                      const invalid = Boolean(error && headLines.some(isIncomplete));
+                      const focused = headLines.some(line => line.id === focusRequest?.lineId);
+                      const availableYears = OTHER_TAX_YEARS.filter(year => !headLines.some(line => line.assessmentYear === year));
+                      return <li key={head.id} data-head-row={head.id} data-invalid={invalid ? 'true' : undefined}
+                        data-highlighted={focused ? 'true' : undefined}
+                        className={invalid ? 'other-tax-row--invalid' : focused ? 'other-tax-row--focused' : headLines.length ? 'bg-blue-50/40' : 'bg-white'}>
                         <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50/60'}`}>
                           <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#2c5ead]"
-                            checked={!!selectedLine} disabled={blocked}
+                            checked={headLines.length > 0} disabled={blocked}
                             onChange={event => toggleHead(head.id, event.target.checked)}
                             aria-label={tx('Select', 'নির্বাচন করুন') + ' ' + head.codeEn + ' — ' + head.en} />
                           <span className="min-w-0 text-sm">
@@ -207,40 +260,57 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                             </span>}
                           </span>
                         </label>
-                        {selectedLine && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
-                          data-testid="other-tax-line" data-head-id={head.id} data-invalid={invalid ? 'true' : undefined}>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-year-${selectedLine.id}`}>
-                              {tx('Assessment year', 'করবর্ষ')} *
-                            </label>
-                            <select id={`other-tax-year-${selectedLine.id}`} value={selectedLine.assessmentYear}
-                              onChange={event => edit(selectedLine.id, { assessmentYear: event.target.value })}
-                              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
-                              {OTHER_TAX_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-amount-${selectedLine.id}`}>
-                              {tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *
-                            </label>
-                            <input id={amountId} type="text" inputMode="decimal"
-                              pattern="[0-9]+([.][0-9]{1,2})?" required
-                              aria-invalid={invalid || undefined}
-                              aria-describedby={invalid ? amountId + '-error' : undefined}
-                              value={selectedLine.amount} onChange={event => {
-                                const next = normalizeGuestAmountInput(event.target.value);
-                                if (next !== null) edit(selectedLine.id, { amount: next });
-                              }}
-                              placeholder="0.00" maxLength={17}
-                              className={invalid
-                                ? "min-h-11 w-full rounded-lg border border-rose-600 bg-white px-3 font-mono-plex text-sm"
-                                : "min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono-plex text-sm"} />
-                            {invalid && <p id={amountId + '-error'} className="payment-form-field-error">
-                              {tx('Enter a positive amount using digits (up to 2 decimal places).',
-                                'সংখ্যা দিয়ে শূন্যের বেশি পরিমাণ লিখুন (সর্বোচ্চ ২ দশমিক স্থান)।')}
-                            </p>}
-                          </div>
-                        </div>}
+                        {headLines.map(line => {
+                          const amountId = 'other-tax-amount-' + line.id;
+                          const lineInvalid = Boolean(error && isIncomplete(line));
+                          return <div key={line.id}
+                            className="other-tax-year-allocation grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
+                            data-testid="other-tax-line" data-head-id={head.id} data-line-id={line.id}
+                            data-invalid={lineInvalid ? 'true' : undefined}
+                            data-focused={focusRequest?.lineId === line.id ? 'true' : undefined}>
+                            <div>
+                              <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-year-${line.id}`}>
+                                {tx('Assessment year', 'করবর্ষ')} *
+                              </label>
+                              <select id={`other-tax-year-${line.id}`} value={line.assessmentYear}
+                                onChange={event => edit(line.id, { assessmentYear: event.target.value })}
+                                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
+                                {OTHER_TAX_YEARS.filter(year => year === line.assessmentYear || !headLines.some(other => other.id !== line.id && other.assessmentYear === year))
+                                  .map(year => <option key={year} value={year}>{year}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold mb-1" htmlFor={amountId}>
+                                {tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *
+                              </label>
+                              <input id={amountId} type="text" inputMode="decimal"
+                                pattern="[0-9]+([.][0-9]{1,2})?" required
+                                aria-invalid={lineInvalid || undefined}
+                                aria-describedby={lineInvalid ? amountId + '-error' : undefined}
+                                value={line.amount} onChange={event => {
+                                  const next = normalizeGuestAmountInput(event.target.value);
+                                  if (next !== null) edit(line.id, { amount: next });
+                                }}
+                                placeholder="0.00" maxLength={17}
+                                className={lineInvalid
+                                  ? 'min-h-11 w-full rounded-lg border border-rose-600 bg-white px-3 font-mono-plex text-sm'
+                                  : 'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono-plex text-sm'} />
+                              {lineInvalid && <p id={amountId + '-error'} className="payment-form-field-error">
+                                {tx('Enter a positive amount using digits (up to 2 decimal places).',
+                                  'সংখ্যা দিয়ে শূন্যের বেশি পরিমাণ লিখুন (সর্বোচ্চ ২ দশমিক স্থান)।')}
+                              </p>}
+                              {headLines.length > 1 && <button type="button" className="other-tax-year-remove"
+                                onClick={() => onChange(lines.filter(item => item.id !== line.id))}
+                                aria-label={tx('Remove', 'সরান') + ' ' + head.codeEn + ' ' + line.assessmentYear}>
+                                {tx('Remove this year', 'এই করবর্ষ সরান')}
+                              </button>}
+                            </div>
+                          </div>;
+                        })}
+                        {headLines.length > 0 && availableYears.length > 0 &&
+                          <button type="button" className="other-tax-add-year" onClick={() => addYear(head.id)}>
+                            + {tx('Add another assessment year', 'আরেকটি করবর্ষ যোগ করুন')}
+                          </button>}
                       </li>;
                     })}
                   </ul>
@@ -251,12 +321,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                 <p className="p-4 text-sm text-slate-600">{tx('No matching payment head', 'কোনো খাত পাওয়া যায়নি')}</p>}
             </div>
             {error && usedTotal === null && invalidLines.length === 0 && <p className="payment-form-field-error">{tx('Combined amount exceeds the supported limit. Reduce the amounts.', 'মোট পরিমাণ সীমার বেশি। পরিমাণ কমান।')}</p>}
-            <div className="flex justify-between gap-3 border-t border-slate-200 pt-3">
-              <span className="text-sm font-semibold">{tx('Total for all taxpayers', 'সব করদাতার মোট')}</span>
-              <strong className="font-mono-plex text-taxpay-primary" data-testid="other-tax-combined-total">
-                {usedTotal === null ? '—' : formatCurrency(usedTotal, language)}
-              </strong>
-            </div>
+
           </div>
         </section>
       </div>

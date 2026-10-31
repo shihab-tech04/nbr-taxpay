@@ -198,7 +198,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                             <th scope="col">{label('Transaction ID', 'লেনদেন আইডি')}</th>
                             <th scope="col">{label('Service', 'সেবা')}</th>
                             <th scope="col">{label('Date', 'তারিখ')}</th>
-                            <th scope="col">{label('Amount (BDT)', 'টাকা (বিডিটি)')}</th>
+                            <th scope="col">{label('Amount (৳)', 'টাকা (বিডিটি)')}</th>
                           </tr>
                         </thead>
                         <tbody>

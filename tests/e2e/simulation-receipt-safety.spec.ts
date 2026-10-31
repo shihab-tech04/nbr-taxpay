@@ -61,7 +61,7 @@ test('guest submission and receipt use only synthetic references', async ({ page
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);

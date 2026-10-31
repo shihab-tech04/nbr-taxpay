@@ -106,7 +106,7 @@ test('online method categories reveal only relevant providers and reset the prev
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await expect(dialog.getByRole('checkbox', { name: /I confirm the TIN/ })).not.toBeChecked();
   await dialog.getByRole('checkbox', { name: /I confirm the TIN/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 25,000/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 25,000/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);

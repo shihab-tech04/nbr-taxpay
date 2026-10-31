@@ -26,7 +26,7 @@ const COPY = {
     year: 'Assessment year', category: 'Payment category', head: 'Select a payment head', search: 'Filter by code or title', review: 'Review payment details',
     blocked: 'Unavailable for review', unverified: 'Under review', act: 'Act reference', legacy: 'Legacy reference', note: 'Note',
     continueAmounts: 'Continue to amounts', continueReview: 'Continue to review', back: 'Back',
-    selectedHead: 'Selected head', amountBreakdown: 'Payment amount breakdown (BDT)', tax: 'Tax amount (৳)', penalty: 'Penalty (৳)', surcharge: 'Surcharge (৳)', interest: 'Interest (৳)',
+    selectedHead: 'Selected head', amountBreakdown: 'Payment amount breakdown (৳)', tax: 'Tax amount (৳)', penalty: 'Penalty (৳)', surcharge: 'Surcharge (৳)', interest: 'Interest (৳)',
     reference: 'Payment reference or assessment note (optional)', referencePlaceholder: 'e.g. Self-assessment return deposit', total: 'Total payable amount',
     payer: 'Payer', tin: 'e-TIN', headCode: 'Head code', remittance: 'Total amount', channel: 'Payment method',
     runSimulation: 'Continue payment', running: 'Processing payment…',

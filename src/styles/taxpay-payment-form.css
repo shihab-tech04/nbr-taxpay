@@ -272,3 +272,25 @@
 .taxpay-taxpayer-row__fields input[readonly]{background:var(--color-taxpay-surface-subtle);cursor:default}
 .taxpay-taxpayer-row__lookup-status{margin:0;font-size:14px;color:var(--color-taxpay-error)}
 @media(max-width:360px){.taxpay-taxpayer-row__tin-search{gap:6px}.taxpay-taxpayer-row__tin-search>.tin-lookup__search{padding-inline:10px}}
+
+/* Clickable calculation rows use a shrinkable amount column on narrow screens. */
+.payment-form-summary__breakdown > button.payment-form-summary__entry--link,
+.payment-form-summary__breakdown > button.payment-form-summary__entry--link:has(.payment-form-summary__entry-description small) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  align-items: start;
+}
+.payment-form-summary__breakdown > button.payment-form-summary__entry--link strong,
+.payment-form-summary__breakdown > button.payment-form-summary__entry--link:has(.payment-form-summary__entry-description small) strong {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.payment-form-summary__breakdown > button.payment-form-summary__entry--link .payment-form-summary__entry-description {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

@@ -419,7 +419,7 @@ export const SecureWorkspace: React.FC = () => {
                 {rows.map(row => <li key={row.id} className="py-3 flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 break-words">
                     <p className="text-sm font-semibold">{copy.categories[row.category]} · {copy.assessmentYearShort} {row.assessment_year}</p>
-                    <p className="text-xs text-slate-600">BDT {formatBdtMinorUnits(row.amount_minor, language)} · {copy.privateDraftOnly}</p>
+                    <p className="text-xs text-slate-600">৳ {formatBdtMinorUnits(row.amount_minor, language)} · {copy.privateDraftOnly}</p>
                     {row.memo && <p className="text-xs text-slate-500">{row.memo}</p>}
                   </div>
                   <div className="flex flex-col items-stretch gap-2">

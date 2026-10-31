@@ -168,7 +168,7 @@ export const IncidentReporting: React.FC = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
-                Debited Amount (BDT) *
+                Debited Amount (৳) *
               </label>
               <input
                 type="number"

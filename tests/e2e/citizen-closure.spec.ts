@@ -89,7 +89,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
-  await expect(page.getByText('BDT 47,400')).toHaveCount(0);
+  await expect(page.getByText('৳ 47,400')).toHaveCount(0);
   await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
   await switchTaxpayerToBangla(page);
   await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();

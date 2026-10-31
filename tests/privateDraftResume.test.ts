@@ -12,7 +12,7 @@ const validDraft = {
   memo: 'Synthetic planning note',
 };
 
-test('private draft resume reconstructs BDT decimal text exactly', () => {
+test('private draft resume reconstructs ৳ decimal text exactly', () => {
   assert.deepEqual(privateDraftToInput(validDraft), {
     purpose: 'TAX_LIABILITY_PAYMENT',
     category: 'TAX_WITH_RETURN',
