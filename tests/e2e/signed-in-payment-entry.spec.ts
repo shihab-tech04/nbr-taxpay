@@ -41,13 +41,13 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
-  await expect(payment.locator('input#guest-tin')).toHaveValue('2222222222222');
-  await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
-  await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
-  await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly', '');
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
-  await payment.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
+  const card = payment.locator('#signed-in-account-taxpayer-card');
+  await expect(card).toContainText('Meghna Trading Ltd.');
+  await expect(card).toContainText('2222222222222');
+  await expect(card).toContainText('01700000002');
+  await expect(payment.locator('#guest-tin, #guest-phone, #guest-taxpayer-name')).toHaveCount(0);
+  await expect(payment.locator('.payment-identity__fields input')).toHaveCount(1);
+  await expect(payment.locator('#guest-notice-ref')).toBeEditable();
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 
@@ -68,6 +68,6 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('input#guest-tin')).toHaveValue('2222222222222');
-  await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
+  await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
+  await expect(payment.locator('#guest-tin')).toHaveCount(0);
 });
