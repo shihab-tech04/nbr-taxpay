@@ -6,21 +6,17 @@ test('payment stepper has connected numbered states and shows completed progress
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
-  const progress = dialog.locator('.tax-service-choice__progress');
-  await expect(progress.locator('li')).toHaveCount(4);
-  await expect(progress.locator('li').nth(0)).toHaveAttribute('data-progress-status', 'current');
-  await expect(progress.locator('li').nth(1)).toHaveAttribute('data-progress-status', 'upcoming');
-  await expect(progress.locator('li').nth(0).locator('.tax-service-choice__stage-number')).toHaveText('1');
-  await expect(progress).toHaveCSS('border-top-style', 'solid');
+  const progress = dialog.locator('.taxpay-modal__progress');
+  await expect(progress).toHaveCSS('height', '10px');
+  await expect(progress).toHaveAttribute('aria-valuenow', '1');
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   const card = dialog.getByRole('region', { name: 'Account taxpayer details' });
   await expect(card).toHaveCount(0); // Guests enter their identity; account fields never appear accidentally.
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(progress.locator('li').nth(0)).toHaveAttribute('data-progress-status', 'complete');
-  await expect(progress.locator('li').nth(1)).toHaveAttribute('data-progress-status', 'current');
-  await expect(progress.locator('li').nth(0).locator('svg')).toBeVisible();
-  await expect(progress.locator('li').nth(1).locator('.tax-service-choice__stage-number')).toHaveText('2');
+  await expect(progress).toHaveAttribute('aria-valuenow', '2');
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
 test('guest Other Tax shows one collapsible calculation group per beneficiary and exact subtotal', async ({ page }) => {
@@ -65,11 +61,11 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
-  const card = dialog.getByRole('region', { name: 'Account taxpayer details' });
-  await expect(card).toBeVisible();
-  await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(card).toHaveCSS('border-top-style', 'none');
-  await expect(card).toContainText('1111111111111');
+  await expect(dialog.locator('#guest-tin')).toHaveValue('1111111111111');
+  await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
+  await expect(dialog.locator('.tin-lookup__result')).toContainText('TIN information will be displayed here.');
+  await dialog.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(dialog.locator('.tin-lookup__result')).toContainText('Md. Arif Rahman');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText('Based on this taxpayer’s recorded demo activity.')).toHaveCount(0);
 });

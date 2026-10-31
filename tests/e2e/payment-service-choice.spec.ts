@@ -159,7 +159,7 @@ test('three compact decisions advance separately and preserve selection with Bac
   await next.click();
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
   await next.click();
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
@@ -217,9 +217,9 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await expect(dialog.getByText('Other tax payment type')).toHaveCount(0);
   const originalUrl = page.url();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
@@ -306,7 +306,7 @@ test('Other Tax keeps the v11 guest reference and four payment stages', async ({
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
 test('Travel Tax remains separately accessible from its existing public banner', async ({ page }) => {

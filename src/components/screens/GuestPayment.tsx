@@ -533,7 +533,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         return false;
       }
     }
-    if (embedded && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) {
+    if (embedded && !signedInAccount && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) {
       setValidationError(language === 'bn' ? 'এগোনোর আগে টিআইএন খুঁজুন।' : 'Search this TIN before continuing.', 'tin');
       return false;
     }

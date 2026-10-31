@@ -1121,3 +1121,6 @@
 @media (prefers-reduced-motion: reduce) {
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__progress-fill { transition: none; }
 }
+
+.tin-lookup__row input { min-width: 0; width: 100%; }
+@media (max-width: 420px) { .tin-lookup__row .tin-lookup__search svg { display:none; } .tin-lookup__row .tin-lookup__search { padding-inline:8px; } }

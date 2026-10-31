@@ -314,7 +314,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.getByRole('alert')).toContainText('greater than zero');
   await services.locator('#guest-tax-amount').fill('25000');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(services.getByText('Step 3 of 4')).toBeVisible();
+  await expect(services.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
   await expect(services.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await services.getByRole('button', { name: 'Pay online' }).click();
   await services.getByRole('button', { name: 'Mobile banking' }).click();

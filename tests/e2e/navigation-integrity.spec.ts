@@ -61,7 +61,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(services).toBeVisible();
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await expect(page).toHaveURL(/action=landing/);
-  await expect(services.getByText('Step 1 of 4')).toBeVisible();
+  await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await page.goto('/?action=landing');
   await openTravelTaxFromBanner(page);
@@ -168,7 +168,7 @@ test('guest menus and bell route to their named services; contextual payment cho
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
   await expect(page).toHaveURL(/action=payment_notifications/);
-  await expect(services.getByText('Step 1 of 4')).toBeVisible();
+  await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
   await page.reload();
   await expect(page.getByRole('heading',{name:'Sign in to view payment notifications',exact:true})).toBeVisible();
@@ -226,7 +226,7 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
-  await expect(services.getByText('Step 1 of 4')).toBeVisible();
+  await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(rail).toBeVisible();
   // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
   await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);

@@ -25,7 +25,7 @@ export interface TaxPayModalProps {
   /** Read-only information dialogs may omit an otherwise empty action footer. */
   hideFooter?: boolean;
   /** Only the four payment stages use the progressive modal shell. */
-  progress?: { current: number; total: number };
+  progress?: { current: number; total: number; label?: string };
 }
 
 /**
@@ -163,7 +163,7 @@ export function TaxPayModal({
           {onBack ? <button type="button" className="taxpay-modal__back" aria-label={backLabel} onClick={onBack}><ArrowLeft size={20} aria-hidden="true" /></button> : <span className="taxpay-modal__back-placeholder" aria-hidden="true" />}
           {progress ? <div className="taxpay-modal__heading">
             <h2 className="taxpay-modal__title" id={titleId}>{title}</h2>
-            <p className="taxpay-modal__step-count">{progress.current}/{progress.total} Steps</p>
+            <p className="taxpay-modal__step-count">{progress.current}/{progress.total} {progress.label ?? 'Steps'}</p>
           </div> : <h2 className="taxpay-modal__title" id={titleId}>{title}</h2>}
           <button
             ref={closeRef}

@@ -104,7 +104,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       title={view === 'login'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
         : view === 'payment' ? stages[stage - 1] : tr('Pay Tax', 'কর পরিশোধ')}
-      progress={view === 'payment' ? { current: stage, total: 4 } : undefined}
+      progress={view === 'payment' ? { current: stage, total: 4, label: tr('Steps', 'ধাপ') } : undefined}
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
@@ -115,7 +115,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         if (back && !back.disabled) back.click();
         else if (stage === 1 || stage === 4) returnToService();
       } : undefined}
-      backLabel={tr('Back', 'ফিরুন')}
+      backLabel={view === 'payment' ? tr('Back to previous payment step', 'পূর্ববর্তী পেমেন্ট ধাপে ফিরুন') : tr('Back', 'ফিরুন')}
       service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'

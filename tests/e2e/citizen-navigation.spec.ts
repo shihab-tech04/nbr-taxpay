@@ -20,7 +20,7 @@ test('public hero opens payment while standalone receipt search stays accessible
  await enterTaxPayService(services, 'TAX_WITH_RETURN');
  await expect(page).toHaveURL(/action=landing/);
  await expect(services.locator('.payment-form-section')).toHaveCount(1);
- await expect(services.getByText('Step 1 of 4',{exact:false})).toBeVisible();
+ await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
