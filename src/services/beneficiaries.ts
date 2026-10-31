@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { beneficiaryNameForStorage } from './beneficiaryNames';
 import {
   addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,
   removeGuestBeneficiary, updateGuestBeneficiary,
@@ -51,22 +52,23 @@ export async function createBeneficiaryList(ownerUid:string | null,name:string):
 export async function addBeneficiaries(ownerUid:string | null,listId:string,rows:BeneficiaryInput[]):Promise<number> {
   if(!rows.length)return 0;
   if(rows.length>1000)throw new Error('Import a maximum of 1,000 beneficiaries at a time.');
-  const valid=rows.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.trim().length>0&&row.display_name.trim().length<=160);
-  if(!valid)throw new Error('Check the beneficiary TIN and name before saving.');
-  if (!ownerUid) return addGuestBeneficiaries(listId,rows);
+  const normalized=rows.map(row=>({...row,display_name:beneficiaryNameForStorage(row.display_name)}));
+  const valid=normalized.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.length<=160);
+  if(!valid)throw new Error('Check the beneficiary TIN and name length before saving.');
+  if (!ownerUid) return addGuestBeneficiaries(listId,normalized);
   // Database unique constraint + ignoreDuplicates makes retry idempotent and leaves existing names unchanged.
   const {data,error}=await client().from('taxpay_beneficiaries')
-    .upsert(rows.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name.trim()})),
+    .upsert(normalized.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name})),
       {onConflict:'list_id,tin',ignoreDuplicates:true})
     .select('id');
   if(error)throw error;
   return data?.length??0;
 }
 export async function updateBeneficiary(ownerUid:string | null,id:string,name:string):Promise<void>{
-  const trimmed=name.trim();
-  if(!trimmed||trimmed.length>160)throw new Error('Enter a beneficiary name of up to 160 characters.');
-  if (!ownerUid) return updateGuestBeneficiary(id,trimmed);
-  const {error}=await client().from('taxpay_beneficiaries').update({display_name:trimmed,updated_at:new Date().toISOString()}).eq('id',id).eq('owner_uid',ownerUid);
+  const normalized=beneficiaryNameForStorage(name);
+  if(normalized.length>160)throw new Error('Enter a beneficiary name of 160 characters or fewer.');
+  if (!ownerUid) return updateGuestBeneficiary(id,normalized);
+  const {error}=await client().from('taxpay_beneficiaries').update({display_name:normalized,updated_at:new Date().toISOString()}).eq('id',id).eq('owner_uid',ownerUid);
   if(error)throw error;
 }
 export async function removeBeneficiary(ownerUid:string | null,id:string):Promise<void>{
