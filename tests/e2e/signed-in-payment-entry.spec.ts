@@ -49,8 +49,8 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 
-  await payment.getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.taxpay-modal__back').click();
+  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
@@ -60,7 +60,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(manualTin).toHaveValue('');
   await expect(manualTin).not.toHaveAttribute('readonly', '');
   await manualTin.fill('123456789012');
-  await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
+  await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
