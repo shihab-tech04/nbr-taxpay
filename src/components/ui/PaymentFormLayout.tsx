@@ -105,7 +105,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <div className="payment-form-summary__taxpayer-items">
             {group.entries.length ? group.entries.map((entry, entryIndex) => {
               const contents = <>
-                <p>{entry.label}{entry.detail && <small>{entry.detail}</small>}</p>
+                <span className="payment-form-summary__taxpayer-label">{entry.label}{entry.detail && <small>{entry.detail}</small>}</span>
                 <strong>{entry.value === null ? '—' : formatCurrency(entry.value, language)}</strong>
               </>;
               return entry.id && onSelectEntry
