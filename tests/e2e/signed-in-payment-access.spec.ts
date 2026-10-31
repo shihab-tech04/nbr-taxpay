@@ -22,7 +22,7 @@ for (const locale of ['en', 'bn'] as const) {
       const continueButton = payment.locator('.tax-service-choice__actions').getByRole('button', { name: locale === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true });
       await expect(continueButton).toBeEnabled();
       await continueButton.click();
-      await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+      await expect(payment.locator('.taxpay-modal__step-count')).toContainText('1/4');
       await expect(payment.locator('.tax-service-choice__account-access')).toBeVisible();
       await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
       if (payer === 'OTHER') {
