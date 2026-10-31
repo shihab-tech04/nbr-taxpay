@@ -341,7 +341,7 @@ export const INITIAL_CASES: CaseRecord[] = [
     tin: 'DEMO-TIN-001',
     taxpayerName: 'Synthetic demo taxpayer',
     assessmentYear: '2023-2024',
-    issue: 'Discrepancy between declared consultancy revenue and e-TDS statement deduction of BDT 1,20,000.',
+    issue: 'Discrepancy between declared consultancy revenue and e-TDS statement deduction of ৳ 1,20,000.',
     disputedAmount: 47400,
     stage: 'ASSESSMENT_ORDER',
     status: 'HEARING_SCHEDULED',
@@ -375,7 +375,7 @@ export const INITIAL_INCIDENTS: IncidentReport[] = [
     transactionReference: 'BKSH-TXN-DEMO-REF-010',
     amount: 15000,
     gateway: 'bKash MFS',
-    description: 'Amount of BDT 15,000 was debited from personal bKash wallet for return tax payment, but portal timed out and displayed "Session Expired" without generating A-Challan receipt or token.',
+    description: 'Amount of ৳ 15,000 was debited from personal bKash wallet for return tax payment, but portal timed out and displayed "Session Expired" without generating A-Challan receipt or token.',
     status: 'INVESTIGATING',
     officerFindings: 'Demonstration-only note; no external bank, Treasury, or taxpayer records were queried.'
   },

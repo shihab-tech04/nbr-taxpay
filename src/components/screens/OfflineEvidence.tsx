@@ -130,7 +130,7 @@ export const OfflineEvidence: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-slate-600 mb-1 font-semibold">Remitted Amount (BDT)</label>
+              <label className="block text-slate-600 mb-1 font-semibold">Remitted Amount (৳)</label>
               <input
                 type="number"
                 min="1"
@@ -169,7 +169,7 @@ export const OfflineEvidence: React.FC = () => {
                 <th className="px-3 py-2.5">Paper Challan No</th>
                 <th className="px-3 py-2.5">Taxpayer & TIN</th>
                 <th className="px-3 py-2.5">Depository Bank Branch</th>
-                <th className="px-3 py-2.5 text-right">Amount (BDT)</th>
+                <th className="px-3 py-2.5 text-right">Amount (৳)</th>
                 <th className="px-3 py-2.5 text-center">Audit Status</th>
               </tr>
             </thead>

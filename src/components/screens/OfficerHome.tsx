@@ -70,10 +70,10 @@ export const OfficerHome: React.FC = () => {
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-slate-500 block">FY Collection Actual:</span>
           <span className="font-mono-plex font-bold text-lg text-emerald-950 mt-1 block">
-            BDT 148.5 Cr
+            ৳ 148.5 Cr
           </span>
           <span className="text-emerald-700 font-semibold block text-[10px]">
-            Target: BDT 210 Cr (70.7%)
+            Target: ৳ 210 Cr (70.7%)
           </span>
         </div>
 
