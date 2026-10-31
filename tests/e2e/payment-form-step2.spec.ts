@@ -322,7 +322,7 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await expect(batch.getByRole('button', { name: 'Unselect all', exact: true })).toBeDisabled();
   await catalogue.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
-  const selected = catalogue.locator('[data-head-row]').filter({ has: batch.getByRole('checkbox', { name: /Select 68A/ }) });
+  const selected = batch.getByRole('checkbox', { name: /Select 68A/ }).locator('xpath=ancestor::li[@data-head-row]');
   await selected.getByRole('button', { name: /Add another assessment year/ }).click();
   const allocations = selected.getByTestId('other-tax-line');
   await expect(allocations).toHaveCount(2);
