@@ -229,18 +229,28 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await expect(pageRoot).not.toContainText(isolationList);
     await expect(pageRoot).not.toContainText('Unauthorised cross-guest edit');
 
-    const firstRow = page.locator('[data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"] li')
-      .filter({ hasText: 'Hosted Synthetic Alpha' }).filter({ hasText: '012345678901' });
-    const secondRow = page.locator('[data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"] li')
-      .filter({ hasText: 'Local Beneficiary Two' }).filter({ hasText: '987654321098' });
+    const savedRows = page.locator('[data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"] li');
+    const firstTinRow = savedRows.filter({ hasText: '012345678901' });
+    const secondTinRow = savedRows.filter({ hasText: '987654321098' });
+    await expect(firstTinRow).toHaveCount(1);
+    await expect(secondTinRow).toHaveCount(1);
+    const sourceRowMatches = {
+      firstHasExpectedName: await firstTinRow.getByText('Hosted Synthetic Alpha', { exact: true }).count() === 1,
+      firstHasOtherName: await firstTinRow.getByText('Local Beneficiary Two', { exact: true }).count() === 1,
+      secondHasExpectedName: await secondTinRow.getByText('Local Beneficiary Two', { exact: true }).count() === 1,
+      secondHasOtherName: await secondTinRow.getByText('Hosted Synthetic Alpha', { exact: true }).count() === 1,
+    };
+    console.log('HOSTED_ACCEPTANCE_PREFILL_ROW_MATCHES=' + JSON.stringify(sourceRowMatches));
+    expect(sourceRowMatches).toEqual({
+      firstHasExpectedName: true,
+      firstHasOtherName: false,
+      secondHasExpectedName: true,
+      secondHasOtherName: false,
+    });
+    const firstRow = firstTinRow.filter({ hasText: 'Hosted Synthetic Alpha' });
+    const secondRow = secondTinRow.filter({ hasText: 'Local Beneficiary Two' });
     await expect(firstRow).toHaveCount(1);
-    await expect(firstRow).not.toContainText('Local Beneficiary Two');
     await expect(secondRow).toHaveCount(1);
-    await expect(secondRow).not.toContainText('Hosted Synthetic Alpha');
-    console.log(`HOSTED_ACCEPTANCE_PREFILL_SOURCE_ROWS=${JSON.stringify({
-      first: (await firstRow.innerText()).replace(/\\s+/g, ' ').trim(),
-      second: (await secondRow.innerText()).replace(/\\s+/g, ' ').trim(),
-    })}`);
     await firstRow.getByRole('button', { name: 'Pay Tax for Others' }).click();
     let payment = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
@@ -249,13 +259,12 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(payment.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-    const observedSinglePrefill = {
-      tin: await payment.locator('#guest-tin').inputValue(),
-      name: await payment.locator('#other-tax-primary-name').inputValue(),
+    const observedSinglePrefillMatches = {
+      tinMatchesExpected: (await payment.locator('#guest-tin').inputValue()) === '012345678901',
+      nameMatchesExpected: (await payment.locator('#other-tax-primary-name').inputValue()) === 'Hosted Synthetic Alpha',
     };
-    console.log(`HOSTED_ACCEPTANCE_SINGLE_PREFILL=${JSON.stringify(observedSinglePrefill)}`);
-    await expect(payment.locator('#guest-tin')).toHaveValue('012345678901');
-    await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Hosted Synthetic Alpha');
+    console.log('HOSTED_ACCEPTANCE_SINGLE_PREFILL_MATCHES=' + JSON.stringify(observedSinglePrefillMatches));
+    expect(observedSinglePrefillMatches).toEqual({ tinMatchesExpected: true, nameMatchesExpected: true });
     await expect(payment.getByText('Sign-in Payment')).toHaveCount(0);
     await payment.getByRole('button', { name: 'Close payment services' }).click();
 
