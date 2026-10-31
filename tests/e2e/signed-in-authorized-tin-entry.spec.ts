@@ -133,10 +133,14 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await dialog.locator('.tax-service-choice__continue').click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.locator('.tax-service-choice__continue').click();
+  await expect(dialog.locator('[data-entry-section="tax"]')).toBeVisible();
+  await expect(dialog.locator('[data-entry-section="access"]')).toBeVisible();
+  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toBeVisible();
+  await dialog.locator('.tax-service-choice__actions')
+    .getByRole('button', { name: 'এগিয়ে যান', exact: true }).click();
   await expect(dialog.getByTestId('authorized-taxpayer-choices')).toContainText('নতুন ডেমো অনুমোদনের অনুরোধে পেমেন্টের আগে করদাতার সম্মতি প্রয়োজন।');
   const tin = dialog.locator('#guest-tin');
   await tin.fill('1234567890123');

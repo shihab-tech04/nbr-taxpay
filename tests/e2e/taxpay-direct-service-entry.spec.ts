@@ -26,12 +26,10 @@ for (const { slide, cta, selected } of [
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Facilitate another taxpayer’s payment');
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Pay on behalf of another taxpayer.');
     await modal.locator('[data-payer-relationship="OTHER"]').click();
-    await modal.getByRole('button', { name: 'Continue', exact: true }).click();
     // Direct banner service remains preselected, with no redundant second modal.
     await expect(modal.locator('[data-payment-entry]')).toHaveCount(2);
     const taxChoice = selected === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX';
     await expect(modal.locator(`[data-payment-entry="${taxChoice}"]`)).toHaveAttribute('aria-pressed', 'true');
-    await modal.getByRole('button', { name: 'Continue', exact: true }).click();
     await modal.locator('[data-payment-access="GUEST"]').click();
     await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(modal.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
@@ -40,8 +38,7 @@ for (const { slide, cta, selected } of [
     await modal.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
     await expect(modal.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
-    await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
-    await modal.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
+
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   });
 }

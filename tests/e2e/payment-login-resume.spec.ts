@@ -6,9 +6,7 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
@@ -61,9 +59,7 @@ test('payment account login preserves payer and access on Back, errors and close
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="OTHER"]').click();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
@@ -76,12 +72,8 @@ test('payment account login preserves payer and access on Back, errors and close
 
   await login.getByRole('button', { name: 'Back' }).click();
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
   const retry = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(retry.getByRole('textbox', { name: 'User ID' })).toHaveValue('');
@@ -91,7 +83,7 @@ test('payment account login preserves payer and access on Back, errors and close
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(0);
 });
 
-test('sequential tax and access decisions each require Continue', async ({ page }) => {
+test('progressive tax and access decisions stay on the same modal and require all choices', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
@@ -99,15 +91,11 @@ test('sequential tax and access decisions each require Continue', async ({ page 
   const next = payment.getByRole('button', { name: 'Continue', exact: true });
   await expect(next).toBeDisabled();
   await payment.locator('[data-payer-relationship="SELF"]').click();
-  await expect(next).toBeEnabled();
-  await next.click();
-  await expect(payment.locator('[data-payment-access]')).toHaveCount(0);
   await expect(payment.locator('[data-payment-entry]')).toHaveCount(2);
   await expect(next).toBeDisabled();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
-  await next.click();
-  await expect(payment.locator('[data-payment-entry]')).toHaveCount(0);
   await expect(payment.locator('[data-payment-access]')).toHaveCount(2);
+  await expect(payment.locator('[data-payer-relationship]')).toHaveCount(2);
   await expect(next).toBeDisabled();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await expect(next).toBeEnabled();

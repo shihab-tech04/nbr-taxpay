@@ -148,17 +148,12 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,000');
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await dialog.getByRole('button', { name: 'Back', exact: true }).click();
-  // From the access screen, Back navigates to tax type and then payer.
-  const chooserBack = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true });
+  // Back returns to the shared chooser with all entry decisions still visible.
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
-  await chooserBack.click();
   await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
-  await chooserBack.click();
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('#guest-tin').fill('444444444444');

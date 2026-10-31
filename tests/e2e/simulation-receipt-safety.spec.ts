@@ -44,11 +44,9 @@ test('guest submission and receipt use only synthetic references', async ({ page
   const ownPayer = dialog.locator('[data-payer-relationship="SELF"]');
   await ownPayer.click();
   await expect(ownPayer).toHaveAttribute('aria-pressed', 'true');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   const withReturn = dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]');
   await withReturn.click();
   await expect(withReturn).toHaveAttribute('aria-pressed', 'true');
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   await guest.click();
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
