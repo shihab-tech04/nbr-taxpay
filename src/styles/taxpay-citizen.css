@@ -2265,6 +2265,8 @@
  .taxpay-citizen-shell .taxpay-modal .receipt-view__action{width:100%;font-size:14px;padding:.55rem .25rem}
 }
 @media print{
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .taxpay-public-desktop-navigation,
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .taxpay-public-mobile-navigation,
  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header,
  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)),
  .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer,
