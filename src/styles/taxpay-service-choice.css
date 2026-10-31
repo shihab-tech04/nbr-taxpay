@@ -1056,7 +1056,7 @@
   line-height: 1.25;
   color: var(--citizen-text);
 }
-.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__step-count {
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] :is(.taxpay-modal__step-count,.taxpay-modal__subtitle) {
   margin: 0;
   color: var(--citizen-muted);
   font-size: 14px;
@@ -1096,6 +1096,7 @@
     align-self: stretch;
     margin: 0;
     border: 0;
+    border-top: 1px solid var(--citizen-border);
     border-left: 1px solid var(--citizen-border);
     border-radius: 0;
   }
