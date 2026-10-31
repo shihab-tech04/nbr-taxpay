@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import { expect, test } from '@playwright/test';
 
 test('approved Korbritto branding stays consistent across public and taxpayer shells', async ({ page }) => {
@@ -9,7 +10,7 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'Korbritto');
   await expect.poll(() => page.locator('.public-footer__wordmark').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page, 'bn');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'করবৃত্ত');
   await expect(page.locator('.public-home-brand__copy small')).toHaveCount(0);
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'করবৃত্ত');
@@ -18,7 +19,7 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   const bengaliDialog = page.getByRole('dialog', { name: 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন' });
   await expect(bengaliDialog).toBeVisible();
   await bengaliDialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
-  await page.getByRole('button', { name: 'EN' }).click();
+  await setWorkspaceLanguage(page, 'en');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Korbritto');
   await page.goto('/?action=office_login&lang=en');
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
