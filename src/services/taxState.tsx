@@ -295,7 +295,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     logAuditAction(
       'PAYMENT_RECORD_SAVED',
       receipt.challanNo,
-      `Payment record for ${receipt.payerName}, amount: BDT ${receipt.totalAmount}; settlement not verified`
+      `Payment record for ${receipt.payerName}, amount: ৳ ${receipt.totalAmount}; settlement not verified`
     );
   };
 

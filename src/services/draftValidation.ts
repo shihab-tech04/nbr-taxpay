@@ -19,7 +19,7 @@ export function validateDraft(input: DraftInput): { amountMinor: number; error: 
     return { amountMinor: 0, error: 'Enter a correctly formatted assessment-year label such as 2026-27. This does not verify its legal applicability.' };
   }
   if (!/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/.test(input.amount)) {
-    return { amountMinor: 0, error: 'Enter a positive BDT amount with at most two decimal places.' };
+    return { amountMinor: 0, error: 'Enter a positive ৳ amount with at most two decimal places.' };
   }
   const [whole, fraction = ''] = input.amount.split('.');
   const amountMinor = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
