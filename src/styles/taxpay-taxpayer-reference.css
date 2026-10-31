@@ -361,7 +361,7 @@
     margin-left: var(--taxpay-adaptive-rail-width);
   }
 }
-@media (min-width: 901px) and (max-width: 1059px) {
+@media (min-width: 901px) and (max-width: 1199px) {
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { padding: 16px 10px; }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-wordmark { width: 150px; }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
