@@ -27,16 +27,16 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
 
   await expect(login).toHaveCount(0);
   await expect(payment).toBeVisible();
-  await expect(payment.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
+  await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
   await expect(payment.locator('[data-payment-entry]')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.locator('.tax-service-choice__selected-service strong').first()).toHaveText('Other Tax Payment');
-  await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.locator('#guest-tin')).toBeVisible();
-  await expect(payment.getByRole('region', { name: 'Account taxpayer details' })).toContainText('2222222222222');
-  await expect(payment.locator('input#guest-tin')).toHaveCount(0);
+  await expect(payment.locator('input#guest-tin')).toHaveValue('2222222222222');
+  await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
   await expect(payment.locator('#guest-notice-ref')).toBeEditable();
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
@@ -48,7 +48,7 @@ test('guest payment bypasses login and continues to the standard four steps', as
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'OTHER_TAX_PAYMENT', 'OTHER');
   await expect(payment).toBeVisible();
-  await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('Facilitate another taxpayer’s payment');
   await expect(payment.getByRole('radio', { name: 'Facilitate another taxpayer’s payment' })).toHaveCount(0);

@@ -48,7 +48,7 @@ test('one decision per shared modal screen with selection retained on Back', asy
   await next.click();
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
   await next.click();
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(guest).toHaveAttribute('aria-pressed', 'true');
 });
