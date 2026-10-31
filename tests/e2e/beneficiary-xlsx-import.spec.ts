@@ -234,8 +234,9 @@ test('failed new-list import stays recoverable and retries against the same crea
   await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
 
   await dialog.getByRole('button',{name:'Finish import'}).click();
-  await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible();
+  await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
   expect(transport.createListCount()).toBe(2);
   await expect(page.locator('#beneficiary-list')).toContainText('Imported list');
   await expect(page.getByText('Local Beneficiary One')).toBeVisible();
+  await expect(page.getByText('Local Beneficiary Two')).toBeVisible();
 });
