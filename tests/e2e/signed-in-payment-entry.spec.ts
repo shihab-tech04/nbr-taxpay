@@ -15,9 +15,11 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
-  await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(payment.locator('[data-payment-access="GUEST"]')).toBeVisible();
+  await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
+  await expect(payment.locator('[data-entry-section="access"]')).toHaveCount(0);
+  await expect(payment.locator('[data-payment-access]')).toHaveCount(0);
+  // A real signed-in session goes directly into the existing account payment flow.
+  await expect(payment.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
