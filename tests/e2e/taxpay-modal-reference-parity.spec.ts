@@ -149,7 +149,6 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   const login = dialog.locator('[data-payment-access="ACCOUNT"]');
   // The dialog itself is deliberately animating its height and vertical position.
