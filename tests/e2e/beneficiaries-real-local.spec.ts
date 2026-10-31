@@ -1,7 +1,6 @@
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {enterTaxPayService} from './pay-tax-entry-helper';
 
 // Real disposable Auth + PostgREST. Fail closed if pointed at any hosted database.
 test('real account saves private beneficiary, reopens it, isolates another owner and prefills Pay Tax',async({browser})=>{
@@ -94,7 +93,18 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
   const modal=page.getByRole('dialog',{name:'Pay Tax'});
-  await enterTaxPayService(modal,'OTHER_TAX_PAYMENT','OTHER');
+  // Real Supabase Auth must render the same approved three-section entry UI.
+  await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
+  await modal.locator('[data-payer-relationship="OTHER"]').click();
+  await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await expect(modal.locator('[data-payment-access]')).toHaveCount(2);
+  await expect(modal.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed','true');
+  await expect(modal.locator('[data-payment-access="GUEST"]')).toBeVisible();
+  await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
+  await expect(modal.locator('[data-payment-entry]')).toHaveCount(2);
+  await modal.getByRole('button',{name:'Continue',exact:true}).click();
+  await expect(modal.getByText('Continuing with your account')).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
   const picker=modal.getByTestId('saved-beneficiary-picker');
   await expect(picker).toContainText('Local Beneficiary One',{timeout:15000});
   await picker.locator('label').filter({hasText:'Local Beneficiary One'}).locator('input').check();

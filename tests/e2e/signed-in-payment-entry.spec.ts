@@ -13,11 +13,15 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(payment, 'ADVANCE_TAX', 'SELF');
+  await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+  await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(payment.locator('[data-payment-access="GUEST"]')).toBeVisible();
+  await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
   await expect(payment.getByText('Step 1 of 4')).toBeVisible();
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
-  await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
 });
 
@@ -46,9 +50,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
 
   await payment.getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
@@ -58,9 +60,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(manualTin).not.toHaveAttribute('readonly', '');
   await manualTin.fill('123456789012');
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
-  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.getByRole('region', { name: 'Account taxpayer details' })).toContainText('2222222222222');
