@@ -8,6 +8,8 @@ type MockGuestSession={lists:MockGuestList[];people:MockGuestPerson[]};
 async function setupGuestTransport(page:Page){
   const sessions=new Map<string,MockGuestSession>();
   let nextId=1;
+  let createListCount=0;
+  let failNextAdd=false;
   const newId=()=>`00000000-0000-4000-8000-${String(nextId++).padStart(12,'0')}`;
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
@@ -25,8 +27,13 @@ async function setupGuestTransport(page:Page){
     if(body.action==='lists')data=session.lists;
     else if(body.action==='people')data=session.people.slice(Number(body.offset)||0,(Number(body.offset)||0)+(Number(body.limit)||500));
     else if(body.action==='create-list'){
+      createListCount++;
       const list={id:newId(),name:String(body.name),created_at:now};session.lists.push(list);data=list;
     }else if(body.action==='add'){
+      if(failNextAdd){
+        failNextAdd=false;
+        await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,code:'TEMPORARY_FAILURE'})});return;
+      }
       let inserted=0;
       for(const row of body.rows as Array<{tin:string;display_name:string}>){
         if(session.people.some(person=>person.list_id===body.listId&&person.tin===row.tin))continue;
@@ -42,6 +49,7 @@ async function setupGuestTransport(page:Page){
     }else data={active:true};
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
+  return {failNextAdd:()=>{failNextAdd=true;},createListCount:()=>createListCount};
 }
 
 test('downloaded Beneficiaries Excel template opens in the supported import parser',async({page})=>{
@@ -70,8 +78,10 @@ test('signed-out visitors can open Beneficiaries without an email or sample-acco
   await page.goto('/?action=beneficiaries&lang=bn');
   await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:/তালিকা তৈরি/}).first()).toBeVisible();
-  await expect(page.getByRole('button',{name:/উপকারভোগী যোগ/}).first()).toBeVisible();
-  await expect(page.getByRole('button',{name:/এক্সেল আমদানি/}).first()).toBeVisible();
+  await expect(page.getByRole('button',{name:/তালিকা তৈরি/})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:/করদাতার অনুমোদন পরিচালনা/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/উপকারভোগী যোগ/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/এক্সেল আমদানি/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/Pay Tax for Others/})).toHaveCount(0);
   await expect(page.getByRole('link',{name:/সাইন ইন/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/Use User ID/})).toHaveCount(0);
@@ -110,6 +120,9 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await dialog.locator('#beneficiary-create-list-name').fill('Guest Family');
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
   await expect(page.getByText(/Guest Family.*is empty/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Create list',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Add beneficiary',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Import Excel',exact:true})).toHaveCount(1);
 
   await page.getByRole('button',{name:'Create list',exact:true}).first().click();
   dialog=page.getByRole('dialog',{name:'Create list'});
@@ -187,4 +200,42 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
     await expect(other.getByRole('heading',{name:'Create your first list'})).toBeVisible();
     await expect(other.getByText('Synthetic Guest Renamed')).toHaveCount(0);
   }finally{await otherContext.close();}
+});
+
+test('failed new-list import stays recoverable and retries against the same created list',async({page})=>{
+  const transport=await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries');
+
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  let dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('Existing list');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
+  const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
+  await page.locator('#beneficiary-file').setInputFiles({
+    name:'guest-beneficiaries.xlsx',
+    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer:Buffer.from(workbook,'base64'),
+  });
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-target-list').selectOption('new');
+  await dialog.locator('#beneficiary-new-list-name').fill('Imported list');
+
+  transport.failNextAdd();
+  await dialog.getByRole('button',{name:'Finish import'}).click();
+  await expect(dialog.getByRole('alert')).toBeVisible();
+  const retryTarget=await dialog.locator('#beneficiary-target-list').inputValue();
+  expect(retryTarget).not.toBe('new');
+  expect(transport.createListCount()).toBe(2);
+  await expect(dialog.getByRole('button',{name:'Back'})).toBeEnabled();
+  await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
+
+  await dialog.getByRole('button',{name:'Finish import'}).click();
+  await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible();
+  expect(transport.createListCount()).toBe(2);
+  await expect(page.locator('#beneficiary-list')).toContainText('Imported list');
+  await expect(page.getByText('Local Beneficiary One')).toBeVisible();
 });
