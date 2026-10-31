@@ -34,7 +34,7 @@ export const formatCurrency = (amount: number, lang: 'en' | 'bn' = 'en'): string
   if (lang === 'bn') {
     return `৳ ${toBengaliNumeral(formattedEn)}`;
   }
-  return `BDT ${formattedEn}`;
+  return `৳ ${formattedEn}`;
 };
 
 export const formatNumber = (num: number, lang: 'en' | 'bn' = 'en'): string => {
