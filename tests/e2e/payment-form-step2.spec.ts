@@ -333,7 +333,7 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await allocations.nth(1).locator('input[id^="other-tax-amount"]').fill('20');
   const calc = dialog.locator('.taxpay-modal__body .payment-form-summary');
   await expect(calc.locator('.payment-form-summary__total')).toContainText('৳ 30');
-  await expect(calc).not.toContainText('৳');
+  await expect(calc).not.toContainText('BDT');
   const links = calc.locator('.payment-form-summary__breakdown button');
   await expect(links).toHaveCount(2);
   await links.nth(1).click();
