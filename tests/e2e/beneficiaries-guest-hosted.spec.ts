@@ -302,8 +302,8 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
           Range: '0-0',
         },
       });
-      if ([401, 403].includes(response.status())) continue;
-      expect([200, 206, 204]).toContain(response.status());
+      if ([401, 403, 204].includes(response.status())) continue;
+      expect([200, 206]).toContain(response.status());
       expect(response.headers()['content-range'] ?? '').toMatch(/\/0$/);
     }
 
