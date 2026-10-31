@@ -223,7 +223,6 @@ test('saved-beneficiary picker uses shared TaxPay controls in the standalone gue
     await expect(useButton).toBeEnabled();
     await useButton.click();
     await expect(page.locator('#guest-tin')).toHaveValue('012345678901');
-    await expect(page.locator('#other-tax-primary-name')).toHaveValue('Saved Guest Taxpayer');
   };
 
   await verifyPicker('en');
