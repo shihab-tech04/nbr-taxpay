@@ -38,7 +38,8 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   const other = dialog.getByTestId('other-tax-taxpayer');
   await other.locator('input[id^="other-tax-tin"]').fill('222222222222');
-  await other.locator('input[id^="other-tax-name"]').fill('Taxpayer Beta');
+  await other.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(other.locator('input[id^="other-tax-name"]')).toHaveValue('User 2');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
