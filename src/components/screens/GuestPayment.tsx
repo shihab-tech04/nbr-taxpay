@@ -38,7 +38,7 @@ import { clearOtherTaxBatch, confirmedBatchReceipts, createOtherTaxBatch, loadOt
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
 import { SavedBeneficiaryPicker } from './SavedBeneficiaryPicker';
-import { SignedInTaxpayerCard, AuthorizedTaxpayerChoices, AccountPaymentSuggestions } from './SignedInPaymentEnhancements';
+import { SignedInTaxpayerCard, AccountPaymentSuggestions } from './SignedInPaymentEnhancements';
 import { activeAuthorizedTaxpayers } from '../../services/signedInPaymentContext';
 import { getHostedAuthorizations, userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
@@ -299,7 +299,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (embedded && !signedInAccount && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) return false;
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
-    if (forSelf === false && effectivePayerName.trim().length < 2) return false;
+    if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
@@ -589,7 +589,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
       return false;
     }
-    if (!forSelf && effectivePayerName.trim().length < 2) {
+    if (!forSelf && !signedInAccount && effectivePayerName.trim().length < 2) {
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
@@ -1161,61 +1161,34 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('payerChoice')}
               </fieldset>
             </PaymentFormSection> : null}
-            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
+            {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={signedInAccount && forSelf === false ? (language === 'bn' ? 'উপকারভোগী নির্বাচন' : 'Choose beneficiaries') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             
-            {forSelf === false && Boolean(authenticatedUser || previewAccount) && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
+            {signedInAccount && forSelf === false && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
               onChoose={selected => {
                 clearReferenceSelection();
-                setAuthorizedTaxpayerId(null); // Saving a beneficiary is never a consent grant.
+                setAuthorizedTaxpayerId(null);
                 setAuthorizedTaxpayerIds({});
                 setSuggestedBatchYears({});
-                const unique=selected.filter((person,index)=>selected.findIndex(p=>p.tin===person.tin)===index);
-                if(otherBatch){
-                  const seen=new Set(batchTaxpayers.map(person=>person.tin).filter(Boolean));
-                  const newcomers=unique.filter(person=>!seen.has(person.tin));
-                  if(!taxpayerTin&&newcomers.length){
-                    const first=newcomers.shift()!;
-                    setTin(first.tin);setOtherTaxpayerName(first.name);
-                  }
-                  if(newcomers.length)setAdditionalTaxpayers(old=>[...old,...newcomers.map(person=>({id:crypto.randomUUID(),tin:person.tin,name:person.name}))]);
-                }else if(unique[0]){
-                  setTin(unique[0].tin);setOtherTaxpayerName(unique[0].name);
-                }
+                setOtherTaxLines([]);
+                const unique=selected.filter((person,index)=>selected.findIndex(candidate=>candidate.tin===person.tin)===index);
+                const first=unique[0];
+                setTin(first?.tin ?? '');
+                setOtherTaxpayerName(first?.name ?? '');
+                setAdditionalTaxpayers(otherBatch?unique.slice(1).map(person=>({
+                  id:crypto.randomUUID(),tin:person.tin,name:person.name
+                })):[]);
                 clearValidationError();
               }} />}
-            {signedInAccount && forSelf === false && <AuthorizedTaxpayerChoices actor={demoConsentActor} language={language}
-              selectedTin={taxpayerTin}
-              addedTins={otherBatch ? batchTaxpayers.map(person => person.tin).filter(Boolean) : [taxpayerTin]}
-              allowAdd={Boolean(otherBatch && taxpayerTin && (authorizedTaxpayerId || otherTaxLines.some(line => line.taxpayerId === 'primary')))}
-              onSelect={(nextTin, nextName) => {
-                clearReferenceSelection();
-                if (otherBatch && taxpayerTin && taxpayerTin !== nextTin &&
-                    (authorizedTaxpayerId || otherTaxLines.some(line => line.taxpayerId === 'primary'))) {
-                  if (!batchTaxpayers.some(person => person.tin === nextTin)) {
-                    const emptySlot = additionalTaxpayers.find(person => !person.tin.trim());
-                    if (emptySlot) {
-                      setAdditionalTaxpayers(people => people.map(person => person.id === emptySlot.id
-                        ? { ...person, tin: nextTin, name: nextName } : person));
-                    } else {
-                      setAdditionalTaxpayers(people => [...people, { id: crypto.randomUUID(), tin: nextTin, name: nextName }]);
-                    }
-                  }
-                  const scenarioId=userIdForHostedTin(nextTin);
-                  if(scenarioId)setAuthorizedTaxpayerIds(current=>({...current,[nextTin]:scenarioId}));
-                } else {
-                  setTin(nextTin);
-                  setOtherTaxpayerName(nextName);
-                  const scenarioId=userIdForHostedTin(nextTin);
-                  setAuthorizedTaxpayerId(scenarioId);
-                  if(scenarioId)setAuthorizedTaxpayerIds(current=>({...current,[nextTin]:scenarioId}));
-                }
-                clearValidationError();
-              }}
-              onManage={() => { setPaymentServiceChoiceOpen(false); navigate('manage_authorization'); }} />}
+            {signedInAccount && forSelf === false && Boolean(taxpayerTin) && <div className="col-span-full rounded-lg border border-slate-200 bg-slate-50 p-3" data-testid="selected-payment-beneficiaries">
+              <h4 className="text-sm font-semibold text-taxpay-text">{language==='bn'?'এই পেমেন্টের নির্বাচিত উপকারভোগী':'Selected beneficiaries for this payment'}</h4>
+              {batchTaxpayers.filter(person=>person.tin).map(person=><p key={person.id} className="mt-1 text-sm text-slate-700">
+                {person.name || (language==='bn'?'নাম দেওয়া হয়নি':'Name not provided')} · {person.tin}
+              </p>)}
+            </div>}
             <div className="payment-identity__fields">
               {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />}
               {!ownAccountTax && <>
-              {(!otherBatch || ownAccountTax) && <div className="payment-identity__tin">
+              {!signedInAccount && (!otherBatch || ownAccountTax) && <div className="payment-identity__tin">
                 <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
                   {isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : (language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer’s TIN')} *
                 </label>
@@ -1246,7 +1219,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {taxpayerLookupResult}
               </div>}
 
-              {forSelf === false && <div>
+              {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)'} *</label>
                 <input
                   id="guest-payer-name"
@@ -1265,7 +1238,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               </>}
               {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
-                {!ownAccountTax && <div>
+                {!signedInAccount && <div>
                 <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
                 <input
                   id="guest-phone"
@@ -1294,7 +1267,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>}
             </div>
             </PaymentFormSection>}
-            {otherBatch && !ownAccountTax && <PaymentFormSection number={3} staticView={embedded}
+            {otherBatch && !ownAccountTax && !signedInAccount && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'এই পেমেন্টের করদাতারা' : 'Taxpayers in this payment'}
               description={language === 'bn' ? 'প্রত্যেক করদাতার জন্য আলাদা টিআইএন দিন। নাম ঐচ্ছিক; পরের ধাপে প্রতিটি পেমেন্ট খাত একজন করদাতাকে বরাদ্দ করবেন।' : 'Enter a unique TIN for each taxpayer. Names are optional. Assign each payment head to a taxpayer in the next step.'}>
               <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} allowAdditional={forSelf === false}
