@@ -131,9 +131,10 @@ test('mobile banner keeps all five approved conceptual illustrations, one-line c
   );
   expectedAssets.forEach((name, index) => expect(images[index]).toContain(`taxpay-hero-${name}`));
 
-  const shortHeading = carousel.locator('[data-banner-service="intro"] .public-hero-copy--mobile').first();
+  const shortHeading = carousel.locator('[data-banner-service="intro"] h1');
   await expect(shortHeading).toBeVisible();
-  await expect(shortHeading.locator('xpath=..')).toHaveCSS('white-space', 'nowrap');
+  await expect(shortHeading).toHaveText('Tax payments, without the confusion');
+  await expect(shortHeading).toHaveCSS('white-space', 'normal');
   await expect(carousel.locator('.public-hero-carousel__arrow').first()).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
