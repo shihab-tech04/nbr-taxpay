@@ -1,17 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 
-/** The redesigned Home page offers Travel Tax on banner five, not in a separate list. */
+/** Travel Tax is a permanent action on the fixed left side of the hero.
+ * Its route is independent of whichever illustration is currently visible. */
 export async function openTravelTaxFromBanner(page: Page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
   const carousel = page.locator('.public-hero-carousel');
   await expect(carousel).toBeVisible();
-  const activeIndex = Number(await carousel.getAttribute('data-active-slide'));
-  expect(Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < 5).toBe(true);
-  const moves = (4 - activeIndex + 5) % 5;
-  for (let i = 0; i < moves; i++) {
-    await carousel.press('ArrowRight');
-    await expect(carousel).toHaveAttribute('data-active-slide', String((activeIndex + i + 1) % 5));
-  }
-  await expect(carousel).toHaveAttribute('data-payment-service', 'TRAVEL_TAX');
-  await carousel.locator('[data-banner-service="travel"] .citizen-public-primary').click();
+  await carousel.getByRole('button', { name: /^(?:Pay Travel Tax|ভ্রমণ কর পরিশোধ)$/ }).click();
 }
