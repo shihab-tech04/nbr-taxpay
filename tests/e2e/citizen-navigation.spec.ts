@@ -169,7 +169,8 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
       await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
       await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
     } else {
-      await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
+      await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
+      await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeHidden();
     }
   }
 });
