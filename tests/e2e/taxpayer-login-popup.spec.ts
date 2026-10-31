@@ -4,8 +4,8 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await page.goto('/');
   await expect(page.locator('#public-home-title')).toBeVisible();
   if (page.viewportSize()!.width<=900) {
-    await page.getByRole('button',{name:'Menu'}).click();
-    await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Login'}).click();
+    await page.getByRole('button',{name:'Open menu'}).click();
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Sign in'}).click();
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
