@@ -23,7 +23,10 @@
     "SCOPED_PASS": "A named subset passed; the listed exclusions remain open.",
     "NOT_TESTED": "No valid evidence for the stated behavior.",
     "BLOCKED": "A prerequisite prevents safe acceptance or hosted change.",
-    "NOT_CERTIFIED": "Source-baseline status retained; implementation or live acceptance is not certified."
+    "NOT_CERTIFIED": "Source-baseline status retained; implementation or live acceptance is not certified.",
+    "SCOPED_PASS_WITH_REMAINDER_OPEN": "The named cleanup slice passed; broader cleanup remains open.",
+    "REVIEW_SNAPSHOT": "Catalogue is prepared for review and does not itself certify release acceptance.",
+    "PRIOR_NARROW_PASS_NOT_RETESTED": "A narrowly scoped prior pass exists, but it was not repeated in this release cycle."
   },
   "evidence_rules": [
     "A source component or prototype feature is not acceptance evidence.",
@@ -2719,6 +2722,13 @@
       ],
       "limits": [
         "Two empty smoke-created sessions were deleted by exact ID after readback; the run had not recorded their capability hashes, so exclusive origin could not be proven."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-PUB-001",
+        "TPAY-PUB-005",
+        "TPAY-PUB-008",
+        "TPAY-IDN-008",
+        "TPAY-TAX-007"
       ]
     },
     {
@@ -2734,6 +2744,10 @@
       "limits": [
         "Account-owned row privacy is NOT TESTED because owner lists and beneficiaries were empty.",
         "No payment submission or gateway selection occurred; exact synthetic hashes were removed and post-delete targeted readback was zero."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-IDN-002",
+        "TPAY-LDG-005"
       ]
     },
     {
@@ -2748,6 +2762,10 @@
       ],
       "limits": [
         "Production signed-in behavior remains NOT TESTED without an authorized hosted account/session; no payment was submitted."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-IDN-008",
+        "TPAY-IDN-009"
       ]
     },
     {
@@ -2762,6 +2780,11 @@
       ],
       "limits": [
         "Production signed-in Track Payment behavior remains NOT TESTED; no real Auth/payment was exercised."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-PUB-005",
+        "TPAY-PUB-008",
+        "TPAY-IDN-008"
       ]
     },
     {
@@ -2771,12 +2794,24 @@
       "acceptance": "Taxpayer inquiry → role-authorized Office review → immutable decision/readback → taxpayer status/notification, without financial mutation.",
       "evidence": [
         "PR #343 refreshed head a3b8536edf4b08202151cb94df1d75c4eada0e63 on base 4418bbe192e43a06aae4c94aee492707bb8bf587",
-        "exact-head Phase 02 41190630925 PASS; source recovery 41190631015 PASS; Pages 41190630947 IN_PROGRESS at snapshot"
+        "exact-head Phase 02 41190630925 PASS; source recovery 41190631015 PASS; Pages 41190630947 PASS at snapshot"
       ],
       "limits": [
         "Hosted TaxPay history ends 20261030143740 while source contains later migrations through 20261030170000.",
         "No verified restorable TaxPay/Office database backup and restore evidence; deployed payment-sync-bridge is version 1 and lacks the current correction routes; no authorized active Office officer identities.",
         "No hosted migration or function write was made."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-COR-001",
+        "TPAY-COR-002",
+        "TPAY-COR-003",
+        "TPAY-COR-004",
+        "TPAY-COR-005",
+        "TPAY-COR-006",
+        "TPAY-COR-007",
+        "TPAY-COR-008",
+        "TPAY-COR-009",
+        "TPAY-TAX-009"
       ]
     },
     {
@@ -2790,6 +2825,12 @@
       ],
       "limits": [
         "Both PRs remain unmerged; no hosted Office migrations, authenticated officer identities, or hosted acceptance."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-COR-003",
+        "TPAY-COR-004",
+        "TPAY-COR-008",
+        "TPAY-COR-009"
       ]
     },
     {
@@ -2802,6 +2843,10 @@
       ],
       "limits": [
         "Catalogue is a source-studied baseline plus release overlay, not a legal register, full story matrix, or acceptance certification."
+      ],
+      "candidate_feature_ids": [
+        "TPAY-QAG-001",
+        "TPAY-QAG-008"
       ]
     },
     {
@@ -2888,24 +2933,28 @@
       "id": "UI-07",
       "status": "SCOPED_PASS",
       "features": [
-        "TPAY-UX-001"
+        "TPAY-UX-003",
+        "TPAY-UX-004",
+        "TPAY-UX-005",
+        "TPAY-UX-006",
+        "TPAY-UX-007",
+        "TPAY-UX-008",
+        "TPAY-QAG-007"
       ],
       "note": "Some CI viewport/language checks pass; full breakpoint, keyboard and accessibility matrix is not accepted."
     },
     {
       "id": "CMS-08",
       "status": "SCOPED_PASS",
-      "features": [
-        "TPAY-PUB-001"
-      ],
-      "note": "Main content workflow passed; full CMS behavioral scope and current-state readback remain unverified."
+      "features": [],
+      "note": "The baseline has no CMS-specific publish/unpublish/order/crop feature ID; keep CMS-08 as a release overlay rather than mapping it to public landing."
     },
     {
       "id": "REL-09",
       "status": "BLOCKED",
       "features": [
         "TPAY-QAG-001",
-        "TPAY-QAG-006"
+        "TPAY-QAG-008"
       ],
       "note": "TaxPay source recovery is verified, but no verified restorable database backup/restore or hosted migration reconciliation."
     },
@@ -2921,10 +2970,8 @@
     {
       "id": "OFF-LOGIN-01",
       "status": "PRIOR_NARROW_PASS_NOT_RETESTED",
-      "features": [
-        "TPAY-OFF-001"
-      ],
-      "note": "Prior Office prototype UI login evidence is not real hosted identity proof and was not retested in this release cycle."
+      "features": [],
+      "note": "Office prototype UI login/logout is not represented by a matching feature ID in the v1.1 baseline; this prior narrow UI pass is not real hosted identity proof and was not retested in this cycle."
     },
     {
       "id": "OFF-IDENTITY-02",
@@ -2939,6 +2986,8 @@
   "catalogue_gaps": [
     "No feature in the v1.1 150-ID baseline explicitly names private saved-beneficiary lists or Excel import; BEN-03 remains a separate approved release overlay pending governance of a stable feature ID.",
     "The recovered 387-story source is missing; do not infer whole-program story coverage or a completion percentage.",
-    "The separate 366-rule legal/SQL ledger remains incomplete and must not be represented by the feature catalogue."
+    "The separate 366-rule legal/SQL ledger remains incomplete and must not be represented by the feature catalogue.",
+    "The v1.1 baseline has no CMS-specific content-management feature ID; CMS-08 remains an explicit release overlay.",
+    "The v1.1 baseline has no Office demo-login/logout feature ID; do not map prototype UI login to officer authentication."
   ]
 }
