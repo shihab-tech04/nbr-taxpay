@@ -264,6 +264,35 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       && batchTaxpayers.some(person => person.id === line.taxpayerId)
       && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
 
+  // Match the existing identity validator before enabling the primary action.
+  // Signed-in beneficiary consent is still verified asynchronously on Continue.
+  const canContinueStep1 = (() => {
+    if (authorizationChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
+    const tinValid = ownAccountTax
+      ? /^\d{12,13}$/.test(taxpayerTin)
+      : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
+    if (!tinValid) return false;
+    if (otherBatch) {
+      const seenTins = new Set<string>();
+      for (const person of batchTaxpayers) {
+        const valid = person.id === 'primary' && ownAccountTax
+          ? /^\d{12,13}$/.test(person.tin)
+          : isSupportedBeneficiaryTin(person.tin, allowSyntheticDemoTin);
+        if (!valid || seenTins.has(person.tin)) return false;
+        seenTins.add(person.tin);
+      }
+    }
+    if (embedded && !signedInAccount && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) return false;
+    if (!/^01\d{9}$/.test(receiptPhone)) return false;
+    if (forSelf === false && effectivePayerName.trim().length < 2) return false;
+    const reference = noticeReference.trim();
+    if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax) {
+      const matched = findV11GuestNotice(taxpayerTin, reference);
+      if (!matched || matched.category !== category) return false;
+    }
+    return true;
+  })();
+
   const [headSearch, setHeadSearch] = useState('');
   const [headSearchDraft, setHeadSearchDraft] = useState('');
 
@@ -1529,7 +1558,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
                 <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
               </button>
-              <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next}>
+              <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next} disabled={!canContinueStep1}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
             </>
