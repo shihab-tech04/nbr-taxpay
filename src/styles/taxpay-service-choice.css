@@ -985,9 +985,11 @@
 }
 .taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__progressive-section {
   min-width: 0;
-  margin: 0;
-  padding: 0;
+  /* Separate revealed decisions; the modal footer already has its own divider. */
+  margin: 1rem 0 0;
+  padding: 1rem 0 0;
   border: 0;
+  border-top: 1px solid var(--citizen-border);
 }
 .taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__entry-heading {
   margin: 0 0 .75rem;
