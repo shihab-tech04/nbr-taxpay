@@ -45,7 +45,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [view, setView] = useState<'payer' | 'login' | 'payment'>('payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [useAccount, setUseAccount] = useState(false);
-  const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(paymentBeneficiaryPrefill ? 'guest' : null);
+  const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
+  // Verified users see the same approved selector, but use the authenticated path by default.
+  const selectedAccess = entryAccess ?? ((verifiedUser || previewAccount) ? 'account' : paymentBeneficiaryPrefill ? 'guest' : null);
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -62,10 +64,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
     if (payerForSelf === null || !selected || (accountLoading && !previewAccount)) return;
+    if (!selectedAccess) return;
+    if (selectedAccess === 'guest' && publicPayment) { beginPayment(false); return; }
     if (verifiedUser || previewAccount) { beginPayment(true); return; }
-    // Never infer access choice from the preceding selections.
-    if (!entryAccess) return;
-    if (entryAccess === 'guest' && publicPayment) { beginPayment(false); return; }
     openLogin();
   };
   const returnToService = () => {
@@ -99,7 +100,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         <div className="tax-service-choice__actions">
           {view === 'payer' && <button type="button" className="tax-service-choice__continue"
              disabled={payerForSelf === null || !selected || (multiBeneficiaryPrefill && selected !== 'OTHER_TAX_PAYMENT') || (accountLoading && !previewAccount)
-               || (!(verifiedUser || previewAccount) && !entryAccess)}
+               || !selectedAccess}
              onClick={advanceToPayment}>
              {tr('Continue', 'এগিয়ে যান')} <ArrowRight size={18} aria-hidden="true" />
            </button>}
@@ -165,9 +166,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              </div>
            </div>}
            {payerForSelf !== null && topLevel !== null && (
-             verifiedUser || previewAccount
-               ? <p className="tax-service-choice__signed-in">{tr('Continue with your signed-in account', 'সাইন ইন করা অ্যাকাউন্ট দিয়ে এগিয়ে যান')}</p>
-               : <div className="tax-service-choice__progressive-section" data-entry-section="access">
+               <div className="tax-service-choice__progressive-section" data-entry-section="access">
                    <h3 id="tax-service-access-heading" className="tax-service-choice__entry-heading">{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
                    <div className="tax-service-choice__access-options" role="group" aria-labelledby="tax-service-access-heading">
                      {[
@@ -175,8 +174,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                        { id: 'guest' as const, Icon: WalletCards, en: 'Walk-in Payment', bn: 'ওয়াক-ইন পেমেন্ট', detailEn: 'Enter your details and make this payment.', detailBn: 'আপনার তথ্য দিয়ে এই কর পরিশোধ করুন।' },
                      ].map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
                        <button type="button" key={id} className="tax-service-choice__access-option"
-                         aria-pressed={entryAccess === id} data-payment-access={id.toUpperCase()}
-                         onClick={() => setEntryAccess(current => current === id ? null : id)}>
+                         aria-pressed={selectedAccess === id} data-payment-access={id.toUpperCase()}
+                         onClick={() => setEntryAccess(id)}>
                          <span className="tax-service-choice__access-icon"><Icon size={20} aria-hidden="true" /></span>
                          <span className="tax-service-choice__access-copy"><strong>{tr(en, bangla)}</strong><small>{tr(detailEn, detailBn)}</small></span>
                          <span className="tax-service-choice__access-radio" aria-hidden="true"><span /></span>
