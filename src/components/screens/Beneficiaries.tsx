@@ -25,7 +25,7 @@ export function Beneficiaries(){
   const [activeList,setActiveList]=useState('');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
-  const [notice,setNotice]=useState('');
+  const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
   const [createListOpen,setCreateListOpen]=useState(false);
   const [phase,setPhase]=useState<Phase>('upload');
@@ -88,7 +88,7 @@ export function Beneficiaries(){
 
   function open(next:Flow){
     setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
-    setTin('');setName('');setRows([]);setFilename('');setModalError('');setNotice('');
+    setTin('');setName('');setRows([]);setFilename('');setModalError('');setNotice(null);
   }
   function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
 
@@ -100,7 +100,7 @@ export function Beneficiaries(){
       const list=await createBeneficiaryList(owner,listName);
       setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
       setActiveList(list.id);setSelectedIds([]);setCreateListOpen(false);setListName('');
-      setNotice(tr('List created.','তালিকা তৈরি হয়েছে।'));
+      setNotice({en:'List created.',bn:'তালিকা তৈরি হয়েছে।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
@@ -128,7 +128,7 @@ export function Beneficiaries(){
       const id=await resolveList();
       const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim()}]);
       await reload(id);setFlow(null);
-      setNotice(count?tr('Beneficiary saved.','উপকারভোগী সংরক্ষিত হয়েছে।'):tr('This beneficiary is already in the list.','এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'));
+      setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
@@ -151,7 +151,7 @@ export function Beneficiaries(){
       const id=await resolveList();
       const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim()})));
       await reload(id);setFlow(null);
-      setNotice(count?tr(`${count} beneficiaries added to the list.`,`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`):tr('No new beneficiaries were added.','নতুন কোনো উপকারভোগী যোগ হয়নি।'));
+      setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
@@ -163,7 +163,7 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       await updateBeneficiary(owner,editPerson.id,editName);await reload();setEditPerson(null);
-      setNotice(tr('Beneficiary updated.','উপকারভোগীর তথ্য হালনাগাদ হয়েছে.'));
+      setNotice({en:'Beneficiary updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে.'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
@@ -173,7 +173,7 @@ export function Beneficiaries(){
     setBusy(true);setError('');
     try{
       await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);
-      setNotice(tr('Beneficiary removed.','উপকারভোগী সরানো হয়েছে।'));
+      setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
     }catch(e){setError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
@@ -208,7 +208,7 @@ export function Beneficiaries(){
         <UiButton className="w-full sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
       </div>}
     </header>
-    {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice}</p>}
+    {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
     <section className="rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
       {checkingIdentity&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Opening your beneficiary workspace…','উপকারভোগীর কর্মক্ষেত্র খোলা হচ্ছে…')}</p>}
