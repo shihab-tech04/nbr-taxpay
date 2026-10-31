@@ -7,12 +7,12 @@ This runbook applies only to the manual, synthetic-data acceptance on the exact 
 Run these read-only checks on TaxPay Supabase project `eyqhoavnitkrajvyqvxn` immediately before dispatch:
 
 ```sql
-select count(*) as expired_guest_sessions
+select count(*) as sessions_expiring_within_two_hours
 from taxpay_guest_private.sessions
-where expires_at <= now();
+where expires_at <= now() + interval '2 hours';
 ```
 
-Dispatch only when the result is `0`. Both `open` and `touch_session` run a global expiry cleanup, so a nonzero result is a hard stop. Dispatch once; do not use “re-run jobs” or start another run for this SHA. Record aggregate guest, owner, and simulated-payment counts before the run. These are counts only; do not inspect, reset, or delete other guest or owner records.
+Dispatch only when the result is `0`. Both `open` and `touch_session` run a global expiry cleanup, so a nonzero result is a hard stop. Run the query immediately before dispatch and require the hosted test step to begin within two hours; if setup or queueing delays it past that window, stop before the test step. Dispatch once; do not use “re-run jobs” or start another run for this SHA. Record aggregate guest, owner, and simulated-payment counts before the run. These are counts only; do not inspect, reset, or delete other guest or owner records.
 
 ```sql
 select 'guest_sessions' as relation, count(*) as row_count from taxpay_guest_private.sessions
@@ -28,7 +28,9 @@ union all select 'story_notifications', count(*) from demo_payment.story_notific
 
 Capture this result immediately before dispatch and repeat it after exact test cleanup. Existing records and concurrent live activity must be preserved and any aggregate drift reported without attributing it to the acceptance.
 
-The test itself probes each generated capability with the real `lists` action and requires `410 / GUEST_SESSION_UNAVAILABLE` before allowing the app's `open` request. A capability that already resolves to a session fails closed. This protects against accidental reuse before the browser creates any list. If the expired-session count is nonzero, stop: `open` and `touch_session` run global expiry cleanup.
+The test itself probes each generated capability with the real `lists` action and requires `410 / GUEST_SESSION_UNAVAILABLE` before allowing the app's `open` request. A capability that already resolves to a session fails closed. This protects against accidental reuse before the browser creates any list. That probe is the first hosted RPC and can globally remove expired sessions, which is why the two-hour expiry buffer and immediate dispatch are required.
+
+The manual workflow also starts the disposable local Phase02 suite in parallel. It does not wait for that job before the hosted test; treat its result as a separate check, not a P1 acceptance gate.
 
 ## Acceptance coverage and limits
 
@@ -100,4 +102,4 @@ select
    where session_id in ('<SESSION_A>'::uuid, '<SESSION_B>'::uuid)) as beneficiaries_remaining;
 ```
 
-All three values must be `0`. Re-read aggregate guest, owner, and simulated-payment counts and the canonical snapshot digest. Concurrent live activity can change aggregate counts; report such drift without attributing it to this test. The exact-hash zero readback, preflight absence, pre-cleanup payload digest, and returned deleted IDs are the authoritative cleanup evidence. No payment API, gateway, challan, or payment submission is part of this acceptance.
+All three values must be `0`. Re-read aggregate guest, owner, and simulated-payment counts. Retain the pre-cleanup per-session payload digests; the exact-hash zero readback proves those test sessions and cascaded rows are gone. Concurrent live activity can change aggregate counts; report such drift without attributing it to this test. The preflight absence, pre-cleanup payload digests, returned deleted IDs, and post-delete zero readback are the authoritative cleanup evidence. No payment API, gateway, challan, or payment submission is part of this acceptance.
