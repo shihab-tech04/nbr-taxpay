@@ -682,6 +682,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             : `Taxpayer ${personNumber} (${missing.tin}) is not approved for payment through your account. Choose an approved taxpayer or request access first.`, 'tin');
           return;
         }
+        // Keep account payment suggestions scoped to every *verified* beneficiary.
+        // Selecting a saved contact alone never grants payment authorization.
+        const verifiedIds: Record<string,DemoUserId> = {};
+        for (const recipient of recipients) {
+          const scenarioId = userIdForHostedTin(recipient.tin);
+          if (scenarioId) verifiedIds[recipient.tin] = scenarioId;
+        }
+        setAuthorizedTaxpayerIds(verifiedIds);
         setAuthorizedTaxpayerId(userIdForHostedTin(taxpayerTin));
       } catch {
         setValidationError(language === 'bn' ? 'অনুমোদন যাচাই করা যায়নি। আবার চেষ্টা করুন।'
