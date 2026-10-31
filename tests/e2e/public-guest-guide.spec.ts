@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import {expect,test} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
@@ -56,7 +57,7 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  await expect(page.getByRole('button',{name:'Mobile'})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('searchbox',{name:'Search the guide'}).fill('rates');
  await expect(page.getByText('Are the rates final?')).toBeVisible();
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await setWorkspaceLanguage(page,'bn');
  await expect(page.getByRole('heading',{name:'করবৃত্ত ব্যবহার নির্দেশিকা'})).toBeVisible();
  await page.getByRole('button',{name:'মুছুন'}).click();
  await expect(page.getByRole('button',{name:'মোবাইল'})).toHaveAttribute('aria-pressed','true');
@@ -160,7 +161,7 @@ test('User guide has real platform-specific steps and searches across all topics
   await expect(guide.getByText('What should I check before payment?')).toBeVisible();
   await expect(travelQuestion).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page,'bn');
   await expect(guide.getByText('আপনার ডিভাইস অনুযায়ী নির্দেশনা দেখুন।')).toBeVisible();
   await expect(guide.getByRole('heading', { name: 'করবৃত্ত ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
@@ -299,7 +300,7 @@ test('guest receipt search is under the banner and opens receipt results in the 
 test('Bangla homepage reference search keeps keyboard access and modal receipt details',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','Bilingual modal receipt at smallest viewport');
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await setWorkspaceLanguage(page,'bn');
  const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
  await expect(search).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
@@ -399,7 +400,7 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
 test('travel tax mobile keeps a compact anchored estimate and Bengali step navigation',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','Smallest viewport EN/BN stepper');
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await setWorkspaceLanguage(page,'bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
  await expect(modal.getByRole('navigation',{name:'ভ্রমণ করের ধাপ'})).toBeVisible();
@@ -492,7 +493,7 @@ test('Travel Tax route search filters English and Bangla and preserves selected 
 test('Travel Tax Bangla route search is accessible and fits mobile viewport',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','Small mobile search and Bangla names');
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await setWorkspaceLanguage(page,'bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
  const search=modal.getByRole('searchbox',{name:'গন্তব্য বা যাতায়াতের ধরন খুঁজুন'});
