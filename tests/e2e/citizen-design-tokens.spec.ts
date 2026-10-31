@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import { expect, test } from '@playwright/test';
 
 test('citizen design locks the primary blue, differentiated icons and the preserved financial service identities', async ({ page }) => {
@@ -30,7 +31,7 @@ test('citizen design locks the primary blue, differentiated icons and the preser
 
 test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page,'bn');
   await expect(page.getByRole('heading', { name: 'যেভাবে কর পরিশোধ করবেন' })).toBeVisible();
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).click();
   await expect(page.locator('[data-payer-relationship]')).toHaveCount(2);
