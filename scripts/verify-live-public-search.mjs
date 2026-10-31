@@ -59,8 +59,14 @@ try {
     const receiptModal = page.getByRole('dialog', { name: 'Payment status & receipt' });
     await expect(receiptModal).toBeVisible();
     await expect(receiptModal.locator('.receipt-view--embedded')).toContainText('TKN-882190');
-    await expect(page.locator('.citizen-header')).toHaveCount(0);
-    await expect(page.locator('.public-home-header')).toBeVisible();
+    // The approved mobile navigation stays mounted across routes; test visibility, not DOM absence.
+    if (mobile) {
+      await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
+      await expect(page.locator('.public-home-header')).toBeHidden();
+    } else {
+      await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
+      await expect(page.locator('.public-home-header')).toBeVisible();
+    }
     if (page.url().includes('TKN-882190')) throw new Error('Reference leaked into live URL');
     await page.close();
   }
