@@ -95,10 +95,7 @@ test('guest users can add, edit, import and prefill a beneficiary without a name
   await intendedRecord.getByRole('button',{name:'Pay Tax for Others',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed','true');
-  await payment.getByRole('button',{name:'Continue',exact:true}).click();
-  await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
-  await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(payment.locator('#other-tax-primary-name')).toHaveValue('');
   await expect(payment.locator('#guest-tin')).toHaveValue('012345678901');
