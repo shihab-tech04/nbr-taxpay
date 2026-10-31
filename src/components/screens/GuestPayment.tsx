@@ -10,7 +10,9 @@ import {
   CheckCircle, 
   AlertCircle, 
   Lock,
-  Search
+  Search,
+  ChevronDown,
+  ReceiptText
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
@@ -193,6 +195,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   // Wizard state steps: 1: Taxpayer & Identification, 2: Head & Amount, 3: Review & Gateway, 4: Receipt
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  // Match the modal's mobile breakpoint; desktop/tablet retain the approved rail.
+  const [mobilePaymentFooter, setMobilePaymentFooter] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 650px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 650px)');
+    const sync = () => setMobilePaymentFooter(query.matches);
+    query.addEventListener('change', sync);
+    sync();
+    return () => query.removeEventListener('change', sync);
+  }, []);
 
   // Form inputs
   const [tin, setTin] = useState(initialBeneficiary?.tin ?? '');
@@ -517,6 +529,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
       { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
     ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : undefined} />;
+  const inlinePaymentCalculation = embedded && mobilePaymentFooter ? null : paymentCalculation;
+  const mobileSummaryTotal = otherBatch ? (step === 1 ? null : batchAmount) : summedAmount;
 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
@@ -1300,7 +1314,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            {paymentCalculation}
+            {inlinePaymentCalculation}
           </div>
         )}
 
@@ -1312,7 +1326,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               userId={userId} taxpayerLabel={person.name || person.tin} language={language}
               mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)
             : <AccountPaymentSuggestions userId={null} language={language} mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)}
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={paymentCalculation}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation}
             lines={otherTaxLines} suggestedAssessmentYears={suggestedBatchYears} onChange={next => {
               setOtherTaxLines(next);
               // Keep the invalid-row indicators visible until every selected
@@ -1511,7 +1525,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </div>}
             </div>
-            {paymentCalculation}
+            {inlinePaymentCalculation}
           </div>
         ))}
 
@@ -1542,7 +1556,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </section>
             </div>
             <aside className="payment-review__aside" aria-label={language === 'bn' ? 'পেমেন্টের মোট পরিমাণ' : 'Payment total'}>
-              {paymentCalculation}
+              {inlinePaymentCalculation}
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
@@ -1553,6 +1567,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       </div>
       {embedded && modalFooterTarget && createPortal(
         <div className="payment-flow-embedded__footer-actions">
+          {mobilePaymentFooter && step <= 3 && (
+            <details key={step} className="payment-flow-embedded__mobile-summary" data-testid="mobile-payment-calculation">
+              <summary className="payment-flow-embedded__mobile-summary-toggle" data-testid="mobile-payment-calculation-toggle">
+                <span className="payment-flow-embedded__mobile-summary-heading"><ReceiptText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</span>
+                <strong className="payment-flow-embedded__mobile-summary-total">{mobileSummaryTotal === null ? '—' : formatCurrency(mobileSummaryTotal, language)}</strong>
+                <ChevronDown size={18} className="payment-flow-embedded__mobile-summary-chevron" aria-hidden="true" />
+              </summary>
+              <div className="payment-flow-embedded__mobile-summary-details" data-testid="mobile-payment-calculation-details">{paymentCalculation}</div>
+            </details>
+          )}
           {step === 1 ? (
             <>
               <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
