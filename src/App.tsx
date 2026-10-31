@@ -207,7 +207,10 @@ const MainRouter: React.FC = () => {
 
   return (
     <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}`}>
-      {publicInformationRoute ? <PublicHomeHeader /> : <CitizenNavigation />}
+      {publicInformationRoute ? <>
+        <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
+        <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
+      </> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
