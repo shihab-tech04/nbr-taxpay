@@ -98,7 +98,7 @@ test('a signed-in account returning to public home sees notification and profile
   await expect(header.getByRole('button',{name:'Profile menu'})).toHaveCount(0);
 });
 
-test('the signed-in public header fits mobile and keeps account controls operable in Bangla',async({page},info)=>{
+test('signed-in public mobile uses the existing private-style header, shared sheet and account actions',async({page},info)=>{
   test.skip(info.project.name!=='mobile-320','One runner tests the tightest mobile layout');
   await page.goto('/?action=taxpayer_login');
   await page.getByLabel('User ID').fill('user1');
@@ -109,23 +109,25 @@ test('the signed-in public header fits mobile and keeps account controls operabl
   for(const width of [320,360,375,390]) {
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=landing');
-    const header=page.locator('.public-home-header');
+    const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
     await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
-    await expect(header.getByRole('button',{name:'Profile menu'})).toBeVisible();
-    await header.getByRole('button',{name:'Menu',exact:true}).click();
-    await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'})).toBeVisible();
-    await header.getByRole('button',{name:'Menu',exact:true}).click();
+    await expect(header.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+    await header.getByRole('button',{name:'Open menu'}).click();
+    const menu=page.getByRole('dialog',{name:'Services & menu'});
+    await expect(menu.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
+    await expect(menu.getByRole('button',{name:'Sign out'})).toBeVisible();
+    await menu.getByRole('button',{name:'Close'}).click();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
-  await page.getByRole('button',{name:'বাংলা'}).click();
-  const header=page.locator('.public-home-header');
-  await header.getByRole('button',{name:'প্রোফাইল মেনু'}).click();
-  await expect(header.getByRole('navigation',{name:'প্রোফাইল মেনু'}).getByRole('button',{name:'সাইন আউট'})).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(header.getByRole('navigation',{name:'প্রোফাইল মেনু'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Open menu'}).click();
+  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
+  const bnSheet=page.getByRole('dialog',{name:'সেবা ও মেনু'});
+  await expect(bnSheet.getByRole('button',{name:'সাইন আউট'})).toBeVisible();
+  await bnSheet.getByRole('button',{name:'সাইন আউট'}).click();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(0);
 });
-
 test('account UI retains no horizontal overflow at six mobile and desktop widths',async({page},info)=>{
   test.skip(info.project.name!=='mobile-320','One worker drives the exact viewport matrix');
   for(const width of [320,360,375,390,768,1280]){
