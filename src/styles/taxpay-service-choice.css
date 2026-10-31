@@ -929,6 +929,15 @@
   margin: 0;
 }
 .account-taxpayer-summary__fields dt { font-size: 14px; }
+/* Reuse the approved account summary only inside the signed-in payment identity form. */
+.payment-identity__fields > .account-taxpayer-summary {
+  padding: 16px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 12px;
+  background: var(--citizen-primary-light);
+  gap: 14px;
+}
+.payment-identity__fields > .account-taxpayer-summary dd { overflow-wrap: anywhere; }
 .account-authorizations {
   display: grid;
   gap: .6rem;
@@ -1158,6 +1167,7 @@
 .tin-lookup__details p { color: var(--citizen-text); }
 .payment-identity__receipt-row { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
 .payment-identity__receipt-row > div { min-width: 0; }
+.payment-identity__receipt-row--account { grid-template-columns: minmax(0,1fr); }
 .tin-lookup__batch { display: grid; justify-items: start; gap: 10px; margin-top: 14px; }
 .tin-lookup__batch .tin-lookup__result { width: 100%; margin-top: 0; }
 @media (max-width: 650px) {
