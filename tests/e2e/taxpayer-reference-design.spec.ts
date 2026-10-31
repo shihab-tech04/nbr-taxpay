@@ -64,7 +64,13 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await rail.getByRole('button',{name:'Beneficiaries',exact:true}).click();
   await expect(rail.getByRole('button',{name:'Beneficiaries',exact:true})).toHaveAttribute('aria-current','page');
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Manage taxpayer authorizations'}).click();
+  await expect(page.getByRole('button',{name:'Manage taxpayer authorizations'})).toHaveCount(0);
+  await rail.getByRole('button',{name:'Pay — select payment type'}).click();
+  const payDialog=page.getByRole('dialog',{name:'Pay Tax'});
+  await enterTaxPayService(payDialog,'OTHER_TAX_PAYMENT','OTHER');
+  const authorizationChoices=payDialog.getByTestId('authorized-taxpayer-choices');
+  await expect(authorizationChoices).toBeVisible();
+  await authorizationChoices.getByRole('button',{name:'Manage authorization',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Manage Authorization',exact:true})).toBeVisible();
   await rail.getByRole('button',{name:'Home',exact:true}).click();
   const main = page.locator('main');
