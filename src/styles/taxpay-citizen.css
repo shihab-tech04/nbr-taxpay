@@ -2353,3 +2353,27 @@
     max-height: none;
   }
 }
+
+/* Beneficiaries: use the approved compact mobile bottom-sheet pattern without changing other workflows. */
+@media (max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal__overlay:has(> .beneficiary-workflow-modal) {
+    align-items:flex-end;
+  }
+  .taxpay-citizen-shell .taxpay-modal.beneficiary-workflow-modal {
+    width:100%;
+    height:auto;
+    max-height:90dvh;
+    border-radius:1rem 1rem 0 0;
+    border:1px solid var(--citizen-border);
+    border-bottom:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal.beneficiary-workflow-modal .taxpay-modal__body {
+    overflow-y:auto;
+    min-height:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal.beneficiary-workflow-modal .taxpay-modal__footer > div,
+  .taxpay-citizen-shell .taxpay-modal.beneficiary-workflow-modal .taxpay-modal__footer > div > div {
+    min-width:0;
+    flex-wrap:wrap;
+  }
+}

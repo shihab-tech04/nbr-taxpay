@@ -36,8 +36,12 @@ test('Beneficiaries stays in the signed-in taxpayer shell and is absent from gue
   const emptyListStart=page.indexOf('listPeople.length===0?');
   const emptyListEnd=page.indexOf(':filteredPeople.length===0?',emptyListStart);
   assert.ok(firstListStart>=0&&firstListEnd>firstListStart,'first-list empty state is present');
-  assert.match(page.slice(firstListStart,firstListEnd),/Create list/);
-  assert.doesNotMatch(page.slice(firstListStart,firstListEnd),/Import Excel|Add beneficiary/);
+  // The empty state cannot duplicate the shared header actions.
+  assert.doesNotMatch(page.slice(firstListStart,firstListEnd),/<UiButton/);
+  assert.doesNotMatch(page,/\{lists\.length>0&&<div className="grid grid-cols-1/);
+  assert.match(page,/Choose how to add beneficiaries/);
+  assert.match(page,/Add one beneficiary/);
+  assert.match(page,/Import from Excel/);
   assert.ok(emptyListStart>=0&&emptyListEnd>emptyListStart,'empty selected-list state is present');
   assert.doesNotMatch(page.slice(emptyListStart,emptyListEnd),/<UiButton/);
 });
