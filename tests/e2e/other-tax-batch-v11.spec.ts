@@ -499,7 +499,7 @@ test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await expect(dialog.getByText('Authorized taxpayers',{exact:true})).toHaveCount(0);
   await expect(dialog.locator('#guest-notice-ref')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeDisabled();
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
 
