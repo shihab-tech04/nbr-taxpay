@@ -82,6 +82,13 @@ test('online method categories reveal only relevant providers and reset the prev
   await expect(dialog.locator('.payment-form-section').last()).not.toContainText('Selected payment head');
   await expect(dialog.locator('.payment-form-section').last()).toContainText('See the payment summary for the applicable sections');
   await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
+  // Phone layout keeps long calculation details collapsed in the sticky footer.
+  const disclosure = dialog.getByTestId('mobile-payment-calculation');
+  if (await disclosure.count()) {
+    await expect(disclosure).not.toHaveAttribute('open', '');
+    await disclosure.getByTestId('mobile-payment-calculation-toggle').click();
+    await expect(disclosure).toHaveAttribute('open', '');
+  }
   await expect(dialog.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await dialog.locator('#guest-tax-amount').fill('25000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
@@ -126,6 +133,13 @@ test('payment wizard stays within the viewport at phone widths', async ({ page }
   await expect(dialog.locator('.payment-form-section').last()).not.toContainText('Selected payment head');
   await expect(dialog.locator('.payment-form-section').last()).toContainText('See the payment summary for the applicable sections');
   await expect(dialog.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
+  // Phone layout keeps long calculation details collapsed in the sticky footer.
+  const disclosure = dialog.getByTestId('mobile-payment-calculation');
+  if (await disclosure.count()) {
+    await expect(disclosure).not.toHaveAttribute('open', '');
+    await disclosure.getByTestId('mobile-payment-calculation-toggle').click();
+    await expect(disclosure).toHaveAttribute('open', '');
+  }
   await expect(dialog.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await dialog.locator('#guest-tax-amount').fill('12000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
