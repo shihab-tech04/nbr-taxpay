@@ -1,5 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {BENEFICIARY_NAME_NOT_PROVIDED} from '../../src/services/beneficiaryNames';
+import {setWorkspaceLanguage} from './workspace-language';
 
 type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;created_at:string;updated_at:string};
 type MockGuestList={id:string;name:string;created_at:string};
@@ -118,4 +119,32 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   const visibleRecords=page.locator('table:visible tbody, ul[aria-label="সংরক্ষিত উপকারভোগী"]:visible, ul[aria-label="Saved beneficiaries"]:visible');
   await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='123450987654')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
+});
+
+
+test('Excel import success notice updates immediately when the user changes language',async({page})=>{
+  await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries');
+
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  let dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('Notice localization');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
+  await page.locator('#beneficiary-file').setInputFiles('tests/fixtures/beneficiary-no-name.xlsx');
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
+
+  const notice=page.locator('[data-testid="beneficiaries-page"] > p[role="status"]');
+  await expect(notice).toHaveText('1 beneficiaries added to the list.');
+
+  await setWorkspaceLanguage(page,'bn');
+  await expect(notice).toHaveText('1 জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।');
+  await expect(page.getByText('1 beneficiaries added to the list.',{exact:true})).toHaveCount(0);
+
+  await setWorkspaceLanguage(page,'en');
+  await expect(notice).toHaveText('1 beneficiaries added to the list.');
 });
