@@ -132,6 +132,7 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
 
     await page.goto('?action=beneficiaries', { waitUntil: 'domcontentloaded' });
     const pageRoot = page.getByTestId('beneficiaries-page');
+    const pageRows = pageRoot.locator('ul li');
     await expect(pageRoot).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Create your first list' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
@@ -155,11 +156,11 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await entryDialog.locator('#beneficiary-tin').fill('012345678901');
     await entryDialog.locator('#beneficiary-name').fill('Hosted Synthetic Alpha');
     await entryDialog.getByRole('button', { name: 'Add beneficiary', exact: true }).click();
-    await expect(pageRoot).toContainText('Hosted Synthetic Alpha');
+    await expect(pageRows.getByText('Hosted Synthetic Alpha', { exact: true })).toHaveCount(1);
     await expect(page.getByText('Beneficiary saved.')).toBeVisible();
 
     await page.reload();
-    await expect(pageRoot).toContainText('Hosted Synthetic Alpha');
+    await expect(pageRows.getByText('Hosted Synthetic Alpha', { exact: true })).toHaveCount(1);
     await expect(page.locator('#beneficiary-list')).toContainText(familyList);
 
     await page.getByRole('button', { name: 'Import Excel', exact: true }).first().click();
@@ -175,17 +176,18 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await entryDialog.getByRole('button', { name: 'Next', exact: true }).click();
     await entryDialog.getByRole('button', { name: 'Finish import' }).click();
     await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible();
-    await expect(pageRoot).toContainText('Local Beneficiary Two');
+    await expect(pageRows.getByText('Local Beneficiary Two', { exact: true })).toHaveCount(1);
 
     // A separate browser context has its own capability and must not see the first guest's data.
     const isolated = await secondContext.newPage();
     isolated.on('request', observeRequest);
     await isolated.goto('?action=beneficiaries', { waitUntil: 'domcontentloaded' });
     const isolatedRoot = isolated.getByTestId('beneficiaries-page');
+    const isolatedRows = isolatedRoot.locator('ul li');
     await expect(isolated.getByRole('heading', { name: 'Create your first list' })).toBeVisible();
-    await expect(isolatedRoot).not.toContainText('Hosted Synthetic Alpha');
-    await expect(isolatedRoot).not.toContainText('Local Beneficiary Two');
-    await expect(isolatedRoot).not.toContainText(familyList);
+    await expect(isolatedRows.getByText('Hosted Synthetic Alpha', { exact: true })).toHaveCount(0);
+    await expect(isolatedRows.getByText('Local Beneficiary Two', { exact: true })).toHaveCount(0);
+    await expect(isolatedRoot.getByText(familyList, { exact: true })).toHaveCount(0);
 
     await isolated.getByRole('button', { name: 'Create list', exact: true }).first().click();
     const isolatedListDialog = isolated.getByRole('dialog', { name: 'Create list' });
@@ -197,7 +199,7 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await isolatedEntry.locator('#beneficiary-tin').fill('000000123456');
     await isolatedEntry.locator('#beneficiary-name').fill('Hosted Synthetic Isolated');
     await isolatedEntry.getByRole('button', { name: 'Add beneficiary', exact: true }).click();
-    await expect(isolatedRoot).toContainText('Hosted Synthetic Isolated');
+    await expect(isolatedRows.getByText('Hosted Synthetic Isolated', { exact: true })).toHaveCount(1);
 
     // A second capability cannot edit or remove the first guest's exact row ID.
     await expect.poll(() => primaryBeneficiaryId).toMatch(/^[0-9a-f-]{36}$/i);
@@ -223,13 +225,13 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
 
     // The first guest must remain unchanged after the second guest's write and denied cross-guest edit/remove.
     await page.reload();
-    await expect(pageRoot).toContainText('Hosted Synthetic Alpha');
-    await expect(pageRoot).toContainText('Local Beneficiary Two');
-    await expect(pageRoot).not.toContainText('Hosted Synthetic Isolated');
-    await expect(pageRoot).not.toContainText(isolationList);
-    await expect(pageRoot).not.toContainText('Unauthorised cross-guest edit');
+    await expect(pageRows.getByText('Hosted Synthetic Alpha', { exact: true })).toHaveCount(1);
+    await expect(pageRows.getByText('Local Beneficiary Two', { exact: true })).toHaveCount(1);
+    await expect(pageRows.getByText('Hosted Synthetic Isolated', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(isolationList, { exact: true })).toHaveCount(0);
+    await expect(pageRows.getByText('Unauthorised cross-guest edit', { exact: true })).toHaveCount(0);
 
-    const savedRows = page.locator('[data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"] li');
+    const savedRows = pageRows;
     const firstTinRow = savedRows.filter({ has: page.getByText('012345678901', { exact: true }) });
     const secondTinRow = savedRows.filter({ has: page.getByText('987654321098', { exact: true }) });
     await expect(firstTinRow).toHaveCount(1);
@@ -276,11 +278,20 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-    await expect(payment.locator('#guest-tin')).toHaveValue('012345678901');
-    await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Hosted Synthetic Alpha');
     const additional = payment.getByTestId('other-tax-taxpayer');
-    await expect(additional.locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
-    await expect(additional.locator('input[id^="other-tax-name-"]')).toHaveValue('Local Beneficiary Two');
+    const multiPrefillMatches = {
+      primaryTinMatchesExpected: (await payment.locator('#guest-tin').inputValue()) === '012345678901',
+      primaryNameMatchesExpected: (await payment.locator('#other-tax-primary-name').inputValue()) === 'Hosted Synthetic Alpha',
+      additionalTinMatchesExpected: (await additional.locator('input[id^="other-tax-tin-"]').inputValue()) === '987654321098',
+      additionalNameMatchesExpected: (await additional.locator('input[id^="other-tax-name-"]').inputValue()) === 'Local Beneficiary Two',
+    };
+    console.log('HOSTED_ACCEPTANCE_MULTI_PREFILL_MATCHES=' + JSON.stringify(multiPrefillMatches));
+    expect(multiPrefillMatches).toEqual({
+      primaryTinMatchesExpected: true,
+      primaryNameMatchesExpected: true,
+      additionalTinMatchesExpected: true,
+      additionalNameMatchesExpected: true,
+    });
     await payment.getByLabel('Your name (payer)').fill('Synthetic QA Payer');
     await payment.getByLabel('Mobile number for receipt').fill('01700000000');
     await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -294,11 +305,11 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await tabs.nth(1).click();
     await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
     await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
-    await expect(tabs.nth(1)).toContainText('Local Beneficiary Two');
+    await expect(tabs.nth(1).getByText('Local Beneficiary Two', { exact: true })).toHaveCount(1);
     await expect(tabs.nth(1)).toContainText('1 selected');
     await expect(batch.getByTestId('other-tax-line')).toContainText('68B');
     await tabs.first().click();
-    await expect(tabs.first()).toContainText('Hosted Synthetic Alpha');
+    await expect(tabs.first().getByText('Hosted Synthetic Alpha', { exact: true })).toHaveCount(1);
     await expect(tabs.first()).toContainText('1 selected');
     await expect(batch.getByTestId('other-tax-line')).toContainText('68A');
     await expect(batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]')).toHaveValue('15');
@@ -317,13 +328,13 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     const editDialog = page.getByRole('dialog', { name: 'Edit beneficiary' });
     await editDialog.locator('#beneficiary-edit-name').fill('Hosted Synthetic Alpha Edited');
     await editDialog.getByRole('button', { name: 'Save changes' }).click();
-    await expect(pageRoot).toContainText('Hosted Synthetic Alpha Edited');
+    await expect(pageRows.getByText('Hosted Synthetic Alpha Edited', { exact: true })).toHaveCount(1);
 
     await secondRow.getByRole('button', { name: 'Remove beneficiary' }).click();
     const removeDialog = page.getByRole('dialog', { name: 'Confirm beneficiary removal' });
     await removeDialog.getByRole('button', { name: 'Remove', exact: true }).click();
-    await expect(pageRoot).not.toContainText('Local Beneficiary Two');
-    await expect(pageRoot).toContainText('Hosted Synthetic Alpha Edited');
+    await expect(pageRows.getByText('Local Beneficiary Two', { exact: true })).toHaveCount(0);
+    await expect(pageRows.getByText('Hosted Synthetic Alpha Edited', { exact: true })).toHaveCount(1);
 
     for (const viewport of [{ width: 320, height: 720 }, { width: 375, height: 812 }, { width: 768, height: 900 }, { width: 1280, height: 800 }]) {
       await page.setViewportSize(viewport);
@@ -332,15 +343,16 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     }
     await page.goto('?action=beneficiaries&lang=bn', { waitUntil: 'domcontentloaded' });
     const bengaliRoot = page.getByTestId('beneficiaries-page');
+    const bengaliRows = bengaliRoot.locator('ul li');
     await expect(bengaliRoot).toHaveAttribute('lang', 'bn');
     await expect(page.getByRole('heading', { name: 'উপকারভোগী' })).toBeVisible();
-    await expect(bengaliRoot).toContainText('Hosted Synthetic Alpha Edited');
-    await expect(bengaliRoot).not.toContainText('Local Beneficiary Two');
+    await expect(bengaliRows.getByText('Hosted Synthetic Alpha Edited', { exact: true })).toHaveCount(1);
+    await expect(bengaliRows.getByText('Local Beneficiary Two', { exact: true })).toHaveCount(0);
 
     await page.goto('?action=beneficiaries', { waitUntil: 'domcontentloaded' });
     await expect(pageRoot).toHaveAttribute('lang', 'en');
-    await expect(pageRoot).toContainText('Hosted Synthetic Alpha Edited');
-    await expect(pageRoot).not.toContainText('Local Beneficiary Two');
+    await expect(pageRows.getByText('Hosted Synthetic Alpha Edited', { exact: true })).toHaveCount(1);
+    await expect(pageRows.getByText('Local Beneficiary Two', { exact: true })).toHaveCount(0);
 
     // Anonymous reads against owner-only tables must be denied.
     // No populated owner row exists in the hosted baseline, so row-level privacy for an existing account record is not tested.
