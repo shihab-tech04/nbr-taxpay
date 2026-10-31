@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import { expect, test } from '@playwright/test';
 
 test('taxpayer dashboard uses compact labels, no backend essays and no invented tax balance',async({page},info)=>{
@@ -48,7 +49,7 @@ test('public information copy is concise and bilingual while preserving payment 
  await expect(page.getByRole('heading',{name:'Pay tax with confidence'})).toBeVisible();
  await expect(page.locator('footer').getByText('No government payments or challans are issued here.')).toHaveCount(0);
  await expect(page.getByText('Prototype status')).toHaveCount(0);
- await page.getByRole('button',{name:'বাংলা'}).click();
+ await setWorkspaceLanguage(page,'bn');
  await expect(page.getByRole('heading',{name:'কর পরিশোধ সহজ করুন'})).toBeVisible();
  await page.goto('/?action=travel');
  await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
