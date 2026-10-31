@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import { expect, test } from '@playwright/test';
 
 test('hero provides five bilingual service slides with the original desktop opening banner', async ({ page }, testInfo) => {
@@ -81,7 +82,7 @@ test('first-banner Travel Tax CTA matches Pay Tax and opens existing travel flow
 test('first-banner travel shortcut is localized in Bangla', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page,'bn');
   const intro = page.locator('[data-banner-service="intro"]');
   await expect(intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true })).toBeVisible();
   await intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true }).click();
@@ -94,7 +95,7 @@ test('both first-banner payment actions fit one line in Bangla on small screens'
   for (const width of [320, 360, 375, 390, 600]) {
     await page.setViewportSize({ width, height: 812 });
     await page.goto('/?action=landing');
-    await page.getByRole('button', { name: 'বাংলা' }).click();
+    await setWorkspaceLanguage(page,'bn');
     const intro = page.locator('[data-banner-service="intro"]');
     await expect(intro.getByRole('button', { name: 'কর পরিশোধ', exact: true })).toBeVisible();
     await expect(intro.getByRole('button', { name: 'ভ্রমণ কর পরিশোধ', exact: true })).toBeVisible();
@@ -320,7 +321,7 @@ test('service labels remain specific and concise in Bangla', async ({ page }, te
   const mobile = testInfo.project.name !== 'desktop-1280';
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page,'bn');
 
   const carousel = page.getByRole('region', { name: 'কর পরিশোধের সেবা ব্যানার' });
   await carousel.focus();
@@ -496,7 +497,7 @@ test('mobile banners have distinct concise copy, equal heights and one-line titl
     for (const width of [320, 375, 390, 600]) {
       await page.setViewportSize({ width, height: 812 });
       await page.goto('/?action=landing');
-      if (language === 'bn') await page.getByRole('button', { name: 'বাংলা' }).click();
+      if (language === 'bn') await setWorkspaceLanguage(page,'bn');
 
       const carousel = page.locator('.public-hero-carousel');
       const bannerCopy = await carousel.locator('.public-hero-carousel__slide').evaluateAll(slides => slides.map(slide => {
@@ -585,6 +586,6 @@ test('public record search has clear accessible emphasis on desktop and mobile w
   await input.clear();
   await expect(submit).toBeDisabled();
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page,'bn');
   await expect(page.getByRole('searchbox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
 });
