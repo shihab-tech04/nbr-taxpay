@@ -15,6 +15,7 @@ interface Props {
   invalidId: string | null;
   tinError?: string;
   onPrimaryTin: (value: string) => void;
+  onPrimarySearch: () => void;
   onPrimaryName: (value: string) => void;
   onAdditional: (people: OtherTaxTaxpayer[]) => void;
   onAllocations: (lines: OtherTaxAllocation[]) => void;
@@ -23,7 +24,7 @@ interface Props {
 
 export function OtherTaxTaxpayerList({
   language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, allowSyntheticDemoTin = false, additional, allocations, invalidId, tinError,
-  onPrimaryTin, onPrimaryName, onAdditional, onAllocations, onClearError
+  onPrimaryTin, onPrimarySearch, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
   const [addedId, setAddedId] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export function OtherTaxTaxpayerList({
             aria-describedby={[tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : '', primaryAssigned && !lockedPrimary ? 'other-tax-primary-tin-help' : ''].filter(Boolean).join(' ') || undefined}
             onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onPrimaryName(''); setSearchedTins(current => ({ ...current, primary: '' })); onClearError(); } }} />
           <button type="button" className="tin-lookup__search" disabled={!canSearch(primaryTin)}
-            onClick={() => { const match = lookupSampleTaxpayer(primaryTin); if (!lockedPrimary) onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current => ({ ...current, primary: primaryTin })); onClearError(); }}>
+            onClick={() => { onPrimarySearch(); const match = lookupSampleTaxpayer(primaryTin); if (!lockedPrimary) onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current => ({ ...current, primary: primaryTin })); onClearError(); }}>
             <Search size={17} aria-hidden="true" />{searchLabel}
           </button>
           </div>
