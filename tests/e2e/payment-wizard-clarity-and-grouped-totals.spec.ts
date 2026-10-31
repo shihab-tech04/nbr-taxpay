@@ -63,9 +63,10 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
   await expect(dialog.locator('#guest-tin')).toHaveValue('1111111111111');
   await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
-  await expect(dialog.locator('.tin-lookup__result')).toContainText('TIN information will be displayed here.');
+  await expect(dialog.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
+  await expect(dialog.locator('#guest-taxpayer-name')).toHaveValue('Md. Arif Rahman');
   await dialog.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(dialog.locator('.tin-lookup__result')).toContainText('Md. Arif Rahman');
+  await expect(dialog.locator('#guest-taxpayer-name')).toHaveValue('Md. Arif Rahman');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText('Based on this taxpayer’s recorded demo activity.')).toHaveCount(0);
 });
