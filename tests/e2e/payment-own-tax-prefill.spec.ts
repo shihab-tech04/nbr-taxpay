@@ -14,6 +14,9 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'ADVANCE_TAX', 'SELF');
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+  // Signed-in uses the same borderless payment section and 60:40 desktop geometry.
+  await expect(payment.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
+  await expect(payment.locator('.payment-form-section--static').first().locator('.payment-form-section__body')).toHaveCSS('padding-left', '0px');
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
 
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
