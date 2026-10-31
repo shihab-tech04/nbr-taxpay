@@ -233,7 +233,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const searchTin = () => {
     setLastSearchedTin(taxpayerTin);
     const match = lookupSampleTaxpayer(taxpayerTin);
-    if (match && forSelf === false && !otherBatch) setOtherTaxpayerName(match.nameEn);
+    if (!otherBatch && !ownAccountTax) setOtherTaxpayerName(match ? (language === 'bn' ? match.nameBn : match.nameEn) : '');
   };
   const [verifiedReference, setVerifiedReference] = useState<V11GuestNotice | null>(null);
   const tinAttempts = useRef<number[]>([]);
@@ -489,15 +489,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
     ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : undefined} />;
 
-  const taxpayerLookupResult = (
-    <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
-      {tinLookupState === 'idle' ? <p>{language === 'bn' ? 'টিআইএন তথ্য এখানে দেখানো হবে।' : 'TIN information will be displayed here.'}</p>
-        : sampleTaxpayer ? <div className="tin-lookup__details">
-          <p><strong>{language === 'bn' ? 'টিআইএন' : 'TIN'}:</strong> {sampleTaxpayer.tin}</p>
-          <p><strong>{language === 'bn' ? 'নাম' : 'Name'}:</strong> {language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn}</p>
-        </div> : <p>{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
-    </div>
-  );
+  const taxpayerLookupResult = tinLookupState === 'missing' ? (
+    <p className="tin-lookup__result" role="status" aria-live="polite">{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>
+  ) : null;
 
   const validateIdentity = () => {
     if (forSelf === null) {
@@ -1180,7 +1174,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   value={taxpayerTin}
                   inputMode="numeric" maxLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
                   readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
-                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
+                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); setOtherTaxpayerName(''); }}
                   className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 <button type="button" className="tin-lookup__search" onClick={searchTin} disabled={!/^\d{12,13}$/.test(taxpayerTin)}>
@@ -1189,6 +1183,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 </div>
                 {fieldError('tin')}
                 {taxpayerLookupResult}
+              </div>}
+              {!otherBatch && !ownAccountTax && <div className="payment-identity__name">
+                <label htmlFor="guest-taxpayer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
+                <input id="guest-taxpayer-name" type="text" value={otherTaxpayerName} readOnly aria-readonly="true" placeholder={language === 'bn' ? 'খুঁজলে নাম স্বয়ংক্রিয়ভাবে আসবে' : 'Auto-filled after TIN search'} className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-slate-50" />
               </div>}
 
               {forSelf === false && <div>
@@ -1253,12 +1251,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     personId==='primary'||people.some(person=>person.id===personId))));
                 }}
                 onAllocations={setOtherTaxLines} onClearError={clearValidationError} />
-              <div className="tin-lookup__batch">
-                <button type="button" className="tin-lookup__search" disabled={!/^\d{12,13}$/.test(taxpayerTin)} onClick={searchTin}>
-                  <Search size={17} aria-hidden="true" />{language === 'bn' ? 'টিআইএন খুঁজুন' : 'Search TIN'}
-                </button>
-                {taxpayerLookupResult}
-              </div>
+
             </PaymentFormSection>}
 
             {!embedded && <div className="flex justify-end pt-3">
