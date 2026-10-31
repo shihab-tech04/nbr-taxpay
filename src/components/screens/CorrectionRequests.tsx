@@ -107,7 +107,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
               >
                 {visibleReceipts.map(r => (
                   <option key={r.id} value={r.challanNo}>
-                    {r.challanNo} — BDT {r.totalAmount} ({r.assessmentYear})
+                    {r.challanNo} — ৳ {r.totalAmount} ({r.assessmentYear})
                   </option>
                 ))}
               </select>
