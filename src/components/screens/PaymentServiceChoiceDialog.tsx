@@ -46,8 +46,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [useAccount, setUseAccount] = useState(false);
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
-  // Signed-in users see the same choices, with account payment selected by default.
-  const selectedAccess = entryAccess ?? ((verifiedUser || previewAccount) ? 'account' : paymentBeneficiaryPrefill ? 'guest' : null);
+  // An existing signed-in session must always use the account journey.
+  // Only signed-out users need to choose between account sign-in and walk-in.
+  const alreadySignedIn = Boolean(verifiedUser || previewAccount);
+  const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -66,7 +68,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     if (payerForSelf === null || !selected || (accountLoading && !previewAccount)) return;
     if (!selectedAccess) return;
     if (selectedAccess === 'guest' && publicPayment) { beginPayment(false); return; }
-    if (verifiedUser || previewAccount) { beginPayment(true); return; }
+    if (alreadySignedIn) { beginPayment(true); return; }
     openLogin();
   };
   const returnToService = () => {
@@ -178,7 +180,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                </p>}
              </div>
            </div>}
-           {payerForSelf !== null && topLevel !== null && (
+           {payerForSelf !== null && topLevel !== null && !alreadySignedIn && !accountLoading && (
                <div className="tax-service-choice__progressive-section" data-entry-section="access">
                    <h3 id="tax-service-access-heading" className="tax-service-choice__entry-heading">{tr('How would you like to continue?', 'কীভাবে এগিয়ে যেতে চান?')}</h3>
                    <div className="tax-service-choice__access-options" role="group" aria-labelledby="tax-service-access-heading">
