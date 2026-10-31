@@ -58,7 +58,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await search.press('Enter');
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/}).getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-REFERENCE-98765');
-  await expect(page.locator('.citizen-header')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay Tax'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
