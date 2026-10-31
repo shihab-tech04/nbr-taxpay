@@ -110,20 +110,21 @@ test('public footer accurately describes service and does not promise challan is
  await expect(footer.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 
-test('public header exposes information only and no role impersonation control',async({page})=>{
+test('public mobile header stays in shared Korbritto shell without account impersonation',async({page})=>{
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=landing');
- const header=page.locator('.public-home-header');
- await expect(header.getByRole('img',{name:'Korbritto'})).toBeVisible();
- await expect(header.getByRole('button',{name:'Menu'})).toBeVisible();
- await header.getByRole('button',{name:'Menu'}).click();
- await expect(header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'})).toBeVisible();
+ const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
+ await expect(header.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+ await expect(header.getByRole('button',{name:'Open menu'})).toBeVisible();
+ await header.getByRole('button',{name:'Open menu'}).click();
+ const sheet=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(sheet.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(sheet.getByRole('button',{name:'Sign in'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Sign out'})).toHaveCount(0);
+ await expect(sheet.getByRole('button',{name:'Sign out'})).toHaveCount(0);
  await page.keyboard.press('Escape');
- await expect(header.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
+ await expect(sheet).toHaveCount(0);
 });
-
 test('catalogue explicitly blocks payability without period/event/taxpayer evidence',async ({page})=>{
  await page.goto('/?action=head_catalogue');
  await expect(page.getByText(/No verified taxpayer-class, payment-event, effective-date/)).toBeVisible();
