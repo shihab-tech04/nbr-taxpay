@@ -19,7 +19,7 @@ for (const language of ['en', 'bn'] as const) {
     for (const section of [tax, access]) {
       await expect(section).toHaveCSS('border-top-width', '1px');
       await expect(section).toHaveCSS('border-top-style', 'solid');
-      await expect(section).toHaveCSS('margin-top', '16px');
+      await expect(section).toHaveCSS('margin-top', '20px');
       await expect(section).toHaveCSS('padding-top', '16px');
     }
 

@@ -127,8 +127,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
-  await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'বাংলা', exact: true }).click();
+  await page.goto('/?action=landing&lang=bn');
   await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
