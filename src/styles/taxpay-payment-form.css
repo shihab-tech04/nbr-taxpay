@@ -263,3 +263,12 @@
 @media(max-width:900px) {
   .payment-flow-embedded .payment-form-summary__taxpayers { display:grid; }
 }
+
+
+/* Lookup stays attached to its own taxpayer TIN in every modal service. */
+.taxpay-taxpayer-row__tin-search{display:flex;align-items:stretch;gap:8px;min-width:0}
+.taxpay-taxpayer-row__tin-search>input{flex:1 1 auto;min-width:0;width:1px}
+.taxpay-taxpayer-row__tin-search>.tin-lookup__search{flex:none;min-height:44px;padding-inline:14px;white-space:nowrap}
+.taxpay-taxpayer-row__fields input[readonly]{background:var(--color-taxpay-surface-subtle);cursor:default}
+.taxpay-taxpayer-row__lookup-status{margin:0;font-size:14px;color:var(--color-taxpay-error)}
+@media(max-width:360px){.taxpay-taxpayer-row__tin-search{gap:6px}.taxpay-taxpayer-row__tin-search>.tin-lookup__search{padding-inline:10px}}
