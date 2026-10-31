@@ -19,7 +19,7 @@ test('payment stepper has connected numbered states and shows completed progress
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
-test('guest Other Tax shows one collapsible calculation group per beneficiary and exact subtotal', async ({ page }) => {
+test('guest Other Tax shows one collapsible calculation group per beneficiary and exact subtotal', async ({ page }, info) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -46,6 +46,15 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await expect(grouped.locator('details')).toHaveCount(2);
   await expect(grouped.locator('details').nth(0).locator('summary')).toContainText('2,100');
   await expect(grouped.locator('details').nth(1).locator('summary')).toContainText('3,500');
+  // The grouped calculation lives inside the collapsed sticky footer on phones.
+  // Expand that parent first, otherwise its nested beneficiary toggles are hidden.
+  if (info.project.name.startsWith('mobile-')) {
+    const mobileSummary = dialog.locator('.taxpay-modal__footer').getByTestId('mobile-payment-calculation');
+    await expect(mobileSummary).toBeVisible();
+    await expect(dialog.locator('.taxpay-modal__body .payment-form-summary')).toHaveCount(0);
+    await mobileSummary.getByTestId('mobile-payment-calculation-toggle').click();
+    await expect(mobileSummary).toHaveAttribute('open', '');
+  }
   await grouped.locator('details').nth(1).locator('summary').click();
   await expect(grouped.locator('details').nth(1)).toHaveAttribute('open', '');
   await expect(grouped.locator('details').nth(1)).toContainText('68B');
