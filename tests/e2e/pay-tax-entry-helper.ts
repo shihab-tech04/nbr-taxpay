@@ -15,7 +15,10 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
   // Access choice is progressively revealed within the same modal.
   const guest = dialog.locator('[data-payment-access="GUEST"]');
   if (await guest.count()) {
-    await guest.click();
+    // Preserve authenticated account continuation; only guests choose Walk-in.
+    const account = dialog.locator('[data-payment-access="ACCOUNT"]');
+    const alreadySignedIn = await account.getAttribute('aria-pressed') === 'true';
+    if (!alreadySignedIn) await guest.click();
     await dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   }
 }
