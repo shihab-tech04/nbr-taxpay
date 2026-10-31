@@ -30,7 +30,7 @@ type TopLevelService = 'TAX_WITH_RETURN' | 'OTHER_TAX';
 
 /** Only two services appear at entry. The original service IDs stay intact underneath. */
 export const TAXPAY_ENTRY_CHOICES = [
-  { id: 'TAX_WITH_RETURN', Icon: FileCheck2, en: 'Tax with Return', bn: 'রিটার্নসহ কর', detailEn: 'Pay income tax with your annual return.', detailBn: 'বার্ষিক রিটার্নের সঙ্গে আয়কর পরিশোধ করুন।' },
+  { id: 'TAX_WITH_RETURN', Icon: FileCheck2, en: 'Tax with Return', bn: 'রিটার্নসহ কর', detailEn: 'Section 173', detailBn: 'ধারা ১৭৩' },
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
