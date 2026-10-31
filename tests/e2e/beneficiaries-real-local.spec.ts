@@ -107,9 +107,20 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(modal.getByText('Continuing with your account')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
   const picker=modal.getByTestId('saved-beneficiary-picker');
-  await expect(picker).toContainText('Local Beneficiary One',{timeout:15000});
-  await picker.locator('label').filter({hasText:'Local Beneficiary One'}).locator('input').check();
-  await picker.getByRole('button',{name:/Add selected to payment|Use selected beneficiary/}).click();
-  await expect(modal.locator('#guest-tin')).toHaveValue('012345678901');
+  await expect(picker.getByRole('heading',{name:'Choose beneficiaries'})).toBeVisible({timeout:15000});
+  await expect(picker).toContainText('Local Beneficiary One');
+  await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible();
+  await expect(picker.getByRole('button',{name:/Family/})).toHaveAttribute('aria-expanded','true');
+  // Signed-in payments select directly from grouped saved lists, never from free-form inputs.
+  await expect(modal.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
+  await expect(modal.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
+  await expect(modal.locator('#guest-tin')).toHaveCount(0);
+  await expect(modal.locator('#guest-payer-name')).toHaveCount(0);
+  await picker.getByRole('checkbox',{name:'Select Local Beneficiary One'}).check();
+  await expect(picker).toContainText('1 selected for this payment');
+  await picker.getByRole('checkbox',{name:'Select Local Beneficiary Two'}).check();
+  await expect(picker).toContainText('2 selected for this payment');
+  await picker.getByRole('checkbox',{name:'Select Local Beneficiary One'}).uncheck();
+  await expect(picker).toContainText('1 selected for this payment');
   await context.close();
 });
