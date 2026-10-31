@@ -159,7 +159,7 @@ test('mobile keeps a fixed copy and artwork stack, without overflow in English o
       expect(geometry.mediaHeight).toBeGreaterThanOrEqual(184);
       expect(geometry.imageFit).toBe('cover');
       expect(geometry.overflow).toBeLessThanOrEqual(2);
-      await expect(carousel.locator('.public-hero-carousel__arrow')).toBeHidden();
+      await expect(carousel.locator('.public-hero-carousel__arrow').first()).toBeHidden();
       await carousel.focus();
       await page.keyboard.press('ArrowRight');
       await expect(carousel).toHaveAttribute('data-active-slide', '1');
