@@ -362,22 +362,22 @@
   }
 }
 @media (min-width: 901px) and (max-width: 1059px) {
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { padding: 16px 10px; }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-wordmark { width: 150px; }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { padding: 16px 10px; }
+  .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-wordmark { width: 150px; }
+  .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
     gap: 9px;
     padding: 8px 9px;
     font-size: 14px;
   }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action {
     padding: 8px;
     font-size: 14px;
   }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button {
     padding: 8px;
     font-size: 13px;
   }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom strong {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom strong {
     padding: 4px;
     font-size: 12px;
   }
