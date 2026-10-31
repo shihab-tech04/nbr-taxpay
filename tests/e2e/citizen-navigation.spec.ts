@@ -10,8 +10,12 @@ test('public hero opens payment while standalone receipt search stays accessible
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
- if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
+ if(page.viewportSize()!.width<=900) {
+   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(1);
+   await expect(page.locator('.citizen-pay')).toBeVisible();
+ } else {
+   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
+ }
  if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
  await page.getByRole('button',{name:'Pay Tax'}).click();
