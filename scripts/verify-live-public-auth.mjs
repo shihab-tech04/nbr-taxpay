@@ -78,91 +78,31 @@ try {
       await guestPayment.close();
     }
 
-    // Beneficiaries is a public feature with private per-browser persistence.
+    // Saved beneficiaries are private. PR preflight targets the pre-merge
+    // published version, so it verifies the old baseline without pretending
+    // the change is already live. Post-deploy checks enforce the new boundary.
     const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('button', { name: 'Use User ID (sample account)' })).toHaveCount(0);
-    await expect(beneficiaries.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
-    const beneficiaryPage = beneficiaries.getByTestId('beneficiaries-page');
-    await expect(beneficiaryPage).toBeVisible();
-    const beneficiaryActions = beneficiaries.locator('[data-testid="beneficiaries-page"] > header');
-    await expect(beneficiaryActions).toHaveCount(1);
-    // PR preflight checks the currently published UI; push/deployment strictly checks the corrected UI.
-    const preMergePublishedUi = process.env.GITHUB_EVENT_NAME === 'pull_request' &&
-      (await beneficiaryActions.getByRole('button', { name: 'Import Excel', exact: true }).count()) > 0;
-    if (preMergePublishedUi) {
-      for (const label of ['Create list', 'Import Excel', 'Add beneficiary']) {
-        await expect(beneficiaryActions.getByRole('button', { name: label, exact: true })).toBeVisible();
-      }
+    const preMergeBaseline = process.env.GITHUB_EVENT_NAME === 'pull_request';
+    if (preMergeBaseline) {
+      await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
     } else {
-      await expect(beneficiaryPage.getByRole('button', { name: 'Create list', exact: true })).toHaveCount(1, { timeout: 30_000 });
-      if (await beneficiaries.locator('#beneficiary-list').count()) {
-        for (const label of ['Create list', 'Import Excel', 'Add beneficiary']) {
-          await expect(beneficiaryActions.getByRole('button', { name: label, exact: true })).toBeVisible();
-        }
-      } else {
-        await expect(beneficiaryActions.getByRole('button', { name: 'Create list', exact: true })).toHaveCount(0);
-        for (const label of ['Import Excel', 'Add beneficiary']) {
-          await expect(beneficiaryPage.getByRole('button', { name: label, exact: true })).toHaveCount(0);
-        }
-      }
-      await expect(beneficiaryPage.getByRole('button', { name: 'Manage taxpayer authorizations', exact: true })).toHaveCount(0);
+      await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
+      await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
+      await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
+      beneficiariesUrl.searchParams.set('lang', 'bn');
+      await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     }
-    for (const retiredLabel of ['Add single', 'Bulk add']) {
-      await expect(beneficiaries.getByRole('button', { name: retiredLabel, exact: true })).toHaveCount(0);
-    }
-    await expect(beneficiaries.locator('.taxpayer-account-center, .taxpayer-account-panel')).toHaveCount(0);
-    await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
-    await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries overflow: ${beneficiaryOverflow}px`);
+    if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries gate overflow: ${beneficiaryOverflow}px`);
     await beneficiaries.screenshot({ path: 'test-results/live-beneficiaries-' + name + '.png', fullPage: true });
-    // On narrow screens the language switcher lives in the visible mobile menu.
-    // Desktop keeps it in the header. Exercise the visible control for each layout.
-    if (isMobile) {
-      await beneficiaries.getByRole('button', { name: 'Open menu' }).click();
-      const mobileMenu = beneficiaries.getByRole('dialog', { name: 'Services & menu' });
-      await expect(mobileMenu).toBeVisible();
-      await mobileMenu.getByRole('button', { name: 'বাংলা' }).click();
-    } else {
-      await beneficiaries.getByRole('button', { name: 'বাংলা' }).click();
-    }
-    await expect(beneficiaries).toHaveURL(/action=beneficiaries.*lang=bn/);
-    await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী', exact: true })).toBeVisible();
-    const bengaliActions = beneficiaries.locator('[data-testid="beneficiaries-page"] > header');
-    await expect(bengaliActions).toHaveCount(1);
-    if (preMergePublishedUi) {
-      for (const label of ['তালিকা তৈরি', 'এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
-        await expect(bengaliActions.getByRole('button', { name: label, exact: true })).toBeVisible();
-      }
-    } else {
-      await expect(beneficiaryPage.getByRole('button', { name: 'তালিকা তৈরি', exact: true })).toHaveCount(1, { timeout: 30_000 });
-      if (await beneficiaries.locator('#beneficiary-list').count()) {
-        for (const label of ['তালিকা তৈরি', 'এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
-          await expect(bengaliActions.getByRole('button', { name: label, exact: true })).toBeVisible();
-        }
-      } else {
-        await expect(bengaliActions.getByRole('button', { name: 'তালিকা তৈরি', exact: true })).toHaveCount(0);
-        for (const label of ['এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
-          await expect(beneficiaryPage.getByRole('button', { name: label, exact: true })).toHaveCount(0);
-        }
-      }
-      await expect(beneficiaryPage.getByRole('button', { name: 'করদাতার অনুমোদন পরিচালনা', exact: true })).toHaveCount(0);
-    }
-    for (const retiredLabel of ['একজন যোগ করুন', 'একাধিক যোগ করুন']) {
-      await expect(beneficiaries.getByRole('button', { name: retiredLabel, exact: true })).toHaveCount(0);
-    }
-    if (isMobile) {
-      await beneficiaries.getByRole('button', { name: 'English' }).click();
-    } else {
-      await beneficiaries.getByRole('button', { name: 'EN' }).click();
-    }
-    await expect(beneficiaries).toHaveURL(/action=beneficiaries/);
-    await expect(beneficiaries).not.toHaveURL(/lang=bn/);
-    await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
     await beneficiaries.close();
 
     // Exercise the *deployed* guest bell without changing hosted payment data.
@@ -202,7 +142,7 @@ try {
     await guest.screenshot({ path: `test-results/live-auth-notification-${name}.png`, fullPage: true });
     await guest.close();
   }
-  console.log('PASS: private URL auth boundary, guest Beneficiaries EN/BN, and deployed guest bell route with mocked read-only SQL response at desktop/mobile widths');
+  console.log('PASS: private route auth boundary, signed-out Beneficiaries gate, and deployed guest bell route with mocked read-only SQL response at desktop/mobile widths');
 } finally {
   await browser.close();
 }
