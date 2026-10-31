@@ -15,6 +15,10 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
   // Signed-in users skip the access question altogether. Guests still
   // select Walk-in Payment; both paths use the same Continue action.
   const guest = dialog.locator('[data-payment-access="GUEST"]');
+  const continueButton = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true });
+  // The Auth subscription can resolve after the tax selection. Wait for
+  // either the guest choices or the signed-in enabled Continue state.
+  await expect.poll(async () => (await guest.count()) > 0 || await continueButton.isEnabled()).toBe(true);
   if (await guest.count()) {
     const account = dialog.locator('[data-payment-access="ACCOUNT"]');
     const accountSelected = await account.getAttribute('aria-pressed') === 'true';
@@ -22,5 +26,6 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
   } else {
     await expect(dialog.locator('[data-entry-section="access"]')).toHaveCount(0);
   }
-  await dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
 }
