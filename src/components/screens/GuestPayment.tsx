@@ -1116,7 +1116,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection> : null}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             {ownAccountTax && !embedded && <SignedInTaxpayerCard profile={ownProfile} language={language} />}
-            {forSelf === false && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
+            {forSelf === false && Boolean(authenticatedUser || previewAccount) && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
               onChoose={selected => {
                 clearReferenceSelection();
                 setAuthorizedTaxpayerId(null); // Saving a beneficiary is never a consent grant.
