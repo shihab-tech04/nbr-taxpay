@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Check, CreditCard, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UsersRound} from 'lucide-react';
+import {Check, CreditCard, Download, FileSpreadsheet, Plus, Search, Trash2, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -27,6 +27,7 @@ export function Beneficiaries(){
   const [error,setError]=useState('');
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
+  const [entryChoiceOpen,setEntryChoiceOpen]=useState(false);
   const [createListOpen,setCreateListOpen]=useState(false);
   const [phase,setPhase]=useState<Phase>('upload');
   const [targetList,setTargetList]=useState('new');
@@ -87,7 +88,7 @@ export function Beneficiaries(){
   const allFilteredSelected=filteredPeople.length>0&&filteredPeople.every(person=>selectedIds.includes(person.id));
 
   function open(next:Flow){
-    setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
+    setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
     setTin('');setName('');setRows([]);setFilename('');setModalError('');setNotice(null);
   }
   function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
@@ -202,11 +203,10 @@ export function Beneficiaries(){
         <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">{tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}</p>
       </div>
-      {lists.length>0&&<div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end">
-        <UiButton className="w-full sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
-        <UiButton className="w-full sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>open('bulk')}><Upload size={17} aria-hidden="true"/>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
-        <UiButton className="w-full sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
-      </div>}
+      <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>setEntryChoiceOpen(true)}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
+      </div>
     </header>
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
@@ -235,9 +235,7 @@ export function Beneficiaries(){
           <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
           <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <UiButton type="button" variant="primary" onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
-          </div>
+
         </div>:<>
           <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
             <label className="relative block w-full sm:max-w-md">
@@ -296,7 +294,20 @@ export function Beneficiaries(){
       </>}
     </section>
 
-    {createListOpen&&<TaxPayModal title={tr('Create beneficiary list','উপকারভোগীর তালিকা তৈরি')} ariaLabel={tr('Create list','তালিকা তৈরি')}
+    {entryChoiceOpen&&<TaxPayModal title={tr('Add beneficiary','উপকারভোগী যোগ')} ariaLabel={tr('Choose how to add beneficiaries','কীভাবে উপকারভোগী যোগ করবেন')} className="beneficiary-workflow-modal beneficiary-choice-modal" hideFooter
+      initialFocusSelector="#beneficiary-entry-single" onClose={()=>setEntryChoiceOpen(false)}>
+      <div className="space-y-3 py-2">
+        <p className="text-sm text-slate-600">{tr('Choose how you want to add taxpayers to your list.','তালিকায় কীভাবে করদাতাদের যোগ করতে চান তা বেছে নিন।')}</p>
+        <UiButton id="beneficiary-entry-single" type="button" variant="outline" className="w-full justify-start gap-3 text-left" onClick={()=>open('single')}>
+          <Plus size={20} aria-hidden="true" className="shrink-0"/>{tr('Add one beneficiary','একজন উপকারভোগী যোগ')}
+        </UiButton>
+        <UiButton type="button" variant="outline" className="w-full justify-start gap-3 text-left" onClick={()=>open('bulk')}>
+          <FileSpreadsheet size={20} aria-hidden="true" className="shrink-0"/>{tr('Import from Excel','এক্সেল থেকে আমদানি')}
+        </UiButton>
+      </div>
+    </TaxPayModal>}
+
+    {createListOpen&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Create beneficiary list','উপকারভোগীর তালিকা তৈরি')} ariaLabel={tr('Create list','তালিকা তৈরি')}
       onClose={()=>{if(!busy){setCreateListOpen(false);setModalError('');}}} initialFocusSelector="#beneficiary-create-list-name"
       footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setCreateListOpen(false)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-create-list-form" variant="primary" disabled={busy}>{busy?tr('Creating…','তৈরি হচ্ছে…'):tr('Create list','তালিকা তৈরি')}</UiButton></div>}>
       <form id="beneficiary-create-list-form" className="space-y-3 py-2" onSubmit={event=>void saveList(event)}>
@@ -305,7 +316,7 @@ export function Beneficiaries(){
       </form>
     </TaxPayModal>}
 
-    {flow&&<TaxPayModal title={flow==='single'?tr('Add beneficiary','উপকারভোগী যোগ করুন'):tr('Import beneficiaries','উপকারভোগী আমদানি করুন')}
+    {flow&&<TaxPayModal className="beneficiary-workflow-modal" title={flow==='single'?tr('Add beneficiary','উপকারভোগী যোগ করুন'):tr('Import beneficiaries','উপকারভোগী আমদানি করুন')}
       onClose={closeFlow} ariaLabel={tr('Beneficiary entry','উপকারভোগী যোগ')} motionKey={flow+phase}
       initialFocusSelector={flow==='single'?'#beneficiary-tin':'#beneficiary-file'}
       footer={<div className="flex w-full flex-wrap items-center justify-between gap-2">
@@ -365,7 +376,7 @@ export function Beneficiaries(){
       </div>
     </TaxPayModal>}
 
-    {editPerson&&<TaxPayModal title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
+    {editPerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
       onClose={()=>{if(!busy){setEditPerson(null);setModalError('');}}} initialFocusSelector="#beneficiary-edit-name"
       footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setEditPerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
@@ -375,7 +386,7 @@ export function Beneficiaries(){
       </form>
     </TaxPayModal>}
 
-    {deletePerson&&<TaxPayModal title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
+    {deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
       onClose={()=>{if(!busy)setDeletePerson(null);}}
       footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setDeletePerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
       <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${deletePerson.tin}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${deletePerson.tin})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>

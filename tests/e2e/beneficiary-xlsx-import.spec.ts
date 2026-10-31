@@ -112,7 +112,8 @@ test('failed new-list import stays recoverable and retries against the same crea
   await dialog.locator('#beneficiary-create-list-name').fill('Existing list');
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
-  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
   const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
   await page.locator('#beneficiary-file').setInputFiles({
     name:'guest-beneficiaries.xlsx',
@@ -159,8 +160,10 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
   await expect(page.getByText(/Guest Family.*is empty/)).toBeVisible();
   await expect(page.getByRole('button',{name:'Create list',exact:true})).toHaveCount(1);
+  // The Beneficiaries header exposes only these two actions on desktop and mobile.
+  await expect(page.locator('[data-testid="beneficiaries-page"] > header button')).toHaveCount(2);
   await expect(page.getByRole('button',{name:'Add beneficiary',exact:true})).toHaveCount(1);
-  await expect(page.getByRole('button',{name:'Import Excel',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Import Excel',exact:true})).toHaveCount(0);
 
   await page.getByRole('button',{name:'Create list',exact:true}).first().click();
   dialog=page.getByRole('dialog',{name:'Create list'});
@@ -169,7 +172,8 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(page.getByText(/Guest Work.*is empty/)).toBeVisible();
   await page.locator('#beneficiary-list').selectOption({label:'Guest Family'});
 
-  await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Synthetic Guest One');
@@ -177,7 +181,8 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expectRecord('Synthetic Guest One');
 
   const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
-  await page.getByRole('button',{name:'Import Excel',exact:true}).first().click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
   await page.locator('#beneficiary-file').setInputFiles({name:'beneficiaries-two-rows.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(workbook,'base64')});
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
@@ -247,7 +252,8 @@ test('signed-out guest payment hides saved beneficiaries even with stored entrie
   await dialog.locator('#beneficiary-create-list-name').fill('Guest Family');
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
-  await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Saved Guest Taxpayer');
