@@ -441,7 +441,7 @@ test('each service-specific banner action skips repeated service selection', asy
       await dialog.locator('[data-payment-access="GUEST"]').click();
       await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
       await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
-      await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+      await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
       await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
         .toHaveAttribute('data-payment-service', code);
       // Back keeps the chosen taxpayer and never reintroduces a second chooser.

@@ -20,7 +20,7 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await expect(payment.locator('[data-payment-access="GUEST"]')).toBeVisible();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
-  await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
 });
@@ -36,17 +36,18 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
 
-  const tinCard = payment.getByRole('region', { name: 'Account taxpayer details' });
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
-  await expect(tinCard).toContainText('2222222222222');
-  await expect(payment.locator('input#guest-tin')).toHaveCount(0);
-  await expect(tinCard).toContainText('Taxes Zone 2');
-  await expect(tinCard).toContainText('01700000002');
-  await expect(payment.locator('#guest-phone')).toHaveCount(0);
+  await expect(payment.locator('input#guest-tin')).toHaveValue('2222222222222');
+  await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
+  await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
+  await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly', '');
+  await expect(payment.locator('.tin-lookup__result')).toContainText('TIN information will be displayed here.');
+  await payment.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(payment.locator('.tin-lookup__result')).toContainText('Meghna Trading Ltd.');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(payment.getByText('Step 2 of 4')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 
   await payment.getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
@@ -63,6 +64,6 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.getByRole('region', { name: 'Account taxpayer details' })).toContainText('2222222222222');
-  await expect(payment.locator('input#guest-tin')).toHaveCount(0);
+  await expect(payment.locator('input#guest-tin')).toHaveValue('2222222222222');
+  await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
 });

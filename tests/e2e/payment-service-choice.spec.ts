@@ -131,8 +131,9 @@ test('the approved three decisions progressively appear in one modal and retain 
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
   await next.click();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Facilitate another taxpayer’s payment');
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
@@ -183,11 +184,19 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
+  const originalUrl = page.url();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
-  await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
-    .toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
+  await expect(dialog.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
+  const visiblePayerText = await dialog.locator('.tax-service-choice__selected-service')
+    .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
+  expect(visiblePayerText).toBeGreaterThanOrEqual(14);
+  expect(page.url()).toBe(originalUrl);
 });
 
 test('Tax with Return still proceeds with its unchanged service ID', async ({ page }) => {
@@ -246,7 +255,7 @@ test('Other Tax keeps the v11 guest reference and four payment stages', async ({
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
 test('Travel Tax remains separately accessible from its existing public banner', async ({ page }) => {

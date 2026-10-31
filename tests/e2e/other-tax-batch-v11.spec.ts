@@ -12,6 +12,7 @@ const getFlow = async (page: import('@playwright/test').Page) => {
 test('Other Tax has five v11 groups, never Return, and uses in-place clickable checkbox rows', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   // Taxpayer beneficiary names are optional; payer/receipt names stay distinct.
@@ -52,6 +53,7 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
 test('all five Other Tax groups keep an editable year and amount through payment review', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -95,6 +97,7 @@ test('all five Other Tax groups keep an editable year and amount through payment
 test('switching taxpayer preserves each person’s head, year and amount without a target dropdown', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -136,6 +139,7 @@ test('switching taxpayer preserves each person’s head, year and amount without
 test('three taxpayers keep separate heads, years and amounts through combined review', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   for (const [tin, name] of [['222222222222', 'Taxpayer Beta'], ['333333333333', 'Taxpayer Gamma']]) {
@@ -203,6 +207,7 @@ test('other-tax allocations create individual records with their own receipts', 
   });
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -211,7 +216,7 @@ test('other-tax allocations create individual records with their own receipts', 
   await batch.getByRole('checkbox', { name: /Select 16A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
   await expect(dialog.getByText('A separate payment record will be created for each selected head.')).toBeVisible();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
@@ -235,6 +240,7 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await expect(list).toContainText('1 taxpayer added');
   await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toContainText('Taxpayer 1');
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -256,6 +262,7 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
 test('Other Tax rejects duplicate TINs but does not require names', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -271,6 +278,7 @@ test('Other Tax rejects duplicate TINs but does not require names', async ({ pag
 test('Other Tax numeric-only amounts and inline invalid-row guidance survive correction', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -294,12 +302,13 @@ test('Other Tax numeric-only amounts and inline invalid-row guidance survive cor
   await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
   await expect(amount).not.toHaveAttribute('aria-invalid', 'true');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
 });
 
 test('Other Tax shows the affected taxpayer when another beneficiary has a missing amount', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -326,6 +335,7 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
 test('every added taxpayer needs a selected head before review', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Payer Name');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -348,6 +358,7 @@ test('long BDT amounts and taxpayer descriptions stay inside the calculation pan
   await page.setViewportSize({ width: 1280, height: 900 });
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.locator('#other-tax-primary-name').fill('Long Taxpayer Name Sample');
@@ -376,6 +387,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', relationship);
     await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
@@ -405,13 +417,13 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
-  const identity = dialog.getByRole('region', { name: 'Account taxpayer details' });
-  await expect(identity).toContainText('2222222222222');
-  await expect(identity).toContainText('Meghna Trading Ltd.');
-  await expect(identity).toContainText('01700000002');
-  await expect(identity.locator('input')).toHaveCount(0);
+  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
+  await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
+  await dialog.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(dialog.locator('.tin-lookup__result')).toContainText('Meghna Trading Ltd.');
+  await expect(dialog.locator('#guest-phone')).toHaveValue('01700000002');
+  await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly', '');
   await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
-  await expect(dialog.locator('#guest-phone')).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');

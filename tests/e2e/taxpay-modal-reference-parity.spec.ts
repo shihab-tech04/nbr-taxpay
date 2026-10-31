@@ -7,8 +7,18 @@ test('the approved single modal progressively reveals all three choice groups an
   const next = dialog.getByRole('button', { name: 'Continue', exact: true });
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
   await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toContainText('Pay tax for myself.');
+  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toContainText('Pay on behalf of another taxpayer.');
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
+  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
+  await expect(dialog.locator('.tax-service-choice__actions button')).toHaveCount(1);
+  const title = await dialog.locator('.taxpay-modal__title').boundingBox();
+  const modal = await dialog.boundingBox();
+  expect(title).not.toBeNull();
+  expect(modal).not.toBeNull();
+  expect(Math.abs(title!.x + title!.width / 2 - (modal!.x + modal!.width / 2))).toBeLessThan(3);
   await expect(next).toBeDisabled();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
@@ -17,12 +27,17 @@ test('the approved single modal progressively reveals all three choice groups an
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+  await expect(dialog.getByRole('heading', { name: 'How would you like to continue?' })).toBeVisible();
+  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Sign-in Payment');
+  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toContainText('Use your account details and records.');
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toContainText('Walk-in Payment');
+  await expect(dialog.locator('[data-payment-access="GUEST"]')).toContainText('Enter your details and make this payment.');
   await expect(next).toBeDisabled();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await expect(next).toBeEnabled();
   await expect(dialog.locator('[data-payment-access]').first()).toHaveAttribute('data-payment-access', 'ACCOUNT');
   await next.click();
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await dialog.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
@@ -158,6 +173,8 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
     const second = await login.boundingBox();
     return first && second ? Math.abs(first.y - second.y) : Infinity;
   }).toBeLessThan(2);
+  await expect(dialog.locator('[data-payment-access]').first()).toHaveAttribute('data-payment-access', 'ACCOUNT');
+  await expect(dialog.locator('[data-payment-access]').last()).toHaveAttribute('data-payment-access', 'GUEST');
   const first = await guest.boundingBox();
   const second = await login.boundingBox();
   expect(first).not.toBeNull();
@@ -190,4 +207,3 @@ test('single modal expands when groups are revealed and respects reduced motion'
   await expect(dialog).toHaveCSS('animation-name', 'none');
   await expect(dialog).toHaveCSS('transition-property', 'none');
 });
-

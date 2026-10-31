@@ -46,7 +46,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [useAccount, setUseAccount] = useState(false);
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
-  // Verified users see the same approved selector, but use the authenticated path by default.
+  // Signed-in users see the same choices, with account payment selected by default.
   const selectedAccess = entryAccess ?? ((verifiedUser || previewAccount) ? 'account' : paymentBeneficiaryPrefill ? 'guest' : null);
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
@@ -84,14 +84,24 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
 
   return (
     <TaxPayModal
-      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : tr('Pay Tax', 'কর পরিশোধ')}
+      title={view === 'login'
+        ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
+        : view === 'payment' ? stages[stage - 1] : tr('Pay Tax', 'কর পরিশোধ')}
+      progress={view === 'payment' ? { current: stage, total: 4, label: tr('Steps', 'ধাপ') } : undefined}
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer'}
       motionKey={view}
-      onBack={view === 'login' ? () => setView('payer') : undefined}
-      backLabel={tr('Back', 'ফিরুন')}
+      onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
+        const back = document.querySelector<HTMLButtonElement>(
+          '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
+          '.taxpay-modal[data-payment-stage="true"] .travel-flow__footer-actions .tax-service-choice__cancel'
+        );
+        if (back && !back.disabled) back.click();
+        else if (stage === 1 || stage === 4) returnToService();
+      } : undefined}
+      backLabel={view === 'payment' ? tr('Back to previous payment step', 'পূর্ববর্তী পেমেন্ট ধাপে ফিরুন') : tr('Back', 'ফিরুন')}
       service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'
@@ -111,7 +121,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
-          <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
+          <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => {
               return (
               <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : 'tax-service-choice__stage--upcoming'}

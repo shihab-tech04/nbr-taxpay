@@ -1022,3 +1022,151 @@
     padding: .7rem .75rem;
   }
 }
+
+
+/* Four-stage payment modal — applied to both account and walk-in flows only. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] {
+  width: min(1160px, calc(100% - 32px));
+  height: min(90dvh, 900px);
+  max-height: 90dvh;
+  min-height: 0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__header {
+  flex: none;
+  min-height: 86px;
+  padding: 14px 22px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  gap: 3px;
+  justify-self: stretch;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title {
+  grid-column: auto;
+  margin: 0;
+  text-align: left;
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__step-count {
+  margin: 0;
+  color: var(--citizen-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__progress {
+  flex: 0 0 10px;
+  height: 10px;
+  width: 100%;
+  overflow: hidden;
+  background: var(--citizen-border);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--citizen-primary);
+  transition: width .18s ease-out;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 22px;
+  overflow: auto;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer {
+  display: flex;
+  flex: 0 0 auto;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .tax-service-choice__progress,
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .tax-service-choice__eyebrow {
+  position: absolute!important;
+  width: 1px!important;
+  height: 1px!important;
+  padding: 0!important;
+  margin: -1px!important;
+  overflow: hidden!important;
+  clip: rect(0,0,0,0)!important;
+  white-space: nowrap!important;
+}
+.payment-identity__fields { display: grid; gap: 14px; min-width: 0; }
+.payment-identity__tin { min-width: 0; }
+.tin-lookup__row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; }
+.tin-lookup__search { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 0; border-radius: 8px; background: var(--citizen-primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.tin-lookup__search:disabled { opacity: .55; cursor: not-allowed; }
+.tin-lookup__result { display: flex; flex-direction: column; justify-content: center; min-height: 96px; margin-top: 14px; padding: 18px; border: 1px dashed var(--citizen-border); border-radius: 10px; background: var(--citizen-primary-light); color: var(--citizen-muted); }
+.tin-lookup__result p { margin: 0; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.tin-lookup__details { display: grid; gap: 5px; }
+.tin-lookup__details p { color: var(--citizen-text); }
+.payment-identity__receipt-row { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.payment-identity__receipt-row > div { min-width: 0; }
+.tin-lookup__batch { display: grid; justify-items: start; gap: 10px; margin-top: 14px; }
+.tin-lookup__batch .tin-lookup__result { width: 100%; margin-top: 0; }
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] {
+    width: 100%; max-width: 100%; height: 100dvh; min-height: 0; max-height: 100dvh;
+    border-radius: 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__header { min-height: 76px; padding: 10px 12px; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title { font-size: 18px; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__body { padding: 12px; min-height: 0; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .payment-identity__receipt-row { grid-template-columns: 1fr; }
+  .tin-lookup__search { padding-inline: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__progress-fill { transition: none; }
+}
+
+.tin-lookup__row input { min-width: 0; width: 100%; }
+@media (max-width: 420px) { .tin-lookup__row .tin-lookup__search svg { display:none; } .tin-lookup__row .tin-lookup__search { padding-inline:8px; } }
+
+/* Approved flat four-stage form treatment: keep the calculation summary as the
+   only card. Shared with signed-in and walk-in payments; no new color values. */
+@media (min-width: 801px) {
+  .payment-flow-embedded__content {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .payment-flow-embedded__receipt-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+@media (min-width: 901px) {
+  .payment-flow-embedded .payment-review {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded .payment-form-section--static {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded .payment-form-section--static > .payment-form-section__heading {
+  min-height: 0;
+  padding: 0 0 10px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded .payment-form-section--static > .payment-form-section__body {
+  padding: 0;
+}
+/* A single quiet helper line replaces the old tinted dashed empty-state card.
+   Successful lookups remain readable without adding decorative backgrounds. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .tin-lookup__result {
+  min-height: 0;
+  margin-top: 8px;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--citizen-muted);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .tin-lookup__result[data-lookup-state="found"] {
+  padding-top: 12px;
+  border-top: 1px solid var(--citizen-border);
+}

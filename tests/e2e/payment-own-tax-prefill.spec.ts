@@ -13,26 +13,29 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'ADVANCE_TAX', 'SELF');
-  await expect(payment.getByText('Step 1 of 4')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+  // Signed-in uses the same borderless payment section and 60:40 desktop geometry.
+  await expect(payment.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
+  await expect(payment.locator('.payment-form-section--static').first().locator('.payment-form-section__body')).toHaveCSS('padding-left', '0px');
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
 
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
-  // The same four-stage journey uses a display card, not read-only text boxes.
-  const card = payment.getByRole('region', { name: 'Account taxpayer details' });
-  await expect(card).toContainText('2222222222222');
-  await expect(card).toContainText('Meghna Trading Ltd.');
-  await expect(card).toContainText('01700000002');
-  await expect(card.locator('input')).toHaveCount(0);
+  // The new shared modal keeps the same account-bound data read-only in its TIN search row.
+  await expect(payment.locator('#guest-tin')).toHaveValue('2222222222222');
+  await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly', '');
+  await payment.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(payment.locator('.tin-lookup__result')).toContainText('Meghna Trading Ltd.');
+  await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
   await expect(payment.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
-  await expect(payment.locator('#guest-phone')).toHaveCount(0);
+  await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly', '');
   await expect(payment.locator('#guest-tax-zone')).toHaveCount(0);
   await expect(payment.locator('#guest-tax-circle')).toHaveCount(0);
   await expect(payment.locator('#guest-notice-ref')).toBeEditable();
 
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(payment.getByText('Step 2 of 4')).toBeVisible();
+  await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
 test('changing from my tax to another taxpayer restores editable 12-digit entry', async ({ page }) => {
@@ -44,7 +47,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
-  await expect(payment.locator('#guest-tin')).toContainText('1111111111111');
+  await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
   // Back returns to the unified chooser; its tax selection is preserved.
   await payment.locator('.payment-flow-embedded__footer-actions').getByRole('button', { name: 'Back', exact: true }).click();
   await payment.locator('[data-payer-relationship="OTHER"]').click();
@@ -61,7 +64,7 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('#guest-tin')).toContainText('1111111111111');
+  await expect(payment.locator('#guest-tin')).toHaveValue('1111111111111');
   await expect(payment.locator('#guest-tin')).toHaveCount(1);
 });
 
@@ -72,7 +75,6 @@ test('standalone payment form also recognizes an existing account session', asyn
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=guest');
   await page.getByRole('radio', { name: 'My tax liability' }).check();
-  await expect(page.getByRole('region', { name: 'Account taxpayer details' })).toContainText('Rupali Textiles Ltd.');
-  await expect(page.locator('#guest-tin')).toContainText('3333333333333');
-  await expect(page.locator('input#guest-tin')).toHaveCount(0);
+  await expect(page.locator('input#guest-tin')).toHaveValue('3333333333333');
+  await expect(page.locator('input#guest-tin')).toHaveAttribute('readonly', '');
 });
