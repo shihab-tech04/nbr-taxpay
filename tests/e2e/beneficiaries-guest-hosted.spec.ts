@@ -396,8 +396,9 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
 
     // The signed-in workspace remains behind its existing auth boundary in the guest context.
     await page.goto('?action=secure_workspace', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sign in with email' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Secure Korbritto workspace' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Sign in with email' })).toBeVisible();
+    await expect(page.getByLabel('Email address')).toBeVisible();
     await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
 
     expect(ownerTableRequests, 'Guest route must not read or write account-owned private tables').toEqual([]);
