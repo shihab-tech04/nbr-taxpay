@@ -43,6 +43,12 @@ jobs:
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
 
+      - name: Verify current live auth and Beneficiaries smoke contract in Chromium
+        if: github.event_name == 'pull_request'
+        env:
+          TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
+        run: node scripts/verify-live-public-auth.mjs
+
       - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
         env:
           VITE_SUPABASE_DISABLED: 'false'

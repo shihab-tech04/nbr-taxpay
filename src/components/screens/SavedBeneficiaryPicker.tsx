@@ -2,6 +2,7 @@ import React, {useEffect,useState} from 'react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadBeneficiaries,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {useTaxState} from '../../services/taxState';
+import {UiButton} from '../ui/Controls';
 
 export function SavedBeneficiaryPicker({language,allowMultiple,onChoose}:{
   language:'en'|'bn';allowMultiple:boolean;onChoose:(people:{tin:string;name:string}[])=>void;
@@ -45,10 +46,10 @@ export function SavedBeneficiaryPicker({language,allowMultiple,onChoose}:{
         </label>)}
         {!filtered.length&&<p className="text-sm text-slate-600">{tr('No matching beneficiaries.','কোনো মিল পাওয়া যায়নি।')}</p>}
       </div>
-      <button type="button" className="taxpay-auth-outline" disabled={!selected.length} onClick={()=>{
+      <UiButton type="button" variant="outline" disabled={!selected.length} onClick={()=>{
         const chosen=selected.map(id=>people.find(x=>x.id===id)).filter((x):x is Beneficiary=>!!x);
         onChoose(chosen.map(x=>({tin:x.tin,name:x.display_name})));setSelected([]);
-      }}>{tr(allowMultiple?'Add selected to payment':'Use selected beneficiary',allowMultiple?'নির্বাচিতদের পেমেন্টে যোগ করুন':'নির্বাচিত উপকারভোগী ব্যবহার')}</button>
+      }}>{tr(allowMultiple?'Add selected to payment':'Use selected beneficiary',allowMultiple?'নির্বাচিতদের পেমেন্টে যোগ করুন':'নির্বাচিত উপকারভোগী ব্যবহার')}</UiButton>
     </>}
     {!loading&&!checkingIdentity&&!error&&!people.length&&<p className="text-sm text-slate-600">
       {tr('No saved beneficiaries yet.','এখনো কোনো উপকারভোগী সংরক্ষিত নেই।')} <button type="button" className="underline" onClick={()=>navigate('beneficiaries')}>{tr('Add one in Beneficiaries.','উপকারভোগী পাতায় যোগ করুন।')}</button>
