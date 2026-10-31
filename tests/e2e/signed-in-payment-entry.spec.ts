@@ -43,9 +43,9 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
   await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
   await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly', '');
-  await expect(payment.locator('.tin-lookup__result')).toContainText('TIN information will be displayed here.');
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
   await payment.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(payment.locator('.tin-lookup__result')).toContainText('Meghna Trading Ltd.');
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
   await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 
