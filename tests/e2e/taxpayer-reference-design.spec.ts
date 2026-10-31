@@ -98,7 +98,9 @@ test('approved desktop rail adapts between 901px and 1439px without changing 144
       'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
     await expect(page.locator('.citizen-header')).toBeHidden();
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
-    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
+    await expect(rail.getByRole('button',{name:'Home',exact:true}))
+      .toHaveCSS('font-size', width < 1060 ? '14px' : '16px');
+    if (width < 1060) await expect(rail).toHaveCSS('padding-left','10px');
     await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
     await expect(page.locator('.citizen-pay')).toBeHidden();
     const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
