@@ -8,8 +8,7 @@ for (const locale of ['en', 'bn'] as const) {
     await login.getByLabel('Password', { exact: true }).fill('user1');
     await login.getByRole('button', { name: 'Sign In' }).click();
     await expect(login).toHaveCount(0);
-    await page.goto('/?action=landing');
-    if (locale === 'bn') await page.getByRole('button', { name: 'বাংলা', exact: true }).click();
+    await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
     await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
     const payment = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
 
