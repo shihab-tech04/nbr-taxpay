@@ -72,7 +72,7 @@ export function OtherTaxTaxpayerList({
             <Search size={17} aria-hidden="true" />{searchLabel}
           </button>
           </div>
-          {searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin) && <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>
+          {Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin) && <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>}
           {primaryAssigned && !lockedPrimary && <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p>}
         </div>
         <div>
@@ -112,7 +112,7 @@ export function OtherTaxTaxpayerList({
               <Search size={17} aria-hidden="true" />{searchLabel}
             </button>
             </div>
-            {searchedTins[person.id] === person.tin && !lookupSampleTaxpayer(person.tin) && <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>
+            {Boolean(person.tin) && searchedTins[person.id] === person.tin && !lookupSampleTaxpayer(person.tin) && <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>}
             {assigned > 0 && <p id={'other-tax-tin-help-' + person.id} className="text-xs text-slate-600">{lockedTinHelp}</p>}
           </div>
           <div>
