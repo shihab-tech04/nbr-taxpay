@@ -56,6 +56,7 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await expect(dialog.locator('#beneficiary-name')).not.toHaveAttribute('required','');
@@ -65,6 +66,7 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('987654321098');
   await dialog.locator('#beneficiary-name').fill('Editable Contact');
@@ -79,7 +81,8 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
   await expect(secondRecord.getByText('Name not provided',{exact:true})).toBeVisible();
   expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
-  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
   await page.locator('#beneficiary-file').setInputFiles('tests/fixtures/beneficiary-no-name.xlsx');
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
@@ -110,6 +113,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await dialog.locator('#beneficiary-create-list-name').fill('নাম ঐচ্ছিক');
   await dialog.getByRole('button',{name:'তালিকা তৈরি',exact:true}).click();
   await page.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
+  await page.getByRole('dialog',{name:'কীভাবে উপকারভোগী যোগ করবেন'}).getByRole('button',{name:'একজন উপকারভোগী যোগ'}).click();
   dialog=page.getByRole('dialog',{name:'উপকারভোগী যোগ'});
   await dialog.locator('#beneficiary-tin').fill('123450987654');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
@@ -128,7 +132,8 @@ test('Excel import success notice updates immediately when the user changes lang
   await dialog.locator('#beneficiary-create-list-name').fill('Notice localization');
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
-  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
   await page.locator('#beneficiary-file').setInputFiles('tests/fixtures/beneficiary-no-name.xlsx');
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
