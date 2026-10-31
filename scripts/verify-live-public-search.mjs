@@ -59,12 +59,19 @@ try {
     const receiptModal = page.getByRole('dialog', { name: 'Payment status & receipt' });
     await expect(receiptModal).toBeVisible();
     await expect(receiptModal.locator('.receipt-view--embedded')).toContainText('TKN-882190');
-    await expect(page.locator('.citizen-header')).toHaveCount(0);
-    await expect(page.locator('.public-home-header')).toBeVisible();
+    // Public receipt lookup retains the approved shared mobile navigation shell.
+    // Desktop keeps the original public header. Neither view should render a duplicate.
+    if (mobile) {
+      await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
+      await expect(page.locator('.public-home-header')).toBeHidden();
+    } else {
+      await expect(page.locator('.public-home-header')).toBeVisible();
+      await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
+    }
     if (page.url().includes('TKN-882190')) throw new Error('Reference leaked into live URL');
     await page.close();
   }
-  console.log('PASS: actual deployed TaxPay Pages search, modal receipt, responsive bounds and no legacy blue-header route');
+  console.log('PASS: deployed TaxPay Pages search, receipt modal, responsive bounds and approved desktop/mobile header parity');
 } finally {
   await browser.close();
 }
