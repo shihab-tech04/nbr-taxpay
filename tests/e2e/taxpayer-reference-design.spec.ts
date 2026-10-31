@@ -78,21 +78,33 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
 });
 
-test('Sobaike-style desktop rail remains aligned at three breakpoints without a duplicate Pay action',async({page},info)=>{
+test('approved desktop rail adapts between 901px and 1439px without changing 1440px+ anchors or duplicating Pay',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One responsive desktop rail matrix');
   await page.setViewportSize({width:1600,height:900});
   await openSampleTaxpayer(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  for(const [width,expectedRailWidth] of [[1440,240],[1600,250],[2048,260]]){
+  for (const width of [901,1024,1199,1200,1280,1366,1439,1440,1600,2048]) {
     await page.setViewportSize({width,height:900});
-    await expect(rail).toHaveCSS('width',`${expectedRailWidth}px`);
+    const expectedRailWidth = width < 1440
+      ? Math.min(239, Math.max(180, width * 0.17))
+      : width >= 1920 ? 260 : width >= 1536 ? 250 : 240;
+    const railBox = await rail.boundingBox();
+    expect(railBox,'rail is visible at '+width).not.toBeNull();
+    expect(Math.abs(railBox!.width - expectedRailWidth),'rail width at '+width).toBeLessThanOrEqual(1);
+    const mainBox = await page.locator('#main-content').boundingBox();
+    expect(mainBox,'main remains visible at '+width).not.toBeNull();
+    expect(Math.abs(mainBox!.x - railBox!.width),'main starts after rail at '+width).toBeLessThanOrEqual(2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
+    await expect(page.locator('.citizen-header')).toBeHidden();
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
     await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
     await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
     await expect(page.locator('.citizen-pay')).toBeHidden();
     const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(overflow,`sidebar overflow at ${width}px`).toBeLessThanOrEqual(1);
-    await page.screenshot({path:`test-results/screenshots/taxpayer-sobaike-rail-${width}.png`,fullPage:false});
+    if ([901,1280,1439,1440,1600,2048].includes(width))
+      await page.screenshot({path:`test-results/screenshots/taxpayer-sobaike-rail-${width}.png`,fullPage:false});
   }
 });
 
@@ -103,8 +115,13 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     await openSampleTaxpayer(page);
     const theme=page.locator('.taxpay-taxpayer-reference');
     expect(await theme.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(exactReference.background);
-    await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
-    await expect(page.locator('.citizen-header')).toBeVisible();
+    if (width <= 900) {
+      await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
+      await expect(page.locator('.citizen-header')).toBeVisible();
+    } else {
+      await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
+      await expect(page.locator('.citizen-header')).toBeHidden();
+    }
     const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(horizontalOverflow,'Taxpayer home has overflow at '+width).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-home-en-'+width+'.png',fullPage:false});
@@ -129,7 +146,8 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
     await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(1);
     // The dashboard navigation remains in the background while the modal is open.
     await expect(services).toBeVisible();
-    await expect(page.locator('.citizen-header')).toBeVisible();
+    if (width <= 900) await expect(page.locator('.citizen-header')).toBeVisible();
+    else await expect(page.locator('.citizen-header')).toBeHidden();
     const after=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(after,'Taxpayer payment form has overflow at '+width).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-input-en-'+width+'.png',fullPage:false});
@@ -184,7 +202,8 @@ test('private drafts receive reference inputs while backend remains disabled on 
   await expect(workspace).toBeVisible();
   await expect(workspace.getByRole('heading').first()).toBeVisible();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
-  await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
+  if ((page.viewportSize()?.width ?? 0) >= 901) await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
+  else await expect(page.locator('.taxpayer-reference-rail')).toBeHidden();
   const calls:string[]=[];
   page.on('request',req=>{if(new URL(req.url()).hostname.endsWith('.supabase.co'))calls.push(req.url());});
   await page.reload();
