@@ -72,8 +72,17 @@ try {
     await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(beneficiaries.getByRole('button', { name: 'Use User ID (sample account)' })).toHaveCount(0);
     await expect(beneficiaries.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
-    await expect(beneficiaries.getByRole('button', { name: 'Add single' })).toBeVisible();
-    await expect(beneficiaries.getByRole('button', { name: 'Bulk add' })).toBeVisible();
+    const beneficiaryPage = beneficiaries.getByTestId('beneficiaries-page');
+    await expect(beneficiaryPage).toBeVisible();
+    const beneficiaryActions = beneficiaries.locator('[data-testid="beneficiaries-page"] > header');
+    await expect(beneficiaryActions).toHaveCount(1);
+    for (const label of ['Create list', 'Import Excel', 'Add beneficiary']) {
+      await expect(beneficiaryActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+    for (const retiredLabel of ['Add single', 'Bulk add']) {
+      await expect(beneficiaries.getByRole('button', { name: retiredLabel, exact: true })).toHaveCount(0);
+    }
+    await expect(beneficiaries.locator('.taxpayer-account-center, .taxpayer-account-panel')).toHaveCount(0);
     await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
     await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -91,7 +100,14 @@ try {
     }
     await expect(beneficiaries).toHaveURL(/action=beneficiaries.*lang=bn/);
     await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী', exact: true })).toBeVisible();
-    await expect(beneficiaries.getByRole('button', { name: 'একজন যোগ করুন' })).toBeVisible();
+    const bengaliActions = beneficiaries.locator('[data-testid="beneficiaries-page"] > header');
+    await expect(bengaliActions).toHaveCount(1);
+    for (const label of ['তালিকা তৈরি', 'এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
+      await expect(bengaliActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+    for (const retiredLabel of ['একজন যোগ করুন', 'একাধিক যোগ করুন']) {
+      await expect(beneficiaries.getByRole('button', { name: retiredLabel, exact: true })).toHaveCount(0);
+    }
     if (isMobile) {
       await beneficiaries.getByRole('button', { name: 'English' }).click();
     } else {
