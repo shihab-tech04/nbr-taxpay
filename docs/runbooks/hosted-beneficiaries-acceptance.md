@@ -7,12 +7,12 @@ This runbook applies only to the manual, synthetic-data acceptance on the exact 
 Run these read-only checks on TaxPay Supabase project `eyqhoavnitkrajvyqvxn` immediately before dispatch:
 
 ```sql
-select count(*) as sessions_expiring_within_two_hours
+select count(*) as sessions_expiring_within_four_hours
 from taxpay_guest_private.sessions
-where expires_at <= now() + interval '2 hours';
+where expires_at <= now() + interval '4 hours';
 ```
 
-Dispatch only when the result is `0`. Both `open` and `touch_session` run a global expiry cleanup, so a nonzero result is a hard stop. Run the query immediately before dispatch and require the hosted test step to begin within two hours; if setup or queueing delays it past that window, stop before the test step. Dispatch once; do not use “re-run jobs” or start another run for this SHA. Record aggregate guest, owner, and simulated-payment counts before the run. These are counts only; do not inspect, reset, or delete other guest or owner records.
+Dispatch only when the result is `0`. Both `open` and `touch_session` run a global expiry cleanup, so a nonzero result is a hard stop. Run the query immediately before dispatch and require the hosted test step to begin within two hours; if setup or queueing delays it past that window, stop before the test step. The hosted test has a three-minute Playwright timeout, so the four-hour look-ahead covers the allowed start window plus its full maximum test duration. Dispatch once; do not use “re-run jobs” or start another run for this SHA. Record aggregate guest, owner, and simulated-payment counts before the run. These are counts only; do not inspect, reset, or delete other guest or owner records.
 
 ```sql
 select 'guest_sessions' as relation, count(*) as row_count from taxpay_guest_private.sessions
