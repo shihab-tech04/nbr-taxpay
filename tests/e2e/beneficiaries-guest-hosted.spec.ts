@@ -81,8 +81,14 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
       await route.continue();
     });
     await context.addInitScript(({ value, key, initialized }) => {
-      localStorage.setItem(key, value);
-      localStorage.removeItem(initialized);
+      const savedCapability = localStorage.getItem(key);
+      if (savedCapability === null) {
+        // Seed a blank browser context once; keep the successful registration marker on reload.
+        localStorage.setItem(key, value);
+        localStorage.removeItem(initialized);
+      } else if (savedCapability !== value) {
+        throw new Error('Test browser context already contains a different guest capability.');
+      }
       const nativeFetch = window.fetch.bind(window);
       let capabilityChecked = false;
       window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
