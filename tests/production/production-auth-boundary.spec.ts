@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const site = '/nbr-taxpay/';
-const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'services'];
+const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'beneficiaries', 'services'];
 
 test('a fresh visitor cannot enter taxpayer screens using an old sample URL', async ({ page }) => {
   await page.goto(site + '?action=taxpayer_home&demoUser=user1');
@@ -51,4 +51,27 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await expect(page).toHaveURL(/lang=bn/);
   await expect(page.getByRole('heading', { name: 'নিরাপদ করবৃত্ত ওয়ার্কস্পেস' })).toBeVisible();
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
+});
+
+test('sample-account Beneficiaries retains the approved left sidebar and content area',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto(site+'?action=taxpayer_login');
+  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await expect(rail).toBeVisible();
+  await rail.getByRole('button',{name:'Beneficiaries',exact:true}).click();
+  await expect(page).toHaveURL(/action=beneficiaries/);
+  await expect(rail.getByRole('button',{name:'Beneficiaries',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  await expect(page.locator('.citizen-header')).toBeHidden();
+  await expect(page.locator('.citizen-footer')).toHaveCount(0);
+  const left=await page.locator('main').evaluate(element=>Math.round(element.getBoundingClientRect().left));
+  expect(left).toBe(250);
+  await page.reload();
+  await expect(rail).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
 });
