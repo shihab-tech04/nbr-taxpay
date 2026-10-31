@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 for (const locale of ['en', 'bn'] as const) {
   test(`already signed-in ${locale.toUpperCase()} taxpayer skips redundant account/walk-in choice for both payers`, async ({ page }) => {
@@ -9,7 +10,7 @@ for (const locale of ['en', 'bn'] as const) {
     await login.getByRole('button', { name: 'Sign In' }).click();
     await expect(login).toHaveCount(0);
     await page.goto('/?action=landing');
-    if (locale === 'bn') await page.getByRole('button', { name: 'বাংলা', exact: true }).click();
+    if (locale === 'bn') await setWorkspaceLanguage(page, 'bn');
     await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
     const payment = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
 
