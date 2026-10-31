@@ -117,8 +117,7 @@ test('guest TIN input stays limited to twelve digits', async ({ page }) => {
   await tin.fill('1234');
   await dialog.locator('#guest-payer-name').fill('Sample payer');
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText('Enter the taxpayer’s 12-digit TIN.')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeDisabled();
 });
 
 test('Bengali entry rejects an unknown demo TIN and accepts an approved one', async ({ page }) => {
@@ -144,8 +143,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await expect(dialog.getByTestId('authorized-taxpayer-choices')).toContainText('নতুন ডেমো অনুমোদনের অনুরোধে পেমেন্টের আগে করদাতার সম্মতি প্রয়োজন।');
   const tin = dialog.locator('#guest-tin');
   await tin.fill('1234567890123');
-  await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
-  await expect(dialog.getByText('১২ সংখ্যার টিআইএন বা পরিচিত ১৩ সংখ্যার টিআইএন দিন।')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' })).toBeDisabled();
   await tin.fill('2222222222222');
   await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
