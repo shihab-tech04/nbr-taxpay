@@ -318,3 +318,45 @@ jobs:
           if [ -n "${TAXPAY_LOCAL_RECOVERY_FILE:-}" ]; then rm -f -- "$TAXPAY_LOCAL_RECOVERY_FILE"; fi
           supabase stop --no-backup || true
           echo "No hosted Supabase project was linked or changed."
+
+
+  hosted-beneficiary-acceptance:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/hosted-beneficiaries-acceptance-20261031' }}
+    name: One-off hosted Beneficiaries acceptance (synthetic only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Set hosted acceptance manifest path
+        shell: bash
+        run: echo "TAXPAY_HOSTED_BENEFICIARIES_MANIFEST=$RUNNER_TEMP/taxpay-hosted-beneficiary-manifest.json" >> "$GITHUB_ENV"
+
+      - name: Run hosted guest Beneficiaries acceptance
+        env:
+          TAXPAY_HOSTED_BENEFICIARIES_URL: https://shihab-tech04.github.io/nbr-taxpay/
+          TAXPAY_HOSTED_BENEFICIARIES_MANIFEST: ${{ runner.temp }}/taxpay-hosted-beneficiary-manifest.json
+          CI: "true"
+        run: npx playwright test --config=playwright.hosted.config.ts
+
+      - name: Upload cleanup-hash manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-beneficiary-cleanup-${{ github.run_id }}
+          path: ${{ runner.temp }}/taxpay-hosted-beneficiary-manifest.json
+          if-no-files-found: ignore
+          retention-days: 7
