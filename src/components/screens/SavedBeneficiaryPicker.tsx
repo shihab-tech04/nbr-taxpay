@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
+import {UiButton} from '../ui/Controls';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadBeneficiaries,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {useTaxState} from '../../services/taxState';
@@ -69,9 +70,9 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}</h3>
-      <button type="button" className="min-h-10 text-sm font-semibold text-taxpay-primary" onClick={manage}>
+      <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={manage}>
         {tr('Manage beneficiaries','উপকারভোগী পরিচালনা')}
-      </button>
+      </UiButton>
     </div>
     <p className="text-sm text-slate-600">{tr(
       'Select saved beneficiaries from a list below. To add or edit a taxpayer, use Beneficiaries.',
@@ -80,14 +81,14 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
     {error&&<div className="flex flex-wrap items-center gap-3" role="alert">
       <p className="text-sm text-red-700">{error}</p>
-      <button type="button" className="text-sm font-semibold text-taxpay-primary" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</button>
+      <UiButton type="button" variant="outline" className="text-sm font-semibold" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</UiButton>
     </div>}
     {!loading&&!checkingIdentity&&!error&&lists.length===0&&<div className="rounded-lg border border-dashed border-taxpay-border p-4">
       <p className="font-semibold text-taxpay-text">{tr('No beneficiary lists yet','এখনও কোনো উপকারভোগীর তালিকা নেই')}</p>
       <p className="mt-1 text-sm text-slate-600">{tr('Create a list and add beneficiaries before continuing with this payment.','পেমেন্টে এগোনোর আগে একটি তালিকা তৈরি করে উপকারভোগী যোগ করুন।')}</p>
-      <button type="button" className="mt-3 min-h-11 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white" onClick={manage}>
+      <UiButton type="button" variant="primary" className="mt-3 min-h-11 text-sm font-semibold" onClick={manage}>
         {tr('Create your first list','প্রথম তালিকা তৈরি করুন')}
-      </button>
+      </UiButton>
     </div>}
     {!loading&&!checkingIdentity&&!error&&lists.length>0&&<>
       {people.length>0&&<div>
