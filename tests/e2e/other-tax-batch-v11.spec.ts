@@ -477,7 +477,7 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
 });
 
-test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitutes the account TIN', async ({ page }) => {
+test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual taxpayer entry', async ({ page }) => {
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [], simulationOnly: true }),
   }));
@@ -491,17 +491,15 @@ test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitu
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
-  await expect(dialog.locator('#guest-tin')).toHaveValue('');
-  await expect(dialog.locator('#guest-tin')).not.toHaveAttribute('readonly');
-  await dialog.locator('#guest-tin').fill('123456789012');
-  await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
-  await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
-  await expect(dialog.locator('#guest-payer-name')).toHaveValue('Md. Arif Rahman');
-  await expect(dialog.locator('#guest-payer-name')).toHaveAttribute('readonly');
-  await expect(dialog.locator('#guest-phone')).toHaveValue('01700000001');
-  await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText(/Taxpayer 1 \(123456789012\) is not approved for payment through your account/)).toBeVisible();
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker).toBeVisible();
+  await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible();
+  await expect(dialog.locator('#guest-tin, #guest-payer-name, #other-tax-primary-name')).toHaveCount(0);
+  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await expect(dialog.getByText('Authorized taxpayers',{exact:true})).toHaveCount(0);
+  await expect(dialog.locator('#guest-notice-ref')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeDisabled();
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
 

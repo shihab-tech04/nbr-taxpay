@@ -40,7 +40,7 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
-test('changing from my tax to another taxpayer restores editable 12-digit entry', async ({ page }) => {
+test('changing from own tax to another taxpayer shows saved beneficiary lists without manual TIN entry', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await page.getByLabel('Password', { exact: true }).fill('user1');
@@ -56,13 +56,11 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(1);
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
-  await expect(payment.locator('#guest-tin')).not.toHaveAttribute('readonly');
-  await expect(payment.locator('#guest-phone')).toHaveValue('01700000001');
-  await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly');
-  await payment.locator('#guest-tin').fill('123456789012');
-  await expect(payment.locator('#guest-tin')).toHaveValue('123456789012');
+  await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
+  await expect(payment.getByTestId('saved-beneficiary-picker').getByRole('button', {name:'Manage beneficiaries'})).toBeVisible();
+  await expect(payment.locator('#guest-tin, #guest-taxpayer-name, #guest-payer-name')).toHaveCount(0);
+  await expect(payment.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
+  await expect(payment.locator('#guest-notice-ref')).toBeEditable();
   await payment.locator('.taxpay-modal__back').click();
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
