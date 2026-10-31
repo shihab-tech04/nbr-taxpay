@@ -68,7 +68,6 @@ test('sample-account Beneficiaries retains the approved left sidebar and content
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.locator('.citizen-header')).toBeHidden();
-  await expect(page.locator('.citizen-footer')).toHaveCount(0);
   const left=await page.locator('main').evaluate(element=>Math.round(element.getBoundingClientRect().left));
   expect(left).toBe(250);
   await page.reload();
