@@ -40,7 +40,8 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const listDialog=page.getByRole('dialog',{name:'Create list'});
   await listDialog.locator('#beneficiary-create-list-name').fill('Family');
   await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
-  await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
@@ -52,7 +53,8 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(records).toContainText('Local Beneficiary One');
 
   // Import a genuine compressed Excel workbook: one duplicate and one valid new beneficiary.
-  await page.getByRole('button',{name:'Import Excel',exact:true}).first().click();
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
   await page.locator('#beneficiary-file').setInputFiles({
     name:'beneficiaries-two-rows.xlsx',
     mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
