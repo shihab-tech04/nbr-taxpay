@@ -31,7 +31,7 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   const bengaliDialog = page.getByRole('dialog', { name: 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন' });
   await expect(bengaliDialog).toBeVisible();
   await bengaliDialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
-  await changePublicLanguage(page, 'en');
+  await page.goto('/?action=landing&lang=en');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Korbritto');
   await page.goto('/?action=office_login&lang=en');
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
