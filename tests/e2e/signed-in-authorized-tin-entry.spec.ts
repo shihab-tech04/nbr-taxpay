@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
+import { setWorkspaceLanguage } from './workspace-language';
 
 type Status = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'REVOKED';
 function authorization(taxpayerId: 'user2' | 'user3', status: Status, activeUntil: number | null = null) {
