@@ -54,7 +54,7 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 50/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 50/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment records pending' })).toBeVisible({ timeout: 15000 });
   await expect(dialog.getByTestId('other-tax-batch-result').first()).toContainText('Record saved');
   await expect(dialog.getByTestId('other-tax-batch-result').last()).toContainText('Pending');

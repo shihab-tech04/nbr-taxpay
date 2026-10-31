@@ -63,10 +63,10 @@ async function openReview(page: Page, category = 'Tax with Return') {
 
 test('online Step 3 requires channel, method and reviewed details before advancing', async ({ page }) => {
   const dialog = await openReview(page, 'Other Tax');
-  const action = dialog.getByRole('button', { name: /Pay BDT 12,500/ });
+  const action = dialog.getByRole('button', { name: /Pay ৳ 12,500/ });
   await expect(action).toBeDisabled();
   await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
-  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 12,500');
+  await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 12,500');
   await expect(dialog.getByText('Payment simulation only')).toHaveCount(0);
   await expect(dialog.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Pay online' }).click();
@@ -124,19 +124,19 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment request declined' })).toBeVisible({ timeout: 12000 });
   await dialog.locator('.payment-lifecycle__progress-detail summary').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Request declined')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Try another method' }).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
-  await expect(dialog.getByRole('button', { name: /Pay BDT 12,500/ })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: /Pay ৳ 12,500/ })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'Nagad' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 12,500/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();

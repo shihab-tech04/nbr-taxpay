@@ -118,12 +118,12 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(summary.locator('.payment-form-summary__total')).toContainText('12,000');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
-  await expect(summary.locator('.payment-form-summary__total')).toHaveText('BDT 12,000');
+  await expect(summary.locator('.payment-form-summary__total')).toHaveText('৳ 12,000');
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 12,000/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 12,000/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
@@ -224,7 +224,7 @@ test('multiple Other Tax heads retain distinct amounts and produce separate paym
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT 1,500/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳ 1,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(submitted).toEqual([120000, 30000]);
   const results = dialog.getByTestId('other-tax-batch-result');
@@ -234,14 +234,14 @@ test('multiple Other Tax heads retain distinct amounts and produce separate paym
   await expect(results.last()).toContainText('300');
   await expect(results.last()).toContainText('private motor car');
   await results.first().getByRole('button', { name: /View receipt/ }).click();
-  await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('BDT 1,200');
+  await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('৳ 1,200');
   await expect(dialog.locator('.receipt-view__paper')).not.toContainText('1,500');
   await dialog.getByRole('button', { name: 'Close payment services' }).click();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const reopened = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(reopened, 'OTHER_TAX_PAYMENT');
   await reopened.getByTestId('other-tax-batch-result').last().getByRole('button', { name: /View receipt/ }).click();
-  await expect(reopened.locator('.receipt-view__amount strong')).toHaveText('BDT 300');
+  await expect(reopened.locator('.receipt-view__amount strong')).toHaveText('৳ 300');
 });
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');
@@ -333,7 +333,7 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await allocations.nth(1).locator('input[id^="other-tax-amount"]').fill('20');
   const calc = dialog.locator('.taxpay-modal__body .payment-form-summary');
   await expect(calc.locator('.payment-form-summary__total')).toContainText('৳ 30');
-  await expect(calc).not.toContainText('BDT');
+  await expect(calc).not.toContainText('৳');
   const links = calc.locator('.payment-form-summary__breakdown button');
   await expect(links).toHaveCount(2);
   await links.nth(1).click();
