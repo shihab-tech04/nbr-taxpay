@@ -42,7 +42,7 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(sheet.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
   await sheet.getByRole('button',{name:'বাংলা'}).click();
   await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'})).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'})).toBeVisible();
+  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'})).toHaveCount(0);
   await bell.click();
