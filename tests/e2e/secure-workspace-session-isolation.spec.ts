@@ -166,7 +166,7 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await ownerAHistory.locator('summary').click();
   await expect(ownerAHistory.getByText('Reason provided: PRIVATE-OWNER-A-INQUIRY')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.locator('#main-content').getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Signed out on this browser. The server could not confirm revoking the session:' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
   await expect(page.getByText(/PRIVATE-OWNER-A-/)).toHaveCount(0);
@@ -179,7 +179,7 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await page.goto(callbackUrl(makeSession(userA), 1));
   await expect(page.getByRole('heading', { name: 'Signed-in application user' })).toBeVisible();
   await expect(page.getByText('PRIVATE-OWNER-A-DRAFT')).toBeVisible();
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.locator('#main-content').getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
   await expect(page.getByRole('status').filter({ hasText: 'Signed out.' })).toBeVisible();
   await expect(page.getByText(/PRIVATE-OWNER-A-/)).toHaveCount(0);

@@ -18,6 +18,8 @@ test('public preview keeps Auth and drafts disabled without explicit backend con
     await page.getByRole('button', { name: 'Open menu' }).click();
     await page.getByRole('dialog', { name: 'Services & menu' }).getByRole('button', { name: 'বাংলা' }).click();
     await page.getByRole('dialog', { name: 'সেবা ও মেনু' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  } else if (await page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).isVisible()) {
+    await page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button', { name: 'বাংলা' }).click();
   } else {
     await page.locator('.citizen-header').getByRole('button', { name: 'বাংলা' }).click();
   }

@@ -16,6 +16,13 @@ export async function setWorkspaceLanguage(page: Page, language: 'en' | 'bn') {
       }).click();
       return;
     }
+    // The approved taxpayer sidebar is also used at intermediate desktop widths.
+    // Detect the visible control rather than assuming a header from viewport width.
+    const rail = page.locator('.taxpayer-reference-rail');
+    if (await rail.isVisible()) {
+      await rail.getByRole('button', { name: language === 'bn' ? 'বাংলা' : 'English' }).click();
+      return;
+    }
     await page.locator('.citizen-header').getByRole('button', {
       name: language === 'bn' ? 'বাংলা' : 'EN', exact: true,
     }).click();

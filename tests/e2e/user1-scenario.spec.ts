@@ -1,5 +1,11 @@
 import {expect,test} from '@playwright/test';
 
+async function openTaxLedger(page: import('@playwright/test').Page) {
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if (await rail.isVisible()) await rail.getByRole('button',{name:'Tax ledger',exact:true}).click();
+  else await page.getByRole('button',{name:'Tax Ledger',exact:true}).click();
+}
+
 test('user1 dashboard, payment history and ledger use one coherent synthetic balance',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Representative desktop financial reconciliation');
   const protectedRpc:string[]=[];
@@ -21,7 +27,7 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Sign in to make a payment'})).toHaveCount(0);
-  await page.getByRole('button',{name:'Tax Ledger',exact:true}).click();
+  await openTaxLedger(page);
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
   await expect(page.locator('table').getByText('DEMO-PAY-02')).toBeVisible();
   await expect(page.getByText('৳ 25,000').first()).toBeVisible();
@@ -34,12 +40,18 @@ test('user1 year selection stays consistent across documents and correction scre
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
   await expect(page.getByText('৳ 125,000').first()).toBeVisible();
   await expect(page.getByText('৳ 10,000').first()).toBeVisible();
-  await page.locator('.citizen-menu-open').click();
-  await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if (await rail.isVisible()) {
+    await rail.getByRole('button',{name:'Activity',exact:true}).click();
+    await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
+  } else {
+    await page.locator('.citizen-menu-open').click();
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Certificates',exact:true}).click();
+  }
   await expect(page).toHaveURL(/scenarioYear=2024-2025/);
   await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
   await expect(page.getByText('DEMO-CH-24-01').first()).toBeVisible();
-  await page.getByRole('button',{name:'Tax Ledger',exact:true}).click();
+  await openTaxLedger(page);
   await expect(page.locator('table').getByText('DEMO-PAY-24-01')).toBeVisible();
   await expect(page.getByText('৳ 10,000').first()).toBeVisible();
 });

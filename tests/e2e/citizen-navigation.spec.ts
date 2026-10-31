@@ -10,6 +10,8 @@ test('public hero opens payment while standalone receipt search stays accessible
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
+ if(page.viewportSize()!.width<=900) await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+ else await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
@@ -168,7 +170,8 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
       await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
       await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
     } else {
-      await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
+      await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
+      await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeHidden();
     }
   }
 });
