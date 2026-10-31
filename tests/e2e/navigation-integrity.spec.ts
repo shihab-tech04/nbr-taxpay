@@ -13,7 +13,12 @@ test('public header, user-guide topics, footer links, language and browser histo
   }
   await expect(page).toHaveURL(/action=user_guide/);
   await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Payment basics'})).toBeVisible();
+  // Mobile Help targets Security & support; desktop User guide opens Payment basics.
+  if (page.viewportSize()!.width <= 900) {
+    await expect(page.getByRole('heading', { name: 'Security & support' })).toBeVisible();
+  } else {
+    await expect(page.getByRole('heading', { name: 'Payment basics' })).toBeVisible();
+  }
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page).toHaveURL(/action=user_guide&category=travel/);
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
