@@ -5,5 +5,5 @@ import { expect, type Page } from '@playwright/test';
 export async function openTravelTaxFromBanner(page: Page) {
   const carousel = page.locator('.public-hero-carousel');
   await expect(carousel).toBeVisible();
-  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  await carousel.getByRole('button', { name: /^(?:Pay Travel Tax|ভ্রমণ কর পরিশোধ)$/ }).click();
 }
