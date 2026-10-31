@@ -32,9 +32,8 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
-  await expect(payment.locator('#guest-tin')).toBeVisible();
-  await expect(payment.locator('input#guest-tin')).toHaveValue('2222222222222');
-  await expect(payment.locator('input#guest-tin')).toHaveAttribute('readonly', '');
+  await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
+  await expect(payment.locator('#guest-tin, #guest-phone')).toHaveCount(0);
   await expect(payment.locator('#guest-notice-ref')).toBeEditable();
   await expect(payment.getByText('Continuing with your account')).toBeVisible();
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
