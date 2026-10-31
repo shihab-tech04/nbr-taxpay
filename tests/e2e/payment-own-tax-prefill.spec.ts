@@ -25,7 +25,8 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.locator('#guest-tin')).toHaveValue('2222222222222');
   await expect(payment.locator('#guest-tin')).toHaveAttribute('readonly', '');
   await payment.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(payment.locator('.tin-lookup__result')).toContainText('Meghna Trading Ltd.');
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
   await expect(payment.locator('#guest-phone')).toHaveValue('01700000002');
   await expect(payment.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
@@ -54,7 +55,8 @@ test('changing from my tax to another taxpayer restores editable 12-digit entry'
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
-  await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(0);
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveCount(1);
+  await expect(payment.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
   await expect(payment.locator('#guest-tin')).not.toHaveAttribute('readonly');
   await expect(payment.locator('#guest-phone')).toHaveValue('01700000001');
   await expect(payment.locator('#guest-phone')).toHaveAttribute('readonly');

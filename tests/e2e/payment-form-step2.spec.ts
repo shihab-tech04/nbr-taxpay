@@ -96,10 +96,9 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   expect(formWidth).toBeGreaterThan(0);
   expect(summaryWidth).toBeGreaterThan(0);
   expect(Math.abs(formWidth / (formWidth + summaryWidth) - 0.6)).toBeLessThan(0.03);
-  const emptyResult = dialog.locator('.tin-lookup__result');
-  await expect(emptyResult).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(emptyResult).toHaveCSS('border-top-width', '0px');
-  expect(await emptyResult.evaluate(element => element.getBoundingClientRect().height)).toBeLessThan(48);
+  await expect(dialog.locator('.tin-lookup__result')).toHaveCount(0);
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer').locator('.taxpay-taxpayer-row__tin-search')).toBeVisible();
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

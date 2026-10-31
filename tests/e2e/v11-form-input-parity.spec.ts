@@ -15,7 +15,8 @@ test('payer relationship is required at entry and head choice is still validated
   await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Sample Agent');
-  await dialog.locator('#other-tax-primary-name').fill('Sample Taxpayer');
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveValue('');
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
