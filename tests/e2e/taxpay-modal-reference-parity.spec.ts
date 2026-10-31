@@ -18,10 +18,12 @@ test('the approved single modal progressively reveals all three choice groups an
   const modal = await dialog.boundingBox();
   expect(title).not.toBeNull();
   expect(modal).not.toBeNull();
-  expect(Math.abs(title!.x + title!.width / 2 - (modal!.x + modal!.width / 2))).toBeLessThan(3);
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveCSS('text-align', 'left');
+  expect(title!.x).toBeLessThan(modal!.x + modal!.width / 3);
   await expect(next).toBeDisabled();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
+  await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toContainText('Section 173');
   await expect(next).toBeDisabled();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
@@ -50,7 +52,7 @@ test('the approved single modal progressively reveals all three choice groups an
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('standalone login uses exactly the shared TaxPayModal header, body and right-aligned footer', async ({ page }) => {
+test('standalone login uses shared modal chrome, left heading, Back and full-width footer', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await expect(dialog).toHaveClass(/taxpay-modal/);
@@ -58,7 +60,8 @@ test('standalone login uses exactly the shared TaxPayModal header, body and righ
   await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__footer')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
-  await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
+  await expect(dialog.locator('.taxpay-modal__back')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveCSS('text-align', 'left');
   await expect(dialog.locator('.taxpayer-login-heading,.taxpayer-login-backdrop')).toHaveCount(0);
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeFocused();
   await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -66,6 +69,11 @@ test('standalone login uses exactly the shared TaxPayModal header, body and righ
   await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await expect(dialog.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeEnabled();
+  const actionWidths = await dialog.locator('.taxpayer-login-actions').evaluate(element => ({
+    action: element.clientWidth,
+    button: element.querySelector('button')!.clientWidth,
+  }));
+  expect(actionWidths.button).toBeGreaterThanOrEqual(actionWidths.action - 2);
 });
 test('both login entry points use the identical reusable login modal variant', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
@@ -212,4 +220,22 @@ test('single modal expands when groups are revealed and respects reduced motion'
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(dialog).toHaveCSS('animation-name', 'none');
   await expect(dialog).toHaveCSS('transition-property', 'none');
+});
+
+
+test('standalone sign-in Back returns to the public landing page without a second dialog', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('.taxpay-modal')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Pay Tax', exact: true }).first()).toBeVisible();
+});
+
+test('Bengali Tax with Return choice displays the legal section number', async ({ page }) => {
+  await page.goto('/?lang=bn');
+  await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toContainText('ধারা ১৭৩');
 });
