@@ -69,12 +69,12 @@ const GUEST_COPY = {
     continueHead: 'Continue to Payment Head', category: 'Payment Category',
     selectHead: (count: number) => `Select Master Payment Head (${count} available in category)`,
     searchHead: 'Search by payment head or code…', blocked: 'Unavailable', act: 'Act', legacy: 'Legacy', note: 'Note',
-    amountBreakdown: 'Payment Amount Breakdown (BDT)', taxAmount: 'Tax Amount (৳)', penalty: 'Penalty (৳)',
+    amountBreakdown: 'Payment Amount Breakdown (৳)', taxAmount: 'Tax Amount (৳)', penalty: 'Penalty (৳)',
     surcharge: 'Surcharge (৳)', interest: 'Interest (৳)', remarks: 'Payment Remarks / Invoice Reference (Optional)',
     remarksPlaceholder: 'e.g. Assessment order #190 / Salary withholding month Oct 2026', total: 'Total Payable Amount:',
     draft: 'Plan as a private draft', continueReview: 'Continue to Review', back: 'Back', backToHead: 'Back to Payment Head',
     reviewTitle: 'Payment summary', payer: 'Payer Name', jurisdiction: 'Jurisdiction',
-    headTitle: 'Payment Head', unspecified: 'Unspecified', grandTotal: 'Total Amount (BDT)',
+    headTitle: 'Payment Head', unspecified: 'Unspecified', grandTotal: 'Total Amount (৳)',
     channel: 'Payment method', noFee: 'No fee', directTreasury: 'Treasury route',
     govSwitch: 'Payment gateway',
     anotherPayment: 'Start another payment',
@@ -215,6 +215,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   );
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
+  const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
   const [suggestedBatchYears,setSuggestedBatchYears]=useState<Record<string,string>>({});
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
@@ -270,7 +271,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   });
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
-  const batchValid = otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
+  const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
+    `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === otherTaxLines.length;
+  const batchValid = uniqueBatchAllocations && otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
     && !missingBatchTaxpayer
     && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
       && batchTaxpayers.some(person => person.id === line.taxpayerId)
@@ -478,6 +481,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const storyAmountSupported = storyAmountMinor !== null && storyAmountMinor > 0n && storyAmountMinor <= MAX_STORY_AMOUNT_MINOR;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
+    onSelectEntry={step === 2 ? lineId => setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 })) : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
@@ -497,6 +501,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         entries: lines.map(line => {
           const head = otherTaxAllocationHead(line.headId);
           return {
+            id: line.id,
             label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
             detail: line.assessmentYear,
             value: otherTaxAllocationTotal([line]),
@@ -508,6 +513,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
       return {
+        id: line.id,
         label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
         detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line])
@@ -1326,13 +1332,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)
             : <AccountPaymentSuggestions userId={null} language={language} mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)}
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation}
-            lines={otherTaxLines} suggestedAssessmentYears={suggestedBatchYears} onChange={next => {
+            lines={otherTaxLines} suggestedAssessmentYears={suggestedBatchYears} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
               // Keep the invalid-row indicators visible until every selected
               // head is corrected, instead of hiding them after the first edit.
               if (isFieldInvalid('headId')) {
                 const sum = otherTaxAllocationTotal(next);
-                const allValid = next.length > 0 && sum !== null && sum > 0 &&
+                const unique = new Set(next.map(line => `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === next.length;
+                const allValid = unique && next.length > 0 && sum !== null && sum > 0 &&
                   next.every(line => isOtherTaxHeadEligible(line.headId) &&
                     OTHER_TAX_YEARS.some(year => year === line.assessmentYear) &&
                     batchTaxpayers.some(person => person.id === line.taxpayerId));

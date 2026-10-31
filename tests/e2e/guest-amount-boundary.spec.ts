@@ -26,7 +26,7 @@ test('payment amount matches the endpoint limit and preserves the last paisa', a
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
-  await expect(dialog.getByRole('button', { name: /Pay BDT/ })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: /Pay ৳/ })).toBeDisabled();
   expect(sentMinor).toBeUndefined();
 
   await dialog.locator('.taxpay-modal__back').click();
@@ -36,7 +36,7 @@ test('payment amount matches the endpoint limit and preserves the last paisa', a
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
-  await dialog.getByRole('button', { name: /Pay BDT/ }).click();
+  await dialog.getByRole('button', { name: /Pay ৳/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(sentMinor).toBe(999999999999);
 });

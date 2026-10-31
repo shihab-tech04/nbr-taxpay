@@ -56,7 +56,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
     : receipt.isSimulatedDemo && receipt.treasuryStatus === 'GATEWAY_SUCCESS'
       ? label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত') : statusLabel(receipt.treasuryStatus);
   const exportDemo = () => {
-    const headings=['Reference','Token','Payment category','Assessment year','Payer TIN','Amount BDT','Treasury status','Credit status'];
+    const headings=['Reference','Token','Payment category','Assessment year','Payer TIN','Amount ৳','Treasury status','Credit status'];
     const lines = filtered.map((r:ChallanReceipt)=>[
       r.challanNo,r.tokenNumber,r.paymentCategory,r.assessmentYear,r.payerTin,r.totalAmount,treasuryLabel(r),statusLabel(r.taxCreditStatus)
     ].map(escapeCsv).join(','));

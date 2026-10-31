@@ -1,9 +1,9 @@
-/** Exact 2-decimal BDT draft display from integer minor units.
+/** Exact 2-decimal ৳ draft display from integer minor units.
  * All finance calculations remain integer-based; does not assert a tax due.
  */
 export function formatBdtMinorUnits(minor: number, locale: 'en' | 'bn' = 'en'): string {
   if (!Number.isSafeInteger(minor) || minor < 0 || minor > 99999999999999) {
-    throw new Error('Invalid integer BDT minor-unit amount');
+    throw new Error('Invalid integer ৳ minor-unit amount');
   }
   const whole = BigInt(minor) / 100n;
   const fraction = String(BigInt(minor) % 100n).padStart(2, '0');

@@ -1339,7 +1339,7 @@ export const MASTER_PAYMENT_HEADS: MasterPaymentHead[] = [
     isWithholding: false,
     status: 'ACTIVE',
     verificationStatus: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED',
-    rateNote: 'Fixed statutory filing fee BDT 1,000'
+    rateNote: 'Fixed statutory filing fee ৳ 1,000'
   },
   {
     id: 138,
@@ -1478,7 +1478,7 @@ export const MASTER_PAYMENT_HEADS: MasterPaymentHead[] = [
   {
     id: 149,
     economicCode: makeCode('0040', 701),
-    nameEn: 'Surcharge on High Net Wealth Individual Taxpayers (Wealth > BDT 4 Cr)',
+    nameEn: 'Surcharge on High Net Wealth Individual Taxpayers (Wealth > ৳ 4 Cr)',
     nameBn: 'উচ্চ নীট সম্পদের উপর সারচার্জ (সম্পদ > ৪ কোটি টাকা)',
     category: 'OTHER_TAX_PAYMENT',
     sectionAct2023: 'Section 173 & Finance Act Surcharge Schedule',
@@ -1513,7 +1513,7 @@ export const MASTER_PAYMENT_HEADS: MasterPaymentHead[] = [
     isWithholding: false,
     status: 'ACTIVE',
     verificationStatus: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED',
-    rateNote: 'BDT 6,000 per departing passenger'
+    rateNote: '৳ 6,000 per departing passenger'
   },
   {
     id: 152,
@@ -1526,7 +1526,7 @@ export const MASTER_PAYMENT_HEADS: MasterPaymentHead[] = [
     isWithholding: false,
     status: 'ACTIVE',
     verificationStatus: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED',
-    rateNote: 'BDT 4,000 (SAARC: BDT 2,000)'
+    rateNote: '৳ 4,000 (SAARC: ৳ 2,000)'
   },
   {
     id: 153,
@@ -1539,7 +1539,7 @@ export const MASTER_PAYMENT_HEADS: MasterPaymentHead[] = [
     isWithholding: false,
     status: 'ACTIVE',
     verificationStatus: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED',
-    rateNote: 'BDT 1,000 per land passenger'
+    rateNote: '৳ 1,000 per land passenger'
   },
   {
     id: 154,
@@ -1552,7 +1552,7 @@ export const MASTER_PAYMENT_HEADS: MasterPaymentHead[] = [
     isWithholding: false,
     status: 'ACTIVE',
     verificationStatus: 'SOURCE NOT IN INPUTS / LEGAL VALIDITY UNVERIFIED',
-    rateNote: 'BDT 2,000 per maritime departure'
+    rateNote: '৳ 2,000 per maritime departure'
   },
   {
     id: 155,

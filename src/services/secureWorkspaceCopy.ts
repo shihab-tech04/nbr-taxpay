@@ -34,7 +34,7 @@ export const SECURE_WORKSPACE_COPY = {
     assessmentYear: 'Assessment-year label (not verified)',
     assessmentYearPlaceholder: 'YYYY-YY',
     assessmentYearHelp: 'Enter the assessment year for this draft.',
-    proposedAmount: 'Proposed amount (BDT)',
+    proposedAmount: 'Proposed amount (৳)',
     amountPlaceholder: '1500.00',
     privateNote: 'Private note (optional)',
     saveDraft: 'Save draft to database',
@@ -114,7 +114,7 @@ export const SECURE_WORKSPACE_COPY = {
     assessmentYear: 'নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)',
     assessmentYearPlaceholder: 'YYYY-YY',
     assessmentYearHelp: 'এই খসড়ার নির্ধারণ বছর লিখুন।',
-    proposedAmount: 'প্রস্তাবিত পরিমাণ (BDT)',
+    proposedAmount: 'প্রস্তাবিত পরিমাণ (৳)',
     amountPlaceholder: '1500.00',
     privateNote: 'ব্যক্তিগত নোট (ঐচ্ছিক)',
     saveDraft: 'ডেটাবেসে খসড়া সংরক্ষণ করুন',
@@ -168,7 +168,7 @@ export type SecureWorkspaceMessageKey = keyof typeof SECURE_WORKSPACE_COPY.en.me
 const DRAFT_VALIDATION_BN: Readonly<Record<string, string>> = {
   'Withholding deposits and tax-liability categories cannot be mixed.': 'উৎসে কর জমা এবং করদায়ের খাত একসঙ্গে ব্যবহার করা যাবে না।',
   'Enter a correctly formatted assessment-year label such as 2026-27. This does not verify its legal applicability.': 'নির্ধারণ বছরের সঠিক লেবেল লিখুন, যেমন 2026-27। এতে এর আইনগত প্রযোজ্যতা যাচাই হয় না।',
-  'Enter a positive BDT amount with at most two decimal places.': 'দশমিকের পরে সর্বোচ্চ দুই অঙ্কসহ শূন্যের বেশি BDT পরিমাণ লিখুন।',
+  'Enter a positive ৳ amount with at most two decimal places.': 'দশমিকের পরে সর্বোচ্চ দুই অঙ্কসহ শূন্যের বেশি ৳ পরিমাণ লিখুন।',
   'Amount is outside the permitted draft range.': 'পরিমাণটি খসড়ার অনুমোদিত সীমার বাইরে।',
   'Notes must be 300 characters or fewer.': 'নোটে সর্বোচ্চ ৩০০টি অক্ষর লিখুন।',
 };

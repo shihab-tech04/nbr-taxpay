@@ -87,15 +87,15 @@ test('authenticated owner resumes and updates a private draft in Bengali without
   await setWorkspaceLanguage(page, 'bn');
   await expect(page.getByRole('heading', { name: 'সাইন-ইন করা অ্যাপ ব্যবহারকারী' })).toBeVisible();
   await page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)').fill('2030-31');
-  await page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)').fill('400.00');
+  await page.getByLabel('প্রস্তাবিত পরিমাণ (৳)').fill('400.00');
   await page.getByLabel('ব্যক্তিগত নোট (ঐচ্ছিক)').fill('Synthetic unsaved draft to preserve');
   await expect(page.getByRole('button', { name: 'খসড়া পুনরায় খুলুন' })).toBeVisible();
   await page.getByRole('button', { name: 'খসড়া পুনরায় খুলুন' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'সংরক্ষিত খসড়া সম্পাদনা করছেন' })).toBeVisible();
   await expect(page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)')).toHaveValue('2026-27');
-  await expect(page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)')).toHaveValue('123.45');
+  await expect(page.getByLabel('প্রস্তাবিত পরিমাণ (৳)')).toHaveValue('123.45');
   await page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)').fill('2027-28');
-  await page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)').fill('124.50');
+  await page.getByLabel('প্রস্তাবিত পরিমাণ (৳)').fill('124.50');
   await page.getByLabel('ব্যক্তিগত নোট (ঐচ্ছিক)').fill('Synthetic updated note');
   await page.getByRole('button', { name: 'খসড়ার পরিবর্তন সংরক্ষণ করুন' }).click();
 
@@ -113,9 +113,9 @@ test('authenticated owner resumes and updates a private draft in Bengali without
     amount_minor: 12450,
     memo: 'Synthetic updated note',
   });
-  await expect(page.getByText('BDT ১২৪.৫০ · শুধু ব্যক্তিগত খসড়া')).toBeVisible();
+  await expect(page.getByText('৳ ১২৪.৫০ · শুধু ব্যক্তিগত খসড়া')).toBeVisible();
   await expect(page.getByLabel('নির্ধারণ বছরের লেবেল (যাচাই করা হয়নি)')).toHaveValue('2030-31');
-  await expect(page.getByLabel('প্রস্তাবিত পরিমাণ (BDT)')).toHaveValue('400.00');
+  await expect(page.getByLabel('প্রস্তাবিত পরিমাণ (৳)')).toHaveValue('400.00');
   await expect(page.getByLabel('ব্যক্তিগত নোট (ঐচ্ছিক)')).toHaveValue('Synthetic unsaved draft to preserve');
 
   const dimensions = await page.evaluate(() => ({

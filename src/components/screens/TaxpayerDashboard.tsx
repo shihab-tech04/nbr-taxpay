@@ -65,7 +65,7 @@ export const TaxpayerDashboard: React.FC = () => {
   </div>;
   const csv=()=>{
     const esc=(x:string|number)=>'"'+String(x).replace(/"/g,'""')+'"';
-    const body=[['Reference','Category','Assessment year','Amount BDT','Treasury status'],...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?'Treasury status not verified':r.treasuryStatus])]
+    const body=[['Reference','Category','Assessment year','Amount ৳','Treasury status'],...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?'Treasury status not verified':r.treasuryStatus])]
       .map(r=>r.map(esc).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);

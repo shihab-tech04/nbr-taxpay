@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseGuestAmount, parseGuestMinorUnits, sumGuestAmounts, sumGuestMinorUnits } from '../src/services/guestAmount';
 
-test('guest amount accepts positive BDT values with at most two decimals', () => {
+test('guest amount accepts positive ৳ values with at most two decimals', () => {
   assert.equal(parseGuestAmount('1200'), 1200);
   assert.equal(parseGuestAmount('0.25'), 0.25);
   assert.equal(parseGuestAmount('1200.50'), 1200.5);

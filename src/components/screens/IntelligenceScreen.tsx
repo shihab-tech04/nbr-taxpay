@@ -22,7 +22,7 @@ export const IntelligenceScreen: React.FC = () => {
       taxpayerName: 'Md. Tariqul Islam Chowdhury',
       type: 'TDS_MISMATCH',
       severity: 'MEDIUM',
-      detectedDiscrepancy: 'e-TDS deducted by clients totals BDT 1,20,000; however return declared gross receipts reflect BDT 80,000 difference.',
+      detectedDiscrepancy: 'e-TDS deducted by clients totals ৳ 1,20,000; however return declared gross receipts reflect ৳ 80,000 difference.',
       potentialYield: 47400,
       confidenceScore: 94,
       action: 'Issued Demand Notice DN-2023-164-90'
@@ -33,7 +33,7 @@ export const IntelligenceScreen: React.FC = () => {
       taxpayerName: 'Bengal Tech Innovations Ltd.',
       type: 'BIN_TURNOVER_VARIANCE',
       severity: 'HIGH',
-      detectedDiscrepancy: 'VAT Return monthly sales reported BDT 12.4 Cr; whereas Section 173 Return sales declared BDT 9.1 Cr.',
+      detectedDiscrepancy: 'VAT Return monthly sales reported ৳ 12.4 Cr; whereas Section 173 Return sales declared ৳ 9.1 Cr.',
       potentialYield: 825000,
       confidenceScore: 98,
       action: 'Flagged for Section 213 Comprehensive Audit'
@@ -79,7 +79,7 @@ export const IntelligenceScreen: React.FC = () => {
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Potential Revenue Yield:</span>
             <span className="font-mono-plex font-bold text-xl text-emerald-900 mt-1 block">
-              BDT 8,87,800
+              ৳ 8,87,800
             </span>
             <span className="text-[10px] text-emerald-700">Identified Unassessed Tax</span>
           </div>

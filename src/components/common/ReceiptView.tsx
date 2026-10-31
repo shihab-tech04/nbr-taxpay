@@ -51,9 +51,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     scroll: 'Treasury scroll reference', pendingScroll: 'No scroll reference',
     withholdingTitle: 'Withholding deposit notice', deductedFor: 'Deposit for deductee TIN:',
     noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
-    allocations: 'Taxpayer payment allocations', allocationTaxpayer: 'Taxpayer / e-TIN', allocationAmount: 'Allocated amount (BDT)',
+    allocations: 'Taxpayer payment allocations', allocationTaxpayer: 'Taxpayer / e-TIN', allocationAmount: 'Allocated amount (৳)',
     breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
-    tax: 'Tax (BDT)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (BDT)', grandTotal: 'Total amount:',
+    tax: 'Tax (৳)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (৳)', grandTotal: 'Total amount:',
     noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.'
   };
   const paymentMethodLabels = {

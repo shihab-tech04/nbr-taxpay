@@ -45,7 +45,7 @@ test('shared receipt reconciles and displays every taxpayer allocation across re
   await expect(paper).toContainText('Penalty & Simple Interest');
   await expect(paper).toContainText('123.45');
   await expect(paper).toContainText('6.55');
-  await expect(paper).toContainText('BDT 130');
+  await expect(paper).toContainText('৳ 130');
   await expect(page.getByTestId('receipt-breakdown-mobile')).toHaveCount(0);
   await expect(page.getByTestId('receipt-breakdown-table')).toHaveCount(0);
 

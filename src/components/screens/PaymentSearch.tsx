@@ -111,7 +111,7 @@ export const PaymentSearch: React.FC = () => {
                   <th className="px-3 py-2.5">AY</th>
                   <th className="px-3 py-2.5">Payer Name</th>
                   <th className="px-3 py-2.5">TIN</th>
-                  <th className="px-3 py-2.5 text-right">Amount (BDT)</th>
+                  <th className="px-3 py-2.5 text-right">Amount (৳)</th>
                   <th className="px-3 py-2.5">Scroll Number</th>
                   <th className="px-3 py-2.5 text-center">Status</th>
                   <th className="px-3 py-2.5 text-center">Action</th>
