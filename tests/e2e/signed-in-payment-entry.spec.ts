@@ -56,6 +56,8 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  // Keep saved-beneficiary selection available after verified account sign-in.
+  await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(1);
   const manualTin = payment.getByRole('textbox', { name: 'Taxpayer’s TIN *' });
   await expect(manualTin).toHaveValue('');
   await expect(manualTin).not.toHaveAttribute('readonly', '');
