@@ -18,12 +18,20 @@ test('guests can manage Beneficiaries without being routed into restricted autho
   assert.doesNotMatch(policy,/['"]beneficiaries['"]/, 'Beneficiaries must not be an account-only route');
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.doesNotMatch(page,/Sign in to manage saved beneficiaries|Sign in with your email/);
-  assert.ok(page.includes("const canManageAuthorizations=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);"));
-  assert.ok(page.includes('{canManageAuthorizations&&<UiButton'));
-  assert.ok(page.includes("onClick={()=>navigate('manage_authorization')"),'account authorization shortcut stays behind the non-guest condition');
+  assert.doesNotMatch(page,/canManageAuthorizations|userRole|manage_authorization|Manage taxpayer authorizations/);
+  assert.doesNotMatch(page,/Saving a contact does not grant authorization|They do not grant access to tax records or authorize a payment/);
   assert.ok(page.includes('Create list'));
   assert.ok(page.includes('Search name or TIN'));
   assert.ok(page.includes('Pay Tax for Others'));
+  const firstListStart=page.indexOf('!lists.length?');
+  const firstListEnd=page.indexOf(':<>',firstListStart);
+  const emptyListStart=page.indexOf('listPeople.length===0?');
+  const emptyListEnd=page.indexOf(':filteredPeople.length===0?',emptyListStart);
+  assert.ok(firstListStart>=0&&firstListEnd>firstListStart,'first-list empty state is present');
+  assert.match(page.slice(firstListStart,firstListEnd),/Create list/);
+  assert.doesNotMatch(page.slice(firstListStart,firstListEnd),/Import Excel|Add beneficiary/);
+  assert.ok(emptyListStart>=0&&emptyListEnd>emptyListStart,'empty selected-list state is present');
+  assert.doesNotMatch(page.slice(emptyListStart,emptyListEnd),/<UiButton/);
 });
 
 test('all account-private beneficiary rows load beyond the first 1,000 in deterministic pages',async()=>{
