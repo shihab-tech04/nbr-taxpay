@@ -76,8 +76,21 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await expect(dialog.getByText('Based on this taxpayer’s recorded demo activity.')).toHaveCount(0);
 });
 
-test('account beneficiary selector separates pending consent and adds multiple approved taxpayers without replacing them', async ({ page }) => {
+test('account beneficiary lists keep selection separate from taxpayer consent', async ({ page }) => {
   let currentStatus: 'PENDING' | 'ACTIVE' = 'PENDING';
+  const listId = '00000000-0000-4000-8000-000000000001';
+  const timestamp = '2026-01-01T00:00:00Z';
+  const members = [
+    {id:'00000000-0000-4000-8000-000000000002',list_id:listId,tin:'2222222222222',display_name:'Taxpayer Two',created_at:timestamp,updated_at:timestamp},
+    {id:'00000000-0000-4000-8000-000000000003',list_id:listId,tin:'3333333333333',display_name:'Taxpayer Three',created_at:timestamp,updated_at:timestamp}
+  ];
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries', async route => {
+    const input = route.request().postDataJSON() as {action?:string;offset?:number;limit?:number};
+    const data = input.action==='open'?{active:true}
+      :input.action==='lists'?[{id:listId,name:'Family',created_at:timestamp}]
+      :input.action==='people'?members.slice(input.offset??0,(input.offset??0)+(input.limit??500)):[];
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations**', async route => {
     const url = new URL(route.request().url());
     if (route.request().method() !== 'GET' || url.searchParams.get('actor') !== 'user1') {
@@ -87,40 +100,43 @@ test('account beneficiary selector separates pending consent and adds multiple a
     const now = Date.now();
     const records = (['user2','user3'] as const).map((taxpayerId,index) => ({
       id: '11111111-1111-4111-8111-11111111111' + index,
-      payerId: 'user1', taxpayerId, status: currentStatus,
-      requestedAt: now - 1000, codeExpiresAt: now + 600000,
-      consentCode: null, confirmedAt: currentStatus === 'ACTIVE' ? now - 500 : null,
-      activeUntil: currentStatus === 'ACTIVE' ? now + 86400000 : null,
-      attempts: 0, revokedAt: null, codeSentAt: null, codeResends: 0
+      payerId:'user1',taxpayerId,status:currentStatus,
+      requestedAt:now-1000,codeExpiresAt:now+600000,
+      consentCode:null,confirmedAt:currentStatus==='ACTIVE'?now-500:null,
+      activeUntil:currentStatus==='ACTIVE'?now+86400000:null,
+      attempts:0,revokedAt:null,codeSentAt:null,codeResends:0
     }));
-    await route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({success:true,data:records}) });
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:records})});
   });
   await page.goto('/?action=taxpayer_login');
-  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
-  await page.getByRole('textbox', { name: 'Password' }).fill('user1');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await page.getByRole('textbox',{name:'Password'}).fill('user1');
+  await page.getByRole('button',{name:'Sign In'}).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  let dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
-  const panel = dialog.getByTestId('authorized-taxpayer-choices');
-  await expect(panel.getByRole('heading', { name: 'Awaiting authorization: 2' })).toBeVisible();
-  await expect(panel.getByText('Awaiting taxpayer approval')).toHaveCount(2);
-  await expect(panel.getByRole('button', { name: /Add to this payment/ })).toHaveCount(0);
-  // Reopen with now-approved records, exercising the exact same UI without altering hosted SQL.
-  currentStatus = 'ACTIVE';
+  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  let dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
+  let picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('button',{name:'Family'})).toHaveAttribute('aria-expanded','true');
+  await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
+  await expect(dialog.locator('#guest-tin')).toHaveCount(0);
+  await picker.getByRole('checkbox',{name:'Select Taxpayer Two'}).check();
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await expect(dialog.getByText(/not approved for payment through your account/)).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
+  // Reopen with the same saved list and now-active independent consent for both people.
+  currentStatus='ACTIVE';
   await page.reload();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
-  const choices = dialog.getByTestId('authorized-taxpayer-choices');
-  await expect(choices.getByText('You can pay for these taxpayers: 2')).toBeVisible();
-  await choices.getByRole('button', { name: /2222222222222/ }).click();
-  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
-  await choices.getByRole('button', { name: /3333333333333/ }).click();
-  const list = dialog.getByTestId('other-tax-taxpayer-list');
-  await expect(list.getByTestId('other-tax-taxpayer')).toHaveCount(1);
-  await expect(list.locator('input[id^="other-tax-tin-"]')).toHaveValue('3333333333333');
-  await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
+  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
+  picker=dialog.getByTestId('saved-beneficiary-picker');
+  await picker.getByRole('checkbox',{name:'Select Taxpayer Two'}).check();
+  await picker.getByRole('checkbox',{name:'Select Taxpayer Three'}).check();
+  await expect(picker).toContainText('2 selected for this payment');
+  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch')).toContainText('2222222222222');
+  await expect(dialog.getByTestId('other-tax-batch')).toContainText('3333333333333');
 });
