@@ -143,6 +143,18 @@ test('a missing Track payment record stays in the taxpayer correction workspace'
   await expect(page.getByRole('heading',{name:'Public Report'})).toHaveCount(0);
 });
 
+test('public missing-record reports keep their existing incident destination', async ({page}) => {
+  await page.goto('/?action=verify');
+  const lookup=page.getByRole('dialog',{name:'Payment status & receipt'}).locator('.receipt-lookup');
+  await lookup.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('NO-SUCH-PUBLIC-REFERENCE');
+  await lookup.getByRole('button',{name:'Search records'}).click();
+  await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
+  await lookup.getByRole('button',{name:'Report a payment issue'}).click();
+
+  await expect(page).toHaveURL(/action=incident(?:&|$)/);
+  await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
+});
+
 test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
   await page.goto('/?action=head_catalogue');
   // Guest visitors use the actual header bell on desktop and mobile;
