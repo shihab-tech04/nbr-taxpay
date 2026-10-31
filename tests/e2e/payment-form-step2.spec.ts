@@ -304,3 +304,46 @@ test('Travel tax form applies exact v11 journey rates and age bands', async ({ p
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await expect(travel.getByRole('heading', { name: 'Review travel details' })).toBeVisible();
 });
+
+test('Other Tax allows different years for the same head, bulk actions and anchored calculation links', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop pinned rail acceptance');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
+  await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue to purpose & amount' }).click();
+
+  const batch = dialog.getByTestId('other-tax-batch');
+  const catalogue = batch.getByTestId('other-tax-head-catalogue');
+  await expect(batch.getByRole('button', { name: 'Select all', exact: true })).toBeVisible();
+  await expect(batch.getByRole('button', { name: 'Unselect all', exact: true })).toBeDisabled();
+  await catalogue.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  const selected = catalogue.locator('[data-head-row]').filter({ has: batch.getByRole('checkbox', { name: /Select 68A/ }) });
+  await selected.getByRole('button', { name: /Add another assessment year/ }).click();
+  const allocations = selected.getByTestId('other-tax-line');
+  await expect(allocations).toHaveCount(2);
+  await expect(allocations.nth(0).getByRole('combobox')).toHaveValue('2026-27');
+  await expect(allocations.nth(1).getByRole('combobox')).toHaveValue('2027-28');
+  await expect(allocations.nth(1).getByRole('combobox').locator('option[value="2026-27"]')).toHaveCount(0);
+  await allocations.nth(0).locator('input[id^="other-tax-amount"]').fill('10');
+  await allocations.nth(1).locator('input[id^="other-tax-amount"]').fill('20');
+  const calc = dialog.locator('.taxpay-modal__body .payment-form-summary');
+  await expect(calc.locator('.payment-form-summary__total')).toContainText('৳ 30');
+  await expect(calc).not.toContainText('BDT');
+  const links = calc.locator('.payment-form-summary__breakdown button');
+  await expect(links).toHaveCount(2);
+  await links.nth(1).click();
+  await expect(allocations.nth(1)).toHaveAttribute('data-focused', 'true');
+  await expect(batch.locator('.payment-form-layout__sections')).toHaveCSS('overflow-y', 'auto');
+  await expect(dialog.locator('.taxpay-modal__body')).toHaveCSS('overflow', 'hidden');
+
+  await batch.getByRole('button', { name: 'Select all', exact: true }).click();
+  await expect(batch.getByRole('button', { name: 'Select all', exact: true })).toBeDisabled();
+  await batch.getByRole('button', { name: 'Unselect all', exact: true }).click();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
+  await expect(calc.locator('.payment-form-summary__breakdown button')).toHaveCount(0);
+});
