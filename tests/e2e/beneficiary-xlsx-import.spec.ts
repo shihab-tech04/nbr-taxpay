@@ -240,7 +240,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   }finally{await otherContext.close();}
 });
 
-test('saved-beneficiary picker uses shared TaxPay controls in the standalone guest route in English and Bengali',async({page})=>{
+test('signed-out guest payment hides saved beneficiaries even with stored entries in English and Bengali',async({page})=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries');
 
@@ -256,26 +256,12 @@ test('saved-beneficiary picker uses shared TaxPay controls in the standalone gue
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
 
-  const verifyPicker=async(language:'en'|'bn')=>{
-    await page.goto(`/?action=guest${language==='bn'?'&lang=bn':''}`);
+  for (const language of ['en', 'bn'] as const) {
+    await page.goto(`/?action=guest${language === 'bn' ? '&lang=bn' : ''}`);
     await page.locator('#guest-payer-other').check();
-    const picker=page.getByTestId('saved-beneficiary-picker');
-    await expect(picker).toContainText('Saved Guest Taxpayer');
-    await expect(picker).toContainText(language==='bn'?'সংরক্ষিত উপকারভোগী':'Saved beneficiaries');
-    const useButton=picker.getByRole('button',{name:language==='bn'?'নির্বাচিত উপকারভোগী ব্যবহার':'Use selected beneficiary'});
-    await expect(useButton).toBeDisabled();
-    await expect(useButton).toHaveClass(/bg-taxpay-surface/);
-    await expect(useButton).toHaveCSS('min-height','44px');
-    await expect(useButton).toHaveCSS('border-top-width','1px');
-    await expect(useButton).toHaveCSS('border-top-style','solid');
-    await expect(useButton).toHaveCSS('background-color','rgb(255, 255, 255)');
-    await expect(useButton).toHaveCSS('color','rgb(44, 94, 173)');
-    await picker.locator('label').filter({hasText:'Saved Guest Taxpayer'}).locator('input').check();
-    await expect(useButton).toBeEnabled();
-    await useButton.click();
-    await expect(page.locator('#guest-tin')).toHaveValue('012345678901');
-  };
-
-  await verifyPicker('en');
-  await verifyPicker('bn');
+    // Guest storage may contain saved records, but the account-only picker stays absent.
+    await expect(page.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
+    await expect(page.locator('#guest-tin')).toBeVisible();
+    await expect(page.locator('#guest-tin')).not.toHaveAttribute('readonly', '');
+  }
 });

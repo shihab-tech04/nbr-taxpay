@@ -64,6 +64,20 @@ try {
     await page.screenshot({ path: 'test-results/live-auth-sample-' + name + '.png', fullPage: true });
     await page.close();
 
+    // A post-deploy check of the actual published bundle, not a PR preview.
+    // Keep the pre-merge readback compatible with the older currently-live UI.
+    if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
+      const guestPayment = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+      const guestPaymentUrl = new URL(base);
+      guestPaymentUrl.searchParams.set('action', 'guest');
+      await guestPayment.goto(guestPaymentUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await guestPayment.locator('#guest-payer-other').check();
+      await expect(guestPayment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
+      await expect(guestPayment.locator('#guest-tin')).toBeVisible();
+      await guestPayment.screenshot({ path: `test-results/live-auth-guest-no-beneficiaries-${name}.png`, fullPage: true });
+      await guestPayment.close();
+    }
+
     // Beneficiaries is a public feature with private per-browser persistence.
     const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
