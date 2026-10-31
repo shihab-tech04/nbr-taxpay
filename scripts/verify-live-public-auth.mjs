@@ -62,6 +62,28 @@ try {
     await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
     await expect(page).not.toHaveURL(/demoUser=/);
     await page.screenshot({ path: 'test-results/live-auth-sample-' + name + '.png', fullPage: true });
+    if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
+      // Verify the *deployed* signed-in navigation, not just a compiled preview.
+      if (isMobile) {
+        await page.getByRole('button', { name: 'Open menu' }).first().click();
+        const menu = page.getByRole('dialog', { name: 'Services & menu' });
+        await menu.getByRole('button', { name: 'Beneficiaries', exact: true }).click();
+      } else {
+        await page.setViewportSize({ width: 1600, height: 900 });
+        const rail = page.getByRole('complementary', { name: 'Taxpayer desktop navigation' });
+        await expect(rail).toBeVisible();
+        await rail.getByRole('button', { name: 'Beneficiaries', exact: true }).click();
+        await expect(rail.getByRole('button', { name: 'Beneficiaries', exact: true })).toHaveAttribute('aria-current', 'page');
+        const mainLeft = await page.locator('main').evaluate(element => Math.round(element.getBoundingClientRect().left));
+        expect(mainLeft).toBe(250);
+      }
+      await expect(page).toHaveURL(/action=beneficiaries/);
+      await expect(page.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      await page.screenshot({ path: 'test-results/live-auth-beneficiaries-' + name + '.png', fullPage: true });
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
+    }
     await page.close();
 
     // A post-deploy check of the actual published bundle, not a PR preview.
