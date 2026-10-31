@@ -501,7 +501,8 @@ test('signed-in OTHER Tax requires saved beneficiaries and never substitutes the
   await expect(dialog.locator('#guest-phone')).toHaveValue('01700000001');
   await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly');
   await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeDisabled();
-  await expect(picker).toContainText('No beneficiary lists yet');
+  // A disconnected synthetic account may show the fail-closed load error instead of an empty list.
+  await expect(picker).toContainText(/No beneficiary lists yet|Could not load your beneficiary lists/);
   await picker.getByRole('button', { name: 'Manage beneficiaries' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();

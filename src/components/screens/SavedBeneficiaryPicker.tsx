@@ -42,7 +42,9 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
       if(cancelled)return;
-      setError(e instanceof Error?e.message:String(e));
+      // This surface is signed-in only: do not display guest-transport internals.
+      setError(tr('Could not load your beneficiary lists. Please try again.',
+        'আপনার উপকারভোগীর তালিকা লোড করা যায়নি। আবার চেষ্টা করুন।'));
       onAvailableTins(null);
     }).finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
