@@ -203,7 +203,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
-        run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts --project=mobile-375
+        run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts --project=mobile-375
 
       - name: Verify guest beneficiary persistence, isolation, XLSX and Pay Tax prefill
         env:

@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
 import {
   addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,
-  removeGuestBeneficiary, updateGuestBeneficiary,
+  removeGuestBeneficiary, updateGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
 export interface BeneficiaryList { id: string; owner_uid?: string; name: string; created_at: string; }
@@ -75,4 +75,26 @@ export async function removeBeneficiary(ownerUid:string | null,id:string):Promis
   if (!ownerUid) return removeGuestBeneficiary(id);
   const {error}=await client().from('taxpay_beneficiaries').delete().eq('id',id).eq('owner_uid',ownerUid);
   if(error)throw error;
+}
+
+/** Rename only an owner-owned saved list; never mutate member TINs or payment records. */
+export async function renameBeneficiaryList(ownerUid:string|null,id:string,name:string):Promise<void>{
+  const normalized=name.trim();
+  if(!normalized || normalized.length>80)throw new Error('Enter a list name of up to 80 characters.');
+  if(!ownerUid)return renameGuestBeneficiaryList(id,normalized);
+  const {data,error}=await client().from('taxpay_beneficiary_lists')
+    .update({name:normalized}).eq('id',id).eq('owner_uid',ownerUid).select('id').maybeSingle();
+  if(error){
+    if(error.code==='23505')throw new Error('A list with this name already exists.');
+    throw error;
+  }
+  if(!data)throw new Error('This beneficiary list no longer exists. Refresh and try again.');
+}
+/** Deleting a list cascades to its saved contacts only. Database RLS scopes the owner. */
+export async function deleteBeneficiaryList(ownerUid:string|null,id:string):Promise<void>{
+  if(!ownerUid)return deleteGuestBeneficiaryList(id);
+  const {data,error}=await client().from('taxpay_beneficiary_lists')
+    .delete().eq('id',id).eq('owner_uid',ownerUid).select('id').maybeSingle();
+  if(error)throw error;
+  if(!data)throw new Error('This beneficiary list no longer exists. Refresh and try again.');
 }

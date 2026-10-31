@@ -16,7 +16,9 @@ type RpcName =
   | 'taxpay_guest_beneficiary_create_list'
   | 'taxpay_guest_beneficiary_add'
   | 'taxpay_guest_beneficiary_update'
-  | 'taxpay_guest_beneficiary_remove';
+  | 'taxpay_guest_beneficiary_remove'
+  | 'taxpay_guest_beneficiary_rename_list'
+  | 'taxpay_guest_beneficiary_delete_list';
 
 function response(value: unknown, status: number, origin: string): Response {
   return new Response(status === 204 ? null : JSON.stringify(value), {
@@ -38,6 +40,7 @@ function publicError(error: unknown): { status: number; code: string } {
   if (/INVALID_BODY|INVALID_CONTENT_TYPE|INVALID_CAPABILITY|INVALID_PAGE|INVALID_LIST_NAME|INVALID_ROWS|INVALID_BENEFICIARY/.test(message))
     return { status: 400, code: message.split(':')[0] };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
+  if (/23505|duplicate key value|already exists/.test(message)) return { status: 409, code: 'LIST_NAME_TAKEN' };
   if (/NOT_FOUND/.test(message)) return { status: 404, code: 'NOT_FOUND' };
   return { status: 503, code: 'SERVICE_UNAVAILABLE' };
 }
@@ -113,6 +116,17 @@ Deno.serve(async (request: Request) => {
     } else if (action === 'create-list') {
       data = await rpc(client, 'taxpay_guest_beneficiary_create_list', {
         p_capability_hash, p_name: validateName(body.name, 80, 'INVALID_LIST_NAME'),
+      });
+    } else if (action === 'rename-list') {
+      if (!uuidPattern.test(String(body.id ?? ''))) throw new Error('NOT_FOUND');
+      data = await rpc(client, 'taxpay_guest_beneficiary_rename_list', {
+        p_capability_hash, p_list_id: body.id,
+        p_name: validateName(body.name, 80, 'INVALID_LIST_NAME'),
+      });
+    } else if (action === 'delete-list') {
+      if (!uuidPattern.test(String(body.id ?? ''))) throw new Error('NOT_FOUND');
+      data = await rpc(client, 'taxpay_guest_beneficiary_delete_list', {
+        p_capability_hash, p_list_id: body.id,
       });
     } else if (action === 'add') {
       if (!uuidPattern.test(String(body.listId ?? '')) || !Array.isArray(body.rows) || body.rows.length > 1000)

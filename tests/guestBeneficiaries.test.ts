@@ -37,6 +37,17 @@ test('guest beneficiary client persists one opaque capability per browser and ke
       };
       if (!session.lists.includes(list)) session.lists.push(list);
       data = list;
+    } else if (body.action === 'rename-list') {
+      const list = session.lists.find(value => value.id === body.id);
+      if (!list) return new Response(JSON.stringify({ success: false, code: 'NOT_FOUND' }), { status: 404 });
+      list.name = body.name;
+      data = list;
+    } else if (body.action === 'delete-list') {
+      const list = session.lists.find(value => value.id === body.id);
+      if (!list) return new Response(JSON.stringify({ success: false, code: 'NOT_FOUND' }), { status: 404 });
+      session.lists = session.lists.filter(value => value.id !== body.id);
+      session.people = session.people.filter(value => value.list_id !== body.id);
+      data = { deleted: true };
     } else if (body.action === 'add') {
       const added = body.rows.filter((row: any) => !session.people.some(value => value.list_id === body.listId && value.tin === row.tin));
       for (const row of added) session.people.push({ ...row, id: crypto.randomUUID(), list_id: body.listId,
@@ -75,6 +86,8 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     (globalThis as any).window = { localStorage: storageB };
     assert.deepEqual(await guest.loadGuestBeneficiaries(), { lists: [], people: [] });
     assert.notEqual(storageB.getItem('korbritto.guest-beneficiaries.capability.v1'), capabilityA);
+    await assert.rejects(guest.renameGuestBeneficiaryList(listA.id,'Stolen'), /not found/i);
+    await assert.rejects(guest.deleteGuestBeneficiaryList(listA.id), /not found/i);
 
     (globalThis as any).window = { localStorage: storageA };
     const person = (await guest.loadGuestBeneficiaries()).people[0];
@@ -83,6 +96,13 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     assert.equal((await guest.loadGuestBeneficiaries()).people[0]?.display_name, 'Renamed Guest A');
     await guest.removeGuestBeneficiary(person.id);
     assert.deepEqual((await guest.loadGuestBeneficiaries()).people, []);
+    await guest.renameGuestBeneficiaryList(listA.id, 'Family & Friends');
+    assert.equal((await guest.loadGuestBeneficiaries()).lists[0]?.name, 'Family & Friends');
+    await guest.addGuestBeneficiaries(listA.id,[{tin:'987654321098',display_name:'Delete with list'}]);
+    await guest.deleteGuestBeneficiaryList(listA.id);
+    assert.deepEqual(await guest.loadGuestBeneficiaries(), { lists: [], people: [] });
+    assert.ok(requests.some(request => request.body.action === 'rename-list' && request.body.id === listA.id));
+    assert.ok(requests.some(request => request.body.action === 'delete-list' && request.body.id === listA.id));
 
     assert.ok(requests.every(request => request.url === 'https://guest-test.supabase.co/functions/v1/taxpay-guest-beneficiaries'));
     assert.ok(requests.every(request => !('authorization' in request.headers)));

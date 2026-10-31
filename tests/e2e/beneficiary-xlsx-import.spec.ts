@@ -170,7 +170,8 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await dialog.locator('#beneficiary-create-list-name').fill('Guest Work');
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
   await expect(page.getByText(/Guest Work.*is empty/)).toBeVisible();
-  await page.locator('#beneficiary-list').selectOption({label:'Guest Family'});
+  await page.locator('#beneficiary-list').click();
+  await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
