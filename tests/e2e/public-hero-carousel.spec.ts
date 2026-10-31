@@ -287,7 +287,6 @@ test('service banners preserve distinctive palette and readable CTA with payer-f
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
 });
 
