@@ -4,8 +4,13 @@ test('public payment status opens in the existing light-shell modal, not the leg
   await page.goto('/?action=verify');
   const modal = page.getByRole('dialog', { name: 'Payment status & receipt' });
   await expect(modal).toBeVisible();
-  await expect(page.locator('.public-home-header')).toBeVisible();
-  await expect(page.locator('.citizen-header')).toHaveCount(0);
+  if (page.viewportSize()!.width <= 900) {
+    await expect(page.locator('.public-home-header')).toBeHidden();
+    await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
+  } else {
+    await expect(page.locator('.public-home-header')).toBeVisible();
+    await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
+  }
   await expect(page.locator('.receipt-lookup--page')).toHaveCount(0);
   await expect(modal.getByRole('textbox', { name: 'Challan, token or transaction reference' })).toBeVisible();
   await expect(modal.getByRole('button', { name: 'Close modal' })).toBeVisible();
