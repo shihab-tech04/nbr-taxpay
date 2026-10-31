@@ -59,6 +59,11 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
       return;
     }
+    const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+    if (await rail.isVisible()) {
+      await rail.getByRole('button',{name:'বাংলা'}).click();
+      return;
+    }
     if (await page.locator('.citizen-corners').count()) {
       await page.locator('.citizen-corners').getByRole('button',{name:'Open menu'}).click();
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
