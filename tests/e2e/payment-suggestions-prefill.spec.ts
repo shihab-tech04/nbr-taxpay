@@ -89,7 +89,6 @@ async function openOwnTaxReturn(page: Page, language: 'en' | 'bn') {
   await page.getByRole('button', { name: dialogName, exact: true }).click();
   const dialog = page.getByRole('dialog', { name: dialogName });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.locator('.tax-service-choice__continue').click();
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await dialog.locator('.tax-service-choice__continue').click();
   await expect(dialog.getByRole('button', { name: language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount' })).toBeVisible();
@@ -141,7 +140,6 @@ for (const language of ['en', 'bn'] as const) {
     const dialog = page.getByRole('dialog', { name: dialogName });
     await dialog.locator('[data-payer-relationship="SELF"]').click();
     await dialog.getByRole('button', { name: language === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true }).click();
-    await dialog.getByRole('button', { name: language === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true }).click();
     await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]'))
       .toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
     await dialog.getByRole('button', { name: language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount' }).click();
@@ -171,7 +169,6 @@ test('authorized taxpayer suggestion selects the matching batch row and preserve
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
-  await dialog.locator('.tax-service-choice__continue').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('.tax-service-choice__continue').click();
 
