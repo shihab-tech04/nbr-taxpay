@@ -188,3 +188,43 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
     await expect(other.getByText('Synthetic Guest Renamed')).toHaveCount(0);
   }finally{await otherContext.close();}
 });
+
+test('saved-beneficiary picker uses shared TaxPay controls in the standalone guest route in English and Bengali',async({page})=>{
+  await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries');
+
+  await page.getByRole('button',{name:'Create list',exact:true}).first().click();
+  let dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('Guest Family');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await dialog.locator('#beneficiary-tin').fill('012345678901');
+  await dialog.locator('#beneficiary-name').fill('Saved Guest Taxpayer');
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByText('Beneficiary saved.')).toBeVisible();
+
+  const verifyPicker=async(language:'en'|'bn')=>{
+    await page.goto(`/?action=guest${language==='bn'?'&lang=bn':''}`);
+    await page.locator('#guest-payer-other').check();
+    const picker=page.getByTestId('saved-beneficiary-picker');
+    await expect(picker).toContainText('Saved Guest Taxpayer');
+    await expect(picker).toContainText(language==='bn'?'সংরক্ষিত উপকারভোগী':'Saved beneficiaries');
+    const useButton=picker.getByRole('button',{name:language==='bn'?'নির্বাচিত উপকারভোগী ব্যবহার':'Use selected beneficiary'});
+    await expect(useButton).toBeDisabled();
+    await expect(useButton).toHaveClass(/bg-taxpay-surface/);
+    await expect(useButton).toHaveCSS('min-height','44px');
+    await expect(useButton).toHaveCSS('border-top-width','1px');
+    await expect(useButton).toHaveCSS('border-top-style','solid');
+    await expect(useButton).toHaveCSS('background-color','rgb(255, 255, 255)');
+    await expect(useButton).toHaveCSS('color','rgb(44, 94, 173)');
+    await picker.locator('label').filter({hasText:'Saved Guest Taxpayer'}).locator('input').check();
+    await expect(useButton).toBeEnabled();
+    await useButton.click();
+    await expect(page.locator('#guest-tin')).toHaveValue('012345678901');
+  };
+
+  await verifyPicker('en');
+  await verifyPicker('bn');
+});
