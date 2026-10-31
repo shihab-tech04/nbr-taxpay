@@ -1224,3 +1224,101 @@
   padding-top: 12px;
   border-top: 1px solid var(--citizen-border);
 }
+
+
+/* Mobile-only: payment calculation moves out of the scrollable step body
+   into the existing fixed modal footer. Desktop/tablet rails stay untouched. */
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__mobile-summary {
+    display: block;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--citizen-border);
+    border-radius: 10px;
+    background: var(--citizen-primary-light);
+    color: var(--citizen-text);
+  }
+  .payment-flow-embedded__mobile-summary-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .payment-flow-embedded__mobile-summary-toggle::-webkit-details-marker { display: none; }
+  .payment-flow-embedded__mobile-summary-heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--citizen-primary);
+  }
+  .payment-flow-embedded__mobile-summary-total {
+    min-width: 0;
+    max-width: 45%;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--citizen-primary-dark);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+    text-align: end;
+  }
+  .payment-flow-embedded__mobile-summary-chevron {
+    flex: 0 0 auto;
+    color: var(--citizen-primary);
+    transition: transform 160ms ease;
+  }
+  .payment-flow-embedded__mobile-summary[open] .payment-flow-embedded__mobile-summary-chevron {
+    transform: rotate(180deg);
+  }
+  .payment-flow-embedded__mobile-summary-toggle:focus-visible {
+    outline: 3px solid var(--citizen-primary);
+    outline-offset: -3px;
+  }
+  .payment-flow-embedded__mobile-summary-details {
+    max-height: min(34dvh, 300px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid var(--citizen-border);
+    background: var(--citizen-surface);
+  }
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary {
+    position: static;
+    top: auto;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__rows,
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__breakdown,
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__help,
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__taxpayers {
+    display: grid;
+  }
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__help { display: block; }
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__heading,
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__eyebrow,
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__total {
+    padding-inline: 12px;
+  }
+  .payment-flow-embedded__mobile-summary-details .payment-form-summary__total {
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+  .payment-review__aside:empty { display: none; }
+}
+@media (max-width: 650px) and (prefers-reduced-motion: reduce) {
+  .payment-flow-embedded__mobile-summary-chevron { transition: none; }
+}
