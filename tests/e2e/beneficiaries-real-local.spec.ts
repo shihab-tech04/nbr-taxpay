@@ -109,9 +109,15 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(modal.getByText('Continuing with your account')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
   const picker=modal.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible({timeout:15000});
+  await expect(picker.getByRole('button',{name:/Family/})).toBeVisible();
+  await picker.getByRole('button',{name:/Family/}).click();
   await expect(picker).toContainText('Local Beneficiary One',{timeout:15000});
   await picker.locator('label').filter({hasText:'Local Beneficiary One'}).locator('input').check();
-  await picker.getByRole('button',{name:/Add selected to payment|Use selected beneficiary/}).click();
-  await expect(modal.locator('#guest-tin')).toHaveValue('012345678901');
+  await picker.getByRole('button',{name:'Use selected beneficiaries'}).click();
+  await expect(modal.getByTestId('selected-payment-beneficiaries')).toContainText('012345678901');
+  await expect(modal.getByTestId('selected-payment-beneficiaries')).toContainText('Local Beneficiary One');
+  await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
   await context.close();
 });
