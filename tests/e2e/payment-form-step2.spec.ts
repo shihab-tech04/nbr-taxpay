@@ -253,12 +253,13 @@ test('mobile return payment uses one fixed head and focuses inline validation er
 
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
-  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(payment.locator('#guest-tin')).toBeFocused();
-  await expect(payment.getByRole('alert')).toContainText('12-digit');
+  const continueButton = payment.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(continueButton).toBeDisabled();
   await payment.locator('#guest-tin').fill('123456789012');
+  await expect(continueButton).toBeDisabled();
   await payment.locator('#guest-phone').fill('01712345678');
-  await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
   await expect(payment.locator('.payment-head-single')).toHaveCount(0);
   await expect(payment.locator('.payment-form-section').last()).toContainText('Enter the amount from your return');
   await expect(payment.locator('.payment-form-section').last()).toContainText('See the payment summary for the applicable sections');
