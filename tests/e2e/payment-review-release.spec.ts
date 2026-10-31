@@ -25,7 +25,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   const takeEvidence = async (name: string) => {
     if (viewport === 'mobile-320' || viewport === 'desktop-1280') {
       await page.evaluate(() => window.scrollTo(0, 0));
-      if (await page.locator('.public-home-header').count()) {
+      if (await page.locator('.public-home-header').isVisible()) {
         await expect(page.locator('.public-home-header')).toBeVisible();
       } else {
         await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
