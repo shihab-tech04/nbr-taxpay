@@ -4,18 +4,26 @@ import {readFileSync} from 'node:fs';
 import {ROUTES} from '../src/services/routeContract';
 import {collectBeneficiaryPages} from '../src/services/beneficiaries';
 
-test('guests can manage Beneficiaries without being routed into restricted authorization management',()=>{
-  for (const path of ['src/components/layout/CitizenNavigation.tsx','src/components/layout/TaxpayerReferenceRail.tsx']) {
-    const text=readFileSync(path,'utf8');
-    assert.match(text,/\{\s*route:\s*'beneficiaries'/,path);
-  }
+test('Beneficiaries stays in the signed-in taxpayer shell and is absent from guest navigation',()=>{
+  const navigation=readFileSync('src/components/layout/CitizenNavigation.tsx','utf8');
+  const guestLinks=navigation.slice(navigation.indexOf('const guestLinks:'),navigation.indexOf('const taxpayerLinks:'));
+  const accountLinks=navigation.slice(navigation.indexOf('const accountLinks:'),navigation.indexOf('const guestServiceLinks:'));
+  assert.doesNotMatch(guestLinks,/\{\s*route:\s*'beneficiaries'/);
+  assert.match(accountLinks,/\{\s*route:\s*'beneficiaries'/);
+  const rail=readFileSync('src/components/layout/TaxpayerReferenceRail.tsx','utf8');
+  assert.match(rail,/\{\s*route:\s*'beneficiaries'/);
+  const router=readFileSync('src\/App.tsx','utf8');
+  assert.match(router,/privateTaxpayerRoute && !privateSampleGate/);
+  assert.match(router,/taxpayerReference && !transactionRoute && <TaxpayerReferenceRail \/>/);
   const auth=readFileSync('src/components/screens/ManageAuthorization.tsx','utf8');
   assert.ok(auth.includes('Request authorization'));
   const beneficiary=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.ok(ROUTES.includes('manage_authorization'));
   assert.ok(ROUTES.includes('beneficiaries'));
   const policy=readFileSync('src/services/privateRoutePolicy.ts','utf8');
-  assert.doesNotMatch(policy,/['"]beneficiaries['"]/, 'Beneficiaries must not be an account-only route');
+  assert.match(policy,/['"]beneficiaries['"]/, 'Beneficiaries must require a signed-in taxpayer session');
+  const routes=readFileSync('src/services/routeContract.ts','utf8');
+  assert.match(routes,/['"]beneficiaries['"]/, 'Email sign-in must be able to return to Beneficiaries');
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.doesNotMatch(page,/Sign in to manage saved beneficiaries|Sign in with your email/);
   assert.doesNotMatch(page,/canManageAuthorizations|userRole|manage_authorization|Manage taxpayer authorizations/);

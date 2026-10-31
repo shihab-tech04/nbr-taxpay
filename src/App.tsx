@@ -61,7 +61,9 @@ const MainRouter: React.FC = () => {
   const priorCitizenRouteRef = useRef<string | null>(null);
   const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
   const signInReturnRoute = safePrivateAuthReturnRoute(currentRoute) ?? 'taxpayer_home';
-  const previewAccess = Boolean(previewAccount && previewReadOnlyRoutes.has(currentRoute));
+  // Sample accounts have an explicit browser-local login and use the same approved
+  // taxpayer layout for saved lists. Anonymous visitors never pass this gate.
+  const previewAccess = Boolean(previewAccount && (previewReadOnlyRoutes.has(currentRoute) || currentRoute === 'beneficiaries'));
   // A UUID linked to a mirrored simulated transaction is a public, read-only
   // receipt view. It grants no access to the taxpayer's private workspace.
   const publicConfirmedReceipt = currentRoute==='payment_details' &&
@@ -79,10 +81,9 @@ const MainRouter: React.FC = () => {
   const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
+  // All account-only routes use the same approved taxpayer shell and sidebar.
   const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
-    currentRoute === 'secure_workspace' || (currentRoute === 'beneficiaries' && Boolean(
-      verifiedApplicationUser || (import.meta.env.DEV && taxpayerSession)
-    )));
+    currentRoute === 'secure_workspace');
   const showActivitySections = taxpayerSession && !privateSampleGate && activityRoutes.has(currentRoute);
 
   // Listen to browser URL search params for direct action links (?action=...)
