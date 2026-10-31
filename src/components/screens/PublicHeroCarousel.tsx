@@ -246,6 +246,12 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   if (!slides.length) return null;
 
+  // The approved introduction is the permanent payment gateway. Published
+  // banners provide rotating images only, never replacement copy or actions.
+  const introduction = fallbackSlides[0];
+  const title = bn ? introduction.headingBn : 'Tax payments, without the confusion';
+  const description = bn ? introduction.descriptionBn : introduction.descriptionEn;
+
   return (
     <div
       ref={containerRef}
@@ -262,11 +268,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'অন্য সেবা দেখতে ডানে বা বামে সোয়াইপ করুন অথবা তীরচিহ্ন কী ব্যবহার করুন।' : 'Swipe or use the left and right arrow keys to see other services.'}
+        aria-description={bn ? 'পরের ছবি দেখতে ডানে বা বামে সোয়াইপ করুন অথবা তীরচিহ্ন কী ব্যবহার করুন।' : 'Swipe or use the left and right arrow keys to see other banner images.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
-        data-payment-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
@@ -274,74 +279,46 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         onPointerCancel={cancelSwipe}
         onLostPointerCapture={cancelSwipe}
       >
-        <div className="public-hero-carousel__track" aria-live="off">
-          {slides.map((slide, index) => {
-            const isActive = index === activeIndex;
-            const heading = bn ? slide.headingBn : slide.headingEn;
-            const mobileHeading = bn ? slide.mobileHeadingBn : slide.mobileHeadingEn;
-            return (
-              <article
+        <article
+          className="citizen-public-hero public-information-hero public-hero-carousel__slide"
+          data-banner-service="intro"
+          data-banner-kind="intro"
+        >
+          <div className="citizen-public-hero__copy">
+            <h1 id="public-home-title">{title}</h1>
+            <p>{description}</p>
+            <div className="citizen-public-hero__actions public-guest-actions">
+              <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? introduction.actionBn : introduction.actionEn}>
+                <WalletCards size={18} aria-hidden="true" />
+                <span className="public-hero-carousel__pay-full">{bn ? introduction.actionBn : introduction.actionEn}</span>
+                <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? 'কর দিন' : 'Pay Tax'}</span>
+              </button>
+              <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}>
+                <WalletCards size={18} aria-hidden="true" />
+                <span className="public-hero-carousel__travel-full">{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</span>
+                <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
+              </button>
+            </div>
+          </div>
+          <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
+            {slides.map((slide, index) => (
+              <picture
                 key={slide.id}
-                className="citizen-public-hero public-information-hero public-hero-carousel__slide"
+                className="public-hero-carousel__artwork"
                 data-banner-service={slide.id}
-                data-banner-kind={slide.serviceCode ? 'service' : 'intro'}
-                data-payment-service={slide.serviceCode}
-                role="group"
-                aria-roledescription="slide"
-                aria-label={bn ? `স্লাইড ${index + 1} / ${slides.length}` : `Slide ${index + 1} of ${slides.length}`}
-                aria-hidden={!isActive}
-                inert={!isActive}
+                data-artwork-active={index === activeIndex}
               >
-                <div className="citizen-public-hero__copy">
-                  {index === 0 ? (
-                    <h1 id="public-home-title">
-                      <span className="public-hero-copy--desktop">{heading}</span>
-                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
-                    </h1>
-                  ) : (
-                    <h2>
-                      <span className="public-hero-copy--desktop">{heading}</span>
-                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
-                    </h2>
-                  )}
-                  <p>
-                    <span className="public-hero-copy--desktop">{bn ? slide.descriptionBn : slide.descriptionEn}</span>
-                    <span className="public-hero-copy--mobile">{bn ? slide.mobileDescriptionBn : slide.mobileDescriptionEn}</span>
-                  </p>
-                  <div className="citizen-public-hero__actions public-guest-actions">
-                    <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax(slide.serviceCode)} aria-label={index === 0 && !slide.serviceCode ? (bn ? slide.actionBn : slide.actionEn) : undefined}>
-                      <WalletCards size={18} aria-hidden="true" />
-                      {index === 0 && !slide.serviceCode ? (
-                        <>
-                          <span className="public-hero-carousel__pay-full">{bn ? slide.actionBn : slide.actionEn}</span>
-                          <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? 'কর দিন' : 'Pay Tax'}</span>
-                        </>
-                      ) : (bn ? slide.actionBn : slide.actionEn)}
-                    </button>
-                    {index === 0 && !slide.serviceCode && (
-                      <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}>
-                        <WalletCards size={18} aria-hidden="true" />
-                        <span className="public-hero-carousel__travel-full">{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</span>
-                        <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-                  <picture>
-                    {slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
-                    <img
-                      className={`public-information-hero__image${slide.id === 'intro' ? '' : ' public-hero-carousel__service-image'}`}
-                      src={slide.image}
-                      alt=""
-                      decoding="async"
-                    />
-                  </picture>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                {slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+                <img
+                  className={`public-information-hero__image${index === 0 ? '' : ' public-hero-carousel__service-image'}`}
+                  src={slide.image}
+                  alt=""
+                  decoding="async"
+                />
+              </picture>
+            ))}
+          </div>
+        </article>
       </section>
       <div className="public-hero-carousel__controls" role="group" aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
         <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous" onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
@@ -352,7 +329,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         </button>
       </div>
       <span className="sr-only" role="status" aria-live="polite">
-        {bn ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Banner ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
+        {bn ? `ছবি ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Image ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
       </span>
     </div>
   );
