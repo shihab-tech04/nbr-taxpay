@@ -46,9 +46,9 @@ async function setupGuestTransport(page:Page){
   return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people)};
 }
 
-test('guest users can add, edit, import and prefill a beneficiary without a name',async({page})=>{
+test('local sample taxpayer can add, edit, import and prefill a beneficiary without a name',async({page})=>{
   const transport=await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries');
+  await page.goto('/?action=beneficiaries&demoUser=user1');
 
   await page.getByRole('button',{name:'Create list',exact:true}).click();
   let dialog=page.getByRole('dialog',{name:'Create list'});
@@ -104,7 +104,7 @@ test('guest users can add, edit, import and prefill a beneficiary without a name
 
 test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async({page})=>{
   const transport=await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries&lang=bn');
+  await page.goto('/?action=beneficiaries&demoUser=user1&lang=bn');
   await page.getByRole('button',{name:'তালিকা তৈরি',exact:true}).click();
   let dialog=page.getByRole('dialog',{name:'তালিকা তৈরি'});
   await dialog.locator('#beneficiary-create-list-name').fill('নাম ঐচ্ছিক');
@@ -121,7 +121,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
 
 test('Excel import success notice updates immediately when the user changes language',async({page})=>{
   await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries');
+  await page.goto('/?action=beneficiaries&demoUser=user1');
 
   await page.getByRole('button',{name:'Create list',exact:true}).click();
   let dialog=page.getByRole('dialog',{name:'Create list'});
