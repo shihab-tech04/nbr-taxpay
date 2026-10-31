@@ -42,8 +42,12 @@ test.describe('read-only citizen screen matrix',()=>{
       await page.goto('/?action=taxpayer_home');
       await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
       if(choice.kind==='menu'){
-        await page.getByRole('button',{name:'Open menu'}).click();
-        await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:choice.button,exact:true}).click();
+        const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+        if (await rail.isVisible()) await rail.getByRole('button',{name:choice.button,exact:true}).click();
+        else {
+          await page.getByRole('button',{name:'Open menu'}).click();
+          await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:choice.button,exact:true}).click();
+        }
       } else if(choice.kind==='activity-tab') {
         await page.getByRole('button',{name:'Open transaction history'}).click();
         await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:choice.button,exact:true}).click();
