@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Search } from 'lucide-react';
+import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import type { OtherTaxTaxpayer, OtherTaxAllocation } from './OtherTaxBatchComposer';
 
 interface Props {
@@ -26,6 +27,17 @@ export function OtherTaxTaxpayerList({
 }: Props) {
   const bn = language === 'bn';
   const [addedId, setAddedId] = useState<string | null>(null);
+  const [lookupStatus, setLookupStatus] = useState<Record<string, 'found' | 'missing'>>({});
+  const searchTaxpayer = (id: string, tin: string) => {
+    const match = lookupSampleTaxpayer(tin);
+    setLookupStatus(current => ({ ...current, [id]: match ? 'found' : 'missing' }));
+    if (match) {
+      const name = bn ? match.nameBn : match.nameEn;
+      if (id === 'primary') onPrimaryName(name);
+      else onAdditional(additional.map(person => person.id === id ? { ...person, name } : person));
+    } else if (id === 'primary') onPrimaryName('');
+    else onAdditional(additional.map(person => person.id === id ? { ...person, name: '' } : person));
+  };
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
   const count = additional.length + 1;
   const primaryAssigned = allocations.some(line => line.taxpayerId === 'primary');
@@ -55,19 +67,20 @@ export function OtherTaxTaxpayerList({
       <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
+          <div className="tin-lookup__row"><input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
             readOnly={lockedPrimary || primaryAssigned} aria-readonly={lockedPrimary || primaryAssigned || undefined}
             value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
             aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
             aria-describedby={[tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : '', primaryAssigned && !lockedPrimary ? 'other-tax-primary-tin-help' : ''].filter(Boolean).join(' ') || undefined}
-            onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onClearError(); } }} />
+            onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); setLookupStatus(current => { const next = { ...current }; delete next.primary; return next; }); onClearError(); } }} />
+          <button type="button" className="tin-lookup__search" disabled={!/^\d{12,13}$/.test(primaryTin)} onClick={() => searchTaxpayer('primary', primaryTin)}><Search size={17} aria-hidden="true" />{bn ? 'খুঁজুন' : 'Search'}</button></div>
+          {lookupStatus.primary === 'missing' && <p role="status">{bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
           {primaryAssigned && !lockedPrimary && <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p>}
         </div>
         <div>
           <label htmlFor="other-tax-primary-name">{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
           <input id="other-tax-primary-name" type="text" autoComplete="off" value={primaryName}
-            placeholder={bn ? 'নাম জানা থাকলে লিখুন' : 'Enter name if known'} readOnly={lockedPrimary} aria-readonly={lockedPrimary || undefined}
-            onChange={event => { if (!lockedPrimary) onPrimaryName(event.target.value); }} />
+            placeholder={bn ? 'খুঁজলে নাম স্বয়ংক্রিয়ভাবে আসবে' : 'Auto-filled after TIN search'} readOnly aria-readonly="true" />
         </div>
       </div>
       {tinError && (!invalidId || invalidId === 'primary') &&
@@ -89,19 +102,20 @@ export function OtherTaxTaxpayerList({
         <div className="taxpay-taxpayer-row__fields">
           <div>
             <label htmlFor={'other-tax-tin-' + person.id}>{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
-            <input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={allowSyntheticDemoTin ? 13 : 12}
+            <div className="tin-lookup__row"><input id={'other-tax-tin-' + person.id} type="text" inputMode="numeric" maxLength={allowSyntheticDemoTin ? 13 : 12}
               value={person.tin} required autoComplete="off" placeholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
               readOnly={assigned > 0} aria-readonly={assigned > 0 || undefined}
               aria-invalid={Boolean(tinError && invalidId === person.id) || undefined}
               aria-describedby={[tinError && invalidId === person.id ? 'guest-payment-error-tin' : '', assigned > 0 ? 'other-tax-tin-help-' + person.id : ''].filter(Boolean).join(' ') || undefined}
-              onChange={event => { if (!assigned) edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12) }); }} />
+              onChange={event => { if (!assigned) { edit(person.id, { tin: event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12), name: '' }); setLookupStatus(current => { const next = { ...current }; delete next[person.id]; return next; }); } }} />
+            <button type="button" className="tin-lookup__search" disabled={!/^\d{12,13}$/.test(person.tin)} onClick={() => searchTaxpayer(person.id, person.tin)}><Search size={17} aria-hidden="true" />{bn ? 'খুঁজুন' : 'Search'}</button></div>
+            {lookupStatus[person.id] === 'missing' && <p role="status">{bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
             {assigned > 0 && <p id={'other-tax-tin-help-' + person.id} className="text-xs text-slate-600">{lockedTinHelp}</p>}
           </div>
           <div>
             <label htmlFor={'other-tax-name-' + person.id}>{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
             <input id={'other-tax-name-' + person.id} type="text" autoComplete="off" value={person.name}
-              placeholder={bn ? 'নাম জানা থাকলে লিখুন' : 'Enter name if known'}
-              onChange={event => edit(person.id, { name: event.target.value })} />
+              placeholder={bn ? 'খুঁজলে নাম স্বয়ংক্রিয়ভাবে আসবে' : 'Auto-filled after TIN search'} readOnly aria-readonly="true" />
           </div>
         </div>
         {tinError && invalidId === person.id &&
