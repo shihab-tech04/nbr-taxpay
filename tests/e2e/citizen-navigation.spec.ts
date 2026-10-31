@@ -8,7 +8,7 @@ test('public hero opens payment while standalone receipt search stays accessible
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
  await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
- await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
+ await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
