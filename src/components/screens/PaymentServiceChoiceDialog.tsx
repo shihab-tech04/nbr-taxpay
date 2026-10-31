@@ -87,7 +87,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       title={view === 'login'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
         : view === 'payment' ? stages[stage - 1] : tr('Pay Tax', 'কর পরিশোধ')}
-      progress={view === 'payment' ? { current: stage, total: 4, label: tr('Steps', 'ধাপ') } : undefined}
+      progress={view === 'payment' ? { current: stage, total: 4, label: tr('Steps', 'ধাপ'),
+        subtitle: chosenService && payerForSelf !== null
+          ? `${tr(chosenService.en, chosenService.bn)} › ${payerForSelf ? tr('My Tax Liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}`
+          : undefined } : undefined}
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
