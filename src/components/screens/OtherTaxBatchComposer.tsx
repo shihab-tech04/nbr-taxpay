@@ -264,7 +264,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                           const amountId = 'other-tax-amount-' + line.id;
                           const lineInvalid = Boolean(error && isIncomplete(line));
                           return <div key={line.id}
-                            className={other-tax-year-allocation grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10}
+                            className="other-tax-year-allocation grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
                             data-testid="other-tax-line" data-head-id={head.id} data-line-id={line.id}
                             data-invalid={lineInvalid ? 'true' : undefined}
                             data-focused={focusRequest?.lineId === line.id ? 'true' : undefined}>
