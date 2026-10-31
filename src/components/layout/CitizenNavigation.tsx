@@ -9,7 +9,7 @@ type CitizenAction = { route: string; en: string; bn: string; category?: string 
 const guestLinks: CitizenAction[] = [
   { route: 'landing', en: 'Home', bn: 'মূল পাতা' },
   { route: 'verify', en: 'Payment Status', bn: 'পেমেন্টের অবস্থা' },
-  { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' }
+  { route: 'user_guide', en: 'Help', bn: 'সহায়তা' }
 ];
 const taxpayerLinks: CitizenAction[] = [
   { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা' },
