@@ -27,6 +27,9 @@ test('every banner image keeps the same deliberate Pay Tax service chooser', asy
     await expect(modal).toBeVisible();
     await expect(modal.locator('[data-payer-relationship="SELF"]')).toContainText('My Tax Liability');
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Facilitate another taxpayer');
+    // Approved progressive entry: first choose payer relationship, then payment type.
+    await expect(modal.locator('[data-payment-entry]')).toHaveCount(0);
+    await modal.locator('[data-payer-relationship="SELF"]').click();
     await expect(modal.locator('[data-payment-entry]')).toHaveCount(2);
     await modal.getByRole('button', { name: 'Close payment services' }).click();
     await expect(modal).toHaveCount(0);
