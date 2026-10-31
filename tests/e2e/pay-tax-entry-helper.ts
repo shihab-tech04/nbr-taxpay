@@ -12,13 +12,20 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
     // The public Other Tax card now selects its generic service directly.
     await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   }
-  // Access choice is progressively revealed within the same modal.
+  // Signed-in users skip the access question altogether. Guests still
+  // select Walk-in Payment; both paths use the same Continue action.
   const guest = dialog.locator('[data-payment-access="GUEST"]');
+  const continueButton = dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true });
+  // The Auth subscription can resolve after the tax selection. Wait for
+  // either the guest choices or the signed-in enabled Continue state.
+  await expect.poll(async () => (await guest.count()) > 0 || await continueButton.isEnabled()).toBe(true);
   if (await guest.count()) {
-    // Preserve authenticated account continuation; only guests choose Walk-in.
     const account = dialog.locator('[data-payment-access="ACCOUNT"]');
-    const alreadySignedIn = await account.getAttribute('aria-pressed') === 'true';
-    if (!alreadySignedIn) await guest.click();
-    await dialog.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+    const accountSelected = await account.getAttribute('aria-pressed') === 'true';
+    if (!accountSelected) await guest.click();
+  } else {
+    await expect(dialog.locator('[data-entry-section="access"]')).toHaveCount(0);
   }
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
 }
