@@ -7,5 +7,5 @@ export async function openTravelTaxFromBanner(page: Page) {
   await expect(carousel).toBeVisible();
   // Artwork rotates independently; the permanent Travel Tax CTA retains
   // the same dedicated passenger-payment flow on every image.
-  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  await carousel.locator('button.public-hero-carousel__travel').click();
 }
