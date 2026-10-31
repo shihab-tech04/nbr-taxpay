@@ -161,7 +161,7 @@ test('a taxpayer with saved heads cannot silently be changed to another TIN', as
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1234.50');
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
   await expect(dialog.getByText(/first remove this taxpayer’s selected payment heads/)).toBeVisible();
   await choices.getByRole('button', { name: /3333333333333/ }).click();
