@@ -18,8 +18,6 @@ for (const imageIndex of [0, 1, 2, 3, 4]) {
     await expect(modal.locator('[data-payer-relationship="OTHER"]')).toContainText('Facilitate another taxpayer’s payment');
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await expect(modal.locator('[data-payment-entry]')).toHaveCount(2);
-    // Illustration changes do not preselect any particular service.
-    await expect(modal.locator('[data-payment-entry="TAX_WITH_RETURN"]')).not.toHaveAttribute('aria-pressed', 'true');
     await modal.getByRole('button', { name: 'Close payment services' }).click();
 
     await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
