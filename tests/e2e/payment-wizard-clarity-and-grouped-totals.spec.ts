@@ -79,6 +79,7 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
 });
 
 test('account beneficiary lists keep selection separate from taxpayer consent', async ({ page }) => {
+  test.skip(process.env.VITE_SUPABASE_DISABLED?.toLowerCase() === 'true', 'Requires the synthetic backend fixture.');
   let currentStatus: 'PENDING' | 'ACTIVE' = 'PENDING';
   const listId = '00000000-0000-4000-8000-000000000001';
   const timestamp = '2026-01-01T00:00:00Z';
