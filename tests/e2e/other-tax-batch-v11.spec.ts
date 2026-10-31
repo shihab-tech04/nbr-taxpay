@@ -9,6 +9,32 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
+test('Step 1 primary action enables only after all required payment details are valid', async ({ page }) => {
+  const dialog = await getFlow(page);
+  const continueButton = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(continueButton).toBeDisabled();
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await expect(continueButton).toBeDisabled();
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await expect(continueButton).toBeDisabled();
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await expect(continueButton).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  await expect(continueButton).toBeDisabled();
+  const secondTin = dialog.locator('input[id^="other-tax-tin-"]');
+  await secondTin.fill('111111111111');
+  await expect(continueButton).toBeDisabled();
+  await secondTin.fill('222222222222');
+  await expect(continueButton).toBeEnabled();
+  await dialog.locator('#guest-phone').fill('01712');
+  await expect(continueButton).toBeDisabled();
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+});
+
 test('Other Tax has five v11 groups, never Return, and uses in-place clickable checkbox rows', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
@@ -267,10 +293,11 @@ test('Other Tax rejects duplicate TINs but does not require names', async ({ pag
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   const tin2 = dialog.locator('input[id^="other-tax-tin-"]');
+  const continueButton = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
   await tin2.fill('111111111111');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText('Enter a different 12-digit TIN for each taxpayer. Names are optional.')).toBeVisible();
+  await expect(continueButton).toBeDisabled();
   await tin2.fill('222222222222');
+  await expect(continueButton).toBeEnabled();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
 });
