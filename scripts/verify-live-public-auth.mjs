@@ -86,6 +86,44 @@ try {
     }
     await page.close();
 
+    // Only the already-published Pages bundle can certify MOBILE public navigation LIVE.
+    // PR preflight must not assert this against the previously published version.
+    if (isMobile && process.env.GITHUB_EVENT_NAME !== 'pull_request') {
+      const publicMobile = await browser.newPage({ viewport, isMobile, hasTouch: true });
+      const mobileUrl = new URL(base);
+      mobileUrl.searchParams.set('action','landing');
+      await publicMobile.goto(mobileUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
+      const mobileNav = publicMobile.locator('.taxpay-public-mobile-navigation');
+      const menu = mobileNav.getByRole('button',{name:'Open menu'});
+      const wordmark = mobileNav.getByRole('button',{name:'Korbritto home'});
+      const bell = mobileNav.getByRole('button',{name:'Notifications'});
+      await expect(menu).toBeVisible({timeout:30_000});
+      await expect(wordmark).toBeVisible();
+      await expect(bell).toBeVisible();
+      await expect(publicMobile.locator('.public-home-header')).toBeHidden();
+      const dock = publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
+      await expect(dock).toBeVisible();
+      await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
+      await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
+      await expect(publicMobile.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+      const frame = await publicMobile.evaluate(()=>{
+        const header = document.querySelector('.taxpay-public-mobile-navigation .citizen-header').getBoundingClientRect();
+        const logo = document.querySelector('.taxpay-public-mobile-navigation .citizen-brand').getBoundingClientRect();
+        const menu = document.querySelector('.taxpay-public-mobile-navigation .citizen-mobile-menu-trigger').getBoundingClientRect();
+        const bell = document.querySelector('.taxpay-public-mobile-navigation .citizen-header__notification').getBoundingClientRect();
+        const help = document.querySelector('.public-help-launch')?.getBoundingClientRect();
+        const pay = document.querySelector('.citizen-pay')?.getBoundingClientRect();
+        const overlaps = help && pay && help.left < pay.right && help.right > pay.left && help.top < pay.bottom && help.bottom > pay.top;
+        return {center:Math.abs(logo.x+logo.width/2-header.x-header.width/2),
+          order:menu.x < logo.x && bell.x > logo.x,overlaps,
+          overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+      });
+      if(frame.center>3 || !frame.order || frame.overlaps || frame.overflow>2)
+        throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
+      await publicMobile.screenshot({path:'test-results/live-auth-public-mobile-nav-'+name+'.png',fullPage:false});
+      await publicMobile.close();
+    }
+
     // A post-deploy check of the actual published bundle, not a PR preview.
     // Keep the pre-merge readback compatible with the older currently-live UI.
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
@@ -100,27 +138,23 @@ try {
       await guestPayment.close();
     }
 
-    // Saved beneficiaries are private in the currently deployed production.
-    // Enforce the same existing access boundary during PR smoke and post-deploy.
+    // Beneficiaries are private in the already-live baseline as well as the
+    // candidate release. Enforce the same signed-out boundary in both PR
+    // preflight and the deployed production browser check.
     const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    const preMergeBaseline = false; // The current LIVE baseline already requires sign-in.
-    if (preMergeBaseline) {
-      await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
-    } else {
-      await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
-      await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
-      await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
-      await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
-      beneficiariesUrl.searchParams.set('lang', 'bn');
-      await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
-      await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
-    }
+    await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
+    await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
+    await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
+    await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
+    beneficiariesUrl.searchParams.set('lang', 'bn');
+    await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
+    await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries gate overflow: ${beneficiaryOverflow}px`);
     await beneficiaries.screenshot({ path: 'test-results/live-beneficiaries-' + name + '.png', fullPage: true });

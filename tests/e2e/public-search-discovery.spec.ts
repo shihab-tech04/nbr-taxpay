@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import { expect, test } from '@playwright/test';
 
 test('search uses the established icon-free section heading and concise single-line help', async ({ page }) => {
@@ -99,7 +100,7 @@ test('suggestions close on Escape or outside click, and translate cleanly into B
   await search.click();
   await page.getByRole('heading', { name: 'Find a payment record' }).click();
   await expect(page.locator('.public-record-suggestions')).toHaveCount(0);
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await setWorkspaceLanguage(page,'bn');
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
   await page.getByRole('searchbox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' }).fill('DEMO');
   await expect(page.getByRole('heading', { name: 'মিলে যাওয়া রেফারেন্স' })).toBeVisible();

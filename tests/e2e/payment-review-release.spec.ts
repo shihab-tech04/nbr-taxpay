@@ -25,7 +25,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   const takeEvidence = async (name: string) => {
     if (viewport === 'mobile-320' || viewport === 'desktop-1280') {
       await page.evaluate(() => window.scrollTo(0, 0));
-      if (await page.locator('.public-home-header').count()) {
+      if (await page.locator('.public-home-header').isVisible()) {
         await expect(page.locator('.public-home-header')).toBeVisible();
       } else {
         await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
@@ -74,7 +74,8 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
   await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
-  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+  if(page.viewportSize()!.width<=900) await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  else await expect(page.locator('.citizen-pay')).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(maxWidth);
   await takeEvidence('public-hub-en');
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();

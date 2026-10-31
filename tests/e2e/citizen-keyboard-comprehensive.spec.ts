@@ -17,17 +17,18 @@ test('Public skip link and FAQ disclosure work with keyboard alone', async ({ pa
   await expect(faq).not.toHaveAttribute('open');
 });
 
-test('Public mobile menu enters a real keyboard sequence and restores trigger focus', async ({ page }) => {
+test('Public mobile shared menu traps focus, closes with Escape, and restores trigger', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?action=landing');
-  const trigger = page.getByRole('button', { name: 'Menu' });
+  const trigger = page.getByRole('button', { name: 'Open menu' });
   await trigger.focus();
   await page.keyboard.press('Enter');
-  const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-  await expect(navigation).toBeVisible();
-  await expect(navigation.getByRole('link', { name: 'Home', exact: true })).toBeFocused();
+  const sheet = page.getByRole('dialog', { name: 'Services & menu' });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole('button', { name: 'Close' })).toBeFocused();
+  await expect(sheet.getByRole('button', { name: 'Help' })).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(navigation).toBeHidden();
+  await expect(sheet).toHaveCount(0);
   await expect(trigger).toBeFocused();
 });
 
