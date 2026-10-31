@@ -100,14 +100,13 @@ try {
       await guestPayment.close();
     }
 
-    // Saved beneficiaries are private. PR preflight targets the pre-merge
-    // published version, so it verifies the old baseline without pretending
-    // the change is already live. Post-deploy checks enforce the new boundary.
+    // Saved beneficiaries are private in the currently deployed production.
+    // Enforce the same existing access boundary during PR smoke and post-deploy.
     const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    const preMergeBaseline = process.env.GITHUB_EVENT_NAME === 'pull_request';
+    const preMergeBaseline = false; // The current LIVE baseline already requires sign-in.
     if (preMergeBaseline) {
       await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
     } else {
