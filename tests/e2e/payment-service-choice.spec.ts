@@ -189,6 +189,8 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
   await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
+  // Walk-in taxpayers never see the signed-in Saved beneficiaries control.
+  await expect(dialog.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
   await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
   await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
