@@ -13,7 +13,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,userRole}=useTaxState();
+  const {language,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -41,8 +41,6 @@ export function Beneficiaries(){
   const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const owner=user?.id??null;
-  const canManageAuthorizations=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
-
   const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
@@ -97,7 +95,8 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       const list=await createBeneficiaryList(owner,listName);
-      await reload(list.id);setCreateListOpen(false);setListName('');
+      setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
+      setActiveList(list.id);setSelectedIds([]);setCreateListOpen(false);setListName('');
       setNotice(tr('List created.','তালিকা তৈরি হয়েছে।'));
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -110,7 +109,10 @@ export function Beneficiaries(){
       return list.id;
     }
     if(!listName.trim())throw new Error(tr('Enter a list name.','তালিকার নাম লিখুন।'));
-    return (await createBeneficiaryList(owner,listName)).id;
+    const list=await createBeneficiaryList(owner,listName);
+    setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
+    setActiveList(list.id);setSelectedIds([]);setTargetList(list.id);setListName('');
+    return list.id;
   }
 
   async function saveSingle(event:React.FormEvent){
@@ -197,12 +199,11 @@ export function Beneficiaries(){
         <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">{tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <UiButton type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
-        <UiButton type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>open('bulk')}><Upload size={17} aria-hidden="true"/>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
-        <UiButton type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
-        {canManageAuthorizations&&<UiButton type="button" variant="outline" onClick={()=>navigate('manage_authorization')}>{tr('Manage taxpayer authorizations','করদাতার অনুমোদন পরিচালনা')}</UiButton>}
-      </div>
+      {lists.length>0&&<div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end">
+        <UiButton className="w-full sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
+        <UiButton className="w-full sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>open('bulk')}><Upload size={17} aria-hidden="true"/>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
+        <UiButton className="w-full sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
+      </div>}
     </header>
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice}</p>}
 
@@ -227,14 +228,12 @@ export function Beneficiaries(){
           </div>}
         </div>
 
-        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-8 text-center sm:py-10">
+        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
           <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
           <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
           <p className="mt-1 text-sm text-slate-600">{tr('Keep taxpayer names and TINs together for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার নাম ও টিআইএন একসঙ্গে রাখুন।')}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <UiButton type="button" variant="primary" onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
-            <UiButton type="button" variant="outline" onClick={()=>open('single')}>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
-            <UiButton type="button" variant="outline" onClick={()=>open('bulk')}>{tr('Import Excel','এক্সেল আমদানি')}</UiButton>
           </div>
         </div>:<>
           <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -250,10 +249,9 @@ export function Beneficiaries(){
             </div>}
           </div>
 
-          {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-8 text-center">
+          {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-5 text-center">
             <h2 className="font-semibold text-taxpay-text">{tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
             <p className="mt-1 text-sm text-slate-600">{tr('Add a taxpayer or import a spreadsheet into this list.','এই তালিকায় করদাতার তথ্য যোগ করুন অথবা স্প্রেডশিট আমদানি করুন।')}</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2"><UiButton type="button" variant="primary" onClick={()=>open('single')}>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton><UiButton type="button" variant="outline" onClick={()=>open('bulk')}>{tr('Import Excel','এক্সেল আমদানি')}</UiButton></div>
           </div>:filteredPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-8 text-center">
             <p className="font-medium text-taxpay-text">{tr('No matching beneficiaries','কোনো উপকারভোগী মেলেনি')}</p>
             <UiButton type="button" variant="quiet" className="mt-2" onClick={()=>setSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</UiButton>
@@ -290,7 +288,6 @@ export function Beneficiaries(){
                 </div>
               </li>)}
             </ul>
-            <p className="pt-2 text-xs text-slate-500">{tr('Saved details are payment shortcuts only. They do not grant access to tax records or authorize a payment.','সংরক্ষিত তথ্য শুধু পেমেন্টে সহায়তার জন্য। এগুলো করতথ্যে প্রবেশাধিকার বা পেমেন্টের অনুমোদন দেয় না।')}</p>
           </>}
         </>}
       </>}
@@ -358,7 +355,7 @@ export function Beneficiaries(){
         </div>:<div className="space-y-2 rounded-lg border border-slate-200 p-4">
           <h3 className="font-semibold">{tr('Confirm import','আমদানি নিশ্চিত করুন')}</h3><p>{tr('Selected: ','নির্বাচিত: ')}<strong>{chosen.length}</strong></p>
           <p>{tr('Skipped or invalid: ','বাদ দেওয়া বা ভুল: ')}<strong>{reviewed.length-chosen.length}</strong></p>
-          <p className="text-sm text-slate-600">{tr('Only selected valid beneficiaries will be saved. Saving a contact does not grant authorization.','শুধু নির্বাচিত সঠিক উপকারভোগী সংরক্ষিত হবে। তথ্য সংরক্ষণ করলে অনুমোদন দেওয়া হয় না।')}</p>
+          <p className="text-sm text-slate-600">{tr('Only selected valid beneficiaries will be saved.','শুধু নির্বাচিত সঠিক উপকারভোগী সংরক্ষিত হবে।')}</p>
         </div>}
         {busy&&<p role="status" className="text-sm text-taxpay-primary">{tr('Saving beneficiaries…','উপকারভোগী সংরক্ষণ হচ্ছে…')}</p>}
         {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}

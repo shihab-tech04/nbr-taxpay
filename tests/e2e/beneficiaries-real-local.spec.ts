@@ -36,6 +36,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.goto(loginUrl(ownerA.session));
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Manage taxpayer authorizations'})).toHaveCount(0);
   await page.getByRole('button',{name:'Create list',exact:true}).first().click();
   const listDialog=page.getByRole('dialog',{name:'Create list'});
   await listDialog.locator('#beneficiary-create-list-name').fill('Family');
