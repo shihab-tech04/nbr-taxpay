@@ -32,6 +32,7 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   });
   let dialog = await openOtherTax(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Payer Name');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -95,6 +96,7 @@ test('a bank-branch request remains pending across reload until continued', asyn
   });
   let dialog = await openOtherTax(page);
   await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Payer Name');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

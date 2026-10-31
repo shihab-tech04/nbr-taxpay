@@ -82,7 +82,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
   await expect(action).toBeEnabled();
   await action.click();
-  await expect(dialog.getByText('Step 4 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('4/4 Steps');
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await expect(dialog.getByText('Payment record saved; settlement is not verified.')).toBeVisible();
   await expect(dialog.locator('.payment-lifecycle__reference-value')).not.toBeEmpty();
@@ -132,7 +132,7 @@ test('declined online authorization issues no receipt and allows a new method', 
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Request declined')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Try another method' }).click();
-  await expect(dialog.getByText('Step 3 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
   await expect(dialog.getByRole('button', { name: /Pay BDT 12,500/ })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();

@@ -269,18 +269,19 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
-  const progress = services.locator('.tax-service-choice__progress');
-  await expect(progress.locator('li')).toHaveCount(4);
+  // The approved compact payment shell exposes a 10px progressbar, not the obsolete numbered track.
+  const progress = services.getByRole('progressbar', { name: 'Payment progress' });
+  await expect(progress).toHaveAttribute('aria-valuenow', '1');
+  await expect(progress).toHaveAttribute('aria-valuemax', '4');
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
-  // The now-connected progress track provides 30px status circles plus 14px labels at all widths.
-  // Guard against excessive expansion rather than enforcing the obsolete single-row 52px layout.
-  expect(progressHeight).toBeGreaterThanOrEqual(60);
-  expect(progressHeight).toBeLessThanOrEqual(96);
-  // Compactness must never come from shrinking the step labels below the approved 14px floor.
-  const stepTextSize = await progress.locator('.tax-service-choice__stage--current .tax-service-choice__stage-label:visible').first()
+  expect(progressHeight).toBe(10);
+  const fillWidth = await progress.locator('.taxpay-modal__progress-fill').evaluate(element => element.getBoundingClientRect().width);
+  const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
+  expect(Math.abs(fillWidth / trackWidth - 0.25)).toBeLessThan(0.02);
+  await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+  const stepTextSize = await services.locator('.taxpay-modal__step-count')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(stepTextSize).toBeGreaterThanOrEqual(14);
-  await expect(services.locator('.tax-service-choice__eyebrow')).toHaveText('Step 1 of 4');
   const visibleContextTextSize = await services.locator('.tax-service-choice__selected-service')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(visibleContextTextSize).toBeGreaterThanOrEqual(14);
@@ -314,7 +315,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.getByRole('alert')).toContainText('greater than zero');
   await services.locator('#guest-tax-amount').fill('25000');
   await services.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(services.getByText('Step 3 of 4')).toBeVisible();
+  await expect(services.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
   await expect(services.getByText('No money is transferred and no official challan is issued.')).toHaveCount(0);
   await services.getByRole('button', { name: 'Pay online' }).click();
   await services.getByRole('button', { name: 'Mobile banking' }).click();

@@ -33,7 +33,7 @@ test('recognized, actively authorized demo TINs are not truncated', async ({ pag
   await tin.fill('2222222222222');
   await expect(tin).toHaveValue('2222222222222');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
 test('signed-in consent requests wait for verification and explain taxpayer approval', async ({ page }) => {
@@ -67,7 +67,7 @@ test('the single-beneficiary service also accepts an authorized fictional TIN', 
   await tin.fill('2222222222222');
   await expect(tin).toHaveValue('2222222222222');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
 });
 
 for (const state of ['PENDING', 'EXPIRED', 'REVOKED', 'ACTIVE_EXPIRED'] as const) {
