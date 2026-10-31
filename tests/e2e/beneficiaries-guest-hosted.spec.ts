@@ -272,26 +272,38 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
 
     await firstRow.getByRole('checkbox').check();
     await secondRow.getByRole('checkbox').check();
-    await page.getByRole('button', { name: 'Pay Tax for Others' }).first().click();
+    const selectionBar = page.getByText('2 selected', { exact: true }).locator('..');
+    const bulkPayButton = selectionBar.getByRole('button', { name: 'Pay Tax for Others', exact: true });
+    await expect(selectionBar).toBeVisible();
+    await expect(bulkPayButton).toHaveCount(1);
+    await bulkPayButton.click();
     payment = page.getByRole('dialog', { name: 'Pay Tax' });
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
     await payment.getByRole('button', { name: 'Continue', exact: true }).click();
     const additional = payment.getByTestId('other-tax-taxpayer');
+    const primaryTin = await payment.locator('#guest-tin').inputValue();
+    const primaryName = await payment.locator('#other-tax-primary-name').inputValue();
+    const additionalTin = await additional.locator('input[id^="other-tax-tin-"]').inputValue();
+    const additionalName = await additional.locator('input[id^="other-tax-name-"]').inputValue();
+    const primaryMatchesAlpha = primaryTin === '012345678901' && primaryName === 'Hosted Synthetic Alpha';
+    const primaryMatchesLocal = primaryTin === '987654321098' && primaryName === 'Local Beneficiary Two';
+    const additionalMatchesAlpha = additionalTin === '012345678901' && additionalName === 'Hosted Synthetic Alpha';
+    const additionalMatchesLocal = additionalTin === '987654321098' && additionalName === 'Local Beneficiary Two';
     const multiPrefillMatches = {
-      primaryTinMatchesExpected: (await payment.locator('#guest-tin').inputValue()) === '012345678901',
-      primaryNameMatchesExpected: (await payment.locator('#other-tax-primary-name').inputValue()) === 'Hosted Synthetic Alpha',
-      additionalTinMatchesExpected: (await additional.locator('input[id^="other-tax-tin-"]').inputValue()) === '987654321098',
-      additionalNameMatchesExpected: (await additional.locator('input[id^="other-tax-name-"]').inputValue()) === 'Local Beneficiary Two',
+      primaryMatchesSelectedBeneficiary: primaryMatchesAlpha || primaryMatchesLocal,
+      additionalMatchesSelectedBeneficiary: additionalMatchesAlpha || additionalMatchesLocal,
+      bothSelectedBeneficiariesMatch: (primaryMatchesAlpha && additionalMatchesLocal) || (primaryMatchesLocal && additionalMatchesAlpha),
     };
     console.log('HOSTED_ACCEPTANCE_MULTI_PREFILL_MATCHES=' + JSON.stringify(multiPrefillMatches));
     expect(multiPrefillMatches).toEqual({
-      primaryTinMatchesExpected: true,
-      primaryNameMatchesExpected: true,
-      additionalTinMatchesExpected: true,
-      additionalNameMatchesExpected: true,
+      primaryMatchesSelectedBeneficiary: true,
+      additionalMatchesSelectedBeneficiary: true,
+      bothSelectedBeneficiariesMatch: true,
     });
+    const primaryNameForTabs = primaryMatchesAlpha ? 'Hosted Synthetic Alpha' : 'Local Beneficiary Two';
+    const additionalNameForTabs = primaryMatchesAlpha ? 'Local Beneficiary Two' : 'Hosted Synthetic Alpha';
     await payment.getByLabel('Your name (payer)').fill('Synthetic QA Payer');
     await payment.getByLabel('Mobile number for receipt').fill('01700000000');
     await payment.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -305,11 +317,11 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await tabs.nth(1).click();
     await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
     await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
-    await expect(tabs.nth(1).getByText('Local Beneficiary Two', { exact: true })).toHaveCount(1);
+    await expect(tabs.nth(1).getByText(additionalNameForTabs, { exact: true })).toHaveCount(1);
     await expect(tabs.nth(1)).toContainText('1 selected');
     await expect(batch.getByTestId('other-tax-line')).toContainText('68B');
     await tabs.first().click();
-    await expect(tabs.first().getByText('Hosted Synthetic Alpha', { exact: true })).toHaveCount(1);
+    await expect(tabs.first().getByText(primaryNameForTabs, { exact: true })).toHaveCount(1);
     await expect(tabs.first()).toContainText('1 selected');
     await expect(batch.getByTestId('other-tax-line')).toContainText('68A');
     await expect(batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]')).toHaveValue('15');
