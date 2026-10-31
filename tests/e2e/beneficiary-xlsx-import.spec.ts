@@ -203,9 +203,12 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
-  await expect(payment.locator('#guest-tin')).toHaveValue('012345678901');
-  await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Synthetic Guest One');
-  await expect(payment.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
+  const picker=payment.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('checkbox',{name:'Select Synthetic Guest One'})).toBeChecked();
+  await expect(picker.getByRole('checkbox',{name:'Select Local Beneficiary Two'})).toBeChecked();
+  await expect(picker).toContainText('2 selected for this payment');
+  await expect(payment.locator('#guest-tin')).toHaveCount(0);
+  await expect(payment.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
   await payment.getByRole('button',{name:'Close payment services'}).click();
 
   const isDesktop=await page.locator('table').isVisible();

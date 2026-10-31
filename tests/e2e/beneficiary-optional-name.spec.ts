@@ -101,8 +101,11 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
   await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed','true');
   await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
-  await expect(payment.locator('#other-tax-primary-name')).toHaveValue('');
-  await expect(payment.locator('#guest-tin')).toHaveValue('012345678901');
+  const picker=payment.getByTestId('saved-beneficiary-picker');
+  await expect(picker).toContainText('012345678901');
+  await expect(picker.locator('label').filter({hasText:'012345678901'}).getByRole('checkbox')).toBeChecked();
+  await expect(payment.locator('#other-tax-primary-name')).toHaveCount(0);
+  await expect(payment.locator('#guest-tin')).toHaveCount(0);
 });
 
 test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async({page})=>{
