@@ -101,13 +101,20 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
 
   return (
     <TaxPayModal
-      title={view === 'login' ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`) : tr('Pay Tax', 'কর পরিশোধ')}
+      title={view === 'login'
+        ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
+        : view === 'payment' ? stages[stage - 1] : tr('Pay Tax', 'কর পরিশোধ')}
+      progress={view === 'payment' ? { current: stage, total: 4 } : undefined}
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer'}
       motionKey={view === 'payer' ? `payer-${decisionStep}` : view}
-      onBack={view === 'login' ? () => setView('payer') : undefined}
+      onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
+        const back = document.querySelector<HTMLButtonElement>('.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel');
+        if (back && !back.disabled) back.click();
+        else if (stage === 1 || stage === 4) returnToService();
+      } : undefined}
       backLabel={tr('Back', 'ফিরুন')}
       service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
@@ -133,7 +140,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         data-decision-step={view === 'payer' ? decisionStep : undefined} className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
-          <ol className="tax-service-choice__progress" aria-label={tr('Payment progress', 'পেমেন্টের ধাপ')}>
+          <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>
             {stages.map((name, index) => {
               return (
               <li key={name} className={index + 1 === stage ? 'tax-service-choice__stage--current' : index + 1 < stage ? 'tax-service-choice__stage--complete' : 'tax-service-choice__stage--upcoming'}
