@@ -28,7 +28,7 @@ union all select 'story_notifications', count(*) from demo_payment.story_notific
 
 Capture this result immediately before dispatch and repeat it after exact test cleanup. Existing records and concurrent live activity must be preserved and any aggregate drift reported without attributing it to the acceptance.
 
-The test itself probes each generated capability with the real `lists` action and requires `410 / GUEST_SESSION_UNAVAILABLE` before allowing the app's `open` request. A capability that already resolves to a session fails closed. This protects against accidental reuse before the browser creates any list. That probe is the first hosted RPC and can globally remove expired sessions, which is why the two-hour expiry buffer and immediate dispatch are required.
+The test itself probes each generated capability with the real `lists` action and requires `410 / GUEST_SESSION_UNAVAILABLE` before allowing the app's `open` request. A capability that already resolves to a session fails closed. This protects against accidental reuse before the browser creates any list. That probe is the first hosted RPC and can globally remove expired sessions, which is why the four-hour expiry look-ahead and immediate dispatch are required.
 
 The manual workflow also starts the disposable local Phase02 suite in parallel. It does not wait for that job before the hosted test; treat its result as a separate check, not a P1 acceptance gate.
 
