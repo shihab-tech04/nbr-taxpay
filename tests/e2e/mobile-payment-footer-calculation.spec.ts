@@ -30,6 +30,13 @@ test('mobile payment calculation belongs to sticky footer and expands for the fu
   await expect(summary).toBeVisible();
   await expect(summary).not.toHaveAttribute('open', '');
   await expect(dialog.locator('.taxpay-modal__body .payment-form-summary')).toHaveCount(0);
+
+  // Compact 320px phones must keep the summary and primary action contained.
+  await page.setViewportSize({ width: 320, height: 760 });
+  await expect(summary).toBeVisible();
+  await expect(footer.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+  const footerOverflow = await footer.evaluate(node => node.scrollWidth - node.clientWidth);
+  expect(footerOverflow).toBeLessThanOrEqual(2);
 });
 
 test('desktop keeps payment calculation in the original rail, without mobile footer duplicate', async ({ page }) => {
