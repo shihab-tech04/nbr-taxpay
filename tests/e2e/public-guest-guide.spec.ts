@@ -267,7 +267,7 @@ test('floating help uses guide answers and report offers an editable review with
 test('public guide and guest launcher pass WCAG automated A/AA',async({page},info)=>{
  test.skip(info.project.name==='desktop-1280','Mobile a11y suite');
  await page.goto('/?action=user_guide');
- const results=await new AxeBuilder({page}).include('.public-guide-page').include('.public-home-header').include('.public-footer').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
+ const results=await new AxeBuilder({page}).include('.public-guide-page').include('.taxpay-public-mobile-navigation .citizen-header').include('.public-footer').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
  expect(results.violations).toEqual([]);
 });
 
@@ -292,7 +292,7 @@ test('guest receipt search is under the banner and opens receipt results in the 
  await expect(lookup.getByRole('button',{name:'Print receipt'})).toBeVisible();
  await expect(lookup.getByRole('button',{name:'Download',exact:true})).toBeVisible();
  await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
- await expect(page.locator('.citizen-header')).toHaveCount(0);
+ await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveCount(1);
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
 });
