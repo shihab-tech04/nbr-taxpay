@@ -1,3 +1,4 @@
+import { setWorkspaceLanguage } from './workspace-language';
 import {expect, test} from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
@@ -26,7 +27,7 @@ test('public header, user-guide topics, footer links, language and browser histo
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   await page.goForward();
   await expect(page.getByRole('heading',{name:'Security & support'})).toBeVisible();
-  await page.getByRole('button',{name:'বাংলা'}).first().click();
+  await setWorkspaceLanguage(page,'bn');
   await expect(page).toHaveURL(/lang=bn/);
   await page.reload();
   await expect(page.getByRole('heading',{name:'করবৃত্ত ব্যবহার নির্দেশিকা'})).toBeVisible();
