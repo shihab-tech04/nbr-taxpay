@@ -51,11 +51,12 @@ interface PaymentSummaryProps {
   amount: number | null;
   note?: string;
   helpText?: string;
-  breakdown?: { label: string; detail?: string; value: number | null }[];
-  groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; entries: { label: string; detail?: string; value: number | null }[] }[];
+  breakdown?: { id?: string; label: string; detail?: string; value: number | null }[];
+  groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; entries: { id?: string; label: string; detail?: string; value: number | null }[] }[];
+  onSelectEntry?: (id: string) => void;
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry }: PaymentSummaryProps) {
   const bn = language === 'bn';
   return (
     <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
@@ -75,13 +76,20 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       </dl>}
       {breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
-        {breakdown.map((item, index) => <div key={index} className="payment-form-summary__entry">
-          <span className="payment-form-summary__entry-description">
-            <span>{item.label}</span>
-            {item.detail && <small>{item.detail}</small>}
-          </span>
-          <strong>{item.value === null ? '—' : formatCurrency(item.value, language)}</strong>
-        </div>)}
+        {breakdown.map((item, index) => {
+          const contents = <>
+            <span className="payment-form-summary__entry-description">
+              <span>{item.label}</span>
+              {item.detail && <small>{item.detail}</small>}
+            </span>
+            <strong>{item.value === null ? '—' : formatCurrency(item.value, language)}</strong>
+          </>;
+          return item.id && onSelectEntry
+            ? <button type="button" key={item.id} className="payment-form-summary__entry payment-form-summary__entry--link"
+                aria-label={bn ? `সম্পাদনা করুন: ${item.label}, ${item.detail || ''}` : `Edit ${item.label}, ${item.detail || ''}`}
+                onClick={() => onSelectEntry(item.id!)}>{contents}</button>
+            : <div key={index} className="payment-form-summary__entry">{contents}</div>;
+        })}
       </div>}
       {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
         <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
@@ -95,10 +103,17 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
             <ChevronDown size={16} aria-hidden="true" />
           </summary>
           <div className="payment-form-summary__taxpayer-items">
-            {group.entries.length ? group.entries.map((entry, entryIndex) => <div key={entryIndex} className="payment-form-summary__taxpayer-item">
-              <p>{entry.label}{entry.detail && <small>{entry.detail}</small>}</p>
-              <strong>{entry.value === null ? '—' : formatCurrency(entry.value, language)}</strong>
-            </div>) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
+            {group.entries.length ? group.entries.map((entry, entryIndex) => {
+              const contents = <>
+                <p>{entry.label}{entry.detail && <small>{entry.detail}</small>}</p>
+                <strong>{entry.value === null ? '—' : formatCurrency(entry.value, language)}</strong>
+              </>;
+              return entry.id && onSelectEntry
+                ? <button type="button" key={entry.id} className="payment-form-summary__taxpayer-item payment-form-summary__entry--link"
+                    aria-label={bn ? `সম্পাদনা করুন: ${entry.label}, ${entry.detail || ''}` : `Edit ${entry.label}, ${entry.detail || ''}`}
+                    onClick={() => onSelectEntry(entry.id!)}>{contents}</button>
+                : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
+            }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
           </div>
         </details>)}
       </section>}
