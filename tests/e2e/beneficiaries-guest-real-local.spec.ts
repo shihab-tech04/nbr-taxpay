@@ -71,9 +71,7 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await firstRow.getByRole('button', { name: 'Pay Tax for Others' }).click();
   const paymentDialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(paymentDialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
-  await paymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await paymentDialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await paymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(paymentDialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(paymentDialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
   await paymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(paymentDialog.locator('#guest-tin')).toHaveValue('012345678901');
@@ -89,9 +87,7 @@ test('guest manages isolated SQL-backed lists and prefills Pay Tax for Others wi
   await page.getByRole('button', { name: 'Pay Tax for Others' }).first().click();
   const multiplePaymentDialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(multiplePaymentDialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
-  await multiplePaymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(multiplePaymentDialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-  await multiplePaymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await multiplePaymentDialog.getByRole('button', { name: 'Continue', exact: true }).click();
   const primaryTin = await multiplePaymentDialog.locator('#guest-tin').inputValue();
   const primaryName = await multiplePaymentDialog.locator('#other-tax-primary-name').inputValue();
