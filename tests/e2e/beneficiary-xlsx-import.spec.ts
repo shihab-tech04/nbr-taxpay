@@ -198,9 +198,7 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
   await page.getByRole('checkbox',{name:'Select Local Beneficiary Two'}).check();
   await page.getByRole('button',{name:'Pay Tax for Others'}).first().click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
-  await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
-  await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(payment.locator('#guest-tin')).toHaveValue('012345678901');
   await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Synthetic Guest One');
