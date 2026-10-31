@@ -1,5 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+/** Approved mobile navigation exposes its language control inside the menu sheet. */
+async function changePublicLanguage(page: import('@playwright/test').Page, target: 'en' | 'bn') {
+  if ((page.viewportSize()?.width ?? 1280) <= 900) {
+    await page.getByRole('button', { name: target === 'bn' ? 'Open menu' : 'মেনু খুলুন' }).click();
+    const menu = page.getByRole('dialog', { name: target === 'bn' ? 'Services & menu' : 'সেবা ও মেনু' });
+    await menu.getByRole('button', { name: target === 'bn' ? 'বাংলা' : 'English', exact: true }).click();
+    await page.keyboard.press('Escape');
+  } else {
+    await page.getByRole('button', { name: target === 'bn' ? 'বাংলা' : 'EN', exact: true }).click();
+  }
+}
+
+
 test('approved Korbritto branding stays consistent across public and taxpayer shells', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/করবৃত্ত \| Korbritto/);
@@ -9,7 +22,7 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'Korbritto');
   await expect.poll(() => page.locator('.public-footer__wordmark').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 
-  await page.getByRole('button', { name: 'বাংলা' }).click();
+  await changePublicLanguage(page, 'bn');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'করবৃত্ত');
   await expect(page.locator('.public-home-brand__copy small')).toHaveCount(0);
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'করবৃত্ত');
@@ -18,7 +31,7 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   const bengaliDialog = page.getByRole('dialog', { name: 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন' });
   await expect(bengaliDialog).toBeVisible();
   await bengaliDialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
-  await page.getByRole('button', { name: 'EN' }).click();
+  await changePublicLanguage(page, 'en');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Korbritto');
   await page.goto('/?action=office_login&lang=en');
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
