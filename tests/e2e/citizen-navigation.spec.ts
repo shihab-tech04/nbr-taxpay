@@ -11,7 +11,8 @@ test('public hero opens payment while standalone receipt search stays accessible
  await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(0);
- await expect(page.locator('.citizen-pay')).toHaveCount(0);
+ if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
+ if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
  await page.getByRole('button',{name:'Pay Tax'}).click();
  const services=page.getByRole('dialog',{name:'Pay Tax'});
@@ -32,17 +33,19 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
 });
 
-test('public menu contains informational navigation with no sample profile selector',async({page})=>{
+test('public mobile menu uses the shared signed-in sheet without account-only items',async({page})=>{
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=landing');
- await page.getByRole('button',{name:'Menu'}).click();
- const nav=page.getByRole('navigation',{name:'Primary navigation'});
- await expect(nav.getByRole('link',{name:'User guide'})).toBeVisible();
+ await page.getByRole('button',{name:'Open menu'}).click();
+ const nav=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(nav.getByRole('navigation',{name:'Services navigation'}).getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(nav.getByRole('button',{name:'Sign in'})).toBeVisible();
+ await expect(nav.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
+ await nav.getByRole('button',{name:'বাংলা'}).click();
+ await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'})).toBeVisible();
  await page.keyboard.press('Escape');
- await expect(nav).toBeHidden();
- await page.getByRole('button',{name:'বাংলা'}).click();
- await expect(page.getByRole('button',{name:'মেনু'})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'})).toHaveCount(0);
 });
 
 test('public information header and sections fit all requested widths',async({page},info)=>{
@@ -51,8 +54,14 @@ test('public information header and sections fit all requested widths',async({pa
  for(const width of [320,360,375,390,768,1024,1440]){
   await page.setViewportSize({width,height:812});
   await page.goto('/?action=landing');
-  await expect(page.locator('.public-home-header')).toBeVisible();
-  await expect(page.locator('.public-home-header').getByRole('img',{name:'Korbritto'})).toBeVisible();
+  if(width<=900) {
+    await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
+    await expect(page.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+    await expect(page.locator('.public-home-header')).toBeHidden();
+  } else {
+    await expect(page.locator('.public-home-header')).toBeVisible();
+    await expect(page.locator('.public-home-header').getByRole('img',{name:'Korbritto'})).toBeVisible();
+  }
   await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   const heroActions=page.locator('.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions').first();
@@ -76,10 +85,11 @@ test('public information header and sections fit all requested widths',async({pa
   expect(actionFit,'both payment actions should fit their cells at '+width).toBe(true);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
-  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
+ if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
   if(width<=900){
-    await page.getByRole('button',{name:'Menu'}).click();
-    await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeVisible();
+    await page.getByRole('button',{name:'Open menu'}).click();
+    await expect(page.getByRole('dialog',{name:'Services & menu'})).toBeVisible();
     await page.keyboard.press('Escape');
   }else{
     await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeVisible();
@@ -98,18 +108,21 @@ test('payment flow suppresses global pay and preserves bilingual step guidance',
 test('citizen navigation has no automated serious accessibility violations',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile navigation audit evaluated in 320/375 variants');
   await page.goto('/?action=landing');
-  const results=await new AxeBuilder({page}).include('.public-home-header').include('.public-information-hub').include('.public-footer').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
+  const results=await new AxeBuilder({page}).include('.taxpay-public-mobile-navigation .citizen-header').include('.public-information-hub').include('.public-footer').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
   expect(results.violations).toEqual([]);
 });
 
 
-test('public guidance links stay on-page without authorizing account access',async({page})=>{
+test('public guide remains reachable through the active desktop or mobile navigation',async({page})=>{
  await page.goto('/?action=landing');
- if (page.viewportSize()!.width<=900) await page.getByRole('button',{name:'Menu'}).click();
- await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
+ if(page.viewportSize()!.width<=900) {
+   await page.getByRole('button',{name:'Open menu'}).click();
+   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Help'}).click();
+ } else {
+   await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
+ }
  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
- await expect(page.locator('.citizen-pay')).toHaveCount(0);
 });
 
 test('leaving an active payment through the logo confirms before discarding entered details', async ({page}) => {
@@ -195,26 +208,23 @@ test('public header centers icons at 1100px content width and routes to User Gui
  await expect(report).toHaveAttribute('aria-current','page');
 });
 
-test('mobile navigation opens User guide and Report in English and Bengali',async({page},info)=>{
- test.skip(info.project.name!=='mobile-375','Mobile controls at 375px');
+test('public mobile menu opens guide and report in EN/BN without exposing private navigation',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-375','Mobile navigation at 375px');
  await page.goto('/?action=landing');
- const nav=page.getByRole('navigation',{name:'Primary navigation'});
- await expect(nav).toBeHidden();
- await page.getByRole('button',{name:'Menu'}).click();
- await expect(nav.getByRole('link',{name:'Login'})).toBeVisible();
- await nav.getByRole('link',{name:'User guide'}).click();
+ await expect(page.locator('.public-home-header')).toBeHidden();
+ await page.getByRole('button',{name:'Open menu'}).click();
+ const sheet=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(sheet.getByRole('button',{name:'Sign in'})).toBeVisible();
+ await sheet.getByRole('button',{name:'Help'}).click();
  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
- await page.getByRole('button',{name:'Menu'}).click();
- await expect(nav.getByRole('link',{name:'User guide'})).toHaveAttribute('aria-current','page');
- await page.getByRole('button',{name:'বাংলা'}).click();
- const bnNav=page.getByRole('navigation',{name:'প্রধান নেভিগেশন'});
- await expect(bnNav.getByRole('link',{name:'লগইন'})).toBeVisible();
- await expect(bnNav.getByRole('link',{name:'লগইন'})).toHaveAttribute('href','?action=taxpayer_login&lang=bn');
- await expect(bnNav.getByRole('link',{name:'ব্যবহার নির্দেশিকা'})).toHaveAttribute('aria-current','page');
- await bnNav.getByRole('link',{name:'অভিযোগ'}).click();
+ await page.getByRole('button',{name:'Open menu'}).click();
+ const next=page.getByRole('dialog',{name:'Services & menu'});
+ await next.getByRole('button',{name:'বাংলা'}).click();
+ const bnMenu=page.getByRole('dialog',{name:'সেবা ও মেনু'});
+ await expect(bnMenu.getByRole('button',{name:'সহায়তা'})).toBeVisible();
+ await bnMenu.getByRole('button',{name:'নিরাপত্তা অভিযোগ'}).click();
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();
 });
-
 
 test('taxpayer mobile header, compact corners and two-tier full-width menu are accessible',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','One mobile workflow verifies requested navigation behavior');
