@@ -320,6 +320,69 @@
 .taxpay-taxpayer-reference .taxpay-payment-wizard button { min-height: 44px; border-radius: 9px; }
 .taxpay-taxpayer-reference .taxpay-payment-wizard [aria-current="step"] { background: var(--color-taxpay-secondary); border-color: var(--color-taxpay-secondary); color: white; }
 
+/* Responsive bridge between the approved 320px mobile dock (<=900px)
+   and the unchanged 1440px+ reference sidebar. The 1440px rule below
+   remains authoritative; no public/guest/Officer or payment UI changes. */
+@media (min-width: 901px) and (max-width: 1439px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+    --taxpay-adaptive-rail-width: clamp(180px, 17vw, 239px);
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--taxpay-adaptive-rail-width);
+    height: 100dvh;
+    z-index: 35;
+    justify-content: space-between;
+    overflow-y: auto;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-header {
+    display: none;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):has(.taxpayer-reference-main-action) .citizen-pay {
+    display: none;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main {
+    width: calc(100% - var(--taxpay-adaptive-rail-width));
+    max-width: none;
+    margin-left: var(--taxpay-adaptive-rail-width);
+    margin-right: 0;
+    padding: 24px clamp(16px, 2.2vw, 32px) 40px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > * {
+    width: 100%;
+    max-width: 1150px;
+    min-width: 0;
+    margin-inline: auto;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > .citizen-footer {
+    margin-left: var(--taxpay-adaptive-rail-width);
+  }
+}
+@media (min-width: 901px) and (max-width: 1059px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { padding: 16px 10px; }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-wordmark { width: 150px; }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
+    gap: 9px;
+    padding: 8px 9px;
+    font-size: 14px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action {
+    padding: 8px;
+    font-size: 14px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button {
+    padding: 8px;
+    font-size: 13px;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom strong {
+    padding: 4px;
+    font-size: 12px;
+  }
+}
+
 /* No changes to Guest, public-payment widgets or Officer globally. */
 @media (min-width: 1440px) {
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail {
