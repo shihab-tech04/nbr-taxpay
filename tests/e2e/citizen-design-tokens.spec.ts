@@ -70,6 +70,6 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
     expect(new Set(elevation.shadows).size).toBe(1);
     expect(elevation.headerShadow).toBe('none');
   }
-  await expect(page.locator('[data-banner-service="intro"] .public-information-hero__image')).toBeVisible();
+  await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
   await expect(page.locator('.public-information-hero .public-information-guide')).toHaveCount(0);
 });
