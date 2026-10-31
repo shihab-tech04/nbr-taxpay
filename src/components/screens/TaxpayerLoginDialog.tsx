@@ -108,6 +108,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   return <TaxPayModal
     title={title}
     onClose={close}
+    onBack={close}
+    backLabel={bn ? 'ফিরুন' : 'Back'}
     closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
     className="taxpayer-login-modal"
     service="login"
