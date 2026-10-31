@@ -71,7 +71,7 @@ test('guest users can add, edit, import and prefill a beneficiary without a name
   const secondRecord=await page.locator('table').isVisible()
     ?page.getByRole('row').filter({hasText:'987654321098'})
     :page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'987654321098'});
-  await secondRecord.getByRole('button',{name:'Edit'}).click();
+  await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await dialog.locator('#beneficiary-edit-name').fill('');
   await dialog.getByRole('button',{name:'Save changes'}).click();
