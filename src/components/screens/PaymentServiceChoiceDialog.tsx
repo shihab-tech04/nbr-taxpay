@@ -141,7 +141,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              ].map(({ own, Icon, en, bn: bangla, detailEn, detailBn }) => (
                <button type="button" key={String(own)} aria-pressed={payerForSelf === own}
                  data-payer-relationship={own ? 'SELF' : 'OTHER'} className="tax-service-choice__card"
-                 onClick={() => setPayerForSelf(current => current === own ? null : own)}>
+                 onClick={() => setPayerForSelf(own)}>
                  <span className="tax-service-choice__icon"><Icon size={23} strokeWidth={1.9} aria-hidden="true" /></span>
                  <span className="tax-service-choice__copy"><strong>{tr(en, bangla)}</strong><span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span></span>
                  <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
@@ -154,7 +154,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                {TAXPAY_ENTRY_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
                  <button type="button" key={id} aria-pressed={topLevel === id} data-payment-entry={id} className="tax-service-choice__card"
                    disabled={multiBeneficiaryPrefill && id !== 'OTHER_TAX'}
-                   onClick={() => { if (!multiBeneficiaryPrefill) setTopLevel(current => current === id ? null : id); }}>
+                   onClick={() => { if (!multiBeneficiaryPrefill) setTopLevel(id); }}>
                    <span className="tax-service-choice__icon"><Icon size={23} strokeWidth={1.9} aria-hidden="true" /></span>
                    <span className="tax-service-choice__copy"><strong>{tr(en, bangla)}</strong><span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span></span>
                    <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
