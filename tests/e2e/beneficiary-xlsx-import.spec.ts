@@ -105,6 +105,46 @@ test('genuine compressed Excel with text TINs parses both rows without losing le
   ]);
 });
 
+test('failed new-list import stays recoverable and retries against the same created list',async({page})=>{
+  const transport=await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries');
+
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  let dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('Existing list');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
+  const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
+  await page.locator('#beneficiary-file').setInputFiles({
+    name:'guest-beneficiaries.xlsx',
+    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer:Buffer.from(workbook,'base64'),
+  });
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-target-list').selectOption('new');
+  await dialog.locator('#beneficiary-new-list-name').fill('Imported list');
+
+  transport.failNextAdd();
+  await dialog.getByRole('button',{name:'Finish import'}).click();
+  await expect(dialog.getByRole('alert')).toBeVisible();
+  const retryTarget=await dialog.locator('#beneficiary-target-list').inputValue();
+  expect(retryTarget).not.toBe('new');
+  expect(transport.createListCount()).toBe(2);
+  await expect(dialog.getByRole('button',{name:'Back'})).toBeEnabled();
+  await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
+
+  await dialog.getByRole('button',{name:'Finish import'}).click();
+  await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
+  expect(transport.createListCount()).toBe(2);
+  await expect(page.locator('#beneficiary-list')).toContainText('Imported list');
+  const visibleRecords=page.locator('[data-testid="beneficiaries-page"] table:visible, [data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"]:visible');
+  await expect(visibleRecords.getByText('Local Beneficiary One',{exact:true})).toBeVisible();
+  await expect(visibleRecords.getByText('Local Beneficiary Two',{exact:true})).toBeVisible();
+});
+
 test('guest Beneficiaries supports independent lists, Excel import, responsive CRUD, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries');
@@ -200,44 +240,4 @@ test('guest Beneficiaries supports independent lists, Excel import, responsive C
     await expect(other.getByRole('heading',{name:'Create your first list'})).toBeVisible();
     await expect(other.getByText('Synthetic Guest Renamed')).toHaveCount(0);
   }finally{await otherContext.close();}
-});
-
-test('failed new-list import stays recoverable and retries against the same created list',async({page})=>{
-  const transport=await setupGuestTransport(page);
-  await page.goto('/?action=beneficiaries');
-
-  await page.getByRole('button',{name:'Create list',exact:true}).click();
-  let dialog=page.getByRole('dialog',{name:'Create list'});
-  await dialog.locator('#beneficiary-create-list-name').fill('Existing list');
-  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
-
-  await page.getByRole('button',{name:'Import Excel',exact:true}).click();
-  const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
-  await page.locator('#beneficiary-file').setInputFiles({
-    name:'guest-beneficiaries.xlsx',
-    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    buffer:Buffer.from(workbook,'base64'),
-  });
-  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await dialog.locator('#beneficiary-target-list').selectOption('new');
-  await dialog.locator('#beneficiary-new-list-name').fill('Imported list');
-
-  transport.failNextAdd();
-  await dialog.getByRole('button',{name:'Finish import'}).click();
-  await expect(dialog.getByRole('alert')).toBeVisible();
-  const retryTarget=await dialog.locator('#beneficiary-target-list').inputValue();
-  expect(retryTarget).not.toBe('new');
-  expect(transport.createListCount()).toBe(2);
-  await expect(dialog.getByRole('button',{name:'Back'})).toBeEnabled();
-  await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
-
-  await dialog.getByRole('button',{name:'Finish import'}).click();
-  await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
-  expect(transport.createListCount()).toBe(2);
-  await expect(page.locator('#beneficiary-list')).toContainText('Imported list');
-  const visibleRecords=page.locator('[data-testid="beneficiaries-page"] table:visible, [data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"]:visible');
-  await expect(visibleRecords.getByText('Local Beneficiary One',{exact:true})).toBeVisible();
-  await expect(visibleRecords.getByText('Local Beneficiary Two',{exact:true})).toBeVisible();
 });
