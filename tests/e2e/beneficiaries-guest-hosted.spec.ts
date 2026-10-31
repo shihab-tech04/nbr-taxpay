@@ -7,6 +7,11 @@ import { readFileSync } from 'node:fs';
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
+const isPaymentMutationUrl = (rawUrl: string) => {
+  const pathname = new URL(rawUrl).pathname;
+  return /\/(?:payments?|gateways?|challans?|intents?|slips?|checkouts?|transactions?|payment-requests?)(?:\/|$)/i.test(pathname)
+    || /(?:payment|gateway|challan|intent|slip|checkout|transaction)[-_]?submit/i.test(pathname);
+};
 
 test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted payment allocation', async ({ browser, request }) => {
   const liveUrl = process.env.TAXPAY_HOSTED_BENEFICIARIES_URL;
@@ -56,7 +61,7 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     if (/\/rest\/v1\/taxpay_beneficiary_(lists|beneficiaries)(?:\?|$)/.test(url.pathname + url.search)) {
       ownerTableRequests.push(url.pathname);
     }
-    if (url.pathname.includes('/functions/v1/demo-story1-taxpay/payments')) paymentRequests.push(url.pathname);
+    if (isPaymentMutationUrl(request.url())) paymentRequests.push(url.pathname);
   };
 
   const createContext = async (capability: string) => {
@@ -65,6 +70,15 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
       viewport: { width: 375, height: 812 },
       isMobile: true,
       hasTouch: true,
+    });
+    await context.route('**/*', async route => {
+      const requestUrl = route.request().url();
+      if (isPaymentMutationUrl(requestUrl)) {
+        paymentRequests.push(new URL(requestUrl).pathname);
+        await route.abort('blockedbyclient');
+        return;
+      }
+      await route.continue();
     });
     await context.addInitScript(({ value, key, initialized }) => {
       localStorage.setItem(key, value);
@@ -264,7 +278,9 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await payment.getByRole('button', { name: 'Continue to payment channel' }).click();
     await expect(payment.getByTestId('payment-review')).toBeVisible();
     // Stop at review. Do not choose a gateway, acknowledge, request a slip, or submit payment.
-    await expect.poll(() => paymentRequests.length).toBe(0);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2_000);
+    expect(paymentRequests, 'No payment, gateway, challan, intent, slip, checkout, or transaction endpoint may be requested').toEqual([]);
     await payment.getByRole('button', { name: 'Close payment services' }).click();
 
     await firstRow.getByRole('button', { name: 'Edit' }).click();
@@ -279,18 +295,25 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
     await expect(pageRoot).not.toContainText('Local Beneficiary Two');
     await expect(pageRoot).toContainText('Hosted Synthetic Alpha Edited');
 
-    for (const viewport of [{ width: 320, height: 720 }, { width: 375, height: 812 }, { width: 1280, height: 800 }]) {
+    for (const viewport of [{ width: 320, height: 720 }, { width: 375, height: 812 }, { width: 768, height: 900 }, { width: 1280, height: 800 }]) {
       await page.setViewportSize(viewport);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, `Hosted Beneficiaries overflow at ${viewport.width}px`).toBeLessThanOrEqual(2);
     }
-    await page.reload();
+    await page.goto('?action=beneficiaries&lang=bn', { waitUntil: 'domcontentloaded' });
+    const bengaliRoot = page.getByTestId('beneficiaries-page');
+    await expect(bengaliRoot).toHaveAttribute('lang', 'bn');
+    await expect(page.getByRole('heading', { name: 'উপকারভোগী' })).toBeVisible();
+    await expect(bengaliRoot).toContainText('Hosted Synthetic Alpha Edited');
+    await expect(bengaliRoot).not.toContainText('Local Beneficiary Two');
+
+    await page.goto('?action=beneficiaries', { waitUntil: 'domcontentloaded' });
+    await expect(pageRoot).toHaveAttribute('lang', 'en');
     await expect(pageRoot).toContainText('Hosted Synthetic Alpha Edited');
     await expect(pageRoot).not.toContainText('Local Beneficiary Two');
-    await expect(pageRoot).not.toContainText('Hosted Synthetic Isolated');
 
-    // Anonymous reads against owner-only tables must be denied or RLS-filtered to zero rows.
-    // HEAD returns no owner record data; the publishable key is already used by the public UI.
+    // Anonymous reads against owner-only tables must be denied.
+    // No populated owner row exists in the hosted baseline, so row-level privacy for an existing account record is not tested.
     expect(supabaseApiOrigin).toBe('https://eyqhoavnitkrajvyqvxn.supabase.co');
     expect(publishableKey).toBeTruthy();
     for (const table of ['taxpay_beneficiary_lists', 'taxpay_beneficiaries']) {
@@ -302,9 +325,7 @@ test('live hosted guest Beneficiaries CRUD, import, isolation, and non-submitted
           Range: '0-0',
         },
       });
-      if ([401, 403, 204].includes(response.status())) continue;
-      expect([200, 206]).toContain(response.status());
-      expect(response.headers()['content-range'] ?? '').toMatch(/\/0$/);
+      expect([401, 403], `Anonymous owner-table HEAD must be denied for ${table}`).toContain(response.status());
     }
 
     // The signed-in workspace remains behind its existing auth boundary in the guest context.
