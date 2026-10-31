@@ -223,6 +223,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // The later approved UX supersedes v11's preselected self-tax default.
   const [forSelf, setForSelf] = useState<boolean | null>(initialForSelf ?? null);
   const ownAccountTax = signedInAccount && forSelf === true;
+  const signedInBeneficiarySelection = signedInAccount && forSelf === false;
+  // A saved TIN must be present in the current account's loaded lists; a route prefill is insufficient.
+  const [availableSavedTins,setAvailableSavedTins] = useState<string[] | null>(null);
   const signedInProfile = signedInAccount ? accountTaxpayer.profile : null;
   const ownProfile = ownAccountTax ? signedInProfile : null;
   const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
@@ -283,6 +286,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Signed-in beneficiary consent is still verified asynchronously on Continue.
   const canContinueStep1 = (() => {
     if (authorizationChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
+    if (signedInBeneficiarySelection && (!availableSavedTins ||
+      !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
       ? /^\d{12,13}$/.test(taxpayerTin)
       : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
@@ -657,6 +662,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleStep1Next = async () => {
+    if (signedInBeneficiarySelection && (!availableSavedTins ||
+      !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) {
+      setValidationError(language === 'bn' ? 'এগোনোর আগে আপনার সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন।' : 'Select beneficiaries from your saved lists before continuing.', 'tin');
+      return;
+    }
     if (authorizationChecking || !validateIdentity()) return;
     // Guest payments remain unchanged. Signed-in, facilitated demo payments
     // require current hosted consent, including every additional taxpayer.
@@ -676,6 +686,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             : `Taxpayer ${personNumber} (${missing.tin}) is not approved for payment through your account. Choose an approved taxpayer or request access first.`, 'tin');
           return;
         }
+        const verifiedIds: Record<string,DemoUserId> = {};
+        for (const recipient of recipients) {
+          const scenarioId=userIdForHostedTin(recipient.tin);
+          if (scenarioId) verifiedIds[recipient.tin] = scenarioId;
+        }
+        setAuthorizedTaxpayerIds(verifiedIds);
         setAuthorizedTaxpayerId(userIdForHostedTin(taxpayerTin));
       } catch {
         setValidationError(language === 'bn' ? 'অনুমোদন যাচাই করা যায়নি। আবার চেষ্টা করুন।'
@@ -1163,28 +1179,31 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection> : null}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} title={signedInAccount && forSelf === false ? (language === 'bn' ? 'উপকারভোগী নির্বাচন' : 'Choose beneficiaries') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={signedInAccount && forSelf === false ? (language === 'bn' ? 'সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন' : 'Select beneficiaries from your saved lists') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             
-            {signedInAccount && forSelf === false && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
+            {signedInBeneficiarySelection && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
+              selectedTins={(otherBatch ? batchTaxpayers : batchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
+              onAvailableTins={setAvailableSavedTins}
               onChoose={selected => {
                 clearReferenceSelection();
+                const unique=selected.filter((person,index)=>selected.findIndex(candidate=>candidate.tin===person.tin)===index);
+                const first=unique[0];
+                const priorPrimaryTin=taxpayerTin;
+                const additional=otherBatch?unique.slice(1).map(person=>{
+                  const previous=additionalTaxpayers.find(candidate=>candidate.tin===person.tin);
+                  return {...person,id:previous?.id??crypto.randomUUID()};
+                }):[];
+                setTin(first?.tin??'');
+                setOtherTaxpayerName(first?.name??'');
+                setAdditionalTaxpayers(additional);
+                setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId==='primary'
+                  ? Boolean(first&&first.tin===priorPrimaryTin)
+                  : additional.some(person=>person.id===line.taxpayerId)));
                 setAuthorizedTaxpayerId(null);
                 setAuthorizedTaxpayerIds({});
                 setSuggestedBatchYears({});
-                setOtherTaxLines([]);
-                const unique=selected.filter((person,index)=>selected.findIndex(candidate=>candidate.tin===person.tin)===index);
-                const first=unique[0];
-                setTin(first?.tin ?? '');
-                setOtherTaxpayerName(first?.name ?? '');
-                setAdditionalTaxpayers(otherBatch?unique.slice(1).map(person=>({
-                  id:crypto.randomUUID(),tin:person.tin,name:person.name
-                })):[]);
                 clearValidationError();
               }} />}
-            {signedInAccount && forSelf === false && Boolean(taxpayerTin) && <div className="col-span-full rounded-lg border border-slate-200 bg-slate-50 p-3" data-testid="selected-payment-beneficiaries">
-              <h4 className="text-sm font-semibold text-taxpay-text">{language==='bn'?'এই পেমেন্টের নির্বাচিত উপকারভোগী':'Selected beneficiaries for this payment'}</h4>
-              {batchTaxpayers.filter(person=>person.tin).map(person=><p key={person.id} className="mt-1 text-sm text-slate-700">
-                {person.name || (language==='bn'?'নাম দেওয়া হয়নি':'Name not provided')} · {person.tin}
-              </p>)}
-            </div>}
+            {signedInBeneficiarySelection && isFieldInvalid('tin') &&
+              <p className="text-sm text-red-700" role="alert">{errorMessage}</p>}
             <div className="payment-identity__fields">
               {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />}
               {!ownAccountTax && <>
