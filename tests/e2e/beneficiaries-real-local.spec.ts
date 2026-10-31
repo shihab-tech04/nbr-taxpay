@@ -93,15 +93,16 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.goto('/?action=landing');
   await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
   const modal=page.getByRole('dialog',{name:'Pay Tax'});
-  // Real Supabase Auth must render the same approved three-section entry UI.
+  // Real Supabase Auth keeps the payer and service choices, but must not
+  // ask an already authenticated taxpayer to sign in or pay as a walk-in.
   await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
   await modal.locator('[data-payer-relationship="OTHER"]').click();
   await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
-  await expect(modal.locator('[data-payment-access]')).toHaveCount(2);
-  await expect(modal.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed','true');
-  await expect(modal.locator('[data-payment-access="GUEST"]')).toBeVisible();
+  await expect(modal.locator('[data-entry-section="access"]')).toHaveCount(0);
+  await expect(modal.locator('[data-payment-access]')).toHaveCount(0);
   await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
   await expect(modal.locator('[data-payment-entry]')).toHaveCount(2);
+  await expect(modal.getByRole('button',{name:'Continue',exact:true})).toBeEnabled();
   await modal.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(modal.getByText('Continuing with your account')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
