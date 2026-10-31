@@ -59,7 +59,8 @@ test('guest users can add, edit, import and prefill a beneficiary without a name
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await expect(dialog.locator('#beneficiary-name')).not.toHaveAttribute('required','');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await expect(page.getByText('Name not provided',{exact:true})).toBeVisible();
+  const visibleRecords=page.locator('table:visible tbody, ul[aria-label="Saved beneficiaries"]:visible');
+  await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
@@ -84,7 +85,6 @@ test('guest users can add, edit, import and prefill a beneficiary without a name
   await expect(dialog.getByText('1 valid, 0 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
-  const visibleRecords=page.locator('table:visible tbody, ul[aria-label="Saved beneficiaries"]:visible');
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(3);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
@@ -110,6 +110,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   dialog=page.getByRole('dialog',{name:'উপকারভোগী যোগ'});
   await dialog.locator('#beneficiary-tin').fill('123450987654');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
-  await expect(page.getByText('নাম দেওয়া হয়নি',{exact:true})).toBeVisible();
+  const visibleRecords=page.locator('table:visible tbody, ul[aria-label="সংরক্ষিত উপকারভোগী"]:visible, ul[aria-label="Saved beneficiaries"]:visible');
+  await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='123450987654')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 });
