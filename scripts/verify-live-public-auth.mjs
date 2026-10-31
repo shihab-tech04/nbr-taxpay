@@ -100,17 +100,16 @@ try {
       await guestPayment.close();
     }
 
-    // Saved beneficiaries are private. PR preflight targets the pre-merge
-    // published version, so it verifies the old baseline without pretending
-    // the change is already live. Post-deploy checks enforce the new boundary.
+    // Saved beneficiaries are private for guests on both the currently
+    // published version and the next release.
     const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    const preMergeBaseline = process.env.GITHUB_EVENT_NAME === 'pull_request';
-    if (preMergeBaseline) {
-      await expect(beneficiaries.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible({ timeout: 30_000 });
-    } else {
+    // Signed-out access has already been restricted in production. Check the
+    // same security boundary before and after merging; do not expect guests to
+    // see the old Beneficiaries page merely because this is a pull request.
+    {
       await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
       await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
