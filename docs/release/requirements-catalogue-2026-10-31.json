@@ -166,14 +166,16 @@
       "feature": "Public portal landing and task entry",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-002",
@@ -183,14 +185,18 @@
       "feature": "Guest income-tax payment entry without account",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-39"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-003",
@@ -200,14 +206,16 @@
       "feature": "Guest withholding deposit entry in distinct mode",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-004",
@@ -217,14 +225,16 @@
       "feature": "Travel-tax entry without account",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-005",
@@ -234,14 +244,16 @@
       "feature": "Receipt/status lookup entry",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-006",
@@ -251,14 +263,16 @@
       "feature": "Public incident reporting entry",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-007",
@@ -268,14 +282,16 @@
       "feature": "Public explanations, architecture and official-service boundaries",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PUB-008",
@@ -285,14 +301,19 @@
       "feature": "Privacy-safe public service selection and route protection",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
+      "evidence_locator": "v11: 2075–2090, 2982–3154, 4215–4407",
       "repository_locator": "src/components/screens/PublicLanding.tsx; src/components/layout/Header.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2985–3059 (NAV, guards); 4221–4379 (public, guest, lookup); 3697–3826 (public reporting)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-12",
+        "V11-SEM-39"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-001",
@@ -302,14 +323,16 @@
       "feature": "Taxpayer identification using TIN and entity type",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-002",
@@ -319,14 +342,18 @@
       "feature": "Keep payer and tax beneficiary identities distinct",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-32"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-003",
@@ -336,14 +363,16 @@
       "feature": "Self versus another-taxpayer liability selection",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-004",
@@ -353,14 +382,20 @@
       "feature": "Representative identity and stated authority scope",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-003"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-30"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-IDN-005",
@@ -370,14 +405,27 @@
       "feature": "Taxpayer consent and mandate grant, expiry and revocation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-003"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-01",
+        "V11-SEM-02",
+        "V11-SEM-05",
+        "V11-SEM-06",
+        "V11-SEM-10",
+        "V11-SEM-11",
+        "V11-SEM-15",
+        "V11-SEM-37"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-IDN-006",
@@ -387,14 +435,16 @@
       "feature": "Simulated taxpayer, agent and officer role-based navigation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-007",
@@ -404,14 +454,16 @@
       "feature": "Secure identity validation without TIN enumeration",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-008",
@@ -421,14 +473,19 @@
       "feature": "Backend-enforced authentication, MFA, session expiry and device protections",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-09",
+        "V11-SEM-22"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-IDN-009",
@@ -438,14 +495,25 @@
       "feature": "Server authorization by taxpayer ownership, role and duty separation",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154, 4481–5013",
       "repository_locator": "src/services/taxState.tsx; src/services/adapters.ts; src/components/screens/GuestPayment.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2243–2264 (people, mandates); 2304–2320 (authorization); 4534–4619 and 4713–4778 (consent, OTP)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-003",
+        "GAP-010"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-01",
+        "V11-SEM-02",
+        "V11-SEM-06",
+        "V11-SEM-13",
+        "V11-SEM-23"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-CAT-001",
@@ -455,14 +523,18 @@
       "feature": "Seven original income-tax payment categories",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2169–2238, 4088–4214",
+      "evidence_locator": "v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-35"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-CAT-002",
@@ -472,14 +544,20 @@
       "feature": "170 embedded payment-head records, unchanged identifiers",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2169–2238, 4088–4214",
+      "evidence_locator": "v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "SOURCE_CONFLICT_CONFIRMED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-001"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-40"
+      ],
+      "v1_1_reconciliation_state": "SOURCE_CONFLICT_CONFIRMED"
     },
     {
       "feature_id": "TPAY-CAT-003",
@@ -489,14 +567,16 @@
       "feature": "Search payment head by name, number or accounting reference",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2169–2238, 4088–4214",
+      "evidence_locator": "v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-CAT-004",
@@ -506,14 +586,20 @@
       "feature": "Block master head IDs 5 and 150 for owner review",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2169–2238, 4088–4214",
+      "evidence_locator": "v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-001"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-40"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-CAT-005",
@@ -523,14 +609,18 @@
       "feature": "Separate legacy Ordinance 1984 numbering from Act 2023 citations",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2169–2238, 4088–4214",
+      "evidence_locator": "v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-001"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-CAT-006",
@@ -540,14 +630,20 @@
       "feature": "Prototype accounting-code crosswalk and iBAS subset",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2169–2238, 4088–4214",
+      "evidence_locator": "v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "SOURCE_CONFLICT_CONFIRMED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-001"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-38"
+      ],
+      "v1_1_reconciliation_state": "SOURCE_CONFLICT_CONFIRMED"
     },
     {
       "feature_id": "TPAY-CAT-007",
@@ -557,14 +653,16 @@
       "feature": "Versioned authoritative payment-head source registry and legal review",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2169–2238, 4088–4214",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-CAT-008",
@@ -574,14 +672,19 @@
       "feature": "Taxpayer, event, effective-date and tax-year-specific head applicability",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2169–2238, 4088–4214",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-03",
+        "V11-SEM-36"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-CAT-009",
@@ -591,14 +694,16 @@
       "feature": "Review and approval workflow for catalogue/economic-code changes",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2169–2238, 4088–4214",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2169–2238, 4088–4214",
       "repository_locator": "src/data/paymentHeads.ts; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2174–2188 (7 categories); 4096–4218 (170-head master, ACS mapping, UI selector)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-001",
@@ -608,14 +713,18 @@
       "feature": "Taxpayer account position overview",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-17"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-002",
@@ -625,14 +734,16 @@
       "feature": "Outstanding assessed demand and notice context",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-003",
@@ -642,14 +753,16 @@
       "feature": "Return-linked payable amount context",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-004",
@@ -659,14 +772,18 @@
       "feature": "Advance-tax installment reminder illustration",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-20"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-005",
@@ -676,14 +793,16 @@
       "feature": "Payment recommendations with reason and source context",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-006",
@@ -693,14 +812,18 @@
       "feature": "Assessment-year selection and historic position",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-03"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-007",
@@ -710,14 +833,16 @@
       "feature": "Real obligation readback from authoritative eReturn/assessment/notices",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OBL-008",
@@ -727,14 +852,16 @@
       "feature": "Prevent overpayment and duplicate satisfaction of identical obligations",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2296, 2884–2980, 3193–3520",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2296, 2884–2980, 3193–3520",
       "repository_locator": "src/components/screens/TaxpayerDashboard.tsx; src/components/screens/TaxpayerHome.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2265–2284 (return, notices, advance schedule); 2352–2399 and 2888–2959 (position, recommendation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-001",
@@ -744,14 +871,19 @@
       "feature": "Liability versus withholding selection",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-31",
+        "V11-SEM-35"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-002",
@@ -761,14 +893,16 @@
       "feature": "Own-account payment wizard",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-003",
@@ -778,14 +912,18 @@
       "feature": "Third-party/representative payment branch",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-002"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-PAY-004",
@@ -795,14 +933,18 @@
       "feature": "Purpose, economic head and assessment year selection",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-36"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-005",
@@ -812,14 +954,16 @@
       "feature": "Tax, interest, penalty and surcharge amount entry/preview",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-006",
@@ -829,14 +973,20 @@
       "feature": "Multi-item payment cart and totals",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-002"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-11"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-PAY-007",
@@ -846,14 +996,16 @@
       "feature": "Resume/discard payment draft with explicit confirmation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-008",
@@ -863,14 +1015,20 @@
       "feature": "Payer/taxpayer/item/amount review before checkout",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-002"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-21"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-PAY-009",
@@ -880,14 +1038,19 @@
       "feature": "Payment channel selection and simulated confirmation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-21",
+        "V11-SEM-30"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PAY-010",
@@ -897,14 +1060,16 @@
       "feature": "Error, retry, expiry and duplicate-submit UX that is transaction-safe",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 3960–4087, 4215–4407, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 3960–4087, 4215–4407, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3966–4069 (flow); 4631–4702 (purpose, withholding); 4786–4997 (cart, batch review, lifecycle)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TRS-001",
@@ -914,14 +1079,20 @@
       "feature": "Distinct initiated, authorized, processing, settled and failed state model",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-004"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-20"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-TRS-002",
@@ -931,14 +1102,16 @@
       "feature": "Simulated bank/MFS/card payment methods",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TRS-003",
@@ -948,14 +1121,16 @@
       "feature": "Simulated ACS reference and Treasury scroll events",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TRS-004",
@@ -965,14 +1140,20 @@
       "feature": "Separate financial receipt status from tax credit status",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-004"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-04"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-TRS-005",
@@ -982,14 +1163,18 @@
       "feature": "Authoritative ACS payment initiation and verified acknowledgement adapter",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-38"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TRS-006",
@@ -999,14 +1184,16 @@
       "feature": "Signed gateway callbacks and asynchronous settlement evidence",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TRS-007",
@@ -1016,14 +1203,20 @@
       "feature": "Idempotent transaction references and replay-safe processing",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-004"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-19"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-TRS-008",
@@ -1033,14 +1226,16 @@
       "feature": "Bank, MFS and Treasury reconciliation with exception queue",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TRS-009",
@@ -1050,14 +1245,18 @@
       "feature": "Failed, timed-out, refunded or reversed payment handling",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/services/adapters.ts; src/types/tax.ts; src/components/screens/PaymentWizard.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2221–2237 (status vocab); 2588–2655 (lifecycle); 4963–4995 (simulated ACS)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-27"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-WHT-001",
@@ -1067,14 +1266,18 @@
       "feature": "Withholding-agent versus deductee ownership model",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-32"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-WHT-002",
@@ -1084,14 +1287,16 @@
       "feature": "Signed-in agent selects demo pending eTDS deductions",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-WHT-003",
@@ -1101,14 +1306,16 @@
       "feature": "Withholding group/aggregate deposit construction",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-WHT-004",
@@ -1118,14 +1325,18 @@
       "feature": "Public agent deposit initially unallocated",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-009"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-WHT-005",
@@ -1135,14 +1346,18 @@
       "feature": "Later signed-in matching of an unallocated public deposit",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-009"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-WHT-006",
@@ -1152,14 +1367,20 @@
       "feature": "Separate agent deposit register from deductee income-tax credit",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-009"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-34"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-WHT-007",
@@ -1169,14 +1390,18 @@
       "feature": "Deductee-level allocation and individual credit concept",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2579–2796, 4481–5013",
+      "evidence_locator": "v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-34"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-WHT-008",
@@ -1186,14 +1411,16 @@
       "feature": "Real eTDS submission and deduction ownership verification",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-WHT-009",
@@ -1203,14 +1430,18 @@
       "feature": "Allocation balancing, partial allocations and duplicate-credit controls",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2579–2796, 4481–5013",
       "repository_locator": "src/components/screens/GuestPayment.tsx; src/components/screens/PaymentWizard.tsx; src/types/tax.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2691–2713 (eTDS posting); 4380–4411 (guest allocation); 4668–4712 (agent flow)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-009"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-TVL-001",
@@ -1220,14 +1451,16 @@
       "feature": "Separate travel-tax payment journey",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 4408–4480",
+      "evidence_locator": "v11: 4408–4480",
       "repository_locator": "src/components/screens/TravelTax.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TVL-002",
@@ -1237,14 +1470,16 @@
       "feature": "Passenger and passport information capture",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 4408–4480",
+      "evidence_locator": "v11: 4408–4480",
       "repository_locator": "src/components/screens/TravelTax.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TVL-003",
@@ -1254,14 +1489,16 @@
       "feature": "Route, age and other demo charge conditions",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 4408–4480",
+      "evidence_locator": "v11: 4408–4480",
       "repository_locator": "src/components/screens/TravelTax.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TVL-004",
@@ -1271,14 +1508,16 @@
       "feature": "Simulated travel payment and receipt",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 4408–4480",
+      "evidence_locator": "v11: 4408–4480",
       "repository_locator": "src/components/screens/TravelTax.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TVL-005",
@@ -1288,14 +1527,16 @@
       "feature": "Current legal rate table, exemptions, effective-date review and validation",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 4408–4480",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 4408–4480",
       "repository_locator": "src/components/screens/TravelTax.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TVL-006",
@@ -1305,14 +1546,16 @@
       "feature": "Verified external travel-tax collections reconciliation",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 4408–4480",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 4408–4480",
       "repository_locator": "src/components/screens/TravelTax.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 4415–4482 (travel rate, payment, simulated bank)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-001",
@@ -1322,14 +1565,16 @@
       "feature": "Challan, token and gateway reference display",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3520, 4215–4407",
+      "evidence_locator": "v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-002",
@@ -1339,14 +1584,16 @@
       "feature": "Payment history and individual payment detail",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3520, 4215–4407",
+      "evidence_locator": "v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-003",
@@ -1356,14 +1603,16 @@
       "feature": "Public receipt lookup using reference and payer mobile",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3520, 4215–4407",
+      "evidence_locator": "v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-004",
@@ -1373,14 +1622,16 @@
       "feature": "Two-status display for Treasury versus tax-credit recognition",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3520, 4215–4407",
+      "evidence_locator": "v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-005",
@@ -1390,14 +1641,18 @@
       "feature": "Printable demo challan/receipt format",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3520, 4215–4407",
+      "evidence_locator": "v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-28"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-006",
@@ -1407,14 +1662,16 @@
       "feature": "Receipt export / document rendering",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3520, 4215–4407",
+      "evidence_locator": "v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-007",
@@ -1424,14 +1681,16 @@
       "feature": "Privacy-safe verified lookup with approved challenge or authorization",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 3193–3520, 4215–4407",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-RCP-008",
@@ -1441,14 +1700,16 @@
       "feature": "Authentic receipt proof, signature/QR verification and provenance",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 3193–3520, 4215–4407",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 3193–3520, 4215–4407",
       "repository_locator": "src/components/screens/ReceiptLookup.tsx; src/components/common/ReceiptView.tsx; src/components/screens/PaymentDetailView.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3143–3155 (dual statuses); 3448–3487 (receipt); 4339–4379 (public lookup)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-001",
@@ -1458,14 +1719,16 @@
       "feature": "Event-based tax account ledger model",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-002",
@@ -1475,14 +1738,21 @@
       "feature": "Debits for liabilities and credits for verified entitlements",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-004"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-04",
+        "V11-SEM-25"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-LDG-003",
@@ -1492,14 +1762,16 @@
       "feature": "Taxpayer, assessment-year and payment ownership in events",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-004",
@@ -1509,14 +1781,20 @@
       "feature": "Pending/confirmed/disputed/invalidated credit states",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-14",
+        "V11-SEM-17",
+        "V11-SEM-29"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-005",
@@ -1526,14 +1804,18 @@
       "feature": "Payment by someone else does not change credit beneficiary",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-33"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-006",
@@ -1543,14 +1825,19 @@
       "feature": "Credit-claim and eReturn matching concept",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-18",
+        "V11-SEM-23"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-007",
@@ -1560,14 +1847,16 @@
       "feature": "Correction lineage, reversal and re-posting concept",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-008",
@@ -1577,14 +1866,16 @@
       "feature": "Immutable durable journal with transactional posting and reconciliation",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-LDG-009",
@@ -1594,14 +1885,16 @@
       "feature": "Duplicate claimant, period and credit-lineage protection",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2297–2468, 2579–2883, 3193–3520",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2297–2468, 2579–2883, 3193–3520",
       "repository_locator": "src/components/screens/TaxLedger.tsx; src/services/taxState.tsx; src/data/mockData.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2336–2468 (tax event/position); 3488–3522 (ledger UI); 2857–2887 (claim)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-001",
@@ -1611,14 +1904,16 @@
       "feature": "Taxpayer account home and quick actions",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-002",
@@ -1628,14 +1923,16 @@
       "feature": "Dashboard of personal tax payment obligations",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-003",
@@ -1645,14 +1942,16 @@
       "feature": "Searchable payment history with filtering/export",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-004",
@@ -1662,14 +1961,16 @@
       "feature": "Payment detail and chronological events",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-005",
@@ -1679,14 +1980,16 @@
       "feature": "Tax journey/timeline status presentation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-006",
@@ -1696,14 +1999,18 @@
       "feature": "Tax payment certificates and printable account proofs",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-28"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-007",
@@ -1713,14 +2020,16 @@
       "feature": "Notifications and reminders centre",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-008",
@@ -1730,14 +2039,16 @@
       "feature": "Connected NBR systems and service status information",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3193–3959",
+      "evidence_locator": "v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-TAX-009",
@@ -1747,14 +2058,16 @@
       "feature": "Evidence-backed citizen notifications rather than mock alerts",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 3193–3959",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 3193–3959",
       "repository_locator": "src/components/screens/TaxpayerHome.tsx; src/components/screens/PaymentHistory.tsx; src/components/screens/TaxJourney.tsx; src/components/screens/CertificatesView.tsx; src/components/screens/NotificationsView.tsx; src/components/screens/ConnectedServices.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3193–3554 (home, history, detail, dashboard, journey, certs); 3931–3965 (notifications, services)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-001",
@@ -1764,14 +2077,16 @@
       "feature": "Taxpayer correction request and reason capture",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-002",
@@ -1781,14 +2096,18 @@
       "feature": "Correct AY, circle, head or related payment attribution request",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-24"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-003",
@@ -1798,14 +2117,20 @@
       "feature": "Maker/Reviewer/Approver demo queue",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-010"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-08"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-COR-004",
@@ -1815,14 +2140,16 @@
       "feature": "Review, approve, reject and remarks lifecycle",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-005",
@@ -1832,14 +2159,16 @@
       "feature": "Dispute/case details and status tracking",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-006",
@@ -1849,14 +2178,18 @@
       "feature": "Block invalid old credit and track correction lineage",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-18"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-007",
@@ -1866,14 +2199,18 @@
       "feature": "Model reversal and replacement event, not destructive overwrite",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-07"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-COR-008",
@@ -1883,14 +2220,21 @@
       "feature": "Server-enforced duties, legal approval authority and controlled reversal transaction",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-010"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-08",
+        "V11-SEM-24"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-COR-009",
@@ -1900,14 +2244,16 @@
       "feature": "Evidence upload, immutable audit and readback of correction resolution",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2797–2883, 3585–3927, 5014–5257",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2797–2883, 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/CorrectionRequests.tsx; src/components/screens/CorrectionQueue.tsx; src/components/screens/CaseManagement.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2800–2856 (correction workflow); 3586–3696 (citizen requests); 5038–5111 (officer decisions)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-INC-001",
@@ -1917,14 +2263,16 @@
       "feature": "Report money debited but no challan or failed gateway response",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/IncidentReporting.tsx; src/components/screens/IncidentInvestigation.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-INC-002",
@@ -1934,14 +2282,18 @@
       "feature": "Report wrong taxpayer association or unauthorised activity",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/IncidentReporting.tsx; src/components/screens/IncidentInvestigation.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-12"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-INC-003",
@@ -1951,14 +2303,16 @@
       "feature": "Public complaint reference and status display",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/IncidentReporting.tsx; src/components/screens/IncidentInvestigation.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-INC-004",
@@ -1968,14 +2322,18 @@
       "feature": "Officer incident investigation screen",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/IncidentReporting.tsx; src/components/screens/IncidentInvestigation.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-13"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-INC-005",
@@ -1985,14 +2343,19 @@
       "feature": "Mismatch analysis, evidence and resolution notes",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 3585–3927, 5014–5257",
+      "evidence_locator": "v11: 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/IncidentReporting.tsx; src/components/screens/IncidentInvestigation.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-14",
+        "V11-SEM-29"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-INC-006",
@@ -2002,14 +2365,16 @@
       "feature": "Real payment reconciliation, SLA escalation and evidence-backed closure",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 3585–3927, 5014–5257",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 3585–3927, 5014–5257",
       "repository_locator": "src/components/screens/IncidentReporting.tsx; src/components/screens/IncidentInvestigation.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 3697–3930 (report, verification, containment, officer investigation)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-001",
@@ -2019,14 +2384,16 @@
       "feature": "Officer landing workspace with scoped task counts",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-002",
@@ -2036,14 +2403,16 @@
       "feature": "Taxpayer 360 payment and obligation dossier",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-003",
@@ -2053,14 +2422,16 @@
       "feature": "Cross-reference payment / challan search",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-004",
@@ -2070,14 +2441,16 @@
       "feature": "Corrections and casework queue controls",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-005",
@@ -2087,14 +2460,18 @@
       "feature": "Offline bank challan/evidence handling",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-25"
+      ],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-006",
@@ -2104,14 +2481,21 @@
       "feature": "Illustrative officer action log",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-005"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-16",
+        "V11-SEM-26"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-OFF-007",
@@ -2121,14 +2505,16 @@
       "feature": "Illustrative revenue intelligence and risk indicators",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-008",
@@ -2138,14 +2524,16 @@
       "feature": "Mock gateway/service uptime and exception monitoring",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 5014–5257",
+      "evidence_locator": "v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-OFF-009",
@@ -2155,14 +2543,18 @@
       "feature": "Jurisdiction-scoped real audit trails, metrics and officer workload permissions",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 5014–5257",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 5014–5257",
       "repository_locator": "src/components/screens/OfficerHome.tsx; src/components/screens/Taxpayer360.tsx; src/components/screens/PaymentSearch.tsx; src/components/screens/OfflineEvidence.tsx; src/components/screens/AuditTrail.tsx; src/components/screens/IntelligenceScreen.tsx; src/components/screens/MonitoringScreen.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 5018–5259 (workspace, queues, 360, search, offline, audit, analytics, monitoring)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-010"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-KNW-001",
@@ -2172,14 +2564,16 @@
       "feature": "Draft payment and tax concept ontology viewer/export",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 899–2090, 5258–5479",
+      "evidence_locator": "v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-KNW-002",
@@ -2189,14 +2583,16 @@
       "feature": "Architecture and external system boundaries explainer",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 899–2090, 5258–5479",
+      "evidence_locator": "v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-KNW-003",
@@ -2206,14 +2602,16 @@
       "feature": "Tax and payment terminology glossary",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 899–2090, 5258–5479",
+      "evidence_locator": "v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-KNW-004",
@@ -2223,14 +2621,16 @@
       "feature": "Rule/keyword-based assistant and FAQs",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 899–2090, 5258–5479",
+      "evidence_locator": "v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-KNW-005",
@@ -2240,14 +2640,18 @@
       "feature": "Illustrative tax estimator with non-authoritative figures",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 899–2090, 5258–5479",
+      "evidence_locator": "v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-006"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-KNW-006",
@@ -2257,14 +2661,16 @@
       "feature": "Source-cited tax-year-specific legal guidance approval gates",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 899–2090, 5258–5479",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-KNW-007",
@@ -2274,14 +2680,18 @@
       "feature": "Tax calculator disabled or fail-closed until law/period certified",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 899–2090, 5258–5479",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 899–2090, 5258–5479",
       "repository_locator": "src/components/screens/OntologyView.tsx; src/components/screens/ArchitectureView.tsx; src/components/screens/GlossaryView.tsx; src/components/screens/GuidanceAssistant.tsx",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 899–2066 (draft ontology); 5259–5481 (ontology viewer, architecture, glossary, assistant)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-006"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-UX-001",
@@ -2291,14 +2701,16 @@
       "feature": "Retain Golden UI palette, spacing and typography",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-002",
@@ -2308,14 +2720,16 @@
       "feature": "Unified headers, navigation, cards, forms, tables and dialogs",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-003",
@@ -2325,14 +2739,16 @@
       "feature": "Responsive mobile/tablet/desktop layouts",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-004",
@@ -2342,14 +2758,16 @@
       "feature": "English and Bangla UI language switching",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-005",
@@ -2359,14 +2777,16 @@
       "feature": "Bengali numeral, date and currency presentation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-006",
@@ -2376,14 +2796,16 @@
       "feature": "Semantic headings, focus treatment and keyboard navigation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-007",
@@ -2393,14 +2815,16 @@
       "feature": "Modal focus, screen-reader announcements and reduced-motion accommodation",
       "basis": "OBSERVED_IN_V11_DEMO",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-UX-008",
@@ -2410,14 +2834,16 @@
       "feature": "Full EN/BN content parity, visual regression and WCAG testing",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 10–899, 2075–2168, 2982–3154",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 10–899, 2075–2168, 2982–3154",
       "repository_locator": "src/components/layout/Header.tsx; src/components/layout/Footer.tsx; src/services/localization.ts; src/index.css",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 10–897 (style, layouts and responsive); 2097–2124 (language); 3092–3142 (accessibility)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PLT-001",
@@ -2427,14 +2853,16 @@
       "feature": "Typed application domain models and modular screen components",
       "basis": "OBSERVED_IN_REACT_SOURCE",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
+      "evidence_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PLT-002",
@@ -2444,14 +2872,16 @@
       "feature": "Mock eTIN, ACS, gateway and linked-service adapters",
       "basis": "OBSERVED_IN_REACT_SOURCE",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
+      "evidence_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PLT-003",
@@ -2461,14 +2891,18 @@
       "feature": "Single-page application routes and in-memory fictional data",
       "basis": "OBSERVED_IN_REACT_SOURCE",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
+      "evidence_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-008"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-PLT-004",
@@ -2478,14 +2912,16 @@
       "feature": "Version-controlled GitHub Actions compiled demo deployment",
       "basis": "OBSERVED_IN_REACT_SOURCE",
       "implementation_status": "DEMO_OR_COMPONENT_EXISTS_NOT_E2E_CERTIFIED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P1",
-      "source_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
+      "evidence_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P1",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PLT-005",
@@ -2495,14 +2931,18 @@
       "feature": "Protected source-only immutable v11 baseline reference and parity traceability",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-007"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-PLT-006",
@@ -2512,14 +2952,20 @@
       "feature": "Persistent transaction database with audit-safe IDs and migration controls",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-005"
+      ],
+      "v1_1_ontology_rule_ids": [
+        "V11-SEM-26"
+      ],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-PLT-007",
@@ -2529,14 +2975,16 @@
       "feature": "Server-side role authorization, privacy and rate limiting",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PLT-008",
@@ -2546,14 +2994,16 @@
       "feature": "Formal eTIN/eReturn/eLedger/eTDS/ACS/iBAS API contracts and sandbox integration",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-PLT-009",
@@ -2563,14 +3013,16 @@
       "feature": "Secret management, observability, incident response and disaster recovery",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: 2239–2468, 2982–3154; inspection §9–10",
       "repository_locator": "src/services/adapters.ts; src/services/taxState.tsx; .github/workflows/pages.yml; vite.config.ts",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: 2070–2092 (HTML single-page shell); 2243–2303 (memory state); 5405–5433 (integration concept)",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-QAG-001",
@@ -2580,14 +3032,19 @@
       "feature": "Route and original feature parity evidence register",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-007",
+        "GAP-008"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-QAG-002",
@@ -2597,14 +3054,16 @@
       "feature": "Automated unit, state-machine and property-based payment tests",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-QAG-003",
@@ -2614,14 +3073,16 @@
       "feature": "Boundary, negative, replay, reversal and duplicate-credit tests",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-QAG-004",
@@ -2631,14 +3092,18 @@
       "feature": "Isolated integration and role-based end-to-end acceptance",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-005"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-QAG-005",
@@ -2648,14 +3113,16 @@
       "feature": "Legal-original preservation, effective-date/source and taxpayer applicability mapping",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-QAG-006",
@@ -2665,14 +3132,18 @@
       "feature": "Head master, travel rate and advance tax legal validation",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [
+        "GAP-006"
+      ],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "GAP_OR_UNVERIFIED_REQUIRES_REVIEW"
     },
     {
       "feature_id": "TPAY-QAG-007",
@@ -2682,14 +3153,16 @@
       "feature": "Accessibility and bilingual user acceptance",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     },
     {
       "feature_id": "TPAY-QAG-008",
@@ -2699,14 +3172,16 @@
       "feature": "Release evidence/readback and rollback conditions for financial operations",
       "basis": "PROPOSED_CAPABILITY",
       "implementation_status": "NOT_CLAIMED_IMPLEMENTED",
-      "source_acceptance_state": "NOT_CERTIFIED",
-      "story_status": "NOT_YET_AUTHORED",
-      "priority": "P0",
-      "source_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
+      "evidence_locator": "PROPOSAL derived from v11 limitations; v11: inspection §8–12; React: TEST_REPORT.md, RELEASE_GATE.md",
       "repository_locator": "TEST_REPORT.md; RELEASE_GATE.md; docs/INITIAL_INDEPENDENT_AUDIT_2026-10-10.md",
       "legal_status": "UNVERIFIED_WHERE_LEGAL_EFFECT_INVOLVED",
-      "exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
-      "reconciliation_state": "NOT_E2E_CERTIFIED"
+      "acceptance_state": "NOT_CERTIFIED",
+      "story_status": "NOT_YET_AUTHORED",
+      "priority": "P0",
+      "v1_1_exact_source_group": "v11: ontology semanticValidationRules 1751–1792; openQuestionsForNBRAndLegal 1989–2016; no independent test suite in this HTML",
+      "v1_1_react_discrepancy_ids": [],
+      "v1_1_ontology_rule_ids": [],
+      "v1_1_reconciliation_state": "NOT_E2E_CERTIFIED"
     }
   ],
   "release_gates": [
