@@ -1166,7 +1166,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               }}
               onManage={() => { setPaymentServiceChoiceOpen(false); navigate('manage_authorization'); }} />}
             <div className="payment-identity__fields">
-              {!otherBatch && <div className="payment-identity__tin">
+              {(!otherBatch || ownAccountTax) && <div className="payment-identity__tin">
                 <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
                   {isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : (language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer’s TIN')} *
                 </label>

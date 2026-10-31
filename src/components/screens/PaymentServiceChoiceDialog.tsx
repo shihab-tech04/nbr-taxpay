@@ -111,7 +111,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       animateSize={view === 'payer'}
       motionKey={view === 'payer' ? `payer-${decisionStep}` : view}
       onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
-        const back = document.querySelector<HTMLButtonElement>('.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel');
+        const back = document.querySelector<HTMLButtonElement>(
+          '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
+          '.taxpay-modal[data-payment-stage="true"] .travel-flow__footer-actions .tax-service-choice__cancel'
+        );
         if (back && !back.disabled) back.click();
         else if (stage === 1 || stage === 4) returnToService();
       } : undefined}
