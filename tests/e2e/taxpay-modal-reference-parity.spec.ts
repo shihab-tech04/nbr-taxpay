@@ -117,8 +117,8 @@ test('both login entry points use the identical reusable login modal variant', a
 test('homepage Login and payment journey account login use the same modal chrome', async ({ page }) => {
   await page.goto('/?action=landing');
   if (page.viewportSize()!.width <= 900) {
-    await page.getByRole('button',{name:'Menu'}).click();
-    await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Login'}).click();
+    await page.getByRole('button',{name:'Open menu'}).click();
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Sign in'}).click();
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
