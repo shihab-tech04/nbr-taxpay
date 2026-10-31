@@ -135,9 +135,8 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.locator('[data-entry-section="tax"]')).toBeVisible();
-  await expect(dialog.locator('[data-entry-section="access"]')).toBeVisible();
-  await expect(dialog.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(dialog.locator('[data-payment-access="GUEST"]')).toBeVisible();
+  await expect(dialog.locator('[data-entry-section="access"]')).toHaveCount(0);
+  await expect(dialog.locator('[data-payment-access]')).toHaveCount(0);
   await dialog.locator('.tax-service-choice__actions')
     .getByRole('button', { name: 'এগিয়ে যান', exact: true }).click();
   await expect(dialog.getByTestId('authorized-taxpayer-choices')).toContainText('নতুন ডেমো অনুমোদনের অনুরোধে পেমেন্টের আগে করদাতার সম্মতি প্রয়োজন।');
