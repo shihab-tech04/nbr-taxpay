@@ -142,7 +142,8 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   const other = dialog.getByTestId('other-tax-taxpayer');
   await other.locator('input[id^="other-tax-tin"]').fill('222222222222');
-  await other.locator('input[id^="other-tax-name"]').fill('Taxpayer Beta');
+  await other.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(other.locator('input[id^="other-tax-name"]')).toHaveValue('User 2');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
@@ -162,7 +163,7 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await expect(groupedTotals.locator('details').first().locator('summary')).toContainText('1,000');
   await expect(groupedTotals.locator('details').nth(1).locator('summary')).toContainText('2,000');
   await expect(groupedTotals).toContainText('111111111111');
-  await expect(groupedTotals).toContainText('Taxpayer Beta');
+  await expect(groupedTotals).toContainText('User 2');
   await groupedTotals.locator('details').nth(1).locator('summary').click();
   await expect(groupedTotals.locator('details').nth(1)).toContainText('2025-26');
 
@@ -182,11 +183,11 @@ test('three taxpayers keep separate heads, years and amounts through combined re
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
-  for (const [tin, name] of [['222222222222', 'Taxpayer Beta'], ['333333333333', 'Taxpayer Gamma']]) {
+  for (const tin of ['222222222222', '333333333333']) {
     await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
     const next = dialog.getByTestId('other-tax-taxpayer').last();
     await next.locator('input[id^="other-tax-tin"]').fill(tin);
-    await next.locator('input[id^="other-tax-name"]').fill(name);
+    await next.getByRole('button', { name: 'Search', exact: true }).click();
   }
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
 
@@ -233,8 +234,8 @@ test('three taxpayers keep separate heads, years and amounts through combined re
   const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(calculation.locator('details')).toHaveCount(3);
   await expect(calculation).toContainText('111111111111');
-  await expect(calculation).toContainText('Taxpayer Beta');
-  await expect(calculation).toContainText('Taxpayer Gamma');
+  await expect(calculation).toContainText('User 2');
+  await expect(calculation).toContainText('User 3');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('BDT 75');
   for (const plan of plans) await expect(calculation).toContainText(plan.year);
 });
@@ -404,7 +405,7 @@ test('long BDT amounts and taxpayer descriptions stay inside the calculation pan
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.locator('#other-tax-primary-name').fill('Long Taxpayer Name Sample');
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
@@ -463,7 +464,7 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(dialog.locator('#guest-tin')).toHaveValue('2222222222222');
   await expect(dialog.locator('#guest-tin')).toHaveAttribute('readonly', '');
   await dialog.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(dialog.locator('.tin-lookup__result')).toContainText('Meghna Trading Ltd.');
+  await expect(dialog.locator('#guest-taxpayer-name')).toHaveValue('Meghna Trading Ltd.');
   await expect(dialog.locator('#guest-phone')).toHaveValue('01700000002');
   await expect(dialog.locator('#guest-phone')).toHaveAttribute('readonly', '');
   await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
@@ -491,7 +492,7 @@ test('signed-in OTHER Tax leaves the beneficiary TIN editable and never substitu
   await expect(dialog.locator('#guest-tin')).toHaveValue('');
   await expect(dialog.locator('#guest-tin')).not.toHaveAttribute('readonly');
   await dialog.locator('#guest-tin').fill('123456789012');
-  await expect(dialog.locator('#other-tax-primary-name')).not.toHaveAttribute('readonly');
+  await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
   await expect(dialog.locator('#guest-payer-name')).toHaveValue('Md. Arif Rahman');
   await expect(dialog.locator('#guest-payer-name')).toHaveAttribute('readonly');
@@ -523,4 +524,30 @@ test('additional taxpayers are not blocked by an unapproved 20-person limit', as
   await expect(dialog.getByText('Maximum 20 taxpayers per payment.')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Remove taxpayer 21' }).click();
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(19);
+});
+
+
+test('inline search populates locked names for every Other Tax taxpayer and clears stale results', async ({ page }) => {
+  const dialog = await getFlow(page);
+  const primary = dialog.getByTestId('other-tax-primary-taxpayer');
+  await primary.locator('#guest-tin').fill('222222222222');
+  await primary.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 2');
+  await expect(primary.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
+  await primary.locator('#guest-tin').fill('333333333333');
+  await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
+  await primary.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 3');
+
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const added = dialog.getByTestId('other-tax-taxpayer').first();
+  await added.locator('input[id^="other-tax-tin"]').fill('444444444444');
+  await added.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(added.locator('input[id^="other-tax-name"]')).toHaveValue('User 4');
+  await expect(added.locator('input[id^="other-tax-name"]')).toHaveAttribute('readonly', '');
+  await added.locator('input[id^="other-tax-tin"]').fill('123456789012');
+  await expect(added.locator('input[id^="other-tax-name"]')).toHaveValue('');
+  await added.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(added.getByText('TIN information not found.')).toBeVisible();
+  await expect(added.locator('input[id^="other-tax-name"]')).toHaveValue('');
 });
