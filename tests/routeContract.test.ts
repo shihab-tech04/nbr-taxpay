@@ -106,12 +106,12 @@ test('public synthetic receipt deep links restore only known fixtures and never 
   assert.equal(search.has('demoReceipt'),false);
 });
 
-test('guest Beneficiaries is not an account-auth return destination',()=>{
+test('Beneficiaries is a safe return destination after verified account sign-in',()=>{
   const query=new URLSearchParams('action=secure_workspace&lang=bn');
   writeRouteContext('secure_workspace',{returnTo:'beneficiaries'},query);
-  assert.equal(query.has('returnTo'),false);
+  assert.equal(query.get('returnTo'),'beneficiaries');
   assert.equal(query.get('lang'),'bn');
-  assert.deepEqual(routeContextFromUrl('secure_workspace',query),{});
+  assert.deepEqual(routeContextFromUrl('secure_workspace',query),{returnTo:'beneficiaries'});
   writeRouteContext('secure_workspace',{returnTo:'https://evil.example',payerTin:'123456789012'},query);
   assert.equal(query.has('returnTo'),false);
   assert.equal(query.has('payerTin'),false);
