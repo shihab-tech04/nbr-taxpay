@@ -29,7 +29,7 @@ test('payment amount matches the endpoint limit and preserves the last paisa', a
   await expect(dialog.getByRole('button', { name: /Pay BDT/ })).toBeDisabled();
   expect(sentMinor).toBeUndefined();
 
-  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await dialog.locator('.taxpay-modal__back').click();
   await dialog.locator('#guest-tax-amount').fill('9999999999.99');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
