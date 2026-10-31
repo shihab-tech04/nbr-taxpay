@@ -199,3 +199,12 @@ test('signed-in facilitated payments save one record per selected taxpayer item'
   expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
 });
+
+test('Manage authorization remains available from signed-in payment choices', async ({ page }) => {
+  await mockAuthorizations(page, []);
+  const dialog = await openSignedInOtherTax(page);
+  const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await expect(choices).toBeVisible();
+  await choices.getByRole('button', { name: 'Manage authorization', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Manage Authorization', exact: true })).toBeVisible();
+});
