@@ -16,7 +16,7 @@ const defaultSlides = [
   {
     id: 'intro',
     serviceCode: undefined,
-    headingEn: 'Tax payments, without the confusion.',
+    headingEn: 'Tax payments, without the confusion',
     headingBn: 'কর পরিশোধে আর বিভ্রান্তি নয়।',
     mobileHeadingEn: 'Pay tax with confidence',
     mobileHeadingBn: 'কর পরিশোধ সহজ করুন',
@@ -262,11 +262,11 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'অন্য সেবা দেখতে ডানে বা বামে সোয়াইপ করুন অথবা তীরচিহ্ন কী ব্যবহার করুন।' : 'Swipe or use the left and right arrow keys to see other services.'}
+        aria-description={bn ? 'শুধু ডান পাশের ছবি পরিবর্তন করতে সোয়াইপ করুন অথবা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to change the right-side illustration. The payment actions remain fixed.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
-        data-payment-service={slides[activeIndex].serviceCode}
+        data-image-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
@@ -320,7 +320,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         </button>
       </div>
       <span className="sr-only" role="status" aria-live="polite">
-        {bn ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Banner ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
+        {bn ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
       </span>
     </div>
   );
