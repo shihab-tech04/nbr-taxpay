@@ -5,9 +5,12 @@ import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 
 test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
   await page.goto('/?action=landing');
-  const publicNav = page.getByRole('navigation',{name:'Primary navigation'});
-  if (page.viewportSize()!.width <= 900) await page.getByRole('button',{name:'Menu'}).click();
-  await publicNav.getByRole('link',{name:'User guide'}).click();
+  if(page.viewportSize()!.width<=900){
+    await page.getByRole('button',{name:'Open menu'}).click();
+    await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Help'}).click();
+  } else {
+    await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
+  }
   await expect(page).toHaveURL(/action=user_guide/);
   await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Payment basics'})).toBeVisible();
@@ -348,8 +351,12 @@ test('Taxpayer receipt inspection is modal, preserves its deep link and returns 
   await page.reload();
   const modal = page.getByRole('dialog',{name:'Payment receipt details'});
   await expect(modal.locator('.receipt-view--embedded')).toContainText('AC-2025-09-DEMO-REF-001');
-  await expect(page.locator('.citizen-header')).toHaveCount(0);
-  await expect(page.locator('.public-home-header')).toBeVisible();
+  if(page.viewportSize()!.width<=900) {
+    await expect(page.locator('.citizen-header')).toBeVisible();
+    await expect(page.locator('.public-home-header')).toBeHidden();
+  } else {
+    await expect(page.locator('.public-home-header')).toBeVisible();
+  }
   await modal.getByRole('button',{name:'Close modal'}).click();
   await expect(page).toHaveURL(/action=history/);
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
