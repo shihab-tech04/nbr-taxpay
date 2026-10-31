@@ -17,7 +17,9 @@ test('beneficiary list custom dropdown, owner-scoped rename, delete and reload',
     });
     expect(response.status).toBe(200);
     const result=await response.json();
-    return {id:result.user.id as string,token:result.session.access_token as string,session:result.session};
+    const session=result.session??result;
+    expect(session.access_token).toBeTruthy();
+    return {id:result.user.id as string,token:session.access_token as string,session};
   };
   const first=await account(),second=await account();
   const loginUrl=(session:{access_token:string;refresh_token:string;expires_at?:number})=>
