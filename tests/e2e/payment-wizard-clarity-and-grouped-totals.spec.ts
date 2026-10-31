@@ -46,6 +46,10 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await expect(grouped.locator('details')).toHaveCount(2);
   await expect(grouped.locator('details').nth(0).locator('summary')).toContainText('2,100');
   await expect(grouped.locator('details').nth(1).locator('summary')).toContainText('3,500');
+  // The mobile footer intentionally hides nested calculations until expanded.
+  if (await dialog.getByTestId('mobile-payment-calculation-toggle').count()) {
+    await dialog.getByTestId('mobile-payment-calculation-toggle').click();
+  }
   await grouped.locator('details').nth(1).locator('summary').click();
   await expect(grouped.locator('details').nth(1)).toHaveAttribute('open', '');
   await expect(grouped.locator('details').nth(1)).toContainText('68B');
