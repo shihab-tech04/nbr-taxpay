@@ -36,6 +36,30 @@ test('recognized, actively authorized demo TINs are not truncated', async ({ pag
   await expect(dialog.getByText('Step 2 of 4')).toBeVisible();
 });
 
+test('signed-in consent requests wait for verification and explain taxpayer approval', async ({ page }) => {
+  let releaseAuthorizationRead!: () => void;
+  const authorizationRead = new Promise<void>(resolve => { releaseAuthorizationRead = resolve; });
+  let signalAuthorizationReadStarted!: () => void;
+  const authorizationReadStarted = new Promise<void>(resolve => { signalAuthorizationReadStarted = resolve; });
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1', async route => {
+    signalAuthorizationReadStarted();
+    await authorizationRead;
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, data: [], simulationOnly: true }) });
+  });
+
+  const dialog = await openSignedInOtherTax(page);
+  await dialog.locator('#guest-tin').fill('2222222222222');
+  const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await authorizationReadStarted;
+  await expect(choices.getByText('Checking authorizations…')).toBeVisible();
+  await expect(choices.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
+
+  releaseAuthorizationRead();
+  await expect(choices.getByText('New demo authorization requests require the taxpayer’s approval before you can pay.')).toBeVisible();
+  await expect(choices.getByRole('button', { name: 'Request authorization for this TIN' })).toBeVisible();
+});
+
 test('the single-beneficiary service also accepts an authorized fictional TIN', async ({ page }) => {
   await mockAuthorizations(page, [authorization('user2', 'ACTIVE')]);
   const dialog = await openSignedInOtherTax(page, 'TAX_WITH_RETURN');
@@ -76,6 +100,7 @@ test('an authorization read failure prevents continuing', async ({ page }) => {
   const dialog = await openSignedInOtherTax(page);
   await dialog.locator('#guest-tin').fill('2222222222222');
   await expect(dialog.getByText(/Authorizations could not be verified/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Request authorization for this TIN' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByText(/Authorization could not be verified/)).toBeVisible();
 });
@@ -112,6 +137,7 @@ test('Bengali entry rejects an unknown demo TIN and accepts an approved one', as
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('.tax-service-choice__continue').click();
+  await expect(dialog.getByTestId('authorized-taxpayer-choices')).toContainText('নতুন ডেমো অনুমোদনের অনুরোধে পেমেন্টের আগে করদাতার সম্মতি প্রয়োজন।');
   const tin = dialog.locator('#guest-tin');
   await tin.fill('1234567890123');
   await dialog.getByRole('button', { name: 'খাত ও পরিমাণে এগিয়ে যান' }).click();
@@ -172,4 +198,13 @@ test('signed-in facilitated payments save one record per selected taxpayer item'
   expect(submitted.map(record => record.details.taxpayerTin)).toEqual(['2222222222222', '3333333333333']);
   expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
+});
+
+test('Manage authorization remains available from signed-in payment choices', async ({ page }) => {
+  await mockAuthorizations(page, []);
+  const dialog = await openSignedInOtherTax(page);
+  const choices = dialog.getByTestId('authorized-taxpayer-choices');
+  await expect(choices).toBeVisible();
+  await choices.getByRole('button', { name: 'Manage authorization', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Manage Authorization', exact: true })).toBeVisible();
 });

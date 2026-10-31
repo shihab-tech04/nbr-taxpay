@@ -76,8 +76,26 @@ try {
     await expect(beneficiaryPage).toBeVisible();
     const beneficiaryActions = beneficiaries.locator('[data-testid="beneficiaries-page"] > header');
     await expect(beneficiaryActions).toHaveCount(1);
-    for (const label of ['Create list', 'Import Excel', 'Add beneficiary']) {
-      await expect(beneficiaryActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+    // PR preflight checks the currently published UI; push/deployment strictly checks the corrected UI.
+    const preMergePublishedUi = process.env.GITHUB_EVENT_NAME === 'pull_request' &&
+      (await beneficiaryActions.getByRole('button', { name: 'Import Excel', exact: true }).count()) > 0;
+    if (preMergePublishedUi) {
+      for (const label of ['Create list', 'Import Excel', 'Add beneficiary']) {
+        await expect(beneficiaryActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+      }
+    } else {
+      await expect(beneficiaryPage.getByRole('button', { name: 'Create list', exact: true })).toHaveCount(1, { timeout: 30_000 });
+      if (await beneficiaries.locator('#beneficiary-list').count()) {
+        for (const label of ['Create list', 'Import Excel', 'Add beneficiary']) {
+          await expect(beneficiaryActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+        }
+      } else {
+        await expect(beneficiaryActions.getByRole('button', { name: 'Create list', exact: true })).toHaveCount(0);
+        for (const label of ['Import Excel', 'Add beneficiary']) {
+          await expect(beneficiaryPage.getByRole('button', { name: label, exact: true })).toHaveCount(0);
+        }
+      }
+      await expect(beneficiaryPage.getByRole('button', { name: 'Manage taxpayer authorizations', exact: true })).toHaveCount(0);
     }
     for (const retiredLabel of ['Add single', 'Bulk add']) {
       await expect(beneficiaries.getByRole('button', { name: retiredLabel, exact: true })).toHaveCount(0);
@@ -102,8 +120,23 @@ try {
     await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী', exact: true })).toBeVisible();
     const bengaliActions = beneficiaries.locator('[data-testid="beneficiaries-page"] > header');
     await expect(bengaliActions).toHaveCount(1);
-    for (const label of ['তালিকা তৈরি', 'এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
-      await expect(bengaliActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+    if (preMergePublishedUi) {
+      for (const label of ['তালিকা তৈরি', 'এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
+        await expect(bengaliActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+      }
+    } else {
+      await expect(beneficiaryPage.getByRole('button', { name: 'তালিকা তৈরি', exact: true })).toHaveCount(1, { timeout: 30_000 });
+      if (await beneficiaries.locator('#beneficiary-list').count()) {
+        for (const label of ['তালিকা তৈরি', 'এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
+          await expect(bengaliActions.getByRole('button', { name: label, exact: true })).toBeVisible();
+        }
+      } else {
+        await expect(bengaliActions.getByRole('button', { name: 'তালিকা তৈরি', exact: true })).toHaveCount(0);
+        for (const label of ['এক্সেল আমদানি', 'উপকারভোগী যোগ']) {
+          await expect(beneficiaryPage.getByRole('button', { name: label, exact: true })).toHaveCount(0);
+        }
+      }
+      await expect(beneficiaryPage.getByRole('button', { name: 'করদাতার অনুমোদন পরিচালনা', exact: true })).toHaveCount(0);
     }
     for (const retiredLabel of ['একজন যোগ করুন', 'একাধিক যোগ করুন']) {
       await expect(beneficiaries.getByRole('button', { name: retiredLabel, exact: true })).toHaveCount(0);
