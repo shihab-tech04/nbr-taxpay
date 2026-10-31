@@ -582,3 +582,54 @@
   .public-record-suggestions__option { flex-wrap: wrap; gap: .15rem .5rem; }
   .public-record-suggestions__links { display: grid; grid-template-columns: minmax(0, 1fr); gap: .1rem; }
 }
+
+
+/* Fixed-copy hero: only the right illustration crossfades between CMS images.
+ * Keep the approved introduction copy, both buttons and background stationary. */
+.public-hero-carousel__fixed.public-information-hero {
+  --banner-bg: var(--citizen-primary-light);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.public-hero-carousel__fixed .citizen-public-hero__copy { position: relative; z-index: 2; }
+.public-hero-carousel__fixed .public-hero-carousel__media--illustrated {
+  overflow: hidden;
+}
+.public-hero-carousel__fixed .public-hero-carousel__image-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 500ms ease-in-out;
+}
+.public-hero-carousel__fixed .public-hero-carousel__image-layer[data-visible="true"] { opacity: 1; }
+.public-hero-carousel__fixed .public-information-hero__image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  object-position: right center;
+}
+@media (min-width: 901px) {
+  .public-hero-carousel__fixed .public-information-hero__media {
+    left: 50% !important;
+    right: 0 !important;
+    width: 50% !important;
+  }
+  .public-hero-carousel__fixed .public-hero-carousel__media--illustrated::before {
+    background: linear-gradient(to right, var(--banner-bg), transparent 28%) !important;
+  }
+}
+@media (max-width: 900px) {
+  .public-hero-carousel__fixed .public-hero-carousel__media--illustrated { position: relative; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-hero-carousel__fixed .public-hero-carousel__image-layer { transition: none; }
+}
