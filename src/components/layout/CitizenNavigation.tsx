@@ -68,7 +68,9 @@ export function CitizenNavigation() {
     finally { setSigningOut(false); }
   };
   // An application session is sufficient for account navigation, not for tax-credit entitlement.
-  const isTaxpayer = Boolean(applicationUser) || (import.meta.env.DEV && (Boolean(previewAccount) || taxpayerRoles.includes(userRole)));
+  // A signed-in browser-local sample account keeps taxpayer navigation, while
+  // the verified application identity remains the only source of API permissions.
+  const isTaxpayer = Boolean(applicationUser || previewAccount) || (import.meta.env.DEV && taxpayerRoles.includes(userRole));
   // A guest must never be sent to the protected taxpayer account inbox.
   // The separate public route reads only SQL events for this browser session.
   const notificationRoute = applicationUser || previewAccount ? 'account_notifications' : 'payment_notifications';
