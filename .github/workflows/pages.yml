@@ -105,6 +105,13 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/taxpay-direct-service-entry.spec.ts --project=desktop-1280 --project=mobile-375
 
+      - name: Verify SQL-backed stationary banner copy and image override contract
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://banner-cms-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/banner-cms-sql-sync.spec.ts --project=desktop-1280 --project=mobile-320
+
       - name: Check public routes and disconnected backend state
         env:
           VITE_SUPABASE_DISABLED: 'true'
