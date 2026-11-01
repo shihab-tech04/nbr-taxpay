@@ -52,8 +52,9 @@ test('user8 begins with no saved activity or personal tax profile; user6 data st
 test('user1 retains existing scenario plus its separate stored travel-tax example', async ({ page }) => {
   requireDisposableBackend();
   await signIn(page, 'user1');
-  const panel = page.getByTestId('demo-sql-service-panel');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await page.getByRole('button',{name:'Open transaction history'}).click();
+  const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user1');
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
