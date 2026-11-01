@@ -19,7 +19,7 @@ export const validRoute = (value: string | null | undefined): string =>
   value && registered.has(value) && !officeManagementAliases.has(value) ? value : 'landing';
 
 /** Only navigation context and public synthetic fixture selectors belong in the URL. */
-const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'reviewStatuses', 'returnTo', 'demoReceipt', 'transactionId', 'docAction', 'trackPayment'] as const;
+const routeQueryKeys = ['category', 'initialCategory', 'draftCategory', 'categoryFilter', 'monthFilter', 'reviewStatuses', 'returnTo', 'demoReceipt', 'transactionId', 'docAction', 'trackPayment'] as const;
 const reviewStatuses = new Set(['PENDING', 'FAILED', 'REVERSED', 'DISPUTED', 'REQUESTED']);
 const receiptReturnRoutes = new Set(['history', 'dashboard', 'taxpayer_home']);
 
@@ -67,6 +67,8 @@ export function routeContextFromUrl(route: string, search: URLSearchParams): Rec
   const result: Record<string, unknown> = {};
   if (search.get('trackPayment') === '1') result.trackPayment = true;
   if (search.has('categoryFilter')) result.categoryFilter = search.get('categoryFilter');
+  const month=search.get('monthFilter');
+  if (month && /^20\d{2}-(0[1-9]|1[0-2])$/.test(month)) result.monthFilter=month;
   const statuses = search.get('reviewStatuses')?.split(',').filter(value => reviewStatuses.has(value));
   if (statuses?.length) result.reviewStatuses = statuses;
   return result;
@@ -97,6 +99,9 @@ export function writeRouteContext(route: string, params: Record<string, any>, se
   if (route === 'history') {
     if (params.trackPayment === true) search.set('trackPayment', '1');
     put('categoryFilter', params.categoryFilter);
+    // Date-scoped history deep links carry a calendar YYYY-MM only, never a taxpayer identifier.
+    if (typeof params.monthFilter==='string' && /^20\d{2}-(0[1-9]|1[0-2])$/.test(params.monthFilter))
+      put('monthFilter',params.monthFilter);
     if (Array.isArray(params.reviewStatuses)) {
       const statuses = params.reviewStatuses.filter((value: unknown) => typeof value === 'string' && reviewStatuses.has(value));
       if (statuses.length) search.set('reviewStatuses', statuses.join(','));
