@@ -2361,6 +2361,45 @@
   }
 }
 
+/* A stable two-column grid for settled Travel Tax receipt actions on desktop.
+   This prevents flex-shrink overlap when the viewport changes from phone
+   width to desktop width during the same payment journey. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded)
+    .receipt-view__actions:has(.receipt-view__restart) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 16px;
+    width: 100%;
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded)
+    .receipt-view__actions > .receipt-view__restart {
+    grid-column: 1;
+    justify-self: start;
+    min-width: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded)
+    .receipt-view__actions .receipt-view__action-group {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    align-items: center;
+    column-gap: 12px;
+    min-width: 0;
+    margin: 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded)
+    .receipt-view__action-group > .receipt-view__action {
+    box-sizing: border-box;
+    width: auto;
+    min-width: 118px;
+  }
+}
+
 /* Travel Tax completed receipt: at 320–390px, the restart action and
    download/print pair occupy separate grid rows. Force border-box on the
    full-width action buttons so padding/borders cannot overlap adjacent cells. */
