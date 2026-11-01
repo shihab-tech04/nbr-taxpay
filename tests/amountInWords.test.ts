@@ -16,7 +16,7 @@ test('paisa is spelled correctly without floating-point artefacts', () => {
   assert.equal(amountInTakaWords(10, 'bn'), 'দশ টাকা মাত্র');
 });
 test('invalid or incomplete totals cannot produce misleading cheque wording', () => {
-  for (const value of [null, -1, Number.POSITIVE_INFINITY, NaN, 90071992547400.01]) {
+  for (const value of [null, -1, Number.POSITIVE_INFINITY, NaN, 90071992547409.92]) {
     assert.equal(amountInTakaWords(value), null);
   }
 });
