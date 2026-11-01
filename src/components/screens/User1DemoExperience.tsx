@@ -425,7 +425,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
             <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Income tax liability','আয়কর দায়')}</dt><dd className="font-semibold tabular-nums">{money(totals.liability)}</dd></div>
             <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Posted credits','নথিভুক্ত ক্রেডিট')}</dt><dd className="font-semibold tabular-nums">{money(totals.applied)}</dd></div>
             <div className="flex items-center justify-between gap-3 py-2"><dt className="font-semibold text-taxpay-text">{tr('Remaining balance','অবশিষ্ট দায়')}</dt><dd className="text-lg font-semibold tabular-nums text-taxpay-primary">{money(totals.outstanding)}</dd></div>
-            <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Travel tax (separate)','ভ্রমণ কর (পৃথক)')}</dt><dd className="font-semibold tabular-nums">{money(totals.travel)}</dd></div>
+            <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Travel tax recorded separately','ভ্রমণ কর পৃথকভাবে নথিভুক্ত')}</dt><dd className="font-semibold tabular-nums">{money(totals.travel)}</dd></div>
           </dl>
           <p className="mt-3 text-xs leading-5 text-taxpay-muted">{tr('Pending payments, failed attempts and unmatched withholding do not reduce the remaining balance. Refund inquiries are not approved refunds.','অপেক্ষমাণ পেমেন্ট, ব্যর্থ চেষ্টা ও অমিল উৎসে কর অবশিষ্ট দায় কমায় না। ফেরতের আবেদন অনুমোদিত ফেরত নয়।')}</p>
         </section>
