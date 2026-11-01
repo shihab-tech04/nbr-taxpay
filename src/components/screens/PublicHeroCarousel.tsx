@@ -105,6 +105,12 @@ function publicBannerImage(path: string | null, fallback: string): string {
 }
 
 async function fetchPublishedBanners(): Promise<BannerSlide[]> {
+  // Isolated development/Playwright runs intentionally disable Supabase.
+  // Keep deterministic local artwork for visual regression only; production
+  // must never resurrect unpublished CMS banners when the backend is absent.
+  if (!supabase && import.meta.env.DEV && import.meta.env.VITE_SUPABASE_DISABLED === 'true') {
+    return fallbackSlides;
+  }
   if (!supabase) throw new Error('The public banner service is unavailable.');
   const { data, error } = await supabase.from('taxpay_site_banners').select('*')
     .eq('published', true).order('sort_order', { ascending: true });
