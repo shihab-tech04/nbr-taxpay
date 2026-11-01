@@ -36,7 +36,7 @@ export interface TaxStateContextType {
   setPaymentBeneficiaryPrefill: (value: PaymentBeneficiaryPrefill | null) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
-  loginPreviewAccount: (userId: string, password: string, options?: { preserveRoute?: boolean }) => boolean;
+  loginPreviewAccount: (userId: string, password: string, options?: { preserveRoute?: boolean; returnRoute?: 'beneficiaries' }) => boolean;
   clearPreviewAccount: () => void;
   logoutPreviewAccount: () => void;
   routeParams: Record<string, any>;
@@ -223,7 +223,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Temporary matching ID/password credentials only select a browser-local UI profile.
   // This deliberately creates no Supabase Auth session or API entitlement.
-  const loginPreviewAccount = (userId: string, password: string, options?: { preserveRoute?: boolean }): boolean => {
+  const loginPreviewAccount = (userId: string, password: string, options?: { preserveRoute?: boolean; returnRoute?: 'beneficiaries' }): boolean => {
     const selected = getDemoUser(userId.trim().toLowerCase());
     if (!selected || password !== selected.id) return false;
     window.sessionStorage.setItem(previewStorageKey, selected.id);
@@ -236,7 +236,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     window.history.replaceState(window.history.state, '', next);
     // A login begun inside a payment modal must not destroy its in-progress form.
     // This local profile never grants private API or taxpayer-data permissions.
-    if (!options?.preserveRoute) navigate('taxpayer_home');
+    if (!options?.preserveRoute) navigate(options?.returnRoute === 'beneficiaries' ? 'beneficiaries' : 'taxpayer_home');
     return true;
   };
   const clearPreviewAccount = (): void => {
