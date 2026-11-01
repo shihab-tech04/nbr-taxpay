@@ -281,7 +281,7 @@ jobs:
             git show "$TAXPAY_HISTORICAL_SHA:supabase/functions/$bridge/index.ts" > "$RUNNER_TEMP/$bridge-historical.ts"
             cmp -s "$RUNNER_TEMP/$bridge-historical.ts" "$OFFICE_DIR/supabase/functions/$bridge/index.ts"
           done
-          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 16
+          test "$(find supabase/hosted_migration_history -name '*.sql' | wc -l)" = 17
           test "$(find "$OFFICE_DIR/supabase/hosted_migration_history" -name '*.sql' | wc -l)" = 17
           echo "PASS: shared contract, historical bridge base, paired correction bridge, and both hosted migration recovery sets"
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
