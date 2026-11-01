@@ -101,11 +101,12 @@ test('preview account also shows this browser session SQL payment notice', async
 });
 
 
-test('guest bell opens a public session-only SQL payment notification without account access', async ({ page }, info) => {
+test('guest hides notification actions while session-only payment events retain direct receipt access', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Guest bell regression on mobile layout');
   await mockSessionNotifications(page, 125050);
   await page.goto('/?action=head_catalogue');
-  await page.getByRole('button', { name: 'Notifications' }).first().click();
+  await expect(page.getByRole('button', { name: 'Notifications' })).toHaveCount(0);
+  await page.goto('/?action=payment_notifications');
   await expect(page).toHaveURL(/action=payment_notifications/);
   await expect(page.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
   await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
