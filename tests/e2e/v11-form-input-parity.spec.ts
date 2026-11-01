@@ -93,13 +93,13 @@ for (const locale of ['en', 'bn'] as const) {
       name: locale === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true,
     }).click();
 
-    const payer = modal.locator('.payment-form-section--static').filter({ has: modal.locator('#guest-payer-name') });
-    const taxpayers = modal.locator('.payment-form-section--static').filter({ has: modal.getByTestId('other-tax-taxpayer-list') });
-    await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details' })).toBeVisible();
+    const payer = modal.locator('.payment-form-section').filter({ has: modal.locator('#guest-payer-name') });
+    const taxpayers = modal.locator('.payment-form-section').filter({ has: modal.getByTestId('other-tax-taxpayer-list') });
+    await expect(payer.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details');
     await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toBeVisible();
-    await expect(taxpayers.getByRole('heading', { name: locale === 'bn' ? 'করদাতারা' : 'Taxpayers', exact: true })).toBeVisible();
-    await expect(payer.locator('.payment-form-section__heading-copy p')).toHaveCount(0);
-    await expect(taxpayers.locator('.payment-form-section__heading-copy p')).toHaveCount(0);
+    await expect(taxpayers.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'করদাতারা' : 'Taxpayers');
+    await expect(payer.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);
+    await expect(taxpayers.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);
     await expect(payer.locator('#guest-payer-name')).toBeVisible();
     await expect(payer.locator('#guest-phone')).toBeVisible();
     await expect(payer.locator('#guest-notice-ref')).toBeVisible();
