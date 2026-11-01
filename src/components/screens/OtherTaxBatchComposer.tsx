@@ -337,12 +337,12 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                                   'সংখ্যা দিয়ে শূন্যের বেশি পরিমাণ লিখুন (সর্বোচ্চ ২ দশমিক স্থান)।')}
                               </p>}
                             </div>
-                            <button type="button" className="other-tax-year-remove"
+                            {headLines.length > 1 && <button type="button" className="other-tax-year-remove"
                               onClick={() => onChange(lines.filter(item => item.id !== line.id))}
                               aria-label={tx('Remove assessment year', 'করবর্ষ মুছুন') + ': ' + line.assessmentYear}
                               title={tx('Remove assessment year', 'করবর্ষ মুছুন')}>
                               <Trash2 size={18} aria-hidden="true" />
-                            </button>
+                            </button>}
                             </div>
                           </div>;
                         })}
