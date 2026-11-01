@@ -145,15 +145,19 @@ try {
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    const beneficiaryLogin = beneficiaries.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+    await expect(beneficiaryLogin).toBeVisible({ timeout: 30_000 });
+    await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
+    await expect(beneficiaryLogin.getByRole('button', { name: 'Sign in with email instead' })).toBeVisible();
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
     await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
     beneficiariesUrl.searchParams.set('lang', 'bn');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    const bengaliLogin = beneficiaries.getByRole('dialog', { name: /করবৃত্ত/ });
+    await expect(bengaliLogin).toBeVisible({ timeout: 30_000 });
+    await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toHaveCount(0);
+    await expect(bengaliLogin.getByRole('button', { name: 'ইমেইল দিয়ে সাইন ইন করুন' })).toBeVisible();
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries gate overflow: ${beneficiaryOverflow}px`);
@@ -200,7 +204,7 @@ try {
     await guest.screenshot({ path: `test-results/live-auth-guest-session-record-${name}.png`, fullPage: true });
     await guest.close();
   }
-  console.log('PASS: private route auth boundary, guest notification controls hidden, signed-out Beneficiaries gate, and session-only payment record readback at desktop/mobile widths');
+  console.log('PASS: private route auth boundary, guest notification controls hidden, direct Beneficiaries login modal, and session-only payment record readback at desktop/mobile widths');
 } finally {
   await browser.close();
 }
