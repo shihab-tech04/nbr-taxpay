@@ -146,6 +146,12 @@ export const PublicLanding: React.FC = () => {
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
             onKeyDown={event => {
+              // Disabled empty-input Submit must not prevent selecting a focused example.
+              if (event.key === 'Enter' && searchOpen && activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+                event.preventDefault();
+                chooseReference(suggestions[activeSuggestion].value);
+                return;
+              }
               if (event.key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
