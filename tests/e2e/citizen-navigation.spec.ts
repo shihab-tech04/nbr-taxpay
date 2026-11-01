@@ -34,6 +34,31 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
 });
 
+test('logged-out and signed-in mobile headers share the approved white shell without exposing account routes',async({page},info)=>{
+ test.skip(info.project.name==='desktop-1280','Mobile-only header parity');
+ await page.setViewportSize({width:info.project.name==='mobile-320'?320:375,height:812});
+ await page.goto('/?action=landing');
+ const publicHeader=page.locator('.taxpay-public-mobile-navigation .citizen-header');
+ await expect(publicHeader).toBeVisible();
+ await expect(page.locator('.public-home-header')).toBeHidden();
+ await expect(publicHeader.getByRole('button',{name:'Open menu'})).toBeVisible();
+ await expect(publicHeader.getByRole('button',{name:'Notifications'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+ const guestColor=await publicHeader.evaluate(el=>getComputedStyle(el).backgroundColor);
+ const guestLogoBackground=await publicHeader.locator('.citizen-brand__wordmark').evaluate(el=>getComputedStyle(el).backgroundColor);
+ await page.goto('/?action=taxpayer_home');
+ const enter=page.getByRole('button',{name:'Explore taxpayer workspace'});
+ if(await enter.isVisible()) await enter.click();
+ const taxpayerHeader=page.locator('.taxpay-taxpayer-reference .citizen-header');
+ await expect(taxpayerHeader).toBeVisible();
+ expect(guestColor).toBe(await taxpayerHeader.evaluate(el=>getComputedStyle(el).backgroundColor));
+ expect(guestLogoBackground).toBe('rgba(0, 0, 0, 0)');
+ await expect(taxpayerHeader.getByRole('button',{name:'Open menu'})).toBeVisible();
+ await expect(taxpayerHeader.getByRole('button',{name:'Notifications'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
+});
+
 test('public mobile menu uses the shared signed-in sheet without account-only items',async({page})=>{
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=landing');
