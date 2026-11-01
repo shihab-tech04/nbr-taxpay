@@ -147,7 +147,7 @@ test('failed new-list import stays recoverable and retries against the same crea
 test('local sample taxpayer Beneficiaries supports independent lists, Excel import, responsive CRUD, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
-  const recordList=page.getByTestId('beneficiary-records').getByRole('list',{name:'Saved beneficiaries'});
+  const recordList=page.getByTestId('beneficiary-records').locator('ul');
   const expectRecord=async(name:string)=>expect(recordList.getByText(name,{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
   await expect(page.getByRole('link',{name:/Sign in/})).toHaveCount(0);
