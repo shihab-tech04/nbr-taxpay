@@ -68,6 +68,9 @@ interface PaymentSummaryProps {
 export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry }: PaymentSummaryProps) {
   const bn = language === 'bn';
   const amountWords = amountInTakaWords(amount, language);
+  // A bulk selection can contain dozens of entries. Keep a clear, accessible
+  // way to reveal every selected head without burying the next taxpayer.
+  const [expandedTaxpayerSummaries, setExpandedTaxpayerSummaries] = React.useState<Record<string, boolean>>({});
   const renderBreakdownEntry = (item: NonNullable<PaymentSummaryProps['breakdown']>[number], index: number) => {
     const contents = <>
       <span className="payment-form-summary__entry-description">
@@ -111,7 +114,12 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       </div>}
       {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
         <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
-        {groupedBreakdown.map((group, index) => <details key={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
+        {groupedBreakdown.map((group, index) => {
+          const previewLimit = 4;
+          const canExpand = group.entries.length > previewLimit;
+          const expanded = Boolean(expandedTaxpayerSummaries[group.id]);
+          const visibleEntries = canExpand && !expanded ? group.entries.slice(0, previewLimit) : group.entries;
+          return <details key={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
           <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
@@ -121,7 +129,17 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
             <ChevronDown size={16} aria-hidden="true" />
           </summary>
           <div className="payment-form-summary__taxpayer-items">
-            {group.entries.length ? group.entries.map((entry, entryIndex) => {
+            {canExpand && <button type="button" className="payment-form-summary__taxpayer-show-all"
+              aria-expanded={expanded}
+              onClick={() => setExpandedTaxpayerSummaries(previous => ({ ...previous, [group.id]: !previous[group.id] }))}>
+              <span>{expanded
+                ? (bn ? 'প্রথম চারটি খাত দেখুন' : 'Show first 4 heads')
+                : (bn ? `নির্বাচিত সব ${group.entries.length}টি খাত দেখুন` : `Show all ${group.entries.length} selected heads`)}</span>
+              <small>{expanded
+                ? (bn ? 'সব খাত তালিকাভুক্ত — নিচে স্ক্রল করুন' : 'All heads listed — scroll to review')
+                : (bn ? `আরও ${group.entries.length - previewLimit}টি খাত` : `${group.entries.length - previewLimit} more heads`)}</small>
+            </button>}
+            {visibleEntries.length ? visibleEntries.map((entry, entryIndex) => {
               const contents = <>
                 <span className="payment-form-summary__taxpayer-label">{entry.label}{entry.detail && <small>{entry.detail}</small>}</span>
                 <strong>{entry.value === null ? '—' : formatCurrency(entry.value, language)}</strong>
@@ -133,7 +151,8 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
             }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
           </div>
-        </details>)}
+        </details>;
+        })}
       </section>}
       {note && <p className="payment-form-summary__notice">{note}</p>}
     </aside>
