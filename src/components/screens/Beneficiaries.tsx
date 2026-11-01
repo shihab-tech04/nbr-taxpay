@@ -299,17 +299,33 @@ export function Beneficiaries(){
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
 
         </div>:<>
-          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <label className="relative block w-full sm:max-w-md">
-              <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/>
-              <span className="sr-only">{tr('Search this list','এই তালিকায় খুঁজুন')}</span>
-              <UiInput type="search" value={search} onChange={event=>setSearch(event.target.value)} placeholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')} className="pl-10"/>
+          <div className="taxpayer-transaction-filters beneficiary-directory__filters">
+            <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
+              <span>{tr('Search','খুঁজুন')}</span>
+              <span className="taxpayer-transaction-filter__search">
+                <Search size={17} aria-hidden="true"/>
+                <input type="search" aria-label={tr('Search this list','এই তালিকায় খুঁজুন')}
+                  value={search} onChange={event=>setSearch(event.target.value)}
+                  placeholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}/>
+              </span>
             </label>
-            {selectedPeople.length>0&&<div className="flex flex-wrap items-center gap-2 rounded-lg bg-taxpay-light p-2">
-              <span className="px-2 text-sm font-medium text-taxpay-text">{tr(`${selectedPeople.length} selected`,`${selectedPeople.length} জন নির্বাচিত`)}</span>
-              <UiButton type="button" variant="primary" onClick={()=>payWith(selectedPeople)}><CreditCard size={17} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যদের কর পরিশোধ')}</UiButton>
-              <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
-            </div>}
+          </div>
+          <div className="taxpayer-transaction-count beneficiary-directory__count">
+            <p className="text-xs text-taxpay-muted" aria-live="polite">{tr('Records','রেকর্ড')}: {filteredPeople.length} <span className="text-taxpay-muted">/ {listPeople.length}</span></p>
+            <div className="beneficiary-directory__bulk-actions">
+              {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
+                <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
+                  onChange={event=>setSelectedIds(current=>event.target.checked
+                    ?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)]))
+                    :current.filter(id=>!filteredPeople.some(person=>person.id===id)))}/>
+                <span>{tr('Select all','সব নির্বাচন')}</span>
+              </label>}
+              {selectedPeople.length>0&&<>
+                <p className="beneficiary-directory__selected-count" role="status">{tr(`${selectedPeople.length} selected`,`${selectedPeople.length} জন নির্বাচিত`)}</p>
+                <UiButton type="button" variant="primary" onClick={()=>payWith(selectedPeople)}><CreditCard size={17} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যদের কর পরিশোধ')}</UiButton>
+                <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
+              </>}
+            </div>
           </div>
 
           {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-5 text-center">
@@ -319,38 +335,42 @@ export function Beneficiaries(){
             <p className="font-medium text-taxpay-text">{tr('No matching beneficiaries','কোনো উপকারভোগী মেলেনি')}</p>
             <UiButton type="button" variant="quiet" className="mt-2" onClick={()=>setSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</UiButton>
           </div>:<>
-            <div className="beneficiary-directory hidden md:block" role="region" aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')}>
-              <table className="beneficiary-directory__table">
-                <thead><tr>
-                  <th className="beneficiary-directory__check"><input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
-                    onChange={event=>setSelectedIds(current=>event.target.checked?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)])):current.filter(id=>!filteredPeople.some(person=>person.id===id)))}/></th>
-                  <th scope="col">{tr('Beneficiary','উপকারভোগী')}</th><th scope="col">{tr('TIN','টিআইএন')}</th><th scope="col" className="beneficiary-directory__actions-label">{tr('Actions','কার্যক্রম')}</th>
-                </tr></thead>
-                <tbody>{filteredPeople.map(person=><tr key={person.id} className={selectedIds.includes(person.id)?'beneficiary-directory__selected':''}>
-                  <td className="beneficiary-directory__check"><input type="checkbox" aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)} checked={selectedIds.includes(person.id)} onChange={event=>setSelectedIds(current=>event.target.checked?[...current,person.id]:current.filter(id=>id!==person.id))}/></td>
-                  <td className="beneficiary-directory__name">{displayName(person)}</td><td className="beneficiary-directory__tin">{person.tin}</td>
-                  <td><div className="beneficiary-directory__actions">
-                    <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditName(editableName(person));setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
-                    <UiButton type="button" variant="outline" className="gap-2 text-sm" onClick={()=>payWith([person])}><CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}</UiButton>
-                    <UiButton type="button" variant="quiet" className="gap-2 text-sm text-red-700 hover:bg-red-50" aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)} onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
-                  </div></td>
-                </tr>)}</tbody>
-              </table>
+            <div className="taxpayer-transaction-list beneficiary-directory" role="region"
+              aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
+              <div className="taxpayer-transaction-list__columns beneficiary-directory__columns" aria-hidden="true">
+                <span>{tr('Beneficiary','উপকারভোগী')}</span>
+                <span>{tr('Actions','কার্যক্রম')}</span>
+              </div>
+              <ul aria-label={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}>
+                {filteredPeople.map(person=><li key={person.id}
+                  className="taxpayer-transaction-row beneficiary-directory__row"
+                  data-selected={selectedIds.includes(person.id)?'true':'false'}>
+                  <div className="beneficiary-directory__identity">
+                    <input id={'beneficiary-select-'+person.id} type="checkbox"
+                      aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)}
+                      checked={selectedIds.includes(person.id)}
+                      onChange={event=>setSelectedIds(current=>event.target.checked
+                        ?Array.from(new Set([...current,person.id]))
+                        :current.filter(id=>id!==person.id))}/>
+                    <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
+                      <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
+                      <p className="taxpayer-transaction-row__ref">{tr('TIN','টিআইএন')}: <span className="tabular-nums">{person.tin}</span></p>
+                    </label>
+                  </div>
+                  <div className="beneficiary-directory__actions" role="group"
+                    aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
+                    <UiButton type="button" variant="outline" className="text-sm"
+                      onClick={()=>{setEditPerson(person);setEditName(editableName(person));setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" className="gap-2 text-sm" onClick={()=>payWith([person])}>
+                      <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+                    </UiButton>
+                    <UiButton type="button" variant="quiet" className="gap-2 text-sm text-red-700 hover:bg-red-50"
+                      aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
+                      onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
+                  </div>
+                </li>)}
+              </ul>
             </div>
-
-            <ul className="beneficiary-directory__mobile md:hidden" aria-label={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}>
-              {filteredPeople.map(person=><li key={person.id} className="beneficiary-directory__mobile-row">
-                <div className="flex items-start gap-3">
-                  <input className="mt-1" type="checkbox" aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)} checked={selectedIds.includes(person.id)} onChange={event=>setSelectedIds(current=>event.target.checked?[...current,person.id]:current.filter(id=>id!==person.id))}/>
-                  <div className="min-w-0 flex-1"><p className="break-words font-semibold text-taxpay-text">{displayName(person)}</p><p className="mt-1 break-all font-mono text-sm text-slate-600">{person.tin}</p></div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditName(editableName(person));setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
-                  <UiButton type="button" variant="outline" className="text-sm" onClick={()=>payWith([person])}><CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}</UiButton>
-                  <UiButton type="button" variant="quiet" className="col-span-2 text-sm text-red-700 hover:bg-red-50" onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove beneficiary','উপকারভোগী সরান')}</UiButton>
-                </div>
-              </li>)}
-            </ul>
           </>}
         </>}
       </>}
