@@ -307,7 +307,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     const reference = noticeReference.trim();
-    if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax) {
+    if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
       if (!matched || matched.category !== category) return false;
     }
@@ -603,7 +603,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // 12-digit v11 fixture tests. New 13-digit simulated payer profiles do not
     // require a reference lookup or an authenticated account.
     const reference = noticeReference.trim();
-    const shouldMatchSample = !!reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax;
+    const shouldMatchSample = !!reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection;
     const matched = shouldMatchSample ? findV11GuestNotice(taxpayerTin, reference) : null;
     if (shouldMatchSample && (!matched || matched.category !== category)) {
       setValidationError(language === 'bn' ? 'এই তথ্য নিশ্চিত করা যায়নি। টিআইএন ও রেফারেন্স মিলিয়ে দেখুন।' : 'We could not confirm these details. Check the TIN and reference.', 'noticeReference');
