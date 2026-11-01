@@ -34,6 +34,14 @@ async function setupGuestTransport(page:Page){
         session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,created_at:now,updated_at:now});inserted++;
       }
       data=inserted;
+    }else if(body.action==='move'){
+      const person=session.people.find(value=>value.id===body.id&&value.list_id===body.sourceListId);
+      const destination=session.lists.find(list=>list.id===body.listId);
+      if(!person||!destination){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
+      if(session.people.some(value=>value.list_id===destination.id&&value.tin===person.tin)){
+        await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({success:false,code:'BENEFICIARY_ALREADY_IN_LIST'})});return;
+      }
+      person.list_id=destination.id;person.updated_at=now;data=person;
     }else if(body.action==='update'){
       const person=session.people.find(value=>value.id===body.id);
       if(!person){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
@@ -46,7 +54,7 @@ async function setupGuestTransport(page:Page){
   return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people)};
 }
 
-test('local sample taxpayer can add, edit, import and prefill a beneficiary without a name',async({page})=>{
+test('local sample taxpayer preserves names when moving beneficiaries across lists, importing and prefilling',async({page})=>{
   const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
 
@@ -54,6 +62,12 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
   let dialog=page.getByRole('dialog',{name:'Create list'});
   await dialog.locator('#beneficiary-create-list-name').fill('Optional names');
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('Clients');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+  await page.getByRole('button',{name:'Selected list'}).click();
+  await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
@@ -76,10 +90,18 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
     :page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'987654321098'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
-  await dialog.locator('#beneficiary-edit-name').fill('');
+  await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
+  await expect(dialog.getByText('Editable Contact')).toBeVisible();
+  await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
+  await dialog.locator('#beneficiary-edit-list').selectOption({label:'Clients'});
   await dialog.getByRole('button',{name:'Save changes'}).click();
-  await expect(secondRecord.getByText('Name not provided',{exact:true})).toBeVisible();
-  expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
+  await expect(page.getByText('Beneficiary moved to the selected list.')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
+  await expect(visibleRecords.getByText('Editable Contact',{exact:true})).toBeVisible();
+  expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe('Editable Contact');
+  await page.reload();
+  await page.getByRole('button',{name:'Selected list'}).click();
+  await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
@@ -89,7 +111,7 @@ test('local sample taxpayer can add, edit, import and prefill a beneficiary with
   await expect(dialog.getByText('1 valid, 0 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
-  await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(3);
+  await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   const intendedRecord=await page.locator('table').isVisible()

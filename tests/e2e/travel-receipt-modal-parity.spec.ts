@@ -39,6 +39,22 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
 
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
+    // Responsive layout may still be settling after the viewport switch.
+    // Poll the actual button rectangles; a persistent overlap still fails.
+    await expect.poll(async () => {
+      const rectangles = await Promise.all([newPayment, download, print].map(button => button.boundingBox()));
+      if (rectangles.some(box => !box)) return Number.POSITIVE_INFINITY;
+      let maxOverlap = 0;
+      for (let i = 0; i < rectangles.length; i++) {
+        for (let j = i + 1; j < rectangles.length; j++) {
+          const a = rectangles[i]!, b = rectangles[j]!;
+          const overlapX = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+          const overlapY = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+          maxOverlap = Math.max(maxOverlap, overlapX * overlapY);
+        }
+      }
+      return maxOverlap;
+    }, {timeout: 5000}).toBeLessThanOrEqual(1);
     const boxes = await Promise.all([newPayment, download, print].map(button => button.boundingBox()));
     for (const box of boxes) {
       expect(box).not.toBeNull();
