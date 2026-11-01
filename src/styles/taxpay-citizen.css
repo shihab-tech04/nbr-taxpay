@@ -344,6 +344,30 @@
 .taxpay-public-desktop-navigation { display:contents; }
 .taxpay-public-mobile-navigation { display:none; }
 
+/* Public mobile navigation shares the approved signed-in white header.
+   Scope to public pages only: taxpayer and desktop UI remain unchanged. */
+@media (max-width:900px) {
+  .taxpay-public-mobile-shell .citizen-header {
+    background:var(--color-taxpay-surface);
+    color:var(--color-taxpay-text);
+    border-bottom-color:var(--color-taxpay-border);
+  }
+  .taxpay-public-mobile-shell .citizen-header .citizen-brand,
+  .taxpay-public-mobile-shell .citizen-mobile-menu-trigger,
+  .taxpay-public-mobile-shell .citizen-header__notification {
+    color:var(--color-taxpay-dark);
+  }
+  .taxpay-public-mobile-shell .citizen-header__inner--standard .citizen-brand__wordmark {
+    background:transparent;
+    padding:0;
+  }
+  .taxpay-public-mobile-shell .citizen-mobile-menu-trigger,
+  .taxpay-public-mobile-shell .citizen-header__notification {
+    border:1px solid var(--color-taxpay-border);
+    background:var(--color-taxpay-surface);
+  }
+}
+
 /* Expanded citizen navigation is a mobile dock. Pay remains an independent floating action. */
 .citizen-bottom-nav { display:none; }
 @media (max-width:900px) {
