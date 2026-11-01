@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 
 test('taxpayer dashboard uses compact labels, no backend essays and no invented tax balance',async({page},info)=>{
@@ -57,3 +58,7 @@ test('public information copy is concise and bilingual while preserving payment 
  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
 });
 
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
