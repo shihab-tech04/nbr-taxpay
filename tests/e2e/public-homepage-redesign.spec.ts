@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 
 test('public homepage explains the payment path without duplicating service categories', async ({ page }, testInfo) => {
@@ -137,3 +138,7 @@ test('mobile banner keeps all five approved conceptual illustrations, one-line c
   await expect(carousel.locator('.public-hero-carousel__arrow').first()).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
