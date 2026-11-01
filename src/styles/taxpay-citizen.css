@@ -2285,7 +2285,10 @@
  .taxpay-citizen-shell .taxpay-modal .receipt-view__action{min-width:0;flex:1;padding:.6rem .5rem}
 }
 @media(max-width:390px){
- .taxpay-citizen-shell .taxpay-modal .receipt-view__action-group{width:100%;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ /* At the narrow mobile breakpoint the action group must OWN its flex row;
+   flex:1 from the parent rule otherwise shrinks it beneath width:100% and
+   lets Download/Print overlap the New payment action by a few pixels. */
+ .taxpay-citizen-shell .taxpay-modal .receipt-view__action-group{flex:0 0 100%;width:100%;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  .taxpay-citizen-shell .taxpay-modal .receipt-view__action{width:100%;font-size:14px;padding:.55rem .25rem}
 }
 @media print{

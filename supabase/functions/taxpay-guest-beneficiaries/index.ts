@@ -16,6 +16,7 @@ type RpcName =
   | 'taxpay_guest_beneficiary_create_list'
   | 'taxpay_guest_beneficiary_add'
   | 'taxpay_guest_beneficiary_update'
+  | 'taxpay_guest_beneficiary_move'
   | 'taxpay_guest_beneficiary_remove'
   | 'taxpay_guest_beneficiary_rename_list'
   | 'taxpay_guest_beneficiary_delete_list';
@@ -40,6 +41,7 @@ function publicError(error: unknown): { status: number; code: string } {
   if (/INVALID_BODY|INVALID_CONTENT_TYPE|INVALID_CAPABILITY|INVALID_PAGE|INVALID_LIST_NAME|INVALID_ROWS|INVALID_BENEFICIARY/.test(message))
     return { status: 400, code: message.split(':')[0] };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
+  if (/BENEFICIARY_ALREADY_IN_LIST/.test(message)) return { status: 409, code: 'BENEFICIARY_ALREADY_IN_LIST' };
   if (/23505|duplicate key value|already exists/.test(message)) return { status: 409, code: 'LIST_NAME_TAKEN' };
   if (/NOT_FOUND/.test(message)) return { status: 404, code: 'NOT_FOUND' };
   return { status: 503, code: 'SERVICE_UNAVAILABLE' };
@@ -147,6 +149,15 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_update', {
         p_capability_hash, p_beneficiary_id: body.id,
         p_name: validateName(body.name, 160, 'INVALID_BENEFICIARY_NAME'),
+      });
+    } else if (action === 'move') {
+      if (!uuidPattern.test(String(body.id ?? '')) ||
+          !uuidPattern.test(String(body.sourceListId ?? '')) ||
+          !uuidPattern.test(String(body.listId ?? ''))) throw new Error('NOT_FOUND');
+      if (body.sourceListId === body.listId) throw new Error('INVALID_BENEFICIARY');
+      data = await rpc(client, 'taxpay_guest_beneficiary_move', {
+        p_capability_hash, p_beneficiary_id: body.id,
+        p_source_list_id: body.sourceListId, p_target_list_id: body.listId,
       });
     } else if (action === 'remove') {
       if (!uuidPattern.test(String(body.id ?? ''))) throw new Error('NOT_FOUND');

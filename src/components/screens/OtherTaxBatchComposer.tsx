@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Search } from 'lucide-react';
+import { ChevronDown, ListChecks, Search } from 'lucide-react';
 import { SuggestedAmountInfo } from '../ui/SuggestedAmountInfo';
 import { paymentAmountSuggestionFor } from '../../services/paymentAmountSuggestions';
 import type { DemoUserId } from '../../data/demoUsers';
@@ -54,7 +54,15 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
+  const selectionMenuRef = useRef<HTMLDetailsElement>(null);
   const lastFocusRequest = useRef<number>(0);
+  useEffect(() => {
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!selectionMenuRef.current?.contains(event.target as Node)) selectionMenuRef.current?.removeAttribute('open');
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, []);
   const [activeTaxpayer, setActiveTaxpayer] = useState('primary');
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
@@ -145,8 +153,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     if (!current) return;
     if (update.assessmentYear && lines.some(line => line.id !== id && line.taxpayerId === current.taxpayerId &&
       line.headId === current.headId && line.assessmentYear === update.assessmentYear)) return;
-    // A User1 example amount is tied to one year. Never carry it to another year.
-    // Other taxpayers' manually entered amounts keep their previous behavior.
+    // A User1 example amount is tied to one year; other taxpayers keep manual values.
     const nextSuggestion = update.assessmentYear
       ? suggestedFor(current.taxpayerId, current.headId, update.assessmentYear) : null;
     const amount = update.amount ?? (update.assessmentYear && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
@@ -155,19 +162,20 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   };
 
   return (
-    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment" data-testid="other-tax-batch">
+    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch">
       <div className="payment-form-layout__sections">
         <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
           <div className="payment-form-section__heading">
             <div className="payment-form-section__heading-copy">
               <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
               {error && <p className="other-tax-error-heading">{tx('Review highlighted entries', 'চিহ্নিত তথ্য সংশোধন করুন')}</p>}
-              <p>{tx('Choose a taxpayer, then tick the payment heads. Enter the year and amount directly below each selection.',
-                'করদাতা নির্বাচন করে খাতে টিক দিন। নির্বাচিত খাতের নিচেই করবর্ষ ও পরিমাণ লিখুন।')}</p>
+              <p>{taxpayers.length > 1
+                ? tx('Choose a taxpayer, then tick payment heads. Enter the year and amount below each selection.', 'করদাতা নির্বাচন করে খাতে টিক দিন। প্রতিটি নির্বাচনের নিচে করবর্ষ ও পরিমাণ লিখুন।')
+                : tx('Tick payment heads, then enter the year and amount below each selection.', 'খাতে টিক দিন, তারপর প্রতিটি খাতের নিচে করবর্ষ ও পরিমাণ লিখুন।')}</p>
             </div>
           </div>
           <div className="payment-form-section__body space-y-4">
-            <div>
+            {taxpayers.length > 1 && <div>
               <p className="text-xs font-semibold text-slate-700 mb-2">
                 {tx('Paying tax for', 'যার কর পরিশোধ করছেন')}
               </p>
@@ -190,34 +198,46 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   </button>;
                 })}
               </div>
-              {taxpayers.length > 1 && <p className="mt-2 text-xs text-slate-600">
+              <p className="mt-2 text-xs text-slate-600">
                 {tx('Switch taxpayers here to select different heads. Other taxpayers’ selections are preserved.',
                   'অন্য করদাতার খাত নির্বাচন করতে এখানে করদাতা বদলান। পূর্বের নির্বাচন অপরিবর্তিত থাকবে।')}
-              </p>}
-            </div>
-            <div>
-              <label htmlFor="other-tax-head-filter" className="block text-xs font-semibold text-slate-700 mb-1">
+              </p>
+            </div>}
+            <div className="other-tax-head-tools">
+              <label htmlFor="other-tax-head-filter" className="other-tax-head-tools__label">
                 {tx('Find a payment head', 'পরিশোধের খাত খুঁজুন')}
               </label>
-              <div className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 min-h-11">
-                <Search size={17} aria-hidden="true" className="text-taxpay-primary shrink-0" />
-                <input id="other-tax-head-filter" type="search" value={query}
-                  onChange={event => setQuery(event.target.value)}
-                  placeholder={tx('Search name or code — e.g. 68A, motor car', 'নাম বা কোড দিয়ে খুঁজুন — যেমন 68A')}
-                  className="w-full min-w-0 text-sm bg-transparent outline-none" />
+              <div className="other-tax-head-tools__row">
+                <div className="other-tax-head-tools__search">
+                  <Search size={17} aria-hidden="true" className="text-taxpay-primary shrink-0" />
+                  <input id="other-tax-head-filter" type="search" value={query}
+                    onChange={event => setQuery(event.target.value)}
+                    placeholder={tx('Search name or code — e.g. 68A, motor car', 'নাম বা কোড দিয়ে খুঁজুন — যেমন 68A')}
+                    className="w-full min-w-0 text-sm bg-transparent outline-none" />
+                </div>
+                <details ref={selectionMenuRef} className="other-tax-selection-menu" data-testid="other-tax-selection-menu"
+                  onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); selectionMenuRef.current?.removeAttribute('open'); } }}>
+                  <summary aria-label={tx('Selection actions', 'খাত নির্বাচনের ব্যবস্থা')}>
+                    <ListChecks size={17} aria-hidden="true" />
+                    <span>{tx('Select', 'নির্বাচন')}</span>
+                    <ChevronDown size={16} aria-hidden="true" className="other-tax-selection-menu__chevron" />
+                  </summary>
+                  <div className="other-tax-selection-menu__panel" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
+                    <button type="button" onClick={() => { selectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
+                      disabled={!visibleEligible.some(head => !activeLines.some(line => line.headId === head.id))}>
+                      {search ? tx('Select all matching', 'মিল থাকা সব নির্বাচন করুন') : tx('Select all', 'সব নির্বাচন করুন')}
+                    </button>
+                    <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
+                      disabled={!activeLines.length}>
+                      {tx('Clear selection', 'নির্বাচন বাতিল করুন')}
+                    </button>
+                  </div>
+                </details>
               </div>
             </div>
-            <div className="other-tax-bulk-actions" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
-              <button type="button" onClick={selectAll} disabled={!visibleEligible.some(head => !activeLines.some(line => line.headId === head.id))}>
-                {search ? tx('Select all matching', 'মিল থাকা সব নির্বাচন করুন') : tx('Select all', 'সব নির্বাচন করুন')}
-              </button>
-              <button type="button" onClick={unselectAll} disabled={!activeLines.length}>
-                {tx('Unselect all', 'সব নির্বাচন বাতিল করুন')}
-              </button>
-            </div>
-            <p className="text-xs text-slate-600" role="status">
-              {tx(`${new Set(activeLines.map(line => line.headId)).size} heads, ${activeLines.length} year allocations selected for ${activePerson?.name || activePerson?.tin || 'this taxpayer'} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
-                `এই করদাতার জন্য ${new Set(activeLines.map(line => line.headId)).size}টি খাত, ${activeLines.length}টি করবর্ষ নির্বাচন · অন্যান্য করের ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
+            <p className="other-tax-selection-status" role="status">
+              {tx(`${new Set(activeLines.map(line => line.headId)).size} heads, ${activeLines.length} year allocations selected${taxpayers.length > 1 ? ' for ' + (activePerson?.name || activePerson?.tin || 'this taxpayer') : ''} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
+                `${new Set(activeLines.map(line => line.headId)).size}টি খাত, ${activeLines.length}টি করবর্ষ নির্বাচন · অন্যান্য করের ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
             </p>
             {error && <div className="other-tax-error-summary" role="alert" data-testid="other-tax-validation-summary">
               <strong>{tx('Check highlighted payment entries', 'চিহ্নিত পরিশোধের তথ্য পরীক্ষা করুন')}</strong>

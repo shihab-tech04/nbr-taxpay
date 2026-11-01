@@ -10,6 +10,7 @@ import { ServiceCategoryTag, type ServiceCategoryCode } from '../ui/ServiceCateg
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { taxpayerGreeting, isReturningTaxpayer } from '../../services/taxpayerGreeting';
 import { AccountActivitySummary } from './AccountActivitySummary';
+import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -91,6 +92,30 @@ export const TaxpayerDashboard: React.FC = () => {
         <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>} />
     {user ? <>
+      <section aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {([
+          {en:'Income tax liability',bn:'আয়কর দায়',
+            helpEn:'No verified assessed liability is available for this account.',
+            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত নির্ধারিত করদায় পাওয়া যায়নি।'},
+          {en:'TDS & advance tax',bn:'উৎসে কর ও অগ্রিম কর',
+            helpEn:'Verified withholding and advance-tax credits are not available for this account.',
+            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত উৎসে কর ও অগ্রিম কর ক্রেডিট পাওয়া যায়নি।'},
+          {en:'Direct payments',bn:'সরাসরি পরিশোধ',
+            helpEn:'Verified posted direct-payment credits are not available for this account.',
+            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত সরাসরি পরিশোধের ক্রেডিট পাওয়া যায়নি।'},
+          {en:'Remaining balance',bn:'অবশিষ্ট দায়',
+            helpEn:'A verified balance requires an assessed liability and eligible posted credits.',
+            helpBn:'যাচাইকৃত অবশিষ্ট দায়ের জন্য নির্ধারিত করদায় ও প্রযোজ্য পোস্টকৃত ক্রেডিট প্রয়োজন।'}
+        ] as const).map((item,index)=><TaxpayerFinancialKpi
+          key={item.en} language={language} titleEn={item.en} titleBn={item.bn}
+          value="—" helpEn={item.helpEn} helpBn={item.helpBn}
+          priority={index===3}/>)}
+      </section>
+      <p className="text-sm text-taxpay-muted" role="status">
+        {tr('Verified tax balances are not available. Your account activity is shown below.',
+          'যাচাইকৃত করের ব্যালেন্স পাওয়া যায়নি। নিচে আপনার অ্যাকাউন্টের কার্যক্রম দেখুন।')}
+      </p>
       <AccountActivitySummary ownerUid={user.id} language={language}
         onNavigate={(route) => navigate(route)} />
       {serviceShortcut}
