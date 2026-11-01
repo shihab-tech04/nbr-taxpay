@@ -12,7 +12,9 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
     review:document.querySelector('#taxpayer-attention-title')?.getBoundingClientRect().top,
     chart:document.querySelector('#taxpayer-coverage-title')?.getBoundingClientRect().top,
   }));
-  expect(order.review).toBeLessThan(order.chart);
+  expect(order.review).toBeDefined();
+  expect(order.chart).toBeDefined();
+  expect(order.review!).toBeLessThan(order.chart!);
   await expect(review).toBeVisible();
   await expect(charts).toBeVisible();
   await page.getByRole('group',{name:/Income tax: Jun 2026/}).getByRole('button',{name:/Income tax, Jun 2026/}).click();
