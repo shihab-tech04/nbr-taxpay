@@ -39,8 +39,8 @@ import { clearOtherTaxBatch, confirmedBatchReceipts, createOtherTaxBatch, loadOt
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
 import { SavedBeneficiaryPicker } from './SavedBeneficiaryPicker';
 import { SignedInTaxpayerCard, AccountPaymentSuggestions } from './SignedInPaymentEnhancements';
-import { activeAuthorizedTaxpayers } from '../../services/signedInPaymentContext';
-import { getHostedAuthorizations, userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
+import { loadBeneficiaries } from '../../services/beneficiaries';
+import { userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
@@ -238,7 +238,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = signedInProfile?.receiptMobile || phone;
   const [authorizedTaxpayerId, setAuthorizedTaxpayerId] = useState<DemoUserId | null>(null);
-  const [authorizationChecking, setAuthorizationChecking] = useState(false);
+  const [beneficiaryChecking, setBeneficiaryChecking] = useState(false);
+  const [beneficiaryRefreshKey, setBeneficiaryRefreshKey] = useState(0);
   const suggestionUserId = ownAccountTax ? demoConsentActor : authorizedTaxpayerId;
   const taxZone = ownProfile?.taxZone ?? '—';
   const taxCircle = ownProfile?.taxCircle ?? '—';
@@ -283,9 +284,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
 
   // Match the existing identity validator before enabling the primary action.
-  // Signed-in beneficiary consent is still verified asynchronously on Continue.
+  // Saved-beneficiary ownership is rechecked against current lists on Continue.
   const canContinueStep1 = (() => {
-    if (authorizationChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
+    if (beneficiaryChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
     if (signedInBeneficiarySelection && (!availableSavedTins ||
       !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
@@ -661,44 +662,46 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     nextField?.focus({preventScroll:true});
   };
 
+  // Saved contacts permit the payer to choose a TIN, not to read that taxpayer's
+  // private records. Re-read only the current account's lists before advancing
+  // or persisting a simulated payment; never rely on a route prefill or stale UI state.
+  const areCurrentSavedBeneficiaries = async (tins: string[]): Promise<boolean> => {
+    if (!tins.length || tins.some(tin => !tin)) return false;
+    const saved = await loadBeneficiaries(authenticatedUser?.id ?? null);
+    const ownedListIds = new Set(saved.lists.map(list => list.id));
+    const allowed = new Set(saved.people.filter(person => ownedListIds.has(person.list_id)).map(person => person.tin));
+    return tins.every(tin => allowed.has(tin));
+  };
+
   const handleStep1Next = async () => {
     if (signedInBeneficiarySelection && (!availableSavedTins ||
       !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) {
       setValidationError(language === 'bn' ? 'এগোনোর আগে আপনার সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন।' : 'Select beneficiaries from your saved lists before continuing.', 'tin');
       return;
     }
-    if (authorizationChecking || !validateIdentity()) return;
-    // Guest payments remain unchanged. Signed-in, facilitated demo payments
-    // require current hosted consent, including every additional taxpayer.
-    if (signedInAccount && forSelf === false) {
-      setAuthorizationChecking(true);
+    if (beneficiaryChecking || !validateIdentity()) return;
+    if (signedInBeneficiarySelection) {
+      setBeneficiaryChecking(true);
       try {
-        const actor = demoConsentActor;
-        if (!actor) throw new Error('An account-linked authorization is required for a facilitated payment.');
-        const active = activeAuthorizedTaxpayers(await getHostedAuthorizations(actor), actor);
-        const recipients = otherBatch ? batchTaxpayers : [{ id: 'primary', tin: taxpayerTin }];
-        const missing = recipients.find(person => !active.some(choice => choice.tin === person.tin));
-        if (missing) {
-          if (missing.id !== 'primary') setInvalidBatchTaxpayerId(missing.id);
-          const personNumber = recipients.findIndex(person => person.id === missing.id) + 1;
+        const tins = (otherBatch ? batchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
+        if (!(await areCurrentSavedBeneficiaries(tins))) {
+          setBeneficiaryRefreshKey(key => key + 1);
           setValidationError(language === 'bn'
-            ? `করদাতা ${personNumber} (${missing.tin}) আপনার অনুমোদিত তালিকায় নেই। অনুমোদিত করদাতা নির্বাচন করুন অথবা অনুমোদনের অনুরোধ করুন।`
-            : `Taxpayer ${personNumber} (${missing.tin}) is not approved for payment through your account. Choose an approved taxpayer or request access first.`, 'tin');
+            ? 'নির্বাচিত উপকারভোগী আপনার সংরক্ষিত তালিকায় নেই। তালিকাটি আবার লোড করে নির্বাচন করুন।'
+            : 'A selected beneficiary is no longer in your saved lists. Reload the list and select again.', 'tin');
           return;
         }
-        const verifiedIds: Record<string,DemoUserId> = {};
-        for (const recipient of recipients) {
-          const scenarioId=userIdForHostedTin(recipient.tin);
-          if (scenarioId) verifiedIds[recipient.tin] = scenarioId;
-        }
-        setAuthorizedTaxpayerIds(verifiedIds);
-        setAuthorizedTaxpayerId(userIdForHostedTin(taxpayerTin));
+        // Saving a beneficiary does not authorize access to that person's private
+        // scenario data, so do not populate consent-based suggestion identities.
+        setAuthorizedTaxpayerIds({});
+        setAuthorizedTaxpayerId(null);
       } catch {
-        setValidationError(language === 'bn' ? 'অনুমোদন যাচাই করা যায়নি। আবার চেষ্টা করুন।'
-          : 'Authorization could not be verified. Retry or open Manage authorization.', 'tin');
+        setValidationError(language === 'bn'
+          ? 'সংরক্ষিত উপকারভোগীর তালিকা যাচাই করা যায়নি। আবার চেষ্টা করুন।'
+          : 'Saved beneficiaries could not be verified. Try again.', 'tin');
         return;
       } finally {
-        setAuthorizationChecking(false);
+        setBeneficiaryChecking(false);
       }
     }
     setStep(2);
@@ -752,14 +755,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const pending = pendingStoryRef.current;
     if (!pending) { setPaymentPhase('failed'); setIsProcessing(false); return; }
     try {
-      if (signedInAccount && forSelf === false) {
-        const actor = demoConsentActor;
-        if (!actor) throw new Error('Account authorization unavailable');
-        const active = activeAuthorizedTaxpayers(await getHostedAuthorizations(actor), actor);
-        const recipients = otherBatch ? batchTaxpayers : [{ id: 'primary', tin: taxpayerTin }];
-        if (recipients.some(person => !active.some(choice => choice.tin === person.tin))) {
-          throw new Error('Authorization expired or revoked. Return to taxpayer details and select an active authorization.');
-        }
+      if (signedInAccount && pending.payload.details.payerMode === 'OTHER') {
+        const paymentTin = pending.payload.details.taxpayerTin;
+        if (typeof paymentTin !== 'string' || !(await areCurrentSavedBeneficiaries([paymentTin])))
+          throw new Error('Selected beneficiary no longer belongs to the signed-in account.');
       }
       const confirmed = await persistSimulatedPayment(pending.payload);
       const settledReceipt: ChallanReceipt = {
@@ -791,11 +790,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!batch || batch.phase !== 'READY') { setPaymentPhase('failed'); setIsProcessing(false); return; }
     try {
       if (signedInAccount && batch.items[0].payload.details.payerMode === 'OTHER') {
-        const actor = demoConsentActor;
-        if (!actor) throw new Error('Account authorization unavailable');
-        const active = activeAuthorizedTaxpayers(await getHostedAuthorizations(actor), actor);
-        if (batch.items.some(item => !active.some(choice => choice.tin === item.payload.details.taxpayerTin)))
-          throw new Error('Authorization unavailable');
+        const tins = batch.items.map(item => item.payload.details.taxpayerTin);
+        if (tins.some(tin => typeof tin !== 'string') ||
+            !(await areCurrentSavedBeneficiaries(tins as string[])))
+          throw new Error('A selected beneficiary no longer belongs to the signed-in account.');
       }
       await syncOtherTaxBatch(batch, persistSimulatedPayment, progress => {
         rememberBatch(progress);
@@ -1179,7 +1177,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </PaymentFormSection> : null}
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} hideHeading={ownAccountTax} title={signedInAccount && forSelf === false ? (language === 'bn' ? 'উপকারভোগী নির্বাচন' : 'Choose beneficiaries') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={signedInAccount && forSelf === false ? (language === 'bn' ? 'সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন' : 'Select beneficiaries from your saved lists') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? (language === 'bn' ? 'রসিদের জন্য আপনার নাম ও যোগাযোগের তথ্য' : 'Your name and receipt contact details') : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             
-            {signedInBeneficiarySelection && <SavedBeneficiaryPicker language={language} allowMultiple={otherBatch}
+            {signedInBeneficiarySelection && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple={otherBatch}
               selectedTins={(otherBatch ? batchTaxpayers : batchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
               onAvailableTins={setAvailableSavedTins}
               onChoose={selected => {
