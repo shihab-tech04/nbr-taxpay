@@ -1767,3 +1767,226 @@
   .other-tax-taxpayer-section { padding-bottom: 14px; }
   .other-tax-batch-panel .payment-form-section__body.space-y-4 { gap: 9px; }
 }
+
+
+/* Travel Tax: the same locked progress/modal layout as every TaxPay stage.
+   The main form alone scrolls; calculation is fixed on desktop and in the
+   footer on mobile. The public entry no longer has a second, 3-tab stepper. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .taxpay-modal__body {
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .tax-service-choice--travel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow,
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .tax-service-choice--travel > .travel-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 60%) minmax(0, 40%);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: var(--citizen-surface);
+  font-family: Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__main {
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 28px;
+  scrollbar-gutter: stable;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__summary {
+  display: flex;
+  flex-direction: column;
+  grid-column: 2;
+  grid-row: 1;
+  height: 100%;
+  min-height: 0;
+  padding: 0 20px 22px;
+  overflow-y: auto;
+  border-top: 0;
+  border-left: 1px solid var(--citizen-border);
+  background: var(--citizen-bg);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__summary-title {
+  min-height: 54px;
+  margin: 0 -20px 18px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--citizen-border);
+  color: var(--citizen-primary-dark);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__summary-title h3 {
+  font: 700 16px/1.4 Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__total {
+  font-family: Poppins, system-ui, sans-serif;
+  font-size: 26px;
+  padding-bottom: 18px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__summary-list :is(dt, dd) {
+  font-size: 14px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__panel .payment-form-section {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__panel .payment-form-section__heading {
+  min-height: 0;
+  padding: 0 0 12px;
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--citizen-border);
+  background: transparent;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__panel .payment-form-section__heading h2 {
+  font: 700 15px/1.5 Poppins, system-ui, sans-serif;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__panel .payment-form-section__body {
+  padding: 0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__routes {
+  gap: 10px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__route {
+  border-radius: 9px;
+  padding: 12px;
+  gap: 12px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__route-copy strong,
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__field label,
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__field :is(input, select) {
+  font-size: 14px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__route-price strong {
+  font: 700 14px/1.5 Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-content {
+  width: 100%;
+  min-width: 0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary {
+  display: none;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions {
+  justify-content: stretch;
+  width: 100%;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .payment-journey-footer__back {
+  display: none;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .payment-journey-footer__next {
+  display: flex;
+  width: 100%;
+  flex: 1 1 auto;
+  margin: 0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 9px;
+  font: 700 14px/1.5 Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .taxpay-modal__body:has(> .receipt-view) {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow,
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .tax-service-choice--travel > .travel-flow {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__main {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    padding: 16px;
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__summary {
+    display: none;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-content {
+    display: grid;
+    gap: 10px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--citizen-border);
+    border-radius: 9px;
+    background: var(--citizen-primary-light);
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary > summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    list-style: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 650;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary > summary::-webkit-details-marker {
+    display: none;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary > summary strong {
+    color: var(--citizen-primary-dark);
+    font-size: 16px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary dl {
+    max-height: 112px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 12px 8px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--citizen-border);
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary dt {
+    color: var(--citizen-muted);
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary dd {
+    margin: 0;
+    max-width: 60%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__routes {
+    gap: 9px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__route {
+    grid-template-columns: minmax(0, 1fr) auto 20px;
+    gap: 7px;
+    padding: 10px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__fields {
+    grid-template-columns: 1fr;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__fields > * {
+    grid-column: 1 / -1;
+  }
+}
