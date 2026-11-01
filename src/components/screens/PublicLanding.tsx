@@ -28,8 +28,9 @@ export const PublicLanding: React.FC = () => {
   const matchedOptions = cleanReference
     ? sampleSearchOptions.filter(option => option.value.toLowerCase().includes(cleanReference)).slice(0, 5)
     : [];
-  // The approved focus state shows only public synthetic examples; typed input filters them.
-  const suggestions = cleanReference ? matchedOptions : sampleSearchOptions.slice(0, 3);
+  // Only public synthetic references; matches and example numbers remain separate groups.
+  const exampleOptions = sampleSearchOptions.slice(0, 3);
+  const suggestions = [...matchedOptions, ...exampleOptions];
   const chooseReference = (reference: string) => {
     setSearchOpen(false);
     setActiveSuggestion(-1);
@@ -177,30 +178,46 @@ export const PublicLanding: React.FC = () => {
         </form>
         {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
-            <div className="public-record-suggestions__group">
-              <h3>{cleanReference ? t('Matching references', 'মিলে যাওয়া রেফারেন্স') : t('Example references', 'নমুনা রেফারেন্স')}</h3>
-              {suggestions.length > 0 ? (
-                <ul className="public-record-suggestions__list">
-                  {suggestions.map((option, index) => (
-                    <li key={option.kind + option.value}>
-                      <button
-                        id={`public-search-option-${index}`}
-                        className={activeSuggestion === index ? 'public-record-suggestions__option is-active' : 'public-record-suggestions__option'}
-                        type="button"
-                        onMouseDown={event => event.preventDefault()}
-                        onClick={() => chooseReference(option.value)}
-                      >
+            {cleanReference && (
+              <div className="public-record-suggestions__group">
+                <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>
+                {matchedOptions.length > 0 ? (
+                  <ul className="public-record-suggestions__list">
+                    {matchedOptions.map((option, index) => (
+                      <li key={'match-' + option.kind + option.value}>
+                        <button id={`public-search-option-${index}`}
+                          className={activeSuggestion === index ? 'public-record-suggestions__option is-active' : 'public-record-suggestions__option'}
+                          type="button" onMouseDown={event => event.preventDefault()}
+                          onClick={() => chooseReference(option.value)}>
+                          <p className="public-record-suggestions__value">{option.value}</p>
+                          <p className="public-record-suggestions__kind">{option.kind === 'challan' ? t('Challan', 'চালান') : option.kind === 'token' ? t('Token', 'টোকেন') : t('Transaction', 'লেনদেন')}</p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="public-record-suggestions__empty">{t('No matching references. You can still search using this reference.', 'মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
+                )}
+              </div>
+            )}
+            <div className="public-record-suggestions__group public-record-suggestions__examples">
+              <h3>{t('Example reference numbers', 'নমুনা রেফারেন্স নম্বর')}</h3>
+              <ul className="public-record-suggestions__list">
+                {exampleOptions.map((option, index) => {
+                  const optionIndex = matchedOptions.length + index;
+                  return (
+                    <li key={'sample-' + option.kind + option.value}>
+                      <button id={`public-search-option-${optionIndex}`}
+                        className={activeSuggestion === optionIndex ? 'public-record-suggestions__option is-active' : 'public-record-suggestions__option'}
+                        type="button" onMouseDown={event => event.preventDefault()}
+                        onClick={() => chooseReference(option.value)}>
                         <p className="public-record-suggestions__value">{option.value}</p>
-                        <p className="public-record-suggestions__kind">
-                          {option.kind === 'challan' ? t('Challan', 'চালান') : option.kind === 'token' ? t('Token', 'টোকেন') : t('Transaction', 'লেনদেন')}
-                        </p>
+                        <p className="public-record-suggestions__kind">{option.kind === 'challan' ? t('Challan', 'চালান') : option.kind === 'token' ? t('Token', 'টোকেন') : t('Transaction', 'লেনদেন')}</p>
                       </button>
                     </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="public-record-suggestions__empty">{t('No matching references. You can still search using this reference.', 'মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
-              )}
+                  );
+                })}
+              </ul>
             </div>
           </div>
         )}
