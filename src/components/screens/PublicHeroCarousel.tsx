@@ -149,6 +149,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const carouselRef = useRef<HTMLElement>(null);
   const pointerStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
   const bn = language === 'bn';
+  // Approved fixed left-side content follows the published intro CMS record;
+  // service-specific slides still rotate artwork only.
+  const mainCopy = slides.find(slide => !slide.serviceCode) ?? defaultSlides[0];
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % Math.max(slides.length, 1)), [slides.length]);
   const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % Math.max(slides.length, 1)), [slides.length]);
@@ -281,12 +284,12 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         >
           <div className="citizen-public-hero__copy">
             <h1 id="public-home-title">
-              <span className="public-hero-copy--desktop">{bn ? defaultSlides[0].headingBn : defaultSlides[0].headingEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? defaultSlides[0].mobileHeadingBn : defaultSlides[0].mobileHeadingEn}</span>
+              <span className="public-hero-copy--desktop">{bn ? mainCopy.headingBn : mainCopy.headingEn}</span>
+              <span className="public-hero-copy--mobile">{bn ? mainCopy.mobileHeadingBn : mainCopy.mobileHeadingEn}</span>
             </h1>
             <p>
-              <span className="public-hero-copy--desktop">{bn ? defaultSlides[0].descriptionBn : defaultSlides[0].descriptionEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? defaultSlides[0].mobileDescriptionBn : defaultSlides[0].mobileDescriptionEn}</span>
+              <span className="public-hero-copy--desktop">{bn ? mainCopy.descriptionBn : mainCopy.descriptionEn}</span>
+              <span className="public-hero-copy--mobile">{bn ? mainCopy.mobileDescriptionBn : mainCopy.mobileDescriptionEn}</span>
             </p>
             <div className="citizen-public-hero__actions public-guest-actions">
               <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? 'কর পরিশোধ' : 'Pay Tax'}>
