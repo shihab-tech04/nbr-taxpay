@@ -131,3 +131,28 @@
   .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal { width: 100%; }
   .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body { padding: 1rem; }
 }
+
+/* One secondary account-access action for private Beneficiaries deep links.
+   Reuse the existing sign-in modal without adding a second auth panel. */
+.taxpay-citizen-shell .taxpayer-login-email-entry {
+  display:block;
+  width:100%;
+  min-height:44px;
+  margin-top:1rem;
+  padding:.65rem 1rem;
+  border:1px solid var(--color-taxpay-primary);
+  border-radius:.65rem;
+  background:transparent;
+  color:var(--color-taxpay-primary);
+  font:inherit;
+  font-size:14px;
+  font-weight:650;
+  text-align:center;
+}
+.taxpay-citizen-shell .taxpayer-login-email-entry:hover {
+  background:var(--citizen-primary-light);
+}
+.taxpay-citizen-shell .taxpayer-login-email-entry:focus-visible {
+  outline:3px solid var(--color-taxpay-primary);
+  outline-offset:2px;
+}
