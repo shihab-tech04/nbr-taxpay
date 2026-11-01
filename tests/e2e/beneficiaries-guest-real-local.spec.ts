@@ -6,8 +6,10 @@ test('signed-out Beneficiaries deep links require verified taxpayer sign-in',asy
   for(const language of ['en','bn'] as const){
     const suffix=language==='bn'?'&lang=bn':'';
     await page.goto('/?action=beneficiaries'+suffix);
-    await expect(page.getByRole('heading',{name:language==='bn'?'করদাতার ব্যক্তিগত তথ্য':'Private taxpayer workspace'})).toBeVisible();
-    await expect(page.getByRole('link',{name:language==='bn'?'ইমেইলে সাইন ইন':'Sign in with email'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+    const login=page.getByRole('dialog',{name:language==='bn'?/করবৃত্ত/:'Sign In To Your Korbritto Account'});
+    await expect(login).toBeVisible();
+    await expect(page.getByRole('heading',{name:language==='bn'?'করদাতার ব্যক্তিগত তথ্য':'Private taxpayer workspace'})).toHaveCount(0);
+    await expect(login.getByRole('button',{name:language==='bn'?'ইমেইল দিয়ে সাইন ইন করুন':'Sign in with email instead'})).toBeVisible();
     await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
     await expect(page.getByRole('navigation',{name:language==='bn'?'প্রধান নেভিগেশন':'Main navigation'}).getByRole('button',{name:language==='bn'?'উপকারভোগী':'Beneficiaries'})).toHaveCount(0);
