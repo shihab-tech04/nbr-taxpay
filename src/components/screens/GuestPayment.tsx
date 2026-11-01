@@ -1433,7 +1433,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
                 <label htmlFor="guest-assessment-year" className="block text-slate-600 font-medium mb-1">{commonCopy.assessmentYear} *</label>
-                <select id="guest-assessment-year" required disabled={!!verifiedReference} value={assessmentYear} onChange={event => setAssessmentYear(event.target.value)} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
+                <select id="guest-assessment-year" required disabled={!!verifiedReference} value={assessmentYear} onChange={event => {
+                  setAssessmentYear(event.target.value);
+                  // A User1 amount belongs to its assessment year, not every year.
+                  if (suggestionUserId === 'user1') setAmountInputs({});
+                }} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
                   {['2027-28', '2026-27', '2025-26', '2024-25'].map(year => <option value={year} key={year}>{year}</option>)}
                 </select>
               </div>
