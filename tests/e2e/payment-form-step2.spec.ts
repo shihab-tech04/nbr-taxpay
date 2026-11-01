@@ -347,3 +347,52 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await expect(calc.locator('.payment-form-summary__breakdown button')).toHaveCount(0);
 });
+
+
+for (const locale of ['en', 'bn'] as const) {
+  test(`Other Tax self Step 1 uses the approved single card, looks up the name and clears the TIN (${locale})`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
+    await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
+    const modal = page.locator('.taxpay-modal').filter({ has: page.locator('.tax-service-choice__actions') });
+    await modal.locator('[data-payer-relationship="SELF"]').click();
+    await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
+    await modal.locator('[data-payment-access="GUEST"]').click();
+    await modal.locator('.tax-service-choice__actions').getByRole('button', { name: locale === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true }).click();
+
+    const card = modal.getByTestId('other-tax-primary-taxpayer');
+    await expect(card).toBeVisible();
+    await expect(modal.getByTestId('other-tax-taxpayer-list')).toHaveClass(/taxpay-taxpayer-list--single/);
+    await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toBeVisible();
+    await expect(modal.locator('.taxpay-taxpayer-list__count')).toHaveCount(0);
+    await expect(modal.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details' })).toHaveCount(0);
+    await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+    await expect(card.locator('.taxpay-taxpayer-row__fields')).toHaveCSS('grid-template-columns', /\d/);
+    await expect(card.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
+    await expect(card.locator('label[for="other-tax-primary-name"]')).toHaveText(locale === 'bn' ? 'করদাতার নাম' : 'Taxpayer name');
+    const geometry = await modal.locator('.payment-form-section--static').first().evaluate(section => {
+      const card = section.querySelector('[data-testid="other-tax-primary-taxpayer"]')!.getBoundingClientRect();
+      const name = section.querySelector('#other-tax-primary-name')!.getBoundingClientRect();
+      const tin = section.querySelector('#guest-tin')!.getBoundingClientRect();
+      const phone = section.querySelector('#guest-phone')!.getBoundingClientRect();
+      const reference = section.querySelector('#guest-notice-ref')!.getBoundingClientRect();
+      return { tinBeforeName: tin.bottom < name.top, nameBeforeReceipt: name.bottom < phone.top, sameReceiptRow: Math.abs(phone.top - reference.top) < 12 };
+    });
+    expect(geometry.tinBeforeName).toBe(true);
+    expect(geometry.nameBeforeReceipt).toBe(true);
+    if (page.viewportSize()!.width > 650) expect(geometry.sameReceiptRow).toBe(true);
+
+    await card.locator('#guest-tin').fill('111111111111');
+    await card.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true }).click();
+    await expect(card.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার ১' : 'User 1');
+    const clear = card.getByRole('button', { name: locale === 'bn' ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search' });
+    await expect(clear).toBeVisible();
+    await clear.click();
+    await expect(card.locator('#guest-tin')).toHaveValue('');
+    await expect(card.locator('#other-tax-primary-name')).toHaveValue('');
+    await expect(clear).toHaveCount(0);
+    await expect(card.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true })).toBeDisabled();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(2);
+  });
+}
