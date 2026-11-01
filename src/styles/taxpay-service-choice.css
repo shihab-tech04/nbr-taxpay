@@ -1430,47 +1430,35 @@
 }
 .other-tax-year-allocation__fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+  align-items: end;
   gap: 12px;
   min-width: 0;
 }
 .other-tax-year-allocation__fields > div { min-width: 0; }
-.other-tax-year-allocation__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  min-width: 0;
-  margin-bottom: 8px;
-  color: var(--citizen-muted);
-  font-size: 14px;
-  font-weight: 600;
-}
 .other-tax-year-remove {
   appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 0;
-  border-radius: 6px;
-  padding: 5px 7px;
-  background: transparent;
+  display: grid;
+  place-items: center;
+  align-self: end;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e6ccd0;
+  border-radius: 8px;
+  background: #fff;
   color: #a3283c;
   cursor: pointer;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 650;
-  min-height: 32px;
+  transition: border-color .15s ease, background-color .15s ease;
 }
-.other-tax-year-remove:hover { background: #fff0f2; }
+.other-tax-year-remove:hover { border-color: #a3283c; background: #fff0f2; }
 .other-tax-add-year {
   appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
-  width: calc(100% - 52px);
+  width: auto;
+  max-width: calc(100% - 52px);
   min-height: 44px;
   margin: 0 12px 12px 40px;
   padding: 9px 12px;
@@ -1487,8 +1475,11 @@
 .other-tax-add-year:hover { border-color: var(--citizen-primary); background: var(--citizen-primary-light); }
 @media (max-width: 575px) {
   .other-tax-year-allocation { padding-left: 26px; }
-  .other-tax-year-allocation__fields { grid-template-columns: minmax(0,1fr); }
-  .other-tax-add-year { margin-left: 26px; width: calc(100% - 38px); }
+  .other-tax-year-allocation__fields { grid-template-columns: minmax(0, 1fr) 44px; gap: 10px; }
+  .other-tax-year-allocation__fields > div:first-child { grid-column: 1 / -1; }
+  .other-tax-year-allocation__fields > div:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .other-tax-year-remove { grid-column: 2; grid-row: 2; }
+  .other-tax-add-year { margin-left: 26px; max-width: calc(100% - 38px); }
 }
 .other-tax-row--focused,
 .other-tax-year-allocation[data-focused="true"] {
