@@ -141,7 +141,6 @@ export const PublicLanding: React.FC = () => {
             maxLength={120}
             value={paymentReference}
             aria-controls="public-record-suggestions"
-            aria-expanded={searchOpen}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
