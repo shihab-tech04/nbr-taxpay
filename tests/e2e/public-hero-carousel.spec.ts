@@ -2,11 +2,11 @@ import { expect, test } from '@playwright/test';
 import { setWorkspaceLanguage } from './workspace-language';
 
 const illustrations = [
-  'taxpay-hero-intro-concept-v7',
-  'taxpay-hero-return-concept-v7',
-  'taxpay-hero-advance-concept-v7',
-  'taxpay-hero-withholding-concept-v7',
-  'taxpay-hero-travel-concept-v7',
+  'taxpay-hero-intro-v9',
+  'taxpay-hero-return-v9',
+  'taxpay-hero-advance-v9',
+  'taxpay-hero-withholding-v9',
+  'taxpay-hero-travel-v9',
 ];
 
 test('one stationary introductory banner displays five right-side illustrations', async ({ page }, testInfo) => {

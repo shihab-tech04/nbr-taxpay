@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
-import heroPaymentIllustration from '../../assets/taxpay-hero-intro-concept-v7.webp';
-import returnTaxIllustration from '../../assets/taxpay-hero-return-concept-v7.webp';
-import advanceTaxIllustration from '../../assets/taxpay-hero-advance-concept-v7.webp';
-import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-concept-v7.webp';
-import travelTaxIllustration from '../../assets/taxpay-hero-travel-concept-v7.webp';
+import heroPaymentIllustration from '../../assets/taxpay-hero-intro-v9.webp';
+import returnTaxIllustration from '../../assets/taxpay-hero-return-v9.webp';
+import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v9.webp';
+import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v9.webp';
+import travelTaxIllustration from '../../assets/taxpay-hero-travel-v9.webp';
 import { supabase } from '../../services/supabaseClient';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
