@@ -16,6 +16,7 @@ import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { PublicReport } from './components/screens/PublicReport';
 import { GuestPayment } from './components/screens/GuestPayment';
 import { Beneficiaries } from './components/screens/Beneficiaries';
+import { BeneficiariesSignIn } from './components/screens/BeneficiariesSignIn';
 import { TravelTax } from './components/screens/TravelTax';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
 import { TaxPayModal } from './components/ui/TaxPayModal';
@@ -213,7 +214,9 @@ const MainRouter: React.FC = () => {
       </> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
-        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
+        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : currentRoute === 'beneficiaries'
+          ? <BeneficiariesSignIn language={language} onBack={() => navigate('landing')} />
+          : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
             <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>
