@@ -160,14 +160,14 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
 
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'My tax liability' })).not.toBeChecked();
-  await expect(page.getByLabel('Taxpayer’s TIN')).toHaveCount(0);
+  await expect(page.getByLabel('Taxpayer TIN')).toHaveCount(0);
   await page.getByRole('radio', { name: 'My tax liability' }).check();
-  await expect(page.getByLabel('Taxpayer’s TIN')).toBeVisible();
+  await expect(page.getByLabel('Taxpayer TIN')).toBeVisible();
   await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
   await expect(page.locator('.citizen-pay')).toHaveCount(0);
   await expect(pageWidth(page)).resolves.toBeLessThanOrEqual(info.project.name === 'mobile-320' ? 322 : info.project.name === 'mobile-375' ? 377 : 1282);
 
-  await page.getByLabel('Taxpayer’s TIN').fill('123456789012');
+  await page.getByLabel('Taxpayer TIN').fill('123456789012');
   await page.getByLabel('Mobile number for receipt').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to Payment Head' }).click();
   await expect(page.locator('.payment-head-single')).toHaveCount(0);
