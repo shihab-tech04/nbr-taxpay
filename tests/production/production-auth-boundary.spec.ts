@@ -31,7 +31,13 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
 test('all private deep links fail closed without an authenticated session', async ({ page }) => {
   for (const action of privateRoutes) {
     await page.goto(site + '?action=' + action + '&demoUser=user1');
-    await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' }), action).toBeVisible();
+    if (action === 'beneficiaries') {
+      await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
+    } else {
+      await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' }), action).toBeVisible();
+    }
+    await expect(page.getByTestId('beneficiaries-page'), action).toHaveCount(0);
     await expect(page.getByTestId('user1-synthetic-workspace'), action).toHaveCount(0);
   }
   // An attacker-supplied browser-history role is not an authentication event.
@@ -73,4 +79,37 @@ test('sample-account Beneficiaries retains the approved left sidebar and content
   await page.reload();
   await expect(rail).toBeVisible();
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+});
+
+test('Beneficiaries deep link opens one login, then returns directly after User ID sign-in',async({page})=>{
+  await page.goto(site+'?action=beneficiaries');
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await expect(login).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  await expect(login.getByRole('button',{name:'Sign in with email instead'})).toBeVisible();
+  await login.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await login.getByLabel('Password',{exact:true}).fill('wrong');
+  await login.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(login.getByRole('alert')).toContainText('Incorrect User ID or password');
+  await login.getByLabel('Password',{exact:true}).fill('user1');
+  await login.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page).toHaveURL(/action=beneficiaries/);
+  await expect(login).toHaveCount(0);
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+});
+
+test('Bengali Beneficiaries email sign-in preserves the destination and language',async({page})=>{
+  await page.goto(site+'?action=beneficiaries&lang=bn');
+  const login=page.getByRole('dialog',{name:/করবৃত্ত/});
+  await expect(login).toBeVisible();
+  await login.getByRole('button',{name:'ইমেইল দিয়ে সাইন ইন করুন'}).click();
+  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page).toHaveURL(/returnTo=beneficiaries/);
+  await expect(page).toHaveURL(/lang=bn/);
+  await expect(login).toHaveCount(0);
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
 });

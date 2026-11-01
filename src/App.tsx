@@ -73,7 +73,11 @@ const MainRouter: React.FC = () => {
   // Receipt routes remain deep-linkable, but their UI lives in the shared modal.
   const receiptOverlayRoute = currentRoute === 'verify' || currentRoute === 'payment_details';
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
-  const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login';
+  // A saved-Beneficiaries deep link must open the approved sign-in modal, not a
+  // generic private-workspace gate. Verified and browser-local sample sessions
+  // continue directly to the unchanged Beneficiaries screen.
+  const beneficiaryLoginRequired = currentRoute === 'beneficiaries' && privateSampleGate && !checkingIdentity;
+  const loginOverlay = currentRoute === 'taxpayer_login' || currentRoute === 'office_login' || beneficiaryLoginRequired;
   const taxpayerSession = Boolean(verifiedApplicationUser || previewAccount ||
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
   // The public guide retains the same public navigation for guests and signed-in visitors.
@@ -213,7 +217,7 @@ const MainRouter: React.FC = () => {
       </> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
-        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
+        {beneficiaryLoginRequired ? <PublicLanding /> : privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
             <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>

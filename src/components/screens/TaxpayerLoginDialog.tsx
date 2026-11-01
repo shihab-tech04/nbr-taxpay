@@ -27,7 +27,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   embedded?: boolean;
   onValidityChange?: (valid: boolean) => void;
 } = {}) {
-  const { language, loginPreviewAccount, navigate } = useTaxState();
+  const { language, currentRoute, loginPreviewAccount, navigate } = useTaxState();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +38,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
   const credentialsReady = Boolean(userId.trim() && password.trim());
+  const requestedBeneficiaries = !embedded && currentRoute === 'beneficiaries';
   useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
   // The shared TaxPayModal owns Escape, focus containment, overlay and focus restoration.
@@ -51,7 +52,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
       setError('already_signed_in');
       return;
     }
-    if (!loginPreviewAccount(userId, password, { preserveRoute: preservePaymentJourney })) {
+    if (!loginPreviewAccount(userId, password, { preserveRoute: preservePaymentJourney, returnRoute: requestedBeneficiaries ? 'beneficiaries' : undefined })) {
       setError('invalid');
       inputRef.current?.focus();
     } else {
@@ -103,6 +104,11 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
             : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
         </p>}
       </form>
+      {requestedBeneficiaries && <button type="button"
+        className="taxpayer-login-email-entry"
+        onClick={() => navigate('secure_workspace', {returnTo:'beneficiaries'})}>
+        {bn ? 'ইমেইল দিয়ে সাইন ইন করুন' : 'Sign in with email instead'}
+      </button>}
     </section>;
   if (embedded) return content;
   return <TaxPayModal
