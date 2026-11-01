@@ -125,7 +125,7 @@ test('mobile banner keeps all five approved conceptual illustrations, one-line c
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
-  const expectedAssets = ['intro-concept-v7', 'return-concept-v7', 'advance-concept-v7', 'withholding-concept-v7', 'travel-concept-v7'];
+  const expectedAssets = ['intro-v9', 'return-v9', 'advance-v9', 'withholding-v9', 'travel-v9'];
   const images = await carousel.locator('.public-information-hero__image').evaluateAll(elements =>
     elements.map(element => (element as HTMLImageElement).src),
   );
