@@ -97,11 +97,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     setMonthFilter('all');
     const url=new URL(window.location.href);
     url.searchParams.set('scenarioYear',nextYear);
+    // Never carry the previous tax year's calendar month into the next year.
+    url.searchParams.delete('monthFilter');
     window.history.replaceState(window.history.state,'',url);
   };
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
+  const chooseHistoryMonth=(month:string)=>{
+    if(month!=='all'&&!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month))return;
+    setMonthFilter(month);
+    const url=new URL(window.location.href);
+    if(month==='all')url.searchParams.delete('monthFilter');
+    else url.searchParams.set('monthFilter',month);
+    window.history.replaceState(window.history.state,'',url);
+  };
   const [reviewFilter,setReviewFilter]=useState<State[]|null>(null);
   useEffect(()=>{
     if(route!=='history')return;
@@ -172,7 +182,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
       </select></label>
-      <label className="taxpayer-transaction-filter"><span>{tr('Calendar month','ক্যালেন্ডার মাস')}</span><select aria-label={tr('Transaction month','লেনদেনের মাস')} value={availableHistoryMonths.includes(monthFilter)?monthFilter:'all'} onChange={e=>setMonthFilter(e.target.value)}>
+      <label className="taxpayer-transaction-filter"><span>{tr('Calendar month','ক্যালেন্ডার মাস')}</span><select aria-label={tr('Transaction month','লেনদেনের মাস')} value={availableHistoryMonths.includes(monthFilter)?monthFilter:'all'} onChange={e=>chooseHistoryMonth(e.target.value)}>
         <option value="all">{tr('All months','সব মাস')}</option>{availableHistoryMonths.map(month=><option key={month} value={month}>{new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(month+'-01T00:00:00Z'))}</option>)}
       </select></label>
       <label className="taxpayer-transaction-filter"><span>{tr('Status','অবস্থা')}</span><select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} value={status} onChange={e=>{setReviewFilter(null);setStatus(e.target.value as State|'all');}}>
