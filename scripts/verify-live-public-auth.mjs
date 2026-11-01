@@ -145,15 +145,34 @@ try {
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    // PR preflight checks the currently published baseline; post-deploy checks
+    // require the new direct sign-in contract against the actual Pages URL.
+    const requireDirectBeneficiariesAuth = process.env.TAXPAY_REQUIRE_NEW_BENEFICIARIES_ENTRY === 'true';
+    if (requireDirectBeneficiariesAuth) {
+      await expect(beneficiaries.getByRole('heading', { name: 'Sign in to manage beneficiaries' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+      await expect(beneficiaries.getByRole('button', { name: 'Email sign-in link' })).toBeVisible();
+      await expect(beneficiaries.getByRole('button', { name: 'Use User ID (sample account)' })).toHaveCount(0);
+      await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
+    } else {
+      await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    }
+    await expect(beneficiaries).toHaveURL(/action=beneficiaries/);
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
     await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
     beneficiariesUrl.searchParams.set('lang', 'bn');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    if (requireDirectBeneficiariesAuth) {
+      await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী দেখতে সাইন ইন করুন' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
+      await expect(beneficiaries.getByRole('button', { name: 'সাইন-ইন লিংক পাঠান' })).toBeVisible();
+      await expect(beneficiaries.getByRole('button', { name: 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' })).toHaveCount(0);
+    } else {
+      await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries gate overflow: ${beneficiaryOverflow}px`);
