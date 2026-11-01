@@ -1584,3 +1584,41 @@
     align-content: start;
   }
 }
+
+
+/* Step 2: no empty delete column when a head has a single assessment year. */
+.other-tax-year-allocation__fields:not(:has(.other-tax-year-remove)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.taxpay-citizen-shell .payment-flow-embedded__footer-actions .tax-service-choice__continue:disabled,
+.taxpay-citizen-shell .payment-journey-footer__next .tax-service-choice__continue:disabled {
+  opacity: 1;
+  background: var(--color-taxpay-border);
+  color: var(--citizen-muted);
+  cursor: not-allowed;
+}
+/* Prevent calculation contents from widening or clipping the fixed summary rail. */
+@media (min-width: 801px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .payment-flow-embedded__content {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .payment-flow-embedded__payment > .payment-form-summary {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .payment-form-summary__breakdown,
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .payment-form-summary__taxpayers {
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 575px) {
+  .other-tax-year-allocation__fields:not(:has(.other-tax-year-remove)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .other-tax-year-allocation__fields:not(:has(.other-tax-year-remove)) > div:first-child,
+  .other-tax-year-allocation__fields:not(:has(.other-tax-year-remove)) > div:nth-child(2) {
+    grid-column: 1;
+  }
+}
