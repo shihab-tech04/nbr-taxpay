@@ -133,6 +133,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <div className="flex min-w-0 items-start justify-between gap-2"><p className="text-sm font-medium text-taxpay-muted">{tr(en,bengali)}</p>
       {info(tr(en,bengali),description,descriptionBn)}</div>
     <p className="mt-3 break-words text-2xl font-semibold tabular-nums text-taxpay-text">{value}</p>
+    {priority && totals.outstanding > 0 && <button type="button" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+      onClick={()=>navigate('wizard',{initialCategory:'TAX_WITH_RETURN',initialAssessmentYear:year})}>
+      {tr('Review payment options','পেমেন্টের বিকল্প দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+    </button>}
   </article>;
   const money=(x:number)=>amount(x,bn);
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
@@ -329,20 +333,62 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
           </button>)}
       </div>
     </section>
-    <section className={panel+' taxpayer-services-shortcut'} aria-labelledby="taxpayer-services-title">
-      <div>
-        <h2 id="taxpayer-services-title" className="text-lg font-semibold">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
-        {sub('Choose Tax with Return or Other Tax, then select an applicable payment type.','প্রথমে রিটার্নসহ কর অথবা অন্যান্য কর বেছে নিন। এরপর প্রযোজ্য কর পরিশোধের ধরন নির্বাচন করুন।')}
+    <section className={panel} aria-labelledby="taxpayer-year-comparison-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="taxpayer-year-comparison-title" className="text-base font-semibold">{tr('By assessment year','করবর্ষ অনুযায়ী')}</h2>
+          <p className="mt-1 text-sm text-taxpay-muted">{tr('Compare recorded credits and remaining balances across years.','করবর্ষ অনুযায়ী নথিভুক্ত ক্রেডিট ও অবশিষ্ট দায় তুলনা করুন।')}</p>
+        </div>
+        {view('ledger','Review tax ledger','কর লেজার দেখুন')}
       </div>
-      {view('services','View payment services','পরিশোধ সেবাসমূহ দেখুন')}
+      <div className="mt-4 overflow-x-auto rounded-xl border border-taxpay-border" role="region" aria-label={tr('Assessment-year tax position','করবর্ষভিত্তিক কর অবস্থান')} tabIndex={0}>
+        <table className="w-full min-w-[660px] text-left text-sm">
+          <thead className="bg-taxpay-background text-taxpay-muted"><tr>
+            <th scope="col" className="px-3 py-3 font-medium">{tr('Year','করবর্ষ')}</th>
+            <th scope="col" className="px-3 py-3 text-right font-medium">{tr('Liability','দায়')}</th>
+            <th scope="col" className="px-3 py-3 text-right font-medium">{tr('TDS + advance','উৎসে + অগ্রিম')}</th>
+            <th scope="col" className="px-3 py-3 text-right font-medium">{tr('Direct payments','সরাসরি পেমেন্ট')}</th>
+            <th scope="col" className="px-3 py-3 text-right font-medium">{tr('Remaining','অবশিষ্ট')}</th>
+            <th scope="col" className="px-3 py-3 font-medium">{tr('Status','অবস্থা')}</th>
+          </tr></thead>
+          <tbody className="divide-y divide-taxpay-border">
+            {taxYears.map(({year:rowYear})=>{
+              const item=yearSummary(rowYear)!;
+              return <tr key={rowYear} className={year===rowYear?'bg-taxpay-light/50':''}>
+                <td className="px-3 py-3"><button type="button" aria-current={year===rowYear?'true':undefined}
+                  className="min-h-10 text-left font-semibold text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" onClick={()=>changeYear(rowYear)}>{rowYear}</button></td>
+                <td className="px-3 py-3 text-right tabular-nums">{money(item.liability)}</td>
+                <td className="px-3 py-3 text-right tabular-nums">{money(item.tds+item.ait)}</td>
+                <td className="px-3 py-3 text-right tabular-nums">{money(item.direct)}</td>
+                <td className="px-3 py-3 text-right font-semibold tabular-nums">{money(item.outstanding)}</td>
+                <td className="px-3 py-3">{item.outstanding>0?tr('Outstanding','বকেয়া'):tr('Settled','নিষ্পন্ন')}</td>
+              </tr>;
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-taxpay-muted">{tr('Only posted income tax, TDS and advance tax reduce the displayed balance. Pending, reversed and travel tax are excluded.','শুধু নথিভুক্ত আয়কর, উৎসে কর ও অগ্রিম কর অবশিষ্ট দায় থেকে বাদ যায়। অপেক্ষমাণ, প্রত্যাবর্তিত ও ভ্রমণ কর বাদ।')}</p>
     </section>
-    {totals.outstanding>0 && <section className={panel} aria-labelledby="taxpayer-selected-payment-heading">
-      <h2 id="taxpayer-selected-payment-heading" className="text-base font-semibold">{tr('Review a suggested payment','পরামর্শকৃত পেমেন্ট যাচাই করুন')}</h2>
-      <p className="mt-2 text-sm text-taxpay-muted">{tr('Displayed Tax with Return balance for ','প্রদর্শিত রিটার্নসহ করের অবশিষ্ট, করবর্ষ ')}{year} · {money(totals.outstanding)}. {tr('Confirm the year, applicable head and amount before payment.','পেমেন্টের আগে করবর্ষ, প্রযোজ্য খাত ও পরিমাণ যাচাই করুন।')}</p>
-      <button type="button" className={action+' mt-3'} onClick={()=>navigate('wizard',{
-        initialCategory:'TAX_WITH_RETURN',initialAssessmentYear:year,initialAmount:totals.outstanding.toFixed(2)
-      })}>{tr('Pay selected tax','নির্বাচিত কর পরিশোধ করুন')} <ArrowRight size={16} aria-hidden="true"/></button>
-    </section>}
+    <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
+        {view('history','View all activity','সব কার্যক্রম দেখুন')}
+      </div>
+      <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
+        {[...scoped].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
+            <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
+          </div>
+          <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
+          <div>{tag(item.state)}</div>
+          <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+        </li>)}
+      </ul>
+      <button type="button" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-medium text-taxpay-primary hover:underline" onClick={()=>navigate('services')}>
+        {tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+      </button>
+    </section>
   </>;
   const journalEntries=(()=>{
     let balance=totals.liability;
@@ -419,7 +465,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
-    {(overviewRoute||route==='services')&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
+    {route==='history'&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}
