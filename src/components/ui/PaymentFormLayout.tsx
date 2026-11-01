@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDown, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
+import { amountInTakaWords } from '../../services/amountInWords';
 import type { ServiceCategoryCode } from './ServiceCategoryTag';
 
 type Language = 'en' | 'bn';
@@ -66,6 +67,21 @@ interface PaymentSummaryProps {
 
 export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry }: PaymentSummaryProps) {
   const bn = language === 'bn';
+  const amountWords = amountInTakaWords(amount, language);
+  const renderBreakdownEntry = (item: NonNullable<PaymentSummaryProps['breakdown']>[number], index: number) => {
+    const contents = <>
+      <span className="payment-form-summary__entry-description">
+        <span>{item.label}</span>
+        {item.detail && <small>{item.detail}</small>}
+      </span>
+      <strong>{item.value === null ? '—' : formatCurrency(item.value, language)}</strong>
+    </>;
+    return item.id && onSelectEntry
+      ? <button type="button" key={item.id} className="payment-form-summary__entry payment-form-summary__entry--link"
+          aria-label={bn ? `সম্পাদনা করুন: ${item.label}, ${item.detail || ''}` : `Edit ${item.label}, ${item.detail || ''}`}
+          onClick={() => onSelectEntry(item.id!)}>{contents}</button>
+      : <div key={item.id ?? index} className="payment-form-summary__entry">{contents}</div>;
+  };
   return (
     <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
       <div className="payment-form-summary__heading"><ReceiptText size={19} aria-hidden="true" />
@@ -73,7 +89,8 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       </div>
       <p className="payment-form-summary__eyebrow">{bn ? 'পরিশোধের মোট পরিমাণ' : 'Payment total'}</p>
       <output className="payment-form-summary__total" aria-live="polite">{amount === null ? '—' : formatCurrency(amount, language)}</output>
-      <p className="payment-form-summary__help">{helpText || (bn ? 'ফর্মে তথ্য পরিবর্তনের সঙ্গে হিসাব আপডেট হয়।' : 'Updates as you complete the form.')}</p>
+      {amountWords && <p className="payment-form-summary__amount-words" data-testid="payment-total-in-words">{amountWords}</p>}
+      {helpText && <p className="payment-form-summary__help">{helpText}</p>}
       {(!hideService || tin || year || head) && <dl className={categoryCode === 'TAX_WITH_RETURN' && head
         ? 'payment-form-summary__rows payment-form-summary__rows--return-context'
         : 'payment-form-summary__rows'}>
@@ -84,20 +101,13 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       </dl>}
       {breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
-        {breakdown.map((item, index) => {
-          const contents = <>
-            <span className="payment-form-summary__entry-description">
-              <span>{item.label}</span>
-              {item.detail && <small>{item.detail}</small>}
-            </span>
-            <strong>{item.value === null ? '—' : formatCurrency(item.value, language)}</strong>
-          </>;
-          return item.id && onSelectEntry
-            ? <button type="button" key={item.id} className="payment-form-summary__entry payment-form-summary__entry--link"
-                aria-label={bn ? `সম্পাদনা করুন: ${item.label}, ${item.detail || ''}` : `Edit ${item.label}, ${item.detail || ''}`}
-                onClick={() => onSelectEntry(item.id!)}>{contents}</button>
-            : <div key={index} className="payment-form-summary__entry">{contents}</div>;
-        })}
+        {breakdown.slice(0, 6).map(renderBreakdownEntry)}
+        {breakdown.length > 6 && <details className="payment-form-summary__more-heads">
+          <summary>{bn ? `আরও ${breakdown.length - 6}টি খাত দেখুন` : `Show ${breakdown.length - 6} more selected heads`}</summary>
+          <div className="payment-form-summary__more-heads-list">
+            {breakdown.slice(6).map((item, index) => renderBreakdownEntry(item, index + 6))}
+          </div>
+        </details>}
       </div>}
       {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
         <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
