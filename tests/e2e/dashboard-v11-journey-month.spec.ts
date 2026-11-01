@@ -22,6 +22,9 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await expect(page.getByRole('list',{name:'Chronological account events'})).toHaveCount(0);
   await expect(page.getByRole('combobox',{name:'Transaction category'})).toHaveValue('income');
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-06');
+  await expect(page).toHaveURL(/monthFilter=2026-06/);
+  await page.reload();
+  await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-06');
   await expect(page.getByText('Records: 1')).toBeVisible();
   await expect(page.getByText('DEMO-PAY-01').first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02')).toHaveCount(0);
