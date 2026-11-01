@@ -19,6 +19,7 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await expect(charts).toBeVisible();
   await page.getByRole('group',{name:/Income tax: Jun 2026/}).getByRole('button',{name:/Income tax, Jun 2026/}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await expect(page.getByRole('list',{name:'Chronological account events'})).toHaveCount(0);
   await expect(page.getByRole('combobox',{name:'Transaction category'})).toHaveValue('income');
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-06');
   await expect(page.getByText('Records: 1')).toBeVisible();
