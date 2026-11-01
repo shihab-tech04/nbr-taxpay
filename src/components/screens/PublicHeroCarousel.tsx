@@ -325,7 +325,16 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         </button>
       </div>
       <span className="sr-only" role="status" aria-live="polite">
-        {bn ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
+        <span className="public-hero-copy--desktop">
+          {bn
+            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}. ${slides[activeIndex].descriptionBn}`
+            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}. ${slides[activeIndex].descriptionEn}`}
+        </span>
+        <span className="public-hero-copy--mobile">
+          {bn
+            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].mobileHeadingBn}. ${slides[activeIndex].mobileDescriptionBn}`
+            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].mobileHeadingEn}. ${slides[activeIndex].mobileDescriptionEn}`}
+        </span>
       </span>
     </div>
   );
