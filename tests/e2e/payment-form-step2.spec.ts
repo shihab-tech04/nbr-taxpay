@@ -354,7 +354,7 @@ for (const locale of ['en', 'bn'] as const) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
     await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
-    const modal = page.locator('.taxpay-modal').filter({ has: page.locator('.tax-service-choice__actions') });
+    const modal = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
     await modal.locator('[data-payer-relationship="SELF"]').click();
     await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
     await modal.locator('[data-payment-access="GUEST"]').click();
@@ -367,7 +367,8 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(modal.locator('.taxpay-taxpayer-list__count')).toHaveCount(0);
     await expect(modal.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details' })).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
-    await expect(card.locator('.taxpay-taxpayer-row__fields')).toHaveCSS('grid-template-columns', /\d/);
+    const cardGridColumns = await card.locator('.taxpay-taxpayer-row__fields').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    expect(cardGridColumns).toBe(1);
     await expect(card.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
     await expect(card.locator('label[for="other-tax-primary-name"]')).toHaveText(locale === 'bn' ? 'করদাতার নাম' : 'Taxpayer name');
     const geometry = await modal.locator('.payment-form-section--static').first().evaluate(section => {
