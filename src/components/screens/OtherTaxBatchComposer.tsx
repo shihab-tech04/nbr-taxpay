@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ListChecks, Search } from 'lucide-react';
+import { ChevronDown, ListChecks, Plus, Search, X } from 'lucide-react';
 import { SuggestedAmountInfo } from '../ui/SuggestedAmountInfo';
 import { paymentAmountSuggestionFor } from '../../services/paymentAmountSuggestions';
 import type { DemoUserId } from '../../data/demoUsers';
@@ -291,15 +291,25 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                             </span>}
                           </span>
                         </label>
-                        {headLines.map(line => {
+                        {headLines.map((line, yearIndex) => {
                           const amountId = 'other-tax-amount-' + line.id;
                           const lineInvalid = Boolean(error && isIncomplete(line));
                           const suggestedAmount = suggestedFor(line.taxpayerId, head.id, line.assessmentYear);
                           return <div key={line.id}
-                            className="other-tax-year-allocation grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
+                            className="other-tax-year-allocation"
                             data-testid="other-tax-line" data-head-id={head.id} data-line-id={line.id}
                             data-invalid={lineInvalid ? 'true' : undefined}
                             data-focused={focusRequest?.lineId === line.id ? 'true' : undefined}>
+                            {headLines.length > 1 && <div className="other-tax-year-allocation__toolbar">
+                              <span>{tx('Year allocation', 'করবর্ষের বরাদ্দ')} {yearIndex + 1}</span>
+                              <button type="button" className="other-tax-year-remove"
+                                onClick={() => onChange(lines.filter(item => item.id !== line.id))}
+                                aria-label={tx('Remove this year', 'এই করবর্ষ সরান') + ': ' + line.assessmentYear}>
+                                <X size={15} aria-hidden="true" />
+                                <span>{tx('Remove year', 'করবর্ষ সরান')}</span>
+                              </button>
+                            </div>}
+                            <div className="other-tax-year-allocation__fields">
                             <div>
                               <label className="block text-xs font-semibold mb-1" htmlFor={`other-tax-year-${line.id}`}>
                                 {tx('Assessment year', 'করবর্ষ')} *
@@ -335,17 +345,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                                 {tx('Enter a positive amount using digits (up to 2 decimal places).',
                                   'সংখ্যা দিয়ে শূন্যের বেশি পরিমাণ লিখুন (সর্বোচ্চ ২ দশমিক স্থান)।')}
                               </p>}
-                              {headLines.length > 1 && <button type="button" className="other-tax-year-remove"
-                                onClick={() => onChange(lines.filter(item => item.id !== line.id))}
-                                aria-label={tx('Remove', 'সরান') + ' ' + head.codeEn + ' ' + line.assessmentYear}>
-                                {tx('Remove this year', 'এই করবর্ষ সরান')}
-                              </button>}
+                            </div>
                             </div>
                           </div>;
                         })}
                         {headLines.length > 0 && availableYears.length > 0 &&
                           <button type="button" className="other-tax-add-year" onClick={() => addYear(head.id)}>
-                            + {tx('Add another assessment year', 'আরেকটি করবর্ষ যোগ করুন')}
+                            <Plus size={16} aria-hidden="true" /> {tx('Add another assessment year', 'আরেকটি করবর্ষ যোগ করুন')}
                           </button>}
                       </li>;
                     })}
