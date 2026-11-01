@@ -230,9 +230,6 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
             </div>}
             {error && <p className="other-tax-error-heading">{tx('Review highlighted entries', 'চিহ্নিত তথ্য সংশোধন করুন')}</p>}
-            <p className="other-tax-guidance">{taxpayers.length > 1
-              ? tx('Select heads, year & amount. Switching taxpayers keeps selections.', 'খাত, করবর্ষ ও পরিমাণ দিন। করদাতা বদলালেও নির্বাচন থাকবে।')
-              : tx('Select heads, year & amount.', 'খাত, করবর্ষ ও পরিমাণ দিন।')}</p>
             <div className="other-tax-head-tools">
               <label htmlFor="other-tax-head-filter" className="other-tax-head-tools__label sr-only">
                 {tx('Find a payment head', 'পরিশোধের খাত খুঁজুন')}
