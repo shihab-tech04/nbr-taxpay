@@ -516,7 +516,7 @@ test('Step 1 shows a pending calculation rather than a misleading zero', async (
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('1 taxpayer added');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
   await expect(dialog.locator('.payment-form-summary__help'))
-    .toContainText('Your total will appear after you choose payment heads and amounts in Step 2.');
+    .toContainText('Add payment heads and amounts to see the total.');
 });
 
 test('additional taxpayers are not blocked by an unapproved 20-person limit', async ({ page }) => {
