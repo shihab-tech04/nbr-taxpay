@@ -17,6 +17,22 @@ function browserStorage(): Storage {
   }
 }
 
+/**
+ * A private account can offer an explicit, non-destructive import only if this
+ * browser already holds a valid guest address-book capability. Do not create a
+ * new guest session merely to decide whether to display the recovery action.
+ * Never return or log the capability.
+ */
+export function hasExistingGuestBeneficiaryAccess(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const value = window.localStorage.getItem(capabilityKey);
+    return value !== null && capabilityPattern.test(value);
+  } catch {
+    return false;
+  }
+}
+
 function createCapability(): string {
   if (!globalThis.crypto?.getRandomValues) {
     throw new Error('Secure guest storage is unavailable in this browser. Open Korbritto over HTTPS and try again.');

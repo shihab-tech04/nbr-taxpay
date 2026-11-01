@@ -31,7 +31,7 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
 test('all private deep links fail closed without an authenticated session', async ({ page }) => {
   for (const action of privateRoutes) {
     await page.goto(site + '?action=' + action + '&demoUser=user1');
-    await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' }), action).toBeVisible();
+    await expect(page.getByRole('heading', { name: action === 'beneficiaries' ? 'Sign in to manage beneficiaries' : 'Private taxpayer workspace' }), action).toBeVisible();
     await expect(page.getByTestId('user1-synthetic-workspace'), action).toHaveCount(0);
   }
   // An attacker-supplied browser-history role is not an authentication event.
