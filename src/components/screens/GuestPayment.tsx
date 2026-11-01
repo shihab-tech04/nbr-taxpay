@@ -1010,6 +1010,18 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
   };
 
+  // Reuse the reference field so self-payment keeps its approved mobile/reference
+  // row while representative payments can pair email/reference below name/mobile.
+  const noticeReferenceField = !isWithholdingMode ? (
+              <div className="payment-identity__contact-reference">
+                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
+                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
+                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
+                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+                {fieldError('noticeReference')}
+                </div>
+  ) : null;
+
   if (step === 4) {
     const completed = paymentPhase === 'settled';
     const bankPending = paymentPhase === 'pending-bank';
@@ -1218,7 +1230,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               </>}
               {otherBatch && forSelf === false && !signedInAccount && <h3 className="payment-identity__receipt-heading">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
-              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__contact-grid${ownAccountTax ? ' payment-identity__contact-grid--account' : ''}${forSelf !== false || signedInAccount ? ' payment-identity__contact-grid--no-name' : ''}`}>
+              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__contact-grid${ownAccountTax ? ' payment-identity__contact-grid--account' : ''}${signedInAccount ? ' payment-identity__contact-grid--no-name' : ''}`}>
               {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম' : 'Your name') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
                 <input
@@ -1251,6 +1263,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 />
                 {fieldError('phone')}
                 </div>}
+              {forSelf === true && !signedInAccount && noticeReferenceField}
               {!ownAccountTax && <div>
                 <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
                 <input id="guest-receipt-email" type="email" inputMode="email" autoComplete="email"
@@ -1261,13 +1274,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary" />
                 {fieldError('email')}
               </div>}
-              {!isWithholdingMode && <div>
-                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
-                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
-                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
-                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
-                {fieldError('noticeReference')}
-                </div>}
+              {(forSelf === false || signedInAccount) && noticeReferenceField}
               </div>}
             </div>
             </PaymentFormSection>}
