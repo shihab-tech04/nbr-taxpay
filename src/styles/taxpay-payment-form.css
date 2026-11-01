@@ -265,6 +265,19 @@
 }
 
 
+/* Own-liability Other Tax uses the approved one-taxpayer card and stacked name field. */
+.taxpay-taxpayer-list--single{margin-bottom:16px}
+.taxpay-taxpayer-list--single .taxpay-taxpayer-row__fields{grid-template-columns:minmax(0,1fr);gap:14px}
+.taxpay-taxpayer-row__tin-entry{position:relative;flex:1 1 auto;min-width:0}
+.taxpay-taxpayer-row__tin-entry>input{width:100%;padding-right:46px}
+.taxpay-taxpayer-row__tin-clear{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:8px;
+  background:transparent;color:var(--color-taxpay-muted);cursor:pointer
+}
+.taxpay-taxpayer-row__tin-clear:hover{background:var(--color-taxpay-light);color:var(--color-taxpay-primary)}
+.taxpay-taxpayer-row__tin-clear:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:1px}
+
 /* Lookup stays attached to its own taxpayer TIN in every modal service. */
 .taxpay-taxpayer-row__tin-search{display:flex;align-items:stretch;gap:8px;min-width:0}
 .taxpay-taxpayer-row__tin-search>input{flex:1 1 auto;min-width:0;width:1px}
