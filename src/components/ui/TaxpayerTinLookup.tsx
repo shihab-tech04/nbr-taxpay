@@ -70,7 +70,7 @@ export function TaxpayerTinLookup({
           </button>}
         </div>
         <button type="button" className="tin-lookup__search taxpayer-tin-lookup__search"
-          disabled={locked || !canSearch} onClick={onSearch}>
+          disabled={disabled || !canSearch} onClick={onSearch}>
           <Search size={17} aria-hidden="true" />{bn ? 'খুঁজুন' : 'Search'}
         </button>
       </div>
