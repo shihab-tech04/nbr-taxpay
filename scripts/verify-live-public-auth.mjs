@@ -148,7 +148,13 @@ try {
     // PR preflight checks the currently published baseline; post-deploy checks
     // require the new direct sign-in contract against the actual Pages URL.
     const requireDirectBeneficiariesAuth = process.env.TAXPAY_REQUIRE_NEW_BENEFICIARIES_ENTRY === 'true';
-    if (requireDirectBeneficiariesAuth) {
+    // Future PR preflights may target a site that already has the new login.
+    // Wait for either authorized sign-in shell, then enforce the new contract in
+    // post-deploy verification of this release.
+    await expect(beneficiaries.locator('section.beneficiary-sign-in, section.citizen-account-gate')).toBeVisible({timeout: 30_000});
+    const actualDirectBeneficiariesAuth = await beneficiaries.getByTestId('beneficiary-sign-in').count() === 1;
+    if (requireDirectBeneficiariesAuth && !actualDirectBeneficiariesAuth) throw new Error('Deployed Beneficiaries still shows obsolete workspace gate');
+    if (actualDirectBeneficiariesAuth) {
       await expect(beneficiaries.getByRole('heading', { name: 'Sign in to manage beneficiaries' })).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaries.getByRole('textbox', { name: 'Email address' })).toBeVisible();
       await expect(beneficiaries.getByRole('button', { name: 'Email sign-in link' })).toBeVisible();
@@ -164,7 +170,10 @@ try {
     await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
     beneficiariesUrl.searchParams.set('lang', 'bn');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    if (requireDirectBeneficiariesAuth) {
+    await expect(beneficiaries.locator('section.beneficiary-sign-in, section.citizen-account-gate')).toBeVisible({timeout: 30_000});
+    const actualBnDirectBeneficiariesAuth = await beneficiaries.getByTestId('beneficiary-sign-in').count() === 1;
+    if (requireDirectBeneficiariesAuth && !actualBnDirectBeneficiariesAuth) throw new Error('Deployed Bengali Beneficiaries still shows obsolete workspace gate');
+    if (actualBnDirectBeneficiariesAuth) {
       await expect(beneficiaries.getByRole('heading', { name: 'উপকারভোগী দেখতে সাইন ইন করুন' })).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaries.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
       await expect(beneficiaries.getByRole('button', { name: 'সাইন-ইন লিংক পাঠান' })).toBeVisible();
