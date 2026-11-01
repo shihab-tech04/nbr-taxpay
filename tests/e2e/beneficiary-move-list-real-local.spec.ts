@@ -83,7 +83,7 @@ test('beneficiary Edit moves only its list, persists, rejects collisions and can
     });
     expect(collision.status).toBe(201);
     await page.setViewportSize({width:1440,height:900});
-    const desktopRow=page.getByRole('row').filter({hasText:'012345678901'});
+    const desktopRow=page.getByTestId('beneficiary-records').getByRole('listitem').filter({hasText:'012345678901'});
     await desktopRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await dialog.locator('#beneficiary-edit-list').selectOption(family);
