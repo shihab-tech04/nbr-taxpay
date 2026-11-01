@@ -256,9 +256,12 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   if (!slides.length) {
     // An unverified client fallback must never override SQL publish status.
     // Preserve functional payment entrypoints without showing any banner image.
-    return <section className="public-hero-carousel-shell public-hero-carousel--offline"
-      aria-label={bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}>
-      <div className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed">
+    return <div className="public-hero-carousel-shell public-hero-carousel--offline">
+      <section className="public-hero-carousel" role="region"
+        aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
+        tabIndex={0}>
+        <article className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
+          data-banner-service="intro" data-banner-kind="intro">
         <div className="citizen-public-hero__copy">
           <h1 id="public-home-title">{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
           <p role="status">{bannerStatus === 'loading'
@@ -275,8 +278,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             {bn ? 'আবার চেষ্টা করুন' : 'Retry banner loading'}
           </button>}
         </div>
-      </div>
-    </section>;
+        </article>
+      </section>
+    </div>;
   }
   // The SQL main record owns the stationary copy. Changing the active image
   // must never change the left-side headline, description, or payment CTAs.
