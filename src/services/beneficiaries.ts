@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
 import {
-  addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,
+  addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries, hasStoredGuestBeneficiaries,
   removeGuestBeneficiary, updateGuestBeneficiary, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
@@ -41,6 +41,39 @@ export async function loadBeneficiaries(ownerUid: string | null = null): Promise
   if(listResult.error)throw listResult.error;
   return {lists:(listResult.data??[]) as BeneficiaryList[],people};
 }
+/** Explicit, idempotent recovery from this browser's guest capability into the signed-in profile.
+ * Keep guest records intact so a partially completed import can be safely retried.
+ * Never attempt to recover another browser's guest session or guess its capability.
+ */
+export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promise<{lists:number;people:number}> {
+  if(!ownerUid)throw new Error('Sign in before restoring beneficiaries.');
+  if(!hasStoredGuestBeneficiaries())return {lists:0,people:0};
+  const source=await loadGuestBeneficiaries();
+  if(!source.lists.length)return {lists:0,people:0};
+  const existing=await loadBeneficiaries(ownerUid);
+  const known=[...existing.lists];
+  let listCount=0,personCount=0;
+  for(const guestList of source.lists){
+    let destination=known.find(list=>list.name.toLocaleLowerCase()===guestList.name.toLocaleLowerCase());
+    if(!destination){
+      try { destination=await createBeneficiaryList(ownerUid,guestList.name); }
+      catch(error){
+        // Another tab might have just created the same list. Resolve by its owner-scoped name.
+        const refreshed=await loadBeneficiaries(ownerUid);
+        destination=refreshed.lists.find(list=>list.name.toLocaleLowerCase()===guestList.name.toLocaleLowerCase());
+        if(!destination)throw error;
+      }
+      known.push(destination);listCount++;
+    }
+    const rows=source.people.filter(person=>person.list_id===guestList.id)
+      .map(person=>({tin:person.tin,display_name:person.display_name}));
+    for(let offset=0;offset<rows.length;offset+=500){
+      personCount+=await addBeneficiaries(ownerUid,destination.id,rows.slice(offset,offset+500));
+    }
+  }
+  return {lists:listCount,people:personCount};
+}
+
 export async function createBeneficiaryList(ownerUid:string | null,name:string):Promise<BeneficiaryList> {
   const trimmed=name.trim();
   if(!trimmed || trimmed.length>80)throw new Error('Enter a list name of up to 80 characters.');
