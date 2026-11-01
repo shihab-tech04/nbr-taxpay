@@ -173,6 +173,9 @@
 @media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{padding:16px;gap:16px}.payment-lifecycle__references{grid-template-columns:minmax(0,1fr)}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{display:none}}
 
 
+/* Clearly separate payer identity from receipt contacts without another card. */
+.payment-identity__receipt-heading{margin:2px 0 0;padding-top:13px;border-top:1px solid var(--citizen-border,#e6ebf2);font-size:14px;font-weight:700;line-height:1.45;color:var(--citizen-text,#172b4d)}
+
 /* Other Tax: one clearly numbered taxpayer per row, responsive and keyboard-friendly. */
 .taxpay-taxpayer-list{display:grid;gap:12px;min-width:0}
 .taxpay-taxpayer-list__count{margin:0;color:#526681;font-size:14px;font-weight:600}
