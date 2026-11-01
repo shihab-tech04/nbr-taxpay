@@ -213,6 +213,13 @@ test('single modal keeps fixed chrome as groups are revealed and respects reduce
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const body = dialog.locator('.taxpay-modal__body');
   const footer = dialog.locator('.taxpay-modal__footer');
+  // Wait for the 99%-to-100% entrance transform before capturing fixed geometry.
+  // Otherwise the scale animation makes the first boundingBox a few pixels smaller.
+  await dialog.evaluate(async element => {
+    await Promise.all(element.getAnimations({ subtree: false })
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished));
+  });
   const initialHeight = (await dialog.boundingBox())!.height;
   const initialFooterY = (await footer.boundingBox())!.y;
   await expect(dialog).not.toHaveAttribute('data-size-motion', 'true');
