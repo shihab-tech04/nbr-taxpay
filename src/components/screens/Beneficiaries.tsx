@@ -250,7 +250,7 @@ export function Beneficiaries(){
   };
 
   return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-col gap-4 rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="min-w-0">
         <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">{tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}</p>
@@ -270,29 +270,15 @@ export function Beneficiaries(){
         <UiButton type="button" variant="outline" onClick={()=>void reloadData()}>{tr('Try again','আবার চেষ্টা করুন')}</UiButton>
       </div>}
       {!checkingIdentity&&!loading&&!error&&<>
-        <div className="flex flex-col gap-4 border-b border-taxpay-border pb-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <p id="beneficiary-list-heading" className="mb-1.5 text-sm font-semibold text-taxpay-text">{tr('Selected list','নির্বাচিত তালিকা')}</p>
-            {lists.length>0?<div className="beneficiary-list-picker" ref={listMenuRef}>
-              <button id="beneficiary-list" ref={listTriggerRef} type="button" className="beneficiary-list-picker__trigger" aria-label={tr('Selected list','নির্বাচিত তালিকা')} aria-haspopup="dialog" aria-expanded={listMenuOpen} aria-controls="beneficiary-list-menu" onClick={()=>setListMenuOpen(current=>!current)}>
-                <span className="truncate text-left">{activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
-                <ChevronDown size={18} className={listMenuOpen?'rotate-180 transition-transform':'transition-transform'} aria-hidden="true"/>
-              </button>
-              {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
-                <p className="beneficiary-list-picker__caption">{tr('Your lists','আপনার তালিকা')}</p>
-                {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
-                  <button type="button" className="beneficiary-list-picker__select" aria-current={activeList===list.id?'true':undefined} onClick={()=>switchList(list.id)}>
-                    <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
-                  </button>
-                  <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Edit ${list.name}`,`${list.name} সম্পাদনা`)} title={tr('Edit list','তালিকা সম্পাদনা')} onClick={()=>openListEditor(list)}><Pencil size={17} aria-hidden="true"/></button>
-                </div>)}
-              </div>}
-            </div>:<p className="text-sm text-slate-600">{tr('Create a list to start saving taxpayer contacts.','করদাতার তথ্য সংরক্ষণ শুরু করতে একটি তালিকা তৈরি করুন।')}</p>}
+        <div className="taxpayer-transaction-panel__heading beneficiary-directory__heading">
+          <div className="min-w-0">
+            <h2 id="beneficiary-list-heading" className="text-xl font-bold text-taxpay-text">{tr('Beneficiary list','উপকারভোগীর তালিকা')}</h2>
+            <p className="mt-1 text-sm text-taxpay-muted">{tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}</p>
           </div>
-          {lists.length>0&&<div className="flex shrink-0 items-center gap-2 text-sm text-slate-600" aria-live="polite">
-            <UsersRound size={18} aria-hidden="true" className="text-taxpay-primary"/>
-            <span><strong className="text-taxpay-text">{listPeople.length}</strong> {tr(listPeople.length===1?'beneficiary':'beneficiaries','জন উপকারভোগী')}</span>
-          </div>}
+          {lists.length>0&&<p className="beneficiary-directory__list-total" role="status" aria-live="polite">
+            <UsersRound size={17} aria-hidden="true"/>
+            <strong>{listPeople.length}</strong> {tr(listPeople.length===1?'beneficiary':'beneficiaries','জন উপকারভোগী')}
+          </p>}
         </div>
 
         {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
@@ -302,6 +288,24 @@ export function Beneficiaries(){
 
         </div>:<>
           <div className="taxpayer-transaction-filters beneficiary-directory__filters">
+            <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
+              <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
+              <div className="beneficiary-list-picker" ref={listMenuRef}>
+                <button id="beneficiary-list" ref={listTriggerRef} type="button" className="beneficiary-list-picker__trigger" aria-label={tr('Selected list','নির্বাচিত তালিকা')} aria-haspopup="dialog" aria-expanded={listMenuOpen} aria-controls="beneficiary-list-menu" onClick={()=>setListMenuOpen(current=>!current)}>
+                  <span className="truncate text-left">{activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
+                  <ChevronDown size={18} className={listMenuOpen?'rotate-180 transition-transform':'transition-transform'} aria-hidden="true"/>
+                </button>
+                {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
+                  <p className="beneficiary-list-picker__caption">{tr('Your lists','আপনার তালিকা')}</p>
+                  {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
+                    <button type="button" className="beneficiary-list-picker__select" aria-current={activeList===list.id?'true':undefined} onClick={()=>switchList(list.id)}>
+                      <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
+                    </button>
+                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Edit ${list.name}`,`${list.name} সম্পাদনা`)} title={tr('Edit list','তালিকা সম্পাদনা')} onClick={()=>openListEditor(list)}><Pencil size={17} aria-hidden="true"/></button>
+                  </div>)}
+                </div>}
+              </div>
+            </div>
             <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
               <span>{tr('Search','খুঁজুন')}</span>
               <span className="taxpayer-transaction-filter__search">
@@ -361,12 +365,12 @@ export function Beneficiaries(){
                   </div>
                   <div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="outline" className="text-sm"
+                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>{setEditPerson(person);setEditTargetList('');setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
-                    <UiButton type="button" variant="outline" className="gap-2 text-sm" onClick={()=>payWith([person])}>
+                    <UiButton type="button" variant="outline" className="beneficiary-directory__pay gap-2 text-sm" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
                     </UiButton>
-                    <UiButton type="button" variant="quiet" className="gap-2 text-sm text-red-700 hover:bg-red-50"
+                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary gap-2 text-sm text-taxpay-error"
                       aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
                       onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>
