@@ -179,3 +179,40 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   expect(await outer.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
   await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
 });
+
+test('Pay Tax entry follows the fixed-header, scrollable-choices, fixed-footer reference', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.locator('.taxpay-modal[data-public-service="payment-choice"]');
+  const question = dialog.getByRole('heading', { name: 'Whose tax liability are you settling?' });
+  const body = dialog.locator('.taxpay-modal__body');
+  const footer = dialog.locator('.taxpay-modal__footer');
+  await expect(question).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
+  await expect(footer).toBeVisible();
+  await dialog.locator('[data-payer-relationship="OTHER"]').click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  const guest = dialog.locator('[data-payment-access="GUEST"]');
+  if (await guest.isVisible()) await guest.click();
+  await expect(dialog.locator('[data-entry-section="tax"]')).toBeVisible();
+  await expect(dialog.locator('[data-entry-section="access"]')).toBeVisible();
+
+  if (testInfo.project.name.startsWith('desktop')) {
+    const initialFooterTop = (await footer.boundingBox())?.y;
+    const metrics = await body.evaluate(element => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+      overflowY: getComputedStyle(element).overflowY,
+    }));
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.overflowY).toBe('auto');
+    await body.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    expect((await footer.boundingBox())?.y).toBeCloseTo(initialFooterTop!, 0);
+  }
+  // The fixed footer must never be clipped and the modal must not overflow horizontally.
+  const bounds = await Promise.all([dialog.boundingBox(), footer.boundingBox()]);
+  expect(bounds[0]).toBeTruthy();
+  expect(bounds[1]).toBeTruthy();
+  expect(bounds[1]!.y + bounds[1]!.height).toBeLessThanOrEqual(bounds[0]!.y + bounds[0]!.height + 2);
+  expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth + 2)).toBe(true);
+});
