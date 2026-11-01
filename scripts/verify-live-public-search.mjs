@@ -26,10 +26,14 @@ try {
       const card = document.querySelector('.public-record-discovery').getBoundingClientRect();
       return document.querySelector('#public-how-it-works').getBoundingClientRect().top - card.bottom;
     });
+    await search.focus();
+    await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
+    await expect(section.locator('.public-record-suggestions__examples button')).toHaveCount(3);
     await search.fill('TKN-882190');
     await expect(section.getByRole('heading', { name: 'Matching references' })).toBeVisible();
-    await expect(section.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
-    await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
+    const matchingGroup = section.locator('.public-record-suggestions__group:not(.public-record-suggestions__examples)');
+    await expect(matchingGroup.getByRole('button', { name: /TKN-882190/ })).toBeVisible();
+    await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(1);
     await expect(section.locator('.public-record-discovery__heading svg')).toHaveCount(0);
     await expect(section.getByText('Search by challan, token or transaction reference.')).toBeVisible();
     await expect(section.getByText(/For guest-payment records/)).toHaveCount(0);
@@ -49,12 +53,12 @@ try {
         Math.abs(flow.gapToNext - gapBefore) > 1) {
       throw new Error(`Live ${name} search dropdown resized the card or detached from input: ${JSON.stringify(flow)}`);
     }
-    const resultOption = section.getByRole('button', { name: /TKN-882190/ });
+    const resultOption = matchingGroup.getByRole('button', { name: /TKN-882190/ });
     await expect(resultOption).toHaveCSS('text-decoration-line', 'none');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (overflow > 2) throw new Error(`Live ${name} public search horizontal overflow: ${overflow}px`);
     await page.screenshot({ path: `test-results/live-search-${name}.png`, fullPage: true });
-    await section.getByRole('button', { name: /TKN-882190/ }).click();
+    await matchingGroup.getByRole('button', { name: /TKN-882190/ }).click();
     await expect(page).toHaveURL(/action=verify/);
     const receiptModal = page.getByRole('dialog', { name: 'Payment status & receipt' });
     await expect(receiptModal).toBeVisible();
@@ -70,7 +74,7 @@ try {
     if (page.url().includes('TKN-882190')) throw new Error('Reference leaked into live URL');
     await page.close();
   }
-  console.log('PASS: actual deployed TaxPay Pages search, modal receipt, responsive bounds and no legacy blue-header route');
+  console.log('PASS: actual deployed TaxPay Pages search matched-first and sample-number sections, modal receipt, responsive bounds and no legacy blue-header route');
 } finally {
   await browser.close();
 }
