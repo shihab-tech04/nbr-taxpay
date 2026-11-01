@@ -54,7 +54,7 @@ test('desktop taxpayer rail keeps profile and language above its final sign-out 
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('No notifications yet.')).toBeVisible();
   await rail.locator('.taxpayer-reference-brand').click();
-  await expect(page.getByRole('heading',{name:'Tax payments, without the confusion.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax payments, without the confusion'})).toBeVisible();
   // An exploratory sample role is not a signed-in account.
   await expect(page.locator('.public-home-header').getByRole('link',{name:'Login'})).toBeVisible();
   await expect(page.locator('.public-home-header').getByRole('button',{name:'Profile menu'})).toHaveCount(0);
