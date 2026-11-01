@@ -40,6 +40,9 @@ test('User1 return amount starts filled, explains its origin and remains editabl
 test('User1 Other Tax fills only the chosen head/year, not every selected head', async ({ page }) => {
   const dialog = await startOwnPayment(page, 'user1', 'OTHER_TAX_PAYMENT');
   const batch = dialog.getByTestId('other-tax-batch');
+  // Preserve the current approved compact head-selector from main (#401).
+  await expect(batch.locator('.other-tax-head-tools')).toBeVisible();
+  await expect(batch.locator('.other-tax-head-tools__search')).toBeVisible();
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /^Select 64 —/ }).check();
   const first = batch.getByTestId('other-tax-line').first();
