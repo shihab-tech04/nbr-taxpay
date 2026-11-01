@@ -271,8 +271,8 @@
 .taxpay-taxpayer-row__tin-entry{position:relative;flex:1 1 auto;min-width:0}
 .taxpay-taxpayer-row__tin-entry>input{width:100%;padding-right:46px}
 .taxpay-taxpayer-row__tin-clear{
-  position:absolute;right:5px;top:50%;transform:translateY(-50%);
-  display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:8px;
+  position:absolute;right:0;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:8px;
   background:transparent;color:var(--color-taxpay-muted);cursor:pointer
 }
 .taxpay-taxpayer-row__tin-clear:hover{background:var(--color-taxpay-light);color:var(--color-taxpay-primary)}
