@@ -36,7 +36,7 @@ test('one stationary introductory banner displays five right-side illustrations'
   imageSources.forEach((src, index) => expect(src).toContain(illustrations[index]));
 });
 
-test('arrow navigation changes only the illustration, never left copy, actions or background', async ({ page }, testInfo) => {
+test('arrow navigation updates image and matched surface tint without moving text, buttons or geometry', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Keyboard and artwork comparison checked once on desktop');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
@@ -54,11 +54,18 @@ test('arrow navigation changes only the illustration, never left copy, actions o
         const rect = node.getBoundingClientRect();
         return [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)];
       }),
-      background: getComputedStyle(element).backgroundColor,
       outline: getComputedStyle(element.closest('.public-hero-carousel')!).borderColor,
     };
   });
   const next = page.getByRole('button', { name: 'Next banner' });
+  const services = [
+    'TAX_WITH_RETURN', 'ADVANCE_TAX', 'SOURCE_TAX_DEPOSIT', 'TRAVEL_TAX',
+  ];
+  const paletteTokens = [
+    '--service-return-bg', '--service-advance-bg',
+    '--service-withholding-bg', '--service-other-bg',
+  ];
+  const initialBackground = await intro.evaluate(element => getComputedStyle(element).backgroundColor);
   for (let index = 1; index < illustrations.length; index++) {
     await next.click();
     await expect(carousel).toHaveAttribute('data-active-slide', String(index));
@@ -78,16 +85,27 @@ test('arrow navigation changes only the illustration, never left copy, actions o
           const rect = node.getBoundingClientRect();
           return [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)];
         }),
-        background: getComputedStyle(element).backgroundColor,
-        outline: getComputedStyle(element.closest('.public-hero-carousel')!).borderColor,
+          outline: getComputedStyle(element.closest('.public-hero-carousel')!).borderColor,
       };
     });
     expect(current).toEqual(fixed);
+    await expect(carousel).toHaveAttribute('data-image-service', services[index - 1]);
+    const paletteColor = await carousel.evaluate((element, token) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = `var(${token})`;
+      element.appendChild(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    }, paletteTokens[index - 1]);
+    await expect(intro).toHaveCSS('background-color', paletteColor);
+    if (index >= 2) expect(paletteColor).not.toBe(initialBackground);
     await expect(intro.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
     await expect(intro.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
   }
   await next.click();
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
+  await expect(intro).toHaveCSS('background-color', initialBackground);
   await page.getByRole('button', { name: 'Previous banner' }).click();
   await expect(carousel).toHaveAttribute('data-active-slide', '4');
 });
