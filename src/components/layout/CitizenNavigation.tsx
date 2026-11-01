@@ -87,7 +87,7 @@ export function CitizenNavigation() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
-  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused && !isPaymentServiceChoiceOpen;
+  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused && !isPaymentServiceChoiceOpen && !(currentRoute === 'beneficiaries' && !isTaxpayer);
   const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
     setCompact(false);
