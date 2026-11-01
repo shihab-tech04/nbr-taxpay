@@ -96,8 +96,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
-      animateSize={view === 'payer'}
-      motionKey={view}
+      // The entry chooser uses a stable scrollable body and fixed action footer.
       onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
         const back = document.querySelector<HTMLButtonElement>(
           '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
