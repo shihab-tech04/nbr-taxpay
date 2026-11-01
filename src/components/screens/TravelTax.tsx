@@ -306,6 +306,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       setBankSlipPending(false);
       setPaymentNonce(crypto.randomUUID());
       setError('');
+      if (embedded || fourStepJourney) goStep(3);
     }catch {setError(bn?'অফিসে পেমেন্ট তথ্য পৌঁছায়নি। একই অনুরোধ আবার চেষ্টা করুন।':'Office payment synchronization pending. Retry this payment.');}
     finally {setIsProcessing(false);}
   };
