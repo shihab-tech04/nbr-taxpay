@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ListChecks, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ListChecks, Plus, Search, Trash2 } from 'lucide-react';
 import { SuggestedAmountInfo } from '../ui/SuggestedAmountInfo';
 import { paymentAmountSuggestionFor } from '../../services/paymentAmountSuggestions';
 import type { DemoUserId } from '../../data/demoUsers';
@@ -54,6 +54,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
+  const taxpayerTabsRef = useRef<HTMLDivElement>(null);
+  const [railEdges, setRailEdges] = useState({ left: false, right: false });
   const selectionMenuRef = useRef<HTMLDetailsElement>(null);
   const lastFocusRequest = useRef<number>(0);
   useEffect(() => {
@@ -63,6 +65,23 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     document.addEventListener('pointerdown', closeOnOutsideClick);
     return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
   }, []);
+  useEffect(() => {
+    const rail = taxpayerTabsRef.current;
+    if (!rail) return;
+    const update = () => setRailEdges(previous => {
+      const next = { left: rail.scrollLeft > 2, right: rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 2 };
+      return previous.left === next.left && previous.right === next.right ? previous : next;
+    });
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(rail);
+    if (rail.firstElementChild) observer.observe(rail.firstElementChild);
+    return () => observer.disconnect();
+  }, [taxpayers.length]);
+  const scrollTaxpayers = (direction: -1 | 1) => {
+    const rail = taxpayerTabsRef.current;
+    if (rail) rail.scrollBy({ left: direction * Math.max(160, rail.clientWidth * .7), behavior: 'smooth' });
+  };
   const [activeTaxpayer, setActiveTaxpayer] = useState('primary');
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
@@ -167,44 +186,56 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
         <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
           <div className="payment-form-section__heading">
             <div className="payment-form-section__heading-copy">
-              <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
-              {error && <p className="other-tax-error-heading">{tx('Review highlighted entries', 'চিহ্নিত তথ্য সংশোধন করুন')}</p>}
-              <p>{taxpayers.length > 1
-                ? tx('Choose a taxpayer, then tick payment heads. Enter the year and amount below each selection.', 'করদাতা নির্বাচন করে খাতে টিক দিন। প্রতিটি নির্বাচনের নিচে করবর্ষ ও পরিমাণ লিখুন।')
-                : tx('Tick payment heads, then enter the year and amount below each selection.', 'খাতে টিক দিন, তারপর প্রতিটি খাতের নিচে করবর্ষ ও পরিমাণ লিখুন।')}</p>
+              <h2>{taxpayers.length > 1 ? tx('Paying tax for', 'যার কর পরিশোধ করছেন') : tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
             </div>
           </div>
           <div className="payment-form-section__body space-y-4">
-            {taxpayers.length > 1 && <div>
-              <p className="text-xs font-semibold text-slate-700 mb-2">
-                {tx('Paying tax for', 'যার কর পরিশোধ করছেন')}
-              </p>
-              <div role="group" aria-label={tx('Choose a taxpayer to assign payment heads', 'করদাতা নির্বাচন করুন')}
-                className="flex flex-wrap gap-2" data-testid="other-tax-taxpayer-tabs">
-                {taxpayers.map((person, index) => {
-                  const selectedCount = lines.filter(line => line.taxpayerId === person.id).length;
-                  const active = activeId === person.id;
-                  const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
-                  const noHead = firstMissingTaxpayer?.id === person.id && !firstInvalid;
-                  return <button key={person.id} type="button"
-                    aria-pressed={active} data-taxpayer-id={person.id} onClick={() => setActiveTaxpayer(person.id)}
-                    className={`min-h-11 rounded-lg border px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary ${noHead ? 'border-rose-400 bg-rose-50 text-taxpay-dark' : active
-                      ? 'border-taxpay-primary bg-blue-50 text-taxpay-dark font-semibold'
-                      : 'border-slate-300 bg-white text-slate-700'}`}>
-                    <span className="block">{person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1)}</span>
-                    <span className="block text-xs font-mono-plex">{person.tin} · {selectedCount} {tx('selected', 'নির্বাচিত')}</span>
-                    {issues > 0 && <span className="block text-xs font-semibold text-rose-700">{issues} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
-                    {noHead && <p className="text-sm font-semibold text-rose-700">{tx('Choose a head', 'খাত নির্বাচন করুন')}</p>}
-                  </button>;
-                })}
+            {taxpayers.length > 1 && <div className="other-tax-taxpayer-section">
+              <div className="other-tax-taxpayer-nav">
+                <div ref={taxpayerTabsRef} role="group"
+                  aria-label={tx('Choose a taxpayer to assign payment heads', 'করদাতা নির্বাচন করুন')}
+                  className="other-tax-taxpayer-tabs" data-testid="other-tax-taxpayer-tabs"
+                  onScroll={() => {
+                    const rail = taxpayerTabsRef.current;
+                    if (rail) setRailEdges({ left: rail.scrollLeft > 2, right: rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 2 });
+                  }}>
+                  {taxpayers.map((person, index) => {
+                    const selectedCount = lines.filter(line => line.taxpayerId === person.id).length;
+                    const active = activeId === person.id;
+                    const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
+                    const noHead = firstMissingTaxpayer?.id === person.id && !firstInvalid;
+                    const name = person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1);
+                    return <button key={person.id} type="button"
+                      aria-pressed={active} data-taxpayer-id={person.id}
+                      data-invalid={issues > 0 || noHead ? 'true' : undefined}
+                      aria-label={name + ', ' + tx('TIN', 'টিআইএন') + ' ' + person.tin + ', ' + selectedCount + ' ' + tx('selected', 'নির্বাচিত') + (issues || noHead ? ', ' + tx('incomplete', 'অসম্পূর্ণ') : '')}
+                      title={name + ' · ' + person.tin} onClick={() => setActiveTaxpayer(person.id)}
+                      className="other-tax-taxpayer-chip">
+                      <span>{name}</span>
+                      {selectedCount > 0 && <span className="other-tax-taxpayer-chip__count" aria-hidden="true">{selectedCount}</span>}
+                      {(issues > 0 || noHead) && <span className="other-tax-taxpayer-chip__alert" aria-hidden="true">!</span>}
+                    </button>;
+                  })}
+                </div>
+                {railEdges.left && <button type="button" className="other-tax-taxpayer-nav__arrow other-tax-taxpayer-nav__arrow--left"
+                  aria-label={tx('Previous taxpayers', 'আগের করদাতারা')} onClick={() => scrollTaxpayers(-1)}>
+                  <ChevronLeft size={17} aria-hidden="true" />
+                </button>}
+                {railEdges.right && <button type="button" className="other-tax-taxpayer-nav__arrow other-tax-taxpayer-nav__arrow--right"
+                  aria-label={tx('Next taxpayers', 'পরের করদাতারা')} onClick={() => scrollTaxpayers(1)}>
+                  <ChevronRight size={17} aria-hidden="true" />
+                </button>}
               </div>
-              <p className="mt-2 text-xs text-slate-600">
-                {tx('Switch taxpayers here to select different heads. Other taxpayers’ selections are preserved.',
-                  'অন্য করদাতার খাত নির্বাচন করতে এখানে করদাতা বদলান। পূর্বের নির্বাচন অপরিবর্তিত থাকবে।')}
-              </p>
             </div>}
+            {taxpayers.length > 1 && <div className="other-tax-head-section__heading">
+              <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
+            </div>}
+            {error && <p className="other-tax-error-heading">{tx('Review highlighted entries', 'চিহ্নিত তথ্য সংশোধন করুন')}</p>}
+            <p className="other-tax-guidance">{taxpayers.length > 1
+              ? tx('Select heads, year & amount. Switching taxpayers keeps selections.', 'খাত, করবর্ষ ও পরিমাণ দিন। করদাতা বদলালেও নির্বাচন থাকবে।')
+              : tx('Select heads, year & amount.', 'খাত, করবর্ষ ও পরিমাণ দিন।')}</p>
             <div className="other-tax-head-tools">
-              <label htmlFor="other-tax-head-filter" className="other-tax-head-tools__label">
+              <label htmlFor="other-tax-head-filter" className="other-tax-head-tools__label sr-only">
                 {tx('Find a payment head', 'পরিশোধের খাত খুঁজুন')}
               </label>
               <div className="other-tax-head-tools__row">
