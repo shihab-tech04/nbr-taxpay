@@ -68,7 +68,7 @@ test('CMS outage never resurrects unpublished bundled artwork and payment action
       : route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"temporarily unavailable"}' }),
   );
   await page.goto('/?action=landing');
-  const fallback = page.getByRole('region', { name: 'Tax payment services' });
+  const fallback = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(fallback.getByText(/Banner information is temporarily unavailable/)).toBeVisible();
   await expect(page.locator('.public-hero-carousel__image-layer')).toHaveCount(0);
   await expect(fallback.getByRole('button', { name: 'Pay Tax' })).toBeVisible();
