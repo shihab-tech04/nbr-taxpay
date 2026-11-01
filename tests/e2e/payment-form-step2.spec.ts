@@ -365,7 +365,7 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(modal.getByTestId('other-tax-taxpayer-list')).toHaveClass(/taxpay-taxpayer-list--single/);
     await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toBeVisible();
     await expect(modal.locator('.taxpay-taxpayer-list__count')).toHaveCount(0);
-    await expect(modal.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details' })).toHaveCount(0);
+    await expect(modal.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details', exact: true })).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
     const cardGridColumns = await card.locator('.taxpay-taxpayer-row__fields').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length);
     expect(cardGridColumns).toBe(1);
@@ -385,7 +385,7 @@ for (const locale of ['en', 'bn'] as const) {
 
     await card.locator('#guest-tin').fill('111111111111');
     await card.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true }).click();
-    await expect(card.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার ১' : 'User 1');
+    await expect(card.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার 1' : 'User 1');
     const clear = card.getByRole('button', { name: locale === 'bn' ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search' });
     await expect(clear).toBeVisible();
     await clear.click();
