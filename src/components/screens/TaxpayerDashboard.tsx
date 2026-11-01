@@ -120,6 +120,7 @@ export const TaxpayerDashboard: React.FC = () => {
       <AuthenticatedDashboardPosition language={language} year={year} years={ASSESSMENT_YEARS}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
       <AccountActivitySummary ownerUid={user.id} language={language}
+        dashboardYear={year} onDashboardYearChange={setYear}
         onNavigate={(route) => navigate(route)} />
       {serviceShortcut}
     </> : <>
