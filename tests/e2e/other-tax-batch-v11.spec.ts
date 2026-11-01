@@ -153,6 +153,8 @@ test('switching taxpayer preserves each person’s head, year and amount without
   const tabs = batch.getByTestId('other-tax-taxpayer-tabs');
   await expect(batch.getByRole('heading', { name: 'Paying tax for' })).toHaveCount(1);
   await expect(batch.getByRole('heading', { name: 'Choose payment heads' })).toHaveCount(1);
+  await expect(batch.locator('.other-tax-guidance')).toHaveCount(0);
+  await expect(batch.getByRole('heading', { level: 2 })).toHaveCount(2);
   await expect(batch.getByText('Select heads, year & amount. Switching taxpayers keeps selections.')).toBeVisible();
   await expect(batch.getByText('Switch taxpayers here to select different heads.')).toHaveCount(0);
   await expect(tabs).toHaveCSS('flex-wrap', 'nowrap');
