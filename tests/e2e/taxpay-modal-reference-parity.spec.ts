@@ -206,17 +206,25 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   }).toBeGreaterThanOrEqual(0);
 });
 
-test('single modal expands when groups are revealed and respects reduced motion', async ({ page }) => {
+test('approved Pay Tax entry keeps a fixed shell, scrollable choices and fixed actions', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog).toHaveAttribute('data-size-motion', 'true');
+  const question = dialog.getByRole('heading', { name: 'Whose tax liability are you settling?' });
+  await expect(question).toBeVisible();
+  await expect(dialog).not.toHaveAttribute('data-size-motion', 'true');
+  const initialBounds = await dialog.boundingBox();
+  expect(initialBounds).not.toBeNull();
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
-  await expect(dialog).toHaveCSS('transition-property', /height/);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
+  const expandedBounds = await dialog.boundingBox();
+  expect(expandedBounds).not.toBeNull();
+  expect(Math.abs(expandedBounds!.height - initialBounds!.height)).toBeLessThan(2);
+  await expect(dialog.locator('.taxpay-modal__body')).toHaveCSS('overflow-y', 'auto');
+  await expect(dialog.locator('.taxpay-modal__footer')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(dialog).toHaveCSS('animation-name', 'none');
   await expect(dialog).toHaveCSS('transition-property', 'none');
