@@ -502,8 +502,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     amount={step === 1 ? null : batchAmount}
     helpText={step === 1
       ? language === 'bn' ? 'পরবর্তী ধাপে খাত ও পরিমাণ নির্বাচন করলে মোট হিসাব দেখা যাবে।' : 'Your total will appear after you choose payment heads and amounts in Step 2.'
-      : !batchValid && otherTaxLines.length > 0
-      ? language === 'bn' ? 'সব নির্বাচিত খাতের পরিমাণ সম্পূর্ণ হলে মোট হিসাব দেখা যাবে।' : 'Complete every selected amount to see the final total.'
       : undefined}
     groupedBreakdown={batchTaxpayers.length > 1 ? batchTaxpayers.map((person, index) => {
       const lines = otherTaxLines.filter(line => line.taxpayerId === person.id);
@@ -1551,7 +1549,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next}>
+            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={otherBatch ? !batchValid || !storyAmountSupported : !amountsValid || !storyAmountSupported || (!isWithholdingMode && !incomeTaxType)}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
