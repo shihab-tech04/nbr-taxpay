@@ -12,14 +12,22 @@ interface FormSectionProps {
   children: React.ReactNode;
   defaultOpen?: boolean;
   staticView?: boolean;
+  hideHeading?: boolean;
 }
 
 /** Native details/summary remain keyboard-operable and retain input state when collapsed. */
-export function PaymentFormSection({ title, description, number, children, defaultOpen = true, staticView = false }: FormSectionProps) {
+export function PaymentFormSection({ title, description, number, children, defaultOpen = true, staticView = false, hideHeading = false }: FormSectionProps) {
   const sectionRef = React.useRef<HTMLDetailsElement>(null);
   React.useEffect(() => {
     if (sectionRef.current) sectionRef.current.open = defaultOpen;
   }, [defaultOpen]);
+  // The signed-in account card supplies its own section title. Avoid duplicate
+  // headings and a non-functional disclosure control in that one journey.
+  if (hideHeading) return (
+    <section className="payment-form-section payment-form-section--static payment-form-section--no-heading">
+      <div className="payment-form-section__body">{children}</div>
+    </section>
+  );
   if (staticView) return (
     <section className="payment-form-section payment-form-section--static">
       <div className="payment-form-section__heading">

@@ -24,6 +24,12 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   // Account-bound display data is not a second taxpayer lookup form.
   const account = payment.locator('#signed-in-account-taxpayer-card');
   await expect(account).toBeVisible();
+  await expect(account.getByRole('heading', { name: 'Taxpayer details' })).toBeVisible();
+  await expect(account.getByText('Account information')).toHaveCount(0);
+  await expect(payment.getByText('Account details', { exact: true })).toHaveCount(0);
+  await expect(payment.getByText('Continuing with your account')).toHaveCount(0);
+  await expect(account).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(account).toHaveCSS('border-top-style', 'solid');
   await expect(account).toContainText('Meghna Trading Ltd.');
   await expect(account).toContainText('2222222222222');
   await expect(account).toContainText('01700000002');

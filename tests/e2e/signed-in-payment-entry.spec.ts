@@ -23,7 +23,7 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
 
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(payment.getByText('Continuing with your account')).toBeVisible();
+  await expect(payment.getByText('Continuing with your account')).toHaveCount(0);
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
 });
 
