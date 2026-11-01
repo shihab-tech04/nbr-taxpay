@@ -4,6 +4,7 @@ import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import {
   AuthorizationSyncError, getHostedAuthorizations, performHostedAuthorization,
   retryHostedAuthorizationSync, userIdForHostedTin, type HostedAuthorization,
@@ -26,6 +27,7 @@ export function ManageAuthorization() {
   const [adding, setAdding] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const [tin, setTin] = useState('');
+  const [searchedAuthTin, setSearchedAuthTin] = useState<string | null>(null);
   const [codes, setCodes] = useState<Record<string, string>>({});
   const [removeId, setRemoveId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export function ManageAuthorization() {
     void poll();const timer=window.setInterval(()=>void poll(),5000);
     return()=>{active=false;window.clearInterval(timer);};
   },[actor]);
-  useEffect(() => { setFeedback(null); setAdding(false); setTin(''); setCodes({}); setRemoveId(null);setDeleteId(null);setSyncPending(null); }, [actor]);
+  useEffect(() => { setFeedback(null); setAdding(false); setTin(''); setSearchedAuthTin(null); setCodes({}); setRemoveId(null);setDeleteId(null);setSyncPending(null); }, [actor]);
 
   const runAction=async(action:()=>Promise<unknown>,success:string)=>{
     if(!actor||busy)return;
@@ -87,7 +89,7 @@ export function ManageAuthorization() {
     }
     await runAction(async()=>{
       await performHostedAuthorization(actor,'request',{tin});
-      setTin('');setAdding(false);
+      setTin('');setSearchedAuthTin(null);setAdding(false);
     },tr('Request sent. The taxpayer will receive a notification and approval prompt.','অনুরোধ পাঠানো হয়েছে। করদাতা বিজ্ঞপ্তি ও অনুমোদনের বার্তা পাবেন।'));
   };
   const confirmCode = (record: HostedAuthorization) => {
@@ -138,6 +140,8 @@ export function ManageAuthorization() {
     return tr('Authorization expired', 'অনুমোদনের মেয়াদ শেষ');
   };
   const shown = records.filter(record => actor && (tab === 'outgoing' ? record.payerId === actor : record.taxpayerId === actor));
+  const matchedAuthUser = userIdForHostedTin(tin);
+  const matchingAuthName = searchedAuthTin === tin && matchedAuthUser ? (bn ? DEMO_USERS[matchedAuthUser].nameBn : DEMO_USERS[matchedAuthUser].nameEn) : '';
 
   return <section className="taxpayer-account-center taxpay-authorization" lang={language} aria-labelledby="manage-auth-title" data-testid="manage-authorization">
     <TaxpayerPageHeading id="manage-auth-title" className="taxpayer-account-heading"
@@ -173,15 +177,22 @@ export function ManageAuthorization() {
       </div>
 
       {adding && tab === 'outgoing' && <form id="new-auth-form" className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
-        <label htmlFor="new-auth-tin">{tr('Taxpayer account reference', 'করদাতার অ্যাকাউন্ট রেফারেন্স')}</label>
-        <div className="taxpay-auth-inline">
-          <input id="new-auth-tin" autoFocus value={tin} onChange={e => setTin(e.target.value.replace(/\D/g, '').slice(0, 13))}
-            inputMode="numeric" autoComplete="off" placeholder={tr('Enter 13-digit account reference', '১৩ সংখ্যার অ্যাকাউন্ট রেফারেন্স লিখুন')} required maxLength={13} />
-          <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization', 'অনুমোদন চান')}</button>
+        <TaxpayerTinLookup language={language} card heading={tr('Taxpayer Information','করদাতার তথ্য')}
+          tinId="new-auth-tin" nameId="new-auth-name" tin={tin} name={matchingAuthName}
+          tinLabel={tr('Taxpayer account reference','করদাতার অ্যাকাউন্ট রেফারেন্স')}
+          tinPlaceholder={tr('Enter 13-digit account reference','১৩ সংখ্যার অ্যাকাউন্ট রেফারেন্স লিখুন')}
+          maxTinLength={13} canSearch={/^\d{13}$/.test(tin)} disabled={busy} autofocusTin
+          onTinChange={value=>{setTin(value);setSearchedAuthTin(null);setFeedback(null);}}
+          onClear={()=>{setTin('');setSearchedAuthTin(null);setFeedback(null);}}
+          onSearch={()=>setSearchedAuthTin(tin)}
+          status={searchedAuthTin === tin && tin.length===13 && !matchedAuthUser
+            ? <p className="text-sm text-red-700" role="status">{tr('No eligible taxpayer account matches this reference.','এই রেফারেন্সের সঙ্গে কোনো উপযুক্ত করদাতার অ্যাকাউন্ট মেলেনি।')}</p> : undefined} />
+        <div className="taxpay-auth-add__actions">
+          <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization','অনুমোদন চান')}</button>
         </div>
         <div className="taxpay-auth-add__footer">
           <p>{tr('The taxpayer accepts from their account, then shares a four-digit code with you to confirm.', 'করদাতা নিজের অ্যাকাউন্ট থেকে গ্রহণ করে আপনার সঙ্গে চার সংখ্যার কোড শেয়ার করবেন।')}</p>
-          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Discard', 'বাদ দিন')}</button>
+          <button type="button" className="taxpay-auth-outline" disabled={busy} onClick={() => { setAdding(false); setTin(''); setSearchedAuthTin(null); setFeedback(null); window.requestAnimationFrame(() => addButtonRef.current?.focus()); }}>{tr('Discard', 'বাদ দিন')}</button>
         </div>
       </form>}
 
