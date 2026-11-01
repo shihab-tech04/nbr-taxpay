@@ -40,6 +40,14 @@ async function setupGuestTransport(page:Page){
         session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,created_at:now,updated_at:now});inserted++;
       }
       data=inserted;
+    }else if(body.action==='move'){
+      const person=session.people.find(value=>value.id===body.id&&value.list_id===body.sourceListId);
+      const destination=session.lists.find(list=>list.id===body.listId);
+      if(!person||!destination){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
+      if(session.people.some(value=>value.list_id===destination.id&&value.tin===person.tin)){
+        await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({success:false,code:'BENEFICIARY_ALREADY_IN_LIST'})});return;
+      }
+      person.list_id=destination.id;person.updated_at=now;data=person;
     }else if(body.action==='update'){
       const person=session.people.find(value=>value.id===body.id);
       if(!person){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
@@ -144,7 +152,7 @@ test('failed new-list import stays recoverable and retries against the same crea
   await expect(visibleRecords.getByText('Local Beneficiary Two',{exact:true})).toBeVisible();
 });
 
-test('local sample taxpayer Beneficiaries supports independent lists, Excel import, responsive CRUD, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
+test('local sample taxpayer Beneficiaries supports independent lists, Excel import, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
   const recordList=page.getByTestId('beneficiary-records').locator('ul');
@@ -190,13 +198,11 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expectRecord('Local Beneficiary Two');
-  // Activity and Beneficiaries must share one bordered, stacked record-row pattern.
   await expect(page.getByTestId('beneficiary-records')).toHaveClass(/taxpayer-transaction-list/);
   await expect(recordList.getByRole('listitem')).toHaveCount(2);
   await expect(recordList.getByRole('listitem').first()).toHaveClass(/taxpayer-transaction-row/);
   await expect(page.getByRole('checkbox',{name:'Select all visible beneficiaries'})).toBeVisible();
   await expect(page.getByTestId('beneficiary-records').locator('table')).toHaveCount(0);
-  // Match the Activity search control: one outer border, no overlaid input border.
   const searchControl=page.locator('.beneficiary-directory__filters .taxpayer-transaction-filter__search');
   await expect(searchControl).toHaveCSS('border-top-width','1px');
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('border-top-width','0px');
@@ -228,9 +234,14 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   const firstRecord=recordList.getByRole('listitem').filter({hasText:'012345678901'});
   await firstRecord.getByRole('button',{name:'Edit'}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
-  await dialog.locator('#beneficiary-edit-name').fill('Synthetic Guest Renamed');
+  await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
+  await expect(dialog.getByText('Synthetic Guest One')).toBeVisible();
+  await dialog.locator('#beneficiary-edit-list').selectOption({label:'Guest Work'});
   await dialog.getByRole('button',{name:'Save changes'}).click();
-  await expectRecord('Synthetic Guest Renamed');
+  await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Guest Work');
+  await expectRecord('Synthetic Guest One');
+  await page.getByRole('button',{name:'Selected list'}).click();
+  await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
   const secondRecord=recordList.getByRole('listitem').filter({hasText:'987654321098'});
   await secondRecord.getByRole('button',{name:'Remove Local Beneficiary Two'}).click();
@@ -239,7 +250,9 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
 
   await page.reload();
-  await expectRecord('Synthetic Guest Renamed');
+  await page.getByRole('button',{name:'Selected list'}).click();
+  await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Work',exact:true}).click();
+  await expectRecord('Synthetic Guest One');
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow,'Beneficiaries viewport overflow').toBeLessThanOrEqual(2);
@@ -248,14 +261,16 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-en.png`,fullPage:true});
   await page.goto('/?action=beneficiaries&demoUser=user1&lang=bn');
   await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
-  await expectRecord('Synthetic Guest Renamed');
+  await page.getByRole('button',{name:'নির্বাচিত তালিকা'}).click();
+  await page.getByRole('dialog',{name:'উপকারভোগীর তালিকা বাছুন'}).getByRole('button',{name:'Guest Work',exact:true}).click();
+  await expectRecord('Synthetic Guest One');
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-bn.png`,fullPage:true});
 
   const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
   try{
     const other=await otherContext.newPage();await setupGuestTransport(other);await other.goto('/?action=beneficiaries&demoUser=user1');
     await expect(other.getByRole('heading',{name:'Create your first list'})).toBeVisible();
-    await expect(other.getByText('Synthetic Guest Renamed')).toHaveCount(0);
+    await expect(other.getByText('Synthetic Guest One')).toHaveCount(0);
   }finally{await otherContext.close();}
 });
 

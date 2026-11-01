@@ -318,8 +318,13 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
 
   const batch = dialog.getByTestId('other-tax-batch');
   const catalogue = batch.getByTestId('other-tax-head-catalogue');
-  await expect(batch.getByRole('button', { name: 'Select all', exact: true })).toBeVisible();
-  await expect(batch.getByRole('button', { name: 'Unselect all', exact: true })).toBeDisabled();
+  const selectionMenu = batch.getByTestId('other-tax-selection-menu');
+  await expect(selectionMenu.locator('summary')).toBeVisible();
+  await expect(selectionMenu).not.toHaveAttribute('open', '');
+  await selectionMenu.locator('summary').click();
+  await expect(selectionMenu.getByRole('button', { name: 'Select all', exact: true })).toBeEnabled();
+  await expect(selectionMenu.getByRole('button', { name: 'Clear selection', exact: true })).toBeDisabled();
+  await selectionMenu.locator('summary').click();
   await catalogue.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   const selected = batch.getByRole('checkbox', { name: /Select 68A/ }).locator('xpath=ancestor::li[@data-head-row]');
@@ -341,9 +346,12 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await expect(batch.locator('.payment-form-layout__sections')).toHaveCSS('overflow-y', 'auto');
   await expect(dialog.locator('.taxpay-modal__body')).toHaveCSS('overflow', 'hidden');
 
-  await batch.getByRole('button', { name: 'Select all', exact: true }).click();
-  await expect(batch.getByRole('button', { name: 'Select all', exact: true })).toBeDisabled();
-  await batch.getByRole('button', { name: 'Unselect all', exact: true }).click();
+  await selectionMenu.locator('summary').click();
+  await selectionMenu.getByRole('button', { name: 'Select all', exact: true }).click();
+  await expect(selectionMenu).not.toHaveAttribute('open', '');
+  await selectionMenu.locator('summary').click();
+  await expect(selectionMenu.getByRole('button', { name: 'Select all', exact: true })).toBeDisabled();
+  await selectionMenu.getByRole('button', { name: 'Clear selection', exact: true }).click();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await expect(calc.locator('.payment-form-summary__breakdown button')).toHaveCount(0);
 });

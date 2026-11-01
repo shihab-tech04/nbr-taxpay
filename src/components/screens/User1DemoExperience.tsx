@@ -3,6 +3,7 @@ import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditC
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
+import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
@@ -129,15 +130,19 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <summary aria-label={tr('About ','বিস্তারিত: ')+label} title={tr('More information','বিস্তারিত তথ্য')}><Info size={16} aria-hidden="true"/></summary>
     <p className="taxpayer-inline-help__content">{tr(english,bengali)}</p>
   </details>;
-  const summaryCard=(en:string,bengali:string,value:string,description:string,descriptionBn:string,priority=false)=><article className={panel+' taxpayer-dashboard-kpi'+(priority?' taxpayer-dashboard-kpi--balance':'')}>
-    <div className="flex min-w-0 items-start justify-between gap-2"><p className="text-sm font-medium text-taxpay-muted">{tr(en,bengali)}</p>
-      {info(tr(en,bengali),description,descriptionBn)}</div>
-    <p className="mt-3 break-words text-2xl font-semibold tabular-nums text-taxpay-text">{value}</p>
-    {priority && totals.outstanding > 0 && <button type="button" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
-      onClick={()=>navigate('wizard',{initialCategory:'TAX_WITH_RETURN',initialAssessmentYear:year})}>
-      {tr('Review payment options','পেমেন্টের বিকল্প দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
-    </button>}
-  </article>;
+  const summaryCard=(en:string,bengali:string,value:string,description:string,descriptionBn:string,priority=false)=>
+    <TaxpayerFinancialKpi
+      language={language}
+      titleEn={en}
+      titleBn={bengali}
+      value={value}
+      helpEn={description}
+      helpBn={descriptionBn}
+      priority={priority}
+      onReviewPayment={priority && totals.outstanding > 0
+        ? () => navigate('wizard',{initialCategory:'TAX_WITH_RETURN',initialAssessmentYear:year})
+        : undefined}
+    />;
   const money=(x:number)=>amount(x,bn);
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
     day:'numeric',month:'short',year:'numeric',timeZone:'UTC'
