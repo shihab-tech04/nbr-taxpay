@@ -120,6 +120,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await yearRow.click();
   await expect(yearRow).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
+  await expect(dashboard.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-26');
   await expect(page.getByRole('button',{name:'Review payment options'})).toHaveCount(0);
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('linked scenario profile user2 · Meghna Trading Ltd.');
