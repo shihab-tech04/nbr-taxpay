@@ -1622,3 +1622,148 @@
     grid-column: 1;
   }
 }
+
+
+/* Other Tax Step 2 — two clearly separated sections and a YouTube-style
+   one-row topic rail. Only the multi-taxpayer editor is changed. */
+.other-tax-batch-panel .payment-form-section__heading {
+  padding-bottom: 8px !important;
+  margin-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+.other-tax-batch-panel .payment-form-section__body.space-y-4 {
+  padding-top: 0;
+  gap: 10px;
+}
+.other-tax-taxpayer-section {
+  min-width: 0;
+  padding-bottom: 18px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.other-tax-taxpayer-nav { position: relative; min-width: 0; }
+.other-tax-taxpayer-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  padding: 2px 0 4px;
+}
+.other-tax-taxpayer-tabs::-webkit-scrollbar { display: none; }
+.other-tax-taxpayer-chip {
+  appearance: none;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  max-width: 200px;
+  padding: 8px 14px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 9px;
+  background: var(--color-taxpay-surface-subtle);
+  color: var(--citizen-text);
+  white-space: nowrap;
+  text-align: center;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.3;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+.other-tax-taxpayer-chip > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.other-tax-taxpayer-chip:hover:not([aria-pressed="true"]) { background: var(--citizen-primary-light); }
+.other-tax-taxpayer-chip[aria-pressed="true"] {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary);
+  color: #fff;
+}
+.other-tax-taxpayer-chip__count {
+  display: grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: var(--citizen-border);
+  color: var(--citizen-primary-dark);
+  font-size: 12px;
+  font-weight: 750;
+}
+.other-tax-taxpayer-chip[aria-pressed="true"] .other-tax-taxpayer-chip__count {
+  background: #fff;
+  color: var(--citizen-primary-dark);
+}
+.other-tax-taxpayer-chip__alert {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  color: #fff;
+  background: #a3283c;
+  font-size: 12px;
+  font-weight: 800;
+}
+.other-tax-taxpayer-chip[data-invalid="true"]:not([aria-pressed="true"]) { border-color: #a3283c; }
+.other-tax-taxpayer-nav__arrow {
+  position: absolute;
+  top: 3px;
+  bottom: 5px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  padding: 0;
+  border: 1px solid var(--citizen-border);
+  border-radius: 9px;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  box-shadow: var(--taxpay-shadow-control);
+  cursor: pointer;
+}
+.other-tax-taxpayer-nav__arrow--left { left: 0; }
+.other-tax-taxpayer-nav__arrow--right { right: 0; }
+.other-tax-taxpayer-chip:focus-visible,
+.other-tax-taxpayer-nav__arrow:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+.other-tax-head-section__heading h2 {
+  margin: 0;
+  color: var(--citizen-text);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+.other-tax-guidance {
+  margin: 0;
+  color: var(--citizen-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.other-tax-batch-panel .other-tax-head-tools__label.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 650px) {
+  .other-tax-taxpayer-chip { min-height: 44px; max-width: 160px; padding: 8px 12px; }
+  .other-tax-taxpayer-section { padding-bottom: 14px; }
+  .other-tax-batch-panel .payment-form-section__body.space-y-4 { gap: 9px; }
+}
