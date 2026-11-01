@@ -82,8 +82,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   const [paymentNonce,setPaymentNonce]=useState(()=>crypto.randomUUID());
 
   useEffect(() => {
-    if (fourStepJourney) onStageChange?.((step + 1) as 1 | 2 | 3 | 4);
-  }, [fourStepJourney, onStageChange, step]);
+    onStageChange?.((step + 1) as 1 | 2 | 3 | 4);
+  }, [onStageChange, step]);
 
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route?.amount ?? 0;
@@ -209,7 +209,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         setCreatedReceipt(newReceipt);
         setBankSlipPending(true);
       }
-      if (fourStepJourney && paymentSaved) goStep(3);
+      if ((fourStepJourney || embedded) && paymentSaved) goStep(3);
       setIsProcessing(false);
     }, 1000);
   };
@@ -350,7 +350,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
       <div className="travel-flow__main">
         {!embedded && <h1 className="travel-flow__standalone-title">{t.title}</h1>}
-        {!fourStepJourney && <nav className="travel-flow__steps" aria-label={bn ? 'ভ্রমণ করের ধাপ' : 'Travel tax steps'}>
+        {!fourStepJourney && !embedded && <nav className="travel-flow__steps" aria-label={bn ? 'ভ্রমণ করের ধাপ' : 'Travel tax steps'}>
           {workflow.steps.map((name, idx) => (
             <button key={name} type="button" disabled={!!createdReceipt || idx > furthestStep}
               aria-current={idx === step ? 'step' : undefined}
@@ -362,12 +362,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         </nav>}
         <form id="travel-tax-form" onSubmit={handlePayTravelTax} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
-          {((step === 0 && !fourStepJourney) || (step === 1 && fourStepJourney)) && <section className="travel-flow__panel" aria-labelledby="travel-route-heading">
-            <PaymentFormSection number={1} title={workflow.select}>
-            <header className="travel-flow__section-header">
+          {((step === 0 && !fourStepJourney) || (step === 1 && fourStepJourney)) && <section className="travel-flow__panel" aria-label={workflow.select}>
+            <PaymentFormSection number={1} title={workflow.select} staticView={embedded}>
+            {!embedded && <header className="travel-flow__section-header">
               <h3 id="travel-route-heading">{workflow.select}</h3>
               <p>{t.intro}</p>
-            </header>
+            </header>}
             <div className="travel-flow__search">
               <Search size={18} aria-hidden="true" className="travel-flow__search-icon" />
               <label htmlFor="travel-tax-route-search" className="sr-only">
@@ -412,12 +412,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
             </PaymentFormSection>
           </section>}
 
-          {((step === 1 && !fourStepJourney) || (step === 0 && fourStepJourney)) && <section className="travel-flow__panel" aria-labelledby="travel-passenger-heading">
-            <PaymentFormSection number={2} title={workflow.passenger} description={workflow.hint}>
-            <header className="travel-flow__section-header">
+          {((step === 1 && !fourStepJourney) || (step === 0 && fourStepJourney)) && <section className="travel-flow__panel" aria-label={workflow.passenger}>
+            <PaymentFormSection number={2} title={workflow.passenger} description={embedded ? undefined : workflow.hint} staticView={embedded}>
+            {!embedded && <header className="travel-flow__section-header">
               <h3 id="travel-passenger-heading">{workflow.passenger}</h3>
               <p>{workflow.hint}</p>
-            </header>
+            </header>}
             <div className={'travel-flow__fields' + ((fourStepJourney || !isDomestic) ? ' travel-flow__fields--five' : '')}>
               <div className="travel-flow__field">
                 <label htmlFor="travel-passenger-age">{bn ? 'যাত্রীর বয়স' : 'Passenger age'} *</label>
@@ -528,9 +528,27 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         </dl>
         {!embedded && primaryAction}
       </aside>
-      {embedded && modalFooterTarget && createPortal(<PaymentJourneyFooter className="travel-flow__footer-actions"
-        back={fourStepJourney && <button type="button" className="tax-service-choice__cancel" onClick={step === 0 || step === 3 ? onBackToService : () => goStep((step - 1) as 0 | 1 | 2 | 3)}><ArrowLeft size={16} aria-hidden="true" />{workflow.back}</button>}
-        next={primaryAction} />, modalFooterTarget)}
+      {embedded && modalFooterTarget && createPortal(
+        <div className="travel-flow__footer-content">
+          <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+            <summary>
+              <span>{workflow.summary}</span>
+              <strong>{route ? formatCurrency(totalAmount, language) : '—'}</strong>
+            </summary>
+            <dl>
+              <div><dt>{workflow.rate}</dt><dd>{formatCurrency(unitRate, language)}</dd></div>
+              <div><dt>{bn ? 'বয়স অনুযায়ী হার' : 'Age rate'}</dt>
+                <dd>{ageBand === 'CHILD' ? '50%' : ageBand === 'UNDER5' ? (bn ? 'করমুক্ত' : 'Exempt') : '100%'}</dd></div>
+              <div><dt>{workflow.route}</dt><dd>{route ? (bn ? route.routeBn : route.route) : '—'}</dd></div>
+            </dl>
+          </details>
+          <PaymentJourneyFooter className="travel-flow__footer-actions"
+            back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
+              onClick={() => goStep((step - 1) as 0 | 1 | 2 | 3)}>
+              <ArrowLeft size={16} aria-hidden="true" />{workflow.back}
+            </button>}
+            next={primaryAction} />
+        </div>, modalFooterTarget)}
     </div>
   );
 };
