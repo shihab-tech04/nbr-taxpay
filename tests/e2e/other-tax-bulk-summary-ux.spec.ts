@@ -91,12 +91,13 @@ test('320px mobile stacks fields with delete beside amount and no row overflow',
   await batch.getByRole('button', { name: /Add another assessment year/ }).click();
   const row = batch.getByTestId('other-tax-line').last().locator('.other-tax-year-allocation__fields');
   const rects = await row.locator(':scope > *').evaluateAll(nodes => nodes.map(node => {
-    const { x, y, width } = node.getBoundingClientRect();
-    return { x, y, width };
+    const { x, y, width, height } = node.getBoundingClientRect();
+    return { x, y, width, height };
   }));
   expect(rects).toHaveLength(3);
   expect(rects[0].y).toBeLessThan(rects[1].y);
   expect(rects[1].x).toBeLessThan(rects[2].x);
-  expect(Math.abs(rects[1].y - rects[2].y)).toBeLessThan(2);
+  // The action aligns with the bottom of the amount input, not its field label.
+  expect(Math.abs((rects[1].y + rects[1].height) - (rects[2].y + rects[2].height))).toBeLessThan(2);
   expect(await row.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
 });
