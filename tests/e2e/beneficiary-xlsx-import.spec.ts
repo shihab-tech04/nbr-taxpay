@@ -147,7 +147,7 @@ test('failed new-list import stays recoverable and retries against the same crea
   await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
   expect(transport.createListCount()).toBe(2);
   await expect(page.locator('#beneficiary-list')).toContainText('Imported list');
-  const visibleRecords=page.locator('[data-testid="beneficiaries-page"] table:visible, [data-testid="beneficiaries-page"] ul[aria-label="Saved beneficiaries"]:visible');
+  const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
   await expect(visibleRecords.getByText('Local Beneficiary One',{exact:true})).toBeVisible();
   await expect(visibleRecords.getByText('Local Beneficiary Two',{exact:true})).toBeVisible();
 });
@@ -155,9 +155,7 @@ test('failed new-list import stays recoverable and retries against the same crea
 test('local sample taxpayer Beneficiaries supports independent lists, Excel import, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
-  const recordList=info.project.name==='desktop-1280'
-    ?page.locator('table:visible tbody')
-    :page.locator('[data-testid="beneficiaries-page"] ul:visible');
+  const recordList=page.getByTestId('beneficiary-records').locator('ul');
   const expectRecord=async(name:string)=>expect(recordList.getByText(name,{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
   await expect(page.getByRole('link',{name:/Sign in/})).toHaveCount(0);
@@ -200,6 +198,22 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expectRecord('Local Beneficiary Two');
+  // Both breakpoints use the approved Activity record list, not separate table/card DOM.
+  await expect(page.getByTestId('beneficiary-records')).toHaveClass(/taxpayer-transaction-list/);
+  await expect(recordList.getByRole('listitem')).toHaveCount(2);
+  await expect(recordList.getByRole('listitem').first()).toHaveClass(/taxpayer-transaction-row/);
+  await expect(page.getByRole('checkbox',{name:'Select all visible beneficiaries'})).toBeVisible();
+  await expect(page.getByTestId('beneficiary-records').locator('table')).toHaveCount(0);
+  const searchControl=page.locator('.beneficiary-directory__filters .taxpayer-transaction-filter__search');
+  await expect(searchControl).toHaveCSS('border-top-width','1px');
+  await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('border-top-width','0px');
+  await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+  if(info.project.name.startsWith('mobile')){
+    const actions=recordList.getByRole('listitem').first().locator('.beneficiary-directory__actions');
+    const payButton=actions.getByRole('button',{name:'Pay Tax for Others'});
+    const groupBox=await actions.boundingBox(),payBox=await payButton.boundingBox();
+    expect(groupBox&&payBox&&payBox.width>=groupBox.width-2,'Mobile payment action occupies its own full row').toBeTruthy();
+  }
 
   const noMatch=page.getByRole('searchbox',{name:'Search this list'});
   await noMatch.fill('no matching name');
@@ -217,8 +231,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(payment.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
   await payment.getByRole('button',{name:'Close payment services'}).click();
 
-  const isDesktop=await page.locator('table').isVisible();
-  const firstRecord=isDesktop?page.getByRole('row').filter({hasText:'012345678901'}):page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'012345678901'});
+  const firstRecord=recordList.getByRole('listitem').filter({hasText:'012345678901'});
   await firstRecord.getByRole('button',{name:'Edit'}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
@@ -230,8 +243,8 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await page.getByRole('button',{name:'Selected list'}).click();
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
-  const secondRecord=isDesktop?page.getByRole('row').filter({hasText:'987654321098'}):page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'987654321098'});
-  await secondRecord.getByRole('button',{name:isDesktop?'Remove Local Beneficiary Two':'Remove beneficiary'}).click();
+  const secondRecord=recordList.getByRole('listitem').filter({hasText:'987654321098'});
+  await secondRecord.getByRole('button',{name:'Remove Local Beneficiary Two'}).click();
   dialog=page.getByRole('dialog',{name:'Confirm beneficiary removal'});
   await dialog.getByRole('button',{name:'Remove',exact:true}).click();
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);

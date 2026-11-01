@@ -76,8 +76,14 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
   assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
   assert.doesNotMatch(page,/TaxpayerPageHeading|taxpayer-account-center|taxpayer-account-panel/);
-  assert.match(page,/md:hidden/);
-  assert.match(page,/md:block/);
+  // The approved Payments & activity row pattern is shared across all viewports.
+  // Do not regress to separate desktop table and mobile-card implementations.
+  assert.match(page,/taxpayer-transaction-list beneficiary-directory/);
+  assert.match(page,/taxpayer-transaction-row beneficiary-directory__row/);
+  assert.match(page,/taxpayer-transaction-filter__search/);
+  assert.match(page,/Select all visible beneficiaries/);
+  assert.doesNotMatch(page,/beneficiary-directory hidden md:block|beneficiary-directory__mobile md:hidden/);
+  assert.match(shared,/\.beneficiary-directory__actions/);
   assert.doesNotMatch(page,/taxpay-auth-(?:primary|outline)/);
   assert.doesNotMatch(taxpayer,/--reference-primary-active/);
 });

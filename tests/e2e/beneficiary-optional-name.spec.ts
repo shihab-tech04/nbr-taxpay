@@ -75,7 +75,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await expect(dialog.locator('#beneficiary-name')).not.toHaveAttribute('required','');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const visibleRecords=page.locator('table:visible tbody, ul[aria-label="Saved beneficiaries"]:visible');
+  const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
@@ -85,9 +85,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.locator('#beneficiary-tin').fill('987654321098');
   await dialog.locator('#beneficiary-name').fill('Editable Contact');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const secondRecord=await page.locator('table').isVisible()
-    ?page.getByRole('row').filter({hasText:'987654321098'})
-    :page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'987654321098'});
+  const secondRecord=visibleRecords.getByRole('listitem').filter({hasText:'987654321098'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
@@ -114,9 +112,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
-  const intendedRecord=await page.locator('table').isVisible()
-    ?page.getByRole('row').filter({hasText:'012345678901'})
-    :page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'012345678901'});
+  const intendedRecord=visibleRecords.getByRole('listitem').filter({hasText:'012345678901'});
   await intendedRecord.getByRole('checkbox',{name:'Select Name not provided',exact:true}).check();
   await intendedRecord.getByRole('button',{name:'Pay Tax for Others',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
@@ -139,7 +135,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   dialog=page.getByRole('dialog',{name:'উপকারভোগী যোগ'});
   await dialog.locator('#beneficiary-tin').fill('123450987654');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
-  const visibleRecords=page.locator('table:visible tbody, ul[aria-label="সংরক্ষিত উপকারভোগী"]:visible, ul[aria-label="Saved beneficiaries"]:visible');
+  const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
   await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='123450987654')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 });
