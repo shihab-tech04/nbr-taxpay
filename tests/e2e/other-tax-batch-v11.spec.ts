@@ -525,3 +525,91 @@ test('additional taxpayers are not blocked by an unapproved 20-person limit', as
   await dialog.getByRole('button', { name: 'Remove taxpayer 21' }).click();
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(19);
 });
+
+
+test('own-tax payment hides redundant taxpayer picker and keeps bulk actions beside search', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await login.getByLabel('Password', { exact: true }).fill('user1');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+
+  const batch = dialog.getByTestId('other-tax-batch');
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs')).toHaveCount(0);
+  await expect(batch.getByText('Paying tax for')).toHaveCount(0);
+  await expect(batch.getByRole('searchbox', { name: 'Find a payment head' })).toBeVisible();
+  const selection = batch.getByTestId('other-tax-selection-menu');
+  await expect(selection.locator('summary')).toBeVisible();
+  const [searchBox, menuBox] = await Promise.all([
+    batch.locator('.other-tax-head-tools__search').boundingBox(),
+    selection.locator('summary').boundingBox(),
+  ]);
+  expect(searchBox).not.toBeNull();
+  expect(menuBox).not.toBeNull();
+  expect(Math.abs(searchBox!.y - menuBox!.y)).toBeLessThanOrEqual(2);
+  await batch.getByRole('searchbox', { name: 'Find a payment head' }).fill('68A');
+  await selection.locator('summary').click();
+  await selection.getByRole('button', { name: 'Select all matching' }).click();
+  await expect(selection).not.toHaveAttribute('open', '');
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  await selection.locator('summary').click();
+  await selection.getByRole('button', { name: 'Clear selection' }).click();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
+});
+
+test('other-tax modal scrolls only the head list and keeps calculation and footer fixed on desktop', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop pinned modal and independent scroll contract');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  const menu = batch.getByTestId('other-tax-selection-menu');
+  await menu.locator('summary').click();
+  await menu.getByRole('button', { name: 'Select all', exact: true }).click();
+  await batch.locator('[data-head-group="Penalty"] > summary').click();
+
+  const body = dialog.locator('.taxpay-modal__body');
+  const left = batch.locator('.payment-form-layout__sections');
+  const calc = dialog.locator('.taxpay-modal__body .payment-form-summary');
+  const footer = dialog.locator('.taxpay-modal__footer');
+  await expect(body).toHaveCSS('overflow', 'hidden');
+  await expect(left).toHaveCSS('overflow-y', 'auto');
+  await expect(calc).toHaveCSS('overflow', 'hidden');
+  expect(await left.evaluate(el => el.scrollHeight > el.clientHeight + 8)).toBe(true);
+  const [calcBefore, footerBefore] = await Promise.all([calc.boundingBox(), footer.boundingBox()]);
+  await left.evaluate(el => { el.scrollTop = el.scrollHeight; });
+  await expect.poll(() => left.evaluate(el => el.scrollTop)).toBeGreaterThan(40);
+  const [calcAfter, footerAfter] = await Promise.all([calc.boundingBox(), footer.boundingBox()]);
+  expect(Math.abs(calcAfter!.y - calcBefore!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(footerAfter!.y - footerBefore!.y)).toBeLessThanOrEqual(2);
+  expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+  expect(await body.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(2);
+});
+
+test('compact search/selection stays operable at 320px without horizontal overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs')).toHaveCount(0);
+  await batch.getByRole('searchbox', { name: 'Find a payment head' }).fill('68A');
+  const menu = batch.getByTestId('other-tax-selection-menu');
+  await menu.locator('summary').click();
+  await menu.getByRole('button', { name: 'Select all matching' }).click();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+  await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+});

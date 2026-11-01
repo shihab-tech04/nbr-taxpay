@@ -1339,13 +1339,87 @@
 
 /* Other Tax Step 2: bulk selection, distinct year allocations and contextual editing.
    Reuse the approved modal/summary tokens; leave mobile footer layout untouched. */
-.other-tax-bulk-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+/* Search and selection use a single compact row; the menu overlays content. */
+.other-tax-batch-panel .payment-form-section__body.space-y-4 { gap: 12px; }
+.other-tax-batch-panel .payment-form-section__body.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0;
+  margin-bottom: 0;
 }
-.other-tax-bulk-actions button,
+.other-tax-head-tools { min-width: 0; position: relative; }
+.other-tax-head-tools__label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--citizen-text);
+  font-size: 14px;
+  font-weight: 650;
+}
+.other-tax-head-tools__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 8px; min-width: 0; }
+.other-tax-head-tools__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: 12px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 8px;
+  background: var(--citizen-surface);
+}
+.other-tax-head-tools__search:focus-within { border-color: var(--citizen-primary); outline: 2px solid var(--citizen-primary-light); }
+.other-tax-head-tools__search input { flex: 1 1 auto; min-width: 0; width: 1px; border: 0; background: transparent; }
+.other-tax-selection-menu { position: relative; align-self: stretch; z-index: 3; }
+.other-tax-selection-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  height: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 8px;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  list-style: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.other-tax-selection-menu > summary::-webkit-details-marker { display: none; }
+.other-tax-selection-menu[open] > summary { border-color: var(--citizen-primary); background: var(--citizen-primary-light); }
+.other-tax-selection-menu[open] .other-tax-selection-menu__chevron { transform: rotate(180deg); }
+.other-tax-selection-menu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 4;
+  width: max-content;
+  min-width: 190px;
+  max-width: min(85vw, 260px);
+  padding: 4px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 9px;
+  background: var(--citizen-surface);
+  box-shadow: var(--taxpay-shadow-modal);
+}
+.other-tax-selection-menu__panel button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--citizen-primary-dark);
+  text-align: start;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.other-tax-selection-menu__panel button:hover:not(:disabled) { background: var(--citizen-primary-light); }
+.other-tax-selection-menu__panel button:disabled { opacity: .45; cursor: not-allowed; }
+.other-tax-selection-status { margin: 0; color: var(--citizen-muted); font-size: 14px; line-height: 1.45; }
 .other-tax-add-year,
 .other-tax-year-remove {
   appearance: none;
@@ -1360,12 +1434,8 @@
   font-weight: 650;
   cursor: pointer;
 }
-.other-tax-bulk-actions button:hover:not(:disabled),
 .other-tax-add-year:hover,
-.other-tax-year-remove:hover {
-  background: var(--citizen-primary-light);
-}
-.other-tax-bulk-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.other-tax-year-remove:hover { background: var(--citizen-primary-light); }
 .other-tax-add-year { margin: 0 12px 12px 40px; }
 .other-tax-year-remove { min-height: 32px; padding: 3px 8px; margin-top: 6px; font-size: 13px; }
 .other-tax-year-allocation + .other-tax-year-allocation {
@@ -1395,7 +1465,8 @@
   background: var(--citizen-primary-light);
 }
 .payment-form-summary__entry--link:focus-visible,
-.other-tax-bulk-actions button:focus-visible,
+.other-tax-selection-menu > summary:focus-visible,
+.other-tax-selection-menu__panel button:focus-visible,
 .other-tax-add-year:focus-visible,
 .other-tax-year-remove:focus-visible {
   outline: 3px solid var(--citizen-primary);
@@ -1421,6 +1492,15 @@
     display: flex;
     overflow: hidden;
   }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .tax-service-choice {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .payment-flow-embedded {
     display: flex;
     flex: 1 1 auto;
@@ -1442,6 +1522,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     align-content: start;
+    scrollbar-gutter: stable;
   }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"]) .payment-flow-embedded__payment > .payment-form-summary {
     position: relative;
@@ -1449,7 +1530,18 @@
     height: 100%;
     min-height: 0;
     align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"])
+    .payment-form-summary__breakdown,
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has([data-testid="other-tax-batch"])
+    .payment-form-summary__taxpayers {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    align-content: start;
   }
 }

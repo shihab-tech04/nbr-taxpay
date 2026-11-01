@@ -99,6 +99,14 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await page.goto('/?action=taxpayer_home');
   const dashboard=page.getByTestId('account-workflow-summary');
   await expect(dashboard).toBeVisible();
+  // Verified account uses the same approved financial KPI cards as the static
+  // reference, but must never inherit user1's fabricated assessed balances.
+  const financialCards=page.locator('.taxpayer-dashboard-kpi');
+  await expect(financialCards).toHaveCount(4);
+  await expect(financialCards.nth(0)).toContainText('Income tax liability');
+  await expect(financialCards.nth(0)).toContainText('—');
+  await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
+  await expect(page.getByRole('button',{name:'Review payment options'})).toHaveCount(0);
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('linked scenario profile user2 · Meghna Trading Ltd.');
   await expect(dashboard.getByText('Payment requests')).toBeVisible();

@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
 import {
   addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,
-  removeGuestBeneficiary, updateGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
+  removeGuestBeneficiary, updateGuestBeneficiary, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
 export interface BeneficiaryList { id: string; owner_uid?: string; name: string; created_at: string; }
@@ -71,6 +71,26 @@ export async function updateBeneficiary(ownerUid:string | null,id:string,name:st
   const {error}=await client().from('taxpay_beneficiaries').update({display_name:normalized,updated_at:new Date().toISOString()}).eq('id',id).eq('owner_uid',ownerUid);
   if(error)throw error;
 }
+/** Move a saved contact without changing its TIN, name, identity or payment history. */
+export async function moveBeneficiary(ownerUid:string|null,id:string,sourceListId:string,targetListId:string):Promise<void>{
+  if(!targetListId||!sourceListId||sourceListId===targetListId)throw new Error('Choose another saved list.');
+  if(!ownerUid)return moveGuestBeneficiary(id,sourceListId,targetListId);
+  const db=client();
+  // The destination must belong to this account. Existing RLS and the composite
+  // (list_id,owner_uid) foreign key also enforce ownership at write time.
+  const {data:destination,error:destinationError}=await db.from('taxpay_beneficiary_lists')
+    .select('id').eq('id',targetListId).eq('owner_uid',ownerUid).maybeSingle();
+  if(destinationError)throw destinationError;
+  if(!destination)throw new Error('The destination list is unavailable. Refresh and choose another list.');
+  const {data,error}=await db.from('taxpay_beneficiaries')
+    .update({list_id:targetListId,updated_at:new Date().toISOString()})
+    .eq('id',id).eq('owner_uid',ownerUid).eq('list_id',sourceListId)
+    .select('id').maybeSingle();
+  if(error?.code==='23505')throw new Error('This beneficiary is already saved in the destination list.');
+  if(error)throw error;
+  if(!data)throw new Error('The beneficiary has changed or is no longer available. Refresh and try again.');
+}
+
 export async function removeBeneficiary(ownerUid:string | null,id:string):Promise<void>{
   if (!ownerUid) return removeGuestBeneficiary(id);
   const {error}=await client().from('taxpay_beneficiaries').delete().eq('id',id).eq('owner_uid',ownerUid);
