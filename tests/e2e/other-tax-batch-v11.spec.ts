@@ -362,7 +362,7 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
   const next = dialog.getByRole('button', { name: 'Continue to payment channel' });
   await expect(next).toBeDisabled();
-  await expect(tabs.first()).toContainText('1 incomplete');
+  await expect(tabs.first()).toContainText('1 selected');
   await tabs.first().click();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1000');
   await expect(next).toBeEnabled();
