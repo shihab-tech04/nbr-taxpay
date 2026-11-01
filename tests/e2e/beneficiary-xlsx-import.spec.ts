@@ -200,6 +200,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   const searchControl=page.locator('.beneficiary-directory__filters .taxpayer-transaction-filter__search');
   await expect(searchControl).toHaveCSS('border-top-width','1px');
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('border-top-width','0px');
+  await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
   if(info.project.name.startsWith('mobile')){
     const firstRow=recordList.getByRole('listitem').first();
     const actions=firstRow.locator('.beneficiary-directory__actions');
