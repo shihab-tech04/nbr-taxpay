@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 import { setWorkspaceLanguage } from './workspace-language';
 
@@ -242,3 +243,7 @@ test('the public search and 14px action minimum remain unchanged', async ({ page
   const sizes = await buttons.evaluateAll(items => items.map(item => parseFloat(getComputedStyle(item).fontSize)));
   sizes.forEach(size => expect(size).toBeGreaterThanOrEqual(14));
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
