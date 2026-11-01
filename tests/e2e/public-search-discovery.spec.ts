@@ -18,7 +18,9 @@ test('search uses the established icon-free section heading and concise single-l
   expect(descriptionLines).toBeLessThan(1.2);
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   await search.click();
-  await expect(page.locator('.public-record-suggestions')).toHaveCount(0);
+  await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__option')).toHaveCount(3);
+  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(1);
 });
 
 test('typing opens a clean floating dropdown without changing the card height', async ({ page }) => {
@@ -33,9 +35,9 @@ test('typing opens a clean floating dropdown without changing the card height', 
   });
   await search.fill('DEMO-REF-001');
   await expect(section.getByRole('heading', { name: 'Matching references' })).toBeVisible();
-  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
-  await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
-  await expect(section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(1);
+  const matches = section.locator('.public-record-suggestions__group:not(.public-record-suggestions__examples)');
+  await expect(matches.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ })).toBeVisible();
   const geometry = await section.evaluate(element => {
     const dropdown = element.querySelector<HTMLElement>('.public-record-suggestions')!;
     const searchField = element.querySelector<HTMLElement>('.public-record-search')!;
@@ -54,13 +56,13 @@ test('typing opens a clean floating dropdown without changing the card height', 
   expect(geometry.dropdownOutsideCard).toBe(true);
   expect(Math.abs(geometry.cardHeight - cardHeightBefore)).toBeLessThan(2);
   expect(Math.abs(geometry.nextGap - nextGapBefore)).toBeLessThan(2);
-  const resultOption = section.getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ });
+  const resultOption = section.locator('.public-record-suggestions__group:not(.public-record-suggestions__examples)').getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ });
   await expect(resultOption).toHaveCSS('text-decoration-line', 'none');
   await resultOption.focus();
   await expect(resultOption).toBeFocused();
   await search.fill('not-a-real-reference');
   await expect(section.getByText(/No matching references/)).toBeVisible();
-  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
+  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(1);
   await expect(section.getByRole('button', { name: 'Search records' })).toBeEnabled();
 });
 
@@ -79,7 +81,7 @@ test('keyboard can select a matching synthetic reference without leaking it into
 test('matching reference opens the receipt modal without exposing the reference in the URL', async ({ page }) => {
   await page.goto('/?action=landing');
   await page.getByRole('searchbox', { name: 'Search payment records by reference' }).fill('DEMO-REF-003');
-  await page.getByRole('button', { name: /AC-2025-06-DEMO-REF-003/ }).click();
+  await page.locator('.public-record-suggestions__group:not(.public-record-suggestions__examples)').getByRole('button', { name: /AC-2025-06-DEMO-REF-003/ }).click();
   await expect(page).toHaveURL(/action=verify/);
   expect(page.url()).not.toContain('DEMO-REF');
   const modal = page.getByRole('dialog', { name: 'Payment status & receipt' });
@@ -135,4 +137,39 @@ test('dropdown overlays following content without resizing the card or overflowi
     expect(geometry.nextSectionBelowCard).toBe(true);
     expect(Math.abs(geometry.cardHeight - heightBefore)).toBeLessThan(2);
   }
+});
+
+
+test('focus examples are keyboard-selectable, private-reference safe and do not resize the search card', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto('/?action=landing');
+  const section = page.getByRole('region', { name: 'Find a payment record' });
+  const search = section.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const before = await section.evaluate(element => element.getBoundingClientRect().height);
+  await search.focus();
+  await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__option')).toHaveCount(3);
+  const example = await section.locator('.public-record-suggestions__value').first().textContent();
+  expect(example?.trim()).toBeTruthy();
+  expect(Math.abs((await section.evaluate(element => element.getBoundingClientRect().height)) - before)).toBeLessThan(2);
+  await search.press('ArrowDown');
+  await expect(section.locator('#public-search-option-0')).toHaveClass(/is-active/);
+  await search.press('Enter');
+  await expect(page).toHaveURL(/action=verify/);
+  expect(page.url()).not.toContain(example!.trim());
+});
+
+
+test('typed search keeps matched references above a distinct bottom sample-number group', async ({ page }) => {
+  await page.goto('/?action=landing');
+  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  await search.fill('DEMO-REF-001');
+  const dropdown = page.locator('.public-record-suggestions');
+  await expect(dropdown.locator('.public-record-suggestions__group')).toHaveCount(2);
+  await expect(dropdown.locator('.public-record-suggestions__group').first().getByRole('heading', { name: 'Matching references' })).toBeVisible();
+  await expect(dropdown.locator('.public-record-suggestions__group').last().getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
+  await expect(dropdown.locator('.public-record-suggestions__examples button')).toHaveCount(3);
+  const match = dropdown.locator('.public-record-suggestions__group').first().getByRole('button', { name: /AC-2025-09-DEMO-REF-001/ });
+  await expect(match).toBeVisible();
+  await expect(match).toHaveCSS('text-decoration-line', 'none');
 });
