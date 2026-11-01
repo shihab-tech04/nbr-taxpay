@@ -10,6 +10,7 @@ on:
       - 'tests/otherTaxBatchSubmission.test.ts'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
       - 'tests/e2e/other-tax-bulk-summary-ux.spec.ts'
+      - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
       - 'tests/e2e/other-tax-batch-submit.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
   push:
@@ -21,6 +22,7 @@ on:
       - 'tests/otherTaxBatchSubmission.test.ts'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
       - 'tests/e2e/other-tax-batch-submit.spec.ts'
+      - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
 
 permissions:
@@ -50,7 +52,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4

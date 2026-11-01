@@ -282,6 +282,35 @@
   display: grid; gap: .55rem; padding: .65rem;
   border-top: 1px solid var(--citizen-border, #dce5f0);
 }
+/* Keep a visible, keyboard-operable disclosure ahead of the bulk preview.
+   All lines remain in the payment model; only the summary presentation folds. */
+.payment-form-summary__taxpayer-show-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--citizen-border, #dce5f0);
+  border-radius: 8px;
+  background: #edf4ff;
+  color: var(--citizen-primary-dark, #245aa0);
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.payment-form-summary__taxpayer-show-all small {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--citizen-muted, #526880);
+}
+.payment-form-summary__taxpayer-show-all:hover { border-color: var(--citizen-primary, #2c5ead); background: #e5efff; }
+.payment-form-summary__taxpayer-show-all:focus-visible { outline: 3px solid var(--citizen-primary, #2c5ead); outline-offset: 2px; }
+.payment-form-summary__taxpayers { scrollbar-gutter: stable; scrollbar-color: #8c9db5 #f3f7fc; }
 .payment-form-summary__taxpayer-item {
   display: grid; grid-template-columns: minmax(0,1fr) auto;
   gap: .5rem; align-items: start;
