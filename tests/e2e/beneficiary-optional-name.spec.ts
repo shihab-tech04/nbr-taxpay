@@ -168,3 +168,33 @@ test('Excel import success notice updates immediately when the user changes lang
   await setWorkspaceLanguage(page,'en');
   await expect(notice).toHaveText('1 beneficiaries added to the list.');
 });
+
+test('single beneficiary uses the shared TIN lookup card, clears lookup, and retains optional manual names', async ({page}) => {
+  const transport=await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries&demoUser=user1');
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  const create=page.getByRole('dialog',{name:'Create list'});
+  await create.locator('#beneficiary-create-list-name').fill('Shared TIN lookup');
+  await create.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  const dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  const lookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
+  await expect(lookup.getByRole('heading',{name:'Taxpayer Information'})).toBeVisible();
+  await lookup.locator('#beneficiary-tin').fill('111111111111');
+  await lookup.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(lookup.locator('#beneficiary-name')).toHaveValue('User 1');
+  await expect(lookup.locator('#beneficiary-name')).toHaveAttribute('readonly','');
+  await lookup.getByRole('button',{name:'Clear TIN search'}).click();
+  await expect(lookup.locator('#beneficiary-name')).toHaveValue('');
+  await expect(lookup.locator('#beneficiary-tin')).toHaveValue('');
+
+  await lookup.locator('#beneficiary-tin').fill('012345678901');
+  await lookup.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(lookup.locator('#beneficiary-name')).not.toHaveAttribute('readonly','');
+  await lookup.locator('#beneficiary-name').fill('Local contact');
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByText('Beneficiary saved.')).toBeVisible();
+  expect(transport.saved().find(record=>record.tin==='012345678901')?.display_name).toBe('Local contact');
+});

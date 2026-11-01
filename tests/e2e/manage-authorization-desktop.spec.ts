@@ -57,6 +57,12 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await expect(directions.getByRole('button',{name:'I can pay for'})).toBeVisible();
   await expect(directions.getByRole('button',{name:'Can pay for me'})).toBeVisible();
   await authorization.getByRole('button',{name:'Add'}).click();
+  const lookup=authorization.getByTestId('shared-taxpayer-tin-lookup');
+  await authorization.getByLabel('Taxpayer account reference').fill('2222222222222');
+  await lookup.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(lookup.locator('#new-auth-name')).toHaveValue('Meghna Trading Ltd.');
+  await lookup.getByRole('button',{name:'Clear TIN search'}).click();
+  await expect(lookup.locator('#new-auth-name')).toHaveValue('');
   await authorization.getByLabel('Taxpayer account reference').fill('2222222222222');
   await authorization.getByRole('button',{name:'Request authorization'}).click();
   await expect(authorization.getByRole('status')).toContainText('Request sent');

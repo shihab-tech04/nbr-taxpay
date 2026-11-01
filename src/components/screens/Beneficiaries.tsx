@@ -3,6 +3,8 @@ import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet,
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
+import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
 import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
@@ -33,6 +35,7 @@ export function Beneficiaries(){
   const [listName,setListName]=useState('');
   const [tin,setTin]=useState('');
   const [name,setName]=useState('');
+  const [searchedBeneficiaryTin,setSearchedBeneficiaryTin]=useState<string|null>(null);
   const [filename,setFilename]=useState('');
   const [rows,setRows]=useState<ImportRow[]>([]);
   const [busy,setBusy]=useState(false);
@@ -138,7 +141,7 @@ export function Beneficiaries(){
   }
   function open(next:Flow){
     setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
-    setTin('');setName('');setRows([]);setFilename('');setModalError('');setNotice(null);
+    setTin('');setName('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
   }
   function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
 
@@ -459,8 +462,21 @@ export function Beneficiaries(){
           {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
         </div>
         {flow==='single'?<form id="beneficiary-single-form" className="space-y-3" onSubmit={event=>void saveSingle(event)}>
-          <div><label className="mb-1 block text-sm font-semibold" htmlFor="beneficiary-tin">{tr('Beneficiary TIN','উপকারভোগীর টিআইএন')} *</label><UiInput id="beneficiary-tin" inputMode="numeric" maxLength={12} required value={tin} onChange={event=>setTin(event.target.value.replace(/\D/g,'').slice(0,12))}/></div>
-          <div><label className="mb-1 block text-sm font-semibold" htmlFor="beneficiary-name">{tr('Beneficiary name (optional)','উপকারভোগীর নাম (ঐচ্ছিক)')}</label><UiInput id="beneficiary-name" maxLength={160} value={name} onChange={event=>setName(event.target.value)}/></div>
+          <TaxpayerTinLookup language={language} card heading={tr('Taxpayer Information','করদাতার তথ্য')}
+            tinId="beneficiary-tin" nameId="beneficiary-name"
+            tin={tin}
+            name={searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin)
+              ? (bn ? lookupSampleTaxpayer(tin)!.nameBn : lookupSampleTaxpayer(tin)!.nameEn) : name}
+            canSearch={/^\d{12}$/.test(tin)}
+            editableName={!(searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin))}
+            onNameChange={setName}
+            tinPlaceholder={tr('12-digit TIN','১২ সংখ্যার টিআইএন')}
+            onTinChange={value=>{setTin(value);setName('');setSearchedBeneficiaryTin(null);setModalError('');}}
+            onClear={()=>{setTin('');setName('');setSearchedBeneficiaryTin(null);setModalError('');}}
+            onSearch={()=>{const found=lookupSampleTaxpayer(tin);setSearchedBeneficiaryTin(tin);if(found)setName(found.nameEn);}}
+            status={searchedBeneficiaryTin === tin && tin.length === 12 && !lookupSampleTaxpayer(tin)
+              ? <p className="text-sm text-slate-600" role="status">{tr('No sample name found. You may enter a name or leave it empty.','নমুনা তথ্য থেকে নাম পাওয়া যায়নি। নাম লিখতে পারেন অথবা ফাঁকা রাখতে পারেন।')}</p> : undefined} />
+
         </form>:phase==='upload'?<div className="space-y-3">
           <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload an Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
           <div className="rounded-lg border-2 border-dashed border-slate-300 p-5 text-center" onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();void receive(event.dataTransfer.files[0]);}}>

@@ -1,0 +1,23 @@
+/* Reusable approved TaxPay taxpayer-information card. No global navigation or officer styles. */
+.taxpayer-tin-lookup{display:grid;gap:14px;min-width:0;width:100%;font-family:inherit}
+.taxpayer-tin-lookup--card{background:var(--color-taxpay-surface,#fff);border:1px solid #dce5f0;border-radius:10px;padding:14px}
+.taxpayer-tin-lookup__heading{margin:0;color:#172b4d;font-size:14px;font-weight:750;line-height:1.5}
+.taxpayer-tin-lookup__field{display:grid;align-content:start;gap:6px;min-width:0}
+.taxpayer-tin-lookup__field>label{font-size:14px;font-weight:650;color:#334b6c;line-height:1.45}
+.taxpayer-tin-lookup__search-row{display:flex;align-items:stretch;gap:8px;min-width:0;width:100%}
+.taxpayer-tin-lookup__tin-entry{position:relative;flex:1 1 0;min-width:0;display:flex}
+.taxpayer-tin-lookup input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;font:inherit;font-size:14px;color:#172b4d;background:var(--color-taxpay-surface,#fff)}
+.taxpayer-tin-lookup__tin-entry>input{padding-right:48px}
+.taxpayer-tin-lookup input[readonly]{background:var(--color-taxpay-surface-subtle,#f7f9fc);cursor:default}
+.taxpayer-tin-lookup input:focus-visible{outline:2px solid var(--color-taxpay-primary,#2c5ead);outline-offset:2px}
+.taxpayer-tin-lookup__clear{position:absolute;right:1px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:44px;background:transparent;border:0;border-radius:8px;color:var(--color-taxpay-muted,#5f6b7a);cursor:pointer}
+.taxpayer-tin-lookup__clear:hover{color:var(--color-taxpay-primary,#2c5ead);background:var(--color-taxpay-light,#eaf2ff)}
+.taxpayer-tin-lookup__clear:focus-visible{outline:2px solid var(--color-taxpay-primary,#2c5ead);outline-offset:-3px}
+.taxpayer-tin-lookup__search{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;min-width:102px;min-height:44px;border:0;border-radius:9px;padding:9px 13px;font-size:14px;font-weight:700;color:white;background:var(--color-taxpay-primary,#2c5ead);cursor:pointer}
+.taxpayer-tin-lookup__search:hover:not(:disabled){background:var(--color-taxpay-primary-hover,#24549d)}
+.taxpayer-tin-lookup__search:disabled{opacity:.53;cursor:not-allowed}
+.taxpayer-tin-lookup__search:focus-visible{outline:2px solid var(--color-taxpay-dark,#1e4484);outline-offset:2px}
+.taxpayer-tin-lookup__field p[role="status"]{font-size:14px;margin:0}
+.taxpay-taxpayer-row__fields--shared{grid-template-columns:minmax(0,1fr)}
+.taxpay-taxpayer-row__fields--shared>.taxpayer-tin-lookup{min-width:0}
+@media(max-width:360px){.taxpayer-tin-lookup--card{padding:12px}.taxpayer-tin-lookup__search{min-width:88px;padding-inline:9px}.taxpayer-tin-lookup__search-row{gap:6px}}
