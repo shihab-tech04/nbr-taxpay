@@ -32,7 +32,7 @@ test('recovery is opt-in, owner-checked, non-destructive and readback verified',
   const service = readFileSync('src/services/beneficiaryAccountRecovery.ts', 'utf8');
   const screen = readFileSync('src/components/screens/BeneficiaryAccountRecovery.tsx', 'utf8');
   const directory = readFileSync('src/components/screens/Beneficiaries.tsx', 'utf8');
-  assert.match(service, /supabase\.auth\.getUser\(\)/);
+  assert.match(service, /client\.auth\.getUser\(\)/);
   assert.match(service, /data\.user\?\.id !== ownerUid/);
   assert.match(service, /await loadBeneficiaries\(ownerUid\)/);
   assert.match(service, /await addBeneficiaries\(/);
