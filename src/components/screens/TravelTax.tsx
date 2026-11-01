@@ -543,8 +543,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
             </dl>
           </details>
           <PaymentJourneyFooter className="travel-flow__footer-actions"
-            back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
-              onClick={() => goStep((step - 1) as 0 | 1 | 2 | 3)}>
+            back={!createdReceipt && (step > 0 || onBackToService) && <button type="button" className="tax-service-choice__cancel"
+              onClick={step === 0 ? onBackToService : () => goStep((step - 1) as 0 | 1 | 2 | 3)}>
               <ArrowLeft size={16} aria-hidden="true" />{workflow.back}
             </button>}
             next={primaryAction} />
