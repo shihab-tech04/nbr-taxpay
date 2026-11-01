@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
+import { SuggestedAmountInfo } from '../ui/SuggestedAmountInfo';
+import { paymentAmountSuggestionFor } from '../../services/paymentAmountSuggestions';
+import type { DemoUserId } from '../../data/demoUsers';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { BLOCKED_HEAD_IDS } from '../../data/paymentHeads';
@@ -39,14 +42,14 @@ type Props = {
   language: Language;
   taxpayers: OtherTaxTaxpayer[];
   lines: OtherTaxAllocation[];
-  suggestedAssessmentYears?: Readonly<Record<string,string>>;
+  suggestionTaxpayerIds?: Readonly<Record<string, DemoUserId | null>>;
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAssessmentYears, onChange, error, summary, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, onChange, error, summary, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -102,10 +105,17 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
     input?.focus({ preventScroll: true });
   }, [focusRequest, activeId, query, lines]);
 
-  const defaultYear = OTHER_TAX_YEARS.some(year => year === suggestedAssessmentYears?.[activeId])
-    ? suggestedAssessmentYears![activeId] : '2026-27';
+  const defaultYear = '2026-27';
+  const suggestedFor = (taxpayerId: string, headId: number, year: string) =>
+    paymentAmountSuggestionFor(
+      suggestionTaxpayerIds?.[taxpayerId] ?? null,
+      liability.find(head => head.id === headId)?.grpEn,
+      year,
+      headId,
+    );
   const newLine = (headId: number, assessmentYear = defaultYear): OtherTaxAllocation => ({
-    id: crypto.randomUUID(), taxpayerId: activeId!, headId, assessmentYear, amount: '',
+    id: crypto.randomUUID(), taxpayerId: activeId!, headId, assessmentYear,
+    amount: suggestedFor(activeId!, headId, assessmentYear)?.amount ?? '',
   });
   const visibleEligible = grouped.flatMap(group => group.rows).filter(head =>
     isOtherTaxHeadEligible(head.id) &&
@@ -135,7 +145,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
     if (!current) return;
     if (update.assessmentYear && lines.some(line => line.id !== id && line.taxpayerId === current.taxpayerId &&
       line.headId === current.headId && line.assessmentYear === update.assessmentYear)) return;
-    onChange(lines.map(line => line.id === id ? { ...line, ...update } : line));
+    // Year-specific defaults update with the year, but manual overrides are retained.
+    const before = suggestedFor(current.taxpayerId, current.headId, current.assessmentYear);
+    const after = update.assessmentYear
+      ? suggestedFor(current.taxpayerId, current.headId, update.assessmentYear) : null;
+    const amount = update.amount ?? (update.assessmentYear && current.amount === before?.amount
+      ? after?.amount ?? '' : current.amount);
+    onChange(lines.map(line => line.id === id ? { ...line, ...update, amount } : line));
   };
 
   return (
@@ -177,11 +193,6 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
               {taxpayers.length > 1 && <p className="mt-2 text-xs text-slate-600">
                 {tx('Switch taxpayers here to select different heads. Other taxpayers’ selections are preserved.',
                   'অন্য করদাতার খাত নির্বাচন করতে এখানে করদাতা বদলান। পূর্বের নির্বাচন অপরিবর্তিত থাকবে।')}
-              </p>}
-              {activeId&&OTHER_TAX_YEARS.some(year=>year===suggestedAssessmentYears?.[activeId])&&<p className="mt-2 text-xs text-taxpay-primary" role="note" data-testid="suggested-taxpayer-year">
-                {tx('This taxpayer’s previous scenario year will be used for new head selections. You can edit each line.',
-                  'এই করদাতার আগের সিনারিও করবর্ষ নতুন খাত নির্বাচনে ব্যবহৃত হবে। প্রতিটি সারির করবর্ষ সম্পাদনা করতে পারবেন।')}
-                {' '}{suggestedAssessmentYears?.[activeId]}
               </p>}
             </div>
             <div>
@@ -263,6 +274,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                         {headLines.map(line => {
                           const amountId = 'other-tax-amount-' + line.id;
                           const lineInvalid = Boolean(error && isIncomplete(line));
+                          const suggestedAmount = suggestedFor(line.taxpayerId, head.id, line.assessmentYear);
                           return <div key={line.id}
                             className="other-tax-year-allocation grid grid-cols-1 sm:grid-cols-2 gap-3 px-3 pb-3 pl-10"
                             data-testid="other-tax-line" data-head-id={head.id} data-line-id={line.id}
@@ -280,9 +292,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestedAss
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs font-semibold mb-1" htmlFor={amountId}>
-                                {tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *
-                              </label>
+                              <div className="mb-1 flex items-center gap-1">
+                                <label className="text-xs font-semibold" htmlFor={amountId}>
+                                  {tx('Payment amount (৳)', 'পরিশোধের পরিমাণ (৳)')} *
+                                </label>
+                                {suggestedAmount && line.amount === suggestedAmount.amount &&
+                                  <SuggestedAmountInfo suggestion={suggestedAmount} language={language} controlId={amountId} />}
+                              </div>
                               <input id={amountId} type="text" inputMode="decimal"
                                 pattern="[0-9]+([.][0-9]{1,2})?" required
                                 aria-invalid={lineInvalid || undefined}
