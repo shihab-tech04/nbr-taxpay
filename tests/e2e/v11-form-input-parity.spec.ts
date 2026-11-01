@@ -93,8 +93,8 @@ for (const locale of ['en', 'bn'] as const) {
       name: locale === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true,
     }).click();
 
-    const payer = modal.locator('.payment-form-section').filter({ has: modal.locator('#guest-payer-name') });
-    const taxpayers = modal.locator('.payment-form-section').filter({ has: modal.getByTestId('other-tax-taxpayer-list') });
+    const payer = modal.locator('.payment-form-section:has(#guest-payer-name)');
+    const taxpayers = modal.locator('.payment-form-section:has([data-testid="other-tax-taxpayer-list"])');
     await expect(payer.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details');
     await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toBeVisible();
     await expect(taxpayers.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'করদাতারা' : 'Taxpayers');
