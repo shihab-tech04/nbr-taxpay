@@ -110,8 +110,7 @@ test('Step 2 primary action stays disabled until a valid head and amount are pre
   const next = dialog.getByRole('button', { name: 'Continue to payment channel' });
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(next).toBeDisabled();
-  const summary = dialog.locator('.taxpay-modal__body .payment-form-summary');
-  await expect(summary).not.toContainText('Complete every selected amount to see the final total.');
+  await expect(dialog).not.toContainText('Complete every selected amount to see the final total.');
   await batch.locator('[data-head-group="Advance Tax"] > summary').click();
   await batch.getByRole('checkbox', { name: /Select 64 —/ }).check();
   await expect(next).toBeDisabled();
