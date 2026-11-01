@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { setWorkspaceLanguage } from './workspace-language';
 import { expect, test } from '@playwright/test';
 
@@ -74,3 +75,7 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
   await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
   await expect(page.locator('.public-information-hero .public-information-guide')).toHaveCount(0);
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
