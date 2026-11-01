@@ -452,12 +452,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const journey=<section className={panel} aria-labelledby="taxpayer-journey-events-heading">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h2 id="taxpayer-journey-events-heading" className="text-base font-semibold">{tr('My tax journey','আমার কর যাত্রা')}</h2>
-        {sub('Recorded events for assessment year '+year+' (fictional scenario only).','করবর্ষ '+year+'-এর নথিভুক্ত ঘটনা (শুধু কাল্পনিক পরিস্থিতি)।')}</div>
+        {sub('Recorded events for assessment year '+year+'.','করবর্ষ '+year+'-এর নথিভুক্ত ঘটনা।')}</div>
       {view('ledger','Review linked ledger','সংযুক্ত লেজার দেখুন')}
     </div>
     <p className="mt-3 text-xs text-taxpay-muted" role="note">
-      {tr('These are dated scenario events, not official confirmations. A payment attempt, Treasury receipt, ledger posting and tax credit are distinct; no missing stage is assumed.',
-        'এগুলো তারিখসহ কাল্পনিক ঘটনা, সরকারি নিশ্চিতকরণ নয়। পেমেন্টের চেষ্টা, ট্রেজারি রসিদ, লেজার পোস্টিং ও কর ক্রেডিট পৃথক; অনুপস্থিত ধাপ অনুমান করা হয় না।')}
+      {tr('Payment attempts, receipts, ledger entries and applied tax credits are distinct. Only recorded statuses are shown.',
+        'পেমেন্টের চেষ্টা, রসিদ, লেজার এন্ট্রি ও সমন্বিত কর ক্রেডিট পৃথক। শুধু নথিভুক্ত অবস্থাই দেখানো হয়েছে।')}
     </p>
     {chronologicalEvents.length ? <ol className="mt-4 space-y-0" aria-label={tr('Chronological account events','কালানুক্রমিক হিসাবের ঘটনা')}>
       {chronologicalEvents.map(item=><li key={item.id} className="relative border-l-2 border-taxpay-border pb-5 pl-5 last:pb-0">
