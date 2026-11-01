@@ -41,6 +41,7 @@ export function Beneficiaries(){
   const [rows,setRows]=useState<ImportRow[]>([]);
   const [busy,setBusy]=useState(false);
   const [restoring,setRestoring]=useState(false);
+  const [recoveryError,setRecoveryError]=useState('');
   const [guestRecoveryDone,setGuestRecoveryDone]=useState(false);
   const [modalError,setModalError]=useState('');
   const [search,setSearch]=useState('');
@@ -251,13 +252,13 @@ export function Beneficiaries(){
   };
   const restoreFromThisBrowser=async()=>{
     if(!owner||restoring)return;
-    setRestoring(true);setError('');
+    setRestoring(true);setRecoveryError('');
     try {
       const result=await recoverGuestBeneficiariesToProfile(owner);
       await reload();
       setGuestRecoveryDone(true);
       setNotice({en:result.people?`Restored ${result.people} beneficiaries to your profile.`:'Your saved beneficiaries are already available in your profile.',bn:result.people?`আপনার প্রোফাইলে ${result.people} জন উপকারভোগী ফিরিয়ে আনা হয়েছে।`:'সংরক্ষিত উপকারভোগীরা ইতিমধ্যে আপনার প্রোফাইলে আছেন।'});
-    }catch(e){setError(e instanceof Error?e.message:String(e));}
+    }catch(e){setRecoveryError(e instanceof Error?e.message:String(e));}
     finally{setRestoring(false);}
   };
   const reloadData=async()=>{
@@ -281,6 +282,7 @@ export function Beneficiaries(){
       <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}
+    {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
     <section className="rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
