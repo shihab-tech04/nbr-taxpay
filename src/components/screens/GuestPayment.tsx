@@ -1218,7 +1218,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               </>}
               {otherBatch && forSelf === false && !signedInAccount && <h3 className="payment-identity__receipt-heading">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
-              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__contact-grid${ownAccountTax ? ' payment-identity__contact-grid--account' : ''}`}>
+              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__contact-grid${ownAccountTax ? ' payment-identity__contact-grid--account' : ''}${forSelf !== false || signedInAccount ? ' payment-identity__contact-grid--no-name' : ''}`}>
               {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম' : 'Your name') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
                 <input
@@ -1235,7 +1235,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 />
                 {fieldError('payerName')}
               </div>}
-                {(!signedInAccount || !signedInProfile?.receiptMobile) && <div>
+                {(!signedInAccount || !signedInProfile?.receiptMobile) && <div className="payment-identity__contact-phone">
                 <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
                 <input
                   id="guest-phone"
