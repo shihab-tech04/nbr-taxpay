@@ -2431,6 +2431,13 @@
 .beneficiary-directory {min-width:0;width:100%;}
 .beneficiary-directory__filters {display:grid;grid-template-columns:minmax(0,420px);margin-top:16px;}
 .beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
+/* Beneficiaries also renders outside .taxpayer-workspace; prevent the global
+   input style from covering the Activity search control's single outline. */
+.beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
+.beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"]:focus-visible {
+  flex:1;width:100%;min-width:0;height:100%;padding:0;border:0;border-radius:0;
+  outline:none;box-shadow:none;appearance:none;background:transparent;
+}
 .beneficiary-directory__count {margin:14px 0 10px;}
 .beneficiary-directory__bulk-actions {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
 .beneficiary-directory__selected-count {margin:0;color:var(--color-taxpay-text);font-size:14px;font-weight:600;}
@@ -2465,7 +2472,11 @@
   }
   .beneficiary-directory__actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-content:stretch;width:100%;}
   .beneficiary-directory__actions button {width:100%;min-width:0;}
-  .beneficiary-directory__actions button:last-child {grid-column:1 / -1;}
+  /* The Activity mobile pattern gives the main action a full row. Secondary
+     edit/remove controls share the next row without three-line wrapping. */
+  .beneficiary-directory__actions button:nth-child(2) {grid-column:1 / -1;grid-row:1;}
+  .beneficiary-directory__actions button:first-child {grid-column:1;grid-row:2;}
+  .beneficiary-directory__actions button:last-child {grid-column:2;grid-row:2;}
 }
 @media (max-width:440px) {
   .beneficiary-directory__bulk-actions {justify-content:flex-start;}
