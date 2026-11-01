@@ -78,3 +78,45 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
   await expect(dialog.locator('.receipt-view__actions')).toHaveCount(0);
   await expect(dialog.locator('#travel-tax-route-results')).toBeVisible();
 });
+
+
+test('direct Travel Tax uses the shared progressive modal with reversible stages and mobile calculation', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const dialog = page.getByRole('dialog', { name: 'Travel tax' });
+
+  await expect(dialog).toHaveAttribute('data-payment-stage', 'true');
+  await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel route');
+  await expect(dialog.locator('.travel-flow__steps')).toHaveCount(0);
+  await expect(dialog.getByRole('heading', { name: 'Choose destination & travel mode' })).toHaveCount(1);
+  await expect(dialog.locator('.travel-flow__summary')).toBeVisible();
+
+  await dialog.locator('#travel-tax-route-0').check();
+  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passenger details');
+  await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
+  await dialog.getByRole('button', { name: 'Back' }).click();
+  await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
+  await expect(dialog.locator('#travel-tax-route-0')).toBeChecked();
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(dialog.locator('.travel-flow__summary')).toBeHidden();
+  const footerSummary = dialog.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]');
+  await expect(footerSummary).toBeVisible();
+  await footerSummary.locator('summary').click();
+  await expect(footerSummary.locator('dl')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__footer .travel-flow__primary')).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await dialog.getByLabel('Passenger name').fill('TEST TRAVELLER');
+  await dialog.getByLabel('Passport number').fill('TRAVEL123');
+  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
+  await dialog.getByLabel('Travel date').fill('2026-11-20');
+  await dialog.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
+  await dialog.getByRole('button', { name: 'Back' }).click();
+  await expect(dialog.getByLabel('Passenger name')).toHaveValue('TEST TRAVELLER');
+});
