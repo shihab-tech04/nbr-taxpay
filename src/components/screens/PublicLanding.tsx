@@ -140,7 +140,7 @@ export const PublicLanding: React.FC = () => {
             spellCheck={false}
             maxLength={120}
             value={paymentReference}
-            aria-controls="public-record-suggestions"
+            aria-controls={searchOpen ? "public-record-suggestions" : undefined}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
