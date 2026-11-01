@@ -6,7 +6,11 @@ declare
   v_b constant text := repeat('b', 64);
   v_list_a uuid;
   v_list_b uuid;
+  v_list_a_target uuid;
   v_person_a uuid;
+  v_person_b uuid;
+  v_original_name text;
+  v_move jsonb;
   v_data jsonb;
 begin
   perform public.taxpay_guest_beneficiary_open(v_a);
@@ -29,7 +33,58 @@ begin
   end if;
   v_data := public.taxpay_guest_beneficiary_rows(v_a, 0, 500);
   if jsonb_array_length(v_data) <> 2 then raise exception 'Guest owner cannot read their rows'; end if;
-  v_person_a := (v_data->0->>'id')::uuid;
+  select (item.value->>'id')::uuid, item.value->>'display_name'
+    into v_person_a, v_original_name
+  from jsonb_array_elements(v_data) as item(value)
+  where item.value->>'tin' = '012345678901';
+  select (item.value->>'id')::uuid
+    into v_person_b
+  from jsonb_array_elements(v_data) as item(value)
+  where item.value->>'tin' = '987654321098';
+  if v_person_a is null or v_person_b is null then
+    raise exception 'Guest owner row lookup by TIN failed';
+  end if;
+
+  v_list_a_target := (public.taxpay_guest_beneficiary_create_list(v_a, 'Clients')->>'id')::uuid;
+  if public.taxpay_guest_beneficiary_add(v_a, v_list_a_target,
+    '[{"tin":"012345678901","display_name":"Target duplicate"}]'::jsonb) <> 1 then
+    raise exception 'Guest target list duplicate fixture was not added';
+  end if;
+  begin
+    perform public.taxpay_guest_beneficiary_move(v_a, v_person_a, v_list_a, v_list_a_target);
+    raise exception 'Duplicate guest beneficiary move unexpectedly succeeded';
+  exception when others then
+    if sqlerrm not like '%BENEFICIARY_ALREADY_IN_LIST%' then raise; end if;
+  end;
+  v_data := public.taxpay_guest_beneficiary_rows(v_a, 0, 500);
+  if not exists (
+    select 1 from jsonb_array_elements(v_data) as item(value)
+    where item.value->>'id' = v_person_a::text
+      and item.value->>'list_id' = v_list_a::text
+      and item.value->>'display_name' = v_original_name
+  ) then
+    raise exception 'Duplicate guest move changed or removed the source beneficiary';
+  end if;
+
+  v_move := public.taxpay_guest_beneficiary_move(v_a, v_person_b, v_list_a, v_list_a_target);
+  if v_move->>'id' is distinct from v_person_b::text
+     or v_move->>'list_id' is distinct from v_list_a_target::text
+     or v_move->>'tin' is distinct from '987654321098'
+     or v_move->>'display_name' is distinct from 'Synthetic Guest A2' then
+    raise exception 'Successful guest move changed the beneficiary identity or target';
+  end if;
+  begin
+    perform public.taxpay_guest_beneficiary_move(v_b, v_person_b, v_list_a, v_list_b);
+    raise exception 'Guest B moved Guest A beneficiary';
+  exception when others then
+    if sqlerrm not like '%NOT_FOUND%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_guest_beneficiary_move(v_a, v_person_a, v_list_a, v_list_a);
+    raise exception 'Guest beneficiary moved to its existing list';
+  exception when others then
+    if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
+  end;
   if jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_b, 0, 500)) <> 0 then
     raise exception 'Guest B read Guest A beneficiary data';
   end if;
@@ -56,14 +111,14 @@ begin
   if public.taxpay_guest_beneficiary_remove(v_b, v_person_a)->>'deleted' <> 'true' then
     raise exception 'Cross-session delete should be a harmless no-op';
   end if;
-  if jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_a, 0, 500)) <> 2 then
+  if jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_a, 0, 500)) <> 3 then
     raise exception 'Cross-session delete changed Guest A rows';
   end if;
   perform public.taxpay_guest_beneficiary_update(v_a, v_person_a, 'Renamed synthetic guest');
   if public.taxpay_guest_beneficiary_remove(v_a, v_person_a)->>'deleted' <> 'true' then
     raise exception 'Owner delete did not complete';
   end if;
-  if jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_a, 0, 500)) <> 1 then
+  if jsonb_array_length(public.taxpay_guest_beneficiary_rows(v_a, 0, 500)) <> 2 then
     raise exception 'Owner delete did not remove exactly one beneficiary';
   end if;
 
@@ -82,6 +137,11 @@ begin
      not has_function_privilege('service_role', 'public.taxpay_guest_beneficiary_lists(text)', 'EXECUTE') then
     raise exception 'Only service_role may execute guest beneficiary RPCs';
   end if;
+  if has_function_privilege('anon', 'public.taxpay_guest_beneficiary_move(text,uuid,uuid,uuid)', 'EXECUTE') or
+     has_function_privilege('authenticated', 'public.taxpay_guest_beneficiary_move(text,uuid,uuid,uuid)', 'EXECUTE') or
+     not has_function_privilege('service_role', 'public.taxpay_guest_beneficiary_move(text,uuid,uuid,uuid)', 'EXECUTE') then
+    raise exception 'Only service_role may execute the guest beneficiary move RPC';
+  end if;
   if has_table_privilege('anon', 'public.taxpay_beneficiary_lists', 'SELECT') or
      has_table_privilege('anon', 'public.taxpay_beneficiaries', 'SELECT') or
      (select count(*) from pg_policies where schemaname = 'public'
@@ -98,4 +158,4 @@ reset role;
 
 rollback;
 
-\echo 'PASS: guest capabilities persist and isolate beneficiary CRUD; account-owned RLS and service-role-only RPC boundary remain intact'
+\echo 'PASS: guest capabilities persist and isolate beneficiary CRUD and atomic list moves; account-owned RLS and service-role-only RPC boundary remain intact'

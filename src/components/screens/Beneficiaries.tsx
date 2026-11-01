@@ -4,9 +4,9 @@ import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
-import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,updateBeneficiary,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
-import {beneficiaryNameForDisplay,beneficiaryNameForPrefill,beneficiaryNameWasNotProvided} from '../../services/beneficiaryNames';
+import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
@@ -19,7 +19,6 @@ export function Beneficiaries(){
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const displayName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
-  const editableName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameWasNotProvided(person.display_name)?'':person.display_name;
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
   const [people,setPeople]=useState<Beneficiary[]>([]);
   const [activeList,setActiveList]=useState('');
@@ -41,7 +40,7 @@ export function Beneficiaries(){
   const [search,setSearch]=useState('');
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
-  const [editName,setEditName]=useState('');
+  const [editTargetList,setEditTargetList]=useState('');
   const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
   const [listMenuOpen,setListMenuOpen]=useState(false);
   const [editingList,setEditingList]=useState<BeneficiaryList|null>(null);
@@ -210,11 +209,14 @@ export function Beneficiaries(){
   async function saveEdit(event:React.FormEvent){
     event.preventDefault();
     if(!editPerson)return;
-    if(editName.trim().length>160){setModalError(tr('Name must be 160 characters or fewer.','নাম ১৬০ অক্ষরের বেশি হতে পারবে না।'));return;}
+    if(!editTargetList||editTargetList===editPerson.list_id||!lists.some(list=>list.id===editTargetList)){
+      setModalError(tr('Choose another saved list.','অন্য একটি সংরক্ষিত তালিকা বাছুন।'));return;
+    }
     setBusy(true);setModalError('');
     try{
-      await updateBeneficiary(owner,editPerson.id,editName);await reload();setEditPerson(null);
-      setNotice({en:'Beneficiary updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে.'});
+      await moveBeneficiary(owner,editPerson.id,editPerson.list_id,editTargetList);
+      await reload(editTargetList);setEditPerson(null);setEditTargetList('');
+      setNotice({en:'Beneficiary moved to the selected list.',bn:'উপকারভোগী নির্বাচিত তালিকায় স্থানান্তরিত হয়েছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
@@ -330,7 +332,7 @@ export function Beneficiaries(){
                   <td className="beneficiary-directory__check"><input type="checkbox" aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)} checked={selectedIds.includes(person.id)} onChange={event=>setSelectedIds(current=>event.target.checked?[...current,person.id]:current.filter(id=>id!==person.id))}/></td>
                   <td className="beneficiary-directory__name">{displayName(person)}</td><td className="beneficiary-directory__tin">{person.tin}</td>
                   <td><div className="beneficiary-directory__actions">
-                    <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditName(editableName(person));setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditTargetList('');setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="gap-2 text-sm" onClick={()=>payWith([person])}><CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}</UiButton>
                     <UiButton type="button" variant="quiet" className="gap-2 text-sm text-red-700 hover:bg-red-50" aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)} onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div></td>
@@ -345,7 +347,7 @@ export function Beneficiaries(){
                   <div className="min-w-0 flex-1"><p className="break-words font-semibold text-taxpay-text">{displayName(person)}</p><p className="mt-1 break-all font-mono text-sm text-slate-600">{person.tin}</p></div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditName(editableName(person));setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
+                  <UiButton type="button" variant="outline" className="text-sm" onClick={()=>{setEditPerson(person);setEditTargetList('');setModalError('');}}>{tr('Edit','সম্পাদনা')}</UiButton>
                   <UiButton type="button" variant="outline" className="text-sm" onClick={()=>payWith([person])}><CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}</UiButton>
                   <UiButton type="button" variant="quiet" className="col-span-2 text-sm text-red-700 hover:bg-red-50" onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove beneficiary','উপকারভোগী সরান')}</UiButton>
                 </div>
@@ -466,11 +468,18 @@ export function Beneficiaries(){
     </TaxPayModal>}
 
     {editPerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
-      onClose={()=>{if(!busy){setEditPerson(null);setModalError('');}}} initialFocusSelector="#beneficiary-edit-name"
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setEditPerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
+      onClose={()=>{if(!busy){setEditPerson(null);setEditTargetList('');setModalError('');}}} initialFocusSelector="#beneficiary-edit-list"
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');}}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editTargetList||editTargetList===editPerson.list_id}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
+        <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
         <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
-        <div><label htmlFor="beneficiary-edit-name" className="mb-1 block text-sm font-semibold">{tr('Beneficiary name (optional)','উপকারভোগীর নাম (ঐচ্ছিক)')}</label><UiInput id="beneficiary-edit-name" maxLength={160} value={editName} onChange={event=>setEditName(event.target.value)}/></div>
+        <div><label htmlFor="beneficiary-edit-list" className="mb-1 block text-sm font-semibold">{tr('Move to list','তালিকা পরিবর্তন করুন')} *</label>
+          <UiSelect id="beneficiary-edit-list" required value={editTargetList} onChange={event=>{setEditTargetList(event.target.value);setModalError('');}}>
+            <option value="">{tr('Choose another list','অন্য তালিকা বাছুন')}</option>
+            {lists.filter(list=>list.id!==editPerson.list_id).map(list=><option key={list.id} value={list.id}>{list.name}</option>)}
+          </UiSelect>
+        </div>
+        {lists.every(list=>list.id===editPerson.list_id)&&<p className="text-sm text-slate-600">{tr('Create another list before moving this beneficiary.','এই উপকারভোগীকে সরানোর আগে আরেকটি তালিকা তৈরি করুন।')}</p>}
         {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
       </form>
     </TaxPayModal>}

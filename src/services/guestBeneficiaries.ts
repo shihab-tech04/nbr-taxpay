@@ -76,6 +76,9 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}): Pr
       if (response.status === 410 || result?.code === 'GUEST_SESSION_UNAVAILABLE') {
         throw new Error('This browser’s saved beneficiary session has expired or is unavailable. Its access key was kept so it will not be replaced silently.');
       }
+      if (response.status === 409 && result?.code === 'BENEFICIARY_ALREADY_IN_LIST') {
+        throw new Error('This beneficiary is already saved in the destination list.');
+      }
       if (response.status === 409 || result?.code === 'LIST_NAME_TAKEN') {
         throw new Error('A list with this name already exists.');
       }
@@ -118,6 +121,11 @@ export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]):
 
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {
   await post('update', { id, name });
+}
+
+/** Guest preview compatibility: server performs one atomic, capability-bound list move. */
+export async function moveGuestBeneficiary(id:string,sourceListId:string,listId:string):Promise<void>{
+  await post('move', {id,sourceListId,listId});
 }
 
 export async function removeGuestBeneficiary(id: string): Promise<void> {
