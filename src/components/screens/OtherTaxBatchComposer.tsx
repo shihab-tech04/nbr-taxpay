@@ -145,12 +145,12 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     if (!current) return;
     if (update.assessmentYear && lines.some(line => line.id !== id && line.taxpayerId === current.taxpayerId &&
       line.headId === current.headId && line.assessmentYear === update.assessmentYear)) return;
-    // Year-specific defaults update with the year, but manual overrides are retained.
-    const before = suggestedFor(current.taxpayerId, current.headId, current.assessmentYear);
-    const after = update.assessmentYear
+    // A User1 example amount is tied to one year. Never carry it to another year.
+    // Other taxpayers' manually entered amounts keep their previous behavior.
+    const nextSuggestion = update.assessmentYear
       ? suggestedFor(current.taxpayerId, current.headId, update.assessmentYear) : null;
-    const amount = update.amount ?? (update.assessmentYear && current.amount === before?.amount
-      ? after?.amount ?? '' : current.amount);
+    const amount = update.amount ?? (update.assessmentYear && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
+      ? nextSuggestion?.amount ?? '' : current.amount);
     onChange(lines.map(line => line.id === id ? { ...line, ...update, amount } : line));
   };
 
