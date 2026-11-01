@@ -10,11 +10,11 @@ test('signed-out Beneficiaries deep link opens approved login, rejects invalid I
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(1);
   await login.getByRole('textbox',{name:'User ID'}).fill('user2');
   await login.getByLabel('Password',{exact:true}).fill('incorrect');
-  await login.getByRole('button',{name:'Sign In'}).click();
+  await login.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(login.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await login.getByLabel('Password',{exact:true}).fill('user2');
-  await login.getByRole('button',{name:'Sign In'}).click();
+  await login.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page).toHaveURL(/action=beneficiaries/);
   await expect(login).toHaveCount(0);
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
