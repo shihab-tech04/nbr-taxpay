@@ -2431,10 +2431,11 @@
 .beneficiary-directory {min-width:0;width:100%;}
 .beneficiary-directory__filters {display:grid;grid-template-columns:minmax(0,420px);margin-top:16px;}
 .beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
-/* Beneficiaries also renders outside .taxpayer-workspace; prevent the global
-   input style from covering the Activity search control's single outline. */
-.beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
-.beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"]:focus-visible {
+/* Beneficiaries renders outside .taxpayer-workspace. The shared Sobaike
+   taxpayer input rule has higher specificity and paints a white background;
+   match that specificity here so only the search wrapper owns its outline. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"]:focus-visible {
   flex:1;width:100%;min-width:0;height:100%;padding:0;border:0;border-radius:0;
   outline:none;box-shadow:none;appearance:none;background:transparent;
 }
