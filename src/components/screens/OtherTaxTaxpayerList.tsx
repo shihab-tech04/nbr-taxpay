@@ -54,7 +54,7 @@ export function OtherTaxTaxpayerList({
     onClearError();
   };
   return <div className={`taxpay-taxpayer-list${simpleSelf ? ' taxpay-taxpayer-list--single' : ''}`} data-testid="other-tax-taxpayer-list">
-    {!simpleSelf && <p className="taxpay-taxpayer-list__count" aria-live="polite">
+    {!simpleSelf && <p className="sr-only" role="status" aria-live="polite">
       {bn ? 'মোট ' + count + ' জন করদাতা' : count + ' ' + (count === 1 ? 'taxpayer' : 'taxpayers') + ' added'}
     </p>}
     <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer">

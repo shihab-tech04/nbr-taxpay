@@ -12,7 +12,7 @@ test('payer relationship is required at entry and head choice is still validated
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
   await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
-  await expect(dialog.getByLabel('Your name (payer)')).toBeVisible();
+  await expect(dialog.getByLabel('Your name')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Sample Agent');
   await expect(dialog.locator('#other-tax-primary-name')).toHaveValue('');
@@ -79,3 +79,37 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await submit.click();
   await expect(travel.locator('.travel-flow__receipt')).toContainText('Payment reference', { timeout: 10000 });
 });
+
+for (const locale of ['en', 'bn'] as const) {
+  test('Other Tax payer and taxpayer sections use concise grouped copy (' + locale + ')', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
+    await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
+    const modal = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
+    await modal.locator('[data-payer-relationship="OTHER"]').click();
+    await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
+    await modal.locator('[data-payment-access="GUEST"]').click();
+    await modal.locator('.tax-service-choice__actions').getByRole('button', {
+      name: locale === 'bn' ? 'এগিয়ে যান' : 'Continue', exact: true,
+    }).click();
+
+    const payer = modal.locator('.payment-form-section:has(#guest-payer-name)');
+    const taxpayers = modal.locator('.payment-form-section:has([data-testid="other-tax-taxpayer-list"])');
+    await expect(payer.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details');
+    await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toBeVisible();
+    await expect(taxpayers.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'করদাতারা' : 'Taxpayers');
+    await expect(payer.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);
+    await expect(taxpayers.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);
+    await expect(payer.locator('#guest-payer-name')).toBeVisible();
+    await expect(payer.locator('#guest-phone')).toBeVisible();
+    await expect(payer.locator('#guest-notice-ref')).toBeVisible();
+    await expect(payer.locator('#guest-tin')).toHaveCount(0);
+    await expect(taxpayers.locator('#guest-tin')).toBeVisible();
+    await expect(taxpayers.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
+    await expect(modal.getByTestId('other-tax-taxpayer-list').locator('p.sr-only')).toHaveCount(1);
+    await taxpayers.getByRole('button', { name: locale === 'bn' ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer' }).click();
+    await expect(taxpayers.getByTestId('other-tax-taxpayer')).toHaveCount(1);
+    const horizontalOverflow = await modal.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth);
+    expect(horizontalOverflow).toBeLessThanOrEqual(2);
+  });
+}
