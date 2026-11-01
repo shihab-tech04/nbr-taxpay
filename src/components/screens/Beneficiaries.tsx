@@ -465,6 +465,7 @@ export function Beneficiaries(){
               ? (bn ? lookupSampleTaxpayer(tin)!.nameBn : lookupSampleTaxpayer(tin)!.nameEn) : name}
             canSearch={/^\d{12}$/.test(tin)}
             editableName={!(searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin))}
+            onNameChange={setName}
             tinPlaceholder={tr('12-digit TIN','১২ সংখ্যার টিআইএন')}
             onTinChange={value=>{setTin(value);setName('');setSearchedBeneficiaryTin(null);setModalError('');}}
             onClear={()=>{setTin('');setName('');setSearchedBeneficiaryTin(null);setModalError('');}}
