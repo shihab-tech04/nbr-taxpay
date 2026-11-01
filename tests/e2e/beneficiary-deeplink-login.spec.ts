@@ -14,12 +14,12 @@ test('Beneficiaries deep link opens one login modal, validates, resumes and surv
 
   await dialog.getByLabel('User ID',{exact:true}).fill('invalid-user');
   await dialog.getByLabel('Password',{exact:true}).fill('invalid-pass');
-  await dialog.getByRole('button',{name:'Sign In'}).click();
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await dialog.getByLabel('User ID',{exact:true}).fill('user2');
   await dialog.getByLabel('Password',{exact:true}).fill('user2');
-  await dialog.getByRole('button',{name:'Sign In'}).click();
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/action=beneficiaries/);
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
@@ -47,7 +47,7 @@ test('already signed-in Beneficiaries deep links never reopen login or workspace
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
-  await dialog.getByRole('button',{name:'Sign In'}).click();
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
   await page.goto('/?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
