@@ -38,14 +38,15 @@ import { clearOtherTaxBatch, confirmedBatchReceipts, createOtherTaxBatch, loadOt
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
 import { SavedBeneficiaryPicker } from './SavedBeneficiaryPicker';
-import { SignedInTaxpayerCard, AccountPaymentSuggestions } from './SignedInPaymentEnhancements';
+import { SignedInTaxpayerCard } from './SignedInPaymentEnhancements';
+import { SuggestedAmountInfo } from '../ui/SuggestedAmountInfo';
+import { paymentAmountSuggestionFor, type SuggestedAmountGroup } from '../../services/paymentAmountSuggestions';
 import { loadBeneficiaries } from '../../services/beneficiaries';
 import { userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import type { DemoUserId } from '../../data/demoUsers';
-import type {PaymentSuggestion} from '../../services/signedInPaymentContext';
 import { OtherTaxBatchComposer, otherTaxAllocationTotal, otherTaxAllocationHead, isOtherTaxHeadEligible, OTHER_TAX_YEARS, type OtherTaxTaxpayer, type OtherTaxAllocation } from './OtherTaxBatchComposer';
 
 const GUEST_COPY = {
@@ -216,7 +217,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
-  const [suggestedBatchYears,setSuggestedBatchYears]=useState<Record<string,string>>({});
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
@@ -240,7 +240,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [authorizedTaxpayerId, setAuthorizedTaxpayerId] = useState<DemoUserId | null>(null);
   const [beneficiaryChecking, setBeneficiaryChecking] = useState(false);
   const [beneficiaryRefreshKey, setBeneficiaryRefreshKey] = useState(0);
-  const suggestionUserId = ownAccountTax ? demoConsentActor : authorizedTaxpayerId;
+  const suggestionUserId = ownAccountTax ? demoConsentActor : null;
   const taxZone = ownProfile?.taxZone ?? '—';
   const taxCircle = ownProfile?.taxCircle ?? '—';
   const [noticeReference, setNoticeReference] = useState('');
@@ -267,12 +267,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
   const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
-  const batchSuggestionTaxpayers = batchTaxpayers.flatMap(person => {
-    const userId = person.id === 'primary' && ownAccountTax
-      ? demoConsentActor
-      : authorizedTaxpayerIds[person.tin] ?? (person.id === 'primary' ? authorizedTaxpayerId : null);
-    return userId ? [{ person, userId }] : [];
-  });
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
@@ -474,8 +468,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     ? categoryHeads.filter(head => head.status === 'ACTIVE' && !BLOCKED_HEAD_IDS.includes(head.id))
     : categoryHeads.filter(head => selectedHeadIds.includes(head.id));
   const selectedHead = selectedHeads[0];
+  const suggestionGroup: SuggestedAmountGroup | null =
+    category === 'TAX_WITH_RETURN' ? 'Tax with Return' :
+    category === 'ADVANCE_TAX' ? 'Advance Tax' :
+    category === 'ASSESSED_DEMAND' ? 'Tax against Demand' :
+    category === 'PENALTY' ? 'Penalty' :
+    category === 'APPELLATE_TRIBUNAL' ? 'Appellate Tribunal' :
+    category === 'OTHER_TAX_PAYMENT' ? 'Others' : null;
+  const suggestedAmount = selectedHeads.length === 1 && !verifiedReference
+    ? paymentAmountSuggestionFor(suggestionUserId, suggestionGroup, assessmentYear) : null;
   const amountRowColumns = paymentAmountRowColumns(selectedHeads.length);
-  const amountRawForHead = (headId: number) => verifiedReference ? String(verifiedReference.amount) : amountInputs[headId] || '';
+  // No state write is required: the stable suggestion becomes the editable initial value,
+  // and a user override (including empty string) always takes precedence.
+  const amountRawForHead = (headId: number) => verifiedReference ? String(verifiedReference.amount)
+    : amountInputs[headId] ?? suggestedAmount?.amount ?? '';
   const headAmount = (headId: number) => parseGuestAmount(amountRawForHead(headId)) ?? 0;
   const validAmountInputs = selectedHeads.map(head => amountRawForHead(head.id)).filter(raw => parseGuestAmount(raw) !== null);
   const summedAmount = verifiedReference && selectedHeads.length > 1 ? null : sumGuestAmounts(validAmountInputs);
@@ -618,48 +624,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     clearValidationError();
     return true;
-  };
-
-  const chooseSuggestedHead = (suggestion:PaymentSuggestion) => {
-    // Never apply another selected taxpayer's scenario record or a record that
-    // still needs review. This source has no exact legal head/notice reference.
-    const authorizedForCurrentFlow = otherBatch
-      ? batchTaxpayers.some(person => {
-        const authorizedId = person.id === 'primary' && ownAccountTax
-          ? demoConsentActor
-          : authorizedTaxpayerIds[person.tin] ?? (person.id === 'primary' ? authorizedTaxpayerId : null);
-        return authorizedId === suggestion.taxpayerId && userIdForHostedTin(person.tin) === suggestion.taxpayerId;
-      })
-      : suggestion.taxpayerId === suggestionUserId;
-    if (!authorizedForCurrentFlow || suggestion.requiresReview) return;
-    const supportedYear=suggestion.assessmentYear&&OTHER_TAX_YEARS.find(year=>year===suggestion.assessmentYear);
-    if(otherBatch){
-      const target=batchTaxpayers.find(person=>userIdForHostedTin(person.tin)===suggestion.taxpayerId);
-      if(target){
-        const targetTab=[...document.querySelectorAll<HTMLButtonElement>('[data-testid="other-tax-taxpayer-tabs"] button')]
-          .find(button=>button.dataset.taxpayerId===target.id);
-        targetTab?.click();
-        if(supportedYear)setSuggestedBatchYears(current=>({...current,[target.id]:supportedYear}));
-      }
-    }else if(supportedYear)setAssessmentYear(supportedYear);
-    const group:Partial<Record<PaymentSuggestion['serviceCode'],string>>={
-      ADVANCE_TAX:'Advance Tax',ASSESSED_DEMAND:'Tax against Demand',PENALTY:'Penalty',
-      APPELLATE_TRIBUNAL:'Appellate Tribunal',OTHER_TAX_PAYMENT:'Others',
-    };
-    const groupName=group[suggestion.serviceCode];
-    const section=groupName?[...document.querySelectorAll<HTMLDetailsElement>('details[data-head-group]')]
-      .find(item=>item.dataset.headGroup===groupName):undefined;
-    if(section){
-      section.open=true;
-      section.scrollIntoView({behavior:'smooth',block:'nearest'});
-      section.querySelector('summary')?.focus({preventScroll:true});
-      return;
-    }
-    const nextField=suggestion.serviceCode==='TAX_WITH_RETURN'
-      ?document.querySelector<HTMLInputElement>('input[name="guest-income-type"]')
-      :document.querySelector<HTMLInputElement>('input[name="guest-payment-head"]');
-    nextField?.scrollIntoView({behavior:'smooth',block:'nearest'});
-    nextField?.focus({preventScroll:true});
   };
 
   // Saved contacts permit the payer to choose a TIN, not to read that taxpayer's
@@ -1319,13 +1283,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          {signedInAccount && (batchSuggestionTaxpayers.length > 0
-            ? batchSuggestionTaxpayers.map(({ person, userId }) => <AccountPaymentSuggestions key={person.id}
-              userId={userId} taxpayerLabel={person.name || person.tin} language={language}
-              mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)
-            : <AccountPaymentSuggestions userId={null} language={language} mode="OTHER_TAX_PAYMENT" onChoose={chooseSuggestedHead} />)}
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation}
-            lines={otherTaxLines} suggestedAssessmentYears={suggestedBatchYears} focusRequest={summaryJump} onChange={next => {
+            lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
               // Keep the invalid-row indicators visible until every selected
               // head is corrected, instead of hiding them after the first edit.
@@ -1344,9 +1303,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
-            {signedInAccount && <AccountPaymentSuggestions userId={suggestionUserId} language={language}
-              mode={isWithholdingMode?'SOURCE_TAX_DEPOSIT':category === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX_PAYMENT'}
-              onChoose={chooseSuggestedHead} />}
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={embedded && category === 'TAX_WITH_RETURN' ? (language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন' : 'Choose the income tax type') : (language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head')}>
             {verifiedReference && <p className="text-xs text-slate-600" role="status">{language === 'bn' ? `NBR রেফারেন্স ${verifiedReference.reference} থেকে করবর্ষ ও পরিমাণ পূরণ করা হয়েছে।` : `Assessment year and amount filled from NBR reference ${verifiedReference.reference}.`}</p>}
             {!isWithholdingMode && <fieldset className="payment-form-radio-fieldset">
@@ -1485,10 +1441,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-head-amount-grid">
             {selectedHeads.map((head, index) => <div className="payment-head-amount" data-columns={amountRowColumns[index]} key={head.id}>
               {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
-              <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="block text-slate-600 font-medium mb-1">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
+              <div className="mb-1 flex items-center gap-1">
+                <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="text-slate-600 font-medium">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
+                {suggestedAmount && amountRawForHead(head.id) === suggestedAmount.amount &&
+                  <SuggestedAmountInfo suggestion={suggestedAmount} language={language} controlId={`guest-tax-amount-${head.id}`} />}
+              </div>
               <input id={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} type="text" inputMode="decimal" required readOnly={!!verifiedReference} autoComplete="off" maxLength={17}
                 placeholder="0.00" aria-invalid={isFieldInvalid('taxAmount') && errorHeadId === head.id || undefined} aria-describedby={isFieldInvalid('taxAmount') && errorHeadId === head.id ? `${ERROR_ID}-taxAmount` : undefined}
-                value={verifiedReference ? String(verifiedReference.amount) : amountInputs[head.id] || ''} onChange={event => {
+                value={amountRawForHead(head.id)} onChange={event => {
                   const next = normalizeGuestAmountInput(event.target.value);
                   if (next === null) return;
                   setAmountInputs(previous => ({ ...previous, [head.id]: next }));
