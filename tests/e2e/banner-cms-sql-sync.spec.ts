@@ -78,5 +78,7 @@ test('CMS outage never resurrects unpublished bundled artwork and payment action
   await fallback.getByRole('button', { name: 'Retry banner loading' }).click();
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-hero-carousel__image-layer')).toHaveCount(5);
-  await expect(carousel.getByRole('heading', { name: 'Updated SQL-controlled headline' })).toBeVisible();
+  const expectedHeading = (page.viewportSize()?.width ?? 1280) <= 640
+    ? 'SQL mobile heading' : 'Updated SQL-controlled headline';
+  await expect(carousel.getByRole('heading', { name: expectedHeading })).toBeVisible();
 });
