@@ -19,6 +19,12 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Needs review'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By assessment year'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Recent activity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Review a suggested payment'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Tax payment services'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Review payment options'})).toBeVisible();
   await expect(page.getByText('Travel tax (separate)')).toBeVisible();
 
   await expect(workspace.locator('.taxpayer-dashboard-kpi').first().locator(':scope > p')).toHaveCount(1);
