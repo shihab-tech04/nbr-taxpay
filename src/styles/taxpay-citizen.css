@@ -2443,7 +2443,7 @@
 .beneficiary-directory__row {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;min-height:98px;padding:15px 16px;background:var(--color-taxpay-surface);}
 .beneficiary-directory__row + .beneficiary-directory__row {border-top:1px solid var(--color-taxpay-border);}
 .beneficiary-directory__row:hover {background:var(--color-taxpay-surface-subtle);}
-.beneficiary-directory__row[data-selected="true"] {background:var(--color-taxpay-primary-light);}
+.beneficiary-directory__row[data-selected="true"] {background:var(--citizen-primary-light);}
 .beneficiary-directory__identity {display:flex;align-items:center;gap:16px;min-width:0;}
 .beneficiary-directory__person {display:block;min-width:0;cursor:pointer;}
 .beneficiary-directory__person .taxpayer-transaction-row__title {margin:0;font-size:15px;font-weight:600;line-height:1.5;color:var(--color-taxpay-text);overflow-wrap:anywhere;}
