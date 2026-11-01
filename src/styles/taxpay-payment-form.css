@@ -21,6 +21,37 @@
 .payment-form-summary__live{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:#2c5ead}
 .payment-form-summary__eyebrow{padding:16px 18px 0;margin:0;color:#516681;font-size:14px;font-weight:600}
 .payment-form-summary__total{display:block;padding:3px 18px 0;color:#1f56a1;font-size:clamp(20px,2vw,26px);font-weight:700;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+/* Cheque-style display under the actual numeric payment total. */
+.payment-form-summary__amount-words {
+  margin: 0;
+  padding: 5px 18px 16px;
+  color: #405a74;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.payment-form-summary__more-heads { min-width: 0; }
+.payment-form-summary__more-heads > summary {
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid #cbd9ec;
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: #245aa0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.payment-form-summary__more-heads > summary::-webkit-details-marker { display: none; }
+.payment-form-summary__more-heads > summary:hover { background: #eef5ff; }
+.payment-form-summary__more-heads > summary:focus-visible { outline: 3px solid #2c5ead; outline-offset: 2px; }
+.payment-form-summary__more-heads-list { display: grid; gap: 9px; padding-top: 12px; min-width: 0; }
+.payment-form-summary__more-heads-list > * { min-width: 0; }
+.payment-form-summary__breakdown > h3 { overflow-wrap: anywhere; }
+
 .payment-form-summary__help{margin:0;padding:4px 18px 16px;font-size:14px;color:#52667f;line-height:1.5}
 .payment-form-summary__rows{margin:0;padding:0 18px 17px;display:grid;gap:13px}
 .payment-form-summary__rows>div{display:grid;gap:3px}

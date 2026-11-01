@@ -1420,27 +1420,75 @@
 .other-tax-selection-menu__panel button:hover:not(:disabled) { background: var(--citizen-primary-light); }
 .other-tax-selection-menu__panel button:disabled { opacity: .45; cursor: not-allowed; }
 .other-tax-selection-status { margin: 0; color: var(--citizen-muted); font-size: 14px; line-height: 1.45; }
-.other-tax-add-year,
+.other-tax-year-allocation {
+  min-width: 0;
+  padding: 10px 12px 12px 40px;
+}
+.other-tax-year-allocation + .other-tax-year-allocation {
+  border-top: 1px solid var(--citizen-border);
+  padding-top: 12px;
+}
+.other-tax-year-allocation__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.other-tax-year-allocation__fields > div { min-width: 0; }
+.other-tax-year-allocation__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  min-width: 0;
+  margin-bottom: 8px;
+  color: var(--citizen-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
 .other-tax-year-remove {
   appearance: none;
-  border: 1px solid var(--citizen-border);
-  background: var(--citizen-surface);
-  color: var(--citizen-primary-dark);
-  border-radius: 8px;
-  min-height: 44px;
-  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 7px;
+  background: transparent;
+  color: #a3283c;
+  cursor: pointer;
   font: inherit;
   font-size: 14px;
   font-weight: 650;
+  min-height: 32px;
+}
+.other-tax-year-remove:hover { background: #fff0f2; }
+.other-tax-add-year {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: calc(100% - 52px);
+  min-height: 44px;
+  margin: 0 12px 12px 40px;
+  padding: 9px 12px;
+  border: 1px dashed var(--citizen-border);
+  border-radius: 8px;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: start;
   cursor: pointer;
 }
-.other-tax-add-year:hover,
-.other-tax-year-remove:hover { background: var(--citizen-primary-light); }
-.other-tax-add-year { margin: 0 12px 12px 40px; }
-.other-tax-year-remove { min-height: 32px; padding: 3px 8px; margin-top: 6px; font-size: 13px; }
-.other-tax-year-allocation + .other-tax-year-allocation {
-  padding-top: 12px;
-  border-top: 1px solid var(--citizen-border);
+.other-tax-add-year:hover { border-color: var(--citizen-primary); background: var(--citizen-primary-light); }
+@media (max-width: 575px) {
+  .other-tax-year-allocation { padding-left: 26px; }
+  .other-tax-year-allocation__fields { grid-template-columns: minmax(0,1fr); }
+  .other-tax-add-year { margin-left: 26px; width: calc(100% - 38px); }
 }
 .other-tax-row--focused,
 .other-tax-year-allocation[data-focused="true"] {
