@@ -97,18 +97,25 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
   const footer=dialog.locator('.travel-flow__footer-actions');
-  const summary=dialog.locator('.travel-flow__summary');
+  // The approved mobile journey places a collapsible calculation in its fixed footer,
+  // not the old desktop rail. Keep the total above the primary action without overflow.
+  const summary=dialog.getByTestId('mobile-payment-calculation');
   const next=footer.getByRole('button',{name:'Continue to passenger details'});
+  await expect(summary).toBeVisible();
+  await expect(next).toBeVisible();
   const [nextBox,summaryBox,footerBox]=await Promise.all([next.boundingBox(),summary.boundingBox(),footer.boundingBox()]);
   expect(nextBox).not.toBeNull();expect(summaryBox).not.toBeNull();expect(footerBox).not.toBeNull();
   const width=page.viewportSize()!.width;
   expect(nextBox!.x).toBeGreaterThanOrEqual(0);
   expect(nextBox!.x+nextBox!.width).toBeLessThanOrEqual(width+1);
   expect(nextBox!.width).toBeGreaterThan(80);
-  expect(footerBox!.y).toBeGreaterThan(summaryBox!.y);
-  expect(summaryBox!.height).toBeLessThanOrEqual(100);
+  expect(summaryBox!.x).toBeGreaterThanOrEqual(0);
+  expect(summaryBox!.x+summaryBox!.width).toBeLessThanOrEqual(width+1);
+  expect(footerBox!.y).toBeGreaterThanOrEqual(summaryBox!.y);
   await dialog.locator('#travel-tax-route-1').check();
-  await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
+  await expect(summary.locator('summary')).toContainText('2,000');
+  await summary.locator('summary').click();
+  await expect(summary.locator('dl')).toBeVisible();
   await next.click();
   await expect(dialog.getByLabel('Passenger name')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
