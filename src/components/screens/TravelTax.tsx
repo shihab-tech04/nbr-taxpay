@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
+import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { createPortal } from 'react-dom';
 import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { 
@@ -69,6 +70,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   const [passengerName, setPassengerName] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
   const [phone, setPhone] = useState('');
+  const [receiptEmail, setReceiptEmail] = useState('');
   const [travelDate, setTravelDate] = useState('');
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -115,6 +117,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
       setError(workflow.missing);
       return;
     }
+    if (!isOptionalReceiptEmailValid(receiptEmail)) {
+      setError(bn ? 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।' : 'Enter a valid email address or leave it blank.');
+      return;
+    }
     if (ageBand === 'UNDER5') {
       setError(bn ? '৫ বছর বা তার কম বয়সী যাত্রী করমুক্ত—পেমেন্টের প্রয়োজন নেই।' : 'Passengers aged 5 or under are exempt. No payment is required.');
       return;
@@ -144,6 +150,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
         payerName: `${passengerName} (Passport: ${passportNumber})`,
         payerTin: 'NON-TIN-PASSENGER',
         receiptMobile: phone,
+        receiptEmail: normaliseReceiptEmail(receiptEmail),
         isRepresentativePayment: false,
         taxZone: 'Customs & Travel Tax Division, Dhaka',
         taxCircle: 'Circle-Immigration Port',
@@ -186,7 +193,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                 assessmentYear:'2026-27',
                 paymentMethod,paymentChannel,
                 receiptReference:paymentReference,
-                receiptMobile:phone,
+                receiptMobile:phone,receiptEmail:normaliseReceiptEmail(receiptEmail),
                 travelDate,travelRoute:route.route,ageBand,
                 passengerName:passengerName.trim(),
                 // Stored in both private SQL payment records; the public Office
@@ -263,11 +270,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
     if (!travelDate || !/^01\d{9}$/.test(phone)) {
       setError(workflow.missing); return;
     }
+    if (!isOptionalReceiptEmailValid(receiptEmail)) {
+      setError(bn ? 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।' : 'Enter a valid email address or leave it blank.');
+      return;
+    }
     goStep(fourStepJourney ? 1 : 2);
   };
   const reset = () => {
     setCreatedReceipt(null); setStep(0); setFurthestStep(0);
-    setPassengerName(''); setPassportNumber(''); setPhone(''); setTravelDate('');
+    setPassengerName(''); setPassportNumber(''); setPhone(''); setReceiptEmail(''); setTravelDate('');
     setAgeBand('ADULT'); setSelectedRouteIdx(-1); setRouteSearch(''); setError('');
     setPaymentMethod(null);
     setPaymentChannel(null);
@@ -294,7 +305,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
           service:'TRAVEL_TAX',amountMinor:Math.round(totalAmount*100),
           details:{payerName:passengerName.trim(),assessmentYear:'2026-27',
             paymentMethod,paymentChannel,receiptReference:receipt.tokenNumber,
-            receiptMobile:phone,travelDate,travelRoute:route?.route,ageBand,
+            receiptMobile:phone,receiptEmail:normaliseReceiptEmail(receiptEmail),travelDate,travelRoute:route?.route,ageBand,
             passengerName:passengerName.trim(),
             passportNumber:isDomestic ? null : passportNumber.trim(),
             lines:receipt.items,receiptSnapshot:receipt},
@@ -428,12 +439,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                 </select>
                 {ageBand === 'UNDER5' && <p className="travel-flow__field-hint" role="status">{bn ? 'এই যাত্রীর জন্য ভ্রমণ কর প্রযোজ্য নয়।' : 'Travel tax is not payable for this passenger.'}</p>}
               </div>
-              <div className="travel-flow__field">
-                <label htmlFor="travel-passenger-name">{t.passenger} *</label>
-                <input id="travel-passenger-name" type="text" autoComplete="off" value={passengerName}
-                  placeholder={t.passengerPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
-                  onChange={e => setPassengerName(e.target.value.toUpperCase())} />
-              </div>
               {(fourStepJourney || !isDomestic) && <div className="travel-flow__field">
                 <label htmlFor="travel-passport">{t.passport}{!isDomestic && ' *'}</label>
                 <input id="travel-passport" type="text" autoComplete="off" value={passportNumber}
@@ -441,9 +446,23 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
                   onChange={e => setPassportNumber(e.target.value.toUpperCase().replace(/\s+/g, ''))} />
               </div>}
               <div className="travel-flow__field">
+                <label htmlFor="travel-passenger-name">{t.passenger} *</label>
+                <input id="travel-passenger-name" type="text" autoComplete="off" value={passengerName}
+                  placeholder={t.passengerPlaceholder} aria-describedby={error ? 'travel-tax-error' : undefined}
+                  onChange={e => setPassengerName(e.target.value.toUpperCase())} />
+              </div>
+              <div className="travel-flow__field">
                 <label htmlFor="travel-mobile">{bn ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
                 <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11} autoComplete="off" value={phone}
                   placeholder="01XXXXXXXXX" onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} />
+              </div>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-receipt-email">{bn ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
+                <input id="travel-receipt-email" type="email" inputMode="email" autoComplete="email"
+                  maxLength={254} placeholder="name@example.com" value={receiptEmail}
+                  aria-invalid={!isOptionalReceiptEmailValid(receiptEmail) || undefined}
+                  aria-describedby={!isOptionalReceiptEmailValid(receiptEmail) ? 'travel-tax-error' : undefined}
+                  onChange={event => setReceiptEmail(event.target.value)} />
               </div>
               <div className="travel-flow__field">
                 <label htmlFor="travel-departure-date">{t.date} *</label>

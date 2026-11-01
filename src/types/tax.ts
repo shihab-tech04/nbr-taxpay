@@ -112,6 +112,8 @@ export interface ChallanReceipt {
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;
+  /** Optional payer contact for payment confirmation, not a login identity. */
+  receiptEmail?: string;
   noticeReference?: string;
   isRepresentativePayment: boolean;
   representativeTin?: string;

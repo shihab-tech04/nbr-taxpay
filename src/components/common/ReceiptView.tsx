@@ -239,6 +239,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <span className="text-slate-700">{labels.payer}:</span>
               <span className="col-span-2 font-semibold text-slate-900">{receipt.payerName}</span>
             </div>
+            {receipt.receiptEmail && <div className="receipt-view__detail">
+              <span className="text-slate-700">{bn ? 'রসিদের ইমেইল' : 'Receipt email'}:</span>
+              <span className="col-span-2 text-slate-800 break-all">{receipt.receiptEmail}</span>
+            </div>}
             <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.tin}:</span>
               <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{taxpayerTinSummary}</span>

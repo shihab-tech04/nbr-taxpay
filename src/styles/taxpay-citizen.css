@@ -1753,6 +1753,10 @@
   padding:.2rem 0 1rem;
 }
 .travel-flow__fields--five > :last-child {grid-column:1/-1;}
+/* Passenger name and receipt mobile share a row; email and travel date share
+   the next when the optional email field is present. */
+.travel-flow__fields--five:has(#travel-receipt-email) > :last-child { grid-column: auto; }
+.travel-flow__fields:not(.travel-flow__fields--five):has(#travel-receipt-email) > :first-child { grid-column: 1 / -1; }
 .travel-flow__field {display:flex;flex-direction:column;min-width:0;}
 .travel-flow__field-hint {
   margin:.32rem 0 0;
@@ -1884,6 +1888,7 @@
   .travel-flow__step {flex-direction:column;justify-content:center;align-items:center;gap:.25rem;text-align:center;font-size:.7rem;padding:.35rem .15rem;}
   .travel-flow__fields {grid-template-columns:minmax(0,1fr);}
   .travel-flow__fields--five > :last-child {grid-column:auto;}
+  .travel-flow__fields:not(.travel-flow__fields--five):has(#travel-receipt-email) > :first-child { grid-column: auto; }
   .travel-flow__route {grid-template-columns:minmax(0,1fr) 18px;}
   .travel-flow__route-price {grid-column:1;grid-row:2;text-align:left;display:flex;gap:.4rem;align-items:baseline;}
   .travel-flow__route input {grid-column:2;grid-row:1/span 2;}
