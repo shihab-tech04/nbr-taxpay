@@ -932,19 +932,13 @@
   background: transparent;
 }
 .account-taxpayer-summary__heading { margin: 0; }
-.account-taxpayer-summary__source {
-  color: var(--citizen-primary-dark);
-  font-size: 14px;
-  font-weight: 650;
-  margin: 0;
-}
 .account-taxpayer-summary__fields dt { font-size: 14px; }
 /* Reuse the approved account summary only inside the signed-in payment identity form. */
 .payment-identity__fields > .account-taxpayer-summary {
   padding: 16px;
   border: 1px solid var(--citizen-border);
   border-radius: 12px;
-  background: var(--citizen-primary-light);
+  background: var(--citizen-surface);
   gap: 14px;
 }
 .payment-identity__fields > .account-taxpayer-summary dd { overflow-wrap: anywhere; }
