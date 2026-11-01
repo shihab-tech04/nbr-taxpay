@@ -92,8 +92,9 @@ test('two selected saved beneficiaries proceed without separate consent',async({
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('2222222222222');
-  await expect(batch).toContainText('3333333333333');
+  const taxpayerTabs = batch.getByTestId('other-tax-taxpayer-tabs');
+  await expect(taxpayerTabs.getByRole('button', { name: /2222222222222/ })).toBeVisible();
+  await expect(taxpayerTabs.getByRole('button', { name: /3333333333333/ })).toBeVisible();
 });
 test('approval service outage cannot block a saved beneficiary',async({page})=>{
   await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);

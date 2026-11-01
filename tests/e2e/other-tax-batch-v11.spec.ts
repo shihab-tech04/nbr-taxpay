@@ -151,6 +151,17 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1000');
 
   const tabs = batch.getByTestId('other-tax-taxpayer-tabs');
+  await expect(batch.getByRole('heading', { name: 'Paying tax for' })).toHaveCount(1);
+  await expect(batch.getByRole('heading', { name: 'Choose payment heads' })).toHaveCount(1);
+  await expect(batch.getByText('Select heads, year & amount. Switching taxpayers keeps selections.')).toBeVisible();
+  await expect(batch.getByText('Switch taxpayers here to select different heads.')).toHaveCount(0);
+  await expect(tabs).toHaveCSS('flex-wrap', 'nowrap');
+  await expect(tabs).toHaveCSS('overflow-x', 'auto');
+  await expect(tabs.getByRole('button')).toHaveCount(2);
+  await expect(tabs.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+  await expect(tabs.getByRole('button').first()).not.toContainText('111111111111');
+  await expect(tabs.getByRole('button').first()).toHaveAttribute('aria-label', /111111111111/);
+  await expect(batch.locator('.other-tax-taxpayer-section')).toHaveCSS('border-bottom-style', 'solid');
   await tabs.getByRole('button').nth(1).click();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
@@ -362,7 +373,7 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2000');
   const next = dialog.getByRole('button', { name: 'Continue to payment channel' });
   await expect(next).toBeDisabled();
-  await expect(tabs.first()).toContainText('1 selected');
+  await expect(tabs.first()).toHaveAttribute('aria-label', /1 selected/);
   await tabs.first().click();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('1000');
   await expect(next).toBeEnabled();
