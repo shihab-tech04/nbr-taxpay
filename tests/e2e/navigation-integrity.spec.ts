@@ -164,24 +164,20 @@ test('public missing-record reports keep their existing incident destination', a
   await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
 });
 
-test('guest menus and bell route to their named services; contextual payment choices stay in the modal', async ({page}) => {
+test('guest navigation has no notification bell and keeps contextual payment choices in the modal', async ({page}) => {
   await page.goto('/?action=head_catalogue');
-  // Guest visitors use the actual header bell on desktop and mobile;
-  // the protected account inbox remains sign-in gated.
-  const guestBell = page.locator('.citizen-header__notification');
-  await expect(guestBell).toBeVisible();
-  await guestBell.click();
-  await expect(page).toHaveURL(/action=payment_notifications/);
-  await expect(page.getByRole('heading',{name:'Sign in to view payment notifications',exact:true})).toBeVisible();
+  // The logged-out shell must not advertise account notifications.
+  await expect(page.locator('.citizen-header__notification')).toHaveCount(0);
+  await expect(page.locator('.citizen-corner--top-right')).toHaveCount(0);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
-  await expect(page).toHaveURL(/action=payment_notifications/);
+  await expect(page).toHaveURL(/action=head_catalogue/);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Sign in to view payment notifications',exact:true})).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
+  await expect(page.locator('.citizen-header__notification')).toHaveCount(0);
 });
 
 test('taxpayer desktop rail keeps compact primary navigation and its menu routes',async({page},info)=>{
