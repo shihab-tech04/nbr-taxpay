@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 
 test('sample taxpayer can navigate a fictional profile and personal settings without impersonating a login',async({page},info)=>{
@@ -139,3 +140,7 @@ test('account UI retains no horizontal overflow at six mobile and desktop widths
     await page.screenshot({path:'test-results/screenshots/taxpayer-account-settings-'+width+'.png',fullPage:false});
   }
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
