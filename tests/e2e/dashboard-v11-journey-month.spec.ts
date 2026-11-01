@@ -29,7 +29,18 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await expect(page.getByText('DEMO-PAY-01').first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Transaction month'}).selectOption('all');
-  await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
+  await expect(page).not.toHaveURL(/monthFilter=/);
+  await page.reload();
+  await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('all');
+  await page.getByRole('combobox',{name:'Transaction month'}).selectOption('2026-09');
+  await expect(page).toHaveURL(/monthFilter=2026-09/);
+  await page.reload();
+  await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-09');
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
+  await expect(page).not.toHaveURL(/monthFilter=/);
+  await page.reload();
+  await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('all');
+  await expect(page.getByText('DEMO-PAY-24-01').first()).toBeVisible();
 });
 
 test('tax journey uses chronological scenario events, no invented four-stage confirmations',async({page})=>{
