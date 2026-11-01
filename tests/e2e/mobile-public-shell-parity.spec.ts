@@ -11,18 +11,16 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   const bell=header.getByRole('button',{name:'Notifications'});
   await expect(menu).toBeVisible();
   await expect(logo).toBeVisible();
-  await expect(bell).toBeVisible();
+  await expect(bell).toHaveCount(0);
   const bounds=await page.evaluate(()=>{
     const h=document.querySelector('.taxpay-public-mobile-navigation .citizen-header')!.getBoundingClientRect();
     const m=document.querySelector('.taxpay-public-mobile-navigation .citizen-mobile-menu-trigger')!.getBoundingClientRect();
     const l=document.querySelector('.taxpay-public-mobile-navigation .citizen-brand')!.getBoundingClientRect();
-    const b=document.querySelector('.taxpay-public-mobile-navigation .citizen-header__notification')!.getBoundingClientRect();
     return {width:document.documentElement.scrollWidth, viewport:document.documentElement.clientWidth,
-      menu:m.x, logo:l.x+l.width/2, center:h.x+h.width/2, bell:b.x};
+      menu:m.x, logo:l.x+l.width/2, center:h.x+h.width/2};
   });
   expect(bounds.menu).toBeLessThan(bounds.logo);
   expect(Math.abs(bounds.logo-bounds.center)).toBeLessThanOrEqual(3);
-  expect(bounds.bell).toBeGreaterThan(bounds.logo);
   expect(bounds.width-bounds.viewport).toBeLessThanOrEqual(2);
   const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
   await expect(dock).toBeVisible();
@@ -45,8 +43,7 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog',{name:'সেবা ও মেনু'})).toHaveCount(0);
-  await bell.click();
-  await expect(page).toHaveURL(/action=payment_notifications/);
+  await expect(page).toHaveURL(/action=landing/);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
 });
 
@@ -56,7 +53,7 @@ test('mobile guest shell shares signed-in compact-on-scroll behavior, without du
   await page.evaluate(()=>window.scrollTo(0,600));
   const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
   await expect(corners.getByRole('button',{name:'Open menu'})).toBeVisible();
-  await expect(corners.getByRole('button',{name:'Notifications'})).toBeVisible();
+  await expect(corners.getByRole('button',{name:'Notifications'})).toHaveCount(0);
   await expect(corners.getByRole('button',{name:'Home'})).toBeVisible();
   await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveClass(/citizen-header--hidden/);
   await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
