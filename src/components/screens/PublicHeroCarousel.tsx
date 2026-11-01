@@ -245,6 +245,11 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   };
 
   if (!slides.length) return null;
+  // The SQL main record owns the stationary copy. Changing the active image
+  // must never change the left-side headline, description, or payment CTAs.
+  const mainBanner = slides.find(slide => slide.id === 'intro' && !slide.serviceCode)
+    ?? slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
+  const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
 
   return (
     <div
@@ -281,22 +286,22 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         >
           <div className="citizen-public-hero__copy">
             <h1 id="public-home-title">
-              <span className="public-hero-copy--desktop">{bn ? defaultSlides[0].headingBn : defaultSlides[0].headingEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? defaultSlides[0].mobileHeadingBn : defaultSlides[0].mobileHeadingEn}</span>
+              <span className="public-hero-copy--desktop">{bn ? mainBanner.headingBn : mainBanner.headingEn}</span>
+              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileHeadingBn : mainBanner.mobileHeadingEn}</span>
             </h1>
             <p>
-              <span className="public-hero-copy--desktop">{bn ? defaultSlides[0].descriptionBn : defaultSlides[0].descriptionEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? defaultSlides[0].mobileDescriptionBn : defaultSlides[0].mobileDescriptionEn}</span>
+              <span className="public-hero-copy--desktop">{bn ? mainBanner.descriptionBn : mainBanner.descriptionEn}</span>
+              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileDescriptionBn : mainBanner.mobileDescriptionEn}</span>
             </p>
             <div className="citizen-public-hero__actions public-guest-actions">
-              <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? 'কর পরিশোধ' : 'Pay Tax'}>
+              <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? mainBanner.actionBn : mainBanner.actionEn}>
                 <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__pay-full">{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
+                <span className="public-hero-carousel__pay-full">{bn ? mainBanner.actionBn : mainBanner.actionEn}</span>
                 <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? 'কর দিন' : 'Pay Tax'}</span>
               </button>
-              <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}>
+              <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
                 <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__travel-full">{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</span>
+                <span className="public-hero-carousel__travel-full">{bn ? travelBanner.actionBn : travelBanner.actionEn}</span>
                 <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
               </button>
             </div>
@@ -320,7 +325,16 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         </button>
       </div>
       <span className="sr-only" role="status" aria-live="polite">
-        {bn ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}` : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
+        <span className="public-hero-copy--desktop">
+          {bn
+            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}. ${slides[activeIndex].descriptionBn}`
+            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}. ${slides[activeIndex].descriptionEn}`}
+        </span>
+        <span className="public-hero-copy--mobile">
+          {bn
+            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].mobileHeadingBn}. ${slides[activeIndex].mobileDescriptionBn}`
+            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].mobileHeadingEn}. ${slides[activeIndex].mobileDescriptionEn}`}
+        </span>
       </span>
     </div>
   );

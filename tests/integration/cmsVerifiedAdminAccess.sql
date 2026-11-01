@@ -10,6 +10,14 @@ begin
   then raise exception 'FAIL: anonymous CMS table write privileges remain'; end if;
   if has_function_privilege('anon','public.taxpay_set_banner_position(text,integer)','EXECUTE')
   then raise exception 'FAIL: anonymous banner order RPC remains'; end if;
+  if has_function_privilege('anon','public.taxpay_save_banner(jsonb,bigint,integer)','EXECUTE')
+  then raise exception 'FAIL: anonymous banner save RPC remains'; end if;
+  if not has_function_privilege('authenticated','public.taxpay_save_banner(jsonb,bigint,integer)','EXECUTE')
+  then raise exception 'FAIL: authenticated banner save RPC grant missing'; end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='taxpay_site_banners'
+  ) then raise exception 'FAIL: banner Realtime publication missing'; end if;
   if exists(select 1 from pg_policies where schemaname='storage' and tablename='objects'
        and cmd='INSERT' and 'anon'=any(roles)
        and (qual like '%taxpay-banners%' or with_check like '%taxpay-banners%'
@@ -37,5 +45,8 @@ update public.taxpay_site_banners set updated_by = (select auth.uid()),heading_e
 update public.taxpay_site_logo set image_path=image_path where id='primary';
 select public.taxpay_set_banner_position(
    (select id from public.taxpay_site_banners order by sort_order,id limit 1),1);
+-- Transactional verified-admin write and reorder; rolled back with the fixture.
+select (public.taxpay_save_banner(to_jsonb(b), b.version, 1)).id as saved_banner_id
+from public.taxpay_site_banners b where b.id='intro';
 rollback;
-\echo 'PASS: anonymous CMS writes denied; synthetic verified administrator writes succeed; all fixture changes rolled back';
+\echo 'PASS: anonymous CMS writes denied; synthetic verified administrator SQL/RPC writes succeed; all fixture changes rolled back';
