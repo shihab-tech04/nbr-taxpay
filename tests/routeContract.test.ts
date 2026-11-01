@@ -126,3 +126,17 @@ test('Beneficiaries is a safe return destination after verified account sign-in'
   writeRouteContext('landing',{},query);
   assert.equal(query.has('returnTo'),false);
 });
+
+test('dashboard month chart links keep exact safe calendar month through reload but never leak to other routes',()=>{
+  const url=new URLSearchParams('action=history&lang=bn');
+  writeRouteContext('history',{categoryFilter:'income',monthFilter:'2026-06',payerTin:'012345678901'},url);
+  assert.equal(url.get('monthFilter'),'2026-06');
+  assert.equal(url.has('payerTin'),false);
+  assert.deepEqual(routeContextFromUrl('history',url),{categoryFilter:'income',monthFilter:'2026-06'});
+  writeRouteContext('history',{categoryFilter:'travel',monthFilter:'2026-13'},url);
+  assert.equal(url.has('monthFilter'),false);
+  url.set('monthFilter','2026-00');
+  assert.deepEqual(routeContextFromUrl('history',url),{categoryFilter:'travel'});
+  writeRouteContext('journey',{},url);
+  assert.equal(url.has('monthFilter'),false);
+});
