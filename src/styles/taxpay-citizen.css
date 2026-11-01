@@ -2426,22 +2426,51 @@
 .beneficiary-list-picker__edit {display:grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px;border:0;border-radius:8px;background:transparent;color:var(--citizen-primary-dark);cursor:pointer;}
 .beneficiary-list-picker__edit:hover {background:var(--citizen-primary-light);}
 .beneficiary-list-edit__footer {width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-.beneficiary-directory {width:100%;border:1px solid var(--citizen-border);border-radius:12px;overflow-x:auto;background:var(--color-taxpay-surface,#fff);}
-.beneficiary-directory__table {width:100%;min-width:700px;border-collapse:collapse;text-align:start;font-size:14px;}
-.beneficiary-directory__table th {padding:10px 14px;text-align:start;color:var(--citizen-muted);font-size:14px;font-weight:600;}
-.beneficiary-directory__table td {padding:12px 14px;border-top:1px solid var(--citizen-border);vertical-align:middle;color:var(--citizen-text);}
-.beneficiary-directory__table tbody tr:hover {background:var(--color-taxpay-surface-subtle);}
-.beneficiary-directory__table tbody tr.beneficiary-directory__selected {background:var(--citizen-primary-light);}
-.beneficiary-directory__check {width:48px;}
-.beneficiary-directory__check input {width:18px;height:18px;accent-color:var(--citizen-primary);cursor:pointer;}
-.beneficiary-directory__name {font-weight:650;overflow-wrap:anywhere;}
-.beneficiary-directory__tin {font-variant-numeric:tabular-nums;white-space:nowrap;}
-.beneficiary-directory__actions-label {text-align:end!important;}
-.beneficiary-directory__actions {display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
-.beneficiary-directory__actions button {white-space:nowrap;}
-.beneficiary-directory__mobile {overflow:hidden;border:1px solid var(--citizen-border);border-radius:12px;background:var(--color-taxpay-surface,#fff);}
-.beneficiary-directory__mobile-row {padding:14px 12px;border-bottom:1px solid var(--citizen-border);}
-.beneficiary-directory__mobile-row:last-child {border-bottom:0;}
+/* Beneficiary records now use the same quiet, bordered record-list pattern as
+   Payments & activity. Keep labels, group actions, and bulk selection intact. */
+.beneficiary-directory {min-width:0;width:100%;}
+.beneficiary-directory__filters {display:grid;grid-template-columns:minmax(0,420px);margin-top:16px;}
+.beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
+.beneficiary-directory__count {margin:14px 0 10px;}
+.beneficiary-directory__bulk-actions {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
+.beneficiary-directory__selected-count {margin:0;color:var(--color-taxpay-text);font-size:14px;font-weight:600;}
+.beneficiary-directory__select-all {display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;color:var(--color-taxpay-muted);font-size:14px;cursor:pointer;}
+.beneficiary-directory__select-all input,.beneficiary-directory__identity > input {
+  flex:none;width:18px;height:18px;accent-color:var(--color-taxpay-primary);cursor:pointer;
+}
+.beneficiary-directory__columns {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px 10px 50px;color:var(--color-taxpay-muted);font-size:12px;font-weight:600;}
+.beneficiary-directory > ul {overflow:hidden;border:1px solid var(--color-taxpay-border);border-radius:12px;background:var(--color-taxpay-surface);}
+.beneficiary-directory__row {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;min-height:98px;padding:15px 16px;background:var(--color-taxpay-surface);}
+.beneficiary-directory__row + .beneficiary-directory__row {border-top:1px solid var(--color-taxpay-border);}
+.beneficiary-directory__row:hover {background:var(--color-taxpay-surface-subtle);}
+.beneficiary-directory__row[data-selected="true"] {background:var(--color-taxpay-primary-light);}
+.beneficiary-directory__identity {display:flex;align-items:center;gap:16px;min-width:0;}
+.beneficiary-directory__person {display:block;min-width:0;cursor:pointer;}
+.beneficiary-directory__person .taxpayer-transaction-row__title {margin:0;font-size:15px;font-weight:600;line-height:1.5;color:var(--color-taxpay-text);overflow-wrap:anywhere;}
+.beneficiary-directory__person .taxpayer-transaction-row__ref {margin:4px 0 0;color:var(--color-taxpay-muted);font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
+.beneficiary-directory__actions {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
+.beneficiary-directory__actions button {white-space:normal;text-align:center;min-height:44px;}
+.beneficiary-directory__identity input:focus-visible,.beneficiary-directory__select-all input:focus-visible,.beneficiary-directory__actions button:focus-visible {
+  outline:2px solid var(--color-taxpay-primary);outline-offset:2px;
+}
+.taxpay-taxpayer-reference .beneficiary-directory .beneficiary-directory__columns {display:flex;justify-content:space-between;padding:0 16px 10px 50px;}
+.taxpay-taxpayer-reference .beneficiary-directory .beneficiary-directory__row {grid-template-columns:minmax(0,1fr) auto;gap:16px;min-height:98px;padding:15px 16px;}
+@media (max-width:850px) {
+  .beneficiary-directory__filters {grid-template-columns:minmax(0,1fr);max-width:420px;}
+}
+@media (max-width:700px) {
+  .beneficiary-directory__columns,.taxpay-taxpayer-reference .beneficiary-directory .beneficiary-directory__columns {display:none;}
+  .beneficiary-directory__row,.taxpay-taxpayer-reference .beneficiary-directory .beneficiary-directory__row {
+    grid-template-columns:minmax(0,1fr);gap:12px;min-height:0;padding:16px;
+  }
+  .beneficiary-directory__actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-content:stretch;width:100%;}
+  .beneficiary-directory__actions button {width:100%;min-width:0;}
+  .beneficiary-directory__actions button:last-child {grid-column:1 / -1;}
+}
+@media (max-width:440px) {
+  .beneficiary-directory__bulk-actions {justify-content:flex-start;}
+  .beneficiary-directory__count {align-items:flex-start;}
+}
 @media (max-width:650px) {
   .beneficiary-entry-choice__grid {grid-template-columns:minmax(0,1fr);gap:10px;}
   .beneficiary-entry-choice__card {min-height:88px;padding:12px;}
