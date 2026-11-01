@@ -106,6 +106,20 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(0)).toContainText('Income tax liability');
   await expect(financialCards.nth(0)).toContainText('—');
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
+  const phase=page.getByTestId('authenticated-dashboard-v11');
+  await expect(phase).toBeVisible();
+  for (const heading of ['Needs review','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
+    await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
+  }
+  // A signed-in account must use the approved Phase A/B visual sections, but
+  // private scenario allocations never become government liability or credits.
+  await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('—');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  await expect(phase).not.toContainText('৳ 180,000');
+  const yearRow=phase.getByRole('button',{name:'2025-2026'});
+  await yearRow.click();
+  await expect(yearRow).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
   await expect(page.getByRole('button',{name:'Review payment options'})).toHaveCount(0);
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('linked scenario profile user2 · Meghna Trading Ltd.');
@@ -137,6 +151,8 @@ test('ordinary verified account without a taxpayer binding sees no financial sam
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('no taxpayer profile linked');
   await expect(dashboard).toContainText('No payment profile is linked to this application account.');
+  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('—');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-25');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
