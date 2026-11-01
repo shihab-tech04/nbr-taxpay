@@ -260,6 +260,42 @@
 .citizen-account-gate button { min-height:44px; padding:.75rem 1rem; border:1px solid var(--citizen-primary); color:var(--citizen-primary); border-radius:.5rem; font-weight:650; }
 .citizen-account-gate button:hover { background:var(--citizen-primary-light); }
 .citizen-account-gate__preview:focus-visible,.citizen-account-gate button:focus-visible { outline:3px solid var(--citizen-primary); outline-offset:3px; }
+/* Direct private Beneficiaries link: only the approved real email-auth journey.
+   No sample-account controls or private sidebar are displayed before Auth. */
+.beneficiary-sign-in {
+  box-sizing:border-box;
+  width:min(100%,520px);
+  margin:clamp(1.5rem,6vh,4.5rem) auto;
+  padding:clamp(1.25rem,4vw,2rem);
+  background:var(--citizen-surface);
+  border:1px solid var(--citizen-border);
+  border-radius:.9rem;
+  color:var(--citizen-text);
+  font-family:inherit;
+}
+.beneficiary-sign-in__symbol {
+  width:46px;height:46px;
+  display:grid;place-items:center;
+  border-radius:.7rem;
+  color:var(--citizen-primary-dark);
+  background:var(--citizen-primary-light);
+  margin:0 0 1rem;
+}
+.beneficiary-sign-in h1 {font:inherit;font-size:clamp(20px,3vw,24px);font-weight:750;line-height:1.35;margin:0 0 .7rem}
+.beneficiary-sign-in__description {color:var(--citizen-muted);line-height:1.6;font-size:15px;margin:0 0 1.4rem}
+.beneficiary-sign-in__form{display:grid;gap:.65rem;min-width:0}
+.beneficiary-sign-in__form label{font-size:15px;font-weight:650}
+.beneficiary-sign-in__form input{min-width:0;max-width:100%}
+.beneficiary-sign-in__actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.45rem}
+.beneficiary-sign-in__actions button{gap:.5rem}
+.beneficiary-sign-in__message {margin:.45rem 0 0;padding:.8rem;border:1px solid var(--citizen-border);border-radius:.6rem;background:var(--citizen-primary-light);color:var(--citizen-text);font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.beneficiary-sign-in__message--error{border-color:var(--citizen-border);background:var(--citizen-surface);color:var(--citizen-text)}
+@media(max-width:420px){
+  .beneficiary-sign-in{margin:1rem auto;padding:1.1rem;border-radius:.75rem}
+  .beneficiary-sign-in__actions{display:grid;grid-template-columns:minmax(0,1fr)}
+  .beneficiary-sign-in__actions button{width:100%}
+}
+
 @media(max-width:900px) {
   .citizen-header__inner { min-height:60px; }
   .citizen-header__links { display:none; }
