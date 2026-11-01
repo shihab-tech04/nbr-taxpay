@@ -260,7 +260,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       aria-label={bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}>
       <div className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed">
         <div className="citizen-public-hero__copy">
-          <h1>{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
+          <h1 id="public-home-title">{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
           <p role="status">{bannerStatus === 'loading'
             ? (bn ? 'ব্যানার লোড হচ্ছে…' : 'Loading banner information…')
             : (bn ? 'ব্যানারের তথ্য পাওয়া যাচ্ছে না। কর পরিশোধ সেবা চালু আছে।' : 'Banner information is temporarily unavailable. Payment services are still accessible.')}</p>
