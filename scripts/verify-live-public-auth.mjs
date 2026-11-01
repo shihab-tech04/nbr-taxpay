@@ -51,7 +51,9 @@ try {
     await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
     await expect(dialog.locator('.taxpay-modal__footer').getByRole('button', { name: 'Sign In' })).toBeDisabled();
     await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
-    await expect(dialog.locator('.taxpay-modal__back')).toHaveCount(0);
+    // The approved sign-in modal now includes Back; verify its accessible action, not its absence.
+    await expect(dialog.locator('.taxpay-modal__back')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
     await expect(page.locator('.taxpayer-login-backdrop')).toHaveCount(0);
     await expect(dialog.getByRole('textbox', { name: 'User ID' })).toBeVisible();
     await expect(dialog.getByLabel('Password', { exact: true })).toHaveAttribute('type','password');
