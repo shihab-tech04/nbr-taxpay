@@ -68,7 +68,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts tests/e2e/beneficiaries-activity-parity.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
+        run: npx playwright test tests/e2e/beneficiaries-direct-auth.spec.ts tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts tests/e2e/beneficiaries-activity-parity.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
 
       - name: Upload Beneficiaries English and Bengali screenshots
         if: always()
@@ -274,6 +274,7 @@ jobs:
       - name: Verify deployed private-route authentication boundary in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+          TAXPAY_REQUIRE_NEW_BENEFICIARIES_ENTRY: 'true'
         run: node scripts/verify-live-public-auth.mjs
 
       - name: Verify deployed public record search and sample lookup in Chromium
