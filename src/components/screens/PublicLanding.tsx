@@ -28,6 +28,8 @@ export const PublicLanding: React.FC = () => {
   const matchedOptions = cleanReference
     ? sampleSearchOptions.filter(option => option.value.toLowerCase().includes(cleanReference)).slice(0, 5)
     : [];
+  // The approved focus state shows only public synthetic examples; typed input filters them.
+  const suggestions = cleanReference ? matchedOptions : sampleSearchOptions.slice(0, 3);
   const chooseReference = (reference: string) => {
     setSearchOpen(false);
     setActiveSuggestion(-1);
@@ -121,8 +123,8 @@ export const PublicLanding: React.FC = () => {
           role="search"
           onSubmit={event => {
             event.preventDefault();
-            if (searchOpen && activeSuggestion >= 0 && matchedOptions[activeSuggestion]) {
-              chooseReference(matchedOptions[activeSuggestion].value);
+            if (searchOpen && activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+              chooseReference(suggestions[activeSuggestion].value);
             } else if (paymentReference.trim()) {
               chooseReference(paymentReference.trim());
             }
@@ -138,6 +140,8 @@ export const PublicLanding: React.FC = () => {
             spellCheck={false}
             maxLength={120}
             value={paymentReference}
+            aria-controls="public-record-suggestions"
+            aria-expanded={searchOpen}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
@@ -149,15 +153,15 @@ export const PublicLanding: React.FC = () => {
                 setActiveSuggestion(-1);
                 return;
               }
-              if (event.key === 'ArrowDown' && matchedOptions.length) {
+              if (event.key === 'ArrowDown' && suggestions.length) {
                 event.preventDefault();
                 setSearchOpen(true);
-                setActiveSuggestion(index => (index + 1) % matchedOptions.length);
+                setActiveSuggestion(index => (index + 1) % suggestions.length);
               }
-              if (event.key === 'ArrowUp' && matchedOptions.length) {
+              if (event.key === 'ArrowUp' && suggestions.length) {
                 event.preventDefault();
                 setSearchOpen(true);
-                setActiveSuggestion(index => index <= 0 ? matchedOptions.length - 1 : index - 1);
+                setActiveSuggestion(index => index <= 0 ? suggestions.length - 1 : index - 1);
               }
             }}
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
@@ -166,13 +170,13 @@ export const PublicLanding: React.FC = () => {
             <Search size={23} aria-hidden="true" />
           </button>
         </form>
-        {searchOpen && cleanReference && (
+        {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
             <div className="public-record-suggestions__group">
-              <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>
-              {matchedOptions.length > 0 ? (
+              <h3>{cleanReference ? t('Matching references', 'মিলে যাওয়া রেফারেন্স') : t('Example references', 'নমুনা রেফারেন্স')}</h3>
+              {suggestions.length > 0 ? (
                 <ul className="public-record-suggestions__list">
-                  {matchedOptions.map((option, index) => (
+                  {suggestions.map((option, index) => (
                     <li key={option.kind + option.value}>
                       <button
                         id={`public-search-option-${index}`}
