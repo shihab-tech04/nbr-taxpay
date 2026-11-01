@@ -21,10 +21,11 @@ export async function recoverBrowserBeneficiariesToAccount(ownerUid: string): Pr
   if (!ownerUid || !hasExistingGuestBeneficiaryAccess()) {
     throw new Error('There is no saved beneficiary address book to import from this browser.');
   }
-  if (!supabase) throw new Error('Account sign-in is unavailable.');
+  const client = supabase;
+  if (!client) throw new Error('Account sign-in is unavailable.');
 
   const ensureOwner = async () => {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await client.auth.getUser();
     if (error || data.user?.id !== ownerUid) {
       throw new Error('Your signed-in account has changed. Sign in again before importing.');
     }
