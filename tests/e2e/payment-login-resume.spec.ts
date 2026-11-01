@@ -35,7 +35,7 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
   await expect(payment.locator('#guest-tin, #guest-phone')).toHaveCount(0);
   await expect(payment.locator('#guest-notice-ref')).toBeEditable();
-  await expect(payment.getByText('Continuing with your account')).toBeVisible();
+  await expect(payment.getByText('Continuing with your account')).toHaveCount(0);
   await expect(page).not.toHaveURL(/action=taxpayer_home/);
 });
 

@@ -24,9 +24,8 @@ export function SignedInTaxpayerCard({ profile, language, id = 'guest-tin' }: {
   const tr = (en: string, bn: string) => language === 'bn' ? bn : en;
   return <section id={id} tabIndex={-1} aria-label={tr('Account taxpayer details', 'অ্যাকাউন্টের করদাতার তথ্য')}
     className="account-taxpayer-summary col-span-full">
-    <div className="account-taxpayer-summary__heading mb-3 flex items-center justify-between gap-3">
+    <div className="account-taxpayer-summary__heading mb-3">
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('Taxpayer details', 'করদাতার তথ্য')}</h3>
-      <p className="account-taxpayer-summary__source">{tr('Account information', 'অ্যাকাউন্টের তথ্য')}</p>
     </div>
     {!profile ? <p role="status" className="text-sm text-slate-600">{tr('Your linked taxpayer profile is unavailable. Check your account before continuing.', 'সংযুক্ত করদাতার তথ্য পাওয়া যায়নি। এগোনোর আগে অ্যাকাউন্ট দেখুন।')}</p> :
     <dl className="account-taxpayer-summary__fields grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">

@@ -145,7 +145,6 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
             <span>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</span>
           </p>
-          {view === 'payment' && stage < 4 && useAccount && <p className="tax-service-choice__account-access">{tr('Continuing with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যাচ্ছেন')}</p>}
         </>}
         {view === 'payer' ? <>
            <h3 ref={payerHeadingRef} tabIndex={-1} id="tax-service-choice-question" className="tax-service-choice__payer-focus">{tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?')}</h3>
