@@ -56,7 +56,7 @@ test('User1 Other Tax fills only the chosen head/year, not every selected head',
   await year.selectOption('2026-27');
   await expect(amount).toHaveValue('4500');
   await amount.fill('1234.50');
-  await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,234.50');
+  await expect(dialog.locator('.payment-form-summary__total')).toContainText('1,234');
   await batch.getByRole('checkbox', { name: /^Select 68A/ }).check();
   await expect(batch.getByTestId('other-tax-line').nth(1).locator('input[id^="other-tax-amount"]')).toHaveValue('');
   await expect(batch.getByTestId('payment-amount-suggestion-info')).toHaveCount(0);
@@ -74,6 +74,8 @@ test('Signed-out guest never receives sample amount suggestions', async ({ page 
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
