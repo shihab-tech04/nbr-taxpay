@@ -81,16 +81,19 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
   expect(result.unsupported).toContain('.xlsx');
 });
 
-test('signed-out Beneficiaries deep link requires taxpayer sign-in in Bengali and English',async({page})=>{
+test('signed-out Beneficiaries deep link requires real email sign-in in Bengali and English',async({page})=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&lang=bn');
-  await expect(page.getByRole('heading',{name:'করদাতার ব্যক্তিগত তথ্য'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'ইমেইলে সাইন ইন'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+  await expect(page.getByRole('heading',{name:'উপকারভোগী দেখতে সাইন ইন করুন'})).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'ইমেইল ঠিকানা'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'সাইন-ইন লিংক পাঠান'})).toBeDisabled();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
   await page.goto('/?action=beneficiaries');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Sign in with email'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+  await expect(page.getByRole('heading',{name:'Sign in to manage beneficiaries'})).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'Email address'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Email sign-in link'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Use User ID (sample account)'})).toHaveCount(0);
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
 });
 
