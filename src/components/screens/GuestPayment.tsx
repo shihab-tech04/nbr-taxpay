@@ -983,7 +983,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     rememberBatch(null);
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
-    setOtherTaxLines([]); setAdditionalTaxpayers([]); setSuggestedBatchYears({}); setAuthorizedTaxpayerIds({});
+    setOtherTaxLines([]); setAdditionalTaxpayers([]); setAuthorizedTaxpayerIds({});
     setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
     setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
   };
@@ -1133,7 +1133,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setSuggestedBatchYears({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
@@ -1161,7 +1161,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   : additional.some(person=>person.id===line.taxpayerId)));
                 setAuthorizedTaxpayerId(null);
                 setAuthorizedTaxpayerIds({});
-                setSuggestedBatchYears({});
                 clearValidationError();
               }} />}
             {signedInBeneficiarySelection && isFieldInvalid('tin') &&
@@ -1183,7 +1182,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   value={taxpayerTin}
                   inputMode="numeric" maxLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
                   readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
-                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
+                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
                   className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
                 />
                 <button type="button" className="tin-lookup__search" onClick={searchTin} disabled={!/^\d{12,13}$/.test(taxpayerTin)}>
@@ -1254,13 +1253,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} allowAdditional={forSelf === false}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
-                onPrimaryTin={value => { clearReferenceSelection(); setOtherTaxpayerName(''); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setSuggestedBatchYears({}); setTin(value); }}
+                onPrimaryTin={value => { clearReferenceSelection(); setOtherTaxpayerName(''); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setTin(value); }}
                 onPrimarySearch={searchTin} onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={people => {
                   setAdditionalTaxpayers(people);
                   setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>
                     knownTin===taxpayerTin||people.some(person=>person.tin===knownTin))));
-                  setSuggestedBatchYears(current=>Object.fromEntries(Object.entries(current).filter(([personId])=>
-                    personId==='primary'||people.some(person=>person.id===personId))));
                 }}
                 onAllocations={setOtherTaxLines} onClearError={clearValidationError} />
 
