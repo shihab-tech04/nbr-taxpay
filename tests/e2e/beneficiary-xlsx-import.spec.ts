@@ -196,6 +196,17 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(recordList.getByRole('listitem').first()).toHaveClass(/taxpayer-transaction-row/);
   await expect(page.getByRole('checkbox',{name:'Select all visible beneficiaries'})).toBeVisible();
   await expect(page.getByTestId('beneficiary-records').locator('table')).toHaveCount(0);
+  // Match the Activity search control: one outer border, no overlaid input border.
+  const searchControl=page.locator('.beneficiary-directory__filters .taxpayer-transaction-filter__search');
+  await expect(searchControl).toHaveCSS('border-top-width','1px');
+  await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('border-top-width','0px');
+  if(info.project.name.startsWith('mobile')){
+    const firstRow=recordList.getByRole('listitem').first();
+    const actions=firstRow.locator('.beneficiary-directory__actions');
+    const payButton=actions.getByRole('button',{name:'Pay Tax for Others'});
+    const groupBox=await actions.boundingBox(),payBox=await payButton.boundingBox();
+    expect(groupBox&&payBox&&payBox.width>=groupBox.width-2,'Main mobile payment action occupies its own full row').toBeTruthy();
+  }
 
   const noMatch=page.getByRole('searchbox',{name:'Search this list'});
   await noMatch.fill('no matching name');
