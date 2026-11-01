@@ -279,6 +279,7 @@ jobs:
       - name: Verify deployed private-route authentication boundary in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+          TAXPAY_EXPECT_BENEFICIARY_MODAL: 'true'
         run: node scripts/verify-live-public-auth.mjs
 
       - name: Verify deployed public record search and sample lookup in Chromium
