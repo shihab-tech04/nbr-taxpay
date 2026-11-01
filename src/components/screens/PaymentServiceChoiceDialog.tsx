@@ -96,7 +96,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
-      animateSize={view === 'payer'}
+      animateSize={false} // Reference design: fixed viewport shell with independently scrolling options.
       motionKey={view}
       onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
         const back = document.querySelector<HTMLButtonElement>(
