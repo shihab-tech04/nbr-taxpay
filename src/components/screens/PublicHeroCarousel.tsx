@@ -105,7 +105,7 @@ function publicBannerImage(path: string | null, fallback: string): string {
 }
 
 async function fetchPublishedBanners(): Promise<BannerSlide[]> {
-  if (!supabase) return fallbackSlides;
+  if (!supabase) throw new Error('The public banner service is unavailable.');
   const { data, error } = await supabase.from('taxpay_site_banners').select('*')
     .eq('published', true).order('sort_order', { ascending: true });
   if (error) throw error;
@@ -139,7 +139,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [slides, setSlides] = useState<BannerSlide[]>(fallbackSlides);
+  const [slides, setSlides] = useState<BannerSlide[]>([]);
+  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [retryNonce, setRetryNonce] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -158,8 +160,15 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     const refresh = () => { void fetchPublishedBanners().then(next => {
       if (!active) return;
       setSlides(next);
+      setBannerStatus('ready');
       setActiveIndex(index => Math.min(index, Math.max(0, next.length - 1)));
-    }).catch(() => { /* Preserve the verified bundled banners during a backend outage. */ }); };
+    }).catch(() => {
+      if (!active) return;
+      // Do not revive bundled images for banners an administrator may have
+      // unpublished or deleted. Keep payment entrypoints available separately.
+      setSlides([]);
+      setBannerStatus('unavailable');
+    }); };
     refresh();
     const channel = supabase?.channel('published-taxpay-banners')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh).subscribe();
@@ -177,7 +186,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       document.removeEventListener('visibilitychange', onVisible);
       if (channel && supabase) void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [retryNonce]);
 
   useEffect(() => {
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -244,7 +253,31 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     setIsSwiping(false);
   };
 
-  if (!slides.length) return null;
+  if (!slides.length) {
+    // An unverified client fallback must never override SQL publish status.
+    // Preserve functional payment entrypoints without showing any banner image.
+    return <section className="public-hero-carousel-shell public-hero-carousel--offline"
+      aria-label={bn ? 'কর পরিশোধ সেবা' : 'Tax payment services'}>
+      <div className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed">
+        <div className="citizen-public-hero__copy">
+          <h1>{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
+          <p role="status">{bannerStatus === 'loading'
+            ? (bn ? 'ব্যানার লোড হচ্ছে…' : 'Loading banner information…')
+            : (bn ? 'ব্যানারের তথ্য পাওয়া যাচ্ছে না। কর পরিশোধ সেবা চালু আছে।' : 'Banner information is temporarily unavailable. Payment services are still accessible.')}</p>
+          <div className="citizen-public-hero__actions public-guest-actions">
+            <button type="button" className="citizen-public-primary public-guest-action"
+              onClick={() => onPayTax()}>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
+            <button type="button" className="public-guest-action"
+              onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</button>
+          </div>
+          {bannerStatus === 'unavailable' && <button className="public-hero-carousel__retry"
+            type="button" onClick={() => {setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
+            {bn ? 'আবার চেষ্টা করুন' : 'Retry banner loading'}
+          </button>}
+        </div>
+      </div>
+    </section>;
+  }
   // The SQL main record owns the stationary copy. Changing the active image
   // must never change the left-side headline, description, or payment CTAs.
   const mainBanner = slides.find(slide => slide.id === 'intro' && !slide.serviceCode)
