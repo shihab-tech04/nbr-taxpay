@@ -85,7 +85,6 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const [activeTaxpayer, setActiveTaxpayer] = useState('primary');
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
-  const activePerson = taxpayers.find(person => person.id === activeId);
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
   const search = query.trim().toLocaleLowerCase();
   const count = grouped.reduce((n, group) => n + group.rows.length, 0);
@@ -267,8 +266,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
-              {tx(`${new Set(activeLines.map(line => line.headId)).size} heads, ${activeLines.length} year allocations selected${taxpayers.length > 1 ? ' for ' + (activePerson?.name || activePerson?.tin || 'this taxpayer') : ''} · ${count} available Other Tax heads in ${GROUP_ORDER.length} groups`,
-                `${new Set(activeLines.map(line => line.headId)).size}টি খাত, ${activeLines.length}টি করবর্ষ নির্বাচন · অন্যান্য করের ${count}টি খাত, ${GROUP_ORDER.length}টি গ্রুপ`)}
+              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available Other Tax heads',
+                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি অন্যান্য করের খাত')}
             </p>
             {error && <div className="other-tax-error-summary" role="alert" data-testid="other-tax-validation-summary">
               <strong>{tx('Check highlighted payment entries', 'চিহ্নিত পরিশোধের তথ্য পরীক্ষা করুন')}</strong>
