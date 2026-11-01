@@ -292,7 +292,7 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await expect(added).toHaveCount(1);
   await expect(added.locator('input[id^="other-tax-tin-"]')).toBeFocused();
   await added.locator('input[id^="other-tax-tin-"]').fill('222222222222');
-  await expect(added.getByText('Taxpayer name (optional)')).toBeVisible();
+  await expect(added.getByText('Taxpayer name')).toBeVisible();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
   await expect(dialog.getByTestId('other-tax-batch').getByTestId('other-tax-taxpayer-tabs').getByRole('button')).toHaveCount(2);
