@@ -1593,3 +1593,60 @@
     align-content: start;
   }
 }
+
+
+/* 2026-11-01 approved Pay Tax entry: reference screenshot 2.
+   Stable modal height, payer question above options, scrolling body, fixed action bar.
+   Only the entry view is affected; payment stages and login retain their shells. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) {
+    height: min(90dvh, 740px);
+    max-height: calc(100dvh - 32px);
+    min-height: 0;
+  }
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) .taxpay-modal__header,
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) .taxpay-modal__footer {
+  flex: 0 0 auto;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) .taxpay-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__payer-focus {
+  position: static !important;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0 0 1.15rem;
+  padding: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 700;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__payer-grid {
+  gap: .85rem;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) .taxpay-modal__footer {
+  min-height: 76px;
+  padding: .75rem 1.35rem;
+  border-top: 1px solid var(--citizen-border);
+  background: var(--citizen-surface);
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) .taxpay-modal__footer {
+    padding: .75rem 1rem max(.75rem, env(safe-area-inset-bottom));
+  }
+}
