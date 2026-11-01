@@ -55,10 +55,10 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
       }
       return maxOverlap;
     }, {timeout: 5000}).toBeLessThanOrEqual(1);
-    if (viewport.width <= 390) {
-      const actionGroup = footer.locator('.receipt-view__action-group');
-      await expect(actionGroup).toHaveCSS('display', 'grid');
-      for (const button of [download, print]) await expect(button).toHaveCSS('box-sizing', 'border-box');
+    const actionGroup = footer.locator('.receipt-view__action-group');
+    await expect(actionGroup).toHaveCSS('display', 'grid');
+    for (const button of [newPayment, download, print]) {
+      await expect(button).toHaveCSS('box-sizing', 'border-box');
     }
     const boxes = await Promise.all([newPayment, download, print].map(button => button.boundingBox()));
     for (const box of boxes) {
