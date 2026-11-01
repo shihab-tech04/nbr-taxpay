@@ -77,9 +77,11 @@ test('year, amount and delete share one desktop row with correct removal semanti
   await lines.first().getByRole('button', { name: /Remove assessment year/ }).click();
   await expect(lines).toHaveCount(1);
   await expect(batch.getByRole('checkbox', { name: /Select 64 —/ })).toBeChecked();
-  await lines.first().getByRole('button', { name: /Remove assessment year/ }).click();
+  await expect(lines.first().getByRole('button', { name: /Remove assessment year/ })).toHaveCount(0);
+  await expect(lines.first().locator('.other-tax-year-allocation__fields > *')).toHaveCount(2);
+  // Removing the last year is intentionally done by unchecking the head.
+  await batch.getByRole('checkbox', { name: /Select 64 —/ }).uncheck();
   await expect(lines).toHaveCount(0);
-  await expect(batch.getByRole('checkbox', { name: /Select 64 —/ })).not.toBeChecked();
 });
 
 test('320px mobile stacks fields with delete beside amount and no row overflow', async ({ page }, info) => {
@@ -100,4 +102,28 @@ test('320px mobile stacks fields with delete beside amount and no row overflow',
   // The action aligns with the bottom of the amount input, not its field label.
   expect(Math.abs((rects[1].y + rects[1].height) - (rects[2].y + rects[2].height))).toBeLessThan(2);
   expect(await row.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+});
+
+
+test('Step 2 primary action stays disabled until a valid head and amount are present', async ({ page }) => {
+  const dialog = await openPurposeAndAmount(page);
+  const next = dialog.getByRole('button', { name: 'Continue to payment channel' });
+  const batch = dialog.getByTestId('other-tax-batch');
+  await expect(next).toBeDisabled();
+  const summary = dialog.locator('.taxpay-modal__body .payment-form-summary');
+  await expect(summary).not.toContainText('Complete every selected amount to see the final total.');
+  await batch.locator('[data-head-group="Advance Tax"] > summary').click();
+  await batch.getByRole('checkbox', { name: /Select 64 —/ }).check();
+  await expect(next).toBeDisabled();
+  await expect(batch.getByRole('button', { name: /Remove assessment year/ })).toHaveCount(0);
+  const amount = batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]');
+  await amount.fill('15');
+  await expect(next).toBeEnabled();
+  await batch.getByRole('button', { name: /Add another assessment year/ }).click();
+  await expect(next).toBeDisabled();
+  await expect(batch.getByRole('button', { name: /Remove assessment year/ })).toHaveCount(2);
+  await batch.getByTestId('other-tax-line').last().locator('input[id^="other-tax-amount"]').fill('35');
+  await expect(next).toBeEnabled();
+  await batch.getByTestId('other-tax-line').last().getByRole('button', { name: /Remove assessment year/ }).click();
+  await expect(next).toBeEnabled();
 });
