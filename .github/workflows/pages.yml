@@ -25,29 +25,6 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 2
-
-      # Keep comprehensive suites on every unrelated change. A payment-suggestion-only
-      # change runs its own targeted payment and production-safety gates instead.
-      - name: Detect payment-suggestion-only changes
-        id: suggestion_scope
-        shell: bash
-        run: |
-          set -euo pipefail
-          scoped=true
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then scoped=false; fi
-          mapfile -t changed < <(git diff --name-only HEAD^ HEAD)
-          if (( ${#changed[@]} == 0 )); then scoped=false; fi
-          for file in "${changed[@]}"; do
-            case "$file" in
-              .github/workflows/pages.yml|src/components/screens/GuestPayment.tsx|src/components/screens/OtherTaxBatchComposer.tsx|src/components/ui/SuggestedAmountInfo.tsx|src/services/paymentAmountSuggestions.ts|tests/e2e/payment-suggestions-prefill.spec.ts|tests/paymentAmountSuggestions.test.ts)
-                ;;
-              *) scoped=false ;;
-            esac
-          done
-          echo "suggestions_only=$scoped" >> "$GITHUB_OUTPUT"
-          printf 'Change-scoped release: %s; changed files: %s\n' "$scoped" "${changed[*]}"
 
       - name: Set up Node.js 24.21.0
         uses: actions/setup-node@v7
@@ -66,7 +43,7 @@ jobs:
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
 
-      - name: Verify User1 inline payment suggestion UX before extended browser sweep
+      - name: Verify User1 inline payment suggestion UX
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -74,7 +51,6 @@ jobs:
         run: npx playwright test tests/e2e/payment-suggestions-prefill.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
 
       - name: Verify shared public and signed-in mobile navigation parity
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -82,13 +58,12 @@ jobs:
         run: npx playwright test tests/e2e/mobile-public-shell-parity.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
 
       - name: Verify current live auth and Beneficiaries smoke contract in Chromium
-        if: github.event_name == 'pull_request' && steps.suggestion_scope.outputs.suggestions_only != 'true'
+        if: github.event_name == 'pull_request'
         env:
           TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
         run: node scripts/verify-live-public-auth.mjs
 
       - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
@@ -96,7 +71,7 @@ jobs:
         run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
 
       - name: Upload Beneficiaries English and Bengali screenshots
-        if: always() && steps.suggestion_scope.outputs.suggestions_only != 'true'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: beneficiaries-acceptance-screenshots
@@ -124,7 +99,6 @@ jobs:
         run: npx playwright test tests/e2e/v11-form-input-parity.spec.ts
 
       - name: Verify direct-service banner referral retains service and skips duplicate chooser
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -132,7 +106,6 @@ jobs:
         run: npx playwright test tests/e2e/taxpay-direct-service-entry.spec.ts --project=desktop-1280 --project=mobile-375
 
       - name: Check public routes and disconnected backend state
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -140,7 +113,6 @@ jobs:
         run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts
 
       - name: Verify purposeful public homepage and selected navigation state
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -148,7 +120,6 @@ jobs:
         run: npx playwright test tests/e2e/public-homepage-redesign.spec.ts
 
       - name: Verify screenshot-reported responsive UX repairs
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -156,7 +127,6 @@ jobs:
         run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts tests/e2e/travel-receipt-modal-parity.spec.ts
 
       - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
@@ -169,7 +139,6 @@ jobs:
         run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
 
       - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
@@ -177,7 +146,6 @@ jobs:
         run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
 
       - name: Verify synthetic receipts and simulated bank slips
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ''
@@ -185,13 +153,11 @@ jobs:
         run: npx playwright test tests/e2e/simulation-receipt-safety.spec.ts
 
       - name: Verify connected fictional Start Payment entry on a mobile viewport
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/connected-simulation-navigation.spec.ts --project=mobile-375
 
       - name: Verify isolated synthetic workspace browser journeys (mock transport only)
-        if: steps.suggestion_scope.outputs.suggestions_only != 'true'
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'

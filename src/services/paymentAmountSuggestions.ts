@@ -41,6 +41,6 @@ export function paymentAmountSuggestionFor(
   if (userId !== 'user1' || !group) return null;
   return USER1_PAYMENT_AMOUNT_EXAMPLES.find(
     item => item.group === group && item.assessmentYear === assessmentYear &&
-      (headId === undefined || item.headId === undefined || item.headId === headId),
+      (item.headId === undefined || item.headId === headId),
   ) ?? null;
 }

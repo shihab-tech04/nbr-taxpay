@@ -476,7 +476,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     category === 'APPELLATE_TRIBUNAL' ? 'Appellate Tribunal' :
     category === 'OTHER_TAX_PAYMENT' ? 'Others' : null;
   const suggestedAmount = selectedHeads.length === 1 && !verifiedReference
-    ? paymentAmountSuggestionFor(suggestionUserId, suggestionGroup, assessmentYear) : null;
+    ? paymentAmountSuggestionFor(suggestionUserId, suggestionGroup, assessmentYear, selectedHead?.id) : null;
   const amountRowColumns = paymentAmountRowColumns(selectedHeads.length);
   // No state write is required: the stable suggestion becomes the editable initial value,
   // and a user override (including empty string) always takes precedence.

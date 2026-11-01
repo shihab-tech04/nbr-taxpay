@@ -25,6 +25,7 @@ test('Other Tax suggestions only apply to the exact head and year', () => {
   assert.equal(paymentAmountSuggestionFor('user1', 'Advance Tax', '2026-27', 121)?.amount, '4500');
   assert.equal(paymentAmountSuggestionFor('user1', 'Advance Tax', '2024-25', 121)?.amount, '3200');
   assert.equal(paymentAmountSuggestionFor('user1', 'Advance Tax', '2026-27', 122), null);
+  assert.equal(paymentAmountSuggestionFor('user1', 'Advance Tax', '2026-27'), null);
   assert.equal(paymentAmountSuggestionFor('user1', 'Advance Tax', '2025-26', 121), null);
   assert.equal(paymentAmountSuggestionFor('user1', 'Penalty', '2025-26', 133)?.amount, '850');
   assert.equal(paymentAmountSuggestionFor('user1', 'Penalty', '2026-27', 133), null);
