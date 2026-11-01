@@ -584,13 +584,30 @@
 }
 
 
-/* Fixed-copy hero: only the right illustration crossfades between CMS images.
- * Keep the approved introduction copy, both buttons and background stationary. */
+/* Fixed-copy hero: the words/buttons stay stationary while the illustration
+ * and left-panel surface follow the active service's EXISTING design tokens.
+ * No independent palette and no change to payment action colors. */
 .public-hero-carousel__fixed.public-information-hero {
   --banner-bg: var(--citizen-primary-light);
+  transition: background-color 500ms ease-in-out;
   position: relative;
   isolation: isolate;
   overflow: hidden;
+}
+/* The carousel already reports the active CMS service. Drive the background
+ * from that attribute so its tint follows the actual displayed illustration.
+ * Published images with no service category retain the approved blue fallback. */
+.public-hero-carousel[data-image-service="TAX_WITH_RETURN"] .public-hero-carousel__fixed {
+  --banner-bg: var(--service-return-bg);
+}
+.public-hero-carousel[data-image-service="ADVANCE_TAX"] .public-hero-carousel__fixed {
+  --banner-bg: var(--service-advance-bg);
+}
+.public-hero-carousel[data-image-service="SOURCE_TAX_DEPOSIT"] .public-hero-carousel__fixed {
+  --banner-bg: var(--service-withholding-bg);
+}
+.public-hero-carousel[data-image-service="TRAVEL_TAX"] .public-hero-carousel__fixed {
+  --banner-bg: var(--service-other-bg);
 }
 .public-hero-carousel__fixed .citizen-public-hero__copy { position: relative; z-index: 2; }
 .public-hero-carousel__fixed .public-hero-carousel__media--illustrated {
@@ -631,5 +648,6 @@
   .public-hero-carousel__fixed .public-hero-carousel__media--illustrated { position: relative; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .public-hero-carousel__fixed { transition: none; }
   .public-hero-carousel__fixed .public-hero-carousel__image-layer { transition: none; }
 }
