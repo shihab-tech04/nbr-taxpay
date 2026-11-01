@@ -2377,3 +2377,47 @@
     flex-wrap:wrap;
   }
 }
+
+/* Beneficiaries: reuse the payment-choice card language and activity table rhythm. */
+.beneficiary-entry-choice__intro {margin:0 0 12px;color:var(--citizen-muted);font-size:14px;line-height:1.55;}
+.beneficiary-entry-choice__grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.beneficiary-entry-choice__card {width:100%;min-height:106px;--choice-primary:var(--citizen-primary);--choice-bg:var(--citizen-primary-light);--choice-text:var(--citizen-primary-dark);}
+.beneficiary-entry-choice__card:hover {border-color:var(--citizen-primary);}
+.beneficiary-entry-choice__arrow {flex:0 0 auto;color:var(--citizen-muted);}
+.beneficiary-entry-choice__icon {flex-basis:44px;width:44px;height:44px;}
+.beneficiary-list-picker {position:relative;z-index:1;isolation:isolate;width:min(100%,560px);}
+.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:40;}
+.beneficiary-list-picker__trigger {width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--citizen-border);border-radius:var(--taxpay-radius-input,10px);background:var(--color-taxpay-surface,#fff);color:var(--citizen-text);font:inherit;}
+.beneficiary-list-picker__trigger:hover {border-color:var(--citizen-primary);}
+.beneficiary-list-picker__trigger:focus-visible,.beneficiary-list-picker__row button:focus-visible,.beneficiary-entry-choice__card:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:2px;}
+.beneficiary-list-picker__menu {position:absolute;top:calc(100% + 4px);inset-inline:0;z-index:30;max-height:min(300px,45dvh);overflow:auto;padding:6px;border:1px solid var(--citizen-border);border-radius:12px;background:var(--color-taxpay-surface,#fff);box-shadow:var(--taxpay-shadow-modal);}
+.beneficiary-list-picker__caption {padding:5px 10px;color:var(--citizen-muted);font-size:14px;font-weight:600;}
+.beneficiary-list-picker__row {display:flex;align-items:stretch;min-width:0;border-radius:8px;}
+.beneficiary-list-picker__row:hover {background:var(--color-taxpay-surface-subtle);}
+.beneficiary-list-picker__select {display:flex;align-items:center;justify-content:space-between;gap:8px;flex:1;min-width:0;min-height:44px;text-align:start;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--citizen-text);font:inherit;}
+.beneficiary-list-picker__select[aria-current="true"] {color:var(--citizen-primary-dark);font-weight:700;}
+.beneficiary-list-picker__edit {display:grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px;border:0;border-radius:8px;background:transparent;color:var(--citizen-primary-dark);cursor:pointer;}
+.beneficiary-list-picker__edit:hover {background:var(--citizen-primary-light);}
+.beneficiary-list-edit__footer {width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.beneficiary-directory {width:100%;border:1px solid var(--citizen-border);border-radius:12px;overflow-x:auto;background:var(--color-taxpay-surface,#fff);}
+.beneficiary-directory__table {width:100%;min-width:700px;border-collapse:collapse;text-align:start;font-size:14px;}
+.beneficiary-directory__table th {padding:10px 14px;text-align:start;color:var(--citizen-muted);font-size:14px;font-weight:600;}
+.beneficiary-directory__table td {padding:12px 14px;border-top:1px solid var(--citizen-border);vertical-align:middle;color:var(--citizen-text);}
+.beneficiary-directory__table tbody tr:hover {background:var(--color-taxpay-surface-subtle);}
+.beneficiary-directory__table tbody tr.beneficiary-directory__selected {background:var(--citizen-primary-light);}
+.beneficiary-directory__check {width:48px;}
+.beneficiary-directory__check input {width:18px;height:18px;accent-color:var(--citizen-primary);cursor:pointer;}
+.beneficiary-directory__name {font-weight:650;overflow-wrap:anywhere;}
+.beneficiary-directory__tin {font-variant-numeric:tabular-nums;white-space:nowrap;}
+.beneficiary-directory__actions-label {text-align:end!important;}
+.beneficiary-directory__actions {display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
+.beneficiary-directory__actions button {white-space:nowrap;}
+.beneficiary-directory__mobile {overflow:hidden;border:1px solid var(--citizen-border);border-radius:12px;background:var(--color-taxpay-surface,#fff);}
+.beneficiary-directory__mobile-row {padding:14px 12px;border-bottom:1px solid var(--citizen-border);}
+.beneficiary-directory__mobile-row:last-child {border-bottom:0;}
+@media (max-width:650px) {
+  .beneficiary-entry-choice__grid {grid-template-columns:minmax(0,1fr);gap:10px;}
+  .beneficiary-entry-choice__card {min-height:88px;padding:12px;}
+  .beneficiary-list-edit__footer>div {display:flex;flex:1;justify-content:flex-end;}
+  .beneficiary-list-edit__footer button {font-size:14px;}
+}

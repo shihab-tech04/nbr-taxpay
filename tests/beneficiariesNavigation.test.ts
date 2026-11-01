@@ -42,6 +42,13 @@ test('Beneficiaries stays in the signed-in taxpayer shell and is absent from gue
   assert.match(page,/Choose how to add beneficiaries/);
   assert.match(page,/Add one beneficiary/);
   assert.match(page,/Import from Excel/);
+  assert.match(page,/tax-service-choice__card beneficiary-entry-choice__card/);
+  assert.match(page,/beneficiary-list-picker__menu/);
+  assert.match(page,/beneficiary-list-picker__edit/);
+  assert.match(page,/Edit beneficiary list/);
+  assert.match(page,/Delete beneficiary list\?/);
+  assert.match(page,/beneficiary-list-edit__footer/);
+  assert.doesNotMatch(page,/<UiSelect id="beneficiary-list"/);
   assert.ok(emptyListStart>=0&&emptyListEnd>emptyListStart,'empty selected-list state is present');
   assert.doesNotMatch(page.slice(emptyListStart,emptyListEnd),/<UiButton/);
 });

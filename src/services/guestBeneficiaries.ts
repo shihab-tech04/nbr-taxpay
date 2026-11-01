@@ -76,6 +76,9 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}): Pr
       if (response.status === 410 || result?.code === 'GUEST_SESSION_UNAVAILABLE') {
         throw new Error('This browser’s saved beneficiary session has expired or is unavailable. Its access key was kept so it will not be replaced silently.');
       }
+      if (response.status === 409 || result?.code === 'LIST_NAME_TAKEN') {
+        throw new Error('A list with this name already exists.');
+      }
       if (response.status === 404) throw new Error('The selected beneficiary was not found in this browser. Refresh the list and try again.');
       if (response.status === 400) throw new Error('Check the beneficiary details and try again.');
       throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
@@ -119,4 +122,11 @@ export async function updateGuestBeneficiary(id: string, name: string): Promise<
 
 export async function removeGuestBeneficiary(id: string): Promise<void> {
   await post('remove', { id });
+}
+
+export async function renameGuestBeneficiaryList(id: string, name: string): Promise<void> {
+  await post('rename-list', { id, name });
+}
+export async function deleteGuestBeneficiaryList(id: string): Promise<void> {
+  await post('delete-list', { id });
 }
