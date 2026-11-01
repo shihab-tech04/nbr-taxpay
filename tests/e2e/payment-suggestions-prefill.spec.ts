@@ -62,23 +62,24 @@ test('User1 Other Tax fills only the chosen head/year, not every selected head',
   await expect(batch.getByTestId('payment-amount-suggestion-info')).toHaveCount(0);
 });
 
-test('Other user and guest never inherit User1 amounts or the old suggestion panel', async ({ page }) => {
+test('Other signed-in users never inherit User1 suggested amounts', async ({ page }) => {
   const dialog = await startOwnPayment(page, 'user2', 'TAX_WITH_RETURN');
   await expect(dialog.locator('#guest-tax-amount')).toHaveValue('');
   await expect(dialog.getByTestId('payment-amount-suggestion-info')).toHaveCount(0);
-  await page.goto('/?action=taxpayer_login');
-  await page.getByRole('button', { name: 'Sign Out' }).click().catch(() => {});
+});
+
+test('Signed-out guest never receives sample amount suggestions', async ({ page }) => {
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  const guest = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(guest, 'OTHER_TAX_PAYMENT', 'OTHER');
-  await guest.locator('#guest-tin').fill('123456789012');
-  await guest.locator('#guest-phone').fill('01712345678');
-  await guest.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  const batch = guest.getByTestId('other-tax-batch');
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /^Select 64 —/ }).check();
   await expect(batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]')).toHaveValue('');
   await expect(batch.getByTestId('payment-amount-suggestion-info')).toHaveCount(0);
-  await expect(guest.getByTestId('payment-suggestions')).toHaveCount(0);
+  await expect(dialog.getByTestId('payment-suggestions')).toHaveCount(0);
 });
