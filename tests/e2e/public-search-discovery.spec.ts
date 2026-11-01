@@ -18,7 +18,9 @@ test('search uses the established icon-free section heading and concise single-l
   expect(descriptionLines).toBeLessThan(1.2);
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   await search.click();
-  await expect(page.locator('.public-record-suggestions')).toHaveCount(0);
+  await expect(section.getByRole('heading', { name: 'Example references' })).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__option')).toHaveCount(3);
+  await expect(section.locator('.public-record-suggestions__examples')).toHaveCount(0);
 });
 
 test('typing opens a clean floating dropdown without changing the card height', async ({ page }) => {
@@ -135,4 +137,24 @@ test('dropdown overlays following content without resizing the card or overflowi
     expect(geometry.nextSectionBelowCard).toBe(true);
     expect(Math.abs(geometry.cardHeight - heightBefore)).toBeLessThan(2);
   }
+});
+
+
+test('focus examples are keyboard-selectable, private-reference safe and do not resize the search card', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto('/?action=landing');
+  const section = page.getByRole('region', { name: 'Find a payment record' });
+  const search = section.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const before = await section.evaluate(element => element.getBoundingClientRect().height);
+  await search.focus();
+  await expect(section.getByRole('heading', { name: 'Example references' })).toBeVisible();
+  await expect(section.locator('.public-record-suggestions__option')).toHaveCount(3);
+  const example = await section.locator('.public-record-suggestions__value').first().textContent();
+  expect(example?.trim()).toBeTruthy();
+  expect(Math.abs((await section.evaluate(element => element.getBoundingClientRect().height)) - before)).toBeLessThan(2);
+  await search.press('ArrowDown');
+  await expect(section.locator('#public-search-option-0')).toHaveClass(/is-active/);
+  await search.press('Enter');
+  await expect(page).toHaveURL(/action=verify/);
+  expect(page.url()).not.toContain(example!.trim());
 });
