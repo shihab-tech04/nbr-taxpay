@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, X } from 'lucide-react';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import type { OtherTaxTaxpayer, OtherTaxAllocation } from './OtherTaxBatchComposer';
 
@@ -8,6 +8,7 @@ interface Props {
   primaryTin: string;
   primaryName: string;
   lockedPrimary?: boolean;
+  singleTaxpayerLayout?: boolean;
   allowAdditional?: boolean;
   allowSyntheticDemoTin?: boolean;
   additional: OtherTaxTaxpayer[];
@@ -23,7 +24,7 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, lockedPrimary = false, allowAdditional = true, allowSyntheticDemoTin = false, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, singleTaxpayerLayout = false, allowAdditional = true, allowSyntheticDemoTin = false, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimarySearch, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
@@ -35,6 +36,7 @@ export function OtherTaxTaxpayerList({
   const notFoundLabel = bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.';
   const count = additional.length + 1;
   const primaryAssigned = allocations.some(line => line.taxpayerId === 'primary');
+  const simpleSelf = singleTaxpayerLayout && !additional.length;
   const lockedTinHelp = bn ? 'টিআইএন বদলাতে আগে এই করদাতার নির্বাচিত পেমেন্ট খাত সরান।' : 'To change this TIN, first remove this taxpayer’s selected payment heads.';
   useEffect(() => {
     if (addedId) document.getElementById('other-tax-tin-' + addedId)?.focus();
@@ -50,24 +52,31 @@ export function OtherTaxTaxpayerList({
     onAdditional(additional.map(person => person.id === id ? { ...person, ...changes } : person));
     onClearError();
   };
-  return <div className="taxpay-taxpayer-list" data-testid="other-tax-taxpayer-list">
-    <p className="taxpay-taxpayer-list__count" aria-live="polite">
+  return <div className={`taxpay-taxpayer-list${simpleSelf ? ' taxpay-taxpayer-list--single' : ''}`} data-testid="other-tax-taxpayer-list">
+    {!simpleSelf && <p className="taxpay-taxpayer-list__count" aria-live="polite">
       {bn ? 'মোট ' + count + ' জন করদাতা' : count + ' ' + (count === 1 ? 'taxpayer' : 'taxpayers') + ' added'}
-    </p>
-    <article className="taxpay-taxpayer-row" data-testid="other-tax-primary-taxpayer">
+    </p>}
+    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer">
       <div className="taxpay-taxpayer-row__header">
-        <h3>{bn ? 'করদাতা ১' : 'Taxpayer 1'} <span>{bn ? 'প্রাথমিক' : 'Default'}</span></h3>
+        <h3>{simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer Information') : <>{bn ? 'করদাতা ১' : 'Taxpayer 1'} <span>{bn ? 'প্রাথমিক' : 'Default'}</span></>}</h3>
       </div>
       <div className="taxpay-taxpayer-row__fields">
         <div>
           <label htmlFor="guest-tin">{bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN'} *</label>
           <div className="taxpay-taxpayer-row__tin-search">
-          <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
-            readOnly={lockedPrimary || primaryAssigned} aria-readonly={lockedPrimary || primaryAssigned || undefined}
-            value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
-            aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
-            aria-describedby={[tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : '', primaryAssigned && !lockedPrimary ? 'other-tax-primary-tin-help' : ''].filter(Boolean).join(' ') || undefined}
-            onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onPrimaryName(''); setSearchedTins(current => ({ ...current, primary: '' })); onClearError(); } }} />
+          <div className="taxpay-taxpayer-row__tin-entry">
+            <input id="guest-tin" type="text" inputMode="numeric" maxLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
+              readOnly={lockedPrimary || primaryAssigned} aria-readonly={lockedPrimary || primaryAssigned || undefined}
+              value={primaryTin} placeholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN'}
+              aria-invalid={Boolean(tinError && invalidId === 'primary') || undefined}
+              aria-describedby={[tinError && invalidId === 'primary' ? 'guest-payment-error-tin' : '', primaryAssigned && !lockedPrimary ? 'other-tax-primary-tin-help' : ''].filter(Boolean).join(' ') || undefined}
+              onChange={event => { if (!lockedPrimary && !primaryAssigned) { onPrimaryTin(event.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); onPrimaryName(''); setSearchedTins(current => ({ ...current, primary: '' })); onClearError(); } }} />
+            {simpleSelf && Boolean(primaryTin) && !lockedPrimary && !primaryAssigned && <button type="button" className="taxpay-taxpayer-row__tin-clear"
+              aria-label={bn ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'} title={bn ? 'টিআইএন মুছুন' : 'Clear TIN'}
+              onClick={() => { onPrimaryTin(''); onPrimaryName(''); setSearchedTins(current => ({ ...current, primary: '' })); onClearError(); document.getElementById('guest-tin')?.focus(); }}>
+              <X size={17} aria-hidden="true" />
+            </button>}
+          </div>
           <button type="button" className="tin-lookup__search" disabled={!canSearch(primaryTin)}
             onClick={() => { onPrimarySearch(); const match = lookupSampleTaxpayer(primaryTin); if (!lockedPrimary) onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current => ({ ...current, primary: primaryTin })); onClearError(); }}>
             <Search size={17} aria-hidden="true" />{searchLabel}
@@ -77,8 +86,8 @@ export function OtherTaxTaxpayerList({
           {primaryAssigned && !lockedPrimary && <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p>}
         </div>
         <div>
-          <label htmlFor="other-tax-primary-name">{bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
-          <input id="other-tax-primary-name" type="text" autoComplete="off" value={primaryName}
+          <label htmlFor="other-tax-primary-name">{simpleSelf ? (bn ? 'করদাতার নাম' : 'Taxpayer name') : (bn ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)')}</label>
+          <input id="other-tax-primary-name" type="text" autoComplete="off" value={simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin) ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
             placeholder={bn ? 'খুঁজলে নাম এখানে দেখাবে' : 'Search TIN to fill name'} readOnly aria-readonly="true" />
         </div>
       </div>
