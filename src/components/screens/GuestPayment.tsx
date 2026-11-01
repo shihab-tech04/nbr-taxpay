@@ -1,3 +1,4 @@
+import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -1183,36 +1184,30 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <div className="payment-identity__fields">
               {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />}
               {!ownAccountTax && <>
-              {!signedInAccount && (!otherBatch || ownAccountTax) && <div className="payment-identity__tin">
-                <label htmlFor="guest-tin" className="block text-xs font-semibold text-slate-700 mb-1">
-                  {isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : (language === 'bn' ? 'করদাতার টিআইএন' : 'Taxpayer’s TIN')} *
-                </label>
-                <div className="tin-lookup__row">
-                <input
-                  id="guest-tin"
-                  type="text"
-                  aria-invalid={isFieldInvalid('tin') || undefined}
-                  aria-describedby={errorDescription('tin')}
-                  placeholder={allowSyntheticDemoTin ? (language === 'bn' ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : ownAccountTax ? '—' : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
-                  value={taxpayerTin}
-                  inputMode="numeric" maxLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12} autoComplete="off" required
-                  readOnly={ownAccountTax} aria-readonly={ownAccountTax || undefined}
-                  onChange={(e) => { clearReferenceSelection(); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setTin(e.target.value.replace(/\D/g, '').slice(0, allowSyntheticDemoTin ? 13 : 12)); }}
-                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${ownAccountTax ? 'bg-slate-100 text-slate-800' : ''}`}
-                />
-                <button type="button" className="tin-lookup__search" onClick={searchTin} disabled={!/^\d{12,13}$/.test(taxpayerTin)}>
-                  <Search size={17} aria-hidden="true" />{language === 'bn' ? 'খুঁজুন' : 'Search'}
-                </button>
-                </div>
-                {fieldError('tin')}
-                <div className="tin-lookup__name mt-3">
-                  <label htmlFor="guest-taxpayer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'করদাতার নাম (ঐচ্ছিক)' : 'Taxpayer name (optional)'}</label>
-                  <input id="guest-taxpayer-name" type="text" value={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
-                    placeholder={language === 'bn' ? 'টিআইএন খুঁজলে নাম এখানে দেখাবে' : 'Search TIN to fill name'} readOnly aria-readonly="true"
-                    className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-slate-100 text-slate-800" />
-                </div>
-                {taxpayerLookupResult}
-              </div>}
+              {!signedInAccount && (!otherBatch || ownAccountTax) &&
+                <TaxpayerTinLookup language={language} className="payment-identity__tin" card
+                  tinId="guest-tin" nameId="guest-taxpayer-name"
+                  tin={taxpayerTin}
+                  name={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
+                  tinLabel={isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : undefined}
+                  maxTinLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12}
+                  tinPlaceholder={allowSyntheticDemoTin ? (language === 'bn' ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : language === 'bn' ? '১২ সংখ্যার টিআইএন লিখুন' : 'Enter the 12-digit TIN'}
+                  readonlyTin={ownAccountTax} canSearch={/^\d{12,13}$/.test(taxpayerTin)}
+                  invalidTin={isFieldInvalid('tin')} tinDescribedBy={errorDescription('tin')}
+                  onTinChange={value => {
+                    clearReferenceSelection(); setLastSearchedTin(null); setOtherTaxpayerName('');
+                    setAuthorizedTaxpayerId(null);
+                    setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin))));
+                    setTin(value);
+                  }}
+                  onClear={() => {
+                    clearReferenceSelection(); setLastSearchedTin(null); setOtherTaxpayerName('');
+                    setAuthorizedTaxpayerId(null);
+                    setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin))));
+                    setTin('');
+                  }}
+                  onSearch={searchTin}
+                  error={fieldError('tin')} status={taxpayerLookupResult} />}
 
               {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)'} *</label>
