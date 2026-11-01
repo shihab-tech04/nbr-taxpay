@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
@@ -292,3 +293,7 @@ test('taxpayer mobile header, compact corners and two-tier full-width menu are a
  for(const name of ['Open menu','Notifications','Home'])await expect(corners.getByRole('button',{name})).toBeVisible();
  await expect(page.locator('.citizen-pay--compact')).toBeVisible();
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
