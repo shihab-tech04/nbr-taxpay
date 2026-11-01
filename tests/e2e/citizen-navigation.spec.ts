@@ -154,7 +154,7 @@ test('public guide remains reachable through the active desktop or mobile naviga
 test('leaving an active payment through the logo confirms before discarding entered details', async ({page}) => {
   await page.goto('/?action=guest');
   await page.getByRole('radio', { name: 'My tax liability' }).check();
-  await page.getByLabel('Taxpayer’s TIN').fill('123456789012');
+  await page.getByLabel('Taxpayer TIN').fill('123456789012');
   const prompt = page.waitForEvent('dialog');
   const clickHome = page.getByRole('button', { name: 'Korbritto home' }).click();
   const dialog = await prompt;
@@ -163,7 +163,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   await dialog.dismiss();
   await clickHome;
   await expect(page.getByRole('heading', { name: 'Guest Income Tax Payment' })).toBeVisible();
-  await expect(page.getByLabel('Taxpayer’s TIN')).toHaveValue('123456789012');
+  await expect(page.getByLabel('Taxpayer TIN')).toHaveValue('123456789012');
 
   const confirmExit = page.waitForEvent('dialog');
   const clickHomeAgain = page.getByRole('button', { name: 'Korbritto home' }).click();
