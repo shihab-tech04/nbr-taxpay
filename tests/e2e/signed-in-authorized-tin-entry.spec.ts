@@ -14,11 +14,11 @@ async function mockAuthorizations(page:Page,records:ReturnType<typeof authorizat
   }));
 }
 /** Synthetic login has no Supabase Auth UID; its existing Beneficiaries page shares the same capability-scoped list backend. */
-async function mockSavedBeneficiaries(page:Page,empty=false){
+async function mockSavedBeneficiaries(page:Page,empty=false,shortTin=false){
   const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
   const people=[
-    {id:'00000000-0000-4000-8000-000000000002',list_id:list.id,tin:'2222222222222',display_name:'Meghna Trading Ltd.',created_at:list.created_at,updated_at:list.created_at},
-    {id:'00000000-0000-4000-8000-000000000003',list_id:list.id,tin:'3333333333333',display_name:'Saved Taxpayer Three',created_at:list.created_at,updated_at:list.created_at}
+    {id:'00000000-0000-4000-8000-000000000002',list_id:list.id,tin:shortTin?'123456789012':'2222222222222',display_name:'Meghna Trading Ltd.',created_at:list.created_at,updated_at:list.created_at},
+    {id:'00000000-0000-4000-8000-000000000003',list_id:list.id,tin:shortTin?'222222222222':'3333333333333',display_name:'Saved Taxpayer Three',created_at:list.created_at,updated_at:list.created_at}
   ];
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
     const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number};
@@ -63,47 +63,78 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await expect(picker).toContainText('1 selected for this payment');
 });
 
-test('verified active consent permits Step 2 with the original 13-digit fictional taxpayer TIN',async({page})=>{
-  await mockSavedBeneficiaries(page);await mockAuthorizations(page,[authorization('user2','ACTIVE')]);
+test('saved beneficiary without authorization proceeds to Step 2',async({page})=>{
+  await mockSavedBeneficiaries(page);await mockAuthorizations(page,[]);
   const dialog=await openSignedInPayment(page);
   await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
-  await expect(dialog.getByTestId('other-tax-batch')).toContainText('2222222222222');
 });
+
 for(const state of ['PENDING','EXPIRED','REVOKED','ACTIVE_EXPIRED'] as const){
-  test(state+' consent cannot authorize a saved beneficiary',async({page})=>{
+  test(state+' approval state does not block saved beneficiary payment',async({page})=>{
     await mockSavedBeneficiaries(page);
     await mockAuthorizations(page,[authorization('user2',state==='ACTIVE_EXPIRED'?'ACTIVE':state,state==='ACTIVE_EXPIRED'?Date.now()-1000:null)]);
     const dialog=await openSignedInPayment(page);
     await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
     await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
-    await expect(dialog.getByText(/not approved for payment through your account/)).toBeVisible();
-    await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
+    await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(dialog.getByText(/not approved for payment through your account/)).toHaveCount(0);
   });
 }
-test('every selected beneficiary needs consent; a single approval cannot cover a second TIN',async({page})=>{
-  await mockSavedBeneficiaries(page);await mockAuthorizations(page,[authorization('user2','ACTIVE')]);
+test('two selected saved beneficiaries proceed without separate consent',async({page})=>{
+  await mockSavedBeneficiaries(page);await mockAuthorizations(page,[]);
   const dialog=await openSignedInPayment(page);
   const picker=dialog.getByTestId('saved-beneficiary-picker');
   await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).check();
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
-  await expect(dialog.getByText(/Taxpayer 2 .* is not approved for payment/)).toBeVisible();
-  await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
+  const batch=dialog.getByTestId('other-tax-batch');
+  await expect(batch).toBeVisible();
+  await expect(batch).toContainText('2222222222222');
+  await expect(batch).toContainText('3333333333333');
 });
-test('authorization read failures fail closed without exposing old authorization UI',async({page})=>{
+test('approval service outage cannot block a saved beneficiary',async({page})=>{
   await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
   const dialog=await openSignedInPayment(page);
   await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
-  await expect(dialog.getByText(/Authorization could not be verified/)).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+});
+test('optional NBR reference does not block a valid saved 12-digit TIN',async({page})=>{
+  await mockSavedBeneficiaries(page,false,true);await mockAuthorizations(page,null);
+  const dialog=await openSignedInPayment(page);
+  await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await dialog.locator('#guest-notice-ref').fill('PN-2026-000392');
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+});
+test('a beneficiary removed from saved lists cannot continue',async({page})=>{
+  await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
+  const dialog=await openSignedInPayment(page);
+  await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
+    const body=route.request().postDataJSON() as {action?:string};
+    return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({success:true,data:body.action==='open'?{active:true}:[]})});
+  });
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await expect(dialog.getByText(/no longer in your saved lists/)).toBeVisible();
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
-  await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
+});
+test('saved-list read failures remain blocking even without beneficiary approval',async({page})=>{
+  await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
+  const dialog=await openSignedInPayment(page);
+  await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>
+    route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,error:'BENEFICIARIES_UNAVAILABLE'})}));
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await expect(dialog.getByText(/Saved beneficiaries could not be verified/)).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
 test('single beneficiary service keeps list selection but shows radio rather than free-form entry',async({page})=>{
-  await mockSavedBeneficiaries(page);await mockAuthorizations(page,[authorization('user2','ACTIVE')]);
+  await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
   const dialog=await openSignedInPayment(page,'TAX_WITH_RETURN');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
   await expect(picker.getByRole('radio',{name:'Select Meghna Trading Ltd.'})).toBeVisible();
@@ -139,7 +170,7 @@ test('guest input remains editable and limited to twelve digits',async({page})=>
 
 test('signed-in facilitated payments save one record per selected taxpayer item', async ({ page }) => {
   await mockSavedBeneficiaries(page);
-  await mockAuthorizations(page, [authorization('user2', 'ACTIVE'), authorization('user3', 'ACTIVE')]);
+  await mockAuthorizations(page, null);
   const submitted: Array<Record<string, any>> = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
