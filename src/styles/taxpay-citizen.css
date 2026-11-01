@@ -2442,7 +2442,7 @@
 .beneficiary-directory__list-total svg {color:var(--color-taxpay-primary);}
 .beneficiary-directory__list-total strong {color:var(--color-taxpay-text);font-weight:650;}
 .beneficiary-directory {min-width:0; width:100%;}
-.taxpay-taxpayer-reference .beneficiary-directory__filters {
+.taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters {
   grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:12px; margin-top:20px;
 }
 .beneficiary-directory__list-filter {min-width:0;}
@@ -2512,7 +2512,7 @@
   outline:2px solid var(--color-taxpay-primary);outline-offset:2px;
 }
 @media (max-width:850px) {
-  .taxpay-taxpayer-reference .beneficiary-directory__filters {grid-template-columns:minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters {grid-template-columns:minmax(0,1fr);}
 }
 @media (max-width:700px) {
   .taxpay-taxpayer-reference .beneficiary-directory .beneficiary-directory__columns {display:none;}
