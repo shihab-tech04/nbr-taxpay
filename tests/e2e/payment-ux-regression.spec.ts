@@ -48,14 +48,18 @@ test('large multi-head values do not turn into zero; missing head is highlighted
   const expectedFirst = new Intl.NumberFormat('en-IN').format(111122241213);
   await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedFirst);
   await amounts.nth(1).fill('');
-  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
-  await expect(batch.getByTestId('other-tax-validation-summary')).toContainText('Correct the highlighted payment heads');
-  await expect(amounts.nth(1)).toHaveAttribute('aria-invalid', 'true');
+  const next = dialog.getByRole('button', { name: 'Continue to payment channel' });
+  await expect(next).toBeDisabled();
   await amounts.nth(1).fill('12214124442.75');
   const expectedTotal = new Intl.NumberFormat('en-IN').format(123336365654.75);
   await expect(dialog.locator('.payment-form-summary__total')).toContainText(expectedTotal);
+  // The large number must display precisely but cannot bypass the maximum supported payment.
+  await expect(next).toBeDisabled();
+  await amounts.first().fill('1000');
+  await amounts.nth(1).fill('250.75');
+  await expect(next).toBeEnabled();
   await expect(batch.getByTestId('other-tax-validation-summary')).toHaveCount(0);
-  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await next.click();
   await expect(dialog.getByTestId('payment-review')).toBeVisible();
   await expect(dialog.getByText('Payment summary', { exact: true })).toHaveCount(0);
 });
