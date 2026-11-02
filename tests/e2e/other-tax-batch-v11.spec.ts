@@ -474,8 +474,15 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(account).toContainText('01700000002');
   await expect(dialog.locator('#guest-tin, #guest-taxpayer-name, #guest-phone')).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Search', exact: true })).toHaveCount(0);
-  await expect(dialog.locator('.payment-identity__fields input')).toHaveCount(1);
+  await expect(dialog.locator('.payment-identity__fields input')).toHaveCount(2);
   await expect(dialog.locator('#guest-notice-ref')).toBeEditable();
+  const receiptEmail = dialog.locator('#guest-receipt-email');
+  await expect(receiptEmail).toBeVisible();
+  await expect(receiptEmail).not.toHaveAttribute('required', '');
+  await receiptEmail.fill('invalid-address');
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeDisabled();
+  await receiptEmail.fill('self-payment@example.com');
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeEnabled();
   await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
