@@ -69,14 +69,17 @@ export async function loadAccountTaxJourney(ownerUid:string):Promise<AccountJour
   for(let offset=0;offset<owned.length;offset+=100){
     await check();
     const ids=owned.slice(offset,offset+100).map(x=>x.id);
-    const {data,error}=await db.from('taxpay_request_events')
-      .select('id,request_id,event_type,status_after,occurred_at')
-      .in('request_id',ids).order('occurred_at',{ascending:true}).order('id',{ascending:true});
-    if(error)throw error;
-    // This endpoint must never silently truncate a batch. Smaller batches are
-    // preferred to blanket access and protected by the same owner RLS join.
-    if((data??[]).length>=1000)throw Error('Too many journey events; narrower pagination is required.');
-    events.push(...(data??[]) as EventRow[]);
+    for(let pageFrom=0;;pageFrom+=pageSize){
+      await check();
+      const {data,error}=await db.from('taxpay_request_events')
+        .select('id,request_id,event_type,status_after,occurred_at')
+        .in('request_id',ids).order('occurred_at',{ascending:true})
+        .order('id',{ascending:true}).range(pageFrom,pageFrom+pageSize-1);
+      if(error)throw error;
+      const page=(data??[]) as EventRow[];
+      events.push(...page);
+      if(page.length<pageSize)break;
+    }
   }
   await check();
   return projectAccountTaxJourney(ownerUid,owned,events);
