@@ -5,7 +5,10 @@ import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 import { formatCurrency } from '../../services/numberFormat';
 import { downloadDisplayedCertificateSummary } from '../../services/receiptDocumentExport';
-import { getStorySessionPayments, type StorySessionPayment } from '../../services/simulatedPaymentStory';
+import { getAccountStoryPayments, getDetailedStorySessionPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
+import { useAccountIdentity } from '../../services/accountIdentity';
+import { ReceiptView } from '../common/ReceiptView';
+import type { ChallanReceipt } from '../../types/tax';
 
 type CertificatePreview = 'ANNUAL_PAYMENT' | 'WITHHOLDING_PROOF' | 'TRAVEL_CLEARANCE';
 
@@ -17,9 +20,11 @@ const previewOptions: { id: CertificatePreview; en: string; bn: string }[] = [
 
 export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activityTabs = false }) => {
   const { language } = useTaxState();
+  const { user: authenticatedUser } = useAccountIdentity();
   const [selectedPreview, setSelectedPreview] = useState<CertificatePreview>('ANNUAL_PAYMENT');
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [sqlPayments, setSqlPayments] = useState<StorySessionPayment[]>([]);
+  const [sqlPayments, setSqlPayments] = useState<BeneficiaryPaymentEntry[]>([]);
+  const [selectedReceipt, setSelectedReceipt] = useState<ChallanReceipt | null>(null);
   const [sqlError, setSqlError] = useState(false);
   const bn = language === 'bn';
   const label = (en: string, bengali: string) => bn ? bengali : en;
@@ -28,9 +33,11 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
     let active = true;
     const refresh = async () => {
       try {
-        const rows = await getStorySessionPayments();
+        const payments=authenticatedUser
+          ?await getAccountStoryPayments(authenticatedUser.id)
+          :await getDetailedStorySessionPayments();
         if (active) {
-          setSqlPayments(rows.filter(row => row.status === 'SIMULATED_SUCCESS'));
+          setSqlPayments(beneficiaryPaymentEntries(payments));
           setSqlError(false);
         }
       } catch {
@@ -40,12 +47,14 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
     void refresh();
     const timer = window.setInterval(() => void refresh(), 15000);
     return () => { active = false; window.clearInterval(timer); };
-  }, []);
+  }, [authenticatedUser?.id]);
 
   const scopedPayments = sqlPayments.filter(row => selectedPreview === 'ANNUAL_PAYMENT' ||
-    (selectedPreview === 'WITHHOLDING_PROOF' && row.service === 'SOURCE_TAX_DEPOSIT') ||
-    (selectedPreview === 'TRAVEL_CLEARANCE' && row.service === 'TRAVEL_TAX'));
-  const recordedTotal = scopedPayments.reduce((total, row) => total + row.amountMinor / 100, 0);
+    (selectedPreview === 'WITHHOLDING_PROOF' && row.receipt.paymentCategory === 'SOURCE_TAX_DEPOSIT') ||
+    (selectedPreview === 'TRAVEL_CLEARANCE' && row.receipt.paymentCategory === 'TRAVEL_TAX'));
+  // Use integer minor units so the total equals the sum of beneficiary lines.
+  const recordedMinor = scopedPayments.reduce((total,row) => total + row.amountMinor,0);
+  const recordedTotal = recordedMinor / 100;
   const totalValue = sqlError ? label('Unavailable', 'পাওয়া যাচ্ছে না') :
     formatCurrency(recordedTotal, language);
   const countValue = sqlError ? label('Unavailable', 'পাওয়া যাচ্ছে না') :
@@ -183,11 +192,14 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                   <div className="receipt-view__breakdown-content">
                     <div className="receipt-view__cards" data-testid="certificate-summary-mobile">
                       {scopedPayments.map(row => (
-                        <article key={row.id} className="p-3">
-                          <p className="break-all font-mono-plex text-sm font-semibold">{row.id}</p>
-                          <p className="mt-1 text-sm">{row.service.replace(/_/g, ' ')}</p>
-                          <p className="mt-1 text-sm">{new Date(row.createdAt).toLocaleDateString(bn ? 'bn-BD' : 'en-GB')}</p>
+                        <article key={row.key} className="p-3">
+                          <p className="font-semibold">{row.beneficiaryName}</p>
+                          <p className="break-all font-mono-plex text-xs">{row.taxpayerTin || '—'}</p>
+                          <p className="mt-1 text-sm">{row.paymentHead} · {row.assessmentYear}</p>
+                          <p className="mt-1 break-all font-mono-plex text-xs">{row.paymentId}</p>
                           <p className="mt-2 text-sm font-bold">{formatCurrency(row.amountMinor / 100, language)}</p>
+                          <button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                            onClick={()=>{setSummaryOpen(false);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>
                         </article>
                       ))}
                     </div>
@@ -196,18 +208,23 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                         <thead>
                           <tr>
                             <th scope="col">{label('Transaction ID', 'লেনদেন আইডি')}</th>
-                            <th scope="col">{label('Service', 'সেবা')}</th>
-                            <th scope="col">{label('Date', 'তারিখ')}</th>
-                            <th scope="col">{label('Amount (৳)', 'টাকা (বিডিটি)')}</th>
+                            <th scope="col">{label('Beneficiary / TIN','উপকারভোগী / টিআইএন')}</th>
+                            <th scope="col">{label('Payment head','পেমেন্ট খাত')}</th>
+                            <th scope="col">{label('Assessment year','করবর্ষ')}</th>
+                            <th scope="col" className="text-right">{label('Amount (৳)', 'পরিমাণ (৳)')}</th>
+                            <th scope="col">{label('Receipt','রসিদ')}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {scopedPayments.map(row => (
-                            <tr key={row.id}>
-                              <td className="break-all font-mono-plex">{row.id}</td>
-                              <td>{row.service.replace(/_/g, ' ')}</td>
-                              <td>{new Date(row.createdAt).toLocaleDateString(bn ? 'bn-BD' : 'en-GB')}</td>
-                              <td>{formatCurrency(row.amountMinor / 100, language)}</td>
+                            <tr key={row.key}>
+                              <td className="break-all font-mono-plex">{row.paymentId}</td>
+                              <td><strong>{row.beneficiaryName}</strong><small className="block break-all">{row.taxpayerTin||'—'}</small></td>
+                              <td>{row.paymentHead}{row.economicCode&&<small className="block">{row.economicCode}</small>}</td>
+                              <td>{row.assessmentYear}</td>
+                              <td className="text-right font-mono-plex">{formatCurrency(row.amountMinor / 100, language)}</td>
+                              <td><button type="button" className="min-h-11 font-semibold text-taxpay-primary"
+                                onClick={()=>{setSummaryOpen(false);setSelectedReceipt(row.receipt);}}>{label('View','দেখুন')}</button></td>
                             </tr>
                           ))}
                         </tbody>
@@ -220,6 +237,11 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           </div>
         </TaxPayModal>
       )}
+      {selectedReceipt&&<TaxPayModal title={label('Payment receipt','পেমেন্ট রসিদ')} service="status"
+        className="receipt-modal" footer={<></>}
+        onClose={()=>{setSelectedReceipt(null);setSummaryOpen(true);}}>
+        <ReceiptView receipt={selectedReceipt} embedded/>
+      </TaxPayModal>}
     </div>
   );
 };

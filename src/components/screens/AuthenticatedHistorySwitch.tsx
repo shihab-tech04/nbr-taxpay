@@ -2,6 +2,7 @@ import React, {useEffect,useState} from 'react';
 import {getBoundSimulationUser} from '../../services/simulatedPaymentsApi';
 import {historyModeForBoundId} from '../../services/accountHistoryMode';
 import {AccountReviewHistory} from './AccountReviewHistory';
+import {AccountBeneficiaryHistory} from './AccountBeneficiaryHistory';
 import {DemoPaymentActivity} from './DemoPaymentActivity';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 
@@ -27,7 +28,12 @@ export const AuthenticatedHistorySwitch:React.FC<{ownerUid:string;language:'en'|
     return()=>{active=false;};
   },[ownerUid,revision]);
   const mode=resolved.uid===ownerUid?resolved.mode:'loading';
-  if(mode==='simulation')return <DemoPaymentActivity activityTabs={activityTabs}/>;
+  if(mode==='simulation')return <>
+    <DemoPaymentActivity activityTabs={activityTabs}/>
+    <div className="mx-auto max-w-5xl px-3 pb-12 sm:px-5">
+      <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
+    </div>
+  </>;
   if(mode==='reviews')return <AccountReviewHistory ownerUid={ownerUid} language={language} activityTabs={activityTabs}/>;
   return <section className="mx-auto max-w-5xl space-y-4 pb-12">
     <TaxpayerPageHeading title={language==='bn'?'অ্যাকাউন্টের কার্যক্রম':'Account activity'}
