@@ -2,7 +2,8 @@ import React, {useEffect, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {loadBeneficiaries,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {useTaxState} from '../../services/taxState';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 
@@ -28,6 +29,9 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
+  const [restoring,setRestoring]=useState(false);
+  const [recoveryDone,setRecoveryDone]=useState(false);
+  const [restoreInfo,setRestoreInfo]=useState('');
   useEffect(()=>{
     let cancelled=false;
     setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
@@ -42,15 +46,43 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
       if(cancelled)return;
-      // This surface is signed-in only: do not display guest-transport internals.
-      setError(tr('Could not load your beneficiary lists. Please try again.',
-        'আপনার উপকারভোগীর তালিকা লোড করা যায়নি। আবার চেষ্টা করুন।'));
+      const detail=e instanceof Error?e.message:'';
+      // User-ID preview accounts use capability-scoped browser storage, not
+      // a verified Supabase Auth UID. Distinguish an unusable saved capability
+      // from a transient request failure without revealing SQL internals.
+      const lostCapability=!user && /session has expired|access key is invalid/.test(detail);
+      const noStorage=!user && /storage is unavailable/.test(detail);
+      setError(lostCapability
+        ? tr('This browser’s saved-list access is unavailable. Do not clear site data; open Beneficiaries to review recovery.',
+          'এই ব্রাউজারের সংরক্ষিত তালিকায় প্রবেশ করা যাচ্ছে না। সাইটের তথ্য মুছবেন না; উপকারভোগী পাতায় দেখুন।')
+        : noStorage
+          ? tr('Allow browser storage to access your saved lists, then retry.',
+            'সংরক্ষিত তালিকা দেখতে ব্রাউজার স্টোরেজ চালু করে আবার চেষ্টা করুন।')
+          : tr('Could not load your beneficiary lists. Please try again.',
+            'আপনার উপকারভোগীর তালিকা লোড করা যায়নি। আবার চেষ্টা করুন।'));
       onAvailableTins(null);
     }).finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
     // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[user?.id,checkingIdentity,refresh,onAvailableTins]);
+
+  const restoreAvailable=Boolean(user?.id&&hasStoredGuestBeneficiaries()&&!recoveryDone);
+  async function restoreSavedLists(){
+    if(!user?.id||restoring)return;
+    setRestoring(true);setRestoreInfo('');
+    try {
+      const recovered=await recoverGuestBeneficiariesToProfile(user.id);
+      setRecoveryDone(true);
+      setRestoreInfo(recovered.people
+        ? tr('Saved beneficiaries restored to your profile.','সংরক্ষিত উপকারভোগীরা আপনার প্রোফাইলে যুক্ত হয়েছে।')
+        : tr('Your profile lists are up to date.','আপনার প্রোফাইলের তালিকা হালনাগাদ রয়েছে।'));
+      setRefresh(previous=>previous+1);
+    } catch {
+      setRestoreInfo(tr('Could not restore saved lists. You can safely retry; the original lists are preserved.',
+        'সংরক্ষিত তালিকা ফিরিয়ে আনা যায়নি। আবার চেষ্টা করতে পারেন; আগের তালিকা অক্ষত আছে।'));
+    } finally {setRestoring(false);}
+  }
 
   const normalized=search.trim().toLocaleLowerCase();
   const names=(person:Beneficiary)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
@@ -81,6 +113,9 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       'নিচের তালিকা থেকে সংরক্ষিত উপকারভোগী নির্বাচন করুন। কাউকে যোগ বা সম্পাদনা করতে উপকারভোগী পাতায় যান।'
     )}</p>
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
+    {!checkingIdentity&&!loading&&!error&&restoreAvailable&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold"
+      disabled={restoring} onClick={restoreSavedLists}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore saved lists','সংরক্ষিত তালিকা ফিরিয়ে আনুন')}</UiButton>}
+    {restoreInfo&&<p role="status" className="text-sm text-slate-600" aria-live="polite">{restoreInfo}</p>}
     {error&&<div className="flex flex-wrap items-center gap-3" role="alert">
       <p className="text-sm text-red-700">{error}</p>
       <UiButton type="button" variant="outline" className="text-sm font-semibold" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</UiButton>
