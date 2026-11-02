@@ -51,7 +51,7 @@ test('mobile monthly activity help opens fully within the dashboard width',async
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
-test('mobile event ledger preserves readable recorded history without inventing financial balances',async({page},info)=>{
+test('mobile event ledger preserves readable entries and explicitly labels scenario balances',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile ledger reflow');
   await enterUser1(page);
   await page.goto('/?action=ledger');
@@ -62,7 +62,7 @@ test('mobile event ledger preserves readable recorded history without inventing 
   const entry=ledger.getByRole('listitem').first();
   await expect(entry).toBeVisible();
   await expect(entry.getByRole('button')).toBeVisible();
-  await expect(ledger.getByText('Not verified').first()).toBeVisible();
+  await expect(ledger.getByText('Selected-year scenario balance')).toBeVisible();
   await entry.getByRole('button').click();
   const detail=page.getByTestId('tax-event-details');
   await expect(detail).toContainText('Ledger entry ID');
