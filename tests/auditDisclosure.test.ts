@@ -8,7 +8,7 @@ const source = (path: string) => new URL(`../src/${path}`, import.meta.url);
 test('audit surfaces do not claim unverified immutability or cryptographic integrity', async () => {
   const files = await Promise.all([
     readFile(source('components/screens/OfficerHome.tsx'), 'utf8'),
-    readFile(source('components/layout/Footer.tsx'), 'utf8'),
+    readFile(source('components/layout/CitizenFooter.tsx'), 'utf8'),
     readFile(source('components/screens/ParityRegisterModal.tsx'), 'utf8'),
     readFile(source('data/taxOntologyData.ts'), 'utf8'),
   ]);
