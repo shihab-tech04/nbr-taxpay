@@ -1446,11 +1446,11 @@
   border: 1px solid #e6ccd0;
   border-radius: 8px;
   background: #fff;
-  color: #a3283c;
+  color: var(--color-taxpay-form-error);
   cursor: pointer;
   transition: border-color .15s ease, background-color .15s ease;
 }
-.other-tax-year-remove:hover { border-color: #a3283c; background: #fff0f2; }
+.other-tax-year-remove:hover { border-color: var(--color-taxpay-form-error); background: #fff0f2; }
 .other-tax-add-year {
   appearance: none;
   display: inline-flex;
@@ -1732,11 +1732,11 @@
   height: 19px;
   border-radius: 50%;
   color: #fff;
-  background: #a3283c;
+  background: var(--color-taxpay-form-error);
   font-size: 12px;
   font-weight: 800;
 }
-.other-tax-taxpayer-chip[data-invalid="true"]:not([aria-pressed="true"]) { border-color: #a3283c; }
+.other-tax-taxpayer-chip[data-invalid="true"]:not([aria-pressed="true"]) { border-color: var(--color-taxpay-form-error); }
 .other-tax-taxpayer-nav__arrow {
   position: absolute;
   top: 3px;
