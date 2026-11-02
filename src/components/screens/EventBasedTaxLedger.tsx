@@ -65,7 +65,7 @@ export function ledgerEventClass(code:string): typeof filters[number][0] {
   if(/CREDIT|WITHHOLD|TDS|AIT|ADVANCE_TAX_PAID/i.test(code))return 'credits';
   return 'payments';
 }
-const money=(minor:number,language:Language)=>'৳'+new Intl.NumberFormat(language==='bn'?'bn-BD':'en-BD',{
+const money=(minor:number,language:Language)=>'৳ '+new Intl.NumberFormat(language==='bn'?'bn-BD':'en-BD',{
   minimumFractionDigits:minor%100===0?0:2,maximumFractionDigits:2
 }).format(minor/100);
 const dateTime=(value:string,language:Language)=>{
@@ -208,6 +208,9 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             <thead className="bg-taxpay-background text-taxpay-muted"><tr>
               <th className="p-3">{t('Date / time','তারিখ / সময়')}</th><th className="p-3">{t('Event','ঘটনা')}</th>
               <th className="p-3">{t('Year · component','বর্ষ · খাত')}</th>
+              <th className="p-3">{t('Particulars & Economic Code','বিবরণ ও অর্থনৈতিক কোড')}</th>
+              <th className="p-3 text-right">{t('Debit (liability)','ডেবিট (দায়)')}</th>
+              <th className="p-3 text-right">{t('Credit (payment)','ক্রেডিট (পরিশোধ)')}</th>
               <th className="p-3 text-right">{t('Effect','প্রভাব')}</th>
               <th className="p-3 text-right">{t('Balance after','পরবর্তী ব্যালেন্স')}</th>
               <th className="p-3">{t('Actor · source','কার্যকারী · উৎস')}</th>
@@ -216,8 +219,11 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             <tbody className="divide-y divide-taxpay-border">{visible.map(e=><tr key={e.id} className="hover:bg-taxpay-light">
               <td className="whitespace-nowrap p-3">{dateTime(e.occurredAt,language)}</td>
               <td className="p-3"><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
-                {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span></button></td>
+                {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button></td>
               <td className="p-3">{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></td>
+              <td className="p-3">{e.title}<span className="block text-taxpay-muted">{e.component}</span></td>
+              <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'}</td>
+              <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'}</td>
               <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor===null?'—':(e.effectMinor>0?'+':'−')+money(Math.abs(e.effectMinor),language)}</td>
               <td className="whitespace-nowrap p-3 text-right font-semibold tabular-nums">{canShowBalance&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):'—'}</td>
               <td className="p-3">{e.actor}<span className="block text-taxpay-muted">{e.source}</span></td>
