@@ -303,7 +303,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (embedded && !signedInAccount && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) return false;
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
-    if (!ownAccountTax && !isOptionalReceiptEmailValid(receiptEmail)) return false;
+    if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
@@ -621,7 +621,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
     }
-    if (!ownAccountTax && !isOptionalReceiptEmailValid(receiptEmail)) {
+    if (!isOptionalReceiptEmailValid(receiptEmail)) {
       setValidationError(language === 'bn' ? 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।' : 'Enter a valid email address or leave it blank.', 'email');
       return false;
     }
@@ -868,7 +868,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         payerTin: signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
         taxpayerTin,
         receiptMobile: receiptPhone,
-        receiptEmail: !ownAccountTax ? normaliseReceiptEmail(receiptEmail) : undefined,
+        receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,
         isRepresentativePayment: !forSelf,
         representativeTin: undefined,
@@ -905,7 +905,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             assessmentYear,
             taxZone, taxCircle,
             receiptMobile: receiptPhone,
-            receiptEmail: !ownAccountTax ? normaliseReceiptEmail(receiptEmail) : undefined,
+            receiptEmail: normaliseReceiptEmail(receiptEmail),
             noticeReference,
             incomeTaxType,
             isWithholding: isWithholdingMode,
@@ -1230,7 +1230,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               </>}
               {otherBatch && forSelf === false && !signedInAccount && <h3 className="payment-identity__receipt-heading">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
-              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__contact-grid${ownAccountTax ? ' payment-identity__contact-grid--account' : ''}${signedInAccount ? ' payment-identity__contact-grid--no-name' : ''}`}>
+              {<div className={`payment-identity__contact-grid${ownAccountTax ? ' payment-identity__contact-grid--account' : ''}${signedInAccount ? ' payment-identity__contact-grid--no-name' : ''}`}>
               {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম' : 'Your name') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
                 <input
@@ -1264,7 +1264,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('phone')}
                 </div>}
               {forSelf === true && !signedInAccount && noticeReferenceField}
-              {!ownAccountTax && <div>
+              {<div>
                 <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
                 <input id="guest-receipt-email" type="email" inputMode="email" autoComplete="email"
                   placeholder="name@example.com" maxLength={254} value={receiptEmail}
