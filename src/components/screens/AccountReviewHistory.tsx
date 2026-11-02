@@ -3,6 +3,7 @@ import {supabase} from '../../services/supabaseClient';
 import {useTaxState} from '../../services/taxState';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {formattedReviewAmount,safeReviewStatus} from '../../services/accountReviewHistory';
+import {AccountBeneficiaryHistory} from './AccountBeneficiaryHistory';
 
 type Row={
   id:string;owner_uid:string;category:string;assessment_year:string;
@@ -53,6 +54,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
       description={tr('Account-owned, non-financial payment review activity. No TIN binding required.',
         'অ্যাকাউন্টভিত্তিক অ-আর্থিক পরিশোধ পর্যালোচনা। টিআইএন সংযোগের প্রয়োজন নেই।')} />
     {activityTabs && <TaxpayerActivityTabs />}
+    <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={tr('Submitted request history','জমা দেওয়া অনুরোধের ইতিহাস')}>
       <p className="text-sm text-taxpay-muted">
         {tr('These are review requests, not payments or government receipts. No Treasury settlement, liability, credit, or tax balance is implied.',
