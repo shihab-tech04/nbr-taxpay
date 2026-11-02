@@ -8,6 +8,8 @@ import {activeAuthorizationFor,getHostedAuthorizations} from '../../services/hos
 import {formatCurrency} from '../../services/numberFormat';
 import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {PaymentLifecycleDetails} from './EventBasedTaxLedger';
+import {TaxPayModal} from '../ui/TaxPayModal';
 import {
   simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,getDemoStoryPaymentHistory,
@@ -29,6 +31,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const txt=(en:string,bengali:string)=>bn?bengali:en;
   const [view,setView]=useState<'beneficiary'|'payer'>('beneficiary');
   const [rows,setRows]=useState<SimulationTransaction[]>([]);
+  const [selectedPayment,setSelectedPayment]=useState<SimulationTransaction|null>(null);
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState('');
   const [revision,setRevision]=useState(0);
@@ -298,10 +301,32 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
             <div><p>{a.beneficiary} · <span className="taxpay-service-value" data-payment-service={a.category}>{simulationCategoryLabels[a.category][bn?'bn':'en']}</span></p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
             <p className="font-semibold tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p></li>)}</ul>
+          <button type="button" onClick={()=>setSelectedPayment(tx)} className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-4 text-sm font-semibold text-taxpay-dark">
+            {txt('View payment details','পেমেন্টের বিবরণ দেখুন')}
+          </button>
           <details className="mt-3 rounded-lg border border-taxpay-border p-3"><summary className="cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
             <ol className="mt-2 space-y-2">{tx.events.map(e=><li key={e.id} className="text-sm"><p className="font-semibold">{e.action}</p><p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p></li>)}</ol>
           </details>
         </article>)}
     </section>
+    {selectedPayment&&<TaxPayModal
+      title={txt('Payment details','পেমেন্টের বিবরণ')}
+      onClose={()=>setSelectedPayment(null)} hideFooter className="taxpayer-transaction-detail">
+      <PaymentLifecycleDetails language={language} record={{
+        reference:selectedPayment.id,
+        transactionId:selectedPayment.transactionId,
+        payerName:selectedPayment.payer,
+        taxpayerName:selectedPayment.allocations.length===1?selectedPayment.allocations[0].beneficiary:undefined,
+        assessmentYear:[...new Set(selectedPayment.allocations.map(a=>a.assessmentYear))].join(', '),
+        paymentType:[...new Set(selectedPayment.allocations.map(a=>simulationCategoryLabels[a.category][bn?'bn':'en']))].join(', '),
+        amountMinor:selectedPayment.totalMinor,createdAt:selectedPayment.createdAt,
+        status:selectedPayment.state,financialReceiptStatus:txt('Not verified','যাচাই হয়নি'),
+        taxCreditStatus:txt('Not verified','যাচাই হয়নি'),source:'TaxPay SQL',
+        events:selectedPayment.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
+          occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
+        allocations:selectedPayment.allocations.map(a=>({id:a.id,title:a.beneficiary+' · '+simulationCategoryLabels[a.category][bn?'bn':'en'],
+          assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
+      }}/>
+    </TaxPayModal>}
   </main>;
 };
