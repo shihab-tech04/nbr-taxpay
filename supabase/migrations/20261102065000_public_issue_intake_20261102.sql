@@ -3,6 +3,7 @@
 -- accepts submissions; authenticated verified Office admins can read/review.
 create table if not exists public.taxpay_public_issue_reports (
   id uuid primary key default gen_random_uuid(),
+  reference text generated always as ('KRB-' || upper(substr(replace(id::text,'-',''),1,12))) stored unique,
   submission_key uuid not null unique,
   tracking_secret uuid not null unique default gen_random_uuid(),
   source_hash text not null check (source_hash ~ '^[a-f0-9]{64}$'),
@@ -51,7 +52,7 @@ begin
    if v_report.source_hash is distinct from p_source_hash then
      raise exception 'Submission key collision.' using errcode='22023';
    end if;
-   return jsonb_build_object('reference','KRB-'||upper(substr(replace(v_report.id::text,'-',''),1,12)),
+   return jsonb_build_object('reference',v_report.reference,
      'tracking_token',v_report.tracking_secret::text,'status',v_report.status);
  end if;
  if (select count(*) from public.taxpay_public_issue_reports
@@ -61,7 +62,7 @@ begin
  insert into public.taxpay_public_issue_reports(category,details,submission_key,source_hash)
    values(p_category,v_details,p_submission_key,p_source_hash)
    returning * into v_report;
- return jsonb_build_object('reference','KRB-'||upper(substr(replace(v_report.id::text,'-',''),1,12)),
+ return jsonb_build_object('reference',v_report.reference,
    'tracking_token',v_report.tracking_secret::text,'status',v_report.status);
 end;
 $$;
