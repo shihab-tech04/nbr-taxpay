@@ -89,7 +89,6 @@
 .payment-radio-card__copy small{font-size:14px;font-weight:400;color:#526681;line-height:1.45}
 .payment-radio-card__empty{margin:10px 0 0;font-size:14px;color:#62748d;line-height:1.5}
 .payment-form-accounting-code{font-size:14px;color:#516681;margin:9px 0 0}
-@media (min-width:400px) and (max-width:639px){.payment-form-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.payment-form-layout{grid-template-columns:minmax(0,1fr)}.payment-form-summary{position:static;grid-row:1}.payment-form-summary__rows{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-form-summary__notice{padding:11px 18px}}
 @media(max-width:600px){.payment-amount-fields--simple{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:480px){.payment-form-section__heading{padding:13px}.payment-form-section__body{padding:14px}.payment-form-summary__total{font-size:25px}.payment-form-summary__rows{grid-template-columns:1fr}}
@@ -141,7 +140,6 @@
 .payment-review__bank-note{display:flex;align-items:flex-start;gap:9px;margin-top:15px;padding:12px;border-radius:9px;background:#fffaec;color:#765d26;font-size:14px;line-height:1.6}
 .payment-review__bank-note svg{flex:none;margin-top:1px}
 .payment-review__aside{display:grid;gap:13px;position:sticky;top:0;min-width:0}
-.payment-review__total-card{background:#f6faff;padding:19px}
 .payment-review__total-label{font-size:14px;font-weight:700;color:var(--color-taxpay-form-text);margin:0}
 .payment-review__total-figure{font-size:29px;font-weight:850;color:#245aa0;display:block;margin:4px 0 18px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .payment-review__breakdown{border-top:1px solid #dce7f6;margin:0;padding-top:11px;display:grid;gap:11px}

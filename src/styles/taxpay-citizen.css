@@ -290,23 +290,15 @@
 .taxpay-payment-wizard fieldset label:focus-within { outline: 2px solid var(--citizen-primary); outline-offset: -2px; }
 
 /* Citizen home components share Government Blue roles, not hard-coded screen colors. */
-.citizen-overview {
-  background:linear-gradient(125deg,var(--citizen-primary-dark),var(--citizen-primary));
-  border-color:var(--citizen-primary);
-}
-.citizen-financial-intro {
-  background:var(--citizen-surface);
-  border:1px solid var(--citizen-border);
-  border-radius:1.1rem;
-  padding:1.25rem;
-}
-.citizen-eyebrow { font-size:14px; font-weight:750; letter-spacing:.035em; color:var(--citizen-primary-dark); }
-.citizen-financial-intro h1 { font-size:clamp(1.4rem,5vw,2rem); font-weight:750; line-height:1.25; margin:.45rem 0; }
-.citizen-financial-intro p:not(.citizen-eyebrow) { color:var(--citizen-muted); font-size:14px; line-height:1.6; }
+
+
+
+
+
 .citizen-financial-links {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;margin-top:1rem;}
 .citizen-financial-links button {background:var(--citizen-primary-light);border-radius:.65rem;color:var(--citizen-primary-dark);font-size:14px;font-weight:700;min-height:48px;padding:.55rem;}
 @media(min-width:768px) {
-  .citizen-financial-intro {padding:1.7rem;}
+
   .citizen-financial-links {display:flex;}
   .citizen-financial-links button {padding:.7rem 1rem;}
 }
@@ -457,10 +449,7 @@
   box-shadow:var(--taxpay-shadow-card);
 }
 .citizen-public-hero__copy, .citizen-taxpayer-hero > div {min-width:0;}
-.citizen-public-hero__eyebrow, .citizen-taxpayer-hero__eyebrow {
-  display:flex;align-items:center;gap:.5rem;margin:0 0 .8rem;
-  color:white;font-size:14px;font-weight:750;letter-spacing:.025em;
-}
+
 .citizen-public-hero h1, .citizen-taxpayer-hero h1 {
   max-width:18ch;margin:0;font-size:clamp(1.55rem,5vw,2.35rem);
   font-weight:800;line-height:1.2;letter-spacing:-.025em;
@@ -548,18 +537,18 @@
 .citizen-hub-steps li > span {display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:var(--citizen-primary);color:white;font-size:14px;font-weight:800;}
 .citizen-hub-steps li strong {display:block;color:var(--citizen-text);font-size:14px;}
 .citizen-hub-steps li p {margin:.25rem 0 0;color:var(--citizen-muted);font-size:14px;line-height:1.5;}
-.citizen-hub-lookup {display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:1.25rem;align-items:start;}
-.citizen-hub-lookup__intro {display:flex;gap:.75rem;min-width:0;}
-.citizen-hub-lookup__icon {display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:.7rem;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);}
-.citizen-hub-lookup__intro p {margin:.35rem 0 0;color:var(--citizen-muted);font-size:14px;line-height:1.5;}
-.citizen-hub-lookup form {min-width:0;}
-.citizen-hub-lookup label {display:block;margin-bottom:.4rem;color:var(--citizen-text);font-size:14px;font-weight:750;}
-.citizen-hub-lookup__controls {display:flex;gap:.55rem;min-width:0;}
-.citizen-hub-lookup input {width:100%;min-width:0;min-height:46px;padding:.65rem .75rem;border:1px solid var(--citizen-border);border-radius:.65rem;background:white;color:var(--citizen-text);font-size:14px;}
-.citizen-hub-lookup__controls button {display:inline-flex;align-items:center;justify-content:center;gap:.4rem;flex:none;min-height:46px;padding:.65rem .8rem;border-radius:.65rem;background:var(--citizen-primary);color:white;font-size:14px;font-weight:750;}
-.citizen-hub-lookup__controls button:hover {background:var(--citizen-primary-dark);}
-.citizen-hub-lookup__notice, .citizen-hub-lookup__error {margin:.45rem 0 0;color:var(--citizen-muted);font-size:14px;line-height:1.45;}
-.citizen-hub-lookup__error {color:var(--citizen-error);}
+
+
+
+
+
+
+
+
+
+
+
+
 .citizen-hub-support {display:flex;align-items:center;justify-content:space-between;gap:1.25rem;background:var(--citizen-bg);}
 .citizen-hub-support > div:first-child {display:flex;align-items:flex-start;gap:.75rem;min-width:0;}
 .citizen-hub-support > div:first-child > svg {flex:none;margin-top:.2rem;color:var(--citizen-primary);}
@@ -569,8 +558,8 @@
 .citizen-hub-support__actions button:hover, .citizen-text-action:hover {border-color:var(--citizen-primary);background:var(--citizen-primary-light);}
 
 /* The taxpayer home is a labeled demonstration dashboard; financial values stay unverified. */
-.citizen-taxpayer-hero {grid-template-columns:minmax(0,1fr) auto;align-items:start;}
-.citizen-taxpayer-hero__badge {display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:.35rem .7rem;border:1px solid color-mix(in srgb,white 55%,transparent);border-radius:999px;color:white;font-size:14px;font-weight:800;white-space:nowrap;}
+
+
 .citizen-taxpayer-summary__notice, .citizen-taxpayer-activity__notice {margin:0 0 .85rem;padding:.75rem .85rem;border-left:3px solid var(--citizen-warning);border-radius:.4rem;background:var(--citizen-bg);color:var(--citizen-muted);font-size:14px;line-height:1.55;}
 .citizen-taxpayer-summary__cards {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;}
 .citizen-taxpayer-summary__cards article {display:flex;flex-direction:column;gap:.4rem;min-width:0;padding:.9rem;border:1px solid var(--citizen-border);border-radius:.75rem;}
@@ -601,19 +590,19 @@
 @media(max-width:720px) {
   .citizen-public-hero {grid-template-columns:minmax(0,1fr);gap:1rem;}
   .citizen-public-hero__panel {max-width:none;}
-  .citizen-hub-lookup {grid-template-columns:minmax(0,1fr);gap:.9rem;}
+
   .citizen-hub-support {align-items:flex-start;flex-direction:column;}
   .citizen-hub-support__actions {width:100%;}
   .citizen-hub-support__actions button {flex:1;justify-content:center;}
 }
 @media(max-width:520px) {
-  .citizen-taxpayer-hero {grid-template-columns:minmax(0,1fr);}
-  .citizen-taxpayer-hero__badge {grid-row:1;justify-self:start;}
+
+
   .citizen-hub-service-grid, .citizen-hub-more-services > div, .citizen-taxpayer-more > div {grid-template-columns:minmax(0,1fr);}
   .citizen-hub-steps ol {grid-template-columns:minmax(0,1fr);}
   .citizen-hub-steps li {min-height:64px;}
-  .citizen-hub-lookup__controls {flex-direction:column;}
-  .citizen-hub-lookup__controls button {width:100%;}
+
+
   .citizen-hub-section__heading {gap:.65rem;}
   .citizen-hub-section__heading h2, .citizen-hub-lookup h2, .citizen-hub-support h2 {font-size:1.05rem;}
   .citizen-hub-quick-grid button, .citizen-taxpayer-quick__grid button {gap:.5rem;padding:.65rem;font-size:14px;}
