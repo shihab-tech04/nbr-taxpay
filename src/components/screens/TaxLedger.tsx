@@ -1,153 +1,118 @@
-import React from 'react';
-import { Download, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
-import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
-import { useTaxState } from '../../services/taxState';
-import { hasVerifiedTaxLedgerSource } from '../../services/taxpayerEvidence';
-import { formatCurrency } from '../../services/numberFormat';
-import { DemoServiceRecordsPanel } from './DemoServiceRecordsPanel';
+import React,{useEffect,useMemo,useState} from 'react';
+import {useTaxState} from '../../services/taxState';
+import {useAccountIdentity} from '../../services/accountIdentity';
+import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {
+  getBoundSimulationUser,getDemoStoryPaymentHistory,getPrivateSimulationHistory,
+  simulationCategoryLabels,type SimulationTransaction
+} from '../../services/simulatedPaymentsApi';
+import {EventBasedTaxLedger,PaymentLifecycleDetails,type TaxAccountEvent,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
+import {TaxPayModal} from '../ui/TaxPayModal';
 
-export const TaxLedger: React.FC = () => {
-  const { ledgerEntries, language, previewAccount } = useTaxState();
-  const bn = language === 'bn';
-
-  const visibleEntries = hasVerifiedTaxLedgerSource ? ledgerEntries : [];
-  const hasEntries = visibleEntries.length > 0;
-  const totalDebits = visibleEntries.reduce((acc, curr) => acc + curr.debit, 0);
-  const totalCredits = visibleEntries.reduce((acc, curr) => acc + curr.credit, 0);
-  const netBalance = totalCredits - totalDebits;
-
-  return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <TaxpayerPageHeading title={bn ? 'কর লেজার' : 'Tax ledger'}
-        description={bn ? 'লেজার তথ্য' : 'Ledger information'} actions={
-            <button
-              type="button"
-              disabled={!hasEntries}
-              onClick={() => {
-                const element = document.createElement('a');
-                const file = new Blob([JSON.stringify(visibleEntries, null, 2)], { type: 'application/json' });
-                element.href = URL.createObjectURL(file);
-                element.download = 'Korbritto_shared_ledger_sample_NOT_OFFICIAL.json';
-                document.body.appendChild(element);
-                element.click();
-                document.body.removeChild(element);
-                URL.revokeObjectURL(element.href);
-              }}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>{bn ? 'লেজার তথ্য নিন' : 'Export ledger data'}</span>
-            </button>
-      } />
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-
-        {/* Ledger Balance Highlights */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-xs">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-slate-500 block">{bn ? 'ডেবিট' : 'Debits'}</span>
-            <div className="flex items-center gap-2 mt-1">
-              <TrendingDown className="w-4 h-4 text-rose-600" />
-              <span className="font-mono-plex font-bold text-lg text-rose-800">
-                {hasEntries ? formatCurrency(totalDebits, language) : (bn ? 'পাওয়া যাচ্ছে না' : 'Not available')}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-slate-500 block">{bn ? 'ক্রেডিট' : 'Credits'}</span>
-            <div className="flex items-center gap-2 mt-1">
-              <TrendingUp className="w-4 h-4 text-taxpay-primary" />
-              <span className="font-mono-plex font-bold text-lg text-taxpay-dark">
-                {hasEntries ? formatCurrency(totalCredits, language) : (bn ? 'পাওয়া যাচ্ছে না' : 'Not available')}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-taxpay-light border border-taxpay-border">
-            <span className="text-taxpay-dark font-medium block">{bn ? 'পার্থক্য' : 'Difference'}</span>
-            <div className="font-mono-plex font-bold text-lg text-taxpay-dark mt-1">
-              {hasEntries ? netBalance >= 0 ? `+${formatCurrency(netBalance, language)}` : `-${formatCurrency(Math.abs(netBalance), language)}` : (bn ? 'পাওয়া যাচ্ছে না' : 'Not available')}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:hidden">
-          {visibleEntries.map(entry => (
-            <article key={entry.id} className="rounded-xl border border-taxpay-border bg-white p-4 space-y-2">
-              <h2 className="text-sm font-semibold text-taxpay-text">{entry.headName}</h2>
-              <p className="text-xs text-slate-600">{entry.date} · AY {entry.assessmentYear}</p>
-              <p className="text-xs font-mono-plex break-all">{entry.headCode} · {entry.challanNo}</p>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div><p>{bn ? 'ডেবিট' : 'Debit'}</p><strong>{formatCurrency(entry.debit,language)}</strong></div>
-                <div><p>{bn ? 'ক্রেডিট' : 'Credit'}</p><strong>{formatCurrency(entry.credit,language)}</strong></div>
-              </div>
-              <p className="text-xs font-semibold text-taxpay-dark">{bn ? 'অবস্থা' : 'Status'}: {entry.status}</p>
-            </article>
-          ))}
-        </div>
-        {/* Ledger Entries Table */}
-        {!hasEntries && (
-          <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-            {bn ? 'এই অ্যাকাউন্টে এখনো কোনো লেজার রেকর্ড নেই।' : 'No ledger records are available for this account yet.'}
-          </p>
-        )}
-        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
-              <tr>
-                <th className="px-3 py-2.5">{bn ? 'তারিখ' : 'Date'}</th>
-                <th className="px-3 py-2.5">{bn ? 'করবর্ষ' : 'AY'}</th>
-                <th className="px-3 py-2.5">{bn ? 'বিবরণ ও অর্থনৈতিক কোড' : 'Particulars & Economic Code'}</th>
-                <th className="px-3 py-2.5">{bn ? 'চালান রেফারেন্স' : 'Challan Ref'}</th>
-                <th className="px-3 py-2.5 text-right text-rose-700">{bn ? 'ডেবিট (দায়)' : 'Debit (Liability)'}</th>
-                <th className="px-3 py-2.5 text-right text-taxpay-dark">{bn ? 'ক্রেডিট (পেমেন্ট)' : 'Credit (Payment)'}</th>
-                <th className="px-3 py-2.5 text-center">{bn ? 'অবস্থা' : 'Status'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {visibleEntries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
-                    {entry.date}
-                  </td>
-                  <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
-                    {entry.assessmentYear}
-                  </td>
-                  <td className="px-3 py-2 text-slate-800">
-                    <div className="font-medium">{entry.headName}</div>
-                    <div className="text-[10px] text-slate-500 font-mono-plex">{entry.headCode}</div>
-                  </td>
-                  <td className="px-3 py-2 font-mono-plex text-taxpay-dark font-bold whitespace-nowrap">
-                    {entry.challanNo}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono-plex font-bold text-rose-700">
-                    {entry.debit > 0 ? formatCurrency(entry.debit, language) : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono-plex font-bold text-taxpay-dark">
-                    {entry.credit > 0 ? formatCurrency(entry.credit, language) : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-center whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-taxpay-dark bg-taxpay-light px-2 py-0.5 rounded border border-taxpay-border">
-                      <CheckCircle2 className="w-3 h-3" />
-                      {bn ? 'যাচাই হয়নি' : 'NOT VERIFIED'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {previewAccount && (
-        <section aria-label={bn ? 'সেবার কার্যক্রম' : 'Service activity'}>
-          <p className="mb-3 text-sm text-taxpay-muted">
-            {bn
-              ? 'নিচের রেকর্ডে সেবার কার্যক্রম দেখানো হয়েছে। কর ক্রেডিট, দায় ও লেজারের পরিমাণ যাচাই করা হয়নি।'
-              : 'The records below show service activity. Tax credit, liability and ledger balances are not verified.'}
-          </p>
-          <DemoServiceRecordsPanel userId={previewAccount.id} language={language} />
-        </section>
-      )}
-    </div>
-  );
+function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccountEvent[]{
+  return rows.flatMap(tx=>{
+    const distinctYears=[...new Set(tx.allocations.map(a=>a.assessmentYear))];
+    const component=[...new Set(tx.allocations.map(a=>simulationCategoryLabels[a.category]?.en||a.category))].join(', ');
+    const year=distinctYears.length===1?distinctYears[0]:'Multiple years';
+    return tx.events.map(event=>({
+      id:tx.transactionId+':'+event.id,
+      occurredAt:event.occurredAt,
+      code:event.action,
+      title:event.action.replaceAll('_',' ').toLowerCase().replace(/^./,c=>c.toUpperCase()),
+      assessmentYear:year,
+      component,
+      amountMinor:tx.totalMinor,
+      // Payment activity, even when mirrored to Office, is NOT authoritative credit.
+      effectMinor:null,
+      balanceAfterMinor:null,
+      actor:'System',
+      source:'TaxPay payment event',
+      taxEventId:undefined,
+      paymentId:tx.transactionId,
+      reference:tx.id,
+      status:tx.state,
+      reason:event.note,
+      linkedReferences:[tx.id,tx.transactionId]
+    }));
+  });
+}
+function paymentRecord(tx:SimulationTransaction):PaymentLifecycleRecord{
+  return {
+    reference:tx.id,transactionId:tx.transactionId,payerName:tx.payer,
+    assessmentYear:[...new Set(tx.allocations.map(a=>a.assessmentYear))].join(', '),
+    paymentType:[...new Set(tx.allocations.map(a=>simulationCategoryLabels[a.category]?.en||a.category))].join(', '),
+    amountMinor:tx.totalMinor,createdAt:tx.createdAt,status:tx.state,
+    financialReceiptStatus:'Not verified',taxCreditStatus:'Not verified',
+    source:'TaxPay payment event',
+    events:tx.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
+      occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
+    allocations:tx.allocations.map(a=>({id:a.id,title:a.beneficiary+' · '+(simulationCategoryLabels[a.category]?.en||a.category),
+      assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
+  };
+}
+export const TaxLedger:React.FC=()=>{
+  const {language,previewAccount}=useTaxState();
+  const {user:authenticatedUser,loading:identityPending}=useAccountIdentity();
+  const [snapshot,setSnapshot]=useState<{key:string;rows:SimulationTransaction[];state:'loading'|'ready'|'error';error:string}>({
+    key:'',rows:[],state:'loading',error:''
+  });
+  const [revision,setRevision]=useState(0);
+  const [selected,setSelected]=useState<PaymentLifecycleRecord|null>(null);
+  const bn=language==='bn',t=(en:string,other:string)=>bn?other:en;
+  const ownerKey=authenticatedUser?'auth:'+authenticatedUser.id:previewAccount?'preview:'+previewAccount.id:'unbound';
+  useEffect(()=>{
+    let live=true;
+    setSnapshot({key:ownerKey,rows:[],state:'loading',error:''});
+    setSelected(null);
+    async function load(){
+      if(authenticatedUser){
+        // Do not read public user IDs as a substitute for a signed-in, owner-scoped query.
+        await getBoundSimulationUser();
+        const [payer,beneficiary]=await Promise.all([
+          getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary')
+        ]);
+        const keyed=new Map<string,SimulationTransaction>();
+        [...payer,...beneficiary].forEach(tx=>keyed.set(tx.transactionId,tx));
+        return [...keyed.values()];
+      }
+      if(previewAccount){
+        const [payer,beneficiary]=await Promise.all([
+          getDemoStoryPaymentHistory(previewAccount.id,'payer'),
+          getDemoStoryPaymentHistory(previewAccount.id,'beneficiary')
+        ]);
+        const keyed=new Map<string,SimulationTransaction>();
+        [...payer,...beneficiary].forEach(tx=>keyed.set(tx.transactionId,tx));
+        return [...keyed.values()];
+      }
+      return [];
+    }
+    void load().then(rows=>{if(live)setSnapshot({key:ownerKey,rows,state:'ready',error:''});})
+      .catch(error=>{if(live)setSnapshot({key:ownerKey,rows:[],state:'error',
+        error:error instanceof Error?error.message:'History unavailable'});});
+    return()=>{live=false;};
+  },[ownerKey,revision]);
+  const state=snapshot.key===ownerKey?snapshot:{key:ownerKey,rows:[],state:'loading' as const,error:''};
+  const events=useMemo(()=>projectRecordedEvents(state.rows),[state.rows]);
+  const openPayment=(id:string)=>{
+    const tx=state.rows.find(r=>r.transactionId===id);
+    if(tx)setSelected(paymentRecord(tx));
+  };
+  return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
+    <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} />
+    {identityPending||state.state==='loading'?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
+      {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
+    state.state==='error'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
+      <p className="text-sm text-taxpay-muted">{t('Unable to verify this account’s event history.','অ্যাকাউন্টের ঘটনার ইতিহাস যাচাই করা যাচ্ছে না।')}</p>
+      <button className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark" type="button" onClick={()=>setRevision(i=>i+1)}>
+        {t('Retry','আবার চেষ্টা করুন')}</button>
+    </section>:
+    <>
+      <EventBasedTaxLedger events={events} language={language} onOpenPayment={openPayment}/>
+      <p className="text-xs text-taxpay-muted">{t('TaxPay and Office activity may be recorded here. An official liability, settlement or credit balance requires verified source events.',
+        'এখানে ট্যাক্সপে ও অফিসের কার্যক্রম দেখা যেতে পারে। সরকারি দায়, নিষ্পত্তি বা ক্রেডিট ব্যালেন্সের জন্য যাচাইকৃত ঘটনা প্রয়োজন।')}</p>
+    </>}
+    {selected&&<TaxPayModal title={t('Payment details','পেমেন্টের বিবরণ')} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
+      <PaymentLifecycleDetails record={selected} language={language}/>
+    </TaxPayModal>}
+  </div>;
 };
