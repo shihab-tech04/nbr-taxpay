@@ -19,13 +19,15 @@ export function TaxpayerLoginFooter({ formId, disabled, language }: {
   </div>;
 }
 
-export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange }: {
+export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange, emailReturnTo }: {
   onClose?: () => void;
   onSuccess?: () => void;
   preservePaymentJourney?: boolean;
   /** Reuse the parent payment modal's title, close control, overlay and footer. */
   embedded?: boolean;
   onValidityChange?: (valid: boolean) => void;
+  /** Safe private destination after verified email-link authentication. */
+  emailReturnTo?: string;
 } = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
   const [userId, setUserId] = useState('');
@@ -96,6 +98,11 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         </div>
         {showRecovery && <p id="taxpayer-login-recovery" className="taxpayer-login-recovery" role="status">
           {bn ? 'বর্তমান user1–user10 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user10 accounts, the password is the same as the User ID.'}
+        </p>}
+        {emailReturnTo && !embedded && <p className="taxpayer-login-email-entry">
+          <button type="button" onClick={() => navigate('secure_workspace', { returnTo: emailReturnTo })}>
+            {bn ? 'ইমেইল দিয়ে সাইন ইন' : 'Sign in with email'}
+          </button>
         </p>}
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'

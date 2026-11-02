@@ -143,7 +143,7 @@ jobs:
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
+        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
 
       - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
         env:
@@ -281,6 +281,7 @@ jobs:
       - name: Verify deployed private-route authentication boundary in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+          TAXPAY_REQUIRE_BENEFICIARIES_MODAL: '1'
         run: node scripts/verify-live-public-auth.mjs
 
       - name: Verify deployed public record search and sample lookup in Chromium
