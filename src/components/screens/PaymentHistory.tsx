@@ -37,6 +37,8 @@ function historyLifecycleRecord(receipt:ChallanReceipt,language:Language):Paymen
     transactionId:receipt.paymentTransactionId||receipt.gatewayTransactionId,
     challanNo:receipt.challanNo,
     payerName:receipt.payerName,payerTin:receipt.payerTin,
+    // Attribute a single known beneficiary; multi-taxpayer details stay in allocations.
+    taxpayerName:receipt.allocationItems?.length===1?receipt.allocationItems[0].taxpayerName:undefined,
     taxpayerTin:receipt.taxpayerTin,
     assessmentYear:receipt.assessmentYear,
     paymentType:CATEGORY_LABELS[receipt.paymentCategory]?.[language]||receipt.paymentCategory.replaceAll('_',' '),
