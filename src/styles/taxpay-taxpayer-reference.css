@@ -1108,3 +1108,117 @@
     border-radius: var(--taxpay-radius-modal);
   }
 }
+
+/* Tax Ledger / Activity screenshot corrections, 2026-11-02.
+   Narrowly scoped to these existing views; shared design tokens remain unchanged. */
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-filters {
+  grid-template-columns:minmax(240px,1.65fr) repeat(3,minmax(140px,1fr));
+  gap:12px;
+  margin-top:16px;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-filter--search {grid-column:auto;}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-count {margin:14px 0 8px;}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-row {
+  min-height:82px;
+  padding-block:11px;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-row:focus-within,
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-row:hover {background:var(--color-taxpay-surface-subtle);}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] {
+  min-width:0;
+  padding:20px;
+  border:1px solid var(--color-taxpay-border);
+  border-radius:16px;
+  background:var(--color-taxpay-surface);
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] > div:first-child {align-items:center;}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] > div:first-child > div:last-child {
+  border:0;
+  border-left:1px solid var(--color-taxpay-border);
+  border-radius:0;
+  background:transparent;
+  padding:0 0 0 20px;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] > div:nth-child(2) {
+  min-width:0;
+  padding-top:12px;
+  border-top:1px solid var(--color-taxpay-border);
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] > div:nth-child(2) nav {min-width:0;}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] > div:nth-child(3) {
+  min-width:0;
+  max-width:100%;
+  overscroll-behavior-inline:contain;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] [data-testid="event-ledger-table"] {
+  min-width:1480px;
+  font-size:13px;
+  line-height:1.5;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] [data-testid="event-ledger-table"] th {
+  white-space:normal;
+  padding:14px 12px;
+  font-weight:650;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] [data-testid="event-ledger-table"] td {
+  padding:13px 12px;
+  vertical-align:middle;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] [data-testid="event-ledger-table"] tbody tr:hover,
+.taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] [data-testid="event-ledger-table"] tbody tr:focus-within {
+  background:var(--color-taxpay-light);
+}
+/* The shared read-only modal is wide enough for three fact columns,
+   but its fixed header and one scrollable body remain intact. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
+  width:min(calc(100vw - 40px),880px);
+  max-width:880px;
+  max-height:calc(100dvh - 48px);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpay-modal__body {
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:20px 24px 24px;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail [data-testid="payment-lifecycle-details"] > section {
+  border:0;
+  border-bottom:1px solid var(--color-taxpay-border);
+  border-radius:0;
+  padding:0 0 18px;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail [data-testid="payment-lifecycle-details"] > section:last-child {
+  border-bottom:0;
+  padding-bottom:0;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail [data-testid="payment-lifecycle-details"] > section:nth-child(2) > dl {margin-top:16px;}
+@media(max-width:1150px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-filters {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:700px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-filters {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] {padding:14px;}
+  .taxpay-taxpayer-reference .taxpayer-workspace [data-testid="event-tax-ledger"] > div:first-child > div:last-child {
+    border-left:0;
+    padding-left:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal__overlay:has(.taxpayer-transaction-detail) {
+    align-items:flex-end;
+    padding:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
+    width:100%;
+    max-width:none;
+    max-height:90dvh;
+    border:1px solid var(--color-taxpay-border);
+    border-bottom:0;
+    border-radius:16px 16px 0 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpay-modal__body {
+    padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+}
