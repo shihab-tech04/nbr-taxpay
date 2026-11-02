@@ -3,6 +3,7 @@ import {ArrowRight, BookOpen, CircleUserRound, FileCheck2, FilePenLine, Receipt,
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadAccountTaxJourney,type AccountJourneyItem} from '../../services/accountTaxJourney';
+import {formattedReviewAmount} from '../../services/accountReviewHistory';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 
 const destinations=[
@@ -97,6 +98,9 @@ export const TaxJourney:React.FC=()=>{
               <span className="rounded-lg border border-taxpay-border bg-white px-2 py-1 text-xs font-medium text-taxpay-primary">{status(item.status)}</span>
             </div>
             <p className="mt-2 break-all text-xs text-taxpay-muted">{tr('Request reference','অনুরোধের রেফারেন্স')}: {item.reference}</p>
+            <p className="mt-2 text-sm font-semibold tabular-nums text-taxpay-text">
+              {tr('Requested amount (not paid)','অনুরোধের পরিমাণ (পরিশোধ নয়)')}: {formattedReviewAmount(item.amountMinor,language)}
+            </p>
             <details className="mt-3 text-sm">
               <summary className="min-h-10 cursor-pointer font-semibold text-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
                 {tr('View event details','ঘটনার বিবরণ দেখুন')}
