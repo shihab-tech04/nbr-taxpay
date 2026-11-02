@@ -272,7 +272,7 @@
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
     max-width: 100%;
     margin: .4rem 0 0;
-    font-size: .8125rem;
+    font-size: 14px;
     line-height: 1.5;
     white-space: nowrap;
   }
@@ -303,7 +303,7 @@
   .public-hero-carousel__slide.public-information-hero .public-guest-actions .public-guest-action {
     min-height: 48px;
     padding: .6rem .75rem;
-    font-size: .8rem;
+    font-size: 14px;
     line-height: 1.4;
   }
 }

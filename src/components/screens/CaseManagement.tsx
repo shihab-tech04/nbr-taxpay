@@ -66,7 +66,7 @@ export const CaseManagement: React.FC = () => {
                     <span className="font-semibold text-slate-800">{cs.taxpayerName}</span>
                     <span className="font-mono text-slate-500">({cs.tin})</span>
                   </div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-sm text-slate-500">
                     Assessment Year: <strong>{cs.assessmentYear}</strong> | Due Date: {cs.dueDate}
                   </div>
                 </div>
@@ -75,7 +75,7 @@ export const CaseManagement: React.FC = () => {
                   <span className="font-mono-plex font-bold text-sm text-rose-800 bg-rose-50 px-2.5 py-1 rounded border border-rose-200">
                     Disputed: {formatCurrency(cs.disputedAmount, language)}
                   </span>
-                  <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                  <span className="px-2 py-1 rounded text-sm font-bold bg-amber-100 text-amber-800">
                     {cs.status}
                   </span>
                 </div>
@@ -86,7 +86,7 @@ export const CaseManagement: React.FC = () => {
                 <p className="text-slate-600 leading-relaxed">{cs.issue}</p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500 pt-1">
                 <div>
                   Assigned Revenue Officer: <strong className="text-slate-800">{cs.assignedOfficer}</strong>
                 </div>

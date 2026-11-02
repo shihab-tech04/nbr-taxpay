@@ -75,7 +75,7 @@ export const Header: React.FC = () => {
                 <span className="font-serif-fraunces text-xl font-bold tracking-tight text-white group-hover:text-amber-300 transition-colors">
                   {t.portalTitle}
                 </span>
-                <span className="hidden md:inline-block text-[10px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/30 uppercase tracking-widest font-mono">
+                <span className="hidden md:inline-block text-sm bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/30 uppercase tracking-widest font-mono">
                   v11
                 </span>
               </div>

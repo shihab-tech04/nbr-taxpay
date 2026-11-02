@@ -80,7 +80,7 @@ export const Taxpayer360: React.FC = () => {
                 setSelectedKey(k);
                 setTinQuery(p.tin);
               }}
-              className={`px-2.5 py-1 rounded border text-[11px] cursor-pointer ${
+              className={`px-2.5 py-1 rounded border text-sm cursor-pointer ${
                 selectedKey === k ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-slate-100 text-slate-700'
               }`}
             >
@@ -97,21 +97,21 @@ export const Taxpayer360: React.FC = () => {
                 <h2 className="font-serif-fraunces font-bold text-lg text-slate-900">
                   {profile.nameEn}
                 </h2>
-                <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
+                <span className="font-mono text-sm bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
                   {profile.type}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500 font-bengali">{profile.nameBn}</div>
+              <div className="text-sm text-slate-500 font-bengali">{profile.nameBn}</div>
             </div>
 
             <div className="flex items-center gap-3 font-mono">
               <div>
-                <span className="text-slate-400 block text-[10px]">TIN:</span>
+                <span className="text-slate-400 block text-sm">TIN:</span>
                 <strong className="text-emerald-900 text-sm">{profile.tin}</strong>
               </div>
               {profile.nid && (
                 <div>
-                  <span className="text-slate-400 block text-[10px]">NID:</span>
+                  <span className="text-slate-400 block text-sm">NID:</span>
                   <strong className="text-slate-800 text-sm">{profile.nid}</strong>
                 </div>
               )}
@@ -134,7 +134,7 @@ export const Taxpayer360: React.FC = () => {
               {profile.representativeScope?.isAuthorized ? (
                 <div className="text-amber-800 font-medium">
                   Authorized: {profile.representativeScope.representativeName}
-                  <div className="text-[10px] text-slate-500">Exp: {profile.representativeScope.mandateExpiryDate}</div>
+                  <div className="text-sm text-slate-500">Exp: {profile.representativeScope.mandateExpiryDate}</div>
                 </div>
               ) : (
                 <span className="text-slate-600">Direct Taxpayer Self-Management</span>
@@ -163,7 +163,7 @@ export const Taxpayer360: React.FC = () => {
                   <span className="font-mono-plex font-bold text-emerald-950">{rcpt.challanNo}</span>
                   <span className="font-mono-plex font-bold text-slate-900">{formatCurrency(rcpt.totalAmount, language)}</span>
                 </span>
-                <span className="flex items-center justify-between text-[11px] text-slate-500">
+                <span className="flex items-center justify-between text-sm text-slate-500">
                   <span><ServiceCategoryTag code={rcpt.paymentCategory}>{CATEGORY_LABELS[rcpt.paymentCategory]?.[language] ?? rcpt.paymentCategory}</ServiceCategoryTag> (AY {rcpt.assessmentYear})</span>
                   <span className="text-emerald-700 font-semibold">{rcpt.treasuryStatus}</span>
                 </span>
@@ -187,8 +187,8 @@ export const Taxpayer360: React.FC = () => {
                     <span className="font-mono-plex font-bold text-slate-900">{cs.caseId}</span>
                     <span className="font-mono-plex font-bold text-rose-800">{formatCurrency(cs.disputedAmount, language)}</span>
                   </div>
-                  <div className="text-[11px] text-slate-700">{cs.issue}</div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                  <div className="text-sm text-slate-700">{cs.issue}</div>
+                  <div className="flex items-center justify-between text-sm text-slate-500 pt-1">
                     <span>Stage: <strong>{cs.stage}</strong></span>
                     <span className="font-semibold text-amber-800">{cs.status}</span>
                   </div>

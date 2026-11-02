@@ -89,17 +89,17 @@ export const CorrectionQueue: React.FC = () => {
             • <strong>Approver (Commissioner of Taxes):</strong> Exercises Section 296 administrative power to sanction ledger migration.
           </p>
           <div className="pt-1 flex items-center gap-2">
-            <span className="text-slate-500 text-[11px]">Simulate role for testing:</span>
+            <span className="text-slate-500 text-sm">Simulate role for testing:</span>
             <button
               onClick={() => setUserRole('OFFICER_REVIEWER')}
-              className="text-[11px] underline font-semibold text-emerald-800 hover:text-emerald-950 cursor-pointer"
+              className="text-sm underline font-semibold text-emerald-800 hover:text-emerald-950 cursor-pointer"
             >
               Switch to Reviewer
             </button>
             <span className="text-slate-300">|</span>
             <button
               onClick={() => setUserRole('OFFICER_APPROVER')}
-              className="text-[11px] underline font-semibold text-emerald-800 hover:text-emerald-950 cursor-pointer"
+              className="text-sm underline font-semibold text-emerald-800 hover:text-emerald-950 cursor-pointer"
             >
               Switch to Approver
             </button>
@@ -120,7 +120,7 @@ export const CorrectionQueue: React.FC = () => {
                       <span className="text-slate-400">•</span>
                       <span className="font-mono-plex font-bold text-emerald-900">{corr.challanNo}</span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-sm text-slate-500">
                       Taxpayer: <strong className="text-slate-800">{corr.taxpayerName}</strong> (TIN: {corr.taxpayerTin})
                     </div>
                   </div>
@@ -137,21 +137,21 @@ export const CorrectionQueue: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg">
                   <div>
-                    <span className="text-slate-500 block text-[11px]">Requested Amendment:</span>
+                    <span className="text-slate-500 block text-sm">Requested Amendment:</span>
                     <strong className="text-slate-800">AY {corr.currentAssessmentYear}</strong> ➔ <strong className="text-emerald-800 font-bold">AY {corr.proposedAssessmentYear}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[11px]">Jurisdiction Migration:</span>
+                    <span className="text-slate-500 block text-sm">Jurisdiction Migration:</span>
                     <span>{corr.currentCircle} ➔ {corr.proposedCircle}</span>
                   </div>
                 </div>
 
-                <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-[11px]">
+                <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-sm">
                   <strong>Reason:</strong> {corr.reason}
                 </p>
 
                 {/* Audit trail of remarks */}
-                <div className="space-y-1 text-[11px] text-slate-600">
+                <div className="space-y-1 text-sm text-slate-600">
                   {corr.makerRemarks && <div>• <strong>Maker Remarks:</strong> {corr.makerRemarks}</div>}
                   {corr.reviewerRemarks && <div>• <strong>Reviewer Remarks:</strong> {corr.reviewerRemarks}</div>}
                   {corr.approverRemarks && <div className="text-emerald-800 font-semibold">• <strong>Approver Sanction:</strong> {corr.approverRemarks}</div>}

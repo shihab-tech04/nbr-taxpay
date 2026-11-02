@@ -24,7 +24,7 @@ export const DemoNoticeBanner: React.FC = () => {
           <span>v11 Route Parity Register (29/29)</span>
         </button>
         <span className="text-amber-800/80">|</span>
-        <span className="font-mono text-[11px] text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300">
+        <span className="font-mono text-sm text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300">
           SHA-256: f99f15...da7b
         </span>
       </div>

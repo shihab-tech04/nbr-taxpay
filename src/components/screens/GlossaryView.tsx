@@ -76,17 +76,17 @@ export const GlossaryView: React.FC = () => {
                     {item.termEn}
                   </h3>
                   {item.acronym && (
-                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">
+                    <span className="font-mono text-sm bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">
                       {item.acronym}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-semibold">
+                <span className="text-sm font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-semibold">
                   {item.category}
                 </span>
               </div>
 
-              <div className="text-[12px] text-emerald-900 font-bengali font-semibold">
+              <div className="text-sm text-emerald-900 font-bengali font-semibold">
                 {item.termBn}
               </div>
 
@@ -95,7 +95,7 @@ export const GlossaryView: React.FC = () => {
               </p>
 
               {item.actReference && (
-                <div className="text-[10px] text-slate-400 font-mono">
+                <div className="text-sm text-slate-400 font-mono">
                   Reference: {item.actReference}
                 </div>
               )}

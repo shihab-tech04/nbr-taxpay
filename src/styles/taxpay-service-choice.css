@@ -1718,7 +1718,7 @@
   border-radius: 999px;
   background: var(--citizen-border);
   color: var(--citizen-primary-dark);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
 }
 .other-tax-taxpayer-chip[aria-pressed="true"] .other-tax-taxpayer-chip__count {
@@ -1733,7 +1733,7 @@
   border-radius: 50%;
   color: #fff;
   background: var(--color-taxpay-form-error);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
 }
 .other-tax-taxpayer-chip[data-invalid="true"]:not([aria-pressed="true"]) { border-color: var(--color-taxpay-form-error); }
@@ -1990,7 +1990,7 @@
     gap: 12px;
     border-top: 1px solid var(--citizen-border);
     padding: 6px 0;
-    font-size: 13px;
+    font-size: 14px;
   }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary dt {
     color: var(--citizen-muted);

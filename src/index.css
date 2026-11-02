@@ -53,6 +53,9 @@
 
 /* Citizen typography contract: both Public and Taxpayer; officer selectors excluded. */
 @theme {
+  /* In Tailwind v4, text-xs also follows the 14px minimum citizen type contract. */
+  --text-xs: .875rem;
+  --text-xs--line-height: 1.4;
   --taxpay-type-body: 1rem;
   --taxpay-type-helper: .875rem;
   --taxpay-type-h1: 1.75rem;

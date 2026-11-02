@@ -296,7 +296,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
             {/* WITHHOLDING SPECIFIC SEPARATION */}
             {receipt.isWithholding && (
-              <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] space-y-1">
+              <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-sm space-y-1">
                 <span className="font-bold text-amber-900 block flex items-center gap-1">
                   <Info className="w-3.5 h-3.5 text-amber-700" />
                   {labels.withholdingTitle}
@@ -320,12 +320,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               {receipt.items.map((item, idx) => (
                 <article key={idx} className="p-3 space-y-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-700">{labels.headCode}</p>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-slate-700">{labels.headCode}</p>
                     <p className="break-all font-mono-plex text-xs font-semibold text-emerald-900">{item.economicCode}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold leading-snug text-slate-900">{itemName(item)}</h4>
-                    {item.note && <p className="mt-1 break-words text-[11px] leading-snug text-slate-600">{item.note}</p>}
+                    {item.note && <p className="mt-1 break-words text-sm leading-snug text-slate-600">{item.note}</p>}
                   </div>
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-200 pt-3 text-xs">
                     <div><dt className="text-slate-700">{labels.tax}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.taxAmount, language)}</dd></div>
@@ -365,7 +365,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                       <div className="font-medium">
                         {itemName(item)}
                       </div>
-                      {item.note && <div className="text-[11px] text-slate-700 italic">{item.note}</div>}
+                      {item.note && <div className="text-sm text-slate-700 italic">{item.note}</div>}
                     </td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.taxAmount, language)}</td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.penaltyAmount, language)}</td>

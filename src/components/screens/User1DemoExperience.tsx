@@ -138,7 +138,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const availableHistoryMonths=[...new Set(scoped.map(x=>x.date.slice(0,7)))].sort();
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
-  const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-[11px] font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
+  const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-sm font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
   const sub=(desc:string,bengali:string)=><p className="mt-1 text-sm leading-6 text-slate-500">{tr(desc,bengali)}</p>;
   const card=(title:string,titleBn:string,value:string,subtitle:string,subtitleBn:string)=><article className={panel}>
     <p className="text-xs font-medium text-slate-500">{tr(title,titleBn)}</p><p className="mt-2 text-xl font-semibold text-slate-800">{value}</p>{sub(subtitle,subtitleBn)}
@@ -335,7 +335,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
             <div className="taxpayer-monthly-chart h-40 items-end gap-1 border-b border-taxpay-border pb-1 sm:gap-2"
               role="group" aria-label={tr(...labels[chartKind])+': '+monthKeys.map((key,i)=>monthLabel(key,true)+' '+money(monthValues[i])).join('; ')}>
               {monthValues.map((v,i)=><div key={monthKeys[i]} className="flex min-w-0 h-full flex-col items-center justify-end gap-1">
-                <p className="min-h-4 text-[10px] tabular-nums text-taxpay-muted">{v?Math.round(v/1000)+'k':''}</p>
+                <p className="min-h-4 text-sm tabular-nums text-taxpay-muted">{v?Math.round(v/1000)+'k':''}</p>
                 {v>0?
                   <button type="button" className="taxpayer-monthly-bar w-full max-w-10 rounded-t bg-taxpay-secondary"
                     aria-label={tr(...labels[chartKind])+', '+monthLabel(monthKeys[i],true)+': '+money(v)}

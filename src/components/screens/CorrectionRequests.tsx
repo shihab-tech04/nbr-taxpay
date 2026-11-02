@@ -242,7 +242,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
                   <span className="text-slate-400">•</span>
                   <span className="font-mono-plex text-taxpay-dark">{corr.challanNo}</span>
                 </div>
-                <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                <span className={`px-2.5 py-0.5 rounded text-sm font-bold ${
                   corr.workflowStage === 'APPROVER_FINALIZED' ? 'bg-emerald-100 text-emerald-800' :
                   corr.workflowStage === 'REVIEWER_CHECKED' ? 'bg-indigo-100 text-indigo-800' :
                   corr.workflowStage === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
@@ -254,21 +254,21 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Amendment:</span>
+                  <span className="text-slate-400 block text-sm">Amendment:</span>
                   <strong>AY {corr.currentAssessmentYear}</strong> ➔ <strong className="text-emerald-800">AY {corr.proposedAssessmentYear}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Jurisdiction:</span>
+                  <span className="text-slate-400 block text-sm">Jurisdiction:</span>
                   <span>{corr.currentCircle} ➔ {corr.proposedCircle}</span>
                 </div>
               </div>
 
-              <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-[11px]">
+              <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-sm">
                 {corr.reason}
               </p>
 
               {corr.approverRemarks && (
-                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-taxpay-dark">
+                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-sm text-taxpay-dark">
                   <strong>Review note:</strong> {corr.approverRemarks}
                 </div>
               )}

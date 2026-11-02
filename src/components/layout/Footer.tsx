@@ -22,7 +22,7 @@ export const Footer: React.FC = () => {
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">{language === 'bn' ? 'স্বতন্ত্র কর পরিশোধ ওয়ার্কস্পেস' : 'Independent tax payment workspace'}</p>
             <div className="pt-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-1 rounded border border-emerald-800">
+              <span className="inline-flex items-center gap-1.5 text-sm font-mono text-emerald-400 bg-emerald-950/80 px-2 py-1 rounded border border-emerald-800">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>v11 Migration Architecture</span>
               </span>

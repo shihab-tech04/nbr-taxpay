@@ -438,7 +438,7 @@
     min-height: 52px;
     padding: 4px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 16px;
     color: var(--color-taxpay-muted);
   }
@@ -462,7 +462,7 @@
     padding: 4px 6px;
     gap: 2px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 16px;
     background: var(--color-taxpay-primary);
   }

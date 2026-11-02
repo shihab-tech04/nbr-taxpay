@@ -1379,22 +1379,22 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                             {language === 'bn' ? head.nameBn : head.nameEn}
                           </span>
                           {isBlocked && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
+                            <span className="inline-flex items-center gap-1 text-sm font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
                               <Lock className="w-3 h-3" />
                               {copy.blocked}
                             </span>
                           )}
                         </div>
-                        <div className={`text-[11px] text-slate-500 ${language === 'bn' ? '' : 'font-bengali'}`} lang={language === 'bn' ? 'en' : 'bn'}>
+                        <div className={`text-sm text-slate-500 ${language === 'bn' ? '' : 'font-bengali'}`} lang={language === 'bn' ? 'en' : 'bn'}>
                           {language === 'bn' ? head.nameEn : head.nameBn}
                         </div>
                         {head.rateNote && (
-                          <div className="text-[11px] text-emerald-800 font-medium">
+                          <div className="text-sm text-emerald-800 font-medium">
                             {copy.note}: <span lang="en">{head.rateNote}</span>
                           </div>
                         )}
                         {head.blockedReason && (
-                          <div lang="en" className="text-[11px] text-rose-700 font-medium">
+                          <div lang="en" className="text-sm text-rose-700 font-medium">
                             {head.blockedReason}
                           </div>
                         )}

@@ -53,7 +53,7 @@ export const ArchitectureView: React.FC = () => {
               <Cpu className="w-4 h-4 text-amber-400" />
               <span>1. Client Ingress Layer</span>
             </div>
-            <ul className="space-y-2 text-slate-300 text-[11px]">
+            <ul className="space-y-2 text-slate-300 text-sm">
               <li className="p-2 rounded bg-slate-800/80">
                 <strong className="text-white block">Public Guest Checkout</strong>
                 No auth required; validates 12-digit e-TIN and economic head codes.
@@ -75,7 +75,7 @@ export const ArchitectureView: React.FC = () => {
               <Server className="w-4 h-4 text-emerald-400" />
               <span>2. Core Domain Engine</span>
             </div>
-            <ul className="space-y-2 text-emerald-100 text-[11px]">
+            <ul className="space-y-2 text-emerald-100 text-sm">
               <li className="p-2 rounded bg-emerald-900/60">
                 <strong className="text-white block">170 Payment-Head Engine</strong>
                 Validates ITA 2023 vs ITO 1984 sections; locks blocked heads (#5, #150).
@@ -97,7 +97,7 @@ export const ArchitectureView: React.FC = () => {
               <Landmark className="w-4 h-4 text-teal-400" />
               <span>3. Statutory External Adapters</span>
             </div>
-            <ul className="space-y-2 text-slate-300 text-[11px]">
+            <ul className="space-y-2 text-slate-300 text-sm">
               <li className="p-2 rounded bg-slate-800/80">
                 <strong className="text-white block">A-Challan / Sonali Bank API</strong>
                 Posts to Treasury Account 1-1141-XXXX-XXXX & scrolls challan token.

@@ -232,7 +232,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             <tbody className="divide-y divide-taxpay-border">{visible.map(e=><tr key={e.id} className="hover:bg-taxpay-light">
               <td className="whitespace-nowrap p-3">{dateTime(e.occurredAt,language)}</td>
               <td className="p-3"><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
-                {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button></td>
+                {e.title}<span className="mt-1 block break-all text-sm font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-sm font-normal text-taxpay-muted">{e.reference||'—'}</span></button></td>
               <td className="p-3">{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></td>
               <td className="p-3">{e.title}<span className="block text-taxpay-muted">{e.component}</span></td>
               <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'}</td>

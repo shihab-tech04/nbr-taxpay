@@ -220,7 +220,7 @@ export const IncidentReporting: React.FC = () => {
                   <span className="text-slate-400">•</span>
                   <span className="text-slate-500">{inc.reportDate}</span>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                <span className={`px-2 py-0.5 rounded text-sm font-bold ${
                   inc.status === 'RECONCILED' ? 'bg-emerald-100 text-emerald-800' :
                   inc.status === 'INVESTIGATING' ? 'bg-amber-100 text-amber-800' :
                   'bg-blue-100 text-blue-800'
@@ -244,12 +244,12 @@ export const IncidentReporting: React.FC = () => {
                 </div>
               </div>
 
-              <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-[11px]">
+              <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-sm">
                 {inc.description}
               </p>
 
               {inc.officerFindings && (
-                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-taxpay-dark">
+                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-sm text-taxpay-dark">
                   <strong>Officer Resolution Findings:</strong> {inc.officerFindings}
                 </div>
               )}

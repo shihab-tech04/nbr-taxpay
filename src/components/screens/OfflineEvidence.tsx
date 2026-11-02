@@ -180,14 +180,14 @@ export const OfflineEvidence: React.FC = () => {
                   <td className="px-3 py-2 font-mono-plex font-bold text-emerald-950">{item.paperChallanNo}</td>
                   <td className="px-3 py-2 text-slate-800">
                     <div>{item.taxpayerName}</div>
-                    <div className="font-mono text-[10px] text-slate-500">{item.tin}</div>
+                    <div className="font-mono text-sm text-slate-500">{item.tin}</div>
                   </td>
                   <td className="px-3 py-2 text-slate-600">{item.bankName}</td>
                   <td className="px-3 py-2 text-right font-mono-plex font-bold text-slate-900">
                     {formatCurrency(item.amount, language)}
                   </td>
                   <td className="px-3 py-2 text-center">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <span className={`px-2 py-0.5 rounded text-sm font-bold ${
                       item.status === 'VERIFIED_SCROLLED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                     }`}>
                       {item.status}
