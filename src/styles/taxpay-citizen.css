@@ -1301,7 +1301,7 @@
 }
 .public-report-card form {display:grid;gap:.55rem;padding:1.5rem;}
 .public-report-card label {margin:.35rem 0 0;color:var(--citizen-text);font-size:.86rem;font-weight:650;}
-.public-report-card select,.public-report-card textarea {
+.public-report-card input,.public-report-card select,.public-report-card textarea {
   width:100%;min-height:46px;border:1px solid var(--citizen-border);
   background:var(--citizen-surface);color:var(--citizen-text);
   border-radius:.55rem;padding:.75rem;font-size:.89rem;
@@ -1322,6 +1322,9 @@
 .public-report-review dt {margin:0 0 .25rem;font-size:.8rem;font-weight:650;color:var(--citizen-muted);}
 .public-report-review dd {margin:0;font-size:.92rem;line-height:1.6;color:var(--citizen-text);white-space:pre-wrap;overflow-wrap:anywhere;}
 .public-report-error {margin:1rem 0 0;color:#a02525;font-weight:600;line-height:1.5;}
+.public-report-tracking {margin-top:var(--space-4,1rem);}
+.public-report-tracking h2 {margin:0 0 .35rem;color:var(--citizen-text);font-size:1.1rem;font-weight:700;}
+
 .public-report-submit:disabled,.public-report-edit:disabled {opacity:.55;cursor:not-allowed;}
 .public-report-actions {flex-wrap:wrap;}
 
