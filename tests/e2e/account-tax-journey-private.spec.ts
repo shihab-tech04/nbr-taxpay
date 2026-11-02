@@ -109,3 +109,20 @@ test('owner SQL payment events show beneficiary allocations with the same refere
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByTestId('account-tax-journey')).toContainText(request.id);
 });
+
+test('unbound signed-in history retains review activity and SQL-owned beneficiary receipts',async({page})=>{
+  await mockAccount(page,true,[sharedPayment]);
+  await page.goto('/?action=history');
+  const history=page.getByTestId('beneficiary-payment-history');
+  await expect(history).toBeVisible();
+  await expect(history.getByRole('row')).toHaveCount(3);
+  await expect(history).toContainText('Beneficiary A');
+  await expect(history).toContainText('Beneficiary B');
+  await expect(history).toContainText(sharedPayment.id);
+  await expect(history).toContainText('Tax head 68A');
+  await expect(history).toContainText('Tax head 68B');
+  await history.getByRole('searchbox',{name:'Search beneficiary, TIN or payment reference'}).fill('012345678902');
+  await expect(history.getByRole('row')).toHaveCount(2);
+  await expect(history).not.toContainText('Beneficiary A');
+  await expect(history).toContainText('Beneficiary B');
+});
