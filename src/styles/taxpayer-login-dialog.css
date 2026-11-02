@@ -54,6 +54,15 @@
   font: inherit;
 }
 .taxpayer-login-recovery-row button:hover { text-decoration: underline; }
+.taxpayer-login-email-entry { margin: .5rem 0 1rem; text-align: center; }
+.taxpayer-login-email-entry button {
+  min-height: 44px; padding: .55rem .8rem; border: 0; background: transparent;
+  color: var(--color-taxpay-primary); font: inherit; font-weight: 650;
+}
+.taxpayer-login-email-entry button:hover { text-decoration: underline; }
+.taxpayer-login-email-entry button:focus-visible {
+  outline: 3px solid var(--color-taxpay-primary); outline-offset: 2px; border-radius: 4px;
+}
 .taxpayer-login-recovery {
   padding: 12px 14px;
   margin: -16px 0 22px;
