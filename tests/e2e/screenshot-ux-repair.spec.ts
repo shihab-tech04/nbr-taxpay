@@ -57,6 +57,7 @@ test('mobile event ledger preserves readable recorded history without inventing 
   await page.goto('/?action=ledger');
   const ledger=page.getByTestId('event-tax-ledger');
   await expect(ledger).toBeVisible();
+  await expect(page.getByText('No ledger records are available for this account yet.')).toHaveCount(0);
   await expect(ledger.getByTestId('event-ledger-table')).toBeHidden();
   const entry=ledger.getByRole('listitem').first();
   await expect(entry).toBeVisible();
