@@ -2525,6 +2525,34 @@
 .beneficiary-list-picker__edit {display:grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px;border:0;border-radius:8px;background:transparent;color:var(--citizen-primary-dark);cursor:pointer;}
 .beneficiary-list-picker__edit:hover {background:var(--citizen-primary-light);}
 .beneficiary-list-edit__footer {width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+/* One compact, connected table surface: the record count/select-all stays above,
+   and the column labels sit directly against the records, never in a floating strip. */
+.beneficiary-directory__count { margin: 10px 0 8px; min-height: 32px; }
+.beneficiary-directory__select-all { min-height: 32px; }
+.beneficiary-directory__table {
+  min-width: 0; overflow: hidden;
+  border: 1px solid var(--color-taxpay-border);
+  border-radius: 10px;
+  background: var(--color-taxpay-surface);
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {
+  min-height: 40px;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--color-taxpay-border);
+  background: var(--color-taxpay-surface-subtle);
+  box-sizing: border-box;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table > ul {
+  margin: 0; padding: 0; list-style: none;
+  border: 0; border-radius: 0; overflow: visible;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
+  min-height: 76px; padding-block: 12px;
+}
+@media (max-width: 700px) {
+  .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns { display: none; }
+  .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row { min-height: 0; }
+}
 /* Beneficiary records now use the same quiet, bordered record-list pattern as
    Payments & activity. Keep labels, group actions, and bulk selection intact. */
 /* Beneficiaries and Payments & activity share the same quiet, scannable

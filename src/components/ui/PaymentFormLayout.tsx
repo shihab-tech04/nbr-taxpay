@@ -102,6 +102,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
         {year && <div><dt>{bn ? 'করবর্ষ' : 'Assessment year'}</dt><dd>{year}</dd></div>}
         {head && <div><dt>{bn ? 'খাত' : 'Payment head'}</dt><dd>{head}</dd></div>}
       </dl>}
+      {Boolean(breakdown?.length || groupedBreakdown?.length) && <div className="payment-form-summary__scroll-content" data-testid="payment-calculation-scroll-area">
       {breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
         {breakdown.slice(0, 6).map(renderBreakdownEntry)}
@@ -159,6 +160,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
         </details>;
         })}
       </section>}
+      </div>}
       {note && <p className="payment-form-summary__notice">{note}</p>}
     </aside>
   );

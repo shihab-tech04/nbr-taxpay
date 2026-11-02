@@ -386,6 +386,7 @@ export function Beneficiaries(){
           </div>:<>
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
+              <div className="beneficiary-directory__table">
               <div className="taxpayer-transaction-list__columns beneficiary-directory__columns" aria-hidden="true">
                 <span>{tr('Beneficiary','উপকারভোগী')}</span>
                 <span>{tr('Actions','কার্যক্রম')}</span>
@@ -419,6 +420,7 @@ export function Beneficiaries(){
                   </div>
                 </li>)}
               </ul>
+              </div>
             </div>
           </>}
         </>}
