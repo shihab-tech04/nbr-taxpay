@@ -56,3 +56,23 @@ test('legacy URL offers account access without fabricated sign-out',async({page}
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop'))
    .toHaveAttribute('href','?action=taxpayer_login');
 });
+
+test('User 1 login reveals both dashboard phases and retains them after refresh',async({page})=>{
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(page).not.toHaveURL(/demoUser=/);
+  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Needs review'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By assessment year'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Current tax position'})).toBeVisible();
+  await expect(page.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
+  await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('৳ 25,000');
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('৳ 25,000');
+});
+
