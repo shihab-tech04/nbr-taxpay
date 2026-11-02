@@ -30,9 +30,20 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await expect(showAll).toBeVisible();
   await showAll.click();
   await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(40);
+  await expect(first).not.toContainText('All heads listed — scroll to review');
+  const headList = first.getByTestId('selected-taxpayer-head-list');
+  await expect(headList).toHaveAttribute('role', 'region');
+  await expect(headList).toHaveAttribute('tabindex', '0');
+  await expect(headList).toHaveCSS('overflow-y', 'auto');
+  const dimensions = await headList.evaluate(element => ({
+    scrollHeight: element.scrollHeight, clientHeight: element.clientHeight
+  }));
+  expect(dimensions.scrollHeight).toBeGreaterThan(dimensions.clientHeight + 20);
+  await headList.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect.poll(() => headList.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   const last = first.locator('.payment-form-summary__taxpayer-item').last();
-  await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
+  await expect(second.locator('summary')).toBeVisible();
   await first.getByRole('button', { name: 'Show first 4 heads' }).click();
   await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(4);
   await expect(second.locator('summary')).toBeVisible();

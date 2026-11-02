@@ -15,6 +15,8 @@ type Props = {
   ownerUid: string;
   language: 'en'|'bn';
   onNavigate: (route:DashboardRoute)=>void;
+  dashboardYear?: string;
+  onDashboardYearChange?: (year:string)=>void;
 };
 type State = {ownerUid:string|null;phase:'loading'|'ready'|'error';counts:AccountActivityCounts|null};
 const initial:State={ownerUid:null,phase:'loading',counts:null};
@@ -30,7 +32,7 @@ const initialScenario:ScenarioState={ownerUid:null,phase:'loading',profileId:nul
  * Auth-UID-owned NON-FINANCIAL workflow counts. No e-TIN binding is required.
  * Never use these records to imply a payment, assessed demand or tax credit.
  */
-export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNavigate})=>{
+export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNavigate,dashboardYear,onDashboardYearChange})=>{
   const [state,setState]=useState<State>(initial);
   const [scenario,setScenario]=useState<ScenarioState>(initialScenario);
   const [assessmentYear,setAssessmentYear]=useState('');
@@ -86,7 +88,10 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     return match?`${match[1]}-${match[2].slice(-2)}`:year;
   });
   const availableYears=[...new Set([...storedYears,...knownYears])].filter(year=>/^20\d{2}-\d{2}$/.test(year)).sort((a,b)=>b.localeCompare(a));
-  const selectedYear=availableYears.includes(assessmentYear)?assessmentYear:(availableYears[0]??'');
+  const dashboardYearShort=dashboardYear&&/^20\d{2}-20\d{2}$/.test(dashboardYear)
+    ? dashboardYear.slice(0,5)+dashboardYear.slice(-2) : dashboardYear;
+  const selectedYear=dashboardYearShort&&availableYears.includes(dashboardYearShort)
+    ? dashboardYearShort : availableYears.includes(assessmentYear)?assessmentYear:(availableYears[0]??'');
   const yearTransactions=selectedYear
     ? filterPrivateDashboardTransactionsByYear(visibleScenario.transactions,selectedYear) : [];
   const accountName=user?.id===ownerUid&&typeof user.user_metadata?.taxpay_display_name==='string'
@@ -210,7 +215,10 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         <div className="flex flex-wrap items-end gap-2">
           {visibleScenario.phase!=='loading'&&visibleScenario.phase!=='error'&&availableYears.length>0&&<label className="flex flex-col gap-1 text-xs font-medium text-taxpay-muted">
             {tr('Assessment year','করবর্ষ')}
-            <select aria-label={tr('Assessment year','করবর্ষ')} value={selectedYear} onChange={event=>setAssessmentYear(event.target.value)}
+            <select aria-label={tr('Assessment year','করবর্ষ')} value={selectedYear} onChange={event=>{
+              setAssessmentYear(event.target.value);
+              if(onDashboardYearChange){const [start,end]=event.target.value.split('-');onDashboardYearChange(start+'-20'+end);}
+            }}
               className="min-h-10 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
               {availableYears.map(year=><option key={year} value={year}>{year}</option>)}
             </select>

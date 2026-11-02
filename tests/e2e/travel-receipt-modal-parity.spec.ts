@@ -125,3 +125,46 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await dialog.getByRole('button', { name: 'Back' }).click();
   await expect(dialog.getByLabel('Passenger name')).toHaveValue('TEST TRAVELLER');
 });
+
+
+test('Travel Tax uses one total with cheque-style words and no duplicate payable panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const dialog = page.getByRole('dialog', { name: 'Travel tax' });
+  const calculation = dialog.locator('.travel-flow__summary');
+  await expect(calculation.getByTestId('travel-payment-total')).toHaveText('—');
+  await expect(calculation.getByTestId('travel-total-in-words')).toHaveCount(0);
+
+  await dialog.locator('#travel-tax-route-1').check();
+  await expect(calculation.getByTestId('travel-payment-total')).toContainText('2,000');
+  const words = calculation.getByTestId('travel-total-in-words');
+  await expect(words).toHaveText('Two Thousand Taka only');
+  const [totalBox, wordsBox] = await Promise.all([
+    calculation.getByTestId('travel-payment-total').boundingBox(),
+    words.boundingBox()
+  ]);
+  expect(totalBox).not.toBeNull();
+  expect(wordsBox).not.toBeNull();
+  expect(wordsBox!.y).toBeGreaterThanOrEqual(totalBox!.y + totalBox!.height);
+
+  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await dialog.getByLabel('Passenger name').fill('TEST TRAVELLER');
+  await dialog.getByLabel('Passport number').fill('TRAVEL123');
+  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
+  await dialog.getByLabel('Travel date').fill('2026-11-20');
+  await dialog.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
+  await expect(dialog.locator('.travel-flow__purpose-total')).toHaveCount(0);
+  await expect(dialog.locator('.travel-flow__review').getByText('Payment method', { exact: true })).toHaveCount(0);
+  await expect(words).toHaveText('Two Thousand Taka only');
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(calculation).toBeHidden();
+  const mobileSummary = dialog.getByTestId('mobile-payment-calculation');
+  await expect(mobileSummary).toBeVisible();
+  await expect(mobileSummary.locator('summary')).toContainText('2,000');
+  await mobileSummary.locator('summary').click();
+  await expect(mobileSummary.getByTestId('travel-mobile-total-in-words')).toContainText('Two Thousand Taka only');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});

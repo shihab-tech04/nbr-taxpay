@@ -84,7 +84,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts tests/e2e/beneficiaries-activity-parity.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
+        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts tests/e2e/beneficiaries-activity-parity.spec.ts tests/e2e/beneficiaries-bulk-remove.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
 
       - name: Upload Beneficiaries English and Bengali screenshots
         if: always()
@@ -159,7 +159,7 @@ jobs:
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
+        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
 
       - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
         env:
@@ -185,7 +185,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts
+        run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts tests/e2e/account-tax-journey-private.spec.ts
 
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()
@@ -297,6 +297,7 @@ jobs:
       - name: Verify deployed private-route authentication boundary in Chromium
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+          TAXPAY_REQUIRE_BENEFICIARIES_MODAL: '1'
         run: node scripts/verify-live-public-auth.mjs
 
       - name: Verify deployed public record search and sample lookup in Chromium

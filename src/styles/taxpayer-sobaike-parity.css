@@ -138,7 +138,7 @@
   border: 1px solid var(--color-taxpay-border);
 }
 
-/* Sobaike's 900px centered reading column and responsive side gutters. */
+/* Preserve the approved centered reading column below the large-desktop breakpoint. */
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > * {
   max-width: 900px;
   min-width: 0;
@@ -148,6 +148,22 @@
   font-family: var(--font-text);
   color: var(--color-taxpay-text);
   line-height: 1.625;
+}
+/* Use available space on large desktops; never cap signed-in content at a fixed 900/1150px.
+ * The rail, public pages, login gate, transaction flows and <1400px layouts stay untouched. */
+@media (min-width: 1400px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main {
+    padding-inline: clamp(24px, 2.5vw, 64px);
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > :not(.citizen-account-gate):not(.taxpayer-reference-secure) {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace {
+    width: 100%;
+    max-width: none;
+  }
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-slate-500"],
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace [class~="text-slate-600"] {

@@ -67,16 +67,22 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}): Pr
   const capability = getCapability();
   const endpoint = `${url.replace(/\/$/, '')}/functions/v1/taxpay-guest-beneficiaries`;
   const send = async (nextAction: string, nextFields: Record<string, unknown> = {}) => {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'apikey': publishableKey,
-        'content-type': 'application/json',
-        'x-taxpay-guest-capability': capability.value,
-      },
-      cache: 'no-store',
-      body: JSON.stringify({ action: nextAction, ...nextFields }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'apikey': publishableKey,
+          'content-type': 'application/json',
+          'x-taxpay-guest-capability': capability.value,
+        },
+        cache: 'no-store',
+        body: JSON.stringify({ action: nextAction, ...nextFields }),
+      });
+    } catch {
+      // Never discard or rotate the capability on a transient network failure.
+      throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
+    }
     const result = await response.json().catch(() => null) as { success?: boolean; data?: T; code?: string } | null;
     if (!response.ok || !result?.success) {
       if (response.status === 410 || result?.code === 'GUEST_SESSION_UNAVAILABLE') {
@@ -106,11 +112,28 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}): Pr
   return send(action, fields);
 }
 
+/** Only idempotent reads retry once on transport/service interruption. A failed
+ * write is never replayed automatically; the original capability is preserved.
+ */
+async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unknown>={}):Promise<T[]> {
+  for(let attempt=0;attempt<2;attempt++){
+    try {
+      const rows=await post<T[]>(action,fields);
+      if(!Array.isArray(rows))throw new Error('Saved beneficiary data could not be read. Please retry.');
+      return rows;
+    } catch(error) {
+      const message=error instanceof Error?error.message:'';
+      if(attempt===1||message!=='Guest beneficiaries are temporarily unavailable. Please try again later.')throw error;
+    }
+  }
+  throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
+}
+
 export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
-  const lists = await post<GuestList[]>('lists');
+  const lists = await readGuestPage<GuestList>('lists');
   const people: GuestPerson[] = [];
   for (let offset = 0; ; offset += pageSize) {
-    const page = await post<GuestPerson[]>('people', { offset, limit: pageSize });
+    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
     people.push(...page);
     if (page.length < pageSize) break;
   }

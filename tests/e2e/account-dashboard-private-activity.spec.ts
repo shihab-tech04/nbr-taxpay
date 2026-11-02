@@ -106,13 +106,56 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(0)).toContainText('Income tax liability');
   await expect(financialCards.nth(0)).toContainText('—');
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
+  const phase=page.getByTestId('authenticated-dashboard-v11');
+  await expect(phase).toBeVisible();
+  for (const heading of ['Needs review','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
+    await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
+  }
+  // A signed-in account must use the approved Phase A/B visual sections, but
+  // private scenario allocations never become government liability or credits.
+  await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('—');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  await expect(phase).not.toContainText('৳ 180,000');
+  // Sample mode is explicit, reversible and never mutates SQL or changes the
+  // meaning of owner-owned activity. It reuses the existing v11 example ledger.
+  const writes:string[]=[];
+  page.on('request',request=>{
+    if(/\/rest\/v1\/(taxpay_payment_requests|taxpay_payment_drafts|taxpay_request_events)/.test(request.url())&&
+       ['POST','PATCH','PUT','DELETE'].includes(request.method()))writes.push(request.url());
+  });
+  const examples=page.getByTestId('dashboard-example-controls');
+  await examples.getByRole('button',{name:'View examples'}).click();
+  await expect(examples).toContainText('not your tax records');
+  await expect(examples.getByRole('button',{name:'Hide examples'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
+  await expect(financialCards.nth(0)).toContainText('৳ 180,000');
+  await expect(financialCards.nth(3)).toContainText('৳ 25,000');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
+  await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('৳ 6,500');
+  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toBeVisible();
+  await phase.getByRole('button',{name:'2024-2025'}).click();
+  await expect(financialCards.nth(3)).toContainText('৳ 10,000');
+  await examples.getByRole('button',{name:'Hide examples'}).click();
+  await expect(examples.getByRole('button',{name:'View examples'})).toHaveAttribute('aria-pressed','false');
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
+  await expect(financialCards.nth(0)).toContainText('—');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  expect(writes).toEqual([]);
+
+  await expect(dashboard).toContainText('৳ 65.50');
+  await expect(dashboard).not.toContainText('৳ 164.50');
+  const yearRow=phase.getByRole('button',{name:'2025-2026'});
+  await yearRow.click();
+  await expect(yearRow).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
+  await expect(dashboard.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-26');
+  await expect(dashboard).toContainText('৳ 34.50');
+  await expect(dashboard).not.toContainText('৳ 65.50');
   await expect(page.getByRole('button',{name:'Review payment options'})).toHaveCount(0);
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('linked scenario profile user2 · Meghna Trading Ltd.');
   await expect(dashboard.getByText('Payment requests')).toBeVisible();
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toBeVisible();
-  await expect(dashboard).toContainText('৳ 65.50');
-  await expect(dashboard).not.toContainText('৳ 164.50');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(dashboard).toContainText('৳ 34.50');
   await expect(dashboard).not.toContainText('৳ 65.50');
@@ -137,6 +180,8 @@ test('ordinary verified account without a taxpayer binding sees no financial sam
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('no taxpayer profile linked');
   await expect(dashboard).toContainText('No payment profile is linked to this application account.');
+  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('—');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-25');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
