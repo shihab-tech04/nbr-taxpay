@@ -54,7 +54,9 @@ test('select all never overflows the pinned desktop calculation', async ({ page 
   const scrollArea = calculation.getByTestId('payment-calculation-scroll-area');
   await expect(scrollArea).toHaveCSS('overflow-y', 'auto');
   await expect(calculation.locator('.payment-form-summary__breakdown')).toHaveCSS('overflow-y', 'visible');
-  await expect(calculation.locator('.payment-form-summary__taxpayers')).toHaveCSS('overflow-y', 'visible');
+  // Grouped taxpayer rows are optional for a single-taxpayer payment.
+  const groups = calculation.locator('.payment-form-summary__taxpayers');
+  if (await groups.count()) await expect(groups).toHaveCSS('overflow-y', 'visible');
   expect(await scrollArea.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(20);
   const lastHead = scrollArea.locator('.payment-form-summary__more-heads-list .payment-form-summary__entry').last();
   await lastHead.scrollIntoViewIfNeeded();
