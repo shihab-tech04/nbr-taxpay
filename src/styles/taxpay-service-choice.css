@@ -1169,6 +1169,20 @@
 .tin-lookup__result p { margin: 0; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 .tin-lookup__details { display: grid; gap: 5px; }
 .tin-lookup__details p { color: var(--citizen-text); }
+/* Shared receipt contacts: desktop two fields per row; narrow screens stack.
+   Name + mobile precede optional email + NBR reference when present. */
+.payment-identity__contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+  align-items: stretch;
+}
+.payment-identity__contact-grid > div { display: flex; flex-direction: column; min-width: 0; }
+.payment-identity__contact-grid > div > label { flex: 1 0 auto; display: flex; align-items: flex-end; }
+.payment-identity__contact-grid > div { min-width: 0; }
+.payment-identity__contact-grid--no-name > .payment-identity__contact-phone { grid-column: 1 / -1; }
+.payment-identity__contact-grid--account { grid-template-columns: minmax(0, 1fr); }
 .payment-identity__receipt-row { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
 .payment-identity__receipt-row > div { min-width: 0; }
 .payment-identity__receipt-row--account { grid-template-columns: minmax(0,1fr); }
@@ -1183,7 +1197,8 @@
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title { font-size: 18px; }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__body { min-height: 0; }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-  .payment-identity__receipt-row { grid-template-columns: 1fr; }
+  .payment-identity__receipt-row,
+  .payment-identity__contact-grid { grid-template-columns: minmax(0,1fr); }
   .tin-lookup__search { padding-inline: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
