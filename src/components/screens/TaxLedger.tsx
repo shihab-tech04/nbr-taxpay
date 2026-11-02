@@ -12,18 +12,20 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 
 function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccountEvent[]{
   return rows.flatMap(tx=>{
-    const distinctYears=[...new Set(tx.allocations.map(a=>a.assessmentYear))];
-    const component=[...new Set(tx.allocations.map(a=>simulationCategoryLabels[a.category]?.en||a.category))].join(', ');
-    const year=distinctYears.length===1?distinctYears[0]:'Multiple years';
-    return tx.events.map(event=>({
-      id:tx.transactionId+':'+event.id,
+    // Each allocation owns its assessment year and amount. A mixed-year payment
+    // must never be hidden under "Multiple years" or counted against the wrong AY.
+    const lines=tx.allocations.length?tx.allocations:[{
+      id:'unallocated',assessmentYear:'Unavailable',amountMinor:tx.totalMinor,category:'UNALLOCATED'
+    }];
+    return tx.events.flatMap(event=>lines.map((line,index)=>({
+      id:tx.transactionId+':'+event.id+':'+line.id+':'+index,
       occurredAt:event.occurredAt,
       code:event.action,
       title:event.action.replaceAll('_',' ').toLowerCase().replace(/^./,c=>c.toUpperCase()),
-      assessmentYear:year,
-      component,
-      amountMinor:tx.totalMinor,
-      // Payment activity, even when mirrored to Office, is NOT authoritative credit.
+      assessmentYear:line.assessmentYear,
+      component:simulationCategoryLabels[line.category as keyof typeof simulationCategoryLabels]?.en||line.category,
+      amountMinor:line.amountMinor,
+      // Recording a payment event never establishes a tax liability or credit.
       effectMinor:null,
       balanceAfterMinor:null,
       actor:'Not recorded',
@@ -33,8 +35,8 @@ function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccount
       reference:tx.id,
       status:tx.state,
       reason:event.note,
-      linkedReferences:[tx.id,tx.transactionId]
-    }));
+      linkedReferences:[tx.id,tx.transactionId,line.id]
+    })));
   });
 }
 function paymentRecord(tx:SimulationTransaction):PaymentLifecycleRecord{
@@ -77,7 +79,7 @@ export const TaxLedger:React.FC=()=>{
           getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary')
         ]);
         const keyed=new Map<string,SimulationTransaction>();
-        [...payer,...beneficiary].forEach(tx=>keyed.set(tx.transactionId,tx));
+        [...beneficiary,...payer].forEach(tx=>keyed.set(tx.transactionId,tx));
         return [...keyed.values()];
       }
       if(previewAccount){
@@ -86,7 +88,7 @@ export const TaxLedger:React.FC=()=>{
           getDemoStoryPaymentHistory(previewAccount.id,'beneficiary')
         ]);
         const keyed=new Map<string,SimulationTransaction>();
-        [...payer,...beneficiary].forEach(tx=>keyed.set(tx.transactionId,tx));
+        [...beneficiary,...payer].forEach(tx=>keyed.set(tx.transactionId,tx));
         return [...keyed.values()];
       }
       return [];
