@@ -39,6 +39,21 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
   if (!response.ok || body.success !== true || body.mirrored !== true || !body.id)
     throw new Error(body.error || 'OFFICE_SYNC_PENDING');
   try { sessionStorage.setItem('taxpay-guest-story-payment', 'true'); } catch { /* optional navigation hint only */ }
+  // Persist the authenticated payer-to-payment link immediately after the SQL
+  // acknowledgement. Do not delay a saved receipt or resubmit a payment when
+  // the separate account-history index is temporarily unavailable; opening
+  // History or Certificates performs the same idempotent claim again.
+  // Client session presence is only an optimization: the SQL RPC independently
+  // verifies auth.uid() and never trusts an arbitrary payer name or TIN.
+  try {
+    const {supabase}=await import('./supabaseClient');
+    if(supabase) {
+      const {data:{session}}=await supabase.auth.getSession();
+      if(session?.access_token) {
+        await supabase.rpc('taxpay_claim_story1_session',{p_session_id:input.sessionId});
+      }
+    }
+  } catch { /* Submitted SQL receipt remains authoritative; history can retry. */ }
   return body as StoryPaymentAcknowledgement;
 }
 

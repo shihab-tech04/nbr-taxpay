@@ -90,6 +90,15 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
    throw new Error('Payment record cannot be certified');
  const d=tx.details??{};
  const method=stringValue(d.paymentMethod);
+ const allocationItems=toAllocationItems(tx);
+ // Do not allow a saved receipt snapshot to bypass beneficiary/amount reconciliation.
+ if(Array.isArray(d.allocations)&&d.allocations.length>0&&!allocationItems)
+  throw new Error('Payment allocations could not be reconciled');
+ const batchId=validCertificateTransactionId(d.batchId)?d.batchId:undefined;
+ const batchItemIndex=Number.isSafeInteger(d.batchItemIndex)&&Number(d.batchItemIndex)>0?Number(d.batchItemIndex):undefined;
+ const batchItemCount=Number.isSafeInteger(d.batchItemCount)&&Number(d.batchItemCount)>0?Number(d.batchItemCount):undefined;
+ const batchInfo=batchId&&batchItemIndex&&batchItemCount&&batchItemIndex<=batchItemCount
+  ? {batchId,batchItemIndex,batchItemCount}: {};
  const snapshot=d.receiptSnapshot;
  if(snapshot&&typeof snapshot==='object'&&!Array.isArray(snapshot)){
   const raw=snapshot as Record<string,unknown>;
@@ -102,13 +111,13 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       createdAt:tx.createdAt,completedAt:tx.createdAt,
       treasuryStatus:'GATEWAY_SUCCESS',
       isSimulatedDemo:true,
+      ...(allocationItems?{allocationItems}:{}),...batchInfo,
       taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
  }
  const category=tx.service as PaymentCategory;
  const total=tx.amountMinor/100;
- const allocationItems=toAllocationItems(tx);
  const allocationYears=Array.from(new Set((allocationItems??[])
   .map(item=>item.assessmentYear).filter(year=>year&&year!=='—')));
  const fallback:ChallanReceipt={
@@ -126,7 +135,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
    method as ChallanReceipt['paymentMethod']:'SIMULATED',
   gatewayTransactionId:tx.id,treasuryStatus:'GATEWAY_SUCCESS',
   taxCreditStatus:category==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
-  createdAt:tx.createdAt,completedAt:tx.createdAt,isSimulatedDemo:true,
+  createdAt:tx.createdAt,completedAt:tx.createdAt,isSimulatedDemo:true,...batchInfo,
  };
  return fallback;
 }
@@ -134,7 +143,7 @@ export async function getConfirmedReceipt(transactionId:string):Promise<ChallanR
  if(!validCertificateTransactionId(transactionId))throw new Error('Invalid transaction reference');
  // The Office feed contains only UI-submitted, SQL-mirrored simulated payments.
  // Page through all rows rather than silently displaying a fixture for a missing record.
- for(let page=1;page<=100;page++){
+ for(let page=1;page<=2000;page++){
   const response=await fetch(OFFICE_API+'/payments?page='+page+'&perPage=100',{cache:'no-store'});
   if(!response.ok)throw new Error('Certificate record service unavailable');
   const envelope=await response.json() as {success:boolean;data:StoredPage};
