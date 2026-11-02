@@ -31,7 +31,18 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
 test('all private deep links fail closed without an authenticated session', async ({ page }) => {
   for (const action of privateRoutes) {
     await page.goto(site + '?action=' + action + '&demoUser=user1');
-    await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' }), action).toBeVisible();
+    if (action === 'beneficiaries') {
+      // The approved single sign-in modal replaces the generic private-workspace gate.
+      // It must not reveal any saved account lists to a signed-out visitor.
+      const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+      await expect(dialog, action).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Sign in with email' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
+      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+      await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+    } else {
+      await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' }), action).toBeVisible();
+    }
     await expect(page.getByTestId('user1-synthetic-workspace'), action).toHaveCount(0);
   }
   // An attacker-supplied browser-history role is not an authentication event.

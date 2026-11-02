@@ -70,6 +70,9 @@ const MainRouter: React.FC = () => {
     validCertificateTransactionId(routeParams.transactionId);
   const privateSampleGate = !publicConfirmedReceipt && !previewAccess &&
     requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
+  // A Beneficiaries deep link requires a real application session or an explicit
+  // browser-local preview sign-in. Never render a separate competing gate card.
+  const beneficiaryLoginRequired = currentRoute === 'beneficiaries' && privateSampleGate && !checkingIdentity;
   // Receipt routes remain deep-linkable, but their UI lives in the shared modal.
   const receiptOverlayRoute = currentRoute === 'verify' || currentRoute === 'payment_details';
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
@@ -79,7 +82,8 @@ const MainRouter: React.FC = () => {
   // The public guide retains the same public navigation for guests and signed-in visitors.
   const taxpayerSupportRoute = false; // Receipt status is now a public modal, not a taxpayer-page shell.
   const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
-    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) || loginOverlay;
+    (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) ||
+    loginOverlay || beneficiaryLoginRequired;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
   // All account-only routes use the same approved taxpayer shell and sidebar.
   const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
@@ -213,7 +217,7 @@ const MainRouter: React.FC = () => {
       </> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
-        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : (
+        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
             <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>
@@ -254,6 +258,11 @@ const MainRouter: React.FC = () => {
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
       {loginOverlay && <TaxpayerLoginDialog />}
+      {beneficiaryLoginRequired && <TaxpayerLoginDialog
+        preservePaymentJourney
+        emailReturnTo={signInReturnRoute}
+        onClose={() => navigate('landing')}
+      />}
       <AuthorizationRequestPopup />
     </div>
   );

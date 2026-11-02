@@ -145,15 +145,27 @@ try {
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+      await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    } else {
+      const login = beneficiaries.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+      await expect(login).toBeVisible({ timeout: 30_000 });
+      await expect(login.getByRole('button', { name: 'Sign in with email' })).toBeVisible();
+    }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
     await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
     beneficiariesUrl.searchParams.set('lang', 'bn');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-    await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+      await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
+      await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+    } else {
+      const login = beneficiaries.getByRole('dialog');
+      await expect(login).toBeVisible({ timeout: 30_000 });
+      await expect(login.getByRole('button', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
+    }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (beneficiaryOverflow > 2) throw new Error(`Live ${name} Beneficiaries gate overflow: ${beneficiaryOverflow}px`);
