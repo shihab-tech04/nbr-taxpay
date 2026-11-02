@@ -193,7 +193,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                   <td className="px-3 py-3">{treasuryLabel(r)}</td>
                   <td className="px-3 py-3"><div className="flex flex-wrap gap-1">
                     <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Lifecycle','পেমেন্ট ধাপ')}</button>
-                    <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Receipt','রসিদ')}</button>
+                    <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button>
                   </div></td>
                 </tr>)}
               </tbody>
