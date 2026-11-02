@@ -14,7 +14,8 @@ test('generic taxpayer preview shows the same payer receipts in dashboard and ac
   if (await rail.isVisible()) await rail.getByRole('button',{name:'Tax ledger',exact:true}).click();
   else await page.getByRole('button',{name:'Tax Ledger',exact:true}).filter({visible:true}).first().click();
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
-  await expect(page.getByText('No ledger records are available for this account yet.')).toBeVisible();
+  await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
+  await expect(page.getByTestId('event-tax-ledger')).toContainText('Not verified');
   await expect(page.getByRole('button',{name:'Export ledger data'})).toBeDisabled();
   await expect(page.getByText('৳ 1,49,500')).toHaveCount(0);
   await expect(page.getByText('AC-2025-09-DEMO-REF-001')).toHaveCount(0);
@@ -22,7 +23,8 @@ test('generic taxpayer preview shows the same payer receipts in dashboard and ac
 
 test('other URL-selected fictional accounts do not inherit shared financial balances, receipts or correction submissions',async({page})=>{
   await page.goto('/?action=ledger&demoUser=user2');
-  await expect(page.getByText('No ledger records are available for this account yet.')).toBeVisible();
+  await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
+  await expect(page.getByTestId('event-tax-ledger')).toContainText('Not verified');
   await expect(page.getByText('৳ 1,49,500')).toHaveCount(0);
   await page.goto('/?action=history&demoUser=user2');
   await expect(page.getByRole('heading',{name:'Sign in to manage payments'})).toBeVisible();
