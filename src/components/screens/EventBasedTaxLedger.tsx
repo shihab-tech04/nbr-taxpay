@@ -115,7 +115,6 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
         <Field title={t('Tax zone','কর অঞ্চল')} value={record.taxZone||unavailable(language)}/>
         <Field title={t('Tax circle','কর সার্কেল')} value={record.taxCircle||unavailable(language)}/>
         <Field title={t('Payment channel','পেমেন্ট মাধ্যম')} value={record.channel||unavailable(language)}/>
-        <Field title={t('Amount','পরিমাণ')} value={money(record.amountMinor,language)}/>
         <Field title={t('Date','তারিখ')} value={dateTime(record.createdAt,language)}/>
         <Field title={t('Current status','বর্তমান অবস্থা')} value={record.status}/>
       </FactGrid>
