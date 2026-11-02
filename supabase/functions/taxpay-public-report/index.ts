@@ -7,8 +7,11 @@ function respond(origin: string|null,body:Record<string,unknown>,status:number) 
  if(origin&&allowedOrigins.has(origin)){headers['Access-Control-Allow-Origin']=origin;headers.Vary='Origin';}
  return new Response(JSON.stringify(body),{status,headers});
 }
-async function sha256(input:string) {
- const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(input));
+// Stable server-only rate-limit fingerprint. HMAC protects IPs even if source hashes leak.
+async function sourceFingerprint(secret:string,ip:string) {
+ const material=new TextEncoder().encode(secret);
+ const key=await crypto.subtle.importKey('raw',material,{name:'HMAC',hash:'SHA-256'},false,['sign']);
+ const digest=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('taxpay-public-report-ip:v1:'+ip));
  return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 Deno.serve(async request=>{
@@ -25,9 +28,11 @@ Deno.serve(async request=>{
    return respond(origin,{error:'Expected JSON.'},415);
  const url=Deno.env.get('SUPABASE_URL');
  const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
- const pepper=Deno.env.get('TAXPAY_PUBLIC_REPORT_PEPPER');
- // Fail closed without explicitly provisioned backend secret.
- if(!url||!key||!pepper||pepper.length<32)
+ // Prefer a dedicated pepper, but managed Supabase already injects a private
+ // service-role key. HMAC domain separation prevents exposing or persisting that key.
+ const dedicatedPepper=Deno.env.get('TAXPAY_PUBLIC_REPORT_PEPPER');
+ const fingerprintKey=dedicatedPepper&&dedicatedPepper.length>=32?dedicatedPepper:key;
+ if(!url||!key||!fingerprintKey||fingerprintKey.length<32)
    return respond(origin,{error:'Reporting temporarily unavailable.'},503);
  let body:Record<string,unknown>;
  try {body=await request.json();}catch{return respond(origin,{error:'Invalid request.'},400);}
@@ -39,10 +44,12 @@ Deno.serve(async request=>{
     ||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionKey)))
    return respond(origin,{error:'Check the issue details and retry.'},400);
  // Only trust the platform gateway's client-address header; never persist IP.
- const ip=request.headers.get('cf-connecting-ip')||request.headers.get('x-real-ip');
+ // This managed gateway supplies cf-connecting-ip. Do not trust caller-controlled
+ // x-real-ip or x-forwarded-for fallbacks for production abuse limits.
+ const ip=request.headers.get('cf-connecting-ip');
  if(!ip||ip.length>64||!/^[0-9a-f:.]+$/i.test(ip))
    return respond(origin,{error:'Unable to verify request.'},503);
- const hash=await sha256(pepper+':'+ip);
+ const hash=await sourceFingerprint(fingerprintKey,ip);
  const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  if(body.action==='status'){
    const reference=body.reference;
