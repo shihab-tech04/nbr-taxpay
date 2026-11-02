@@ -8,9 +8,13 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   const events=page.getByTestId('event-tax-ledger');
   await expect(events).toBeVisible();
   await expect(events.getByRole('navigation',{name:'Event categories'})).toBeVisible();
-  await expect(events.getByRole('columnheader',{name:'Date / time'})).toBeVisible();
-  await expect(events.getByRole('columnheader',{name:'Year · component'})).toBeVisible();
-  await expect(events.getByRole('columnheader',{name:'Actor · source'})).toBeVisible();
+  if((page.viewportSize()?.width??1280)>=768){
+    await expect(events.getByRole('columnheader',{name:'Date / time'})).toBeVisible();
+    await expect(events.getByRole('columnheader',{name:'Year · component'})).toBeVisible();
+    await expect(events.getByRole('columnheader',{name:'Actor · source'})).toBeVisible();
+  }else{
+    await expect(events.getByTestId('event-ledger-table')).toBeHidden();
+  }
   await expect(events.getByText('Selected-year scenario balance')).toBeVisible();
   await expect(events.getByText('৳25,000').first()).toBeVisible();
 
@@ -48,7 +52,7 @@ test('event ledger keeps the mobile viewport free from page-level horizontal ove
   await page.goto(ledger);
   await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
   await expect(page.getByTestId('event-ledger-table')).toBeHidden();
-  await expect(page.getByText('Salary withholding').first()).toBeVisible();
+  await expect(page.getByTestId('event-tax-ledger').getByRole('button',{name:/Salary withholding/}).first()).toBeVisible();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
