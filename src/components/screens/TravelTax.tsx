@@ -18,6 +18,7 @@ import {
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import { formatCurrency } from '../../services/numberFormat';
+import { amountInTakaWords } from '../../services/amountInWords';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection } from '../ui/PaymentFormLayout';
@@ -88,6 +89,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route?.amount ?? 0;
   const totalAmount = ageBand === 'UNDER5' ? 0 : ageBand === 'CHILD' ? unitRate / 2 : unitRate;
+  const amountWords = route ? amountInTakaWords(totalAmount, language) : null;
   const isDomestic = selectedRouteIdx === 3;
 
   const handlePayTravelTax = (e: React.FormEvent) => {
@@ -482,8 +484,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               <div><dt>{t.date}</dt><dd>{travelDate}</dd></div>
               {!fourStepJourney && <>
                 <div><dt>{bn ? 'রসিদের মোবাইল' : 'Receipt mobile'}</dt><dd>{phone.replace(/\d(?=\d{3})/g, '•')}</dd></div>
-                <div><dt>{bn ? 'পরিমাণ' : 'Amount'}</dt><dd>{formatCurrency(totalAmount, language)}</dd></div>
-                <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentMethodLabel(paymentMethod, language)}</dd></div>
+                {paymentMethod && <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentMethodLabel(paymentMethod, language)}</dd></div>}
               </>}
             </dl>}
             {fourStepJourney && step === 1 && <p className="travel-flow__purpose-total">{bn ? 'পরিশোধের খাত: ভ্রমণ কর' : 'Payment purpose: Travel Tax'} · <strong>{formatCurrency(totalAmount, language)}</strong></p>}
@@ -504,7 +505,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               <div><dt>{bn ? 'পেমেন্ট পদ্ধতি' : 'Payment method'}</dt><dd>{paymentMethodLabel(paymentMethod, language)}</dd></div>
               <div><dt>{bn ? 'চার্জ' : 'Charge'}</dt><dd>{formatCurrency(0, language)}</dd></div>
             </dl>}
-            <p className="travel-flow__purpose-total">{bn ? 'সর্বমোট' : 'Total payable'}: <strong>{formatCurrency(totalAmount, language)}</strong></p>
             <label className="travel-flow__channel-option"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />{bn ? 'ভ্রমণ, যাত্রীর তথ্য ও পরিমাণ সঠিক।' : 'The journey, passenger details and amount are correct.'}</label>
           </section>}
           {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
@@ -519,7 +519,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
           <h3>{workflow.summary}</h3>
         </div>
         <p className="travel-flow__summary-label">{workflow.estimate}</p>
-        <strong className="travel-flow__total">{formatCurrency(totalAmount, language)}</strong>
+        <strong className={'travel-flow__total' + (amountWords ? ' travel-flow__total--with-words' : '')} data-testid="travel-payment-total">{route ? formatCurrency(totalAmount, language) : '—'}</strong>
+        {amountWords && <p className="travel-flow__amount-words" data-testid="travel-total-in-words">{amountWords}</p>}
         <dl className="travel-flow__summary-list">
           <div><dt>{workflow.rate}</dt><dd>{formatCurrency(unitRate, language)}</dd></div>
           <div><dt>{bn ? 'বয়স অনুযায়ী হার' : 'Age rate'}</dt><dd>{ageBand === 'CHILD' ? '50%' : ageBand === 'UNDER5' ? (bn ? 'করমুক্ত' : 'Exempt') : '100%'}</dd></div>
@@ -537,6 +538,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({embedded=false, fourStepJou
               <strong>{route ? formatCurrency(totalAmount, language) : '—'}</strong>
             </summary>
             <dl>
+              {amountWords && <div className="travel-flow__mobile-words" data-testid="travel-mobile-total-in-words"><dt>{bn ? 'কথায়' : 'In words'}</dt><dd>{amountWords}</dd></div>}
               <div><dt>{workflow.rate}</dt><dd>{formatCurrency(unitRate, language)}</dd></div>
               <div><dt>{bn ? 'বয়স অনুযায়ী হার' : 'Age rate'}</dt>
                 <dd>{ageBand === 'CHILD' ? '50%' : ageBand === 'UNDER5' ? (bn ? 'করমুক্ত' : 'Exempt') : '100%'}</dd></div>
