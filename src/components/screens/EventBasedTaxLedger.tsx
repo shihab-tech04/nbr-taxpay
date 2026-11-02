@@ -157,9 +157,9 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
   </div>;
 }
 
-export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,onOpenPayment}:{
+export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment}:{
   events:readonly TaxAccountEvent[];language:Language;year?:string;
-  onYearChange?:(year:string)=>void;financialBalanceVerified?:boolean;onOpenPayment?:(paymentId:string)=>void;
+  onYearChange?:(year:string)=>void;financialBalanceVerified?:boolean;showRecordedScenarioBalance?:boolean;onOpenPayment?:(paymentId:string)=>void;
 }){
   const t=(en:string,bn:string)=>pair(en,bn,language);
   const [selectedYear,setSelectedYear]=useState('all');
@@ -169,7 +169,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
   const currentYear=year??selectedYear;
   const visible=useMemo(()=>events.filter(e=>(currentYear==='all'||e.assessmentYear===currentYear)&&(type==='all'||ledgerEventClass(e.code)===type))
     .sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt)||b.id.localeCompare(a.id)),[events,currentYear,type]);
-  const balance=financialBalanceVerified&&currentYear!=='all'
+  const canShowBalance=financialBalanceVerified||showRecordedScenarioBalance;
+  const balance=canShowBalance&&currentYear!=='all'
     ? events.filter(e=>e.assessmentYear===currentYear&&e.balanceAfterMinor!==null)
       .sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt))[0]?.balanceAfterMinor??null
     : null;
@@ -178,7 +179,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
       <div><p className="text-sm text-taxpay-muted">{t('Append-only event history','অপরিবর্তনীয় ঘটনার ইতিহাস')}</p>
         <p className="mt-1 text-xs text-taxpay-muted">{t('Events are recorded independently of confirmed tax credit.','ঘটনাগুলো নিশ্চিত কর ক্রেডিট থেকে পৃথকভাবে সংরক্ষিত।')}</p></div>
       <div className="rounded-xl border border-taxpay-border bg-white p-3 text-right">
-        <p className="text-xs text-taxpay-muted">{t('Balance after eligible entries','যোগ্য এন্ট্রির পর ব্যালেন্স')}</p>
+        <p className="text-xs text-taxpay-muted">{showRecordedScenarioBalance?t('Selected-year scenario balance','নির্বাচিত করবর্ষের নমুনা ব্যালেন্স'):t('Balance after eligible entries','যোগ্য এন্ট্রির পর ব্যালেন্স')}</p>
         <p className="mt-1 text-xl font-semibold tabular-nums">{balance===null?t('Not verified','যাচাই হয়নি'):money(balance,language)}</p>
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
@@ -218,7 +219,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
                 {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span></button></td>
               <td className="p-3">{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></td>
               <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor===null?'—':(e.effectMinor>0?'+':'−')+money(Math.abs(e.effectMinor),language)}</td>
-              <td className="whitespace-nowrap p-3 text-right font-semibold tabular-nums">{financialBalanceVerified&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):'—'}</td>
+              <td className="whitespace-nowrap p-3 text-right font-semibold tabular-nums">{canShowBalance&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):'—'}</td>
               <td className="p-3">{e.actor}<span className="block text-taxpay-muted">{e.source}</span></td>
               <td className="p-3 break-all font-mono">{e.taxEventId||e.id}</td>
             </tr>)}</tbody>
