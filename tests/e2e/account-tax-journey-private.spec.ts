@@ -6,7 +6,7 @@ const owner={id:'00000000-0000-4000-8000-000000000202',email:'journey-owner@exam
   user_metadata:{taxpay_display_name:'Journey owner'},
   created_at:'2026-01-01T00:00:00Z',last_sign_in_at:'2026-10-01T00:00:00Z'};
 const request={id:'00000000-0000-4000-8000-000000000901',owner_uid:owner.id,category:'ADVANCE_TAX',
-  assessment_year:'2026-27',request_status:'INFO_REQUESTED',submitted_at:'2026-10-01T10:00:00Z'};
+  assessment_year:'2026-27',amount_minor:'12345',request_status:'INFO_REQUESTED',submitted_at:'2026-10-01T10:00:00Z'};
 function session(){
   const exp=Math.floor(Date.now()/1000)+3600;
   const encoded=btoa(JSON.stringify({sub:owner.id,aud:'authenticated',role:'authenticated',exp}));
@@ -51,6 +51,7 @@ test('verified account sees only real owner review events and correct chronologi
   await expect(items.first()).toContainText('Review request submitted');
   await expect(items.nth(1)).toContainText('Review status event');
   await expect(timeline).toContainText(request.id);
+  await expect(timeline).toContainText('Requested amount (not paid): ৳ 123.45');
   await expect(timeline).not.toContainText('Treasury confirmed');
   await expect(timeline).not.toContainText('Tax credit recognized');
   await items.nth(1).getByText('View event details').click();
