@@ -84,13 +84,17 @@ test('downloaded Beneficiaries Excel template opens in the supported import pars
 test('signed-out Beneficiaries deep link requires taxpayer sign-in in Bengali and English',async({page})=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&lang=bn');
-  await expect(page.getByRole('heading',{name:'করদাতার ব্যক্তিগত তথ্য'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'ইমেইলে সাইন ইন'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+  const bnLogin=page.locator('.taxpay-modal.taxpayer-login-modal');
+  await expect(bnLogin).toBeVisible();
+  await expect(page.getByRole('heading',{name:'করদাতার ব্যক্তিগত তথ্য'})).toHaveCount(0);
+  await expect(bnLogin.getByRole('button',{name:'ইমেইল দিয়ে সাইন ইন'})).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
   await page.goto('/?action=beneficiaries');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Sign in with email'})).toHaveAttribute('href',/returnTo=beneficiaries/);
+  const enLogin=page.locator('.taxpay-modal.taxpayer-login-modal');
+  await expect(enLogin).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+  await expect(enLogin.getByRole('button',{name:'Sign in with email'})).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
 });
 
