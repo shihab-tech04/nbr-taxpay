@@ -105,13 +105,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       {Boolean(breakdown?.length || groupedBreakdown?.length) && <div className="payment-form-summary__scroll-content" data-testid="payment-calculation-scroll-area">
       {breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
-        {breakdown.slice(0, 6).map(renderBreakdownEntry)}
-        {breakdown.length > 6 && <details className="payment-form-summary__more-heads">
-          <summary>{bn ? `আরও ${breakdown.length - 6}টি খাত দেখুন` : `Show ${breakdown.length - 6} more selected heads`}</summary>
-          <div className="payment-form-summary__more-heads-list">
-            {breakdown.slice(6).map((item, index) => renderBreakdownEntry(item, index + 6))}
-          </div>
-        </details>}
+        {breakdown.map(renderBreakdownEntry)}
       </div>}
       {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
         <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
