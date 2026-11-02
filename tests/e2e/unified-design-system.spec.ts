@@ -40,6 +40,10 @@ test('shared payment stepper has accessible, dynamic SVG progress',async ({page}
   await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
   const dialog = page.getByRole('dialog',{name:'Pay Tax'});
   await expect(dialog).toBeVisible();
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
+  await dialog.getByRole('button',{name:'Continue',exact:true}).click();
   const progress = dialog.getByRole('progressbar',{name:'Payment progress'});
   await expect(progress).toHaveAttribute('aria-valuenow','1');
   await expect(progress).toHaveAttribute('aria-valuemax','4');
