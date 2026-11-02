@@ -6,6 +6,12 @@ const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
 const pageSize = 500;
 
+/** A guest address book can be recovered only from a browser retaining its capability. */
+export function hasStoredGuestBeneficiaries(): boolean {
+  try { return capabilityPattern.test(window.localStorage.getItem(capabilityKey) ?? '') && window.localStorage.getItem(initializedKey) === '1'; }
+  catch { return false; }
+}
+
 type GuestList = Pick<BeneficiaryList, 'id' | 'name' | 'created_at'>;
 type GuestPerson = Pick<Beneficiary, 'id' | 'list_id' | 'tin' | 'display_name' | 'created_at' | 'updated_at'>;
 
