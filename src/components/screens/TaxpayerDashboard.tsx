@@ -12,6 +12,7 @@ import { taxpayerGreeting, isReturningTaxpayer } from '../../services/taxpayerGr
 import { AccountActivitySummary } from './AccountActivitySummary';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
+import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
@@ -31,10 +32,20 @@ export const TaxpayerDashboard: React.FC = () => {
   // Keep that prior working default when the v11 dashboard becomes visible.
   // Do not change the historical sample-only assessment-year list.
   const [yearChoice,setYearChoice] = useState<string|null>(null);
-  const accountYears=user ? ['2026-2027',...ASSESSMENT_YEARS] : ASSESSMENT_YEARS;
+  const [exampleMode,setExampleMode]=useState(false);
+  const [yearBeforeExample,setYearBeforeExample]=useState<string|null>(null);
+  const accountYears=user ? [...new Set(['2026-2027',...ASSESSMENT_YEARS,...illustrativeDashboardYears])] : ASSESSMENT_YEARS;
   const defaultYear=user ? '2026-2027' : (ASSESSMENT_YEARS[0] || '2026-2027');
   const year=yearChoice&&accountYears.includes(yearChoice) ? yearChoice : defaultYear;
   const setYear=(value:string)=>setYearChoice(value);
+  const exampleYear=exampleMode?getIllustrativeDashboardYear(year):null;
+  const toggleExample=()=>{
+    if(!exampleMode){
+      setYearBeforeExample(year);
+      if(!getIllustrativeDashboardYear(year))setYear('2025-2026');
+    } else if(yearBeforeExample) setYear(yearBeforeExample);
+    setExampleMode(!exampleMode);
+  };
   const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
   // Explicit demo activity ONLY. Payer-TIN fixtures do not establish credit ownership.
@@ -100,6 +111,15 @@ export const TaxpayerDashboard: React.FC = () => {
         {!user && <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>}
       </div>} />
     {user ? <>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3" data-testid="dashboard-example-controls">
+        <p className="min-w-0 text-sm text-taxpay-muted">{exampleMode
+          ? tr('Example figures — not your tax records or confirmed payments.','উদাহরণের পরিমাণ — আপনার কর রেকর্ড বা নিশ্চিত পরিশোধ নয়।')
+          : tr('View the dashboard with optional fictional example figures.','চাইলে কাল্পনিক উদাহরণের পরিমাণ দিয়ে ড্যাশবোর্ড দেখুন।')}</p>
+        <button type="button" aria-pressed={exampleMode} onClick={toggleExample}
+          className="min-h-11 shrink-0 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+          {exampleMode?tr('Hide examples','উদাহরণ বন্ধ করুন'):tr('View examples','উদাহরণ দেখুন')}
+        </button>
+      </div>
       <section aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {([
@@ -117,14 +137,21 @@ export const TaxpayerDashboard: React.FC = () => {
             helpBn:'যাচাইকৃত অবশিষ্ট দায়ের জন্য নির্ধারিত করদায় ও প্রযোজ্য পোস্টকৃত ক্রেডিট প্রয়োজন।'}
         ] as const).map((item,index)=><TaxpayerFinancialKpi
           key={item.en} language={language} titleEn={item.en} titleBn={item.bn}
-          value="—" helpEn={item.helpEn} helpBn={item.helpBn}
+          value={exampleYear ? formatIllustrativeTaka(
+            index===0?exampleYear.liability:index===1?(exampleYear.tds+exampleYear.ait):index===2?exampleYear.direct:exampleYear.remaining,language
+          ) : '—'}
+          helpEn={exampleMode?'Illustrative example only. Not linked to this account or an official credit.':item.helpEn}
+          helpBn={exampleMode?'শুধু কাল্পনিক উদাহরণ; এই অ্যাকাউন্ট বা সরকারি ক্রেডিটের সঙ্গে যুক্ত নয়।':item.helpBn}
           priority={index===3}/>)}
       </section>
       <p className="text-sm text-taxpay-muted" role="status">
-        {tr('Verified tax balances are not available. Your account activity is shown below.',
-          'যাচাইকৃত করের ব্যালেন্স পাওয়া যায়নি। নিচে আপনার অ্যাকাউন্টের কার্যক্রম দেখুন।')}
+        {exampleMode
+          ? tr('Illustrative dashboard — the saved account activity below remains unchanged.',
+            'উদাহরণভিত্তিক ড্যাশবোর্ড — নিচের সংরক্ষিত অ্যাকাউন্ট কার্যক্রম অপরিবর্তিত।')
+          : tr('Actual tax balances are unavailable. Use View examples to inspect the dashboard.',
+            'প্রকৃত কর ব্যালেন্স পাওয়া যায়নি। ড্যাশবোর্ড দেখতে উদাহরণ দেখুন বেছে নিন।')}
       </p>
-      <AuthenticatedDashboardPosition language={language} year={year} years={accountYears}
+      <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
       <AccountActivitySummary ownerUid={user.id} language={language}
         dashboardYear={year} onDashboardYearChange={setYear}
