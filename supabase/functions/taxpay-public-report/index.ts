@@ -34,9 +34,9 @@ Deno.serve(async request=>{
  const category=body.category;
  const details=typeof body.details==='string'?body.details.trim():'';
  const submissionKey=body.submissionKey;
- if(!['payment','reference','security'].includes(String(category))
+ if(body.action!=='status' && (!['payment','reference','security'].includes(String(category))
     ||details.length<10||details.length>500||typeof submissionKey!=='string'
-    ||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionKey))
+    ||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionKey)))
    return respond(origin,{error:'Check the issue details and retry.'},400);
  // Only trust the platform gateway's client-address header; never persist IP.
  const ip=request.headers.get('cf-connecting-ip')||request.headers.get('x-real-ip');
@@ -44,6 +44,17 @@ Deno.serve(async request=>{
    return respond(origin,{error:'Unable to verify request.'},503);
  const hash=await sha256(pepper+':'+ip);
  const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+ if(body.action==='status'){
+   const reference=body.reference;
+   if(typeof reference!=='string'||!/^KRB-[A-F0-9]{12}$/.test(reference))
+     return respond(origin,{error:'Enter a valid report reference.'},400);
+   const {data:report,error:lookupError}=await admin.from('taxpay_public_issue_reports')
+     .select('status,updated_at').eq('reference',reference).maybeSingle();
+   if(lookupError)return respond(origin,{error:'Status temporarily unavailable.'},503);
+   if(!report)return respond(origin,{error:'No matching report.'},404);
+   return respond(origin,{reference,status:report.status,updatedAt:report.updated_at},200);
+ }
+
  const {data,error}=await admin.rpc('taxpay_record_public_issue',{
    p_category:category,p_details:details,p_submission_key:submissionKey,p_source_hash:hash
  });
