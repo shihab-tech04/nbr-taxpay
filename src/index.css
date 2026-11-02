@@ -29,6 +29,14 @@
   --color-taxpay-success: #238636;
   --color-taxpay-warning: #D97706;
   --color-taxpay-error: #C62828;
+  --color-taxpay-on-primary: #FFFFFF;
+  --color-taxpay-form-border: #DCE5F0;
+  --color-taxpay-form-text: #405A74;
+  --color-taxpay-form-heading: #172B4D;
+  --color-taxpay-form-muted: #526880;
+  --color-taxpay-form-divider: #E6EBF2;
+  --color-taxpay-form-hover: #EEF5FF;
+  --color-taxpay-form-error: #A3283C;
 
   /* Sobaike-inspired central shapes and low-elevation surface treatment. */
   --taxpay-radius-control: 12px;
@@ -79,7 +87,7 @@
 }
 
 .font-bengali {
-  font-family: 'Noto Sans Bengali', 'Manrope', sans-serif;
+  font-family: 'Noto Sans Bengali', 'Poppins', sans-serif;
 }
 
 /* Print Styles for A-Challan Official Receipts */
@@ -116,14 +124,13 @@
 .taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button) { line-height: 1.55; }
 
 /* Enforce the same loaded font in both citizen experiences, never Officer. */
-.taxpay-citizen-shell { font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif; }
-.taxpay-citizen-shell[lang="bn"] { font-family: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif; }
+.taxpay-citizen-shell { font-family: var(--font-text); }
 
 /* TaxPay citizen font contract; Office routes are explicitly outside this selector. */
 :root { --font-text: 'Poppins', 'Noto Sans Bengali', sans-serif; --font-numeric: 'IBM Plex Mono', 'Noto Sans Bengali', monospace; }
 .taxpay-citizen-shell :is(.numeric,.taxpay-type-financial,.font-mono,.font-mono-plex,.tabular-nums) { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell :is(input,select,textarea,button) { font-family: inherit; }
-.taxpay-citizen-shell[lang="bn"] { font-family: 'Noto Sans Bengali', 'Poppins', sans-serif; }
+.taxpay-citizen-shell[lang="bn"] { --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif; font-family: var(--font-text); }
 
 .taxpay-citizen-shell .font-serif-fraunces {font-family:var(--font-text);}
 .taxpay-citizen-shell .font-bengali {font-family:'Noto Sans Bengali','Poppins',sans-serif;}
