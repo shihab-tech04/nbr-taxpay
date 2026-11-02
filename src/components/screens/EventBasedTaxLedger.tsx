@@ -84,6 +84,20 @@ const FactGrid=({children}:{children:React.ReactNode})=><dl className="grid gap-
 
 export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecycleRecord;language:Language}){
   const t=(en:string,bn:string)=>pair(en,bn,language);
+  const stateText=(value?:string)=>{
+    if(!value)return t('Not verified','যাচাই হয়নি');
+    const known:Record<string,[string,string]>={
+      'Not verified':['Not verified','যাচাই হয়নি'],
+      'SIMULATED':['Recorded','রেকর্ড হয়েছে'],
+      'SIMULATED_SUCCESS':['Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত'],
+      'POSTED':['Recorded','রেকর্ড হয়েছে'],
+      'PENDING':['Pending','অপেক্ষমাণ'],
+      'FAILED':['Failed','ব্যর্থ'],
+      'REVERSED':['Reversed','প্রত্যাবর্তিত'],
+      'DISPUTED':['Disputed','বিরোধপূর্ণ']
+    };
+    return known[value]?t(...known[value]):value;
+  };
   return <div className="space-y-4 text-taxpay-text" data-testid="payment-lifecycle-details">
     <section className="rounded-xl border border-taxpay-border bg-white p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -98,8 +112,8 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
         <Field title={t('Challan / receipt no.','চালান / রসিদ নম্বর')} value={record.challanNo||unavailable(language)}/>
       </FactGrid>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-taxpay-muted">{t('Financial receipt status','আর্থিক রসিদের অবস্থা')}</p><p className="mt-1 text-sm font-semibold">{record.financialReceiptStatus||t('Not verified','যাচাই হয়নি')}</p></div>
-        <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-taxpay-muted">{t('Tax-credit status','কর ক্রেডিটের অবস্থা')}</p><p className="mt-1 text-sm font-semibold">{record.taxCreditStatus||t('Not verified','যাচাই হয়নি')}</p></div>
+        <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-taxpay-muted">{t('Financial receipt status','আর্থিক রসিদের অবস্থা')}</p><p className="mt-1 text-sm font-semibold">{stateText(record.financialReceiptStatus)}</p></div>
+        <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-taxpay-muted">{t('Tax-credit status','কর ক্রেডিটের অবস্থা')}</p><p className="mt-1 text-sm font-semibold">{stateText(record.taxCreditStatus)}</p></div>
       </div>
     </section>
     <section className="rounded-xl border border-taxpay-border bg-white p-4">
@@ -116,7 +130,7 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
         <Field title={t('Tax circle','কর সার্কেল')} value={record.taxCircle||unavailable(language)}/>
         <Field title={t('Payment channel','পেমেন্ট মাধ্যম')} value={record.channel||unavailable(language)}/>
         <Field title={t('Date','তারিখ')} value={dateTime(record.createdAt,language)}/>
-        <Field title={t('Current status','বর্তমান অবস্থা')} value={record.status}/>
+        <Field title={t('Current status','বর্তমান অবস্থা')} value={stateText(record.status)}/>
       </FactGrid>
     </section>
     {Boolean(record.allocations?.length)&&<section className="rounded-xl border border-taxpay-border bg-white p-4">
@@ -145,9 +159,9 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
     <section className="rounded-xl border border-taxpay-border bg-white p-4">
       <h3 className="mb-3 text-sm font-semibold">{t('Tax treatment','কর সমন্বয়')}</h3>
       <FactGrid>
-        <Field title={t('Liability settled','নিষ্পত্তিকৃত করদায়')} value={record.liabilitySettled||t('Not verified','যাচাই হয়নি')}/>
-        <Field title={t('Tax credit','কর ক্রেডিট')} value={record.taxCreditStatus||t('Not verified','যাচাই হয়নি')}/>
-        <Field title={t('Remaining balance','অবশিষ্ট ব্যালেন্স')} value={record.remainingBalance||t('Not verified','যাচাই হয়নি')}/>
+        <Field title={t('Liability settled','নিষ্পত্তিকৃত করদায়')} value={stateText(record.liabilitySettled)}/>
+        <Field title={t('Tax credit','কর ক্রেডিট')} value={stateText(record.taxCreditStatus)}/>
+        <Field title={t('Remaining balance','অবশিষ্ট ব্যালেন্স')} value={stateText(record.remainingBalance)}/>
       </FactGrid>
       <h3 className="mb-2 mt-4 text-sm font-semibold">{t('Where this payment counts','এই পেমেন্ট কোথায় গণনা হয়')}</h3>
       <p className="text-sm text-taxpay-muted">{t('A saved payment record is separate from Treasury settlement and tax-ledger credit. Credit is shown only when verified source events establish it.',
