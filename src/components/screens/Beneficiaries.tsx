@@ -49,6 +49,7 @@ export function Beneficiaries(){
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const [editTargetList,setEditTargetList]=useState('');
   const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
+  const [bulkRemoveIds,setBulkRemoveIds]=useState<string[]|null>(null);
   const [listMenuOpen,setListMenuOpen]=useState(false);
   const [editingList,setEditingList]=useState<BeneficiaryList|null>(null);
   const [editingListName,setEditingListName]=useState('');
@@ -228,6 +229,24 @@ export function Beneficiaries(){
     finally{setBusy(false);}
   }
 
+  async function confirmBulkRemove(){
+    if(!bulkRemoveIds?.length||busy)return;
+    const stillSelected=bulkRemoveIds.filter(id=>people.some(person=>person.id===id&&person.list_id===activeList));
+    setBusy(true);setModalError('');
+    try{
+      for(const id of stillSelected)await removeBeneficiary(owner,id);
+      const saved=await reload();
+      if(saved.people.some(person=>stillSelected.includes(person.id))){
+        throw new Error(tr('Some selected beneficiaries could not be removed. Try again.','নির্বাচিত কয়েকজনকে সরানো যায়নি। আবার চেষ্টা করুন।'));
+      }
+      setBulkRemoveIds(null);
+      setNotice({en:`${stillSelected.length} beneficiaries removed.`,bn:`${stillSelected.length} জন উপকারভোগী সরানো হয়েছে।`});
+    }catch(e){
+      setModalError(e instanceof Error?e.message:String(e));
+      await reload().catch(()=>{});
+    }finally{setBusy(false);}
+  }
+
   async function confirmRemove(){
     if(!deletePerson)return;
     setBusy(true);setError('');
@@ -352,6 +371,7 @@ export function Beneficiaries(){
               {selectedPeople.length>0&&<>
                 <p className="beneficiary-directory__selected-count" role="status">{tr(`${selectedPeople.length} selected`,`${selectedPeople.length} জন নির্বাচিত`)}</p>
                 <UiButton type="button" variant="primary" onClick={()=>payWith(selectedPeople)}><CreditCard size={17} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যদের কর পরিশোধ')}</UiButton>
+                <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-taxpay-error" onClick={()=>{setBulkRemoveIds(selectedPeople.map(person=>person.id));setModalError('');}}><Trash2 size={16} aria-hidden="true"/>{tr('Remove selected','নির্বাচিতদের সরান')}</UiButton>
                 <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
               </>}
             </div>
@@ -542,6 +562,17 @@ export function Beneficiaries(){
         {lists.every(list=>list.id===editPerson.list_id)&&<p className="text-sm text-slate-600">{tr('Create another list before moving this beneficiary.','এই উপকারভোগীকে সরানোর আগে আরেকটি তালিকা তৈরি করুন।')}</p>}
         {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
       </form>
+    </TaxPayModal>}
+
+    {bulkRemoveIds&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove selected beneficiaries?','নির্বাচিত উপকারভোগীদের সরাবেন?')}
+      ariaLabel={tr('Confirm bulk beneficiary removal','একাধিক উপকারভোগী সরানো নিশ্চিত করুন')}
+      onClose={()=>{if(!busy){setBulkRemoveIds(null);setModalError('');}}}
+      footer={<div className="flex w-full justify-end gap-2">
+        <UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setBulkRemoveIds(null);setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton>
+        <UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmBulkRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove selected','নির্বাচিতদের সরান')}</UiButton>
+      </div>}>
+      <p className="py-2 text-sm text-slate-700">{tr(`Remove ${bulkRemoveIds.length} selected beneficiaries from this list? Payment and tax records will not change.`,`এই তালিকা থেকে নির্বাচিত ${bulkRemoveIds.length} জন উপকারভোগী সরাবেন? পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
+      {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
 
     {deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
