@@ -48,6 +48,29 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('012345678901');
+  // Desktop table headers must touch their records and align with actual
+  // beneficiary names/actions, rather than floating in a separate blank strip.
+  await page.setViewportSize({width:1280,height:900});
+  const table=page.getByTestId('beneficiary-records').locator('.beneficiary-directory__table');
+  await expect(table).toBeVisible();
+  const layout=await table.evaluate(element=>{
+    const header=element.querySelector('.beneficiary-directory__columns')!;
+    const row=element.querySelector('.beneficiary-directory__row')!;
+    const name=element.querySelector('.beneficiary-directory__person')!;
+    const actions=row.querySelector('.beneficiary-directory__actions')!;
+    return {
+      rowGap: row.getBoundingClientRect().top-header.getBoundingClientRect().bottom,
+      nameOffset: name.getBoundingClientRect().left-header.firstElementChild!.getBoundingClientRect().left,
+      actionsOffset: actions.getBoundingClientRect().right-header.lastElementChild!.getBoundingClientRect().right,
+      widthOverflow:element.scrollWidth-element.clientWidth,
+    };
+  });
+  expect(Math.abs(layout.rowGap)).toBeLessThanOrEqual(2);
+  expect(Math.abs(layout.nameOffset)).toBeLessThanOrEqual(2);
+  expect(Math.abs(layout.actionsOffset)).toBeLessThanOrEqual(2);
+  expect(layout.widthOverflow).toBeLessThanOrEqual(1);
+  await page.setViewportSize({width:375,height:812});
+  expect(await table.evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
