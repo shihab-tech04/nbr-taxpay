@@ -16,7 +16,7 @@ for(const language of ['en','bn'] as const){
       if(body.action==='open')data={active:true};
       if(body.action==='lists')data=lists;
       if(body.action==='people')data=records.slice(body.offset??0,(body.offset??0)+(body.limit??500));
-      if(body.action==='delete'){
+      if(body.action==='remove'){
         records=records.filter(person=>person.id!==body.id);
         data=true;
       }
