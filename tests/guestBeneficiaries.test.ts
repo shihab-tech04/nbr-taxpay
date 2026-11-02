@@ -17,12 +17,17 @@ test('guest beneficiary client persists one opaque capability per browser and ke
   const originalWindow = (globalThis as { window?: unknown }).window;
   const originalFetch = globalThis.fetch;
   const sessions = new Map<string, { lists: any[]; people: any[] }>();
+  let transientReadFailures = 0;
   const requests: Array<{ url: string; headers: Record<string, string>; body: Record<string, any> }> = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const headers = Object.fromEntries(new Headers(init?.headers).entries());
     const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, any>;
     requests.push({ url, headers, body });
+    if (body.action === 'lists' && transientReadFailures > 0) {
+      transientReadFailures--;
+      throw new TypeError('Temporary simulated network failure');
+    }
     const capability = headers['x-taxpay-guest-capability'];
     if (!capability) return new Response(JSON.stringify({ success: false, code: 'INVALID_CAPABILITY' }), { status: 400 });
     if (body.action === 'open') sessions.set(capability, sessions.get(capability) ?? { lists: [], people: [] });
@@ -76,11 +81,17 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     const capabilityA = storageA.getItem('korbritto.guest-beneficiaries.capability.v1');
     assert.match(capabilityA ?? '', /^[A-Za-z0-9_-]{43}$/);
 
-    // Replacing the page's JS context while retaining localStorage models a reload/reopen.
+    // A transient read outage retries once without replacing the stored
+    // capability or duplicating a write. Continued outages must still fail.
+    transientReadFailures = 1;
     (globalThis as any).window = { localStorage: storageA };
     const restored = await guest.loadGuestBeneficiaries();
     assert.equal(restored.people[0]?.display_name, 'Synthetic Guest A');
     assert.equal(storageA.getItem('korbritto.guest-beneficiaries.capability.v1'), capabilityA);
+    transientReadFailures = 2;
+    await assert.rejects(guest.loadGuestBeneficiaries(), /temporarily unavailable/);
+    assert.equal(storageA.getItem('korbritto.guest-beneficiaries.capability.v1'), capabilityA);
+    transientReadFailures = 0;
 
     const storageB = new MemoryStorage();
     (globalThis as any).window = { localStorage: storageB };

@@ -154,6 +154,35 @@ test('empty beneficiary lists direct signed-in payers to the dedicated managemen
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });
+test('one temporary guest read outage recovers without losing the browser-saved beneficiary list',async({page})=>{
+  let listReads=0;
+  const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
+    const body=route.request().postDataJSON() as {action?:string};
+    if(body.action==='lists'&&++listReads===1)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,code:'SERVICE_UNAVAILABLE'})});
+    const data=body.action==='open'?{active:true}:body.action==='lists'?[list]:[];
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
+  });
+  const dialog=await openSignedInPayment(page);
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('button',{name:'Family'})).toBeVisible();
+  expect(listReads).toBe(2);
+  await expect(picker.getByText('Could not load your beneficiary lists.')).toHaveCount(0);
+});
+
+test('unavailable guest capability blocks payment with actionable recovery guidance',async({page})=>{
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
+    const body=route.request().postDataJSON() as {action?:string};
+    return route.fulfill({status:body.action==='open'?200:410,contentType:'application/json',body:JSON.stringify(body.action==='open'
+      ?{success:true,data:{active:true}}:{success:false,code:'GUEST_SESSION_UNAVAILABLE'})});
+  });
+  const dialog=await openSignedInPayment(page);
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('alert')).toContainText('Do not clear site data');
+  await expect(picker.getByRole('button',{name:'Retry'})).toBeVisible();
+  await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
+});
+
 test('guest input remains editable and limited to twelve digits',async({page})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
