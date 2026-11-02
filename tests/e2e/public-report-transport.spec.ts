@@ -5,11 +5,18 @@ test('server acceptance alone yields a support reference; no payment status is i
  await page.route('**/functions/v1/taxpay-public-report',async route=>{
    writes+=1;
    const payload=route.request().postDataJSON();
+   if(payload.action==='status'){
+     expect(payload.reference).toBe('KRB-ABCDEF012345');
+     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+       reference:'KRB-ABCDEF012345',status:'in_review',updatedAt:'2026-11-02T00:00:00Z'
+     })});
+     return;
+   }
    expect(payload.category).toBe('payment');
    expect(payload.details).toBe('I need help finding my receipt reference');
    expect(payload.submissionKey).toMatch(/^[0-9a-f-]{36}$/i);
    await route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({
-     reference:'KRB-ABCDEF012345',trackingToken:'2339cd1d-cf9b-40ab-9f8d-899ca771ff20',status:'received'
+     reference:'KRB-ABCDEF012345',status:'received'
    })});
  });
  await page.goto('/?action=incident');
@@ -19,7 +26,9 @@ test('server acceptance alone yields a support reference; no payment status is i
  await expect(page.getByRole('heading',{name:'Report submitted'})).toBeVisible();
  await expect(page.getByText('KRB-ABCDEF012345')).toBeVisible();
  await expect(page.getByText('Submitting a report does not verify or settle a payment.')).toBeVisible();
- expect(writes).toBe(1);
+ await page.getByRole('button',{name:'Check status'}).click();
+ await expect(page.getByRole('status').filter({hasText:'Current status:'})).toContainText('In review');
+ expect(writes).toBe(2);
  await page.getByRole('button',{name:'New report'}).click();
  await expect(page.getByLabel('Short description')).toBeEmpty();
 });
