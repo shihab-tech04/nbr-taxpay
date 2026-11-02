@@ -26,7 +26,7 @@ function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccount
       // Payment activity, even when mirrored to Office, is NOT authoritative credit.
       effectMinor:null,
       balanceAfterMinor:null,
-      actor:'System',
+      actor:'Not recorded',
       source:'TaxPay payment event',
       taxEventId:undefined,
       paymentId:tx.transactionId,
