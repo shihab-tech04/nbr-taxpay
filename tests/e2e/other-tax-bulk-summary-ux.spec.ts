@@ -44,24 +44,24 @@ test('select all never overflows the pinned desktop calculation', async ({ page 
   await menu.locator('summary').click();
   await menu.getByRole('button', { name: 'Select all', exact: true }).click();
   const calculation = dialog.locator('.taxpay-modal__body .payment-form-summary');
-  await expect(calculation.locator('.payment-form-summary__more-heads')).toBeVisible();
-  await expect(calculation.locator('.payment-form-summary__breakdown > button')).toHaveCount(6);
-  await expect(calculation.locator('.payment-form-summary__more-heads > summary')).toContainText(/Show \d+ more selected heads/);
+// All selected heads are exposed in the same list. The old six-item
+  // disclosure was intentionally removed; never restore it to satisfy a test.
+  const entries = calculation.locator('.payment-form-summary__breakdown > button');
+  expect(await entries.count()).toBeGreaterThan(6);
+  await expect(calculation.locator('.payment-form-summary__more-heads')).toHaveCount(0);
   await expect(calculation).toHaveCSS('overflow', 'hidden');
-  await calculation.locator('.payment-form-summary__more-heads > summary').click();
-  await expect(calculation.locator('.payment-form-summary__more-heads')).toHaveAttribute('open', '');
-  // The whole detail rail, not two half-height inner panels, owns the scroll.
+  // One scroll owner holds all entries; the total stays outside the rail.
   const scrollArea = calculation.getByTestId('payment-calculation-scroll-area');
   await expect(scrollArea).toHaveCSS('overflow-y', 'auto');
   await expect(calculation.locator('.payment-form-summary__breakdown')).toHaveCSS('overflow-y', 'visible');
-  // Grouped taxpayer rows are optional for a single-taxpayer payment.
   const groups = calculation.locator('.payment-form-summary__taxpayers');
   if (await groups.count()) await expect(groups).toHaveCSS('overflow-y', 'visible');
   expect(await scrollArea.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(20);
-  const lastHead = scrollArea.locator('.payment-form-summary__more-heads-list .payment-form-summary__entry').last();
+  const lastHead = entries.last();
   await lastHead.scrollIntoViewIfNeeded();
   await expect(lastHead).toBeInViewport();
   expect(await scrollArea.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+  await expect(calculation.getByTestId('payment-total-in-words')).toBeVisible();
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
 });
 
