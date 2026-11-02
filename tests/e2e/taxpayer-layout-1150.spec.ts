@@ -32,10 +32,10 @@ test('User1 charts use TaxPay blue tokens, and category filters work by keyboard
   await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
 });
 
-test('User1 overview fits narrow phones, tablets and large desktops at Sobaike 900px width', async ({page},info) => {
-  test.skip(info.project.name !== 'mobile-375','One worker measures eleven explicit viewport widths');
+test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {
+  test.skip(info.project.name !== 'mobile-375','One worker measures the full breakpoint matrix');
   test.setTimeout(120000);
-  for (const width of [320,360,375,390,600,768,900,1024,1280,1440,1600,1920]) {
+  for (const width of [320,360,375,390,600,768,900,1024,1280,1399,1400,1440,1600,1920]) {
     await page.setViewportSize({width,height:850});
     await page.goto(url('taxpayer_home'));
     await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
@@ -47,9 +47,11 @@ test('User1 overview fits narrow phones, tablets and large desktops at Sobaike 9
     });
     expect(dims.overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
     expect(dims.width,'too wide at '+width).toBeLessThanOrEqual(width);
-    if (width>=1600) {
-      expect(dims.width,'too narrow at '+width).toBeGreaterThanOrEqual(890);
-      expect(dims.width,'exceeds Sobaike 900px target at '+width).toBeLessThanOrEqual(902);
+    if (width>=1400) {
+      expect(dims.width,'large-desktop content did not expand at '+width).toBeGreaterThan(width * .7);
+      expect(dims.width,'large-desktop content exceeds the viewport at '+width).toBeLessThan(width);
+    } else if (width >= 1280) {
+      expect(dims.width,'pre-1400px layout should retain its approved width').toBeLessThanOrEqual(902);
     }
     if (width<=390) {
       await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
@@ -72,11 +74,43 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       const dims=await page.evaluate(() => ({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
         content:(document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement).getBoundingClientRect().width}));
       expect(dims.overflow,route+' overflow at '+width).toBeLessThanOrEqual(2);
-      if(width>=1600) {
-        expect(dims.content,route+' too narrow at '+width).toBeGreaterThanOrEqual(890);
-        expect(dims.content,route+' exceeds Sobaike target at '+width).toBeLessThanOrEqual(902);
+      if(width>=1400) {
+        expect(dims.content,route+' content did not expand at '+width).toBeGreaterThan(width * .7);
+      } else if(width===1280) {
+        expect(dims.content,route+' should preserve its pre-1400px width').toBeLessThanOrEqual(902);
       }
       await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
+    }
+  }
+});
+
+test('both signed-in taxpayer profiles use available main width without horizontal overflow', async ({page},info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One worker checks both signed-in profiles and breakpoints');
+  test.setTimeout(120000);
+  for (const account of ['user1','user2']) {
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox',{name:'User ID'}).fill(account);
+    await page.getByLabel('Password',{exact:true}).fill(account);
+    await page.getByRole('button',{name:'Sign In',exact:true}).click();
+    await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+    for (const viewport of [1280,1399,1400,1600,1920,2560]) {
+      await page.setViewportSize({width:viewport,height:900});
+      const size = await page.evaluate(() => {
+        const main = document.querySelector('#main-content') as HTMLElement;
+        const content = main.firstElementChild as HTMLElement;
+        return {
+          main: main.getBoundingClientRect().width,
+          content: content.getBoundingClientRect().width,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      expect(size.overflow,`${account} overflow at ${viewport}px`).toBeLessThanOrEqual(2);
+      if (viewport < 1400) {
+        expect(size.content,`${account} unexpectedly changed at ${viewport}px`).toBeLessThanOrEqual(1152);
+      } else {
+        expect(size.content,`${account} does not fill its flexible workspace at ${viewport}px`).toBeGreaterThan(size.main * .82);
+        expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
+      }
     }
   }
 });
