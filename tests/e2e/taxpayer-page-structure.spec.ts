@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('signed-in page structure', () => {
-  for (const route of ['taxpayer_home', 'history', 'verify', 'corrections', 'certificates', 'ledger', 'account_profile', 'account_notifications', 'account_settings'] as const) {
+  for (const route of ['taxpayer_home', 'history', 'journey', 'verify', 'corrections', 'certificates', 'ledger', 'account_profile', 'account_notifications', 'account_settings'] as const) {
     test(`user1 ${route}: heading → optional tabs → content`, async ({ page }) => {
       await page.goto(`/?action=${route}&demoUser=user1`);
       const heading = page.locator('main .taxpayer-page-heading').first();
       await expect(heading.locator('h1')).toBeVisible();
       const tabs = page.getByRole('navigation', { name: 'Activity sections' });
-      const requiresTabs = ['history', 'verify', 'corrections', 'certificates'].includes(route);
+      const requiresTabs = ['history', 'journey', 'verify', 'corrections', 'certificates'].includes(route);
       await expect(tabs).toHaveCount(requiresTabs ? 1 : 0);
       if (requiresTabs) {
         expect(await heading.evaluate((node, next) =>
