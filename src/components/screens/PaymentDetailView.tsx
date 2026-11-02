@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTaxState } from '../../services/taxState';
 import { ReceiptView } from '../common/ReceiptView';
+import { PaymentLifecycleSummary } from './PaymentLifecycleSummary';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { receiptReturnRoute } from '../../services/routeContract';
 import { useAccountIdentity } from '../../services/accountIdentity';
@@ -42,7 +43,7 @@ function SyncedCertificate({transactionId,docAction,embedded=false}:{transaction
 
 
 export const PaymentDetailView: React.FC<{embedded?:boolean}> = ({embedded=false}) => {
-  const { selectedReceipt, receipts, taxpayerProfile, userRole, demoUser, routeParams, navigate } = useTaxState();
+  const { selectedReceipt, receipts, taxpayerProfile, userRole, demoUser, routeParams, navigate, language } = useTaxState();
   const confirmedId=routeParams.transactionId;
   const { user: authenticatedUser } = useAccountIdentity();
   const returnTo = receiptReturnRoute(routeParams.returnTo);
@@ -79,6 +80,7 @@ export const PaymentDetailView: React.FC<{embedded?:boolean}> = ({embedded=false
 
   return (
     <div className="pb-12">
+      <PaymentLifecycleSummary receipt={availableReceipt} language={language} />
       <ReceiptView receipt={availableReceipt} embedded={embedded} onBack={() => navigate(returnTo)} />
     </div>
   );
