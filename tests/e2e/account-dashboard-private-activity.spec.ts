@@ -189,3 +189,23 @@ test('ordinary verified account without a taxpayer binding sees no financial sam
   await expect(dashboard).toContainText('এই অ্যাপ অ্যাকাউন্টে কোনো পেমেন্ট প্রোফাইল সংযুক্ত নেই।');
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
 });
+
+
+test('bound SQL ledger keeps historical and new mixed-year allocations independently filterable',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.goto('/?action=ledger');
+  const ledger=page.getByTestId('event-tax-ledger');
+  await expect(ledger).toBeVisible();
+  const years=ledger.getByRole('combobox',{name:'Filter ledger by year'});
+  await years.selectOption('2026-27');
+  await expect(ledger.locator('tbody tr')).toHaveCount(1);
+  await ledger.getByRole('button',{name:/Payment record present/}).first().click();
+  await expect(page.getByTestId('tax-event-details')).toContainText('৳ 65.50');
+  await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
+  await years.selectOption('2025-26');
+  await expect(ledger.locator('tbody tr')).toHaveCount(1);
+  await ledger.getByRole('button',{name:/Payment record present/}).first().click();
+  await expect(page.getByTestId('tax-event-details')).toContainText('৳ 34.50');
+  await expect(page.getByTestId('tax-event-details')).not.toContainText('৳ 65.50');
+  await expect(ledger).not.toContainText('৳ 164.50');
+});

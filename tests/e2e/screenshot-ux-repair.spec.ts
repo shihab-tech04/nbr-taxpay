@@ -51,14 +51,23 @@ test('mobile monthly activity help opens fully within the dashboard width',async
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
-test('mobile journal renders labeled cards with all five financial fields',async({page},info)=>{
-  test.skip(info.project.name==='desktop-1280','Mobile journal reflow');
+test('mobile event ledger preserves readable entries and explicitly labels scenario balances',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile ledger reflow');
   await enterUser1(page);
   await page.goto('/?action=ledger');
-  const journal=page.locator('.taxpayer-ledger-journal__mobile');
-  await expect(journal.getByRole('listitem').first()).toBeVisible();
-  await expect(journal.getByRole('listitem').first()).toContainText('DEMO-LIABILITY');
-  for(const field of ['Debit','Credit','Remaining'])await expect(journal.getByRole('listitem').first()).toContainText(field);
+  const ledger=page.getByTestId('event-tax-ledger');
+  await expect(ledger).toBeVisible();
+  await expect(page.getByText('No ledger records are available for this account yet.')).toHaveCount(0);
+  await expect(ledger.getByTestId('event-ledger-table')).toBeHidden();
+  const entry=ledger.getByRole('listitem').first();
+  await expect(entry).toBeVisible();
+  await expect(entry.getByRole('button')).toBeVisible();
+  await expect(ledger.getByText('Selected-year scenario balance')).toBeVisible();
+  await entry.getByRole('button').click();
+  const detail=page.getByTestId('tax-event-details');
+  await expect(detail).toContainText('Ledger entry ID');
+  await expect(detail).toContainText('Source system');
+  await expect(detail).toContainText('Effect on balance');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 

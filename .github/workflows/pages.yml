@@ -43,6 +43,22 @@ jobs:
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
 
+      - name: Verify preserved ledger and receipt contracts
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: |
+          npx playwright test tests/e2e/user1-scenario.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/navigation-integrity.spec.ts --project=desktop-1280 --grep "user1 dashboard, payment history|user1 year selection|history uses one content panel|ten user1 routes|taxpayer ledger table|All taxpayer inner pages|Taxpayer receipt inspection"
+          npx playwright test tests/e2e/taxpayer-account-integrity.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --grep "generic taxpayer preview|other URL-selected fictional accounts"
+
+      - name: Verify event-based ledger, payment identity and narrow-mobile layout
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/event-based-ledger-payment-history.spec.ts --project=desktop-1280 --project=mobile-320
+
       - name: Verify User1 inline payment suggestion UX
         env:
           VITE_SUPABASE_DISABLED: 'true'
