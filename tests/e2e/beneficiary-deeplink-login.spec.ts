@@ -53,3 +53,18 @@ test('already signed-in Beneficiaries deep links never reopen login or workspace
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
 });
+
+test('user1 lists offer verified cross-device account sync without treating the sample login as Auth',async({page})=>{
+  await page.goto('/?action=taxpayer_login');
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await dialog.getByLabel('User ID',{exact:true}).fill('user1');
+  await dialog.getByLabel('Password',{exact:true}).fill('user1');
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  await page.goto('/?action=beneficiaries');
+  const accountSync=page.getByTestId('beneficiaries-account-sync');
+  await expect(accountSync).toBeVisible();
+  await accountSync.getByRole('button',{name:'Sign in with email'}).click();
+  await expect(page).toHaveURL(/action=secure_workspace/);
+  await expect(page).toHaveURL(/returnTo=beneficiaries/);
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+});

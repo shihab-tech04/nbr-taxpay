@@ -17,7 +17,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,previewAccount,navigate}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -88,6 +88,31 @@ export function Beneficiaries(){
     return()=>{cancelled=true;};
   },[owner,checkingIdentity]);
 
+  // Refresh across tabs and after returning from payments. Keep the current
+  // list visible while reading; never replace a valid snapshot with an empty
+  // state just because a transient request failed.
+  useEffect(()=>{
+    if(checkingIdentity || busy)return;
+    let cancelled=false;
+    let revision=0;
+    const refresh=()=>{
+      if(document.visibilityState==='hidden')return;
+      const current=++revision;
+      void loadBeneficiaries(owner).then(data=>{
+        if(cancelled || current!==revision)return;
+        setLists(data.lists);setPeople(data.people);setError('');
+        setActiveList(selected=>data.lists.some(list=>list.id===selected)?selected:(data.lists[0]?.id??''));
+        setSelectedIds(selected=>selected.filter(id=>data.people.some(person=>person.id===id)));
+      }).catch(()=>{
+        // The last verified snapshot is still visible. A manual reload gives
+        // feedback if the transport or session remains unavailable.
+      });
+    };
+    window.addEventListener('focus',refresh);
+    document.addEventListener('visibilitychange',refresh);
+    return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+  },[owner,checkingIdentity,busy]);
+
   const listPeople=people.filter(person=>person.list_id===activeList);
   const filteredPeople=listPeople.filter(person=>(displayName(person)+' '+person.tin).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
@@ -156,8 +181,9 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       const list=await createBeneficiaryList(owner,listName);
-      setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
-      setActiveList(list.id);setSelectedIds([]);setCreateListOpen(false);setListName('');
+      const saved=await reload(list.id);
+      if(!saved.lists.some(value=>value.id===list.id))throw new Error(tr('List was not saved. Please retry.','তালিকাটি সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
+      setCreateListOpen(false);setListName('');
       setNotice({en:'List created.',bn:'তালিকা তৈরি হয়েছে।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -185,7 +211,11 @@ export function Beneficiaries(){
     try{
       const id=await resolveList();
       const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim()}]);
-      await reload(id);setFlow(null);
+      const saved=await reload(id);
+      if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
+        throw new Error(tr('Beneficiary was not saved. Please retry.','উপকারভোগী সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
+      }
+      setFlow(null);
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -208,7 +238,12 @@ export function Beneficiaries(){
     try{
       const id=await resolveList();
       const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim()})));
-      await reload(id);setFlow(null);
+      const saved=await reload(id);
+      const savedTins=new Set(saved.people.filter(person=>person.list_id===id).map(person=>person.tin));
+      if(chosen.some(row=>!savedTins.has(row.tin))){
+        throw new Error(tr('Some beneficiaries were not saved. Retry the import.','কিছু উপকারভোগী সংরক্ষিত হয়নি। আবার আমদানি করুন।'));
+      }
+      setFlow(null);
       setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -300,6 +335,10 @@ export function Beneficiaries(){
     {owner&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
+    </div>}
+    {!owner&&previewAccount&&<div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3" data-testid="beneficiaries-account-sync">
+      <p className="text-sm text-taxpay-text">{tr('For lists across devices, use your email account.','সব ডিভাইসে একই তালিকা পেতে ইমেইল অ্যাকাউন্ট ব্যবহার করুন।')}</p>
+      <UiButton variant="outline" type="button" onClick={()=>navigate('secure_workspace',{returnTo:'beneficiaries'})}>{tr('Sign in with email','ইমেইল দিয়ে সাইন ইন')}</UiButton>
     </div>}
     {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
