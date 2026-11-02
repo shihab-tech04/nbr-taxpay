@@ -11,6 +11,8 @@ import { formatCurrency } from '../../services/numberFormat';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import type { ChallanReceipt, PaymentCategory } from '../../types/tax';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
+import {TaxPayModal} from '../ui/TaxPayModal';
 
 const statusText: Record<string, {en:string; bn:string}> = {
   INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
@@ -27,6 +29,36 @@ const statusText: Record<string, {en:string; bn:string}> = {
   DISPUTED:{en:'Disputed',bn:'বিরোধপূর্ণ'}
 };
 
+/** Read-only detail projection: a session receipt alone proves no Treasury settlement or tax credit. */
+function historyLifecycleRecord(receipt:ChallanReceipt):PaymentLifecycleRecord {
+  return {
+    reference:receipt.challanNo,
+    taxEventId:receipt.taxEventId,
+    transactionId:receipt.paymentTransactionId||receipt.gatewayTransactionId,
+    challanNo:receipt.challanNo,
+    payerName:receipt.payerName,payerTin:receipt.payerTin,
+    taxpayerTin:receipt.taxpayerTin,
+    assessmentYear:receipt.assessmentYear,
+    paymentType:receipt.paymentCategory.replaceAll('_',' '),
+    taxZone:receipt.taxZone,taxCircle:receipt.taxCircle,
+    channel:receipt.paymentMethod.replaceAll('_',' '),
+    amountMinor:Math.round(receipt.totalAmount*100),
+    createdAt:receipt.createdAt,status:receipt.treasuryStatus.replaceAll('_',' '),
+    financialReceiptStatus:'Not verified',taxCreditStatus:'Not verified',
+    source:'TaxPay payment record',
+    events:[
+      {id:receipt.id+':created',title:'Payment record created',occurredAt:receipt.createdAt,source:'TaxPay payment record'},
+      ...(receipt.completedAt?[{id:receipt.id+':status',title:receipt.treasuryStatus.replaceAll('_',' '),
+        occurredAt:receipt.completedAt,source:'TaxPay payment record'}]:[])
+    ],
+    allocations:receipt.allocationItems?.map((a,index)=>({
+      id:String(index),title:a.taxpayerName+' · '+a.paymentServiceEn,
+      assessmentYear:a.assessmentYear,amountMinor:a.amountMinor
+    }))||receipt.items.map((a,index)=>({id:String(index),title:a.headNameEn,
+      assessmentYear:receipt.assessmentYear,amountMinor:Math.round(a.totalAmount*100)}))
+  };
+}
+
 const escapeCsv = (value: unknown) => {
   let raw = String(value ?? '');
   if (/^[=+\-@\t\r]/.test(raw)) raw = "'" + raw;
@@ -40,6 +72,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('ALL');
   const [category, setCategory] = useState('ALL');
+  const [lifecycleReceipt,setLifecycleReceipt]=useState<ChallanReceipt|null>(null);
   const bn = language === 'bn';
   const label = (en:string,bengali:string)=> bn ? bengali : en;
   // payerTin is not authoritative taxpayer/credit ownership. Only initiated demo receipts
@@ -128,6 +161,10 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                 <p className="mt-1 text-xs text-taxpay-muted"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag> · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
                 <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {treasuryLabel(r)}</p>
                 <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
+                <button type="button" onClick={()=>setLifecycleReceipt(r)}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-white text-sm font-semibold text-taxpay-dark">
+                  {label('Payment lifecycle','পেমেন্টের ধাপসমূহ')} <ArrowRight aria-hidden="true" size={16}/>
+                </button>
                 <button type="button" onClick={()=>selectReceipt(r.id)}
                   className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
                   {label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/>
@@ -154,13 +191,20 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                   <td className="whitespace-nowrap px-3 py-3">{r.assessmentYear}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">{formatCurrency(r.totalAmount,language)}</td>
                   <td className="px-3 py-3">{treasuryLabel(r)}</td>
-                  <td className="px-3 py-3"><button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button></td>
+                  <td className="px-3 py-3"><div className="flex flex-wrap gap-1">
+                    <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Lifecycle','পেমেন্ট ধাপ')}</button>
+                    <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Receipt','রসিদ')}</button>
+                  </div></td>
                 </tr>)}
               </tbody>
             </table>
           </div>
         </>}
       </section>
+      {lifecycleReceipt&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
+        onClose={()=>setLifecycleReceipt(null)} hideFooter className="taxpayer-transaction-detail">
+        <PaymentLifecycleDetails language={language} record={historyLifecycleRecord(lifecycleReceipt)}/>
+      </TaxPayModal>}
     </div>
   );
 };
