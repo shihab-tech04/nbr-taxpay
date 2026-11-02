@@ -5,6 +5,7 @@ import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadAccountTaxJourney,type AccountJourneyItem} from '../../services/accountTaxJourney';
 import {formattedReviewAmount} from '../../services/accountReviewHistory';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {AccountSqlPaymentJourney} from './AccountSqlPaymentJourney';
 
 const destinations=[
   {route:'account_profile',title:{en:'Profile',bn:'প্রোফাইল'},Icon:CircleUserRound},
@@ -58,6 +59,7 @@ export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})
     <TaxpayerPageHeading id="taxpay-journey-title" title={tr('My tax journey','আমার কর কার্যক্রম')}
       description={tr('Recorded account activity and links to the related tax services.','অ্যাকাউন্টের নথিভুক্ত কার্যক্রম এবং সংশ্লিষ্ট করসেবার লিংক।')}/>
     {activityTabs&&<TaxpayerActivityTabs />}
+    {ownerUid&&<AccountSqlPaymentJourney ownerUid={ownerUid} language={language}/>}
     {ownerUid&&<section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="account-journey-events-title"
       data-testid="account-tax-journey">
       <div className="flex flex-wrap items-end justify-between gap-3">
