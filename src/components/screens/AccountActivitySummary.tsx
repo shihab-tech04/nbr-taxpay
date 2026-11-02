@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import {MetricBar} from '../ui/MetricVisuals';
 import {RefreshCcw} from 'lucide-react';
 import {supabase} from '../../services/supabaseClient';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -259,7 +260,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
                   <p className="shrink-0 font-semibold tabular-nums text-taxpay-text">{scenarioAmountLabel(row.amount)}</p>
                 </div>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                  <div className="taxpayer-dashboard__category-bar h-full rounded-full" style={{width:`${basisPoints/100}%`}}/>
+                  <MetricBar className="taxpayer-dashboard__category-bar" value={basisPoints} total={10000} />
                 </div>
               </div>;
             })}

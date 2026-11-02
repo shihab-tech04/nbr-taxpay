@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import {MetricBar} from './MetricVisuals';
 
 /** Portal target for workflow-owned footer actions; the modal still owns its close control. */
 export const TaxPayModalFooterTarget = createContext<HTMLDivElement | null>(null);
@@ -57,15 +58,12 @@ export function TaxPayModal({
   const headerRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLElement>(null);
-  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const initialControl = initialFocusSelector ? dialogRef.current?.querySelector<HTMLElement>(initialFocusSelector) : null;
     (initialControl ?? closeRef.current)?.focus();
 
@@ -101,41 +99,46 @@ export function TaxPayModal({
 
     document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
       previousFocus?.focus();
     };
   }, []);
 
   useLayoutEffect(() => {
-    if (!animateSize) {
-      setContentHeight(null);
-      return;
-    }
-    const body = bodyRef.current;
+    if (!animateSize) return;
+    const dialog = dialogRef.current;
     const header = headerRef.current;
-    const footer = footerRef.current;
+    const body = bodyRef.current;
+    const footerElement = footerRef.current;
     const content = body?.firstElementChild as HTMLElement | null;
-    if (!body || !header || !content) return;
-    // Observe natural content height, not the scrollable body's constrained height.
-    // This allows the modal to animate both expansion and contraction.
+    if (!dialog || !header || !body || !content) return;
     const measure = () => {
       const styles = getComputedStyle(body);
       const padding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
       const available = Math.max(0, window.innerHeight - (window.innerWidth <= 650 ? 0 : 32));
-      const natural = Math.ceil(header.offsetHeight + (footer?.offsetHeight ?? 0) + content.scrollHeight + padding + 2);
-      const next = Math.min(available, natural);
-      setContentHeight(previous => previous === next ? previous : next);
+      return Math.min(available, Math.ceil(header.offsetHeight + (footerElement?.offsetHeight ?? 0) + content.scrollHeight + padding + 2));
     };
-    measure();
-    const observer = new ResizeObserver(measure);
+    let priorHeight = measure();
+    let animation: Animation | null = null;
+    const resize = () => {
+      const nextHeight = measure();
+      if (Math.abs(nextHeight - priorHeight) < 2) return;
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        animation?.cancel();
+        animation = dialog.animate([{height: priorHeight + 'px'}, {height: nextHeight + 'px'}],
+          {duration: 180, easing: 'ease-in-out'});
+      }
+      priorHeight = nextHeight;
+    };
+    const observer = new ResizeObserver(resize);
     observer.observe(content);
     observer.observe(header);
-    if (footer) observer.observe(footer);
-    window.addEventListener('resize', measure);
+    if (footerElement) observer.observe(footerElement);
+    window.addEventListener('resize', resize);
     return () => {
+      animation?.cancel();
       observer.disconnect();
-      window.removeEventListener('resize', measure);
+      window.removeEventListener('resize', resize);
     };
   }, [animateSize, motionKey]);
 
@@ -156,7 +159,6 @@ export function TaxPayModal({
         data-public-service={service}
         data-payment-stage={progress ? "true" : undefined}
         data-size-motion={animateSize ? 'true' : undefined}
-        style={animateSize && contentHeight !== null ? { height: contentHeight } : undefined}
         ref={dialogRef}
       >
         <header ref={headerRef} className="taxpay-modal__header public-service-dialog__header">
@@ -179,7 +181,7 @@ export function TaxPayModal({
         {progress && <div className="taxpay-modal__progress" role="progressbar"
           aria-label="Payment progress" aria-valuemin={0} aria-valuemax={progress.total}
           aria-valuenow={progress.current} aria-valuetext={`Step ${progress.current} of ${progress.total}`}>
-          <span className="taxpay-modal__progress-fill" style={{ width: `${100 * progress.current / progress.total}%` }} />
+          <MetricBar className="taxpay-modal__progress-fill" value={progress.current} total={progress.total} />
         </div>}
         <div ref={bodyRef} className="taxpay-modal__body public-service-dialog__body">
           {children}

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { THEMES, THEME_ORDER, type ThemeId } from './themes';
+import React, { createContext, useContext, useState } from 'react';
+import { THEME_ORDER, type ThemeId } from './themes';
 
 export type OfficeFont = 'inter' | 'poppins' | 'noto-sans' | 'google-sans';
 export type OfficeFontSize = 'compact' | 'standard' | 'large';
@@ -49,27 +49,8 @@ export function OfficeThemeProvider({children}: {children: React.ReactNode}) {
       return updated;
     });
   }
-  const palette = THEMES[appearance.theme];
-  const vars = useMemo(() => ({
-    '--om-primary': palette.primary,
-    '--om-primary-dark': palette.primaryDark,
-    '--om-primary-light': palette.primaryLight,
-    '--om-secondary': palette.secondary,
-    '--om-accent': palette.accent,
-    '--om-background': palette.background,
-    '--om-surface': palette.surface,
-    '--om-border': palette.border,
-    '--om-text': palette.textPrimary,
-    '--om-text-muted': palette.textSecondary,
-    '--om-success': palette.success,
-    '--om-warning': palette.warning,
-    '--om-error': palette.error,
-    '--om-on-primary': appearance.theme === 'dark-mode' ? '#202124' : '#FFFFFF',
-    '--om-font': FONT_FAMILY[appearance.font],
-    '--om-font-scale': String(SIZE_FACTOR[appearance.size])
-  }) as React.CSSProperties, [palette, appearance.font, appearance.size, appearance.theme]);
   return <ThemeContext.Provider value={{...appearance,setTheme: theme=>set({theme}),setFont:font=>set({font}),setSize:size=>set({size})}}>
-    <div className="om-root" data-office-theme={appearance.theme} style={vars}>{children}</div>
+    <div className="om-root" data-office-theme={appearance.theme} data-office-font={appearance.font} data-office-size={appearance.size}>{children}</div>
   </ThemeContext.Provider>;
 }
 

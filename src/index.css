@@ -10,6 +10,7 @@
 @import './styles/taxpay-payment-form.css';
 @import './styles/taxpayer-tin-lookup.css';
 @import './styles/taxpayer-sobaike-parity.css';
+@import './styles/taxpay-metrics.css';
 
 @theme {
   /* Locked Korbritto primary: never replace this with a service/status color. */

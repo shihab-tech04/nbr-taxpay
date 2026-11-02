@@ -1,0 +1,29 @@
+/* Shared citizen chart primitives: all live percentages are SVG geometry, never inline CSS. */
+.taxpay-citizen-shell .ui-metric-bar,
+.taxpay-citizen-shell .ui-metric-stack,
+.taxpay-citizen-shell .ui-metric-column {display:block;width:100%;height:100%;overflow:hidden}
+.taxpay-citizen-shell :is(.ui-metric-bar,.ui-metric-stack,.ui-metric-column) rect {fill:currentColor}
+.taxpay-citizen-shell .ui-metric-donut {position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.taxpay-citizen-shell .ui-metric-donut circle {fill:none;stroke:currentColor;stroke-width:20}
+.taxpay-citizen-shell .ui-metric-donut__track {stroke:var(--color-taxpay-border)}
+.taxpay-citizen-shell .ui-metric-tone--primary {color:var(--color-taxpay-primary)}
+.taxpay-citizen-shell .ui-metric-tone--secondary {color:var(--color-taxpay-secondary)}
+.taxpay-citizen-shell .ui-metric-tone--dark {color:var(--color-taxpay-dark)}
+.taxpay-citizen-shell .ui-metric-tone--accent {color:var(--color-taxpay-accent)}
+.taxpay-citizen-shell .ui-metric-tone--neutral {color:var(--color-taxpay-muted)}
+.taxpay-citizen-shell .ui-metric-tone--income {color:var(--service-return-primary)}
+.taxpay-citizen-shell .ui-metric-tone--withholding {color:var(--service-withholding-primary)}
+.taxpay-citizen-shell .ui-metric-tone--travel {color:var(--service-other-primary)}
+.taxpay-citizen-shell .ui-metric-dot {display:inline-block;width:10px;height:10px;flex-shrink:0;border-radius:50%;background:currentColor}
+.taxpay-citizen-shell .taxpayer-monthly-chart {display:flex;min-width:max-content}
+.taxpay-citizen-shell .taxpayer-monthly-chart > * {min-width:52px;flex:1}
+.taxpay-citizen-shell .taxpayer-monthly-bar {height:94px;position:relative;overflow:visible}
+.taxpay-citizen-shell .taxpayer-monthly-bar .ui-metric-column {position:absolute;inset:0}
+.taxpay-citizen-shell .taxpayer-dashboard__category-bar.ui-metric-column {background:transparent}
+@media (prefers-reduced-motion:reduce) {
+  .taxpay-citizen-shell :is(.ui-metric-bar,.ui-metric-stack,.ui-metric-column,.ui-metric-donut) {transition:none}
+}
+
+/* Shared overlay body lock: no imperative document.body.style mutation. */
+body:has(.taxpay-modal__overlay) {overflow:hidden}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__progress-fill {width:100%;height:100%;background:transparent}

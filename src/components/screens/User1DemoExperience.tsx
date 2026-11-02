@@ -1,4 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
+import {MetricDonut, MetricColumn, MetricDot, MetricStack} from '../ui/MetricVisuals';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -214,12 +215,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
-    {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
-    {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
-    {label:tr('Direct payment','সরাসরি পেমেন্ট'),value:totals.direct,color:'var(--color-taxpay-dark)'},
-    {label:tr('Remaining','অবশিষ্ট'),value:totals.outstanding,color:'var(--color-taxpay-accent)'}
+    {label:tr('TDS','উৎসে কর'),value:totals.tds,tone:'primary' as const},
+    {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,tone:'secondary' as const},
+    {label:tr('Direct payment','সরাসরি পেমেন্ট'),value:totals.direct,tone:'dark' as const},
+    {label:tr('Remaining','অবশিষ্ট'),value:totals.outstanding,tone:'accent' as const}
   ];
-  const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const cats:Kind[]=['income','tds','ait','travel'];
   const [chartKind,setChartKind]=useState<Kind>('income');
   const [selectedCoverage,setSelectedCoverage]=useState<number|null>(null);
@@ -292,7 +292,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         </div>
         <div className="relative mx-auto my-5 h-48 w-48 rounded-full sm:h-52 sm:w-52" role="img"
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
-          style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
+>
+          <MetricDonut segments={coveredBreakdown} total={totals.liability} />
           <div className="absolute inset-[43px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
             <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Applied','সমন্বিত'):coveredBreakdown[selectedCoverage].label}</p>
             <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-2xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
@@ -303,7 +304,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
             title={tr('Show ','দেখুন: ')+x.label+': '+money(x.value)}
             onClick={()=>setSelectedCoverage(selectedCoverage===i?null:i)}
             className={'taxpayer-coverage-row flex w-full min-w-0 items-center justify-between gap-2 py-2 text-left text-sm '+(selectedCoverage===i?'taxpayer-coverage-row--active':'')}>
-            <span className="flex min-w-0 items-center gap-2"><span aria-hidden="true" className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{backgroundColor:x.color}}/>{x.label}</span>
+            <span className="flex min-w-0 items-center gap-2"><MetricDot tone={x.tone} />{x.label}</span>
             <span className="shrink-0 font-semibold tabular-nums">{money(x.value)}</span>
           </button>)}
         </div>
@@ -331,8 +332,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         <div className="taxpayer-monthly-scroll mt-3 overflow-x-auto" tabIndex={monthKeys.length>5?0:undefined}
           aria-label={tr('Monthly activity chart','মাসভিত্তিক কার্যক্রম চার্ট')}>
           {monthKeys.length?
-            <div className="taxpayer-monthly-chart grid h-40 items-end gap-1 border-b border-taxpay-border pb-1 sm:gap-2"
-              style={{gridTemplateColumns:'repeat('+monthKeys.length+',minmax(52px,1fr))',minWidth:monthKeys.length*52+'px'}}
+            <div className="taxpayer-monthly-chart h-40 items-end gap-1 border-b border-taxpay-border pb-1 sm:gap-2"
               role="group" aria-label={tr(...labels[chartKind])+': '+monthKeys.map((key,i)=>monthLabel(key,true)+' '+money(monthValues[i])).join('; ')}>
               {monthValues.map((v,i)=><div key={monthKeys[i]} className="flex min-w-0 h-full flex-col items-center justify-end gap-1">
                 <p className="min-h-4 text-[10px] tabular-nums text-taxpay-muted">{v?Math.round(v/1000)+'k':''}</p>
@@ -340,11 +340,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
                   <button type="button" className="taxpayer-monthly-bar w-full max-w-10 rounded-t bg-taxpay-secondary"
                     aria-label={tr(...labels[chartKind])+', '+monthLabel(monthKeys[i],true)+': '+money(v)}
                     title={monthLabel(monthKeys[i],true)+': '+money(v)}
-                    style={{height:Math.max(6,v*94/chartMax)+'px'}}
                     onClick={()=>navigate('history',{categoryFilter:chartKind,monthFilter:monthKeys[i]})}>
+                    <MetricColumn value={v} total={chartMax} tone="secondary" />
                     <span className="taxpayer-monthly-bar__tooltip" aria-hidden="true">{monthLabel(monthKeys[i],true)} · {money(v)}</span>
                   </button>:
-                  <span aria-hidden="true" className="w-full max-w-10" style={{height:0}}/>}
+                  <span aria-hidden="true" className="w-full max-w-10" />}
                 <p className="text-xs whitespace-nowrap text-taxpay-muted">{monthLabel(monthKeys[i])}</p>
               </div>)}
             </div>:
@@ -400,21 +400,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
           <p className="mt-1 text-xs text-taxpay-muted">{tr('Posted credits for the selected assessment year','নির্বাচিত করবর্ষের নথিভুক্ত ক্রেডিট')} · {year}</p>
           <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-taxpay-border" role="img"
             aria-label={tr('Posted credit composition','নথিভুক্ত ক্রেডিটের বিভাজন')+': '+tr('TDS','উৎসে কর')+' '+money(totals.tds)+', '+tr('Advance tax','অগ্রিম কর')+' '+money(totals.ait)+', '+tr('Direct payments','সরাসরি পরিশোধ')+' '+money(totals.direct)}>
-            {([
-              {value:totals.tds,color:'var(--color-taxpay-primary)'},
-              {value:totals.ait,color:'var(--color-taxpay-secondary)'},
-              {value:totals.direct,color:'var(--color-taxpay-dark)'}
-            ] as const).map((part,i)=><span key={i} aria-hidden="true" style={{width:(totals.applied>0?part.value/totals.applied*100:0)+'%',backgroundColor:part.color}} />)}
+            <MetricStack total={totals.applied} segments={[
+              {value:totals.tds,tone:'primary'},
+              {value:totals.ait,tone:'secondary'},
+              {value:totals.direct,tone:'dark'}
+            ]} />
           </div>
           <table className="mt-4 w-full text-sm" aria-label={tr('Posted credit components','নথিভুক্ত ক্রেডিটের উপাদান')}>
             <thead><tr className="text-taxpay-muted"><th scope="col" className="pb-2 text-left font-medium">{tr('Component','উপাদান')}</th><th scope="col" className="pb-2 text-right font-medium">{tr('Posted credit','নথিভুক্ত ক্রেডিট')}</th></tr></thead>
             <tbody className="divide-y divide-taxpay-border">
               {([
-                {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
-                {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
-                {label:tr('Direct payments','সরাসরি পরিশোধ'),value:totals.direct,color:'var(--color-taxpay-dark)'}
+                {label:tr('TDS','উৎসে কর'),value:totals.tds,tone:'primary' as const},
+                {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,tone:'secondary' as const},
+                {label:tr('Direct payments','সরাসরি পরিশোধ'),value:totals.direct,tone:'dark' as const}
               ] as const).map(component=><tr key={component.label}>
-                <th scope="row" className="py-2 text-left font-normal text-taxpay-text"><span aria-hidden="true" className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{backgroundColor:component.color}}/>{component.label}</th>
+                <th scope="row" className="py-2 text-left font-normal text-taxpay-text"><MetricDot tone={component.tone} />{component.label}</th>
                 <td className="py-2 text-right font-semibold tabular-nums">{money(component.value)}</td>
               </tr>)}
               <tr><th scope="row" className="pt-3 text-left font-semibold">{tr('Total applied credits','মোট সমন্বিত ক্রেডিট')}</th><td className="pt-3 text-right font-semibold tabular-nums">{money(totals.applied)}</td></tr>

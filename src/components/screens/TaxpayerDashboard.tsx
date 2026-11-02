@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import {MetricDonut, MetricColumn} from '../ui/MetricVisuals';
 import { Activity, ArrowRight, CalendarDays, Download, Receipt, Search, ShieldCheck, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
@@ -176,7 +177,11 @@ export const TaxpayerDashboard: React.FC = () => {
       <section className={card} aria-labelledby="composition-heading">
         <h2 id="composition-heading" className="text-base font-semibold text-slate-800">{tr('Payment composition','পেমেন্টের বিভাজন')}</h2>
         <p className="mt-1 text-xs text-slate-500">{tr('Activity by payment category','খাতভিত্তিক লেনদেন')}</p>
-        {exampleRecords.length?<><div role="img" aria-label={tr('Transaction category breakdown','খাতভিত্তিক লেনদেন')} className="relative mx-auto my-6 h-52 w-52 rounded-full" style={{background:`conic-gradient(var(--service-return-primary) 0% ${100*demoTotals[0]/(sum||1)}%, var(--service-withholding-primary) ${100*demoTotals[0]/(sum||1)}% ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}%, var(--service-other-primary) ${100*(demoTotals[0]+demoTotals[1])/(sum||1)}% 100%)`}}><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Activity breakdown','লেনদেনের বিভাজন')}</div></div>
+        {exampleRecords.length?<><div role="img" aria-label={tr('Transaction category breakdown','খাতভিত্তিক লেনদেন')} className="relative mx-auto my-6 h-52 w-52 rounded-full"><MetricDonut segments={[
+          {value:demoTotals[0],tone:'income'},
+          {value:demoTotals[1],tone:'withholding'},
+          {value:demoTotals[2],tone:'travel'}
+        ]} total={sum} /><div className="absolute inset-[54px] flex items-center justify-center rounded-full bg-white text-center text-xs font-semibold text-slate-700">{tr('Activity breakdown','লেনদেনের বিভাজন')}</div></div>
         {[tr('Income tax','আয়কর'),tr('Source tax','উৎসে কর'),tr('Travel tax','ভ্রমণ কর')].map((label,i)=><div className="flex items-center justify-between border-t border-slate-100 py-3 text-sm" key={label}><p><span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${['taxpayer-category-legend__swatch--income','taxpayer-category-legend__swatch--source','taxpayer-category-legend__swatch--travel'][i]}`}/>{label}</p><p className="font-semibold">৳ {fmt(demoTotals[i])}</p></div>)}</>:
         empty(tr('No activity to summarize','সারসংক্ষেপের তথ্য নেই'),tr('No payment records for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেকর্ড নেই।'))}
       </section>
@@ -186,7 +191,7 @@ export const TaxpayerDashboard: React.FC = () => {
           {filterLabels.map(f=><button key={f.key} type="button" aria-pressed={category===f.key} data-payment-service={f.key==='source'?'SOURCE_TAX_DEPOSIT':f.key==='travel'?'TRAVEL_TAX':f.key==='income'?'TAX_WITH_RETURN':undefined} className={`taxpayer-dashboard__category-filter min-h-11 rounded-lg border px-2 text-xs font-medium ${category===f.key?'border-blue-700 bg-blue-50 text-blue-900':'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`} onClick={()=>setCategory(f.key)}>{tr(f.en,f.bn)}</button>)}
         </div>
         {records.length?<div className="mt-8 flex h-64 items-end gap-2 border-b border-slate-200 pb-6" role="img" aria-label={tr('Transaction amounts by record','রেকর্ড অনুযায়ী লেনদেনের পরিমাণ')}>
-          {records.slice(0,12).map((r,i)=>{const max=Math.max(...records.map(x=>x.totalAmount),1);return <div key={r.id} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2"><p className="text-[10px] text-slate-500">{fmt(r.totalAmount)}</p><div data-payment-service={r.paymentCategory} className="taxpayer-dashboard__category-bar w-full max-w-12 rounded-t-md" style={{height:Math.max(4,r.totalAmount/max*185)}}/><p className="text-[10px] text-slate-500">{i+1}</p></div>})}
+          {records.slice(0,12).map((r,i)=>{const max=Math.max(...records.map(x=>x.totalAmount),1);return <div key={r.id} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2"><p className="text-[10px] text-slate-500">{fmt(r.totalAmount)}</p><div data-payment-service={r.paymentCategory} className="h-[185px] w-full max-w-12"><MetricColumn value={r.totalAmount} total={max} tone="primary" /></div><p className="text-[10px] text-slate-500">{i+1}</p></div>})}
         </div>:<div className="mt-5">{empty(tr('No activity for this selection','এই বাছাইয়ে লেনদেন নেই'),tr('No transactions match the selected category.','নির্বাচিত খাতে কোনো লেনদেন নেই।'))}</div>}
       </section>
     </div>
