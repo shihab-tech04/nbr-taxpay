@@ -9,7 +9,7 @@ import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { formatCurrency } from '../../services/numberFormat';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
-import type { ChallanReceipt, PaymentCategory } from '../../types/tax';
+import type { ChallanReceipt, PaymentCategory, Language } from '../../types/tax';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -30,7 +30,7 @@ const statusText: Record<string, {en:string; bn:string}> = {
 };
 
 /** Read-only detail projection: a session receipt alone proves no Treasury settlement or tax credit. */
-function historyLifecycleRecord(receipt:ChallanReceipt):PaymentLifecycleRecord {
+function historyLifecycleRecord(receipt:ChallanReceipt,language:Language):PaymentLifecycleRecord {
   return {
     reference:receipt.challanNo,
     taxEventId:receipt.taxEventId,
@@ -39,7 +39,7 @@ function historyLifecycleRecord(receipt:ChallanReceipt):PaymentLifecycleRecord {
     payerName:receipt.payerName,payerTin:receipt.payerTin,
     taxpayerTin:receipt.taxpayerTin,
     assessmentYear:receipt.assessmentYear,
-    paymentType:receipt.paymentCategory.replaceAll('_',' '),
+    paymentType:CATEGORY_LABELS[receipt.paymentCategory]?.[language]||receipt.paymentCategory.replaceAll('_',' '),
     taxZone:receipt.taxZone,taxCircle:receipt.taxCircle,
     channel:receipt.paymentMethod.replaceAll('_',' '),
     amountMinor:Math.round(receipt.totalAmount*100),
@@ -203,7 +203,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
       </section>
       {lifecycleReceipt&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
         onClose={()=>setLifecycleReceipt(null)} hideFooter className="taxpayer-transaction-detail">
-        <PaymentLifecycleDetails language={language} record={historyLifecycleRecord(lifecycleReceipt)}/>
+        <PaymentLifecycleDetails language={language} record={historyLifecycleRecord(lifecycleReceipt,language)}/>
       </TaxPayModal>}
     </div>
   );
