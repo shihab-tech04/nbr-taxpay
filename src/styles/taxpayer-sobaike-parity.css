@@ -155,7 +155,7 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main {
     padding-inline: clamp(24px, 2.5vw, 64px);
   }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > :not(.citizen-account-gate) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > :not(.citizen-account-gate):not(.taxpayer-reference-secure) {
     width: 100%;
     max-width: none;
     min-width: 0;
