@@ -12,7 +12,9 @@
     "test:domain": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test --config playwright.config.ts",
     "test:integration:local": "node tests/integration/localSupabaseHttp.mjs",
-    "test:hosted": "node --import tsx --test tests/external/hosted-simulation.test.ts"
+    "test:hosted": "node --import tsx --test tests/external/hosted-simulation.test.ts",
+    "audit:ui": "node scripts/audit-ui.mjs",
+    "audit:ui:check": "node scripts/audit-ui.mjs --check"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
