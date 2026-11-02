@@ -11,7 +11,8 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   await expect(events.getByRole('columnheader',{name:'Date / time'})).toBeVisible();
   await expect(events.getByRole('columnheader',{name:'Year · component'})).toBeVisible();
   await expect(events.getByRole('columnheader',{name:'Actor · source'})).toBeVisible();
-  await expect(events.getByText('Not verified')).toBeVisible();
+  await expect(events.getByText('Selected-year scenario balance')).toBeVisible();
+  await expect(events.getByText('৳25,000').first()).toBeVisible();
 
   await events.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2025-2026');
   await events.getByRole('button',{name:'Credits'}).click();
