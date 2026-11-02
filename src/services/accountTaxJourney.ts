@@ -27,7 +27,7 @@ export function projectAccountTaxJourney(ownerUid:string,requests:RequestRow[],e
   const result:AccountJourneyItem[]=own.map(row=>({
     key:'request:'+row.id,requestId:row.id,at:row.submitted_at,category:row.category,
     assessmentYear:row.assessment_year,label:'SUBMITTED_FOR_REVIEW',source:'request',
-    status:safeReviewStatus(row.request_status),reference:row.id,
+    status:'SUBMITTED_FOR_REVIEW',reference:row.id,
   }));
   for(const event of events){
     const request=byId.get(event.request_id);
