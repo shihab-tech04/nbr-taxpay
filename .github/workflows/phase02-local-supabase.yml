@@ -115,7 +115,9 @@ jobs:
           test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename='taxpay_payment_drafts' and cmd='UPDATE'")" = 1
           test "$(psql -X -Atqc "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='taxpay_payment_drafts' and grantee='authenticated' and privilege_type='UPDATE'")" = 5
           test "$(psql -X -Atqc "select to_regclass('public.taxpay_beneficiaries') is not null and to_regclass('public.taxpay_beneficiary_lists') is not null")" = t
-          test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename in ('taxpay_beneficiaries','taxpay_beneficiary_lists')")" = 8
+          # Eight owner-isolation policies plus two verified-admin read-only SELECT policies.
+          test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename in ('taxpay_beneficiaries','taxpay_beneficiary_lists')")" = 10
+          test "$(psql -X -Atqc "select count(*) from pg_policies where schemaname='public' and tablename in ('taxpay_beneficiaries','taxpay_beneficiary_lists') and cmd='SELECT' and policyname like '%verified_portal_admin'")" = 2
           test "$(psql -X -Atqc "select not has_table_privilege('anon','public.taxpay_beneficiaries','SELECT') and not has_table_privilege('anon','public.taxpay_beneficiary_lists','INSERT')")" = t
           echo "PASS: $applied_migrations ordered migrations installed, including canonical Main banner guard, private beneficiary storage, corrections and owner-update grants"
 
