@@ -3,6 +3,7 @@ import { useTaxState } from '../../services/taxState';
 
 const activitySections = [
   { route: 'history', en: 'Transactions', bn: 'লেনদেনসমূহ' },
+  { route: 'journey', en: 'Tax journey', bn: 'কর যাত্রা' },
   { route: 'history', trackPayment: true, en: 'Track payment', bn: 'পেমেন্ট অনুসন্ধান' },
   { route: 'corrections', en: 'Issues & corrections', bn: 'সমস্যা ও সংশোধন' },
   { route: 'certificates', en: 'Receipts & certificates', bn: 'রসিদ ও সনদপত্র' },
