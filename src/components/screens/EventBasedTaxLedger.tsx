@@ -203,7 +203,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     <div className="overflow-x-auto rounded-xl border border-taxpay-border bg-white">
       {visible.length===0?<p role="status" className="p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>:
         <>
-          <table className="min-w-[840px] w-full text-left text-xs" data-testid="event-ledger-table">
+          <table className="hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
             <thead className="bg-taxpay-background text-taxpay-muted"><tr>
               <th className="p-3">{t('Date / time','তারিখ / সময়')}</th><th className="p-3">{t('Event','ঘটনা')}</th>
               <th className="p-3">{t('Year · component','বর্ষ · খাত')}</th>
