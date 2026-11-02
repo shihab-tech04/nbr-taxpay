@@ -651,3 +651,27 @@
   .public-hero-carousel__fixed { transition: none; }
   .public-hero-carousel__fixed .public-hero-carousel__image-layer { transition: none; }
 }
+
+/* Fail closed when the CMS cannot confirm published artwork. Keep only safe
+   service entrypoints, never bundled images with unknown publication state. */
+.public-hero-carousel--offline .public-hero-carousel__fixed {
+  background: var(--citizen-primary-light);
+}
+.public-hero-carousel__retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: .75rem;
+  padding: .45rem .85rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: .5rem;
+  background: transparent;
+  color: var(--citizen-text);
+  font: inherit;
+  cursor: pointer;
+}
+.public-hero-carousel__retry:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
+}

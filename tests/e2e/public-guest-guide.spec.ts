@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { setWorkspaceLanguage } from './workspace-language';
 import {expect,test} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -527,3 +528,7 @@ test('Travel Tax Bangla route search is accessible and fits mobile viewport',asy
  await modal.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
  await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });

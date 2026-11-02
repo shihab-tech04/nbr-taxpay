@@ -58,3 +58,27 @@ test('uploaded SQL image paths override v9 defaults while mobile may use its own
   await expect(media.locator('img')).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/desktop\.jpg/);
   await expect(media.locator('source')).toHaveAttribute('srcset', /taxpay-banners\/banners\/intro\/mobile\.png/);
 });
+
+test('CMS outage never resurrects unpublished bundled artwork and payment actions remain accessible', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  let cmsAvailable = false;
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    cmsAvailable
+      ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(banners) })
+      : route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"temporarily unavailable"}' }),
+  );
+  await page.goto('/?action=landing');
+  const fallback = page.getByRole('region', { name: 'Tax payment service banners' });
+  await expect(fallback.getByText(/Banner information is temporarily unavailable/)).toBeVisible();
+  await expect(page.locator('.public-hero-carousel__image-layer')).toHaveCount(0);
+  await expect(fallback.getByRole('button', { name: 'Pay Tax' })).toBeVisible();
+  await expect(fallback.getByRole('button', { name: 'Pay Travel Tax' })).toBeVisible();
+
+  cmsAvailable = true;
+  await fallback.getByRole('button', { name: 'Retry banner loading' }).click();
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await expect(carousel.locator('.public-hero-carousel__image-layer')).toHaveCount(5);
+  const expectedHeading = (page.viewportSize()?.width ?? 1280) <= 640
+    ? 'SQL mobile heading' : 'Updated SQL-controlled headline';
+  await expect(carousel.getByRole('heading', { name: expectedHeading })).toBeVisible();
+});

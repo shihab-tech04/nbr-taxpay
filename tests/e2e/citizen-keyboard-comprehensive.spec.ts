@@ -1,3 +1,4 @@
+import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 
 test('Public skip link and FAQ disclosure work with keyboard alone', async ({ page }) => {
@@ -90,3 +91,7 @@ test('Scrolled-away mobile header is inert rather than an invisible Tab trap', a
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(header).not.toHaveAttribute('inert', '');
 });
+
+// Banner-dependent browser checks use explicitly published CMS rows;
+// unavailable CMS must not revive unpublished bundled artwork.
+test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
