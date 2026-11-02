@@ -5,7 +5,6 @@ create table if not exists public.taxpay_public_issue_reports (
   id uuid primary key default gen_random_uuid(),
   reference text generated always as ('KRB-' || upper(substr(replace(id::text,'-',''),1,12))) stored unique,
   submission_key uuid not null unique,
-  tracking_secret uuid not null unique default gen_random_uuid(),
   source_hash text not null check (source_hash ~ '^[a-f0-9]{64}$'),
   category text not null check (category in ('payment','reference','security')),
   details text not null check (char_length(btrim(details)) between 10 and 500),
