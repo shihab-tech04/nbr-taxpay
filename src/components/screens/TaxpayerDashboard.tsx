@@ -27,7 +27,14 @@ export const TaxpayerDashboard: React.FC = () => {
   const greeting = taxpayerGreeting(language, new Date().getHours(), visibleName,
     Boolean(previewAccount) || isReturningTaxpayer(user?.created_at, user?.last_sign_in_at));
   const serviceName = (code: ServiceCategoryCode) => code === 'TRAVEL_TAX' ? tr('Travel tax','ভ্রমণ কর') : (CATEGORY_LABELS[code]?.[language] ?? code);
-  const [year,setYear] = useState(ASSESSMENT_YEARS[0] || '2026-2027');
+  // Verified-account activity already defaults to the newest year (2026-27).
+  // Keep that prior working default when the v11 dashboard becomes visible.
+  // Do not change the historical sample-only assessment-year list.
+  const [yearChoice,setYearChoice] = useState<string|null>(null);
+  const accountYears=user ? ['2026-2027',...ASSESSMENT_YEARS] : ASSESSMENT_YEARS;
+  const defaultYear=user ? '2026-2027' : (ASSESSMENT_YEARS[0] || '2026-2027');
+  const year=yearChoice&&accountYears.includes(yearChoice) ? yearChoice : defaultYear;
+  const setYear=(value:string)=>setYearChoice(value);
   const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
   // Explicit demo activity ONLY. Payer-TIN fixtures do not establish credit ownership.
@@ -88,7 +95,7 @@ export const TaxpayerDashboard: React.FC = () => {
       description={previewAccount ? `${tr('User ID','ইউজার আইডি')}: ${previewAccount.id}` : undefined}
       actions={<div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
-          <select value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800">{ASSESSMENT_YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select>
+          <select value={year} onChange={e=>setYear(e.target.value)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800">{accountYears.map(y=><option key={y} value={y}>{y}</option>)}</select>
         </label>
         {!user && <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>}
       </div>} />
@@ -117,7 +124,7 @@ export const TaxpayerDashboard: React.FC = () => {
         {tr('Verified tax balances are not available. Your account activity is shown below.',
           'যাচাইকৃত করের ব্যালেন্স পাওয়া যায়নি। নিচে আপনার অ্যাকাউন্টের কার্যক্রম দেখুন।')}
       </p>
-      <AuthenticatedDashboardPosition language={language} year={year} years={ASSESSMENT_YEARS}
+      <AuthenticatedDashboardPosition language={language} year={year} years={accountYears}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
       <AccountActivitySummary ownerUid={user.id} language={language}
         dashboardYear={year} onDashboardYearChange={setYear}
