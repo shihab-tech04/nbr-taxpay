@@ -2,7 +2,7 @@ import {useRef,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {supabase} from '../../services/supabaseClient';
 
-type ReportAck={reference:string;trackingToken:string;status:string};
+type ReportAck={reference:string;status:string};
 
 export function PublicReport(){
  const {language}=useTaxState();
@@ -37,9 +37,10 @@ export function PublicReport(){
      const {data,error:serviceError}=await supabase.functions.invoke('taxpay-public-report',{
        body:{category,details:details.trim(),submissionKey:submissionKey.current}
      });
-     if(serviceError||!data||typeof data.reference!=='string'||typeof data.trackingToken!=='string')
+     if(serviceError||!data||typeof data.reference!=='string'||typeof data.status!=='string')
        throw new Error('Report not accepted');
      setAck(data as ReportAck);
+     setLookupReference(data.reference);
    }catch{
      setError(bn?'রিপোর্ট পাঠানো যায়নি। তথ্য ঠিক রেখে আবার চেষ্টা করুন।':'Report not sent. Your details are still here; please retry.');
    }finally{setPending(false);}
