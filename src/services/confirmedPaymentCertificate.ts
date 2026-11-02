@@ -126,6 +126,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   paymentCategory:category,assessmentYear:allocationYears.length?allocationYears.join(', '):stringValue(d.assessmentYear)||'—',
   payerName:stringValue(d.payerName)||'—',payerTin:stringValue(d.payerTin)||'—',
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
+  receiptEmail:stringValue(d.receiptEmail),
   noticeReference:stringValue(d.noticeReference),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
