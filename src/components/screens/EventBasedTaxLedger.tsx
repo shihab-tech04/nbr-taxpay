@@ -195,7 +195,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         <select aria-label={t('Filter ledger by year','করবর্ষ অনুযায়ী লেজার')}
           value={currentYear} onChange={e=>onYearChange?onYearChange(e.target.value):setSelectedYear(e.target.value)}
           className="min-h-10 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
-          {!year&&<option value="all">{t('All years','সব করবর্ষ')}</option>}
+          <option value="all">{t('All years','সব করবর্ষ')}</option>
           {allYears.map(y=><option key={y} value={y}>{y}</option>)}
         </select>
       </label>
