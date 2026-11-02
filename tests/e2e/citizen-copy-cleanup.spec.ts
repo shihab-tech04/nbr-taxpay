@@ -26,7 +26,10 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
     await page.goto('/?action='+route+'&demoUser=user1');
     const main=page.getByTestId('user1-synthetic-workspace');
     await expect(main).toBeVisible();
-    if (['account_profile','account_settings'].includes(route))
+    if (route==='ledger') {
+      await expect(main.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+      await expect(main.getByRole('combobox',{name:'Filter ledger by year'})).toBeVisible();
+    } else if (['account_profile','account_settings'].includes(route))
       await expect(main.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
     else await expect(main.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
     expect(await main.innerText(), route+' exposes repetitive jargon').not.toMatch(banned);

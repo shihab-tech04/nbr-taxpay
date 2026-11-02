@@ -56,3 +56,52 @@ test('event ledger keeps the mobile viewport free from page-level horizontal ove
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
+
+
+test('desktop ledger keeps one year control and the complete table within its own scroll region',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(ledger);
+  await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toHaveCount(1);
+  const table=page.getByTestId('event-ledger-table');
+  const scroller=table.locator('..');
+  await expect(table).toBeVisible();
+  const widths=await scroller.evaluate(el=>({
+    scroll:el.scrollWidth,client:el.clientWidth,
+    viewport:document.documentElement.scrollWidth-document.documentElement.clientWidth
+  }));
+  expect(widths.scroll).toBeGreaterThan(widths.client);
+  expect(widths.viewport).toBeLessThanOrEqual(2);
+});
+
+test('activity filters share one desktop row and details use the shared wide modal',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto(history);
+  const controls=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-filters > label');
+  await expect(controls).toHaveCount(4);
+  const positions=await controls.evaluateAll(nodes=>nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
+  expect(new Set(positions).size).toBe(1);
+  await page.getByRole('button',{name:'Details for Salary withholding'}).click();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog.getByTestId('payment-lifecycle-details')).toBeVisible();
+  const dimensions=await dialog.boundingBox();
+  expect(dimensions?.width).toBeGreaterThanOrEqual(800);
+  await expect(dialog.getByText('Tax circle',{exact:true})).toBeVisible();
+  await dialog.getByRole('button',{name:'Close transaction details'}).click();
+  await expect(dialog).toBeHidden();
+});
+
+test('small-screen transaction details stay within a scrollable bottom sheet',async({page})=>{
+  await page.setViewportSize({width:320,height:760});
+  await page.goto(history);
+  await page.getByRole('button',{name:'Details for Salary withholding'}).click();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog.getByTestId('payment-lifecycle-details')).toBeVisible();
+  const box=await dialog.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(-1);
+  expect(box!.x+box!.width).toBeLessThanOrEqual(321);
+  expect(box!.y+box!.height).toBeGreaterThanOrEqual(758);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
