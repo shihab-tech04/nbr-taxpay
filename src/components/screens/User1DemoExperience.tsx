@@ -8,6 +8,7 @@ import {DEMO_USERS} from '../../data/demoUsers';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
 import {ReceiptLookup} from './ReceiptLookup';
+import {EventBasedTaxLedger, PaymentLifecycleDetails, type TaxAccountEvent} from './EventBasedTaxLedger';
 
 /**
  * Public synthetic storybook dataset for fictional "user1" only.
@@ -209,7 +210,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
-    actions={!['account_profile','account_settings'].includes(route) ? years : undefined} />;
+    actions={!['account_profile','account_settings','ledger'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
@@ -452,32 +453,41 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       </button>
     </section>
   </>;
-  const journalEntries=(()=>{
-    let balance=totals.liability;
-    const postings=scoped.filter(x=>x.state==='POSTED'&&['income','tds','ait'].includes(x.kind)).sort((a,b)=>a.date.localeCompare(b.date));
-    return [{id:'OPEN',date:year.slice(0,4)+'-07-01',ref:'DEMO-LIABILITY-'+year,debit:totals.liability,credit:0,bal:totals.liability},
-      ...postings.map(x=>{balance-=x.amount;return {id:x.id,date:x.date,ref:x.ref,debit:0,credit:x.amount,bal:balance};})];
-  })();
-  const ledger=<>
-    <section className="grid gap-3 sm:grid-cols-3">{card('Tax liability','করদায়',money(totals.liability),'Single opening liability per tax year','প্রতি করবর্ষে একটি প্রাথমিক দায়')}
-      {card('Applied credits','প্রয়োগকৃত ক্রেডিট',money(totals.applied),'TDS + AIT + posted direct payments','উৎসে কর + অগ্রিম কর + পোস্টকৃত পেমেন্ট')}
-      {card('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),'Independent from travel-tax records','ভ্রমণ কর থেকে পৃথক')}</section>
-    <section className={panel}><h2 className="text-base font-semibold">{tr('Running-balance journal','চলতি ব্যালেন্সের জার্নাল')}</h2>{sub('Journal shows the opening liability and eligible posted entries.','জার্নালে প্রাথমিক দায় ও যোগ্য পোস্টকৃত এন্ট্রি দেখানো হয়েছে।')}
-      <div className="taxpayer-ledger-journal__mobile mt-4" role="list" aria-label={tr('Journal entries','জার্নাল এন্ট্রি')}>
-        {journalEntries.map(entry=><article role="listitem" className="taxpayer-ledger-journal__card" key={entry.id}>
-          <div className="taxpayer-ledger-journal__identity"><time dateTime={entry.date}>{entry.date}</time><p>{entry.ref}</p></div>
-          <dl>
-            <div><dt>{tr('Debit','ডেবিট')}</dt><dd>{entry.debit?money(entry.debit):'—'}</dd></div>
-            <div><dt>{tr('Credit','ক্রেডিট')}</dt><dd>{entry.credit?money(entry.credit):'—'}</dd></div>
-            <div><dt>{tr('Remaining','অবশিষ্ট')}</dt><dd>{money(entry.bal)}</dd></div>
-          </dl>
-        </article>)}
-      </div>
-      <div className="mt-4 hidden overflow-x-auto sm:block"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{[tr('Date','তারিখ'),tr('Reference','রেফারেন্স'),tr('Debit','ডেবিট'),tr('Credit','ক্রেডিট'),tr('Remaining','অবশিষ্ট')].map((label,index)=><th key={label} className={'px-3 py-3 '+(index>=2?'text-right':'')}>{label}</th>)}</tr></thead>
-      <tbody>{journalEntries.map(entry=><tr className="border-b border-slate-100" key={entry.id}><td className="whitespace-nowrap px-3 py-3">{entry.date}</td><td className="px-3 py-3">{entry.ref}</td><td className="px-3 py-3 text-right">{entry.debit?money(entry.debit):'—'}</td><td className="px-3 py-3 text-right">{entry.credit?money(entry.credit):'—'}</td><td className="px-3 py-3 text-right font-semibold">{money(entry.bal)}</td></tr>)}</tbody></table></div>
-      <p className="mt-3 text-xs text-slate-600">{tr('Control check','যাচাই')}: {money(totals.liability)} − {money(totals.applied)} = {money(totals.outstanding)}. {tr('Pending, travel-tax, disputed, failed and reversal entries are excluded.','অপেক্ষমাণ, ভ্রমণ, বিরোধপূর্ণ, ব্যর্থ ও রিভার্স অন্তর্ভুক্ত নয়।')}</p>
-    </section>
-  </>;
+  // A single event projection powers every supported assessment year; a record is
+  // never promoted into an official balance just because its scenario state is POSTED.
+  const ledgerEvents:TaxAccountEvent[]=taxYears.flatMap(assessment=>{
+    let running=assessment.liability*100;
+    const opening:TaxAccountEvent={
+      id:'OPEN-'+assessment.year,occurredAt:assessment.year.slice(0,4)+'-07-01T00:00:00Z',
+      code:'LIABILITY_CREATED',title:tr('Opening liability','প্রাথমিক করদায়'),
+      assessmentYear:assessment.year,component:tr('Income tax','আয়কর'),
+      amountMinor:running,effectMinor:running,balanceAfterMinor:running,
+      actor:'System',source:'Account scenario',taxEventId:'OPEN-'+assessment.year,
+      reference:'LIABILITY-'+assessment.year,status:'Recorded',
+      reason:tr('Opening assessment-year liability.','করবর্ষের প্রাথমিক দায়।')
+    };
+    const lines=events.filter(item=>item.year===assessment.year).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+    const entries=lines.map(item=>{
+      const accepted=item.state==='POSTED'&&['tds','ait','income'].includes(item.kind);
+      const effect=accepted?-item.amount*100:null;
+      if(effect!==null)running+=effect;
+      const code=item.kind==='tds'?'TDS_'+item.state:
+        item.kind==='ait'?'ADVANCE_TAX_'+item.state:
+        item.kind==='refund'?'REFUND_'+item.state:
+        item.kind==='adjustment'?'CORRECTION_'+item.state:
+        item.kind==='travel'?'TRAVEL_TAX_'+item.state:'PAYMENT_'+item.state;
+      return {
+        id:item.id,occurredAt:item.date+'T00:00:00Z',code,title:item.title,
+        assessmentYear:item.year,component:tr(...labels[item.kind]),
+        amountMinor:item.amount*100,effectMinor:effect,balanceAfterMinor:running,
+        actor:'System',source:item.channel,taxEventId:item.id,
+        challanNo:item.challan,reference:item.ref,status:tr(...stateLabels[item.state]),
+        reason:item.detail,linkedReferences:[item.ref,...(item.challan?[item.challan]:[])]
+      } satisfies TaxAccountEvent;
+    });
+    return [opening,...entries];
+  });
+  const ledger=<EventBasedTaxLedger events={ledgerEvents} language={language}/>;
   const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Receipts and supporting records','রসিদ ও সহায়ক নথি')}</h2>{sub('Open a record to see its details','বিস্তারিত দেখতে রেকর্ড খুলুন')}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View details','বিস্তারিত দেখুন')}</button></article>)}</div>
   </section></>;
@@ -567,14 +577,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       className="taxpayer-transaction-detail"
       hideFooter
     >
-      <div className="taxpayer-transaction-detail__body">
-        <p className="text-sm font-semibold text-taxpay-muted">{tr('Transaction details','লেনদেনের বিস্তারিত')}</p>
-        <div className="taxpayer-transaction-detail__summary"><p className="text-xl font-semibold tabular-nums text-taxpay-text">{money(selected.amount)}</p>{tag(selected.state)}</div>
-        <dl className="taxpayer-transaction-detail__facts">{[
-          [tr('Reference','রেফারেন্স'),selected.ref],[tr('Assessment year','করবর্ষ'),selected.year],[tr('Date','তারিখ'),formatDate(selected.date)],[tr('Category','ধরন'),tr(...labels[selected.kind])],
-          [tr('Channel','মাধ্যম'),selected.channel],[tr('Challan reference','চালান রেফারেন্স'),selected.challan||tr('Unavailable','পাওয়া যায়নি')],[tr('Meaning','বিবরণ'),selected.detail]
-        ].map(x=><div key={x[0]}><dt>{x[0]}</dt><dd>{x[1]}</dd></div>)}</dl>
-      </div>
+      <PaymentLifecycleDetails language={language} record={{
+        reference:selected.ref,taxEventId:selected.id,challanNo:selected.challan,
+        payerName:selected.kind==='income'?DEMO_USERS.user1.nameEn:undefined,
+        payerTin:selected.kind==='income'?DEMO_USERS.user1.tin:undefined,
+        taxpayerName:DEMO_USERS.user1.nameEn,taxpayerTin:DEMO_USERS.user1.tin,
+        assessmentYear:selected.year,paymentType:tr(...labels[selected.kind]),
+        taxCircle:DEMO_USERS.user1.taxCircle,channel:selected.channel,
+        amountMinor:selected.amount*100,createdAt:selected.date+'T00:00:00Z',
+        status:tr(...stateLabels[selected.state]),
+        financialReceiptStatus:tr('Not verified','যাচাই হয়নি'),
+        taxCreditStatus:tr('Not verified','যাচাই হয়নি'),
+        source:selected.channel,
+        events:[{id:selected.id,title:selected.title,occurredAt:selected.date+'T00:00:00Z',
+          source:selected.channel,note:selected.detail}],
+      }}/>
     </TaxPayModal>}
   </div>;
 };
