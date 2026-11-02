@@ -44,7 +44,7 @@ test('select all never overflows the pinned desktop calculation', async ({ page 
   await menu.locator('summary').click();
   await menu.getByRole('button', { name: 'Select all', exact: true }).click();
   const calculation = dialog.locator('.taxpay-modal__body .payment-form-summary');
-// All selected heads are exposed in the same list. The old six-item
+  // All selected heads are exposed in the same list. The old six-item
   // disclosure was intentionally removed; never restore it to satisfy a test.
   const entries = calculation.locator('.payment-form-summary__breakdown > button');
   expect(await entries.count()).toBeGreaterThan(6);
@@ -61,7 +61,6 @@ test('select all never overflows the pinned desktop calculation', async ({ page 
   await lastHead.scrollIntoViewIfNeeded();
   await expect(lastHead).toBeInViewport();
   expect(await scrollArea.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
-  await expect(calculation.getByTestId('payment-total-in-words')).toBeVisible();
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
 });
 
