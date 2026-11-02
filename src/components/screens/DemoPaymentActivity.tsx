@@ -298,8 +298,34 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           <ul className="mt-2 divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="flex justify-between gap-2 py-2 text-sm">
             <div><p>{a.beneficiary} · <span className="taxpay-service-value" data-payment-service={a.category}>{simulationCategoryLabels[a.category][bn?'bn':'en']}</span></p><p className="text-taxpay-muted">AY {a.assessmentYear}</p></div>
             <p className="font-semibold tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p></li>)}</ul>
-          <details className="mt-3 rounded-lg border border-taxpay-border p-3"><summary className="cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
-            <ol className="mt-2 space-y-2">{tx.events.map(e=><li key={e.id} className="text-sm"><p className="font-semibold">{e.action}</p><p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p></li>)}</ol>
+          <details className="mt-3 rounded-lg border border-taxpay-border p-3" data-testid="payment-event-history">
+            <summary className="min-h-11 cursor-pointer py-2 font-semibold text-taxpay-dark">{txt('View payment identity, events and linked records','পেমেন্ট পরিচিতি, ইভেন্ট ও সংযুক্ত রেকর্ড দেখুন')}</summary>
+            <div className="grid gap-3 border-t border-taxpay-border pt-3 text-sm sm:grid-cols-2">
+              <div><p className="text-xs text-taxpay-muted">{txt('Payment transaction ID','পেমেন্ট লেনদেন আইডি')}</p><p className="break-all font-mono font-semibold">{tx.transactionId}</p></div>
+              <div><p className="text-xs text-taxpay-muted">{txt('Payment reference','পেমেন্ট রেফারেন্স')}</p><p className="break-all font-mono font-semibold">{tx.id}</p></div>
+              <div><p className="text-xs text-taxpay-muted">{txt('Payer','পরিশোধকারী')}</p><p className="font-semibold">{tx.payer}</p></div>
+              <div><p className="text-xs text-taxpay-muted">{txt('Recorded status','নথিভুক্ত অবস্থা')}</p><p className="font-semibold">{tx.state}</p></div>
+              <div><p className="text-xs text-taxpay-muted">{txt('Office review status','অফিস পর্যালোচনার অবস্থা')}</p><p className="font-semibold">{tx.reviewStatus}</p></div>
+              <div><p className="text-xs text-taxpay-muted">{txt('Total amount','মোট পরিমাণ')}</p><p className="font-semibold">{formatSimulatedAmount(tx.totalMinor)}</p></div>
+            </div>
+            <h3 className="mb-2 mt-5 font-semibold text-taxpay-text">{txt('Event-based activity journal','ইভেন্টভিত্তিক কার্যক্রমের জার্নাল')}</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-[580px] w-full text-left text-xs">
+                <thead className="bg-taxpay-background text-taxpay-muted"><tr>
+                  <th scope="col" className="px-3 py-2">{txt('Date / time','তারিখ / সময়')}</th>
+                  <th scope="col" className="px-3 py-2">{txt('Event','ইভেন্ট')}</th>
+                  <th scope="col" className="px-3 py-2">{txt('Reason / details','কারণ / বিবরণ')}</th>
+                  <th scope="col" className="px-3 py-2">{txt('Event reference','ইভেন্ট রেফারেন্স')}</th>
+                </tr></thead>
+                <tbody className="divide-y divide-taxpay-border">{tx.events.map(e=><tr key={e.id}>
+                  <td className="whitespace-nowrap px-3 py-3"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></td>
+                  <td className="px-3 py-3 font-semibold">{e.action.replace(/_/g,' ')}</td>
+                  <td className="px-3 py-3">{e.note}</td>
+                  <td className="break-all px-3 py-3 font-mono">{e.id}</td>
+                </tr>)}</tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-xs text-taxpay-muted">{txt('Financial settlement, challan and tax-credit events are not shown unless verified source records exist.','যাচাইকৃত উৎস রেকর্ড না থাকলে আর্থিক নিষ্পত্তি, চালান ও কর ক্রেডিট ইভেন্ট দেখানো হয় না।')}</p>
           </details>
         </article>)}
     </section>
