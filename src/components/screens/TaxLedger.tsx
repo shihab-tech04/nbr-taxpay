@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {
   getBoundSimulationUser,getDemoStoryPaymentHistory,getPrivateSimulationHistory,
   simulationCategoryLabels,type SimulationTransaction
@@ -67,7 +68,11 @@ export const TaxLedger:React.FC=()=>{
     async function load(){
       if(authenticatedUser){
         // Do not read public user IDs as a substitute for a signed-in, owner-scoped query.
-        await getBoundSimulationUser();
+        try { await getBoundSimulationUser(); }
+        catch(error) {
+          if(error instanceof Error && error.message.includes('No approved synthetic profile binding'))return [];
+          throw error;
+        }
         const [payer,beneficiary]=await Promise.all([
           getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary')
         ]);
@@ -98,7 +103,7 @@ export const TaxLedger:React.FC=()=>{
     if(tx)setSelected(paymentRecord(tx));
   };
   return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
-    <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} />
+    <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
     {identityPending||state.state==='loading'?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
       {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
     state.state==='error'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
@@ -111,6 +116,7 @@ export const TaxLedger:React.FC=()=>{
       <p className="text-xs text-taxpay-muted">{t('TaxPay and Office activity may be recorded here. An official liability, settlement or credit balance requires verified source events.',
         'এখানে ট্যাক্সপে ও অফিসের কার্যক্রম দেখা যেতে পারে। সরকারি দায়, নিষ্পত্তি বা ক্রেডিট ব্যালেন্সের জন্য যাচাইকৃত ঘটনা প্রয়োজন।')}</p>
     </>}
+    {previewAccount&&<DemoServiceRecordsPanel userId={previewAccount.id} language={language}/>}
     {selected&&<TaxPayModal title={t('Payment details','পেমেন্টের বিবরণ')} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <PaymentLifecycleDetails record={selected} language={language}/>
     </TaxPayModal>}
