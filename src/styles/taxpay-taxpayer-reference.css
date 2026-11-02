@@ -1208,7 +1208,7 @@
   }
   .taxpay-citizen-shell .taxpay-modal__overlay:has(.taxpayer-transaction-detail) {
     align-items:flex-end;
-    padding:0;
+    padding:0 0 2px;
   }
   .taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail {
     width:100%;
