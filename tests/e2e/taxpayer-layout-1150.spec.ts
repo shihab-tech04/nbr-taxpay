@@ -68,7 +68,10 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
     for (const route of ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings']) {
       await page.goto(url(route));
       await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-      if(['account_profile','account_settings'].includes(route))
+      if(route==='ledger') {
+        await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+        await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toBeVisible();
+      } else if(['account_profile','account_settings'].includes(route))
         await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
       else await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
       const dims=await page.evaluate(() => ({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
