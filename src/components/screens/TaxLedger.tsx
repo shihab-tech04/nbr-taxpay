@@ -17,7 +17,11 @@ function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccount
     const lines=tx.allocations.length?tx.allocations:[{
       id:'unallocated',assessmentYear:'Unavailable',amountMinor:tx.totalMinor,category:'UNALLOCATED'
     }];
-    return tx.events.flatMap(event=>lines.map((line,index)=>({
+    const recorded=tx.events.length?tx.events:[{
+      id:'payment-record',occurredAt:tx.createdAt,
+      action:'PAYMENT_RECORD_PRESENT',note:'Payment record present in SQL'
+    }];
+    return recorded.flatMap(event=>lines.map((line,index)=>({
       id:tx.transactionId+':'+event.id+':'+line.id+':'+index,
       occurredAt:event.occurredAt,
       code:event.action,
