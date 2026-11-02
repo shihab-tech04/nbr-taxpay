@@ -124,6 +124,13 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/publicIssueIntakeIsolation.sql
 
+      - name: Rehearse reversible public issue intake migration rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/publicIssueRollbackRehearsal.sql
+
       - name: Verify capability-scoped guest beneficiary storage and owner isolation
         run: |
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
