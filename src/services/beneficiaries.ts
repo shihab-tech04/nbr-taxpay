@@ -47,28 +47,60 @@ export async function loadBeneficiaries(ownerUid: string | null = null): Promise
  */
 export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promise<{lists:number;people:number}> {
   if(!ownerUid)throw new Error('Sign in before restoring beneficiaries.');
+  const db=client();
+  const ensureOwner=async()=>{
+    const {data,error}=await db.auth.getUser();
+    if(error||data.user?.id!==ownerUid){
+      throw new Error('Your signed-in account has changed. Sign in again before restoring beneficiaries.');
+    }
+  };
+  // A supplied owner UID is never enough to authorize a private account write.
+  await ensureOwner();
   if(!hasStoredGuestBeneficiaries())return {lists:0,people:0};
   const source=await loadGuestBeneficiaries();
   if(!source.lists.length)return {lists:0,people:0};
+  await ensureOwner();
   const existing=await loadBeneficiaries(ownerUid);
   const known=[...existing.lists];
+  const destinations=new Map<string,string>();
   let listCount=0,personCount=0;
   for(const guestList of source.lists){
-    let destination=known.find(list=>list.name.toLocaleLowerCase()===guestList.name.toLocaleLowerCase());
+    await ensureOwner();
+    const normalizedName=guestList.name.trim().toLocaleLowerCase();
+    let destination=known.find(list=>list.name.trim().toLocaleLowerCase()===normalizedName);
     if(!destination){
-      try { destination=await createBeneficiaryList(ownerUid,guestList.name); }
+      let created=false;
+      try { destination=await createBeneficiaryList(ownerUid,guestList.name);created=true; }
       catch(error){
-        // Another tab might have just created the same list. Resolve by its owner-scoped name.
+        // A concurrent same-account request may have created the list. Never
+        // substitute a different owner's list or discard a failed source row.
         const refreshed=await loadBeneficiaries(ownerUid);
-        destination=refreshed.lists.find(list=>list.name.toLocaleLowerCase()===guestList.name.toLocaleLowerCase());
+        destination=refreshed.lists.find(list=>list.name.trim().toLocaleLowerCase()===normalizedName);
         if(!destination)throw error;
       }
-      known.push(destination);listCount++;
+      known.push(destination);
+      if(created)listCount++;
     }
+    destinations.set(guestList.id,destination.id);
     const rows=source.people.filter(person=>person.list_id===guestList.id)
       .map(person=>({tin:person.tin,display_name:person.display_name}));
     for(let offset=0;offset<rows.length;offset+=500){
+      await ensureOwner();
       personCount+=await addBeneficiaries(ownerUid,destination.id,rows.slice(offset,offset+500));
+    }
+  }
+  // A successful HTTP write is insufficient: verify each original TIN is
+  // readable from the same verified owner's SQL account before announcing success.
+  await ensureOwner();
+  const saved=await loadBeneficiaries(ownerUid);
+  for(const guestList of source.lists){
+    const destinationId=destinations.get(guestList.id);
+    if(!destinationId||!saved.lists.some(list=>list.id===destinationId)){
+      throw new Error('A beneficiary list could not be verified. Retry to finish restoring it.');
+    }
+    const savedTins=new Set(saved.people.filter(person=>person.list_id===destinationId).map(person=>person.tin));
+    if(source.people.some(person=>person.list_id===guestList.id&&!savedTins.has(person.tin))){
+      throw new Error('Some beneficiaries could not be verified. Retry safely; existing records will not be duplicated.');
     }
   }
   return {lists:listCount,people:personCount};
