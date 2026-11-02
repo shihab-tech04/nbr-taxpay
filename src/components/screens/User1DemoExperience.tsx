@@ -102,6 +102,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     url.searchParams.delete('monthFilter');
     window.history.replaceState(window.history.state,'',url);
   };
+  const [ledgerYear,setLedgerYear]=useState<string>(year);
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
@@ -488,8 +489,23 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     });
     return [opening,...entries];
   });
-  const ledger=<EventBasedTaxLedger events={ledgerEvents} language={language}
-    onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>;
+  const visibleLedgerTotals=ledgerYear==='all'
+    ? taxYears.map(y=>yearSummary(y.year)!).reduce((sum,item)=>({
+      liability:sum.liability+item.liability,applied:sum.applied+item.applied,
+      outstanding:sum.outstanding+item.outstanding
+    }),{liability:0,applied:0,outstanding:0})
+    : yearSummary(ledgerYear)||totals;
+  const ledger=<>
+    <section className="grid gap-3 sm:grid-cols-3" aria-label={tr('Assessment-year summary','করবর্ষের সারসংক্ষেপ')}>
+      {card('Tax liability','করদায়',money(visibleLedgerTotals.liability),'Opening liabilities','প্রাথমিক দায়')}
+      {card('Applied credits','প্রয়োগকৃত ক্রেডিট',money(visibleLedgerTotals.applied),'Posted source, advance and direct entries','উৎসে কর, অগ্রিম কর ও সরাসরি এন্ট্রি')}
+      {card('Remaining balance','অবশিষ্ট দায়',money(visibleLedgerTotals.outstanding),'Scenario journal, not an official NBR balance','সরকারি এনবিআর ব্যালেন্স নয়')}
+    </section>
+    <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear}
+      onYearChange={setLedgerYear}
+      onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
+  </>;
+
   const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Receipts and supporting records','রসিদ ও সহায়ক নথি')}</h2>{sub('Open a record to see its details','বিস্তারিত দেখতে রেকর্ড খুলুন')}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View details','বিস্তারিত দেখুন')}</button></article>)}</div>
   </section></>;
