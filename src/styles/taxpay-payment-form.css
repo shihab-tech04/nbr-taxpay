@@ -285,6 +285,25 @@
   display: grid; gap: .55rem; padding: .65rem;
   border-top: 1px solid var(--citizen-border, #dce5f0);
 }
+/* Only the expanded selected-head list scrolls. Keep the taxpayer header,
+   collapse control, next taxpayer and modal footer in their approved positions. */
+.payment-form-summary__taxpayer-entries {
+  display: grid;
+  min-width: 0;
+  gap: .55rem;
+}
+@media (min-width: 801px) {
+  .payment-form-summary__taxpayer-entries[data-expanded="true"] {
+    max-height: min(36dvh, 340px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-color: #8c9db5 #f3f7fc;
+    padding-inline-end: 6px;
+  }
+}
+
 /* Keep a visible, keyboard-operable disclosure ahead of the bulk preview.
    All lines remain in the payment model; only the summary presentation folds. */
 .payment-form-summary__taxpayer-show-all {
