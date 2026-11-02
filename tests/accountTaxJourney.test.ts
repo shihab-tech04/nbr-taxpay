@@ -29,6 +29,10 @@ test('owner mismatch and orphan events fail closed instead of showing another ac
 });
 
 test('unknown status is explicitly unavailable, not silently approved',()=>{
-  const rows=projectAccountTaxJourney(owner,[{...request,request_status:'TREASURY_SETTLED'}],[]);
-  assert.equal(rows[0].status,'UNVERIFIED');
+  const rows=projectAccountTaxJourney(owner,[request],[{
+    id:4,request_id:request.id,event_type:'UNRECOGNIZED_RESPONSE',
+    status_after:'TREASURY_SETTLED',occurred_at:'2026-10-04T10:00:00Z',
+  }]);
+  assert.equal(rows[0].status,'SUBMITTED_FOR_REVIEW');
+  assert.equal(rows[1].status,'UNVERIFIED');
 });
