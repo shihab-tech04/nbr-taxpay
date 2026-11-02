@@ -202,7 +202,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
       </label>
     </div>
     <div className="overflow-x-auto rounded-xl border border-taxpay-border bg-white">
-      {visible.length===0?<p role="status" className="p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>:
+      {visible.length===0&&<p role="status" className="p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
         <>
           <table className="hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
             <thead className="bg-taxpay-background text-taxpay-muted"><tr>
@@ -238,7 +238,6 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             </button>
           </li>)}</ul>
         </>
-      }
     </div>
     {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <section className="space-y-4 p-1" data-testid="tax-event-details">
