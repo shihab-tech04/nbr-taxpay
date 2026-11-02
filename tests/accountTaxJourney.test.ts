@@ -13,7 +13,7 @@ test('journey follows only recorded application review events in chronology; nev
     {id:1,request_id:request.id,event_type:'OFFICER_ACKNOWLEDGED',status_after:'OFFICER_ACKNOWLEDGED',occurred_at:'2026-10-02T10:00:00Z'},
   ]);
   assert.deepEqual(rows.map(r=>r.source),['request','review_event','review_event']);
-  assert.deepEqual(rows.map(r=>r.status),['INFO_REQUESTED','OFFICER_ACKNOWLEDGED','INFO_REQUESTED']);
+  assert.deepEqual(rows.map(r=>r.status),['SUBMITTED_FOR_REVIEW','OFFICER_ACKNOWLEDGED','INFO_REQUESTED']);
   assert.deepEqual(rows.map(r=>r.assessmentYear),['2026-27','2026-27','2026-27']);
   assert.equal(rows.every(r=>r.reference===request.id),true);
   assert.equal(rows.some(r=>/TREASURY|POSTED|CREDIT_RECOGNIZED/.test(r.label)),false);
