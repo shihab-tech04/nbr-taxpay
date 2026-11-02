@@ -481,13 +481,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         assessmentYear:item.year,component:tr(...labels[item.kind]),
         amountMinor:item.amount*100,effectMinor:effect,balanceAfterMinor:running,
         actor:'System',source:item.channel,taxEventId:item.id,
+        paymentId:['income','ait','travel'].includes(item.kind)?item.ref:undefined,
         challanNo:item.challan,reference:item.ref,status:tr(...stateLabels[item.state]),
         reason:item.detail,linkedReferences:[item.ref,...(item.challan?[item.challan]:[])]
       } satisfies TaxAccountEvent;
     });
     return [opening,...entries];
   });
-  const ledger=<EventBasedTaxLedger events={ledgerEvents} language={language}/>;
+  const ledger=<EventBasedTaxLedger events={ledgerEvents} language={language}
+    onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>;
   const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Receipts and supporting records','রসিদ ও সহায়ক নথি')}</h2>{sub('Open a record to see its details','বিস্তারিত দেখতে রেকর্ড খুলুন')}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View details','বিস্তারিত দেখুন')}</button></article>)}</div>
   </section></>;
