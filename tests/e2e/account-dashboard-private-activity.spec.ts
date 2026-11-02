@@ -165,6 +165,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   const refreshedHistory=page.waitForRequest(request=>request.url().endsWith('/rest/v1/rpc/sim_my_payment_history')&&request.method()==='POST');
   await dashboard.getByRole('button',{name:'অ্যাকাউন্টের কার্যক্রম হালনাগাদ করুন'}).click();
   await refreshedHistory;
+  // Refresh can replace the account summary while its request resolves. Wait
+  // for the visible control to return to idle before testing navigation.
+  await expect(dashboard.getByRole('button',{name:'অ্যাকাউন্টের কার্যক্রম হালনাগাদ করুন'})).toBeEnabled();
   await dashboard.getByRole('button',{name:'প্রোফাইল দেখুন'}).click();
   await expect(page).toHaveURL(/action=account_profile(?:&|$)/);
   await expect(page.getByRole('heading',{name:'প্রোফাইল',exact:true,level:1})).toBeVisible();

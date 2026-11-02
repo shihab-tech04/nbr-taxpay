@@ -212,7 +212,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
-    actions={!['account_profile','account_settings','ledger'].includes(route) ? years : undefined} />;
+    actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
@@ -515,41 +515,43 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {card('Refund / adjustment requests','ফেরত / সমন্বয় আবেদন',String(correctionRecords.filter(x=>x.state==='REQUESTED').length),'No approval implied','অনুমোদন বোঝায় না')}
     {card('Unmatched / failed / reversed','অমিল / ব্যর্থ / রিভার্স',String(correctionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Not included as credits','ক্রেডিট হিসাবে গণনা নয়')}</div>
     <section className={panel}><h2 className="text-base font-semibold">{tr('Exception and correction tracker','ব্যতিক্রম ও সংশোধন ট্র্যাকার')}</h2><div className="mt-3 space-y-3">{correctionRecords.length?correctionRecords.map(x=><article className="rounded-lg border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.ref} · {x.date}</p><p className="mt-2 text-sm">{x.detail}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('Review case','কেস দেখুন')}</button></article>):<p className="text-sm text-slate-500">{tr('No exceptions this year','এই করবর্ষে ব্যতিক্রম নেই')}</p>}</div></section></>;
-  // Only actual scenario events appear; never invent Treasury, challan or credit milestones.
-  const chronologicalEvents=[...scoped].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
-  const journey=<section className={panel} aria-labelledby="taxpayer-journey-events-heading">
+
+  // The same immutable payment records feed Transactions, Tax Ledger and this journey.
+  // Group by calendar year, not assessment year; do not manufacture posting milestones.
+  const journeyEvents=[...events].sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
+  const journeyCalendarYears=[...new Set(journeyEvents.map(item=>item.date.slice(0,4)))];
+  const journey=<section className={panel+' taxpayer-payment-journey'} aria-labelledby="taxpayer-journey-events-heading" data-testid="taxpay-payment-journey">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><h2 id="taxpayer-journey-events-heading" className="text-base font-semibold">{tr('My tax journey','আমার কর যাত্রা')}</h2>
-        {sub('Recorded events for assessment year '+year+'.','করবর্ষ '+year+'-এর নথিভুক্ত ঘটনা।')}</div>
-      {view('ledger','Review linked ledger','সংযুক্ত লেজার দেখুন')}
+      <div><h2 id="taxpayer-journey-events-heading" className="text-lg font-semibold">{tr('Tax journey','কর যাত্রা')}</h2>
+        {sub('Payment activity across calendar years. Open any event for complete details.','বছর অনুযায়ী পেমেন্টের কার্যক্রম। বিস্তারিত দেখতে ঘটনা খুলুন।')}</div>
+      {view('history','Transaction history','লেনদেনের ইতিহাস')}
     </div>
     <p className="mt-3 text-xs text-taxpay-muted" role="note">
-      {tr('Payment attempts, receipts, ledger entries and applied tax credits are distinct. Only recorded statuses are shown.',
-        'পেমেন্টের চেষ্টা, রসিদ, লেজার এন্ট্রি ও সমন্বিত কর ক্রেডিট পৃথক। শুধু নথিভুক্ত অবস্থাই দেখানো হয়েছে।')}
+      {tr('Recorded payment events only. An attempt, a saved receipt and a verified tax credit are different statuses.',
+        'শুধু নথিভুক্ত পেমেন্টের ঘটনা। পেমেন্ট প্রচেষ্টা, সংরক্ষিত রসিদ এবং যাচাইকৃত কর ক্রেডিট আলাদা অবস্থা।')}
     </p>
-    {chronologicalEvents.length ? <ol className="mt-4 space-y-0" aria-label={tr('Chronological account events','কালানুক্রমিক হিসাবের ঘটনা')}>
-      {chronologicalEvents.map(item=><li key={item.id} className="relative border-l-2 border-taxpay-border pb-5 pl-5 last:pb-0">
-        <span className="absolute -left-[6px] top-1 h-2.5 w-2.5 rounded-full border-2 border-taxpay-primary bg-white" aria-hidden="true"/>
-        <article className="min-w-0 rounded-lg border border-taxpay-border bg-taxpay-background p-3 sm:p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0"><p className="text-xs font-medium text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
-              <h3 className="mt-1 text-sm font-semibold text-taxpay-text">{item.title}</h3></div>
-            {tag(item.state)}
-          </div>
-          <p className="mt-2 break-all text-xs text-taxpay-muted">{tr('Reference','রেফারেন্স')}: {item.ref}</p>
-          <p className="mt-2 text-sm text-taxpay-text">{item.detail}</p>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold tabular-nums">{money(item.amount)}</p>
-            <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>
-              {tr('View details','বিস্তারিত দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
-            </button>
-          </div>
-        </article>
-      </li>)}
-    </ol> : <p role="status" className="mt-4 rounded-lg border border-dashed border-taxpay-border px-4 py-6 text-center text-sm text-taxpay-muted">
-      {tr('No recorded events for this assessment year.','এই করবর্ষে কোনো নথিভুক্ত ঘটনা নেই।')}
-    </p>}
-    <div className="mt-4 flex flex-wrap gap-2">{view('history','Inspect transactions','লেনদেন দেখুন')}{view('certificates','Inspect evidence','প্রমাণ দেখুন')}</div>
+    <div className="mt-5 space-y-6">
+      {journeyCalendarYears.map(calendarYear=><section key={calendarYear} aria-label={calendarYear}>
+        <h3 className="mb-3 text-xl font-semibold text-taxpay-text">{calendarYear}</h3>
+        <ol className="space-y-0" aria-label={tr('Payment events in ','এই বছরের পেমেন্ট ঘটনা: ')+calendarYear}>
+          {journeyEvents.filter(item=>item.date.startsWith(calendarYear)).map(item=>
+            <li key={item.id} className="grid grid-cols-[100px_minmax(0,1fr)] gap-3 sm:grid-cols-[130px_minmax(0,1fr)]">
+              <time dateTime={item.date} className="pt-1 text-right text-xs text-taxpay-muted">{formatDate(item.date)}</time>
+              <div className="relative border-l-2 border-taxpay-border pb-5 pl-5 last:pb-0">
+                <span className="absolute -left-[6px] top-1.5 h-2.5 w-2.5 rounded-full bg-taxpay-primary" aria-hidden="true"/>
+                <button type="button" onClick={()=>setSelected(item)} aria-label={tr('View details for ','বিস্তারিত দেখুন: ')+item.title}
+                  className="w-full min-w-0 rounded-lg p-1 text-left hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+                  <span className="block text-sm font-semibold text-taxpay-text">{item.title} · {money(item.amount)}</span>
+                  <span className="mt-1 block break-words text-xs text-taxpay-muted">
+                    {tr('AY ','করবর্ষ ')}{item.year} · {tr(...stateLabels[item.state])} · {tr(...labels[item.kind])}
+                  </span>
+                  <span className="mt-1 block break-all text-xs text-taxpay-muted">{item.ref} · {item.detail}</span>
+                </button>
+              </div>
+            </li>)}
+        </ol>
+      </section>)}
+    </div>
   </section>;
   const profile=<section className={panel}><h2 className="text-base font-semibold">{tr('Account details','অ্যাকাউন্টের তথ্য')}</h2>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">{[

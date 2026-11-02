@@ -43,22 +43,24 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await expect(page.getByText('DEMO-PAY-24-01').first()).toBeVisible();
 });
 
-test('tax journey uses chronological scenario events, no invented four-stage confirmations',async({page})=>{
-  await page.goto('/?action=journey&demoUser=user1&scenarioYear=2025-2026');
-  const timeline=page.getByRole('list',{name:'Chronological account events'});
+test('Tax Journey tab shows every historical payment grouped by calendar year and preserves event details',async({page})=>{
+  await page.goto('/?action=history&demoUser=user1');
+  const tabs=page.getByRole('navigation',{name:'Activity sections'});
+  await tabs.getByRole('button',{name:'Tax journey'}).click();
+  const timeline=page.getByTestId('taxpay-payment-journey');
   await expect(timeline).toBeVisible();
-  await expect(timeline.locator('li')).toHaveCount(14);
-  await expect(timeline.locator('li').first()).toContainText('Salary withholding');
-  await expect(timeline).toContainText('Pending bank reconciliation');
-  await expect(timeline).toContainText('Unmatched withholding candidate');
+  await expect(tabs.getByRole('button',{name:'Tax journey'})).toHaveAttribute('aria-current','page');
+  for(const year of ['2026','2025','2024','2023'])await expect(timeline.getByRole('heading',{name:year})).toBeVisible();
+  await expect(timeline.locator('li')).toHaveCount(21);
+  await expect(timeline.locator('li').first()).toContainText('Pending bank reconciliation');
+  await expect(timeline).toContainText('DEMO-PAY-PEND-01');
+  await expect(timeline).toContainText('DEMO-ETDS-23-01');
   await expect(timeline.getByText('Treasury settlement',{exact:true})).toHaveCount(0);
   await expect(timeline.getByText('Ledger allocation',{exact:true})).toHaveCount(0);
-  await timeline.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();
+  await timeline.getByRole('button',{name:'View details for Pending bank reconciliation'}).click();
   const details=page.getByRole('dialog',{name:'Pending bank reconciliation'});
   await expect(details).toContainText('DEMO-PAY-PEND-01');
   await expect(details).toContainText('No settlement or ledger credit assigned');
   await details.getByRole('button',{name:'Close transaction details'}).click();
-  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
-  await expect(timeline.locator('li')).toHaveCount(4);
-  await expect(timeline).not.toContainText('DEMO-PAY-PEND-01');
+  await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
 });

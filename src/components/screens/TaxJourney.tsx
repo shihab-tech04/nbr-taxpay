@@ -4,7 +4,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadAccountTaxJourney,type AccountJourneyItem} from '../../services/accountTaxJourney';
 import {formattedReviewAmount} from '../../services/accountReviewHistory';
-import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
+import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 
 const destinations=[
   {route:'account_profile',title:{en:'Profile',bn:'প্রোফাইল'},Icon:CircleUserRound},
@@ -18,7 +18,7 @@ type LoadState={uid:string|null;phase:'loading'|'ready'|'error';events:AccountJo
 
 /** Real accounts show only recorded owner-owned review events. A request never
  * implies a Treasury receipt, tax credit or officially posted liability. */
-export const TaxJourney:React.FC=()=>{
+export const TaxJourney:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
   const {navigate,language}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
@@ -57,6 +57,7 @@ export const TaxJourney:React.FC=()=>{
   return <div className="mx-auto max-w-4xl space-y-5 pb-12">
     <TaxpayerPageHeading id="taxpay-journey-title" title={tr('My tax journey','আমার কর কার্যক্রম')}
       description={tr('Recorded account activity and links to the related tax services.','অ্যাকাউন্টের নথিভুক্ত কার্যক্রম এবং সংশ্লিষ্ট করসেবার লিংক।')}/>
+    {activityTabs&&<TaxpayerActivityTabs />}
     {ownerUid&&<section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="account-journey-events-title"
       data-testid="account-tax-journey">
       <div className="flex flex-wrap items-end justify-between gap-3">

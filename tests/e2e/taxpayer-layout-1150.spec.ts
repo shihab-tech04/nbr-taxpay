@@ -71,7 +71,7 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       if(route==='ledger') {
         await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
         await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toBeVisible();
-      } else if(['account_profile','account_settings'].includes(route))
+      } else if(['account_profile','account_settings','journey'].includes(route))
         await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
       else await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
       const dims=await page.evaluate(() => ({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,

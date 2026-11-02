@@ -52,7 +52,7 @@ const previewReadOnlyRoutes = new Set([
   'wizard', 'payment_details'
 ]);
 
-const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
+const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
@@ -169,7 +169,7 @@ const MainRouter: React.FC = () => {
       case 'ledger':
         return <TaxLedger />;
       case 'journey':
-        return <TaxJourney />;
+        return <TaxJourney activityTabs={showActivitySections} />;
       case 'certificates':
         return <CertificatesView activityTabs={showActivitySections} />;
       case 'corrections':
