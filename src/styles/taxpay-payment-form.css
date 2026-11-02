@@ -396,3 +396,34 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* A payment with many heads must expose every entry in one independently
+   scrollable pane. The amount/TIN stay fixed while the modal footer remains
+   outside the scroll area; never nest another scroll inside the head list. */
+.payment-flow-embedded .payment-form-summary {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(65dvh, 680px);
+  overflow: hidden;
+}
+.payment-flow-embedded .payment-form-summary__scroll-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: #8c9db5 #f3f7fc;
+}
+.payment-flow-embedded .payment-form-summary__breakdown {
+  min-width: 0;
+  align-content: start;
+}
+.payment-flow-embedded .payment-form-summary__entry {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .payment-flow-embedded .payment-form-summary { max-height: min(45dvh, 440px); }
+}

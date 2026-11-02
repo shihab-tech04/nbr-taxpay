@@ -2666,3 +2666,52 @@
   .beneficiary-list-edit__footer>div {display:flex;flex:1;justify-content:flex-end;}
   .beneficiary-list-edit__footer button {font-size:14px;}
 }
+
+/* Beneficiaries: the heading and each row must share exactly the same grid.
+   Override the legacy Activity list's roomy header and row sizing only inside
+   this feature, leaving all other taxpayer lists untouched. */
+.taxpay-taxpayer-reference .beneficiary-directory__table {
+  border: 1px solid var(--color-taxpay-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,320px);
+  align-items: center;
+  gap: 16px;
+  height: auto;
+  min-height: 42px;
+  margin: 0;
+  padding: 10px 16px 10px 50px;
+  border-bottom: 1px solid var(--color-taxpay-border);
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table > ul {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  list-style: none;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,320px);
+  align-items: center;
+  gap: 16px;
+  min-height: 68px;
+  margin: 0;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 0;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row + .beneficiary-directory__row {
+  border-top: 1px solid var(--color-taxpay-border);
+}
+@media (max-width: 700px) {
+  .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns { display: none; }
+  .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
+    grid-template-columns: minmax(0,1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+}
