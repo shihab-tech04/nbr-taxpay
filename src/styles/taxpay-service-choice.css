@@ -1835,6 +1835,10 @@
   font-size: 26px;
   padding-bottom: 18px;
 }
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__total--with-words {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__summary-list :is(dt, dd) {
   font-size: 14px;
 }
