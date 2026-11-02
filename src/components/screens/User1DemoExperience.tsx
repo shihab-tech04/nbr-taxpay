@@ -95,6 +95,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   });
   const changeYear=(nextYear:string)=>{
     setYear(nextYear);
+    setLedgerYear(nextYear);
     setMonthFilter('all');
     const url=new URL(window.location.href);
     url.searchParams.set('scenarioYear',nextYear);
@@ -211,7 +212,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
-    actions={!['account_profile','account_settings','ledger'].includes(route) ? years : undefined} />;
+    actions={!['account_profile','account_settings'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
@@ -502,7 +503,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       {card('Remaining balance','অবশিষ্ট দায়',money(visibleLedgerTotals.outstanding),'Scenario journal, not an official NBR balance','সরকারি এনবিআর ব্যালেন্স নয়')}
     </section>
     <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear} showRecordedScenarioBalance
-      onYearChange={setLedgerYear}
+      onYearChange={nextYear=>nextYear==='all'?setLedgerYear('all'):changeYear(nextYear)}
       onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
   </>;
 
