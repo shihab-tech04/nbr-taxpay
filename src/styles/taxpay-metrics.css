@@ -19,7 +19,10 @@
 .taxpay-citizen-shell .taxpayer-monthly-chart > * {min-width:52px;flex:1}
 .taxpay-citizen-shell .taxpayer-monthly-bar {height:94px;position:relative;overflow:visible}
 .taxpay-citizen-shell .taxpayer-monthly-bar .ui-metric-column {position:absolute;inset:0}
-.taxpay-citizen-shell .taxpayer-dashboard__category-bar.ui-metric-column {background:transparent}
+/* Preserve service-specific category colors in the SVG migration. */
+.taxpay-citizen-shell .taxpayer-dashboard__category-bar:is(.ui-metric-bar,div) {background:transparent}
+.taxpay-citizen-shell .taxpayer-dashboard__category-bar.ui-metric-bar rect,
+.taxpay-citizen-shell .taxpayer-dashboard__category-bar .ui-metric-column rect {fill:var(--choice-primary,var(--color-taxpay-primary))}
 @media (prefers-reduced-motion:reduce) {
   .taxpay-citizen-shell :is(.ui-metric-bar,.ui-metric-stack,.ui-metric-column,.ui-metric-donut) {transition:none}
 }
