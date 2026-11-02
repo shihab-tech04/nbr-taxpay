@@ -104,6 +104,8 @@ export const TaxLedger:React.FC=()=>{
   };
   return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
+    <div className="flex justify-end"><button type="button" disabled className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-muted opacity-50">{t('Export ledger data','লেজারের তথ্য রপ্তানি')}</button></div>
+    <p role="status" className="text-sm text-taxpay-muted">{t('No ledger records are available for this account yet.','এই অ্যাকাউন্টে এখনো কোনো লেজার রেকর্ড নেই।')}</p>
     {identityPending||state.state==='loading'?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
       {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
     state.state==='error'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
