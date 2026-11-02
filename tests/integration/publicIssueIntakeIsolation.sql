@@ -30,5 +30,11 @@ begin
  if (select status from public.taxpay_public_issue_reports limit 1) <> 'received' then
    raise exception 'Report status was not received';
  end if;
+ if (select reference from public.taxpay_public_issue_reports limit 1) !~ '^KRB-[A-F0-9]{12}
+end $$;
+rollback;
+ then
+   raise exception 'Public issue reference was not generated';
+ end if;
 end $$;
 rollback;
