@@ -10,7 +10,7 @@ import {
 import {EventBasedTaxLedger,PaymentLifecycleDetails,type TaxAccountEvent,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
 
-function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccountEvent[]{
+function projectRecordedEvents(rows:readonly SimulationTransaction[],language:'en'|'bn'):TaxAccountEvent[]{
   return rows.flatMap(tx=>{
     // Each allocation owns its assessment year and amount. A mixed-year payment
     // must never be hidden under "Multiple years" or counted against the wrong AY.
@@ -27,7 +27,7 @@ function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccount
       code:event.action,
       title:event.action.replaceAll('_',' ').toLowerCase().replace(/^./,c=>c.toUpperCase()),
       assessmentYear:line.assessmentYear,
-      component:simulationCategoryLabels[line.category as keyof typeof simulationCategoryLabels]?.en||line.category,
+      component:simulationCategoryLabels[line.category as keyof typeof simulationCategoryLabels]?.[language]||line.category,
       amountMinor:line.amountMinor,
       // Recording a payment event never establishes a tax liability or credit.
       effectMinor:null,
@@ -43,11 +43,11 @@ function projectRecordedEvents(rows:readonly SimulationTransaction[]):TaxAccount
     })));
   });
 }
-function paymentRecord(tx:SimulationTransaction):PaymentLifecycleRecord{
+function paymentRecord(tx:SimulationTransaction,language:'en'|'bn'):PaymentLifecycleRecord{
   return {
     reference:tx.id,transactionId:tx.transactionId,payerName:tx.payer,
     assessmentYear:[...new Set(tx.allocations.map(a=>a.assessmentYear))].join(', '),
-    paymentType:[...new Set(tx.allocations.map(a=>simulationCategoryLabels[a.category]?.en||a.category))].join(', '),
+    paymentType:[...new Set(tx.allocations.map(a=>simulationCategoryLabels[a.category]?.[language]||a.category))].join(', '),
     amountMinor:tx.totalMinor,createdAt:tx.createdAt,status:tx.state,
     financialReceiptStatus:'Not verified',taxCreditStatus:'Not verified',
     source:'TaxPay payment event',
@@ -103,10 +103,10 @@ export const TaxLedger:React.FC=()=>{
     return()=>{live=false;};
   },[ownerKey,revision]);
   const state=snapshot.key===ownerKey?snapshot:{key:ownerKey,rows:[],state:'loading' as const,error:''};
-  const events=useMemo(()=>projectRecordedEvents(state.rows),[state.rows]);
+  const events=useMemo(()=>projectRecordedEvents(state.rows,language),[state.rows,language]);
   const openPayment=(id:string)=>{
     const tx=state.rows.find(r=>r.transactionId===id);
-    if(tx)setSelected(paymentRecord(tx));
+    if(tx)setSelected(paymentRecord(tx,language));
   };
   return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
