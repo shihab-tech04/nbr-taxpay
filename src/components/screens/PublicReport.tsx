@@ -13,6 +13,10 @@ export function PublicReport(){
  const [pending,setPending]=useState(false);
  const [error,setError]=useState('');
  const [ack,setAck]=useState<ReportAck|null>(null);
+ const [lookupReference,setLookupReference]=useState('');
+ const [lookupStatus,setLookupStatus]=useState('');
+ const [lookupError,setLookupError]=useState('');
+ const [lookupPending,setLookupPending]=useState(false);
  const submissionKey=useRef<string>(crypto.randomUUID());
  const categories=[
    {value:'payment',en:'Payment issue',bn:'পেমেন্টের সমস্যা'},
@@ -41,6 +45,28 @@ export function PublicReport(){
    }finally{setPending(false);}
  };
  const reset=()=>{setAck(null);setReviewing(false);setCategory('payment');setDetails('');setError('');submissionKey.current=crypto.randomUUID();};
+ const lookup=async(event:React.FormEvent<HTMLFormElement>)=>{
+   event.preventDefault();setLookupError('');setLookupStatus('');
+   const reference=lookupReference.trim().toUpperCase();
+   if(!/^KRB-[A-F0-9]{12}$/.test(reference)){
+     setLookupError(bn?'সঠিক রিপোর্ট রেফারেন্স লিখুন।':'Enter a valid report reference.');return;
+   }
+   if(!supabase){setLookupError(bn?'এখন রিপোর্টের অবস্থা জানা যাচ্ছে না।':'Report status is temporarily unavailable.');return;}
+   setLookupPending(true);
+   try{
+     const {data,error:serviceError}=await supabase.functions.invoke('taxpay-public-report',{body:{action:'status',reference}});
+     if(serviceError||!data||typeof data.status!=='string')throw new Error('Status not available');
+     const names:Record<string,[string,string]>={
+       received:['Received','জমা হয়েছে'],in_review:['In review','পর্যালোচনা চলছে'],
+       resolved:['Resolved','সমাধান হয়েছে'],closed:['Closed','বন্ধ করা হয়েছে']
+     };
+     const name=names[data.status];
+     if(!name)throw new Error('Unknown status');
+     setLookupStatus(bn?name[1]:name[0]);
+   }catch{
+     setLookupError(bn?'রিপোর্টের অবস্থা জানা যায়নি। রেফারেন্স মিলিয়ে আবার চেষ্টা করুন।':'Could not check this report. Check the reference and retry.');
+   }finally{setLookupPending(false);}
+ };
  return <section className={'public-report-page '+(bn?'font-bengali':'')} aria-labelledby="public-report-title">
    <header className="public-report-header">
      <h1 id="public-report-title">{bn?'সমস্যা জানান':'Report a problem'}</h1>
@@ -78,5 +104,18 @@ export function PublicReport(){
        </div>
      </form>}
    </div>
+   <section className="public-report-card public-report-tracking" aria-labelledby="public-report-track-title">
+     <form onSubmit={e=>void lookup(e)}>
+       <h2 id="public-report-track-title">{bn?'রিপোর্টের অবস্থা দেখুন':'Track a report'}</h2>
+       <label htmlFor="public-report-reference">{bn?'রিপোর্ট রেফারেন্স':'Report reference'}</label>
+       <input id="public-report-reference" type="text" autoComplete="off" maxLength={16}
+         placeholder="KRB-XXXXXXXXXXXX" value={lookupReference}
+         onChange={e=>{setLookupReference(e.target.value.toUpperCase().slice(0,16));setLookupStatus('');setLookupError('');}}/>
+       {lookupError&&<p role="alert" className="public-report-error">{lookupError}</p>}
+       {lookupStatus&&<p role="status">{bn?'বর্তমান অবস্থা:':'Current status:'} <strong>{lookupStatus}</strong></p>}
+       <div className="public-report-actions"><button type="submit" className="public-report-submit"
+         disabled={lookupPending||!lookupReference.trim()}>{lookupPending?(bn?'খোঁজা হচ্ছে…':'Checking…'):(bn?'অবস্থা দেখুন':'Check status')}</button></div>
+     </form>
+   </section>
  </section>;
 }
