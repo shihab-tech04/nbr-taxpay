@@ -50,6 +50,16 @@ test('select all never overflows the pinned desktop calculation', async ({ page 
   await expect(calculation).toHaveCSS('overflow', 'hidden');
   await calculation.locator('.payment-form-summary__more-heads > summary').click();
   await expect(calculation.locator('.payment-form-summary__more-heads')).toHaveAttribute('open', '');
+  // The whole detail rail, not two half-height inner panels, owns the scroll.
+  const scrollArea = calculation.getByTestId('payment-calculation-scroll-area');
+  await expect(scrollArea).toHaveCSS('overflow-y', 'auto');
+  await expect(calculation.locator('.payment-form-summary__breakdown')).toHaveCSS('overflow-y', 'visible');
+  await expect(calculation.locator('.payment-form-summary__taxpayers')).toHaveCSS('overflow-y', 'visible');
+  expect(await scrollArea.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(20);
+  const lastHead = scrollArea.locator('.payment-form-summary__more-heads-list .payment-form-summary__entry').last();
+  await lastHead.scrollIntoViewIfNeeded();
+  await expect(lastHead).toBeInViewport();
+  expect(await scrollArea.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
 });
 
