@@ -501,7 +501,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       {card('Applied credits','প্রয়োগকৃত ক্রেডিট',money(visibleLedgerTotals.applied),'Posted source, advance and direct entries','উৎসে কর, অগ্রিম কর ও সরাসরি এন্ট্রি')}
       {card('Remaining balance','অবশিষ্ট দায়',money(visibleLedgerTotals.outstanding),'Scenario journal, not an official NBR balance','সরকারি এনবিআর ব্যালেন্স নয়')}
     </section>
-    <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear}
+    <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear} showRecordedScenarioBalance
       onYearChange={setLedgerYear}
       onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
   </>;
