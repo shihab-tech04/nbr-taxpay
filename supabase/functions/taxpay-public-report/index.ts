@@ -62,5 +62,5 @@ Deno.serve(async request=>{
    if(error.code==='P0001') return respond(origin,{error:'Too many reports. Retry later.'},429);
    return respond(origin,{error:'Report not sent. Please retry.'},503);
  }
- return respond(origin,{reference:data.reference,trackingToken:data.tracking_token,status:data.status},201);
+ return respond(origin,{reference:data.reference,status:data.status},201);
 });
