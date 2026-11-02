@@ -70,6 +70,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     : item.headNameEn;
 
   const allocationItems = receipt.allocationItems ?? [];
+  const batchLabel=receipt.batchId&&receipt.batchItemIndex&&receipt.batchItemCount
+    ? (bn ? `ব্যাচ ${receipt.batchItemIndex} / ${receipt.batchItemCount}` : `Batch item ${receipt.batchItemIndex} of ${receipt.batchItemCount}`)
+    : null;
   const defaultService = bn
     ? (CATEGORY_LABELS[receipt.paymentCategory]?.bn ?? receipt.paymentCategory)
     : (CATEGORY_LABELS[receipt.paymentCategory]?.en ?? receipt.paymentCategory);
@@ -180,6 +183,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
       {/* Payment record generated from the app's local transaction state. */}
       <div className="receipt-view__paper print-card" lang={language}>
+        {batchLabel&&<div className="receipt-view__batch-meta" data-testid="receipt-batch-identity">
+          <strong>{batchLabel}</strong><span className="break-all">{receipt.batchId}</span>
+        </div>}
         <header className="receipt-view__summary">
           <div className="receipt-view__summary-copy">
             <p className="receipt-view__eyebrow">{bn ? 'পেমেন্ট রেকর্ড' : 'Payment record'}</p>
