@@ -29,8 +29,16 @@ export async function collectBeneficiaryPages<T>(
 export async function loadBeneficiaries(ownerUid: string | null = null): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
   if (!ownerUid) return loadGuestBeneficiaries();
   const db=client();
-  const [listResult,people]=await Promise.all([
-    db.from('taxpay_beneficiary_lists').select('id,owner_uid,name,created_at').eq('owner_uid',ownerUid).order('name'),
+  // PostgREST truncates unpaged SELECT results at the project row limit.
+  // Read both collections in stable pages; an omitted saved list must never
+  // look like an account with no beneficiaries.
+  const [lists,people]=await Promise.all([
+    collectBeneficiaryPages<BeneficiaryList>(async(from,to)=>{
+      const result=await db.from('taxpay_beneficiary_lists').select('id,owner_uid,name,created_at')
+        .eq('owner_uid',ownerUid).order('name').order('id').range(from,to);
+      if(result.error)throw result.error;
+      return (result.data??[]) as BeneficiaryList[];
+    }),
     collectBeneficiaryPages<Beneficiary>(async(from,to)=>{
       const result=await db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,created_at,updated_at')
         .eq('owner_uid',ownerUid).order('created_at',{ascending:false}).order('id',{ascending:false}).range(from,to);
@@ -38,8 +46,7 @@ export async function loadBeneficiaries(ownerUid: string | null = null): Promise
       return (result.data??[]) as Beneficiary[];
     }),
   ]);
-  if(listResult.error)throw listResult.error;
-  return {lists:(listResult.data??[]) as BeneficiaryList[],people};
+  return {lists,people};
 }
 /** Explicit, idempotent recovery from this browser's guest capability into the signed-in profile.
  * Keep guest records intact so a partially completed import can be safely retried.

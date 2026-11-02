@@ -67,6 +67,15 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[user?.id,checkingIdentity,refresh,onAvailableTins]);
 
+  // A payment step can remain mounted while beneficiaries change in another
+  // tab. Re-read the same identity-scoped source on return to the tab.
+  useEffect(()=>{
+    const refreshVisible=()=>{if(document.visibilityState!=='hidden')setRefresh(value=>value+1);};
+    window.addEventListener('focus',refreshVisible);
+    document.addEventListener('visibilitychange',refreshVisible);
+    return()=>{window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
+  },[]);
+
   const restoreAvailable=Boolean(user?.id&&hasStoredGuestBeneficiaries()&&!recoveryDone);
   async function restoreSavedLists(){
     if(!user?.id||restoring)return;

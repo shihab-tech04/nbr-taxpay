@@ -29,6 +29,10 @@ test('Beneficiaries stays in the signed-in taxpayer shell and is absent from gue
   assert.doesNotMatch(page,/canManageAuthorizations|userRole|manage_authorization|Manage taxpayer authorizations/);
   assert.doesNotMatch(page,/Saving a contact does not grant authorization|They do not grant access to tax records or authorize a payment/);
   assert.ok(page.includes('Create list'));
+  assert.match(page,/const saved=await reload\(list\.id\)/, 'list creation verifies SQL readback');
+  assert.match(page,/saved\.people\.some\(person=>person\.list_id===id&&person\.tin===tin\)/, 'single add verifies SQL readback');
+  assert.match(page,/chosen\.some\(row=>!savedTins\.has\(row\.tin\)\)/, 'bulk import verifies every requested TIN');
+  assert.match(page,/beneficiaries-account-sync/, 'sample accounts can reach verified account sync without spoofing UID');
   assert.ok(page.includes('Search name or TIN'));
   assert.ok(page.includes('Pay Tax for Others'));
   const firstListStart=page.indexOf('!lists.length?');
@@ -62,6 +66,12 @@ test('all account-private beneficiary rows load beyond the first 1,000 in determ
   });
   assert.deepEqual(actual,rows);
   assert.deepEqual(ranges,[[0,499],[500,999],[1000,1499]]);
+  // The service must page the list table as well as the people table.
+  const service=readFileSync('src/services/beneficiaries.ts','utf8');
+  const load=service.slice(service.indexOf('export async function loadBeneficiaries('),service.indexOf('/** Explicit, idempotent recovery'));
+  assert.match(load,/collectBeneficiaryPages<BeneficiaryList>/);
+  assert.match(load,/collectBeneficiaryPages<Beneficiary>/);
+  assert.match(load,/\.order\('name'\)\.order\('id'\)\.range\(from,to\)/);
   assert.deepEqual(await collectBeneficiaryPages(async()=>[]),[]);
   await assert.rejects(collectBeneficiaryPages(async()=>[],0),/page size/);
 });

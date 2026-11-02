@@ -19,3 +19,14 @@ test('browser beneficiary recovery requires current Auth UID and SQL readback',(
   assert.doesNotMatch(recovery,/removeGuest|deleteGuest|\.delete\(/);
   assert.match(service,/ignoreDuplicates:true/, 'retries must not overwrite saved names');
 });
+
+// Guard the distinct identity models rather than assigning anonymous browser
+// address-book data to whichever sample user is visible in the URL.
+test('user1 sample stays browser-scoped until verified email sign-in',()=>{
+  const state=readFileSync('src/services/taxState.tsx','utf8');
+  const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  assert.match(state,/if \(route === 'secure_workspace' && previewAccount\)/);
+  assert.match(page,/!owner&&previewAccount/);
+  assert.match(page,/navigate\('secure_workspace',\{returnTo:'beneficiaries'\}\)/);
+  assert.doesNotMatch(page,/owner=previewAccount|owner=demoUser|owner="user1"/);
+});
