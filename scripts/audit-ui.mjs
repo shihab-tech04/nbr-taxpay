@@ -8,9 +8,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const typescriptModule=require('typescript');
-const ts=typescriptModule.ScriptTarget ? typescriptModule : typescriptModule.default;
-if (!ts?.ScriptTarget || !ts?.createSourceFile) throw new Error('TypeScript AST API unavailable');
+let ts=null;
+try {
+  const module=require('typescript');
+  const candidate=module?.ScriptTarget ? module : module?.default;
+  if (candidate?.ScriptTarget && candidate?.createSourceFile) ts=candidate;
+} catch { /* Use the conservative syntax-independent fallback below. */ }
+if (!ts) console.warn('TypeScript AST unavailable: checking JSX attributes and hrefs lexically.');
 const root=process.cwd();
 const strict=process.argv.includes('--check');
 const ignored=new Set(['.git','node_modules','dist','build','coverage','test-results','playwright-report']);
@@ -27,6 +31,15 @@ const stats={files:files.length,lines:0,inlineStyle:0,directGenericText:0,cssUnu
 for(const [file,s] of source){
   stats.lines+=s.split('\n').length;
   if(/\.(tsx|jsx)$/.test(file)){
+    if (!ts) {
+      for(const m of s.matchAll(/\bstyle\s*=\s*\{/g)) {
+        stats.inlineStyle++;
+        add(file,locate(s,m.index),'INLINE_STYLE','error','Inline JSX style attribute');
+      }
+      for(const m of s.matchAll(/<a\b[^>]*>/g)) {
+        if(!/\bhref\s*=/.test(m[0])) add(file,locate(s,m.index),'LINK_NO_HREF','error','Anchor without href');
+      }
+    } else {
     const sf=ts.createSourceFile(file,s,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
     const walk=node=>{
       if(ts.isJsxOpeningElement(node)||ts.isJsxSelfClosingElement(node)){
@@ -52,6 +65,7 @@ for(const [file,s] of source){
       }
       ts.forEachChild(node,walk);
     };walk(sf);
+    }
   }
   if(file.endsWith('.css')){
     for(const m of s.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/g))if(Number(m[1])<14)add(file,locate(s,m.index),'TYPE_BELOW_14','warning',m[1]+'px');
