@@ -4,7 +4,7 @@ import {projectAccountTaxJourney} from '../src/services/accountTaxJourney';
 
 const owner='00000000-0000-4000-8000-000000000111';
 const request={id:'00000000-0000-4000-8000-000000000901',owner_uid:owner,
-  category:'ADVANCE_TAX',assessment_year:'2026-27',request_status:'INFO_REQUESTED',
+  category:'ADVANCE_TAX',assessment_year:'2026-27',amount_minor:'12345',request_status:'INFO_REQUESTED',
   submitted_at:'2026-10-01T10:00:00Z'};
 
 test('journey follows only recorded application review events in chronology; never manufactures Treasury or credit',()=>{
@@ -16,6 +16,7 @@ test('journey follows only recorded application review events in chronology; nev
   assert.deepEqual(rows.map(r=>r.status),['SUBMITTED_FOR_REVIEW','OFFICER_ACKNOWLEDGED','INFO_REQUESTED']);
   assert.deepEqual(rows.map(r=>r.assessmentYear),['2026-27','2026-27','2026-27']);
   assert.equal(rows.every(r=>r.reference===request.id),true);
+  assert.equal(rows.every(r=>r.amountMinor==='12345'),true);
   assert.equal(rows.some(r=>/TREASURY|POSTED|CREDIT_RECOGNIZED/.test(r.label)),false);
 });
 
