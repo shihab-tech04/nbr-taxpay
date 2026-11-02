@@ -156,7 +156,7 @@ test('bound SQL ledger keeps historical and new mixed-year allocations independe
   await expect(ledger.locator('tbody tr')).toHaveCount(1);
   await ledger.getByRole('button',{name:/Payment record present/}).first().click();
   await expect(page.getByTestId('tax-event-details')).toContainText('৳ 65.50');
-  await page.getByRole('dialog').getByRole('button',{name:'Close'}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Close modal'}).click();
   await years.selectOption('2025-26');
   await expect(ledger.locator('tbody tr')).toHaveCount(1);
   await ledger.getByRole('button',{name:/Payment record present/}).first().click();
