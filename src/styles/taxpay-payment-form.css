@@ -1,31 +1,31 @@
 .payment-form-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;align-items:start;gap:22px}
 .payment-form-layout__sections{display:grid;gap:14px;min-width:0}
 .payment-form-section{min-width:0;border:1px solid #e0e6ef;border-radius:11px;background:#fff;overflow:hidden}
-.payment-form-section__heading{display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px 18px;list-style:none;min-height:69px;color:#172b4d}
+.payment-form-section__heading{display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px 18px;list-style:none;min-height:69px;color:var(--color-taxpay-form-heading)}
 .payment-form-section__heading::-webkit-details-marker{display:none}
 .payment-form-section__heading:focus-visible{outline:3px solid #8ab5ec;outline-offset:-3px}
-.payment-form-section[open]>.payment-form-section__heading{border-bottom:1px solid #e6ebf2}
-.payment-form-section__number{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:9px;background:#edf3ff;color:#2c5ead;font-size:14px;font-weight:800}
+.payment-form-section[open]>.payment-form-section__heading{border-bottom:1px solid var(--color-taxpay-form-divider)}
+.payment-form-section__number{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:9px;background:#edf3ff;color:var(--color-taxpay-primary);font-size:14px;font-weight:800}
 .payment-form-section__heading-copy{flex:1;display:grid;gap:3px}
 .payment-form-section__heading-copy strong{font-size:14px;font-weight:750}
 .payment-form-section__heading-copy small{font-size:14px;color:#566982;font-weight:450}
 .payment-form-section__heading-copy h2{font-size:15px;font-weight:750;line-height:1.4;margin:0}
 .payment-form-section__heading-copy p{font-size:14px;line-height:1.45;color:#566982;margin:0}
-.payment-form-section--static .payment-form-section__heading{cursor:default;border-bottom:1px solid #e6ebf2;min-height:0}
+.payment-form-section--static .payment-form-section__heading{cursor:default;border-bottom:1px solid var(--color-taxpay-form-divider);min-height:0}
 .payment-form-section__chevron{flex:none;color:#71839e;transition:transform .2s}
 .payment-form-section[open] .payment-form-section__chevron{transform:rotate(180deg)}
 .payment-form-section__body{padding:18px;display:grid;gap:16px;min-width:0}
 .payment-form-summary{position:sticky;top:90px;min-width:0;border:1px solid #d7e2f0;border-radius:12px;background:#f8fbff;overflow:hidden;color:#18355a}
-.payment-form-summary__heading{display:flex;align-items:center;gap:9px;padding:16px 17px;border-bottom:1px solid #e0e9f4;color:#2c5ead}
+.payment-form-summary__heading{display:flex;align-items:center;gap:9px;padding:16px 17px;border-bottom:1px solid #e0e9f4;color:var(--color-taxpay-primary)}
 .payment-form-summary__heading h2{font-size:15px;font-weight:700;margin:0;flex:1;line-height:1.4}
-.payment-form-summary__live{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:#2c5ead}
+.payment-form-summary__live{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--color-taxpay-primary)}
 .payment-form-summary__eyebrow{padding:16px 18px 0;margin:0;color:#516681;font-size:14px;font-weight:600}
 .payment-form-summary__total{display:block;padding:3px 18px 0;color:#1f56a1;font-size:clamp(20px,2vw,26px);font-weight:700;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 /* Cheque-style display under the actual numeric payment total. */
 .payment-form-summary__amount-words {
   margin: 0;
   padding: 5px 18px 16px;
-  color: #405a74;
+  color: var(--color-taxpay-form-text);
   font-size: 14px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -46,8 +46,8 @@
   font-weight: 700;
 }
 .payment-form-summary__more-heads > summary::-webkit-details-marker { display: none; }
-.payment-form-summary__more-heads > summary:hover { background: #eef5ff; }
-.payment-form-summary__more-heads > summary:focus-visible { outline: 3px solid #2c5ead; outline-offset: 2px; }
+.payment-form-summary__more-heads > summary:hover { background: var(--color-taxpay-form-hover); }
+.payment-form-summary__more-heads > summary:focus-visible { outline: 3px solid var(--color-taxpay-primary); outline-offset: 2px; }
 .payment-form-summary__more-heads-list { display: grid; gap: 9px; padding-top: 12px; min-width: 0; }
 .payment-form-summary__more-heads-list > * { min-width: 0; }
 .payment-form-summary__breakdown > h3 { overflow-wrap: anywhere; }
@@ -55,7 +55,7 @@
 .payment-form-summary__help{margin:0;padding:4px 18px 16px;font-size:14px;color:#52667f;line-height:1.5}
 .payment-form-summary__rows{margin:0;padding:0 18px 17px;display:grid;gap:13px}
 .payment-form-summary__rows>div{display:grid;gap:3px}
-.payment-form-summary__rows dt{font-size:14px;color:#526880;font-weight:400}
+.payment-form-summary__rows dt{font-size:14px;color:var(--color-taxpay-form-muted);font-weight:400}
 .payment-form-summary__rows dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
 .payment-form-summary__mono{font-family:ui-monospace,monospace}
 .payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
@@ -79,11 +79,11 @@
 .payment-form-radio-fieldset{min-width:0;margin:0;padding:0;border:0}
 .payment-form-subheading{font-size:14px;font-weight:600;color:#334b6c;margin:0 0 9px}
 .payment-radio-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.payment-radio-card{display:flex;align-items:center;gap:11px;min-height:65px;padding:13px 14px;border:1.5px solid #dce5f0;border-radius:10px;background:#fff;color:#243c60;cursor:pointer;transition:border-color .12s ease,background-color .12s ease}
+.payment-radio-card{display:flex;align-items:center;gap:11px;min-height:65px;padding:13px 14px;border:1.5px solid var(--color-taxpay-form-border);border-radius:10px;background:#fff;color:#243c60;cursor:pointer;transition:border-color .12s ease,background-color .12s ease}
 .payment-radio-card:hover{border-color:#8aabd9}
 .payment-radio-card:focus-within{outline:2px solid #8aabd9;outline-offset:2px}
-.payment-radio-card--selected{border-color:#2c5ead;background:#eef5ff}
-.payment-radio-card input{flex:none;width:18px;height:18px;font-size:16px;accent-color:#2c5ead}
+.payment-radio-card--selected{border-color:var(--color-taxpay-primary);background:var(--color-taxpay-form-hover)}
+.payment-radio-card input{flex:none;width:18px;height:18px;font-size:16px;accent-color:var(--color-taxpay-primary)}
 .payment-radio-card__copy{display:grid;gap:3px;min-width:0}
 .payment-radio-card__copy strong{font-size:14px;font-weight:600;line-height:1.45}
 .payment-radio-card__copy small{font-size:14px;font-weight:400;color:#526681;line-height:1.45}
@@ -101,27 +101,27 @@
 .payment-review__panel{padding:19px}
 .payment-review__section-title{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
 .payment-review__section-title h2{font-size:17px;line-height:1.35;color:#142d53;font-weight:800;margin:0}
-.payment-review__section-title p{font-size:14px;color:#405a74;margin:5px 0 0;line-height:1.5}
+.payment-review__section-title p{font-size:14px;color:var(--color-taxpay-form-text);margin:5px 0 0;line-height:1.5}
 .payment-review__section-number{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eaf3ff;color:#265da7;font-size:14px;font-weight:800;flex:none}
 .payment-review__rows{display:grid;grid-template-columns:1fr 1fr;gap:0 19px;margin:0}
 .payment-review__rows>div{display:grid;align-content:start;gap:4px;border-bottom:1px solid #ebf0f5;padding:11px 0;min-width:0}
-.payment-review__rows dt{color:#405a74;font-size:14px;font-weight:600}
+.payment-review__rows dt{color:var(--color-taxpay-form-text);font-size:14px;font-weight:600}
 .payment-review__rows dd{margin:0;overflow-wrap:anywhere;font-size:14px;font-weight:750;line-height:1.6;color:#183353}
 .payment-review__note{background:#f5f8fd;border-radius:9px;padding:12px;font-size:14px;color:#516884;margin:15px 0 0;overflow-wrap:anywhere}
 .payment-review__channels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
 .payment-review__channel{display:flex;text-align:left;align-items:center;gap:12px;min-height:72px;border:1px solid var(--citizen-border);border-radius:10px;padding:12px;background:var(--citizen-surface);color:var(--citizen-primary-dark);cursor:pointer}
 .payment-review__channel>span:nth-child(2){display:grid;gap:7px;flex:1;min-width:0}
 .payment-review__channel strong{font-size:14px;color:#1b395d}
-.payment-review__channel small{font-size:14px;line-height:1.5;color:#405a74}
+.payment-review__channel small{font-size:14px;line-height:1.5;color:var(--color-taxpay-form-text)}
 .payment-review__channel--selected{border-color:var(--citizen-primary);background:var(--citizen-primary-light);box-shadow:inset 0 0 0 1px var(--citizen-primary)}
 .payment-review__radio{width:17px;height:17px;border:1.5px solid #a9bad0;border-radius:100%;flex:none;margin-top:2px}
 .payment-review__channel--selected .payment-review__radio{border:5px solid #2d64a9;background:white}
 .payment-review__methods{border-top:1px solid #e5edf6;margin-top:18px;padding-top:17px;display:grid;gap:15px}
 .payment-review__methods fieldset{min-width:0}
-.payment-review__methods legend{font-size:14px;color:#405a74;font-weight:600;margin-bottom:9px}
+.payment-review__methods legend{font-size:14px;color:var(--color-taxpay-form-text);font-weight:600;margin-bottom:9px}
 .payment-review__method-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .payment-review__method-group{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:8px;border:1px solid var(--citizen-border);border-radius:9px;background:var(--citizen-surface);color:var(--citizen-text);font-size:14px;font-weight:600;cursor:pointer;line-height:1.4;text-align:center}
-.payment-review__method-group svg{flex:none;color:#2c5ead}
+.payment-review__method-group svg{flex:none;color:var(--color-taxpay-primary)}
 .payment-review__method-group--selected{background:var(--citizen-primary-light);border-color:var(--citizen-primary);color:var(--citizen-primary-dark)}
 .payment-review__provider-fieldset{border-top:1px solid #e5edf6;padding-top:15px}
 .payment-review__method-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
@@ -135,17 +135,17 @@
 .payment-review__mastercard-mark{position:relative;display:block;width:37px;height:22px}
 .payment-review__mastercard-mark:before,.payment-review__mastercard-mark:after{content:'';position:absolute;top:1px;width:22px;height:22px;border-radius:50%;background:#e83e38;opacity:.9}
 .payment-review__mastercard-mark:before{left:1px}.payment-review__mastercard-mark:after{right:1px;background:#f7b229;mix-blend-mode:multiply}
-.payment-review__method--selected{border-color:#2e66ad;background:#eef5ff;color:#214e85}
+.payment-review__method--selected{border-color:#2e66ad;background:var(--color-taxpay-form-hover);color:#214e85}
 .payment-review__method input,.payment-review__ack input,.payment-review__fail-toggle input{accent-color:#2e66ad;width:17px;height:17px;flex:none}
-.payment-review__fail-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:#405a74;padding:8px 10px;border-radius:9px;background:#f7f9fc}
+.payment-review__fail-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:var(--color-taxpay-form-text);padding:8px 10px;border-radius:9px;background:var(--color-taxpay-surface-subtle)}
 .payment-review__bank-note{display:flex;align-items:flex-start;gap:9px;margin-top:15px;padding:12px;border-radius:9px;background:#fffaec;color:#765d26;font-size:14px;line-height:1.6}
 .payment-review__bank-note svg{flex:none;margin-top:1px}
 .payment-review__aside{display:grid;gap:13px;position:sticky;top:0;min-width:0}
 .payment-review__total-card{background:#f6faff;padding:19px}
-.payment-review__total-label{font-size:14px;font-weight:700;color:#405a74;margin:0}
+.payment-review__total-label{font-size:14px;font-weight:700;color:var(--color-taxpay-form-text);margin:0}
 .payment-review__total-figure{font-size:29px;font-weight:850;color:#245aa0;display:block;margin:4px 0 18px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .payment-review__breakdown{border-top:1px solid #dce7f6;margin:0;padding-top:11px;display:grid;gap:11px}
-.payment-review__breakdown>div{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:#405a74}
+.payment-review__breakdown>div{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:var(--color-taxpay-form-text)}
 .payment-review__breakdown dd{margin:0;color:#274361;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
 .payment-review__breakdown-fee{border-top:1px dashed #c9d8ea;padding-top:10px}
 .payment-review__ack{display:flex;gap:11px;align-items:flex-start;margin-top:18px;padding:14px;border:1px solid #c9daef;border-radius:11px;background:#f9fbfe;font-size:14px;line-height:1.55;font-weight:500;color:#395777;cursor:pointer}
@@ -165,31 +165,31 @@
 .payment-flow-embedded__confirmation-layout{width:min(100%,760px);margin:0 auto}
 .payment-lifecycle__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px 21px}
 .payment-lifecycle__overview>div{display:grid;gap:6px;min-width:0}
-.payment-lifecycle__overview span{font-size:14px;color:#526880}
+.payment-lifecycle__overview span{font-size:14px;color:var(--color-taxpay-form-muted)}
 .payment-lifecycle__overview strong{font-size:clamp(17px,2vw,23px);font-weight:700;line-height:1.4;color:#1f56a1;overflow-wrap:anywhere}
 .payment-lifecycle__overview .payment-lifecycle__reference-value{font-size:14px;color:#204269;font-family:ui-monospace,monospace}
 .payment-lifecycle__progress-detail{border-top:1px solid #e5edf6}
 .payment-lifecycle__progress-detail>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 21px;font-size:14px;font-weight:600;color:#35577e;cursor:pointer}
-.payment-lifecycle__progress-detail>summary:focus-visible{outline:2px solid #2c5ead;outline-offset:-2px}
+.payment-lifecycle__progress-detail>summary:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:-2px}
 .payment-lifecycle__progress-detail>summary span{font-weight:400;color:#62748d}
 .payment-lifecycle__progress-detail .payment-lifecycle__details{border-top:1px solid #e5edf6}
 .payment-receipt-details{min-width:0;width:min(100%,840px);margin:0 auto}
 .payment-lifecycle__heading h2{font-size:18px;font-weight:850;margin:0;line-height:1.4}
-.payment-lifecycle__heading p{font-size:14px;color:#405a74;margin:6px 0 0;line-height:1.6}
+.payment-lifecycle__heading p{font-size:14px;color:var(--color-taxpay-form-text);margin:6px 0 0;line-height:1.6}
 .payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
 .payment-lifecycle__heading--failed .payment-lifecycle__symbol{color:#b64242}
 .payment-lifecycle__heading--complete .payment-lifecycle__symbol{color:#147957}
 .payment-lifecycle__details{display:flex;flex-direction:column-reverse;gap:20px;padding:20px 21px}
 .payment-lifecycle__references{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;margin:0;padding-top:16px;border-top:1px solid var(--citizen-border)}
 .payment-lifecycle__references>div{display:grid;gap:4px;min-width:0}
-.payment-lifecycle__references dt{font-size:14px;color:#405a74;font-weight:650}
+.payment-lifecycle__references dt{font-size:14px;color:var(--color-taxpay-form-text);font-weight:650}
 .payment-lifecycle__references dd{font-size:14px;font-weight:800;font-family:ui-monospace,monospace;overflow-wrap:anywhere;margin:0;color:#204269}
 .payment-lifecycle__timeline{list-style:none;margin:0;padding:0;display:grid;gap:11px}
 .payment-lifecycle__timeline li{display:grid;grid-template-columns:23px minmax(0,1fr);align-items:start;gap:10px;font-size:14px;font-weight:650;line-height:1.55;color:var(--citizen-text)}
 .payment-lifecycle__timeline small{display:none}
 .payment-lifecycle__event-dot{display:grid;place-items:center;background:#e0f4eb;color:#167651;border-radius:50%;height:23px;width:23px;flex:none;font-size:14px;font-weight:800}
 .payment-lifecycle__event--failed .payment-lifecycle__event-dot{background:#fee4e4;color:#a92424}
-.payment-lifecycle__waiting{color:#405a74!important;font-weight:550!important}
+.payment-lifecycle__waiting{color:var(--color-taxpay-form-text)!important;font-weight:550!important}
 .payment-lifecycle__waiting .payment-lifecycle__event-dot{background:#edf1f6;color:#728ba7}
 .payment-lifecycle__result{display:flex;align-items:flex-start;gap:10px;margin:0 20px 16px;padding:15px;border-radius:10px;font-size:14px;line-height:1.65}
 .payment-lifecycle__result p{margin:0}
@@ -205,31 +205,31 @@
 
 
 /* Clearly separate payer identity from receipt contacts without another card. */
-.payment-identity__receipt-heading{margin:2px 0 0;padding-top:13px;border-top:1px solid var(--citizen-border,#e6ebf2);font-size:14px;font-weight:700;line-height:1.45;color:var(--citizen-text,#172b4d)}
+.payment-identity__receipt-heading{margin:2px 0 0;padding-top:13px;border-top:1px solid var(--citizen-border,var(--color-taxpay-form-divider));font-size:14px;font-weight:700;line-height:1.45;color:var(--citizen-text,var(--color-taxpay-form-heading))}
 
 /* Other Tax: one clearly numbered taxpayer per row, responsive and keyboard-friendly. */
 .taxpay-taxpayer-list{display:grid;gap:12px;min-width:0}
 .taxpay-taxpayer-list__count{margin:0;color:#526681;font-size:14px;font-weight:600}
-.taxpay-taxpayer-row{border:1px solid #dce5f0;border-radius:10px;padding:14px;min-width:0;background:#fff;display:grid;gap:12px}
+.taxpay-taxpayer-row{border:1px solid var(--color-taxpay-form-border);border-radius:10px;padding:14px;min-width:0;background:#fff;display:grid;gap:12px}
 .taxpay-taxpayer-row__header{display:flex;align-items:center;justify-content:space-between;min-height:30px;gap:10px}
-.taxpay-taxpayer-row__header h3{font-size:14px;font-weight:700;color:#172b4d;margin:0;display:flex;align-items:center;gap:8px}
+.taxpay-taxpayer-row__header h3{font-size:14px;font-weight:700;color:var(--color-taxpay-form-heading);margin:0;display:flex;align-items:center;gap:8px}
 .taxpay-taxpayer-row__header h3 span{font-size:14px;font-weight:600;color:#466282;background:#eef3fa;border-radius:12px;padding:3px 9px}
 .taxpay-taxpayer-row__fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .taxpay-taxpayer-row__fields>div{min-width:0;display:grid;align-content:start;gap:6px}
 .taxpay-taxpayer-row__fields label{font-size:14px;font-weight:600;color:#334b6c}
-.taxpay-taxpayer-row__fields input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;color:#172b4d;font-size:14px;background:#fff}
-.taxpay-taxpayer-row__fields input:focus-visible{outline:2px solid #2c5ead;outline-offset:2px}
-.taxpay-taxpayer-row__remove{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid #ead1d4;border-radius:9px;background:#fff;color:#a3283c;cursor:pointer}
+.taxpay-taxpayer-row__fields input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;color:var(--color-taxpay-form-heading);font-size:14px;background:#fff}
+.taxpay-taxpayer-row__fields input:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:2px}
+.taxpay-taxpayer-row__remove{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid #ead1d4;border-radius:9px;background:#fff;color:var(--color-taxpay-form-error);cursor:pointer}
 .taxpay-taxpayer-row__remove:hover{background:#fff2f4;border-color:#c33d4d}
-.taxpay-taxpayer-row__remove:focus-visible,.taxpay-taxpayer-list__add:focus-visible{outline:3px solid #2c5ead;outline-offset:2px}
+.taxpay-taxpayer-row__remove:focus-visible,.taxpay-taxpayer-list__add:focus-visible{outline:3px solid var(--color-taxpay-primary);outline-offset:2px}
 .taxpay-taxpayer-list__add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:0;border:1.5px dashed #7a9bcf;border-radius:10px;background:#f6f9ff;color:#2357a1;font-weight:700;font-size:14px;cursor:pointer}
-.taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:#2c5ead}
+.taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:var(--color-taxpay-primary)}
 .taxpay-taxpayer-list__add:disabled{opacity:.5;cursor:not-allowed}
 .taxpay-taxpayer-list__limit{font-size:14px;color:#526681;margin:0}
-.taxpay-taxpayer-row__confirmation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #e6ebf2;padding-top:12px}
+.taxpay-taxpayer-row__confirmation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid var(--color-taxpay-form-divider);padding-top:12px}
 .taxpay-taxpayer-row__confirmation p{flex-basis:100%;margin:0;font-size:14px;color:#813040}
-.taxpay-taxpayer-row__confirmation button{border-radius:8px;min-height:44px;padding:0 13px;font-size:14px;font-weight:650;border:1px solid #dce5f0}
-.taxpay-taxpayer-row__confirmation button:first-of-type{background:#a3283c;color:white;border-color:#a3283c}
+.taxpay-taxpayer-row__confirmation button{border-radius:8px;min-height:44px;padding:0 13px;font-size:14px;font-weight:650;border:1px solid var(--color-taxpay-form-border)}
+.taxpay-taxpayer-row__confirmation button:first-of-type{background:var(--color-taxpay-form-error);color:white;border-color:var(--color-taxpay-form-error)}
 @media(max-width:575px){.taxpay-taxpayer-row{padding:12px}.taxpay-taxpayer-row__fields{grid-template-columns:minmax(0,1fr);gap:12px}}
 
 
@@ -240,7 +240,7 @@
 .other-tax-error-summary strong{font-size:14px}
 .other-tax-error-summary p{margin:0;font-size:14px;line-height:1.45}
 .other-tax-error-summary button{justify-self:start;min-height:44px;color:#264f93;font-weight:700;text-decoration:underline;text-underline-offset:3px;font-size:14px}
-.other-tax-error-summary button:focus-visible{outline:2px solid #2c5ead;outline-offset:2px}
+.other-tax-error-summary button:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:2px}
 .other-tax-group--invalid>summary{background:#fff1f2;color:#85263b}
 .other-tax-row--invalid{background:#fff7f7;box-shadow:inset 3px 0 0 #c8374c}
 .other-tax-row--invalid input[aria-invalid="true"]{border-color:#b82d43;box-shadow:0 0 0 1px #b82d43}
@@ -251,14 +251,14 @@
 .payment-form-summary__taxpayers {
   min-width: 0; display: grid; gap: .45rem;
   padding: .75rem .85rem 1rem;
-  border-top: 1px solid var(--citizen-border, #dce5f0);
+  border-top: 1px solid var(--citizen-border, var(--color-taxpay-form-border));
 }
 .payment-form-summary__taxpayers > h3 {
   margin: 0 0 .2rem; font-size: 14px; font-weight: 750;
-  color: var(--citizen-text, #172b4d);
+  color: var(--citizen-text, var(--color-taxpay-form-heading));
 }
 .payment-form-summary__taxpayer {
-  min-width: 0; border: 1px solid var(--citizen-border, #dce5f0);
+  min-width: 0; border: 1px solid var(--citizen-border, var(--color-taxpay-form-border));
   border-radius: .55rem; overflow: hidden; background: var(--citizen-surface, white);
 }
 .payment-form-summary__taxpayer > summary {
@@ -268,13 +268,13 @@
 }
 .payment-form-summary__taxpayer > summary::-webkit-details-marker { display: none; }
 .payment-form-summary__taxpayer > summary:focus-visible {
-  outline: 2px solid var(--citizen-primary, #2c5ead); outline-offset: -2px;
+  outline: 2px solid var(--citizen-primary, var(--color-taxpay-primary)); outline-offset: -2px;
 }
 .payment-form-summary__taxpayer-name {
   display: grid; gap: .2rem; min-width: 0; flex: 1;
 }
 .payment-form-summary__taxpayer-name strong { font-size: 14px; overflow-wrap: anywhere; }
-.payment-form-summary__taxpayer-name small { color: var(--citizen-muted, #526880); font-size: 14px; overflow-wrap: anywhere; }
+.payment-form-summary__taxpayer-name small { color: var(--citizen-muted, var(--color-taxpay-form-muted)); font-size: 14px; overflow-wrap: anywhere; }
 .payment-form-summary__taxpayer-total {
   flex: none; color: var(--citizen-primary-dark, #245aa0);
   font-size: 14px; font-weight: 800; white-space: nowrap;
@@ -283,7 +283,7 @@
 .payment-form-summary__taxpayer[open] > summary > svg { transform: rotate(180deg); }
 .payment-form-summary__taxpayer-items {
   display: grid; gap: .55rem; padding: .65rem;
-  border-top: 1px solid var(--citizen-border, #dce5f0);
+  border-top: 1px solid var(--citizen-border, var(--color-taxpay-form-border));
 }
 /* Only the expanded selected-head list scrolls. Keep the taxpayer header,
    collapse control, next taxpayer and modal footer in their approved positions. */
@@ -315,7 +315,7 @@
   width: 100%;
   min-height: 44px;
   padding: 9px 11px;
-  border: 1px solid var(--citizen-border, #dce5f0);
+  border: 1px solid var(--citizen-border, var(--color-taxpay-form-border));
   border-radius: 8px;
   background: #edf4ff;
   color: var(--citizen-primary-dark, #245aa0);
@@ -328,19 +328,19 @@
 .payment-form-summary__taxpayer-show-all small {
   font-size: 14px;
   font-weight: 500;
-  color: var(--citizen-muted, #526880);
+  color: var(--citizen-muted, var(--color-taxpay-form-muted));
 }
-.payment-form-summary__taxpayer-show-all:hover { border-color: var(--citizen-primary, #2c5ead); background: #e5efff; }
-.payment-form-summary__taxpayer-show-all:focus-visible { outline: 3px solid var(--citizen-primary, #2c5ead); outline-offset: 2px; }
+.payment-form-summary__taxpayer-show-all:hover { border-color: var(--citizen-primary, var(--color-taxpay-primary)); background: #e5efff; }
+.payment-form-summary__taxpayer-show-all:focus-visible { outline: 3px solid var(--citizen-primary, var(--color-taxpay-primary)); outline-offset: 2px; }
 .payment-form-summary__taxpayers { scrollbar-gutter: stable; scrollbar-color: #8c9db5 #f3f7fc; }
 .payment-form-summary__taxpayer-item {
   display: grid; grid-template-columns: minmax(0,1fr) auto;
   gap: .5rem; align-items: start;
 }
 .payment-form-summary__taxpayer-item p { margin: 0; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
-.payment-form-summary__taxpayer-item small { display:block; color: var(--citizen-muted, #526880); font-size:14px; }
+.payment-form-summary__taxpayer-item small { display:block; color: var(--citizen-muted, var(--color-taxpay-form-muted)); font-size:14px; }
 .payment-form-summary__taxpayer-item strong { font-size:14px; white-space:nowrap; }
-.payment-form-summary__taxpayer-empty { margin: 0; color: var(--citizen-muted, #526880); font-size:14px; }
+.payment-form-summary__taxpayer-empty { margin: 0; color: var(--citizen-muted, var(--color-taxpay-form-muted)); font-size:14px; }
 .payment-flow-embedded .payment-form-summary__taxpayers { display:grid; }
 @media(max-width:900px) {
   .payment-flow-embedded .payment-form-summary__taxpayers { display:grid; }
