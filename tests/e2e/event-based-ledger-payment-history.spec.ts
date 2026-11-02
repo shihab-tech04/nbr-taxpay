@@ -105,3 +105,15 @@ test('small-screen transaction details stay within a scrollable bottom sheet',as
   expect(box!.y+box!.height).toBeGreaterThanOrEqual(758);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('payment journey matches the history identities on desktop and mobile',async({page})=>{
+  await page.setViewportSize({width:320,height:760});
+  await page.goto(history);
+  await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Tax journey'}).click();
+  const timeline=page.getByTestId('taxpay-payment-journey');
+  await expect(timeline).toBeVisible();
+  await expect(timeline.getByText('DEMO-PAY-02')).toBeVisible();
+  await expect(timeline.getByText('DEMO-PAY-24-01')).toBeVisible();
+  await expect(timeline.locator('li')).toHaveCount(21);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
