@@ -135,11 +135,15 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
               <span>{expanded
                 ? (bn ? 'প্রথম চারটি খাত দেখুন' : 'Show first 4 heads')
                 : (bn ? `নির্বাচিত সব ${group.entries.length}টি খাত দেখুন` : `Show all ${group.entries.length} selected heads`)}</span>
-              <small>{expanded
-                ? (bn ? 'সব খাত তালিকাভুক্ত — নিচে স্ক্রল করুন' : 'All heads listed — scroll to review')
-                : (bn ? `আরও ${group.entries.length - previewLimit}টি খাত` : `${group.entries.length - previewLimit} more heads`)}</small>
+              {!expanded && <small>{bn ? `আরও ${group.entries.length - previewLimit}টি খাত` : `${group.entries.length - previewLimit} more heads`}</small>}
             </button>}
-            {visibleEntries.length ? visibleEntries.map((entry, entryIndex) => {
+            <div className="payment-form-summary__taxpayer-entries"
+              data-testid="selected-taxpayer-head-list"
+              data-expanded={canExpand && expanded ? 'true' : undefined}
+              role={canExpand && expanded ? 'region' : undefined}
+              aria-label={canExpand && expanded ? (bn ? `${group.label} নির্বাচিত পরিশোধের খাত` : `${group.label} selected payment heads`) : undefined}
+              tabIndex={canExpand && expanded ? 0 : undefined}>
+              {visibleEntries.length ? visibleEntries.map((entry, entryIndex) => {
               const contents = <>
                 <span className="payment-form-summary__taxpayer-label">{entry.label}{entry.detail && <small>{entry.detail}</small>}</span>
                 <strong>{entry.value === null ? '—' : formatCurrency(entry.value, language)}</strong>
@@ -149,7 +153,8 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
                     aria-label={bn ? `সম্পাদনা করুন: ${entry.label}, ${entry.detail || ''}` : `Edit ${entry.label}, ${entry.detail || ''}`}
                     onClick={() => onSelectEntry(entry.id!)}>{contents}</button>
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
-            }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
+              }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
+            </div>
           </div>
         </details>;
         })}
