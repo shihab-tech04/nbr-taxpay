@@ -51,8 +51,7 @@ begin
    if v_report.source_hash is distinct from p_source_hash then
      raise exception 'Submission key collision.' using errcode='22023';
    end if;
-   return jsonb_build_object('reference',v_report.reference,
-     'tracking_token',v_report.tracking_secret::text,'status',v_report.status);
+   return jsonb_build_object('reference',v_report.reference,'status',v_report.status);
  end if;
  if (select count(*) from public.taxpay_public_issue_reports
      where source_hash=p_source_hash and submitted_at>now()-interval '1 hour')>=4 then
@@ -61,8 +60,7 @@ begin
  insert into public.taxpay_public_issue_reports(category,details,submission_key,source_hash)
    values(p_category,v_details,p_submission_key,p_source_hash)
    returning * into v_report;
- return jsonb_build_object('reference',v_report.reference,
-   'tracking_token',v_report.tracking_secret::text,'status',v_report.status);
+ return jsonb_build_object('reference',v_report.reference,'status',v_report.status);
 end;
 $$;
 revoke all on function public.taxpay_record_public_issue(text,text,uuid,text) from public,anon,authenticated;
