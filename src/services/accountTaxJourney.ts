@@ -1,11 +1,12 @@
 import {supabase} from './supabaseClient';
-import {safeReviewStatus} from './accountReviewHistory';
+import {safeReviewStatus,formattedReviewAmount} from './accountReviewHistory';
 
 export type AccountJourneyItem={
   key:string;requestId:string;at:string;category:string;assessmentYear:string;
   label:string;source:'request'|'review_event';status:string;reference:string;
+  amountMinor:string|number;
 };
-type RequestRow={id:string;owner_uid:string;category:string;assessment_year:string;request_status:string;submitted_at:string};
+type RequestRow={id:string;owner_uid:string;category:string;assessment_year:string;amount_minor:string|number;request_status:string;submitted_at:string};
 type EventRow={id:number|string;request_id:string;event_type:string;status_after:string;occurred_at:string};
 
 function validInstant(value:unknown):value is string {
@@ -17,6 +18,7 @@ function parseRequests(rows:RequestRow[],ownerUid:string):RequestRow[]{
        typeof row.category!=='string'||typeof row.assessment_year!=='string'||
        !/^20\d{2}-(?:20\d{2}|\d{2})$/.test(row.assessment_year)||
        !validInstant(row.submitted_at))throw new Error('Unexpected account journey record.');
+    formattedReviewAmount(row.amount_minor,'en');
   }
   return rows;
 }
@@ -27,7 +29,7 @@ export function projectAccountTaxJourney(ownerUid:string,requests:RequestRow[],e
   const result:AccountJourneyItem[]=own.map(row=>({
     key:'request:'+row.id,requestId:row.id,at:row.submitted_at,category:row.category,
     assessmentYear:row.assessment_year,label:'SUBMITTED_FOR_REVIEW',source:'request',
-    status:'SUBMITTED_FOR_REVIEW',reference:row.id,
+    status:'SUBMITTED_FOR_REVIEW',reference:row.id,amountMinor:row.amount_minor,
   }));
   for(const event of events){
     const request=byId.get(event.request_id);
@@ -37,7 +39,7 @@ export function projectAccountTaxJourney(ownerUid:string,requests:RequestRow[],e
     result.push({key:'event:'+event.id,requestId:request.id,at:event.occurred_at,
       category:request.category,assessmentYear:request.assessment_year,
       label:event.event_type,source:'review_event',status:safeReviewStatus(event.status_after),
-      reference:request.id});
+      reference:request.id,amountMinor:request.amount_minor});
   }
   return result.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.key.localeCompare(b.key));
 }
@@ -56,7 +58,7 @@ export async function loadAccountTaxJourney(ownerUid:string):Promise<AccountJour
   for(let offset=0;;offset+=pageSize){
     await check();
     const {data,error}=await db.from('taxpay_payment_requests')
-      .select('id,owner_uid,category,assessment_year,request_status,submitted_at')
+      .select('id,owner_uid,category,assessment_year,amount_minor,request_status,submitted_at')
       .eq('owner_uid',ownerUid).order('submitted_at',{ascending:true})
       .order('id',{ascending:true}).range(offset,offset+pageSize-1);
     if(error)throw error;
