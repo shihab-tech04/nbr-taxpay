@@ -1,0 +1,170 @@
+/* Shared citizen field-label weight: excludes tabs, option cards and section headings. */
+.taxpay-citizen-shell {
+  --taxpay-form-label-weight: 500;
+}
+/* Source audit: utility-based labels otherwise retain font-semibold/font-bold. */
+.taxpay-citizen-shell label[class~="font-semibold"]:not(:has(input[type="radio"], input[type="checkbox"])),
+.taxpay-citizen-shell label[class~="font-bold"]:not(:has(input[type="radio"], input[type="checkbox"])) {
+  font-weight: var(--taxpay-form-label-weight);
+}
+.taxpay-citizen-shell .travel-flow__field > label:not(.travel-flow__check),
+.taxpay-citizen-shell .taxpayer-account-fields label,
+.taxpay-citizen-shell .citizen-select-label,
+.taxpay-citizen-shell .citizen-hub-lookup label,
+.taxpay-citizen-shell .receipt-lookup__field label,
+.taxpay-citizen-shell .public-report-card label,
+.taxpay-citizen-shell .taxpay-taxpayer-row__fields label,
+.taxpay-citizen-shell .payment-head-amount__label,
+.taxpay-citizen-shell .other-tax-head-tools__label,
+.taxpay-citizen-shell .taxpay-auth-add label,
+.taxpay-citizen-shell .taxpayer-tin-lookup__field > label {
+  font-weight: var(--taxpay-form-label-weight);
+}
+
+/* Incremental Travel Tax: passport search and lookup remain on one row. */
+.taxpay-citizen-shell .travel-flow__passenger-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.taxpay-citizen-shell .travel-flow__passport-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  column-gap: 12px;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.taxpay-citizen-shell .travel-flow__passport-input {
+  position: relative;
+  min-width: 0;
+}
+.taxpay-citizen-shell .travel-flow__passport-action button {
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 1px solid var(--citizen-primary);
+  border-radius: 10px;
+  background: var(--citizen-surface);
+  color: var(--citizen-primary-dark);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.taxpay-citizen-shell .travel-flow__passport-action button:hover {
+  background: var(--citizen-primary-light);
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--citizen-surface);
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 12%);
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions [role="option"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--citizen-border);
+  background: transparent;
+  color: var(--citizen-text);
+  font: inherit;
+  cursor: pointer;
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions [role="option"]:hover,
+.taxpay-citizen-shell .travel-flow__passport-suggestions [role="option"]:focus-visible {
+  background: var(--citizen-primary-light);
+  outline-offset: -2px;
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions [role="option"] > span:last-child {
+  color: var(--citizen-muted);
+  font-size: 12px;
+}
+.taxpay-citizen-shell .travel-flow__identity-card {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 18px;
+  background: var(--citizen-surface);
+  border: 1px solid var(--citizen-border);
+  border-radius: 12px;
+}
+.taxpay-citizen-shell .travel-flow__identity-card h3 {
+  margin: 0 0 18px;
+  font: 650 16px/1.4 Poppins, system-ui, sans-serif;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .travel-flow__identity-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.taxpay-citizen-shell .travel-flow__identity-card dt {
+  color: var(--citizen-muted);
+  font-size: 14px;
+  font-weight: var(--taxpay-form-label-weight);
+}
+.taxpay-citizen-shell .travel-flow__identity-card dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--citizen-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.taxpay-citizen-shell .travel-flow__identity-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .travel-flow__identity-progress p {
+  margin: 0;
+  color: var(--citizen-muted);
+  font-size: 14px;
+}
+.taxpay-citizen-shell .travel-flow__identity-progress button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0;
+  background: transparent;
+  border: 0;
+  color: var(--citizen-primary-dark);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+@media (max-width: 560px) {
+  .taxpay-citizen-shell .travel-flow__passport-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  /* Inline suggestions on narrow screens cannot cover the Check Passport action. */
+  .taxpay-citizen-shell .travel-flow__passport-suggestions {
+    position: static;
+    max-height: 190px;
+    margin-top: 4px;
+    box-shadow: none;
+  }
+  .taxpay-citizen-shell .travel-flow__passport-action button { width: 100%; }
+  .taxpay-citizen-shell .travel-flow__identity-card dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

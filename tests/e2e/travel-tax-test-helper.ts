@@ -9,6 +9,8 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await primary.fill('TEST123456');
     await root.locator('#travel-lookup-first').click();
   }
+  const continueToTravel = root.locator('.travel-flow__primary').filter({ hasText: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/ });
+  if (await continueToTravel.isVisible()) await continueToTravel.click();
   const mode = options?.mode ?? (await root.locator('#travel-tax-route-1').isChecked() ? 'WATER' : 'LAND');
   if (mode === 'WATER') {
     await root.locator('#travel-tax-route-1').check();
@@ -36,7 +38,11 @@ export async function fillForeignPassenger(root: Locator | Page, options?: {
   await root.locator('#travel-name-first').fill(options?.name ?? 'SAMPLE TRAVELLER');
   await root.locator('#travel-birth-date-first').fill(options?.birthDate ?? '1992-05-10');
   await root.locator('#travel-country-first').fill(options?.country ?? 'India');
-  if (returnedToStageOne) await root.getByRole('button', { name: 'Continue to add passengers' }).click();
+  if (returnedToStageOne) {
+    const identityNext = root.locator('.travel-flow__primary').filter({ hasText: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/ });
+    if (await identityNext.isVisible()) await identityNext.click();
+    await root.locator('.travel-flow__primary').filter({ hasText: /Continue to add passengers|অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান/ }).click();
+  }
   if (await root.locator('#travel-mobile').isVisible()) await root.locator('#travel-mobile').fill('01712345678');
 }
 

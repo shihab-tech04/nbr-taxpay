@@ -288,8 +288,7 @@ test('Travel tax calculates age-dependent estimates only after identity and trav
   await page.goto('/?action=travel');
   const travel=page.locator('.travel-flow');
   const summary=travel.locator('.travel-flow__total');
-  await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(2);
-  await expect(travel.locator('#travel-tax-route-0')).toBeChecked();
+  await expect(travel.locator('#travel-tax-route-results')).toHaveCount(0);
   await expect(summary).toContainText('—');
   await travel.locator('#travel-passenger-tab-first-FOREIGN').click();
   await travel.locator('#travel-passport-first').fill('FAKE002');
@@ -297,6 +296,7 @@ test('Travel tax calculates age-dependent estimates only after identity and trav
   await travel.locator('#travel-country-first').fill('India');
   await travel.locator('#travel-birth-date-first').fill('2017-08-10');
   await fillTravelDetails(travel);
+  await expect(travel.locator('#travel-tax-route-0')).toBeChecked();
   await expect(summary).toContainText('500');
   await travel.locator('#travel-birth-date-first').fill('2023-08-10');
   await expect(summary).toContainText('0');

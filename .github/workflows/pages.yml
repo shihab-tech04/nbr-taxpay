@@ -351,6 +351,11 @@ jobs:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-public-search.mjs
 
+      - name: Verify deployed Travel Tax progressive passport journey on desktop and mobile
+        env:
+          TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/verify-live-travel-passport.mjs
+
       - name: Upload live signed-out browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -359,4 +364,5 @@ jobs:
           path: |
             test-results/live-auth-*.png
             test-results/live-search-*.png
+            test-results/live-travel-passport-*.png
           if-no-files-found: ignore

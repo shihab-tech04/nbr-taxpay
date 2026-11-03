@@ -8,6 +8,8 @@ test('Travel Tax: Step 1 identifies missing travel fields before age validation'
   const modal = page.getByRole('dialog', {name: 'Travel tax'});
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
+  await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+  await modal.getByRole('button', {name: 'Continue to travel details'}).click();
   const continueButton = modal.getByRole('button', {name: 'Continue to add passengers'});
 
   await continueButton.click();
@@ -28,21 +30,61 @@ test('Travel Tax: Step 1 identifies missing travel fields before age validation'
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
 });
 
+test('Travel Tax: ten fictional passports suggest on focus and confirm the selected identity', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  const passport = modal.locator('#travel-passport-first');
+  await passport.focus();
+  const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
+  await expect(options).toHaveCount(10);
+  await options.filter({hasText: 'TEST230005'}).click();
+  await expect(passport).toHaveValue('TEST230005');
+  await modal.getByRole('button', {name: 'Check Passport'}).click();
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
+  await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
+  await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+  await modal.getByRole('button', {name: 'Continue to travel details'}).click();
+  await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
+  await expect(modal.locator('#travel-tax-route-results')).toContainText('By land');
+  await expect(modal.locator('#travel-tax-route-results')).not.toContainText('স্থলপথে');
+  await modal.getByRole('button', {name: 'Edit passenger details'}).click();
+  await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+});
+
+test('Travel Tax: foreign passenger must enter mandatory identity fields before travel details', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  await modal.locator('#travel-passenger-tab-first-FOREIGN').click();
+  await expect(modal.locator('#travel-country-first')).toBeVisible();
+  await expect(modal.locator('#travel-lookup-first')).toHaveCount(0);
+  await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+  await modal.getByRole('button', {name: 'Continue to travel details'}).click();
+  await expect(modal.getByRole('alert')).toBeVisible();
+  await fillForeignPassenger(modal);
+  await modal.getByRole('button', {name: 'Continue to travel details'}).click();
+  await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
+});
+
 test('Travel Tax: passenger tabs first, Land default, no rate on mode cards or accounting inputs', async ({page}) => {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal = page.getByRole('dialog', {name: 'Travel tax'});
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger and travel details');
-  await expect(modal.getByRole('button', {name:'Continue to add passengers'})).toBeVisible();
+  await expect(modal.getByRole('button', {name:'Continue to travel details'})).toBeVisible();
   await expect(modal.locator('#travel-passenger-tab-first-BD')).toHaveAttribute('aria-selected', 'true');
-  await expect(modal.locator('#travel-name-first')).toHaveAttribute('readonly', '');
-  await expect(modal.locator('#travel-birth-date-first')).toHaveAttribute('readonly', '');
+  await expect(modal.locator('#travel-passenger-tab-first-BD svg')).toBeVisible();
   const routes = modal.locator('#travel-tax-route-results');
+  await expect(routes).toHaveCount(0);
+  await expect(modal.locator('#travel-port-number, #travel-tax-zone, #travel-organization-code')).toHaveCount(0);
+  await expect(modal.getByTestId('travel-payment-total')).toHaveText('—');
+  await fillTravelDetails(modal);
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
   await expect(routes.locator('input[type=radio]')).toHaveCount(2);
   await expect(routes.locator('#travel-tax-route-0')).toBeChecked();
   await expect(routes.getByText('1,000')).toHaveCount(0);
-  await expect(modal.locator('#travel-port-number, #travel-tax-zone, #travel-organization-code')).toHaveCount(0);
-  await expect(modal.getByTestId('travel-payment-total')).toHaveText('—');
+  await expect(routes.getByText('স্থলপথে')).toHaveCount(0);
   const boxes = await Promise.all([
     routes.locator('.travel-flow__route').nth(0).boundingBox(),
     routes.locator('.travel-flow__route').nth(1).boundingBox(),
@@ -54,7 +96,6 @@ test('Travel Tax: passenger tabs first, Land default, no rate on mode cards or a
   } else {
     expect(boxes[1]!.y).toBeGreaterThanOrEqual(boxes[0]!.y + boxes[0]!.height);
   }
-  await fillTravelDetails(modal);
   await expect(modal.getByTestId('travel-payment-total')).toContainText('1,000');
   await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 34 on travel date');
   await modal.getByRole('button', {name:'Continue to add passengers'}).click();
@@ -127,11 +168,11 @@ test('Travel Tax: government passport lookup must not fabricate identity',async(
   await modal.locator('#travel-passport-first').fill('REALPASSPORT1');
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByRole('alert')).toContainText('not connected');
-  await expect(modal.locator('#travel-name-first')).toHaveValue('');
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveCount(0);
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
-  await expect(modal.locator('#travel-name-first')).toHaveValue('SAMPLE BANGLADESHI PASSENGER');
-  await expect(modal.locator('#travel-birth-date-first')).toHaveValue('1992-04-18');
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('1992-04-18');
   await expect(modal.getByText('Sample identity and birth date only', {exact:false})).toBeVisible();
 });
 

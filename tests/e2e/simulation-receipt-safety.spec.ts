@@ -28,8 +28,9 @@ function expectSafeSnapshot(input: PaymentInput) {
 }
 async function travelReview(page: Page) {
   await page.goto('/?action=travel');
-  await page.locator('#travel-tax-route-0').check();
+  await expect(page.locator('#travel-tax-route-results')).toHaveCount(0);
   await fillTravelDetails(page);
+  await expect(page.locator('#travel-tax-route-0')).toBeChecked();
   await page.getByRole('button', { name: 'Continue to add passengers' }).click();
 
   await page.locator('#travel-mobile').fill('01712345678');

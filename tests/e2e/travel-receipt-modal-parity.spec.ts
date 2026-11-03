@@ -9,7 +9,6 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
 
   await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__footer-close')).toHaveCount(0);
-  await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
   await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
 
@@ -81,7 +80,8 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
   await newPayment.click();
   await expect(dialog.locator('.travel-flow')).toBeVisible();
   await expect(dialog.locator('.receipt-view__actions')).toHaveCount(0);
-  await expect(dialog.locator('#travel-tax-route-results')).toBeVisible();
+  await expect(dialog.locator('#travel-tax-route-results')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Continue to travel details' })).toBeVisible();
 });
 
 
@@ -98,7 +98,6 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(dialog.locator('.payment-form-section').getByRole('heading', { name: 'Passenger and travel details' })).toHaveCount(1);
   await expect(dialog.locator('.travel-flow__summary')).toBeVisible();
 
-  await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
   await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
@@ -135,8 +134,8 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   await expect(calculation.getByTestId('travel-payment-total')).toContainText('—');
   await expect(calculation.getByTestId('travel-total-in-words')).toHaveCount(1);
 
-  await dialog.locator('#travel-tax-route-1').check();
-  await fillTravelDetails(dialog);
+  await fillTravelDetails(dialog, { mode: 'WATER' });
+  await expect(dialog.locator('#travel-tax-route-1')).toBeChecked();
   await expect(calculation.getByTestId('travel-payment-total')).toContainText('1,000');
   const words = calculation.getByTestId('travel-total-in-words');
   await expect(words).toHaveText('One Thousand Taka only');

@@ -1,13 +1,13 @@
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
-  LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
-  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger,
+  LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
+  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge,
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
@@ -25,8 +25,6 @@ interface TravelTaxProps {
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
-
-const PASSPORT_PREVIEW = 'TEST123456';
 
 function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
@@ -51,6 +49,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [identityRevealed, setIdentityRevealed] = useState(false);
+  const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
   const [methodGroup, setMethodGroup] = useState<PaymentMethodGroup | null>(null);
@@ -93,12 +93,22 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     { value: 'WATER', en: 'By water', bn: 'নৌপথে' },
   ];
 
+  const showError = (message: string) => {
+    setError(message);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const alert = document.getElementById('travel-tax-error');
+      alert?.scrollIntoView({ block: 'nearest' });
+      alert?.focus();
+    }));
+  };
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
+    if (id === 'first' && ('passport' in patch || 'nationality' in patch)) setIdentityRevealed(false);
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
   };
   const changePassengerType = (id: string, nationality: TravellerNationality) => {
+    setPassportSuggestionsFor(null);
     changePassenger(id, { nationality, passport: '', name: '', birthDate: '',
       country: nationality === 'BD' ? 'Bangladesh' : '',
       identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL' });
@@ -138,17 +148,44 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     if (!/^01\d{9}$/.test(phone)) return tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
     return null;
   };
+  const confirmIdentity = () => {
+    const passenger = passengers[0];
+    const problem = validateTravelParty([passenger]);
+    if (problem) {
+      showError(bn
+        ? (passenger.nationality === 'BD'
+          ? 'নমুনা পাসপোর্ট নম্বর নির্বাচন করে যাচাই করুন।'
+          : 'বৈধ পাসপোর্ট নম্বর ও যাত্রীর পুরো নাম দিন।')
+        : problem);
+      return;
+    }
+    if (passenger.nationality === 'FOREIGN') {
+      if (!passenger.country.trim()) {
+        showError(tr('Enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।'));
+        return;
+      }
+      if (travelPassengerAge(passenger.birthDate, new Date().toISOString().slice(0, 10)) === null) {
+        showError(tr('Enter a valid date of birth.', 'সঠিক জন্মতারিখ লিখুন।'));
+        return;
+      }
+    }
+    setIdentityRevealed(true);
+    setError('');
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.getElementById('travel-mode-section')?.scrollIntoView({ block: 'nearest' })
+    ));
+  };
   const continueStep = () => {
     const problem = step === 0
       ? validateTravelParty([passengers[0]]) ?? validateTravelDetails() ??
         validateTravelParty([passengers[0]], travelDate)
       : validatePassengers();
-    if (problem) { setError(problem); return; }
+    if (problem) { showError(problem); return; }
     stepTo(step === 0 ? 1 : 2);
   };
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
-    setDestination(''); setTravelDate('');
+    setDestination(''); setTravelDate(''); setIdentityRevealed(false); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -286,9 +323,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       <div className="travel-flow__passenger-tabs" role="tablist"
         aria-label={tr('Passenger type for passenger ', 'যাত্রীর ধরন, যাত্রী ') + (index + 1)}>
         {([
-          ['BD', tr('Bangladeshi passenger','বাংলাদেশি যাত্রী')],
-          ['FOREIGN', tr('Foreign passenger','বিদেশি যাত্রী')]
-        ] as const).map(([nationality, label]) =>
+          ['BD', tr('Bangladeshi passenger','বাংলাদেশি যাত্রী'), Flag],
+          ['FOREIGN', tr('Foreign passenger','বিদেশি যাত্রী'), Globe2]
+        ] as const).map(([nationality, label, Icon]) =>
           <button key={nationality} type="button" role="tab"
             id={'travel-passenger-tab-' + item.id + '-' + nationality}
             aria-controls={panelId} aria-selected={item.nationality === nationality}
@@ -304,46 +341,82 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               requestAnimationFrame(() => document.getElementById(
                 'travel-passenger-tab-' + item.id + '-' + next)?.focus());
             }}>
-            {label}
+            <Icon size={17} aria-hidden="true" />{label}
           </button>)}
       </div>
       <div id={panelId} role="tabpanel"
         aria-labelledby={'travel-passenger-tab-' + item.id + '-' + item.nationality}
         className="travel-flow__passenger-panel">
         <div className="travel-flow__fields">
-          <div className="travel-flow__field">
-            <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
-            <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
-              onChange={event => changePassenger(item.id, {
-                passport: event.target.value.toUpperCase().replace(/\s+/g, ''),
-                ...(item.nationality === 'BD' ? {name: '', birthDate: '', identitySource: 'PENDING' as const} : {}),
-              })} placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
-          </div>
           {item.nationality === 'BD' ? <>
-            <div className="travel-flow__field travel-flow__passport-action">
-              <label htmlFor={'travel-lookup-' + item.id}>{tr('Passport details','পাসপোর্টের তথ্য')}</label>
-              <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
-                if (item.passport !== PASSPORT_PREVIEW) {
-                  setError(tr('Government passport lookup is not connected. Use TEST123456 for a clearly marked sample.',
-                    'সরকারি পাসপোর্ট তথ্য অনুসন্ধান সংযুক্ত নয়। নমুনা হিসেবে TEST123456 ব্যবহার করুন।'));
-                } else {
-                  changePassenger(item.id, {
-                    name: 'SAMPLE BANGLADESHI PASSENGER', birthDate: '1992-04-18',
-                    country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'
-                  });
-                }
-              }}>{tr('Retrieve passport details (sample)','পাসপোর্টের নমুনা তথ্য আনুন')}</button>
+            <div className="travel-flow__passport-row">
+              <div className="travel-flow__field travel-flow__passport-input">
+                <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+                <input id={'travel-passport-' + item.id} role="combobox" aria-autocomplete="list"
+                  aria-controls={'travel-passport-suggestions-' + item.id}
+                  aria-expanded={passportSuggestionsFor === item.id}
+                  value={item.passport} maxLength={20} autoComplete="off"
+                  onFocus={() => setPassportSuggestionsFor(item.id)}
+                  onKeyDown={event => {
+                    if (event.key === 'Escape') setPassportSuggestionsFor(null);
+                    if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
+                      event.preventDefault();
+                      document.querySelector<HTMLElement>('#travel-passport-suggestions-' + item.id + ' [role="option"]')?.focus();
+                    }
+                  }}
+                  onChange={event => {
+                    changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, ''),
+                      name: '', birthDate: '', identitySource: 'PENDING'});
+                    setPassportSuggestionsFor(item.id);
+                  }}
+                  placeholder={tr('Select or enter a sample passport','একটি নমুনা পাসপোর্ট নির্বাচন বা লিখুন')}/>
+                {passportSuggestionsFor === item.id && <div
+                  className="travel-flow__passport-suggestions"
+                  id={'travel-passport-suggestions-' + item.id}
+                  role="listbox" aria-label={tr('Sample passport suggestions','নমুনা পাসপোর্টের পরামর্শ')}>
+                  {SAMPLE_BD_PASSPORTS.filter(sample => sample.passport.includes(item.passport.toUpperCase()))
+                    .map(sample => <button type="button" role="option" aria-selected={item.passport === sample.passport}
+                      key={sample.passport} onMouseDown={event => event.preventDefault()}
+                      onClick={() => {
+                        changePassenger(item.id, {passport: sample.passport, name: '', birthDate: '', identitySource: 'PENDING'});
+                        setPassportSuggestionsFor(null);
+                      }}>
+                      <span>{sample.passport}</span><span>{tr('Sample','নমুনা')}</span>
+                    </button>)}
+                </div>}
+              </div>
+              <div className="travel-flow__field travel-flow__passport-action">
+                <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
+                  setPassportSuggestionsFor(null);
+                  const sample = SAMPLE_BD_PASSPORTS.find(entry => entry.passport === item.passport.trim().toUpperCase());
+                  if (!sample) {
+                    showError(tr('This passport is not in the ten sample records. Government verification is not connected.',
+                      'এই পাসপোর্টটি ১০টি নমুনা রেকর্ডে নেই। সরকারি যাচাই সংযুক্ত নয়।'));
+                    return;
+                  }
+                  changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
+                    country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
+                }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
+              </div>
             </div>
-            <div className="travel-flow__field">
-              <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name (from passport)','যাত্রীর নাম (পাসপোর্ট থেকে)')}</label>
-              <input id={'travel-name-' + item.id} value={item.name} readOnly
-                placeholder={tr('Filled after lookup','অনুসন্ধানের পরে পূরণ হবে')}/>
-            </div>
-            <div className="travel-flow__field">
-              <label htmlFor={'travel-birth-date-' + item.id}>{tr('Date of birth (from passport)','জন্মতারিখ (পাসপোর্ট থেকে)')}</label>
-              <input id={'travel-birth-date-' + item.id} type="date" value={item.birthDate} readOnly/>
-            </div>
+            {item.identitySource === 'PASSPORT_SAMPLE' && <section className="travel-flow__identity-card"
+              aria-label={tr('Passenger details','যাত্রীর তথ্য')}>
+              <h3>{tr('Passenger details','যাত্রীর তথ্য')}</h3>
+              <dl>
+                <div><dt>{tr('Passenger name','যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
+                <div><dt>{tr('Passport number','পাসপোর্ট নম্বর')}</dt><dd>{item.passport}</dd></div>
+                <div><dt>{tr('Date of birth','জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
+                <div><dt>{tr('Nationality','জাতীয়তা')}</dt><dd>{tr('Bangladeshi','বাংলাদেশি')}</dd></div>
+              </dl>
+            </section>}
           </> : <>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+              <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
+                onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
+                placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
+            </div>
+          
             <div className="travel-flow__field">
               <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name as on passport','পাসপোর্ট অনুযায়ী নাম')} *</label>
               <input id={'travel-name-' + item.id} maxLength={100} value={item.name}
@@ -362,21 +435,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
-          <div className="travel-flow__field travel-flow__medical">
+          {(step !== 0 || identityRevealed) && <div className="travel-flow__field travel-flow__medical">
             <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
             <label className="travel-flow__check">
               <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
                 onChange={event => changePassenger(item.id, {medicalPortReferral: event.target.checked})}/>
               <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
             </label>
-          </div>
+          </div>}
         </div>
         {item.nationality === 'BD' && <p className="travel-flow__field-hint" role="status">
           {item.identitySource === 'PASSPORT_SAMPLE'
             ? tr('Sample identity and birth date only — not verified by passport authority.',
                  'পরিচয় ও জন্মতারিখ শুধু নমুনা; পাসপোর্ট কর্তৃপক্ষের যাচাই নয়।')
-            : tr('Government passport lookup is pending. For UX review, use TEST123456.',
-                 'সরকারি পাসপোর্ট সেবা সংযুক্ত নয়। শুধু UX পরীক্ষায় TEST123456 ব্যবহার করুন।')}
+            : tr('Government passport verification is unavailable. Choose from ten fictional passports and press Check Passport.',
+                 'সরকারি পাসপোর্ট যাচাই সংযুক্ত নয়। ১০টি কাল্পনিক পাসপোর্টের একটি বেছে পাসপোর্ট যাচাই করুন।')}
         </p>}
         {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
           {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
@@ -405,8 +478,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       {processing ? tr('Processing…', 'প্রক্রিয়াধীন…') : tr('Confirm preview payment', 'নমুনা পেমেন্ট নিশ্চিত করুন')}
     </button>
   ) : (
-    <button type="button" className="travel-flow__primary" onClick={continueStep}>
-      {step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান') : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
+    <button type="button" className="travel-flow__primary"
+      onClick={step === 0 && !identityRevealed ? confirmIdentity : continueStep}>
+      {step === 0 && !identityRevealed ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
+        : step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান')
+        : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
   );
@@ -433,7 +509,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           ))}
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
-          {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
+          {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
 
           {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')}>
             <PaymentFormSection number={1} title={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')} staticView={embedded}>
@@ -442,7 +518,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 'প্রথমে যাত্রীর ধরন ও পাসপোর্টের তথ্য দিন। জন্মতারিখ ও ভ্রমণের তারিখ থেকে কর হিসাব হবে।'
               )}</p>
               {renderPassengerEditor(passengers[0], 0)}
-              <div className="travel-flow__field-group">
+              {identityRevealed && <>
+              <div className="travel-flow__identity-progress">
+                <p>{tr('Passenger details confirmed for this sample. Continue with travel details.',
+                  'নমুনা যাত্রীর তথ্য নিশ্চিত হয়েছে। এবার ভ্রমণের তথ্য দিন।')}</p>
+                <button type="button" onClick={() => { setIdentityRevealed(false); setError(''); }}>
+                  <Pencil size={15} aria-hidden="true"/>{tr('Edit passenger details','যাত্রীর তথ্য সম্পাদনা')}
+                </button>
+              </div>
+              <div className="travel-flow__field-group" id="travel-mode-section">
                 <p className="travel-flow__field-title">{tr('Travel mode','যাতায়াতের মাধ্যম')} *</p>
                 <fieldset id="travel-tax-route-results" className="travel-flow__routes">
                   <legend className="sr-only">{tr('Travel mode','যাতায়াতের মাধ্যম')}</legend>
@@ -452,11 +536,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       className={'travel-flow__route' + (mode === item.value ? ' travel-flow__route--selected' : '')}>
                       <span className="travel-flow__route-copy">
                         <strong>{bn ? item.bn : item.en}</strong>
-                        <span>{bn ? item.en : item.bn}</span>
                       </span>
                       <input id={'travel-tax-route-' + index} name="travel-tax-route" type="radio"
                         checked={mode === item.value} onChange={() => {
-                          setMode(item.value); setPort(''); setWaterPort(''); setAcknowledged(false);
+                          setMode(item.value); setPort(''); setWaterPort(''); setError(''); setAcknowledged(false);
                         }}/>
                     </label>;
                   })}
@@ -465,7 +548,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               <div className="travel-flow__fields travel-flow__field-group">
                 {mode === 'LAND' ? <div className="travel-flow__field">
                   <label htmlFor="travel-port">{tr('Departure land port','স্থলবন্দর')} *</label>
-                  <select id="travel-port" value={port} onChange={e => setPort(e.target.value)}>
+                  <select id="travel-port" value={port} onChange={e => { setPort(e.target.value); setError(''); }}>
                     <option value="">{tr('Select departure port','বন্দর নির্বাচন করুন')}</option>
                     {LAND_PORT_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
                   </select>
@@ -473,7 +556,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     'ঐতিহাসিক বন্দরের তালিকা; বর্তমান কার্যক্রম যাচাই প্রয়োজন।')}</p>
                 </div> : <div className="travel-flow__field">
                   <label htmlFor="travel-water-port">{tr('Departure water port','নৌবন্দর')} *</label>
-                  <input id="travel-water-port" value={waterPort} onChange={e => setWaterPort(e.target.value)}
+                  <input id="travel-water-port" value={waterPort} onChange={e => { setWaterPort(e.target.value); setError(''); }}
                     placeholder={tr('Enter water port','নৌবন্দর লিখুন')} list="travel-water-port-options"/>
                   <datalist id="travel-water-port-options"><option value="Chattogram"/><option value="Mongla"/><option value="Payra"/></datalist>
                   <p className="travel-flow__field-hint">{tr('Water-port catalogue pending approval.','নৌবন্দরের তালিকা অনুমোদনের অপেক্ষায়।')}</p>
@@ -481,14 +564,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 <div className="travel-flow__field">
                   <label htmlFor="travel-destination">{tr('Destination','গন্তব্য')} *</label>
                   <input id="travel-destination" list="travel-destinations" value={destination}
-                    onChange={e => setDestination(e.target.value)} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
+                    onChange={e => { setDestination(e.target.value); setError(''); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
                   <datalist id="travel-destinations"><option value="India"/><option value="Nepal"/><option value="Bhutan"/><option value="Myanmar"/></datalist>
                 </div>
                 <div className="travel-flow__field">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
-                  <input id="travel-departure-date" type="date" value={travelDate} onChange={e => setTravelDate(e.target.value)}/>
+                  <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
               </div>
+              </>}
             </PaymentFormSection>
           </section>}
 
