@@ -72,9 +72,12 @@ test('Citizen route matrix never adds static text and containers to the Tab sequ
   for (const route of ['landing', 'user_guide', 'incident', 'guest', 'travel', 'verify', 'secure_workspace']) {
     await page.goto('/?action=' + route);
     await expect(page.locator('main#main-content')).toBeVisible();
+    // Wait for asynchronous screen content before testing focus order.
+    await expect.poll(
+      () => page.locator('main a[href], main button:not([disabled]), main input:not([disabled]), main select:not([disabled]), main summary').count(),
+      { message: 'No accessible native controls found for ' + route },
+    ).toBeGreaterThan(0);
     await expect(page.locator('main h1[tabindex="0"],main h2[tabindex="0"],main p[tabindex="0"],main div[tabindex="0"]')).toHaveCount(0);
-    const interactiveCount = await page.locator('main a[href], main button:not([disabled]), main input:not([disabled]), main select:not([disabled]), main summary').count();
-    expect(interactiveCount, 'No accessible native controls found for ' + route).toBeGreaterThan(0);
   }
 });
 
@@ -82,6 +85,7 @@ test('Scrolled-away mobile header is inert rather than an invisible Tab trap', a
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
+  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
   const header = page.locator('.citizen-header');
   await page.evaluate(() => window.scrollTo(0, 650));
   await expect(header).toHaveAttribute('inert', '');
