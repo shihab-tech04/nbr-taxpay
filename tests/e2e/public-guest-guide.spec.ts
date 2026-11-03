@@ -30,8 +30,7 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await travel.locator('#travel-tax-route-0').check();
   await fillTravelDetails(travel);
  await travel.getByRole('button',{name:'Continue to passenger details'}).click();
- await travel.getByLabel('Passenger name').fill('TEST PASSENGER');
- await travel.getByLabel('Passport number').fill('DEMO1234');
+
  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review passengers and payment'})).toBeVisible();
@@ -376,7 +375,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await expect(modal.getByLabel('Passenger name')).toBeVisible();
+  await expect(modal.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
@@ -397,8 +396,7 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   await left.evaluate(el=>el.scrollTop=el.scrollHeight);
   expect(Math.abs((await side.evaluate(el=>el.getBoundingClientRect().top))-initial)).toBeLessThan(2);
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
-  await modal.getByLabel('Passenger name').fill('SYNTHETIC USER');
-  await modal.getByLabel('Passport number').fill('FAKE0001');
+
   await modal.getByLabel('Mobile number for receipt').fill('01712345678');
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
@@ -427,9 +425,8 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await modal.locator('#travel-tax-route-0').check();
   await fillTravelDetails(modal);
  await modal.getByRole('button',{name:'যাত্রীর তথ্যে এগিয়ে যান'}).click();
- await expect(modal.getByLabel('যাত্রীর নাম')).toBeVisible();
- await modal.getByLabel('যাত্রীর নাম').fill('DEMO NAME');
- await modal.getByLabel('পাসপোর্ট নম্বর').fill('FAKE001');
+ await expect(modal.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+
  await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'যাত্রী ও পেমেন্ট যাচাই করুন'})).toBeVisible();
@@ -452,8 +449,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await modal.locator('#travel-tax-route-0').check();
   await fillTravelDetails(modal);
   await actions.getByRole('button',{name:'Continue to passenger details'}).click();
-  await modal.getByLabel('Passenger name').fill('SYNTHETIC PASSENGER');
-  await modal.getByLabel('Passport number').fill('DEMOFAKE01');
+
   await modal.getByLabel('Mobile number for receipt').fill('01712345678');
   await actions.getByRole('button',{name:'Continue to review'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
@@ -493,7 +489,7 @@ test('Travel Tax searches only Land and Water in English while preserving the se
  await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
  await fillTravelDetails(modal,{mode:'WATER'});
  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
- await expect(modal.locator('.payment-form-section').getByRole('heading',{name:'Passenger details'})).toBeVisible();
+ await expect(modal.locator('.payment-form-section').getByRole('heading',{name:'Passengers and receipt details'})).toBeVisible();
 });
 
 test('Travel Tax Bengali mode search remains accessible at 320px',async({page},info)=>{
