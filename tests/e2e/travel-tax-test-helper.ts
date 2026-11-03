@@ -9,7 +9,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await primary.fill('TEST123456');
     await root.locator('#travel-lookup-first').click();
   }
-  const mode = options?.mode ?? 'LAND';
+  const mode = options?.mode ?? (await root.locator('#travel-tax-route-1').isChecked() ? 'WATER' : 'LAND');
   if (mode === 'WATER') {
     await root.locator('#travel-tax-route-1').check();
     await root.locator('#travel-water-port').fill(options?.port ?? 'Chattogram');
