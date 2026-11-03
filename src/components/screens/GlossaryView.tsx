@@ -95,9 +95,9 @@ export const GlossaryView: React.FC = () => {
               </p>
 
               {item.actReference && (
-                <div className="text-sm text-slate-400 font-mono">
+                <p className="text-sm text-slate-400 font-mono">
                   Reference: {item.actReference}
-                </div>
+                </p>
               )}
             </div>
           ))}

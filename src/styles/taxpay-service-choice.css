@@ -873,8 +873,8 @@
 .account-authorizations__pending h4 { margin:0; color:var(--citizen-text); font-size:14px; font-weight:750; }
 .account-authorizations__pending-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.15rem .8rem; margin:0; padding:.45rem 0; font-size:14px; }
 .account-authorizations__pending-item strong { color:var(--citizen-text); min-width:0; overflow-wrap:anywhere; }
-.account-authorizations__pending-item span { color:var(--citizen-muted); overflow-wrap:anywhere; }
-.account-authorizations__pending-item span:last-child { grid-column:1/-1; }
+.account-authorizations__pending-item small { color:var(--citizen-muted); overflow-wrap:anywhere; }
+.account-authorizations__pending-item small:last-child { grid-column:1/-1; }
 @media(max-width:600px){.account-authorizations__pending-item{grid-template-columns:minmax(0,1fr)}}
 
 .account-authorizations__expired { margin:0; padding:.55rem 0; border-top:1px solid var(--citizen-border); color:var(--citizen-muted); font-size:14px; line-height:1.5; }
@@ -1594,7 +1594,7 @@
   cursor: pointer;
   scroll-snap-align: start;
 }
-.other-tax-taxpayer-chip > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.other-tax-taxpayer-chip > strong:first-child { overflow: hidden; text-overflow: ellipsis; font-weight:inherit; }
 .other-tax-taxpayer-chip:hover:not([aria-pressed="true"]) { background: var(--citizen-primary-light); }
 .other-tax-taxpayer-chip[aria-pressed="true"] {
   border-color: var(--citizen-primary);
@@ -1617,6 +1617,7 @@
   background: #fff;
   color: var(--citizen-primary-dark);
 }
+.other-tax-taxpayer-chip__alert::before {content:"!"}
 .other-tax-taxpayer-chip__alert {
   display: grid;
   place-items: center;

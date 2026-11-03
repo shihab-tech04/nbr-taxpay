@@ -59,9 +59,9 @@ export const PaymentWizard: React.FC = () => {
     <div>
       {currentStep === 4 && (
         <div className="mb-2 flex justify-end">
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+          <p className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
             {t.step} 4 {t.of} 4
-          </span>
+          </p>
         </div>
       )}
       <ol aria-label={bn ? 'পেমেন্টের ধাপ' : 'Payment steps'}
@@ -287,9 +287,9 @@ export const PaymentWizard: React.FC = () => {
               {t.taxpayer}: <strong className="text-slate-800">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</strong> ({t.tin}: {taxpayerProfile.tin})
             </p>
           </div>
-          <span className="text-sm px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <p className="text-sm px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
             {t.step} {step} {t.of} 4
-          </span>
+          </p>
         </div>
 
         {renderProgress(step)}
@@ -395,12 +395,12 @@ export const PaymentWizard: React.FC = () => {
                         </div>
                         {!bn && <div className="text-sm text-slate-500 font-bengali">{head.nameBn}</div>}
                         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                          <span>{category === 'TAX_WITH_RETURN' ? (bn ? 'প্রযোজ্য ধারা' : 'Applicable section') : (bn ? 'মূল নথির খাত-কোড' : 'Source head code')}: <strong>{category === 'TAX_WITH_RETURN' ? '173 / 174' : head.economicCode}</strong></span>
+                          <p>{category === 'TAX_WITH_RETURN' ? (bn ? 'প্রযোজ্য ধারা' : 'Applicable section') : (bn ? 'মূল নথির খাত-কোড' : 'Source head code')}: <strong>{category === 'TAX_WITH_RETURN' ? '173 / 174' : head.economicCode}</strong></p>
                         </div>
                         {head.rateNote && (
-                          <div className="text-sm text-emerald-800 font-medium">
+                          <p className="text-sm text-emerald-800 font-medium">
                             {t.note}: {head.rateNote}
-                          </div>
+                          </p>
                         )}
                       </div>
                       <input
@@ -445,7 +445,7 @@ export const PaymentWizard: React.FC = () => {
                 <strong className="font-mono-plex text-taxpay-dark">
                   {category === 'TAX_WITH_RETURN' ? returnLawLabel : `${selectedHead?.economicCode} — ${bn ? selectedHead?.nameBn : selectedHead?.nameEn}`}
                 </strong>
-                <span className="ml-2 text-slate-600">· {t.year}: {assessmentYear}</span>
+                <p className="ml-2 inline-block text-slate-600">· {t.year}: {assessmentYear}</p>
                 {category === 'TAX_WITH_RETURN' && <p className="mt-1 text-xs text-slate-600">{returnLawNote}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
@@ -516,12 +516,12 @@ export const PaymentWizard: React.FC = () => {
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">
+                <p className="font-bold text-sm text-slate-800">
                   {t.total}:
-                </span>
-                <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
+                </p>
+                <p className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
-                </span>
+                </p>
               </div>
             </div>
             </PaymentFormSection>
@@ -555,29 +555,29 @@ export const PaymentWizard: React.FC = () => {
                 {t.review}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <span className="text-slate-500 block">{t.payer}:</span>
-                  <strong className="text-slate-900">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">{t.tin}:</span>
-                  <strong className="font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">{t.year}:</span>
-                  <strong className="text-slate-900">{assessmentYear}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">{t.headCode}:</span>
-                  <strong className="font-mono-plex text-taxpay-dark">{category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode}</strong>
-                </div>
+                <dl>
+                  <dt className="text-slate-500 block">{t.payer}:</dt>
+                  <dd className="font-semibold text-slate-900">{bn ? taxpayerProfile.nameBn : taxpayerProfile.nameEn}</dd>
+                </dl>
+                <dl>
+                  <dt className="text-slate-500 block">{t.tin}:</dt>
+                  <dd className="font-semibold font-mono-plex text-taxpay-dark">{taxpayerProfile.tin}</dd>
+                </dl>
+                <dl>
+                  <dt className="text-slate-500 block">{t.year}:</dt>
+                  <dd className="font-semibold text-slate-900">{assessmentYear}</dd>
+                </dl>
+                <dl>
+                  <dt className="text-slate-500 block">{t.headCode}:</dt>
+                  <dd className="font-semibold font-mono-plex text-taxpay-dark">{category === 'TAX_WITH_RETURN' ? returnLawLabel : selectedHead?.economicCode}</dd>
+                </dl>
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">{t.remittance}:</span>
-                <span className="font-mono-plex font-bold text-xl text-taxpay-dark">
+                <p className="font-bold text-sm text-slate-800">{t.remittance}:</p>
+                <p className="font-mono-plex font-bold text-xl text-taxpay-dark">
                   {formatCurrency(totalAmount, language)}
-                </span>
+                </p>
               </div>
             </div>
 
@@ -631,7 +631,7 @@ export const PaymentWizard: React.FC = () => {
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 text-taxpay-dark" />
-                    <span>{t.runSimulation} · {formatCurrency(totalAmount, language)}</span>
+                    {t.runSimulation} · {formatCurrency(totalAmount, language)}
                   </>
                 )}
               </button>

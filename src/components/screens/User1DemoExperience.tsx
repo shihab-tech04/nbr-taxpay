@@ -194,7 +194,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       </select></label>
     </div>
     <div className="taxpayer-transaction-count">
-      <p className="text-xs text-slate-500" aria-live="polite">{tr('Records','রেকর্ড')}: {filtered.length} <span className="text-slate-400">/ {scoped.length}</span></p>
+      <p className="text-xs text-slate-500" aria-live="polite">{tr('Records','রেকর্ড')}: {filtered.length} / {scoped.length}</p>
       {reviewFilter&&<button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>}
     </div>
@@ -202,7 +202,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <div className="taxpayer-transaction-list__columns" aria-hidden="true"><span>{tr('Payment','পেমেন্ট')}</span><span>{tr('Amount','পরিমাণ')}</span><span>{tr('Status','অবস্থা')}</span><span /></div>
       <ul>{filtered.map(item=><li key={item.id} className="taxpayer-transaction-row">
         <div className="taxpayer-transaction-row__identity"><p className="taxpayer-transaction-row__title">{item.title}</p>
-          <p className="taxpayer-transaction-row__meta"><span>{tr(...labels[item.kind])}</span><span aria-hidden="true">·</span><time dateTime={item.date}>{formatDate(item.date)}</time></p>
+          <p className="taxpayer-transaction-row__meta">{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
           <p className="taxpayer-transaction-row__ref">{item.ref}</p></div>
         <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>
         <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
@@ -342,7 +342,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
                     title={monthLabel(monthKeys[i],true)+': '+money(v)}
                     onClick={()=>navigate('history',{categoryFilter:chartKind,monthFilter:monthKeys[i]})}>
                     <MetricColumn value={v} total={chartMax} tone="secondary" />
-                    <span className="taxpayer-monthly-bar__tooltip" aria-hidden="true">{monthLabel(monthKeys[i],true)} · {money(v)}</span>
+                    <p className="taxpayer-monthly-bar__tooltip" aria-hidden="true">{monthLabel(monthKeys[i],true)} · {money(v)}</p>
                   </button>:
                   <span aria-hidden="true" className="w-full max-w-10" />}
                 <p className="text-xs whitespace-nowrap text-taxpay-muted">{monthLabel(monthKeys[i])}</p>
@@ -541,11 +541,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
                 <span className="absolute -left-[6px] top-1.5 h-2.5 w-2.5 rounded-full bg-taxpay-primary" aria-hidden="true"/>
                 <button type="button" onClick={()=>setSelected(item)} aria-label={tr('View details for ','বিস্তারিত দেখুন: ')+item.title}
                   className="w-full min-w-0 rounded-lg p-1 text-left hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
-                  <span className="block text-sm font-semibold text-taxpay-text">{item.title} · {money(item.amount)}</span>
-                  <span className="mt-1 block break-words text-xs text-taxpay-muted">
+                  <strong className="block text-sm font-semibold text-taxpay-text">{item.title} · {money(item.amount)}</strong>
+                  <small className="mt-1 block break-words text-xs text-taxpay-muted">
                     {tr('AY ','করবর্ষ ')}{item.year} · {tr(...stateLabels[item.state])} · {tr(...labels[item.kind])}
-                  </span>
-                  <span className="mt-1 block break-all text-xs text-taxpay-muted">{item.ref} · {item.detail}</span>
+                  </small>
+                  <small className="mt-1 block break-all text-xs text-taxpay-muted">{item.ref} · {item.detail}</small>
                 </button>
               </div>
             </li>)}

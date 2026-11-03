@@ -255,7 +255,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600">
                 <div>
                   <p className="text-slate-400 block text-sm">Amendment:</p>
-                  <strong>AY {corr.currentAssessmentYear}</strong> ➔ <strong className="text-emerald-800">AY {corr.proposedAssessmentYear}</strong>
+                  <p><strong>AY {corr.currentAssessmentYear}</strong> ➔ <strong className="text-emerald-800">AY {corr.proposedAssessmentYear}</strong></p>
                 </div>
                 <div>
                   <p className="text-slate-400 block text-sm">Jurisdiction:</p>

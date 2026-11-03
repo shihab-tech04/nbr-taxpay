@@ -210,9 +210,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                       aria-label={name + ', ' + tx('TIN', 'টিআইএন') + ' ' + person.tin + ', ' + selectedCount + ' ' + tx('selected', 'নির্বাচিত') + (issues || noHead ? ', ' + tx('incomplete', 'অসম্পূর্ণ') : '')}
                       title={name + ' · ' + person.tin} onClick={() => setActiveTaxpayer(person.id)}
                       className="other-tax-taxpayer-chip">
-                      <span>{name}</span>
-                      {selectedCount > 0 && <span className="other-tax-taxpayer-chip__count" aria-hidden="true">{selectedCount}</span>}
-                      {(issues > 0 || noHead) && <span className="other-tax-taxpayer-chip__alert" aria-hidden="true">!</span>}
+                      <strong>{name}</strong>
+                      {selectedCount > 0 && <output className="other-tax-taxpayer-chip__count" aria-hidden="true">{selectedCount}</output>}
+                      {(issues > 0 || noHead) && <span className="other-tax-taxpayer-chip__alert" aria-hidden="true" />}
                     </button>;
                   })}
                 </div>
@@ -285,7 +285,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   className={groupErrors ? "group border-b border-rose-300 last:border-b-0 other-tax-group--invalid" : "group border-b border-slate-200 last:border-b-0"} data-head-group={group.name} data-invalid={groupErrors ? "true" : undefined}>
                   <summary className="cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
                     {bn ? matched[0].grpBn : group.name}
-                    <span className="text-slate-500 font-normal"> ({matched.length})</span>
+                    <small className="text-slate-500 font-normal"> ({matched.length})</small>
                     {groupErrors > 0 && <span className="ml-2 text-rose-700 text-xs font-semibold">{groupErrors} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
                     {groupSelectedCount > 0 && <span className="ml-2 text-taxpay-primary text-xs">
                       {groupSelectedCount} {tx('selected', 'নির্বাচিত')}
@@ -308,7 +308,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                             aria-label={tx('Select', 'নির্বাচন করুন') + ' ' + head.codeEn + ' — ' + head.en} />
                           <span className="min-w-0 text-sm">
                             <span className="block text-taxpay-dark">
-                              <strong className="font-mono-plex">{head.codeEn}</strong> — {bn ? head.bn || head.en : head.en}
+                              <strong className="font-mono-plex">{head.codeEn}</strong> <bdi>— {bn ? head.bn || head.en : head.en}</bdi>
                             </span>
                             {head.bn && <span lang={bn ? 'en' : 'bn'} className="block text-xs text-slate-600 mt-1">
                               {bn ? head.en : head.bn}

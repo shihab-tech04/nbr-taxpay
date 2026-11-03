@@ -1029,7 +1029,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               : <div><span>{language === 'bn' ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>}
           </div>
           <details className="payment-lifecycle__progress-detail" open={!completed && !bankPending && !declined}>
-            <summary>{language === 'bn' ? 'পেমেন্টের অগ্রগতি ও রেফারেন্স' : 'Payment progress and references'} <span>{lifecycleStages.length} / {ONLINE_LIFECYCLE.length}</span></summary>
+            <summary>{language === 'bn' ? 'পেমেন্টের অগ্রগতি ও রেফারেন্স' : 'Payment progress and references'} <output>{lifecycleStages.length} / {ONLINE_LIFECYCLE.length}</output></summary>
           <div className="payment-lifecycle__details">
             {!batchAttempt && <dl className="payment-lifecycle__references">
               <div><dt>{language === 'bn' ? 'কর ইভেন্ট আইডি' : 'Tax event ID'}</dt><dd>{attemptReceipt?.taxEventId || '—'}</dd></div>
@@ -1039,12 +1039,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </dl>}
             <ol className="payment-lifecycle__timeline" aria-label={language === 'bn' ? 'পরিশোধের অবস্থা' : 'Payment lifecycle'} aria-live="polite" data-testid="payment-lifecycle">
               {lifecycleStages.map((status, index) => <li key={`${status}-${index}`} className={status === 'FAILED' ? 'payment-lifecycle__event--failed' : ''}>
-                <span className="payment-lifecycle__event-dot" aria-hidden="true">{status === 'FAILED' ? '!' : '✓'}</span>
+                <span className="payment-lifecycle__event-dot" aria-hidden="true" />
                 <span>{status === 'CREDITED' && category === 'SOURCE_TAX_DEPOSIT'
                   ? (language === 'bn' ? 'eTDS বরাদ্দ বা কর ক্রেডিট নিশ্চিত হয়নি' : 'eTDS allocation and tax credit not confirmed')
                   : statusLabels[status][language]}</span>
               </li>)}
-              {isProcessing && <li className="payment-lifecycle__waiting"><span className="payment-lifecycle__event-dot" aria-hidden="true">·</span>{language === 'bn' ? 'পরবর্তী নিশ্চিতকরণের অপেক্ষায়…' : 'Waiting for the next confirmation…'}</li>}
+              {isProcessing && <li className="payment-lifecycle__waiting"><span className="payment-lifecycle__event-dot" aria-hidden="true" />{language === 'bn' ? 'পরবর্তী নিশ্চিতকরণের অপেক্ষায়…' : 'Waiting for the next confirmation…'}</li>}
             </ol>
           </div>
           </details>
@@ -1389,9 +1389,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                           {language === 'bn' ? head.nameEn : head.nameBn}
                         </div>
                         {head.rateNote && (
-                          <div className="text-sm text-emerald-800 font-medium">
-                            {copy.note}: <span lang="en">{head.rateNote}</span>
-                          </div>
+                          <p className="text-sm text-emerald-800 font-medium">
+                            {copy.note}: <bdi lang="en">{head.rateNote}</bdi>
+                          </p>
                         )}
                         {head.blockedReason && (
                           <div lang="en" className="text-sm text-rose-700 font-medium">
@@ -1493,7 +1493,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           <div className="payment-review" data-testid="payment-review">
             <div className="payment-review__main">
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
-                <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
+                <div className="payment-review__section-title"><p className="payment-review__section-number" aria-hidden="true">01</p><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
                 {!storyAmountSupported && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
                   {language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language)}।`
                     : `The maximum supported total is ${formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language)}.`}
