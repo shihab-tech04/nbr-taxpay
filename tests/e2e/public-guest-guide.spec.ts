@@ -418,7 +418,6 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await expect(modal.locator('.taxpay-modal__title')).toHaveText('ভ্রমণের তথ্য');
  await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
 
- await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'পর্যালোচনা ও পেমেন্ট'})).toBeVisible();
  const width=await modal.evaluate(el=>({viewport:innerWidth,paper:el.getBoundingClientRect().width,scroll:document.documentElement.scrollWidth}));
