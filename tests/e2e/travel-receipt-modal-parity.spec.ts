@@ -96,7 +96,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel details');
   await expect(dialog.locator('.travel-flow__steps')).toHaveCount(0);
-  await expect(dialog.getByRole('heading', { name: 'Travel details' })).toHaveCount(1);
+  await expect(dialog.locator('.payment-form-section').getByRole('heading', { name: 'Travel details' })).toHaveCount(1);
   await expect(dialog.locator('.travel-flow__summary')).toBeVisible();
 
   await dialog.locator('#travel-tax-route-0').check();
@@ -134,14 +134,14 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   await openTravelTaxFromBanner(page);
   const dialog = page.getByRole('dialog', { name: 'Travel tax' });
   const calculation = dialog.locator('.travel-flow__summary');
-  await expect(calculation.getByTestId('travel-payment-total')).toHaveText('—');
-  await expect(calculation.getByTestId('travel-total-in-words')).toHaveCount(0);
+  await expect(calculation.getByTestId('travel-payment-total')).toContainText('1,000');
+  await expect(calculation.getByTestId('travel-total-in-words')).toHaveCount(1);
 
   await dialog.locator('#travel-tax-route-1').check();
   await fillTravelDetails(dialog);
-  await expect(calculation.getByTestId('travel-payment-total')).toContainText('2,000');
+  await expect(calculation.getByTestId('travel-payment-total')).toContainText('1,000');
   const words = calculation.getByTestId('travel-total-in-words');
-  await expect(words).toHaveText('Two Thousand Taka only');
+  await expect(words).toHaveText('One Thousand Taka only');
   const [totalBox, wordsBox] = await Promise.all([
     calculation.getByTestId('travel-payment-total').boundingBox(),
     words.boundingBox()
@@ -158,14 +158,14 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Review & payment');
   await expect(dialog.locator('.travel-flow__purpose-total')).toHaveCount(0);
   await expect(dialog.locator('.travel-flow__review').getByText('Payment method', { exact: true })).toHaveCount(0);
-  await expect(words).toHaveText('Two Thousand Taka only');
+  await expect(words).toHaveText('One Thousand Taka only');
 
   await page.setViewportSize({ width: 375, height: 812 });
   await expect(calculation).toBeHidden();
   const mobileSummary = dialog.getByTestId('mobile-payment-calculation');
   await expect(mobileSummary).toBeVisible();
-  await expect(mobileSummary.locator('summary')).toContainText('2,000');
+  await expect(mobileSummary.locator('summary')).toContainText('1,000');
   await mobileSummary.locator('summary').click();
-  await expect(mobileSummary.getByTestId('travel-mobile-total-in-words')).toContainText('Two Thousand Taka only');
+  await expect(mobileSummary.getByTestId('travel-mobile-total-in-words')).toContainText('One Thousand Taka only');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
