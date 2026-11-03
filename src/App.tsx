@@ -11,6 +11,10 @@ import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
 
 // Screens
+import { PublicUserGuide } from './components/screens/PublicUserGuide';
+import { GuestPayment } from './components/screens/GuestPayment';
+import { TravelTax } from './components/screens/TravelTax';
+import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicReport } from './components/screens/PublicReport';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
@@ -25,15 +29,11 @@ import { validCertificateTransactionId } from './services/confirmedPaymentCertif
 import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 // Defer non-entry screens until visited, preserving the public shell and auth gates.
-const PublicUserGuide = React.lazy(() => import('./components/screens/PublicUserGuide').then(module => ({ default: module.PublicUserGuide })));
-const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
-const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
 const TaxpayerDashboard = React.lazy(() => import('./components/screens/TaxpayerDashboard').then(module => ({ default: module.TaxpayerDashboard })));
 const PaymentWizard = React.lazy(() => import('./components/screens/PaymentWizard').then(module => ({ default: module.PaymentWizard })));
 const PaymentHistory = React.lazy(() => import('./components/screens/PaymentHistory').then(module => ({ default: module.PaymentHistory })));
-const ReceiptLookup = React.lazy(() => import('./components/screens/ReceiptLookup').then(module => ({ default: module.ReceiptLookup })));
 const TaxLedger = React.lazy(() => import('./components/screens/TaxLedger').then(module => ({ default: module.TaxLedger })));
 const TaxJourney = React.lazy(() => import('./components/screens/TaxJourney').then(module => ({ default: module.TaxJourney })));
 const CertificatesView = React.lazy(() => import('./components/screens/CertificatesView').then(module => ({ default: module.CertificatesView })));
