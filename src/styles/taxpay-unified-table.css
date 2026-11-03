@@ -1,0 +1,105 @@
+/* Korbritto shared data-table foundation.
+ * Reference: Board Meeting Solution's quiet header/toolbar/filter/row rhythm.
+ * Keep TaxPay's existing colors, typography, responsive row layouts and actions.
+ * This file does not change data or navigation behavior.
+ */
+.taxpay-citizen-shell {
+  --taxpay-table-border: var(--color-taxpay-border);
+  --taxpay-table-heading: var(--color-taxpay-surface-subtle);
+  --taxpay-table-stripe: #FAFBFD;
+  --taxpay-table-hover: #F1F6FF;
+  --taxpay-table-radius: 10px;
+}
+
+/* Consistent surfaces for actual tables and existing accessible row lists. */
+.taxpay-citizen-shell table,
+.taxpay-citizen-shell .taxpayer-transaction-list > ul,
+.taxpay-citizen-shell .beneficiary-directory__table {
+  min-width: 0;
+  border: 1px solid var(--taxpay-table-border);
+  border-radius: var(--taxpay-table-radius);
+  background: var(--color-taxpay-surface);
+}
+.taxpay-citizen-shell table {width:100%;border-collapse:separate;border-spacing:0;}
+.taxpay-citizen-shell table th,
+.taxpay-citizen-shell .taxpayer-transaction-list__columns {
+  background: var(--taxpay-table-heading);
+  color: var(--color-taxpay-muted);
+  font-weight: 650;
+  font-size: 14px;
+  letter-spacing: 0;
+  border-bottom: 1px solid var(--taxpay-table-border);
+}
+.taxpay-citizen-shell table th {padding:12px 16px;text-align:left;}
+.taxpay-citizen-shell table td {padding:12px 16px;vertical-align:middle;border-bottom:1px solid var(--taxpay-table-border);}
+.taxpay-citizen-shell table tbody tr:last-child td {border-bottom:0;}
+.taxpay-citizen-shell table tbody tr:nth-child(even),
+.taxpay-citizen-shell .taxpayer-transaction-row:nth-child(even):not([data-selected="true"]) {
+  background: var(--taxpay-table-stripe);
+}
+.taxpay-citizen-shell table tbody tr:hover,
+.taxpay-citizen-shell .taxpayer-transaction-row:hover:not([data-selected="true"]) {
+  background: var(--taxpay-table-hover);
+}
+.taxpay-citizen-shell table tbody tr:focus-within,
+.taxpay-citizen-shell .taxpayer-transaction-row:focus-within {
+  outline: 2px solid var(--color-taxpay-primary);
+  outline-offset: -2px;
+}
+
+/* One-row search + filters at desktop, measured from the Board Meeting table.
+ * Do not hide the approved beneficiary list editor, filters or bulk actions.
+ */
+.taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters {
+  grid-template-columns: minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.3fr);
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters:has([aria-label="Filter by relationship"]) {
+  grid-template-columns: minmax(0,1.25fr) repeat(2,minmax(0,.85fr)) minmax(0,1.25fr);
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table {
+  overflow: hidden;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {
+  min-height: 42px;
+  padding-block: 11px;
+  border-bottom: 1px solid var(--taxpay-table-border);
+  background: var(--taxpay-table-heading);
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table > ul {
+  border: 0;
+  border-radius: 0;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
+  min-height: 74px;
+  padding-block: 12px;
+}
+.taxpay-citizen-shell .beneficiary-import-table {
+  overflow: auto;
+  border: 1px solid var(--taxpay-table-border);
+  border-radius: var(--taxpay-table-radius);
+}
+.taxpay-citizen-shell .beneficiary-import-table table {border:0;border-radius:0;}
+.taxpay-citizen-shell .beneficiary-import-table th {position:sticky;top:0;z-index:1;}
+
+@media(max-width:1050px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters,
+  .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters:has([aria-label="Filter by relationship"]) {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:700px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters,
+  .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters:has([aria-label="Filter by relationship"]) {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {display:none;}
+  .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
+    min-height:0;
+    padding:12px;
+  }
+  .taxpay-citizen-shell table th,
+  .taxpay-citizen-shell table td {padding:10px 12px;}
+}
