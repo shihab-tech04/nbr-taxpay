@@ -27,6 +27,9 @@ const report=[];
 const add=(file,line,code,severity,detail)=>report.push({file,line,code,severity,detail});
 const locate=(s,i)=>s.slice(0,i).split('\n').length;
 const allNonCss=[...source].filter(([p])=>!p.endsWith('.css')).map(([,s])=>s).join('\n');
+// React template classes such as brand--${option} are genuine runtime uses.
+const dynamicPrefixes=new Set([...allNonCss.matchAll(/([_a-zA-Z][\w-]*--)\$\{/g)].map(m=>m[1]));
+const cssClassUsed=(name)=>allNonCss.includes(name)||[...dynamicPrefixes].some(prefix=>name.startsWith(prefix));
 const stats={files:files.length,lines:0,inlineStyle:0,directGenericText:0,cssUnusedCandidates:0,orphanHtml:0};
 for(const [file,s] of source){
   stats.lines+=s.split('\n').length;
@@ -71,7 +74,7 @@ for(const [file,s] of source){
     for(const m of s.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/g))if(Number(m[1])<14)add(file,locate(s,m.index),'TYPE_BELOW_14','warning',m[1]+'px');
     for(const m of s.matchAll(/!important/g))add(file,locate(s,m.index),'CSS_IMPORTANT','review','Justify override');
     if(!file.includes('office-'))for(const m of new Set([...s.matchAll(/\.([a-zA-Z_][\w-]*)/g)].map(x=>x[1]))){
-      if(!allNonCss.includes(m)){stats.cssUnusedCandidates++;add(file,locate(s,s.indexOf('.'+m)),'UNUSED_SELECTOR_CANDIDATE','review','Dynamic selectors and print usage need review: '+m);}
+      if(!cssClassUsed(m)){stats.cssUnusedCandidates++;add(file,locate(s,s.indexOf('.'+m)),'UNUSED_SELECTOR_CANDIDATE','review','Dynamic selectors and print usage need review: '+m);}
     }
   }
   if(file.endsWith('.html')){
@@ -85,4 +88,4 @@ const counts={error:report.filter(x=>x.severity==='error').length,warning:report
 fs.writeFileSync('ui-audit-results.json',JSON.stringify({stats,counts,report},null,2)+'\n');
 fs.writeFileSync('ui-audit-results.md','# Korbritto UI source audit\n\n'+JSON.stringify({stats,counts})+'\n\n'+report.map(x=>'- '+x.severity.toUpperCase()+' '+x.file+':'+x.line+' '+x.code+' — '+x.detail).join('\n')+'\n');
 console.log(JSON.stringify({stats,counts},null,2));
-if(strict&&counts.error)process.exitCode=1;
+if(strict&&(counts.error||stats.cssUnusedCandidates||stats.orphanHtml))process.exitCode=1;

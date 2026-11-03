@@ -287,8 +287,6 @@
 .taxpay-payment-wizard fieldset { width: 100%; }
 .taxpay-payment-wizard fieldset label:focus-within { outline: 2px solid var(--citizen-primary); outline-offset: -2px; }
 @media(min-width:768px) {
-
-  .citizen-financial-links {display:flex;}
 }
 
 /* Citizen footer links never expose the separate Officer workspace. */
@@ -421,7 +419,7 @@
 }
 
 /* Public hub: a clear first step, grouped services and token-based service cards. */
-.citizen-public-hero, .citizen-taxpayer-hero {
+.citizen-public-hero {
   display:grid;
   grid-template-columns:minmax(0,1.35fr) minmax(16rem,.85fr);
   align-items:center;
@@ -433,33 +431,31 @@
   background:linear-gradient(125deg,var(--citizen-primary-dark),var(--citizen-primary));
   box-shadow:var(--taxpay-shadow-card);
 }
-.citizen-public-hero__copy, .citizen-taxpayer-hero > div {min-width:0;}
+.citizen-public-hero__copy {min-width:0;}
 
-.citizen-public-hero h1, .citizen-taxpayer-hero h1 {
+.citizen-public-hero h1 {
   max-width:18ch;margin:0;font-size:clamp(1.55rem,5vw,2.35rem);
   font-weight:800;line-height:1.2;letter-spacing:-.025em;
 }
-.citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow),
-.citizen-taxpayer-hero > div > p:not(.citizen-taxpayer-hero__eyebrow) {
+.citizen-public-hero__copy > p {
   max-width:62ch;margin:.8rem 0 0;color:white;font-size:.9rem;line-height:1.65;opacity:.94;
 }
-.citizen-public-hero__actions, .citizen-taxpayer-hero__actions {
+.citizen-public-hero__actions {
   display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1.2rem;
 }
-.citizen-public-hero__actions button, .citizen-public-hero__actions a, .citizen-taxpayer-hero__actions button {
+.citizen-public-hero__actions button, .citizen-public-hero__actions a {
   display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
   min-height:46px;padding:.7rem 1rem;border:1px solid transparent;border-radius:.7rem;
   font-size:14px;font-weight:750;text-align:left;text-decoration:none;
 }
-.citizen-public-primary, .citizen-taxpayer-primary {background:white;color:var(--citizen-primary-dark);}
-.citizen-public-primary:hover, .citizen-taxpayer-primary:hover {background:var(--citizen-primary-light);}
-.citizen-hub-section, .citizen-hub-lookup, .citizen-hub-support, .citizen-taxpayer-summary,
-.citizen-taxpayer-profile, .citizen-taxpayer-quick, .citizen-taxpayer-activity, .citizen-taxpayer-more {
+.citizen-public-primary {background:white;color:var(--citizen-primary-dark);}
+.citizen-public-primary:hover {background:var(--citizen-primary-light);}
+.citizen-hub-section {
   min-width:0;padding:clamp(1rem,3vw,1.35rem);border:1px solid var(--citizen-border);
   border-radius:1rem;background:var(--citizen-surface);
 }
 .citizen-hub-section__heading {display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;}
-.citizen-hub-section__heading h2, .citizen-hub-lookup h2, .citizen-hub-support h2 {
+.citizen-hub-section__heading h2 {
   margin:.18rem 0 0;color:var(--citizen-text);font-size:1.15rem;font-weight:800;line-height:1.35;
 }
 .citizen-hub-section__heading p:not(.citizen-hub-eyebrow) {max-width:65ch;margin:.4rem 0 0;color:var(--citizen-muted);font-size:14px;line-height:1.55;}
@@ -471,11 +467,8 @@
 @media(max-width:520px) {
 
 
-  .citizen-hub-service-grid, .citizen-hub-more-services > div, .citizen-taxpayer-more > div {grid-template-columns:minmax(0,1fr);}
-
-
   .citizen-hub-section__heading {gap:.65rem;}
-  .citizen-hub-section__heading h2, .citizen-hub-lookup h2, .citizen-hub-support h2 {font-size:1.05rem;}
+  .citizen-hub-section__heading h2 {font-size:1.05rem;}
 }
 
 
@@ -521,7 +514,6 @@
   .public-info-guides {grid-template-columns:minmax(0,1fr);}
 }
 @media(max-width:600px){
-  .public-info-topic-grid {grid-template-columns:minmax(0,1fr);}
   .public-home-brand img {height:38px;max-width:75px;}
   .public-information-hero .citizen-public-hero__copy h1 {max-width:none;}
   .public-information-hero .public-home-login {width:100%;}
@@ -576,7 +568,7 @@
 }
 .public-information-hero .citizen-public-hero__copy {padding:clamp(1.5rem,3.5vw,2.75rem);position:relative;z-index:1;}
 .public-information-hero .citizen-public-hero__copy h1 {max-width:24ch;color:var(--citizen-text);font-size:clamp(1.8rem,2.5vw,2rem);font-weight:750;line-height:1.22;letter-spacing:-.025em;}
-.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {max-width:50ch;margin-top:.85rem;color:var(--citizen-muted);font-size:1rem;line-height:1.65;opacity:1;}
+.public-information-hero .citizen-public-hero__copy > p {max-width:50ch;margin-top:.85rem;color:var(--citizen-muted);font-size:1rem;line-height:1.65;opacity:1;}
 .public-information-hero .citizen-public-hero__actions {margin-top:1.4rem;}
 .public-information-hero__media {display:flex;align-items:flex-end;justify-content:center;min-width:0;align-self:stretch;overflow:hidden;}
 .public-information-hero__image {display:block;width:100%;height:100%;max-height:330px;object-fit:contain;object-position:center bottom;}
@@ -605,7 +597,6 @@
 .citizen-footer--public .citizen-footer__intro {align-items:flex-start;}
 .citizen-footer--public .citizen-footer__intro > svg {flex:none;margin-top:.15rem;color:var(--citizen-primary);}
 @media(max-width:1100px){
-  .public-info-topic-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media(max-width:900px){
   .public-home-header__inner {min-height:70px;}
@@ -620,7 +611,7 @@
   .public-information-hero {grid-template-columns:minmax(0,1fr);}
   .public-information-hero .citizen-public-hero__copy {padding:1.5rem 1.4rem .75rem;text-align:center;}
   .public-information-hero .citizen-public-hero__copy h1 {max-width:none;font-size:1.75rem;}
-  .public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {margin-inline:auto;}
+  .public-information-hero .citizen-public-hero__copy > p {margin-inline:auto;}
   .public-information-hero__media {height:220px;}
   .public-information-hero__image {max-height:235px;object-position:center bottom;}
 }
@@ -636,10 +627,10 @@
   .public-information-hero {gap:0;padding:0;border-radius:1rem;}
   .public-information-hero .citizen-public-hero__copy {padding:1.3rem 1rem .55rem;}
   .public-information-hero .citizen-public-hero__copy h1 {font-size:1.75rem;}
-  .public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {font-size:.9rem;line-height:1.55;}
+  .public-information-hero .citizen-public-hero__copy > p {font-size:.9rem;line-height:1.55;}
   .public-information-hero__media {height:190px;}
   .public-information-hub .public-info-section {padding:1rem;border-radius:.9rem;}
-  .public-info-topic-grid,.public-info-guides {grid-template-columns:minmax(0,1fr);}
+  .public-info-guides {grid-template-columns:minmax(0,1fr);}
   .public-info-topic {min-height:0;}
 }
 
@@ -2005,14 +1996,12 @@
   .public-faq-layout__all-guides {justify-content:flex-start;}
   .public-faq-layout .public-info-faq summary {font-size:.9rem;padding:.8rem .2rem;}
 }
-.taxpay-reference-dialog__body :is(button,input):focus-visible,.taxpay-reference-dialog__close:focus-visible {outline:3px solid var(--citizen-primary);outline-offset:2px;}
 /* Mobile navigation bottom sheet uses the same centered-header controls. */
 .citizen-dialog__title {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:.75rem;padding-bottom:.9rem;border-bottom:1px solid var(--citizen-border);}
 .citizen-dialog__title::before {content:'';grid-column:1;}
 .citizen-dialog__title h2 {grid-column:2;text-align:center;font-size:1.15rem;font-weight:600;margin:0;}
 .citizen-dialog__title button {grid-column:3;grid-row:1;border:1px solid var(--citizen-border);background:var(--citizen-surface);}
 @media(max-width:560px) {
-  .taxpay-reference-dialog__header {grid-template-columns:40px minmax(0,1fr) 40px;padding:.8rem 1rem;}
   .citizen-dialog__title {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}
 }
 
@@ -2105,12 +2094,7 @@
  .taxpay-citizen-shell .taxpay-modal .receipt-view__action{width:100%;font-size:14px;padding:.55rem .25rem}
 }
 @media print{
- .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .taxpay-public-desktop-navigation,
- .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .taxpay-public-mobile-navigation,
- .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header,
- .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)),
- .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer,
- .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-help-chat{display:none!important}
+ .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .taxpay-public-desktop-navigation, .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .taxpay-public-mobile-navigation, .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > .public-home-header, .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > main:not(:has(.receipt-modal)), .taxpay-citizen-shell:has(.receipt-modal .receipt-view) > footer{display:none!important}
  .taxpay-citizen-shell .taxpay-modal.receipt-modal{position:static!important;width:100%!important;max-width:none!important;height:auto!important;max-height:none!important;border:0!important;box-shadow:none!important;overflow:visible!important}
  .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__body{overflow:visible!important;padding:0!important}
  .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header,

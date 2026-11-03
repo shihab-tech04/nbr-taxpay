@@ -98,7 +98,7 @@
   color: var(--choice-text);
 }
 
-.public-hero-carousel__slide.public-information-hero[data-payment-service] .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {
+.public-hero-carousel__slide.public-information-hero[data-payment-service] .citizen-public-hero__copy > p {
   color: color-mix(in srgb, var(--choice-text) 72%, var(--citizen-muted));
 }
 
@@ -301,7 +301,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__track { transition: none; }
 }
 
 

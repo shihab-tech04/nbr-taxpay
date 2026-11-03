@@ -93,7 +93,7 @@
 /* Step 3: the v11 review / channel choice, shown inside the same tax-payment modal. */
 .payment-review{display:grid;grid-template-columns:minmax(0,1fr) 315px;gap:18px;align-items:start;min-width:0;color:#1c3456}
 .payment-review__main{display:grid;gap:17px;min-width:0}
-.payment-review__panel,.payment-review__total-card{border:1px solid #dee7f2;border-radius:14px;background:#fff;overflow:hidden}
+.payment-review__panel{border:1px solid #dee7f2;border-radius:14px;background:#fff;overflow:hidden}
 .payment-review__panel{padding:19px}
 .payment-review__section-title{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
 .payment-review__section-title h2{font-size:17px;line-height:1.35;color:#142d53;font-weight:800;margin:0}
