@@ -26,7 +26,7 @@ test('every record table uses the same presentation contract without deleting it
   ];
   for(const screen of recordScreens){
     const source=read('src/components/screens/'+screen+'.tsx');
-    assert.match(source,/taxpay-unified-table/,screen);
+    assert.match(source,/taxpay-unified-table|TaxPayDataGrid/,screen);
     assert.match(source,/taxpay-table-viewport|TaxPayTableViewport/,screen+' needs controlled horizontal scrolling');
   }
   const beneficiary=read('src/components/screens/Beneficiaries.tsx');
@@ -36,7 +36,7 @@ test('every record table uses the same presentation contract without deleting it
   assert.match(beneficiary,/Pay Tax for Others/);
   assert.match(beneficiary,/Select all/);
   const ledger=read('src/components/screens/EventBasedTaxLedger.tsx');
-  assert.match(ledger,/data-testid="event-ledger-table"/);
+  assert.match(ledger,/testId="event-ledger-table"/);
   assert.match(ledger,/taxpay-table-tabs/);
 });
 
@@ -44,8 +44,8 @@ test('mobile record cards keep the original actions and responsive contract',()=
   for(const screen of ['PaymentHistory','AccountBeneficiaryHistory','EventBasedTaxLedger',
     'TaxpayerDashboard','PaymentSearch','DemoServiceRecordsPanel','AuditTrail','OfflineEvidence']){
     const source=read('src/components/screens/'+screen+'.tsx');
-    assert.match(source,/taxpay-mobile-table-card|TaxPayMobileTableCard/,screen);
-    assert.match(source,/md:hidden/,screen);
+    assert.match(source,/taxpay-mobile-table-card|TaxPayMobileTableCard|renderMobileCard=/,screen);
+    assert.match(source,/md:hidden|renderMobileCard=/,screen);
   }
   const beneficiary=read('src/components/screens/Beneficiaries.tsx');
   assert.match(beneficiary,/beneficiary-directory__row/);

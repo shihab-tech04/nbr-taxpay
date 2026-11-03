@@ -6,12 +6,13 @@ test('screenshots: ledger, transactions and beneficiaries use shared table compo
  const shared=source('src/components/ui/TaxPayDataTable.tsx');
  assert.match(shared,/function TaxPayUnifiedTable/);
  assert.match(shared,/function TaxPayRecordList/);
+ assert.match(shared,/function TaxPayDataGrid/);
  const ledger=source('src/components/screens/EventBasedTaxLedger.tsx');
  const activity=source('src/components/screens/User1DemoExperience.tsx');
  const beneficiaries=source('src/components/screens/Beneficiaries.tsx');
- assert.match(ledger,/<TaxPayUnifiedTable[^>]+data-testid="event-ledger-table"/);
- assert.match(activity,/<TaxPayRecordList variant="payments"/);
- assert.match(beneficiaries,/<TaxPayRecordList variant="beneficiaries"/);
+ assert.match(ledger,/<TaxPayDataGrid[^>]+testId="event-ledger-table"/);
+ assert.match(activity,/<TaxPayDataGrid variant="payments"/);
+ assert.match(beneficiaries,/<TaxPayDataGrid variant="beneficiaries"/);
  assert.match(activity,/setSelected\(item\)/);
  assert.match(beneficiaries,/openPersonEditor\(person\)/);
  assert.match(beneficiaries,/payWith\(\[person\]\)/);
@@ -23,7 +24,8 @@ test('desktop table markup is semantic, and all existing record tables use the s
  for(const name of names){
   const s=source('src/components/screens/'+name+'.tsx');
   assert.doesNotMatch(s,/<table\\b[^>]*taxpay-unified-table/);
-  assert.match(s,/<TaxPayUnifiedTable/);
+  if(["EventBasedTaxLedger"].includes(name))assert.match(s,/<TaxPayDataGrid/);
+  else assert.match(s,/<TaxPayUnifiedTable/);
  }
 });
 test('one stylesheet owns density, columns, zebra rows and mobile card breakpoint',()=>{
