@@ -276,7 +276,8 @@ jobs:
       contents: read
     steps:
       - name: Confirm all unchanged acceptance suites and production checks passed
-        run: echo "PASS: compiled artifact, domain, release safety, and all parallel browser acceptance lanes succeeded"
+        run: |
+          echo "PASS: compiled artifact, domain, release safety, and all parallel browser acceptance lanes succeeded"
 
 
   deploy:
