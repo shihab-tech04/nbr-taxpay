@@ -369,7 +369,6 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
     await expect(modal.locator('.travel-flow__summary')).toBeHidden();
   }
     await fillTravelDetails(modal);
-  await modal.getByRole('button',{name:'Continue to review'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
   await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
@@ -426,7 +425,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  expect(width.paper).toBeLessThanOrEqual(width.viewport);
  expect(width.scroll).toBeLessThanOrEqual(width.viewport+2);
  await expect(modal.locator('.travel-flow__summary')).toBeHidden();
- await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toHaveCount(0);
+ await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toBeVisible();
 });
 
 
