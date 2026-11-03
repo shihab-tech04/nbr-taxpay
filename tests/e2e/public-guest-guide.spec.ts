@@ -471,45 +471,32 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await expect(modal.locator('.receipt-view__actions')).toHaveCount(0);
 });
 
-test('Travel Tax route search filters English and Bangla and preserves selected payment amount',async({page})=>{
+test('Travel Tax searches only Land and Water in English while preserving the selected mode',async({page})=>{
  await page.goto('/?action=landing');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'Travel tax'});
  const search=modal.getByRole('searchbox',{name:'Travel mode'});
  const routes=modal.locator('#travel-tax-route-results');
  const summary=modal.locator('.travel-flow__summary');
- await expect(search).toBeVisible();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
- await search.fill('saARc');
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
+ await expect(routes.locator('#travel-tax-route-0')).toBeChecked();
+ await search.fill('wATer');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('By air to a SAARC country',{exact:false})).toBeVisible();
- await routes.locator('input[type="radio"]').check();
- await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
- await search.fill('জাপান');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('By air to North America, South America',{exact:false})).toBeVisible();
- // Filtering does not silently replace the selected rate.
- await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
- await search.fill('somewhere-invalid-999');
+ await expect(routes.getByText('By water',{exact:false})).toBeVisible();
+ await routes.locator('#travel-tax-route-1').check();
+ await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
+ await search.fill('air');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(0);
- await expect(routes.getByRole('status')).toContainText('No matching routes');
- await expect(summary.locator('.travel-flow__total')).toContainText('2,000');
- await routes.getByRole('button',{name:'Show all routes'}).click();
- await expect(search).toHaveValue('');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
- await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
- await search.fill('land');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(2); // New Zealand and land both match.
- await search.fill('By land');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
+ await expect(routes.getByRole('status')).toContainText('No matching travel modes');
  await modal.getByRole('button',{name:'Clear search'}).click();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
- await expect(search).toHaveValue('');
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
+ await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
+ await fillTravelDetails(modal,{mode:'WATER'});
  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
  await expect(modal.getByRole('heading',{name:'Passenger details'})).toBeVisible();
 });
 
-test('Travel Tax Bangla route search is accessible and fits mobile viewport',async({page},info)=>{
+test('Travel Tax Bengali mode search remains accessible at 320px',async({page},info)=>{
  test.skip(info.project.name!=='mobile-320','Small mobile search and Bangla names');
  await page.goto('/?action=landing');
  await setWorkspaceLanguage(page,'bn');
@@ -519,16 +506,16 @@ test('Travel Tax Bangla route search is accessible and fits mobile viewport',asy
  const routes=modal.locator('#travel-tax-route-results');
  await search.fill('স্থল');
  await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('স্থল পথে',{exact:false})).toBeVisible();
+ await expect(routes.getByText('স্থলপথে',{exact:false})).toBeVisible();
  const sizes=await search.evaluate(el=>{
-  const box=el.getBoundingClientRect();
-  return {left:box.left,right:box.right,width:window.innerWidth,scroll:document.documentElement.scrollWidth};
+   const box=el.getBoundingClientRect();
+   return {left:box.left,right:box.right,width:window.innerWidth,scroll:document.documentElement.scrollWidth};
  });
  expect(sizes.left).toBeGreaterThanOrEqual(-1);
  expect(sizes.right).toBeLessThanOrEqual(sizes.width+1);
  expect(sizes.scroll).toBeLessThanOrEqual(sizes.width+2);
  await modal.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(6);
+ await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
 });
 
 // Banner-dependent browser checks use explicitly published CMS rows;
