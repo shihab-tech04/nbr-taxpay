@@ -11,7 +11,7 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
   await expect(dialog.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
-  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
 
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to review' }).click();
@@ -93,15 +93,15 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
 
   await expect(dialog).toHaveAttribute('data-payment-stage', 'true');
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel details');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passenger and travel details');
   await expect(dialog.locator('.travel-flow__steps')).toHaveCount(0);
   await expect(dialog.locator('.payment-form-section').getByRole('heading', { name: 'Passenger and travel details' })).toHaveCount(1);
   await expect(dialog.locator('.travel-flow__summary')).toBeVisible();
 
   await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
-  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passenger details');
+  await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
   await dialog.getByRole('button', { name: 'Back' }).click();
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
@@ -115,7 +115,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(footerSummary.locator('dl')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__footer .travel-flow__primary')).toBeVisible();
 
-  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
 
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to review' }).click();
@@ -148,7 +148,7 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   expect(wordsBox).not.toBeNull();
   expect(wordsBox!.y).toBeGreaterThanOrEqual(totalBox!.y + totalBox!.height);
 
-  await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
 
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to review' }).click();

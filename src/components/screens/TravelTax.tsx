@@ -405,7 +405,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     </button>
   ) : (
     <button type="button" className="travel-flow__primary" onClick={continueStep}>
-      {step === 0 ? tr('Continue to passenger details', 'যাত্রীর তথ্যে এগিয়ে যান') : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
+      {step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান') : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
   );
@@ -421,7 +421,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
         {!embedded && <nav className="travel-flow__steps" aria-label={tr('Travel tax steps', 'ভ্রমণ করের ধাপ')}>
           {[
-            tr('Travel details', 'ভ্রমণের তথ্য'), tr('Passengers', 'যাত্রী'),
+            tr('Passenger and travel details', 'যাত্রী ও ভ্রমণের তথ্য'), tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'),
             tr('Payment', 'পেমেন্ট'), tr('Challan', 'চালান'),
           ].map((name, idx) => (
             <button key={name} type="button" disabled={idx > step || !!createdReceipt}
