@@ -257,14 +257,16 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <span className="text-slate-700">{labels.year}:</span>
               <span className="col-span-2 font-bold text-slate-800">{assessmentYearSummary}</span>
             </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.zone}:</span>
-              <span className="col-span-2 text-slate-800">{receipt.taxZone}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.circle}:</span>
-              <span className="col-span-2 text-slate-800">{receipt.taxCircle}</span>
-            </div>
+            {receipt.paymentCategory !== 'TRAVEL_TAX' && <>
+              <div className="receipt-view__detail">
+                <span className="text-slate-700">{labels.zone}:</span>
+                <span className="col-span-2 text-slate-800">{receipt.taxZone}</span>
+              </div>
+              <div className="receipt-view__detail">
+                <span className="text-slate-700">{labels.circle}:</span>
+                <span className="col-span-2 text-slate-800">{receipt.taxCircle}</span>
+              </div>
+            </>}
           </div>
 
           <div className="space-y-2">
@@ -313,9 +315,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           <h3 className="receipt-view__section-title">{bn ? 'যাত্রীভিত্তিক ভ্রমণ কর' : 'Passenger-wise Travel Tax'}</h3>
           <dl className="receipt-view__detail receipt-view__travel-meta">
             <div><dt>{bn ? 'যাত্রার মাধ্যম' : 'Travel mode'}</dt><dd>{receipt.travelDetails.mode === 'LAND' ? (bn ? 'স্থলপথে' : 'Land') : (bn ? 'নৌপথে' : 'Water')}</dd></div>
-            <div><dt>{bn ? 'বন্দর ও নম্বর' : 'Departure port and number'}</dt><dd>{receipt.travelDetails.departurePort} · {receipt.travelDetails.portNumber}</dd></div>
+            <div><dt>{bn ? 'যাত্রা বন্দর' : 'Departure port'}</dt><dd>{receipt.travelDetails.departurePort}</dd></div>
             <div><dt>{bn ? 'গন্তব্য ও তারিখ' : 'Destination and date'}</dt><dd>{receipt.travelDetails.destination} · {receipt.travelDetails.travelDate}</dd></div>
-            <div><dt>{bn ? 'প্রাতিষ্ঠানিক কোড' : 'Organizational code'}</dt><dd>{receipt.travelDetails.organizationalCode}</dd></div>
             <div><dt>{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}</dt><dd>{receipt.travelDetails.economicCode}</dd></div>
           </dl>
           <div className="receipt-view__table">
@@ -329,7 +330,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <tbody>{receipt.travelDetails.passengers.map((item,index) => <tr key={index}>
                 <td>{item.name}</td>
                 <td>{item.passportMasked}</td>
-                <td>{item.ageBand}</td>
+                <td>{item.age ?? item.ageBand}</td>
                 <td>{formatCurrency(item.amount, language)}</td>
               </tr>)}</tbody>
               <tfoot><tr><th scope="row" colSpan={3}>{bn ? 'সর্বমোট ভ্রমণ কর' : 'Combined Travel Tax'}</th>
