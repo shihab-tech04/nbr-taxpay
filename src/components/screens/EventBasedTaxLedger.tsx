@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayTableViewport} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -198,7 +198,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
     </div>
-    <div className="taxpay-table-toolbar taxpay-table-filters">
+    <TaxPayTableControls className="taxpay-table-toolbar taxpay-table-filters">
       <nav className="taxpay-table-tabs flex max-w-full gap-2 overflow-x-auto" aria-label={t('Event categories','ঘটনার শ্রেণি')}>
         {filters.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>setType(key)}
           className={'min-h-10 shrink-0 rounded-full border px-3 text-xs font-medium '+(type===key?'border-taxpay-primary bg-taxpay-primary text-white':'border-taxpay-border bg-white text-taxpay-text')}>
@@ -214,7 +214,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           {allYears.map(y=><option key={y} value={y}>{y}</option>)}
         </select>
       </label>
-    </div>
+    </TaxPayTableControls>
+    <TaxPayTablePanel className="taxpay-ledger-records">
     <TaxPayTableViewport>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
         <>
@@ -253,6 +254,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           </li>)}</ul>
         </>
     </TaxPayTableViewport>
+    </TaxPayTablePanel>
     {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <section className="space-y-4 p-1" data-testid="tax-event-details">
         <div className="flex items-center gap-2 text-xs text-taxpay-muted"><Clock3 size={16}/>{dateTime(selected.occurredAt,language)}</div>

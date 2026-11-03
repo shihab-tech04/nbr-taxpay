@@ -82,8 +82,8 @@ for(const language of ['en','bn'] as const){
         headingVisible:getComputedStyle(heading).display!=='none'};
     });
     expect(layout.pageOverflow).toBe(false);
-    expect(layout.rowColumns).toBe(layout.width<=700?1:2);
-    expect(layout.headingVisible).toBe(layout.width>700);
+    expect(layout.rowColumns).toBe(layout.width<=800?1:4);
+    expect(layout.headingVisible).toBe(layout.width>800);
     expect(layout.filterColumns).toBe(layout.width<=700?1:layout.width<=1050?2:3);
     await search.fill('Neighbour');
     await expect(rows).toHaveCount(1);
