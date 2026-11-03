@@ -139,6 +139,7 @@ test('failed new-list import stays recoverable and retries against the same crea
   await dialog.locator('#beneficiary-new-list-name').fill('Imported list');
 
   transport.failNextAdd();
+  await dialog.locator('#beneficiary-tag').selectOption('others');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(dialog.getByRole('alert')).toBeVisible();
   const retryTarget=await dialog.locator('#beneficiary-target-list').inputValue();
@@ -147,6 +148,7 @@ test('failed new-list import stays recoverable and retries against the same crea
   await expect(dialog.getByRole('button',{name:'Back'})).toBeEnabled();
   await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
 
+  await dialog.locator('#beneficiary-tag').selectOption('others');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
   expect(transport.createListCount()).toBe(2);
@@ -188,6 +190,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Synthetic Guest One');
+  await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expectRecord('Synthetic Guest One');
 
@@ -200,6 +203,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(dialog.getByText('Already saved in this list.')).toBeVisible();
   await expect(dialog.getByText('1 valid, 1 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-tag').selectOption('others');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expectRecord('Local Beneficiary Two');
   // Both breakpoints use the approved Activity record list, not separate table/card DOM.
@@ -292,6 +296,7 @@ test('signed-out guest payment hides saved beneficiaries even with stored entrie
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Saved Guest Taxpayer');
+  await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
 

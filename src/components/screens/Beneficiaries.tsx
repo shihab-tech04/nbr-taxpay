@@ -10,6 +10,7 @@ import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfil
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
+import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
@@ -36,6 +37,10 @@ export function Beneficiaries(){
   const [listName,setListName]=useState('');
   const [tin,setTin]=useState('');
   const [name,setName]=useState('');
+  const [tag,setTag]=useState<BeneficiaryTag|''>('');
+  const [relationship,setRelationship]=useState<BeneficiaryRelation|''>('');
+  const [tagFilter,setTagFilter]=useState('all');
+  const [relationshipFilter,setRelationshipFilter]=useState('all');
   const [searchedBeneficiaryTin,setSearchedBeneficiaryTin]=useState<string|null>(null);
   const [filename,setFilename]=useState('');
   const [rows,setRows]=useState<ImportRow[]>([]);
@@ -114,7 +119,12 @@ export function Beneficiaries(){
   },[owner,checkingIdentity,busy]);
 
   const listPeople=people.filter(person=>person.list_id===activeList);
-  const filteredPeople=listPeople.filter(person=>(displayName(person)+' '+person.tin).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const filteredPeople=listPeople.filter(person=>{
+    const matchesTag=tagFilter==='all'||(tagFilter==='legacy'? !person.tag :person.tag===tagFilter);
+    const matchesRelation=tagFilter!=='friends_family'||relationshipFilter==='all'||person.relationship===relationshipFilter;
+    return matchesTag&&matchesRelation&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language))
+      .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+  });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
   const activeListRecord=lists.find(list=>list.id===activeList);
   const existingTins=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
@@ -135,7 +145,7 @@ export function Beneficiaries(){
   const allFilteredSelected=filteredPeople.length>0&&filteredPeople.every(person=>selectedIds.includes(person.id));
 
   function switchList(id:string){
-    setActiveList(id);setSelectedIds([]);setSearch('');setListMenuOpen(false);
+    setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
     listTriggerRef.current?.focus();
   }
   function openListEditor(list:BeneficiaryList){
@@ -171,7 +181,7 @@ export function Beneficiaries(){
   }
   function open(next:Flow){
     setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
-    setTin('');setName('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
+    setTin('');setName('');setTag('');setRelationship('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
   }
   function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
 
@@ -204,13 +214,14 @@ export function Beneficiaries(){
 
   async function saveSingle(event:React.FormEvent){
     event.preventDefault();
+    if(!validBeneficiaryClassification(tag,relationship)){setModalError(tr('Select a tag and, for friends or family, a relationship.','ট্যাগ বাছুন এবং বন্ধু বা পরিবারের ক্ষেত্রে সম্পর্ক বাছুন।'));return;}
     if(!/^\d{12}$/.test(tin)||name.trim().length>160){
       setModalError(tr('Enter a valid 12-digit TIN and a name of up to 160 characters.','সঠিক ১২ সংখ্যার টিআইএন এবং সর্বোচ্চ ১৬০ অক্ষরের নাম লিখুন।'));return;
     }
     setBusy(true);setModalError('');
     try{
       const id=await resolveList();
-      const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim()}]);
+      const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null}]);
       const saved=await reload(id);
       if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
         throw new Error(tr('Beneficiary was not saved. Please retry.','উপকারভোগী সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
@@ -234,10 +245,11 @@ export function Beneficiaries(){
 
   async function finishImport(){
     if(!chosen.length)return;
+    if(!validBeneficiaryClassification(tag,relationship)){setModalError(tr('Select a tag and, for friends or family, a relationship.','ট্যাগ বাছুন এবং বন্ধু বা পরিবারের ক্ষেত্রে সম্পর্ক বাছুন।'));return;}
     setBusy(true);setModalError('');
     try{
       const id=await resolveList();
-      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim()})));
+      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null})));
       const saved=await reload(id);
       const savedTins=new Set(saved.people.filter(person=>person.list_id===id).map(person=>person.tin));
       if(chosen.some(row=>!savedTins.has(row.tin))){
@@ -387,6 +399,21 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
+            <label className="taxpayer-transaction-filter"><span>{tr('Tag','ট্যাগ')}</span>
+              <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);}}>
+                <option value="all">{tr('All tags','সব ট্যাগ')}</option>
+                <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
+                <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
+                <option value="others">{tr('Others','অন্যান্য')}</option>
+                <option value="legacy">{tr('Previously saved · No tag','পূর্বের তথ্য · ট্যাগ নেই')}</option>
+              </UiSelect>
+            </label>
+            {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
+              <UiSelect aria-label={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')} value={relationshipFilter} onChange={event=>{setRelationshipFilter(event.target.value);setSelectedIds([]);}}>
+                <option value="all">{tr('All relationships','সব সম্পর্ক')}</option>
+                {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
+              </UiSelect>
+            </label>}
             <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
               <span>{tr('Search','খুঁজুন')}</span>
               <span className="taxpayer-transaction-filter__search">
@@ -444,6 +471,7 @@ export function Beneficiaries(){
                     <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
                       <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
                       <p className="taxpayer-transaction-row__ref">{tr('TIN','টিআইএন')}: <span className="tabular-nums">{person.tin}</span></p>
+                      <p className="taxpayer-transaction-row__ref">{tr('Tag','ট্যাগ')}: {beneficiaryTagLabel(person.tag,person.relationship,language)}</p>
                     </label>
                   </div>
                   <div className="beneficiary-directory__actions" role="group"
@@ -541,6 +569,22 @@ export function Beneficiaries(){
             <option value="new">{tr('Create new list','নতুন তালিকা তৈরি')}</option>{lists.map(list=><option key={list.id} value={list.id}>{list.name}</option>)}
           </UiSelect>
           {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
+        </div>
+        <div className="space-y-2 rounded-lg border border-taxpay-border p-3" data-testid="beneficiary-tag-fields">
+          <label htmlFor="beneficiary-tag" className="block text-sm font-semibold text-taxpay-text">{tr('Tag','ট্যাগ')} *</label>
+          <UiSelect id="beneficiary-tag" required value={tag} onChange={event=>{setTag(event.target.value as BeneficiaryTag|'');setRelationship('');setModalError('');}}>
+            <option value="">{tr('Select a tag','ট্যাগ বাছুন')}</option>
+            <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
+            <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
+            <option value="others">{tr('Others','অন্যান্য')}</option>
+          </UiSelect>
+          {tag==='friends_family'&&<>
+            <label htmlFor="beneficiary-relationship" className="block text-sm font-semibold text-taxpay-text">{tr('Relationship','সম্পর্ক')} *</label>
+            <UiSelect id="beneficiary-relationship" required value={relationship} onChange={event=>{setRelationship(event.target.value as BeneficiaryRelation|'');setModalError('');}}>
+              <option value="">{tr('Select a relationship','সম্পর্ক বাছুন')}</option>
+              {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
+            </UiSelect>
+          </>}
         </div>
         {flow==='single'?<form id="beneficiary-single-form" className="space-y-3" onSubmit={event=>void saveSingle(event)}>
           <TaxpayerTinLookup language={language} card heading={tr('Taxpayer Information','করদাতার তথ্য')}
