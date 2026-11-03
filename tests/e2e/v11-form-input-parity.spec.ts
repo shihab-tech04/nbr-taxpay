@@ -78,7 +78,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(travel.locator('.travel-flow__receipt')).toContainText('Payment reference', { timeout: 10000 });
+  await expect(travel.locator('.receipt-view__paper')).toContainText('SIM-', { timeout: 10000 });
 });
 
 for (const locale of ['en', 'bn'] as const) {
