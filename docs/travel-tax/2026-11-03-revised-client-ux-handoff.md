@@ -1,63 +1,45 @@
-# Korbritto Travel Tax — Nov 2026 UX/UI and developer-handoff contract
+# Korbritto Travel Tax — current UX/UI developer-handoff contract
 
-**Status:** UX/payment simulation preview; NOT a government passport lookup, official A-Challan, or actual Treasury settlement.
+**Source precedence:** Latest client instruction (03 Nov 2026) supersedes conflicting 02 Nov meeting-minute UI rules. Preserve other confirmed rules, approved Korbritto design system, and existing TaxPay journeys.
 
-## Governing sources
-1. Revised *Meeting Minutes — Arif Sir, 02 November 2026 (1)* (pp. 1–2): current Travel Tax product requirements.
-2. Original 02 November meeting minutes: port number field and unresolved post-payment amendment policy.
-3. *Tax Zones: Organizational and Economic Codes*, 2026–27: 9 organizational codes and economic code 1144102.
-4. Customs SRO 297/2024: goods-related customs stations; a customs station is not automatically an active passenger crossing.
-5. BLPA passenger report, FY2024–25: historical port names and activity, not verified 2026 operations.
-6. Approved Korbritto UI: Poppins, shared modal/stepper/footer, shared receipt, component tokens, EN/BN, mobile.
-7. WhatsApp voice audio could not be reliably transcribed and has not been used to introduce rules.
+**Phase:** Production-published *UX preview* only. No real passport verification, official A-Challan, or statutory-fee assertion is implemented.
 
-## Client-confirmed scope
-- Travel modes: Land (first and default) and Water only; exclude Air.
-- Departure port and destination selection; port number/reference from earlier minutes.
-- Bangladeshi passengers: enter passport, automatic identity lookup through future government API; no duplicate manual data after successful lookup.
-- Foreign passengers: manual entry of required personal details.
-- Add New Member: family and friends, many passengers in one application.
-- One A-Challan for all passengers, one passenger-wise table, grand total.
-- Medical exemption: may apply for qualifying conditions; documentary process completed manually at port; never automatically approve online.
-- Post-payment changes to travel date or port remain an explicit unresolved CLIENT DECISION.
+## Approved user flow (4 stages, existing shared progressive modal)
 
-## Proposed four-stage flow, built into existing approved modal
+1. **Passenger and travel details:** Two exclusive tabs, *Bangladeshi Passenger* and *Foreign Passenger*. First choose passenger type; the form mounts only that type's fields. Bangladeshi: passport number -> lookup -> read-only government-returned identity and birth date -> mode -> departure port -> destination -> travel date. Foreign: manually enter passport number, passport name, birth date, country of nationality; then choose mode, port, destination, travel date. **By Land is selected by default; By Water is secondary.** No Air. No fixed amount displayed beside either mode.
+2. **Passengers and receipt details:** Show the first passenger in a concise read-only summary with Edit, allow adding family/friends with the same distinct BD/Foreign tab behaviors and independent validation. Collect one receipt mobile number.
+3. **Review & payment:** Show travel mode, **port name only**, destination/date, passenger-wise ages and auto-calculated illustrative amounts, one total, the existing payment-method control and acknowledgement. A-Challan is the intended future government handoff, not a live API in this UX phase.
+4. **Combined challan:** One receipt and passenger-wise breakdown, with masked passport, age, per-passenger amount, total, print/download and all existing safety labels. Never represent a synthetic receipt as government Treasury settlement.
 
-### 1. Travel details
-- Land default, Water second; route search shows only these two modes.
-- Land port: historical reference select; show warning that current immigration operation is not established. Water port: editable selection proposal pending an authoritative list.
-- Port number/reference required; destination required; travel date required.
-- Tax zone: choose from 9 provided values, since no approved port→zone mapping exists. Show corresponding read-only organizational code and economic code 1144102, year 2026–27.
+## Fields and removals
 
-### 2. Passengers
-- One initial passenger. Add, edit or remove family/friend member; remove targets only that passenger.
-- Per passenger: nationality, passport, full name, age band, medical-port referral.
-- Foreign: manually enter name/passport. Bangladeshi: name read-only until lookup. As a **UX-only sample**, passport TEST123456 may return visibly synthetic name SAMPLE BANGLADESHI PASSENGER; all other passports show the government API is not connected, never fabricate an identity.
-- Application receipt mobile collected once.
-- Duplicate passports rejected case-insensitively. Medical referral cannot silently be treated as a granted exemption.
-- Age bands and land/water amounts are from previous illustrative application configuration, not legally verified.
+- **Delete from Travel Tax entry and review:** Port number / reference number, Tax Zone, Organizational Code. Do not make them mandatory or infer a tax-zone assignment from a historical port.
+- Departure Land port: historical reference list from BLPA FY2024–25 (not proof of 2026 passenger operations).
+- Departure Water port: proposal/free-text until the client approves a current port catalogue.
+- Destination and travel date remain required. Port name remains required.
+- Economic code 1144102 remains internal accounting metadata where already supported; it is not a passenger-entered form field.
+- **Passport lookup:** In the preview, only **TEST123456** returns an overtly synthetic Bangladeshi identity and DOB; any other value reports that the real government API is not connected. Never invent an identity. Real API credentials and mapping are developer-phase work.
+- **Foreign personal data:** Passport number, full passport name, birth date and country of nationality are required UX fields; final authoritative identity-field mapping remains pending client/API owner approval.
 
-### 3. Review and payment
-- Single table with passenger name, masked passport, age band, illustrative amount; one combined total.
-- Show travel mode, port/number, destination/date, tax zone, accounting codes.
-- Reuse approved online/bank payment method selector, acknowledgement and failure/retry feedback.
-- Payment is **simulated preview**. A-Challan is a future developer integration; synthetic transaction reference must never be described as government challan.
+## Automatic age-based preview calculation
 
-### 4. Combined challan
-- One simulated reference per application, all passenger rows and combined grand total.
-- Reuse existing shared receipt, Download/Print controls, and mobile full-width receipt.
-- Snapshot travel details, zone, codes and passenger allocations for consistent history.
-- Bank-slip preview is not paid until simulated settlement, never actual Treasury confirmation.
+- Derive age *on the selected travel date* from passport-supplied DOB (BD sample) or manually entered DOB (foreign).
+- **Do not show a tax amount until** passenger identity information, DOB and travel date are available. New unfilled group members also prevent the combined total being presented as final.
+- Show the amount and a plain-language age reason **on the desktop right-side Payment calculation rail** and in the mobile expandable fixed footer. When a new passenger is added, show their own age reason and amount, then combined total.
+- Current app preview uses **illustrative, legally unverified** Land/Water rate and age bands (age ≤ 5 -> 0, ages 6–12 -> half, age > 12 -> full). These must be replaced by signed-off, date-effective statutory rules, including exemptions and mode-specific schedule, before any real payment integration.
+- Changing passport number, passenger type, DOB, travel date, or mode invalidates/recomputes the previous estimate. Duplicate passport numbers are rejected.
+- Medical-exemption documentation is reviewed manually at the departure port, never auto-approved online. Post-payment date/port amendment policy remains a client decision.
 
-## Product acceptance and future developer integration
-UI acceptance must cover single foreign, BD sample and unavailable lookup, Land default/Water, invalid and duplicate passport, family/friends, age calculations with illustrative rates, manual medical referral, one receipt, EN/BN mobile and desktop, safe failure/retry, protected read-only identity, and unaffected other tax journeys.
+## Preserved design and integration boundaries
 
-Future APIs are **outside this UX phase**: verified passport lookup, authoritative dated ports/rates/zone mapping, createTravelApplication (one-to-many passenger allocations), genuine A-Challan initialization/acknowledgement/reconciliation, Treasury transaction status, and Office Management secured 1:1 transaction projection. Do not represent placeholders as verified integrations.
+- Frozen Korbritto shared modal, shared receipt, typography/color tokens, EN/BN, responsive payment footer, focus/keyboard and accessible tab states remain authoritative.
+- Prior TaxPay/Office source contracts are not authorization to invent live passport lookup or A-Challan settlement.
+- Preserve existing receipt storage compatibility: historical portNumber/organizationalCode fields can be read if present, but new Travel Tax records do not collect them; new UI and challan do not display them. Preserve transaction records and masked passport privacy.
+- Dev phase API requirements: passport lookups with DOB/identity source, current port eligibility, authoritative versioned rules/fee schedule, one-to-many application allocations, A-Challan initialization/reconciliation, and Office read-only mirror. These are not claimed live.
+- Regression acceptance: BD/Foreign tabs, keyboard arrows, sample versus unavailable lookup, Land default/Water, no fixed card amount, port name only, no Tax Zone/Org field, age threshold math, party totals, receipt, responsive mobile, EN/BN, auth/RLS and existing non-Travel Tax journeys.
 
-Remaining decisions:
-- After payment, may date/port be amended, or is a new application mandatory?
-- Port-to-zone rules, up-to-date passenger port catalog, water port list, actual applicable rates and exemption parameters.
-- Required government identity fields returned by passport lookup.
-- A-Challan payload and reconciliation rules, to be provided for developer phase.
+## Open client decisions (do not invent)
 
-**Release discipline:** No feature is COMPLETE until relevant CI and UX regressions pass. No feature is LIVE until PR is authorized/merged, Pages deploys, and deployed URL/version are verified. A demo UI release is not genuine government payment.
+Actual statutory amounts and effective dates; exact legal age bands and medical exemptions; up-to-date land/water passenger-port catalogue; government passport response fields; whether travel date/port can change after payment; official A-Challan API contract.
+
+**Release gate:** verified off-GitHub restorable backup -> required CI and focused UX tests -> protected merge -> successful production Pages deployment and live readback. PR/build alone is not LIVE.
