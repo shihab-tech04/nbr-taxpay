@@ -173,8 +173,8 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
                     checked={selectedTins.includes(person.tin)} onChange={()=>change(person)}
                     aria-label={tr('Select '+names(person),'নির্বাচন করুন '+names(person))}/>
                   <span className="min-w-0 flex-1">
-                    <span className="block break-words text-sm font-semibold text-taxpay-text">{names(person)}</span>
-                    <span className="block break-all text-xs text-slate-600">{tr('TIN','টিআইএন')}: {person.tin}</span>
+                    <strong className="block break-words text-sm font-semibold text-taxpay-text">{names(person)}</strong>
+                    <small className="block break-all text-xs text-slate-600">{tr('TIN','টিআইএন')}: {person.tin}</small>
                   </span>
                 </label>)}
             </div>}

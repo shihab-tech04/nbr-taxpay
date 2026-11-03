@@ -76,7 +76,7 @@ export const IncidentReporting: React.FC = () => {
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Incident Ticket Logged: {submittedTicket}</span>
+              <p>Incident Ticket Logged: {submittedTicket}</p>
             </div>
             <p className="text-xs text-emerald-700">
               Your report has been queued for immediate investigation by the Treasury Gateway Reconciliation Cell. You will receive an SMS status notification once the clearing batch is checked.
@@ -199,7 +199,7 @@ export const IncidentReporting: React.FC = () => {
               className="px-6 py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Send className="w-4 h-4" />
-              <span>Submit Incident Report</span>
+              Submit Incident Report
             </button>
           </div>
         </form>
@@ -217,7 +217,7 @@ export const IncidentReporting: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-mono-plex font-bold text-slate-900">{inc.incidentNumber}</span>
-                  <span className="text-slate-400">•</span>
+                  <span aria-hidden="true" className="text-slate-400 before:content-['•']" />
                   <span className="text-slate-500">{inc.reportDate}</span>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-sm font-bold ${
@@ -231,16 +231,16 @@ export const IncidentReporting: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <span className="text-slate-500 block">Reporter:</span>
-                  <span className="font-medium text-slate-800">{inc.reporterName} ({inc.reporterContact})</span>
+                  <p className="text-slate-500 block">Reporter:</p>
+                  <p className="font-medium text-slate-800">{inc.reporterName} ({inc.reporterContact})</p>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Txn Reference:</span>
-                  <span className="font-mono-plex text-slate-800">{inc.transactionReference}</span>
+                  <p className="text-slate-500 block">Txn Reference:</p>
+                  <p className="font-mono-plex text-slate-800">{inc.transactionReference}</p>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Gateway & Amount:</span>
-                  <span className="font-medium text-slate-800">{inc.gateway} — {formatCurrency(inc.amount, language)}</span>
+                  <p className="text-slate-500 block">Gateway & Amount:</p>
+                  <p className="font-medium text-slate-800">{inc.gateway} — {formatCurrency(inc.amount, language)}</p>
                 </div>
               </div>
 

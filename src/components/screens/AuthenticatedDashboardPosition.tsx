@@ -93,9 +93,9 @@ export const AuthenticatedDashboardPosition: React.FC<{
               const monthLabel=new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(m.month+'-01T00:00:00Z'));
               return <div role="listitem" key={m.month} aria-label={monthLabel+': '+money(total)}
                 className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
-                <span className="text-sm text-taxpay-muted">{Math.round(total/1000)}k</span>
+                <p className="text-sm text-taxpay-muted">{Math.round(total/1000)}k</p>
                 <div className="h-[115px] w-full max-w-10"><MetricColumn value={total} total={monthlyMax} /></div>
-                <span className="text-center text-sm text-taxpay-muted">{monthLabel}</span>
+                <p className="text-center text-sm text-taxpay-muted">{monthLabel}</p>
               </div>;
             })}
           </div>
