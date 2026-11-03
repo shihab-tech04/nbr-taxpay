@@ -157,6 +157,26 @@ table.taxpay-unified-table {
   line-height: 1.5;
 }
 .taxpay-table-viewport > table.taxpay-unified-table {min-width:max-content;}
+/* Mobile ledger uses the same one-surface-per-record treatment as Activity and
+ * Beneficiaries. The desktop 10-column scrolling table keeps its panel. */
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference .taxpay-data-table.taxpay-ledger-records {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .taxpay-taxpayer-reference .taxpay-ledger-records > .taxpay-table-viewport {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .taxpay-taxpayer-reference .taxpay-ledger-records .taxpay-mobile-table-cards {
+    padding: 0;
+  }
+}
+
 .taxpay-unified-table thead tr {
   background: var(--taxpay-table-heading, #f7f9fc);
 }
