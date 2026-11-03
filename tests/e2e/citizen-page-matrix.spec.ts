@@ -18,8 +18,10 @@ const privateRoutes={
 const visualAudit=async(page:import('@playwright/test').Page,key:string,viewport:string) => {
   const main=page.locator('main');
   await expect(main).toBeVisible();
-  const headingCount=await main.locator('h1,h2').count();
-  expect(headingCount,key+' must have a visible page heading').toBeGreaterThan(0);
+  // Route chunks may load after <main> mounts; verify the actual screen, not its placeholder.
+  await expect.poll(() => main.locator('h1,h2').count(), {
+    message: key+' must have a visible page heading',
+  }).toBeGreaterThan(0);
   const width=page.viewportSize()!.width;
   const actualWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(actualWidth, key+' has page-wide horizontal overflow').toBeLessThanOrEqual(width+2);

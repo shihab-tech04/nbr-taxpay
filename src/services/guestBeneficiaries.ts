@@ -130,9 +130,20 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
 }
 
 export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
-  const lists = await readGuestPage<GuestList>('lists');
-  const people: GuestPerson[] = [];
-  for (let offset = 0; ; offset += pageSize) {
+  // Existing capability sessions can fetch independent lists and the first page
+  // concurrently, avoiding a full extra Edge Function round trip on every read.
+  // A first-time session must finish capability registration before concurrent reads.
+  const initialized = hasStoredGuestBeneficiaries();
+  const [lists, firstPage] = initialized
+    ? await Promise.all([
+        readGuestPage<GuestList>('lists'),
+        readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize }),
+      ])
+    : [await readGuestPage<GuestList>('lists'), null];
+  const people: GuestPerson[] = firstPage ? [...firstPage] : [];
+  for (let offset = firstPage ? pageSize : 0;
+       firstPage ? (firstPage.length === pageSize) : true;
+       offset += pageSize) {
     const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
     people.push(...page);
     if (page.length < pageSize) break;
