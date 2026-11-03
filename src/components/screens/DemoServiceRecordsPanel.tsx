@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React from 'react';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { useTaxState } from '../../services/taxState';
@@ -241,7 +242,7 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
             <>
               <h3 className="text-base font-semibold text-taxpay-text">{tr('Service record details', 'সেবার রেকর্ডের বিস্তারিত')}</h3>
               <div className="taxpay-table-viewport hidden md:block">
-                <table className="taxpay-unified-table min-w-full text-left text-sm">
+                <TaxPayUnifiedTable className="taxpay-unified-table min-w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-semibold text-taxpay-muted">
                     <tr>
                       <th scope="col" className="px-3 py-3">{tr('Service', 'সেবা')}</th>
@@ -270,7 +271,7 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </TaxPayUnifiedTable>
               </div>
               <ul className="taxpay-mobile-table-cards md:hidden" aria-label={tr('Service records', 'সেবার রেকর্ড')}>
                 {records.map(record => (

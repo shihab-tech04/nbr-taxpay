@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { 
   FileText, 
@@ -162,7 +163,7 @@ export const OfflineEvidence: React.FC = () => {
 
         {/* Existing Offline Records */}
         <div className="taxpay-table-viewport hidden md:block">
-          <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
+          <TaxPayUnifiedTable className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
                 <th className="px-3 py-2.5">Batch Ref</th>
@@ -196,7 +197,7 @@ export const OfflineEvidence: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TaxPayUnifiedTable>
         </div>
         <div className="taxpay-mobile-table-cards md:hidden" data-testid="offline-evidence-mobile-cards">
           {evidenceList.map(item=><article key={item.id} className="taxpay-mobile-table-card">

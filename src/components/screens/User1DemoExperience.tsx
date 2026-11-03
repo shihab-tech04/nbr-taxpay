@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable,TaxPayRecordList} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
@@ -197,17 +198,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       {reviewFilter&&<button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>}
     </div>
-    {filtered.length ? <div className="taxpayer-transaction-list">
-      <div className="taxpayer-transaction-list__columns" aria-hidden="true"><span>{tr('Payment','পেমেন্ট')}</span><span>{tr('Amount','পরিমাণ')}</span><span>{tr('Status','অবস্থা')}</span><span /></div>
-      <ul>{filtered.map(item=><li key={item.id} className="taxpayer-transaction-row">
+    {filtered.length ? <TaxPayRecordList variant="payments" className="taxpayer-transaction-list" headers={[tr("Payment","পেমেন্ট"),tr("Amount","পরিমাণ"),tr("Status","অবস্থা"),tr("Actions","কার্যক্রম")]}>
+      {filtered.map(item=><li key={item.id} className="taxpayer-transaction-row taxpay-record-list__row">
         <div className="taxpayer-transaction-row__identity"><p className="taxpayer-transaction-row__title">{item.title}</p>
           <p className="taxpayer-transaction-row__meta"><span>{tr(...labels[item.kind])}</span><span aria-hidden="true">·</span><time dateTime={item.date}>{formatDate(item.date)}</time></p>
           <p className="taxpayer-transaction-row__ref">{item.ref}</p></div>
         <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>
         <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
         <button type="button" onClick={()=>setSelected(item)} className={action+' taxpayer-transaction-row__action'} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
-      </li>)}</ul>
-    </div>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
+      </li>)}
+    </TaxPayRecordList>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
@@ -368,7 +368,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         {view('ledger','Review tax ledger','কর লেজার দেখুন')}
       </div>
       <div className="taxpay-table-viewport mt-4" role="region" aria-label={tr('Assessment-year tax position','করবর্ষভিত্তিক কর অবস্থান')} tabIndex={0}>
-        <table className="taxpay-unified-table w-full min-w-[660px] text-left text-sm">
+        <TaxPayUnifiedTable className="taxpay-unified-table w-full min-w-[660px] text-left text-sm">
           <thead className="bg-taxpay-background text-taxpay-muted"><tr>
             <th scope="col" className="px-3 py-3 font-medium">{tr('Year','করবর্ষ')}</th>
             <th scope="col" className="px-3 py-3 text-right font-medium">{tr('Liability','দায়')}</th>
@@ -391,7 +391,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
               </tr>;
             })}
           </tbody>
-        </table>
+        </TaxPayUnifiedTable>
       </div>
       <p className="mt-3 text-xs text-taxpay-muted">{tr('Only posted income tax, TDS and advance tax reduce the displayed balance. Pending, reversed and travel tax are excluded.','শুধু নথিভুক্ত আয়কর, উৎসে কর ও অগ্রিম কর অবশিষ্ট দায় থেকে বাদ যায়। অপেক্ষমাণ, প্রত্যাবর্তিত ও ভ্রমণ কর বাদ।')}</p>
       <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-2">
@@ -406,7 +406,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
               {value:totals.direct,color:'var(--color-taxpay-dark)'}
             ] as const).map((part,i)=><span key={i} aria-hidden="true" style={{width:(totals.applied>0?part.value/totals.applied*100:0)+'%',backgroundColor:part.color}} />)}
           </div>
-          <table className="taxpay-unified-table mt-4 w-full text-sm" aria-label={tr('Posted credit components','নথিভুক্ত ক্রেডিটের উপাদান')}>
+          <TaxPayUnifiedTable className="taxpay-unified-table mt-4 w-full text-sm" aria-label={tr('Posted credit components','নথিভুক্ত ক্রেডিটের উপাদান')}>
             <thead><tr className="text-taxpay-muted"><th scope="col" className="pb-2 text-left font-medium">{tr('Component','উপাদান')}</th><th scope="col" className="pb-2 text-right font-medium">{tr('Posted credit','নথিভুক্ত ক্রেডিট')}</th></tr></thead>
             <tbody className="divide-y divide-taxpay-border">
               {([
@@ -419,7 +419,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
               </tr>)}
               <tr><th scope="row" className="pt-3 text-left font-semibold">{tr('Total applied credits','মোট সমন্বিত ক্রেডিট')}</th><td className="pt-3 text-right font-semibold tabular-nums">{money(totals.applied)}</td></tr>
             </tbody>
-          </table>
+          </TaxPayUnifiedTable>
         </section>
         <section className="min-w-0 rounded-xl border border-taxpay-border bg-taxpay-surface p-4" aria-labelledby="taxpayer-current-position-title">
           <h3 id="taxpayer-current-position-title" className="text-base font-semibold text-taxpay-text">{tr('Current tax position','বর্তমান কর অবস্থান')}</h3>

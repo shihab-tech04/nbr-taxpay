@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React from 'react';
 import {ArrowRight, CalendarDays, CircleHelp, ClipboardList} from 'lucide-react';
 import {getIllustrativeDashboardYear,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
@@ -116,7 +117,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
         <span className="text-xs text-taxpay-muted">{exampleMode?tr('Example figures only','শুধু উদাহরণের পরিমাণ'):tr('Balances unavailable','ব্যালেন্স পাওয়া যায়নি')}</span>
       </div>
       <div className="taxpay-table-viewport mt-3" role="region" aria-label={tr('Assessment-year table scroll area','করবর্ষের তালিকা স্ক্রল')} tabIndex={0}>
-        <table className="taxpay-unified-table min-w-[660px] w-full text-left text-sm">
+        <TaxPayUnifiedTable className="taxpay-unified-table min-w-[660px] w-full text-left text-sm">
           <thead className="bg-slate-50 text-taxpay-muted"><tr>
             {[tr('Assessment year','করবর্ষ'),tr('Liability','করদায়'),tr('TDS & AIT','উৎসে ও অগ্রিম কর'),tr('Direct paid','সরাসরি পরিশোধ'),tr('Remaining','অবশিষ্ট')].map((heading,index)=>
               <th key={heading} scope="col" className={'px-3 py-3 '+(index?'text-right':'')}>{heading}</th>)}
@@ -131,7 +132,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
               return <td className="px-3 py-3 text-right tabular-nums" key={index}>{money(value)}</td>;
             })}
           </tr>)}</tbody>
-        </table>
+        </TaxPayUnifiedTable>
       </div>
     </section>
 
@@ -148,13 +149,13 @@ export const AuthenticatedDashboardPosition: React.FC<{
             <div className="bg-slate-400" style={{width:(100*sample.direct/sample.applied)+'%'}}/>
           </>}
         </div>
-        <table className="taxpay-unified-table mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>
+        <TaxPayUnifiedTable className="taxpay-unified-table mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>
           <tbody>{credits.map(item=><tr className="border-b border-taxpay-border" key={item.en}>
             <th scope="row" className="py-3 text-left font-normal text-taxpay-muted">{tr(item.en,item.bn)}</th>
             <td className="py-3 text-right font-semibold tabular-nums">{money(sample?[sample.tds,sample.ait,sample.direct][credits.indexOf(item)]:undefined)}</td>
           </tr>)}</tbody>
           <tfoot><tr><th scope="row" className="py-3 text-left font-semibold">{tr('Total applied credits','মোট সমন্বিত ক্রেডিট')}</th><td className="py-3 text-right font-semibold">{money(sample?.applied)}</td></tr></tfoot>
-        </table>
+        </TaxPayUnifiedTable>
         <p className="text-xs text-taxpay-muted">{exampleMode
           ?tr('Example only. No credit was applied to this account.','শুধু উদাহরণ। এই অ্যাকাউন্টে কোনো ক্রেডিট যোগ করা হয়নি।')
           :tr('A payment request or receipt is not an automatic tax credit.','পেমেন্ট অনুরোধ বা রসিদ স্বয়ংক্রিয় কর ক্রেডিট নয়।')}</p>

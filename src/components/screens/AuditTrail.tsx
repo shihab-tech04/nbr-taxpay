@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { 
   ScrollText, 
@@ -63,7 +64,7 @@ export const AuditTrail: React.FC = () => {
 
         {/* Audit Log Table */}
         <div className="taxpay-table-viewport hidden md:block">
-          <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
+          <TaxPayUnifiedTable className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
                 <th className="px-3 py-2.5">Timestamp</th>
@@ -92,7 +93,7 @@ export const AuditTrail: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TaxPayUnifiedTable>
         </div>
         <div className="taxpay-mobile-table-cards md:hidden" data-testid="audit-trail-mobile-cards">
           {filteredLogs.map(log=><article className="taxpay-mobile-table-card" key={log.id}>

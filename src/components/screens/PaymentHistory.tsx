@@ -1,4 +1,4 @@
-import {TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
@@ -176,7 +176,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             ))}
           </TaxPayMobileTableCards>
           <TaxPayTableViewport className="hidden md:block">
-            <table className="taxpay-unified-table min-w-full text-left text-sm">
+            <TaxPayUnifiedTable className="taxpay-unified-table min-w-full text-left text-sm">
               <thead className="bg-taxpay-background text-xs text-taxpay-muted">
                 <tr>
                   <th scope="col" className="px-3 py-3">{label('Reference','রেফারেন্স')}</th>
@@ -200,7 +200,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                   </div></td>
                 </tr>)}
               </tbody>
-            </table>
+            </TaxPayUnifiedTable>
           </TaxPayTableViewport>
         </>}
       </section>

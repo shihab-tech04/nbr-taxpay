@@ -1,4 +1,4 @@
-import {TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, FileText } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
@@ -61,7 +61,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       <p>{tr('No matching recorded payments.','মিল পাওয়া যায়নি।')}</p></TaxPayTableState>}
     {!loading&&!error&&filtered.length>0&&<>
     <TaxPayTableViewport className="mt-4 hidden md:block">
-      <table className="taxpay-unified-table w-full min-w-[680px] text-left text-sm">
+      <TaxPayUnifiedTable className="taxpay-unified-table w-full min-w-[680px] text-left text-sm">
         <thead className="bg-taxpay-background text-taxpay-muted">
           <tr>
             <th scope="col" className="px-3 py-3">{tr('Beneficiary / TIN','উপকারভোগী / টিআইএন')}</th>
@@ -94,7 +94,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
             </td>
           </tr>)}
         </tbody>
-      </table>
+      </TaxPayUnifiedTable>
     </TaxPayTableViewport>
     <TaxPayMobileTableCards className="mt-3 md:hidden" data-testid="beneficiary-payment-mobile-cards">
       {filtered.map(row=><TaxPayMobileTableCard key={row.key}>
