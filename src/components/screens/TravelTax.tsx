@@ -25,7 +25,7 @@ interface TravelTaxProps {
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
-const PASSPORT_PREVIEW = 'DEMO123456';
+const PASSPORT_PREVIEW = 'TEST123456';
 
 function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
@@ -421,8 +421,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       <label>{tr('Passport information lookup','পাসপোর্ট তথ্য অনুসন্ধান')}</label>
                       <button type="button" onClick={() => {
                         if (item.passport !== PASSPORT_PREVIEW) {
-                          setError(tr('Government passport lookup is not connected. Only DEMO123456 has a sample profile for UX review.',
-                            'সরকারি পাসপোর্ট API সংযুক্ত নয়। UX পরীক্ষার নমুনা পাসপোর্ট DEMO123456।'));
+                          setError(tr('Government passport lookup is not connected. Only TEST123456 has a sample profile for UX review.',
+                            'সরকারি পাসপোর্ট API সংযুক্ত নয়। UX পরীক্ষার নমুনা পাসপোর্ট TEST123456।'));
                         } else {
                           changePassenger(item.id, { name: 'SAMPLE BANGLADESHI PASSENGER', identitySource: 'PASSPORT_SAMPLE' });
                           setError('');
@@ -459,8 +459,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   {item.nationality === 'BD' && <p className="travel-flow__field-hint">
                     {item.identitySource === 'PASSPORT_SAMPLE'
                       ? tr('Sample identity only — not verified by the passport authority.', 'এটি নমুনা পরিচয়; পাসপোর্ট কর্তৃপক্ষের যাচাই নয়।')
-                      : tr('Real automatic lookup is pending the government API. Sample passport: DEMO123456.',
-                        'সরকারি API সংযুক্ত হলে স্বয়ংক্রিয় তথ্য আসবে। নমুনা: DEMO123456।')}
+                      : tr('Real automatic lookup is pending the government API. Sample passport: TEST123456.',
+                        'সরকারি API সংযুক্ত হলে স্বয়ংক্রিয় তথ্য আসবে। নমুনা: TEST123456।')}
                   </p>}
                   {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
                     {tr('Medical exemption is not approved online. Bring supporting documents to the port; this application cannot claim the exemption.',
