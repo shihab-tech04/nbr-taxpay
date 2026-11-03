@@ -367,8 +367,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         </div>
         {view('ledger','Review tax ledger','কর লেজার দেখুন')}
       </div>
-      <div className="mt-4 overflow-x-auto rounded-xl border border-taxpay-border" role="region" aria-label={tr('Assessment-year tax position','করবর্ষভিত্তিক কর অবস্থান')} tabIndex={0}>
-        <table className="w-full min-w-[660px] text-left text-sm">
+      <div className="taxpay-table-viewport mt-4" role="region" aria-label={tr('Assessment-year tax position','করবর্ষভিত্তিক কর অবস্থান')} tabIndex={0}>
+        <table className="taxpay-unified-table w-full min-w-[660px] text-left text-sm">
           <thead className="bg-taxpay-background text-taxpay-muted"><tr>
             <th scope="col" className="px-3 py-3 font-medium">{tr('Year','করবর্ষ')}</th>
             <th scope="col" className="px-3 py-3 text-right font-medium">{tr('Liability','দায়')}</th>
@@ -406,7 +406,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
               {value:totals.direct,color:'var(--color-taxpay-dark)'}
             ] as const).map((part,i)=><span key={i} aria-hidden="true" style={{width:(totals.applied>0?part.value/totals.applied*100:0)+'%',backgroundColor:part.color}} />)}
           </div>
-          <table className="mt-4 w-full text-sm" aria-label={tr('Posted credit components','নথিভুক্ত ক্রেডিটের উপাদান')}>
+          <table className="taxpay-unified-table mt-4 w-full text-sm" aria-label={tr('Posted credit components','নথিভুক্ত ক্রেডিটের উপাদান')}>
             <thead><tr className="text-taxpay-muted"><th scope="col" className="pb-2 text-left font-medium">{tr('Component','উপাদান')}</th><th scope="col" className="pb-2 text-right font-medium">{tr('Posted credit','নথিভুক্ত ক্রেডিট')}</th></tr></thead>
             <tbody className="divide-y divide-taxpay-border">
               {([
