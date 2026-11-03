@@ -36,6 +36,18 @@
   gap: 12px;
 }
 .taxpay-table-toolbar > :is(h2,h3,p) { margin: 0; }
+.taxpay-table-toolbar__search {
+  flex: 1 1 260px;
+  max-width: 400px;
+  min-width: 0;
+}
+.taxpay-table-toolbar__search:focus-within {
+  outline: 2px solid var(--taxpay-table-primary, #2c5ead);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .taxpay-table-toolbar__search {flex-basis:100%;max-width:none;width:100%;}
+}
 .taxpay-table-toolbar__title {
   font-size: 16px;
   font-weight: 650;
