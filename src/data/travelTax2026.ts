@@ -14,6 +14,8 @@ export interface TravelPassenger {
   passport: string;
   name: string;
   ageBand: TravelAgeBand;
+  birthDate: string;
+  country: string;
   identitySource: 'PASSPORT_SAMPLE' | 'MANUAL' | 'PENDING';
   medicalPortReferral: boolean;
 }
@@ -41,11 +43,40 @@ export const LAND_PORT_NAMES = [
   'Sonahat', 'Dhanua Kamalpur', 'Gobrakura-Koroitoli', 'Teknaf',
 ] as const;
 
-export function makeTravelPassenger(id: string): TravelPassenger {
+export function makeTravelPassenger(id: string, nationality: TravellerNationality = 'FOREIGN'): TravelPassenger {
   return {
-    id, nationality: 'FOREIGN', passport: '', name: '',
-    ageBand: 'ADULT', identitySource: 'MANUAL', medicalPortReferral: false,
+    id, nationality, passport: '', name: '', birthDate: '', country: nationality === 'BD' ? 'Bangladesh' : '',
+    ageBand: 'ADULT', identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL', medicalPortReferral: false,
   };
+}
+
+/** Age is measured on the selected travel date, not on today's date. */
+export function travelPassengerAge(birthDate: string, travelDate: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || !/^\d{4}-\d{2}-\d{2}$/.test(travelDate)) return null;
+  const birth = new Date(birthDate + 'T00:00:00Z');
+  const travel = new Date(travelDate + 'T00:00:00Z');
+  if (!Number.isFinite(birth.getTime()) || !Number.isFinite(travel.getTime()) ||
+      birth.toISOString().slice(0, 10) !== birthDate ||
+      travel.toISOString().slice(0, 10) !== travelDate || birth > travel) return null;
+  let age = travel.getUTCFullYear() - birth.getUTCFullYear();
+  if (travel.getUTCMonth() < birth.getUTCMonth() ||
+      (travel.getUTCMonth() === birth.getUTCMonth() && travel.getUTCDate() < birth.getUTCDate())) age--;
+  return age >= 0 && age < 130 ? age : null;
+}
+
+export function travelAgeBand(age: number): TravelAgeBand {
+  // Illustrative bands from the existing preview; statutory thresholds remain unverified.
+  return age <= 5 ? 'UNDER5' : age <= 12 ? 'CHILD' : 'ADULT';
+}
+
+export function assessTravelPassenger(passenger: TravelPassenger, unitRate: number, travelDate: string) {
+  if (!passenger.passport.trim() || !passenger.name.trim() ||
+      (passenger.nationality === 'BD' && passenger.identitySource !== 'PASSPORT_SAMPLE') ||
+      (passenger.nationality === 'FOREIGN' && !passenger.country.trim())) return null;
+  const age = travelPassengerAge(passenger.birthDate, travelDate);
+  if (age === null) return null;
+  const ageBand = travelAgeBand(age);
+  return { age, ageBand, amount: travelPassengerAmount(unitRate, ageBand) };
 }
 
 export function travelPassengerAmount(unitRate: number, ageBand: TravelAgeBand): number {
@@ -54,11 +85,14 @@ export function travelPassengerAmount(unitRate: number, ageBand: TravelAgeBand):
   return unitRate;
 }
 
-export function travelPartyTotal(passengers: TravelPassenger[], unitRate: number): number {
+export function travelPartyTotal(passengers: TravelPassenger[], unitRate: number, travelDate?: string): number {
+  if (travelDate !== undefined) {
+    return passengers.reduce((total, passenger) => total + (assessTravelPassenger(passenger, unitRate, travelDate)?.amount ?? 0), 0);
+  }
   return passengers.reduce((total, passenger) => total + travelPassengerAmount(unitRate, passenger.ageBand), 0);
 }
 
-export function validateTravelParty(passengers: TravelPassenger[]): string | null {
+export function validateTravelParty(passengers: TravelPassenger[], travelDate?: string): string | null {
   if (!passengers.length) return 'At least one passenger is required.';
   const passports = new Set<string>();
   for (let i = 0; i < passengers.length; i++) {
@@ -69,6 +103,10 @@ export function validateTravelParty(passengers: TravelPassenger[]): string | nul
     if (passenger.name.trim().length < 2) return 'Passenger ' + (i + 1) + ': passenger identity is required.';
     if (passenger.nationality === 'BD' && passenger.identitySource !== 'PASSPORT_SAMPLE') {
       return 'Bangladeshi passenger details require passport verification; the government lookup is not connected.';
+    }
+    if (travelDate !== undefined) {
+      if (travelPassengerAge(passenger.birthDate, travelDate) === null) return 'Passenger ' + (i + 1) + ': enter a valid date of birth before the travel date.';
+      if (passenger.nationality === 'FOREIGN' && !passenger.country.trim()) return 'Passenger ' + (i + 1) + ': enter the country of nationality.';
     }
     if (passenger.medicalPortReferral) return 'Medical exemption requests require manual documentation at the port.';
   }

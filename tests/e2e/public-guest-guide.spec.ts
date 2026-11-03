@@ -30,8 +30,7 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await travel.locator('#travel-tax-route-0').check();
   await fillTravelDetails(travel);
  await travel.getByRole('button',{name:'Continue to passenger details'}).click();
- await travel.getByLabel('Passenger name').fill('TEST PASSENGER');
- await travel.getByLabel('Passport number').fill('DEMO1234');
+
  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Review passengers and payment'})).toBeVisible();
@@ -376,7 +375,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await expect(modal.getByLabel('Passenger name')).toBeVisible();
+  await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
@@ -397,8 +396,7 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   await left.evaluate(el=>el.scrollTop=el.scrollHeight);
   expect(Math.abs((await side.evaluate(el=>el.getBoundingClientRect().top))-initial)).toBeLessThan(2);
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
-  await modal.getByLabel('Passenger name').fill('SYNTHETIC USER');
-  await modal.getByLabel('Passport number').fill('FAKE0001');
+
   await modal.getByLabel('Mobile number for receipt').fill('01712345678');
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
@@ -427,9 +425,8 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await modal.locator('#travel-tax-route-0').check();
   await fillTravelDetails(modal);
  await modal.getByRole('button',{name:'যাত্রীর তথ্যে এগিয়ে যান'}).click();
- await expect(modal.getByLabel('যাত্রীর নাম')).toBeVisible();
- await modal.getByLabel('যাত্রীর নাম').fill('DEMO NAME');
- await modal.getByLabel('পাসপোর্ট নম্বর').fill('FAKE001');
+ await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+
  await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'যাত্রী ও পেমেন্ট যাচাই করুন'})).toBeVisible();
@@ -452,8 +449,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await modal.locator('#travel-tax-route-0').check();
   await fillTravelDetails(modal);
   await actions.getByRole('button',{name:'Continue to passenger details'}).click();
-  await modal.getByLabel('Passenger name').fill('SYNTHETIC PASSENGER');
-  await modal.getByLabel('Passport number').fill('DEMOFAKE01');
+
   await modal.getByLabel('Mobile number for receipt').fill('01712345678');
   await actions.getByRole('button',{name:'Continue to review'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
@@ -471,51 +467,43 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await expect(modal.locator('.receipt-view__actions')).toHaveCount(0);
 });
 
-test('Travel Tax searches only Land and Water in English while preserving the selected mode',async({page})=>{
- await page.goto('/?action=landing');
- await openTravelTaxFromBanner(page);
- const modal=page.getByRole('dialog',{name:'Travel tax'});
- const search=modal.getByRole('searchbox',{name:'Travel mode'});
- const routes=modal.locator('#travel-tax-route-results');
- const summary=modal.locator('.travel-flow__summary');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
- await expect(routes.locator('#travel-tax-route-0')).toBeChecked();
- await search.fill('wATer');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('By water',{exact:false})).toBeVisible();
- await routes.locator('#travel-tax-route-1').check();
- await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
- await search.fill('air');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(0);
- await expect(routes.getByRole('status')).toContainText('No matching travel modes');
- await modal.getByRole('button',{name:'Clear search'}).click();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
- await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
- await fillTravelDetails(modal,{mode:'WATER'});
- await modal.getByRole('button',{name:'Continue to passenger details'}).click();
- await expect(modal.locator('.payment-form-section').getByRole('heading',{name:'Passenger details'})).toBeVisible();
+test('Travel Tax displays only two mode cards without fixed prices and calculates after passport lookup',async({page})=>{
+  await page.goto('/?action=landing');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  const routes=modal.locator('#travel-tax-route-results');
+  const summary=modal.locator('.travel-flow__summary');
+  await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
+  await expect(routes.locator('#travel-tax-route-0')).toBeChecked();
+  await expect(routes).toContainText('By water');
+  await expect(routes).not.toContainText('1,000');
+  await expect(summary.locator('.travel-flow__total')).toContainText('—');
+  await routes.locator('#travel-tax-route-1').check();
+  await fillTravelDetails(modal,{mode:'WATER'});
+  await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
+  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
+  await expect(modal.locator('.payment-form-section').getByRole('heading',{name:'Passengers and receipt details'})).toBeVisible();
 });
 
-test('Travel Tax Bengali mode search remains accessible at 320px',async({page},info)=>{
- test.skip(info.project.name!=='mobile-320','Small mobile search and Bangla names');
- await page.goto('/?action=landing');
- await setWorkspaceLanguage(page,'bn');
- await openTravelTaxFromBanner(page);
- const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
- const search=modal.getByRole('searchbox',{name:'যাতায়াতের মাধ্যম'});
- const routes=modal.locator('#travel-tax-route-results');
- await search.fill('স্থল');
- await expect(routes.locator('input[type="radio"]')).toHaveCount(1);
- await expect(routes.getByText('স্থলপথে',{exact:false})).toBeVisible();
- const sizes=await search.evaluate(el=>{
-   const box=el.getBoundingClientRect();
-   return {left:box.left,right:box.right,width:window.innerWidth,scroll:document.documentElement.scrollWidth};
- });
- expect(sizes.left).toBeGreaterThanOrEqual(-1);
- expect(sizes.right).toBeLessThanOrEqual(sizes.width+1);
- expect(sizes.scroll).toBeLessThanOrEqual(sizes.width+2);
- await modal.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
- await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
+test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-320','Small mobile Bengali mode and tabs');
+  await page.goto('/?action=landing');
+  await setWorkspaceLanguage(page,'bn');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
+  const routes=modal.locator('#travel-tax-route-results');
+  await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
+  await expect(routes.locator('#travel-tax-route-0')).toBeChecked();
+  await expect(modal.getByRole('tab',{name:'বাংলাদেশি যাত্রী'})).toHaveAttribute('aria-selected','true');
+  await modal.getByRole('tab',{name:'বিদেশি যাত্রী'}).click();
+  await expect(modal.locator('#travel-country-first')).toBeVisible();
+  const sizes=await routes.evaluate(el=>{
+    const box=el.getBoundingClientRect();
+    return {left:box.left,right:box.right,width:window.innerWidth,scroll:document.documentElement.scrollWidth};
+  });
+  expect(sizes.left).toBeGreaterThanOrEqual(-1);
+  expect(sizes.right).toBeLessThanOrEqual(sizes.width+1);
+  expect(sizes.scroll).toBeLessThanOrEqual(sizes.width+2);
 });
 
 // Banner-dependent browser checks use explicitly published CMS rows;

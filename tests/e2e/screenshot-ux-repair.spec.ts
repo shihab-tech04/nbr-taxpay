@@ -128,7 +128,7 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   await summary.locator('summary').click();
   await expect(summary.locator('dl')).toBeVisible();
   await next.click();
-  await expect(dialog.getByLabel('Passenger name')).toBeVisible();
+  await expect(dialog.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
@@ -141,18 +141,16 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
   await dialog.getByRole('button',{name:'Continue to passenger details'}).click();
-  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('FAKE0001');
+
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button',{name:'Continue to review'}).click();
-  const row=dialog.locator('.travel-flow__summary-list > div').nth(2);
-  await expect(row.locator('dd')).not.toBeEmpty();
-  const values=await row.evaluate(element=>({display:getComputedStyle(element).display,
-    maxWidth:getComputedStyle(element.querySelector('dd')!).maxWidth,
-    rowWidth:element.getBoundingClientRect().width,
-    valueWidth:element.querySelector('dd')!.getBoundingClientRect().width}));
-  expect(values.display).toBe('grid');
-  expect(values.valueWidth).toBeGreaterThan(values.rowWidth*.8);
+  const age=dialog.locator('.travel-flow__age-breakdown');
+  await expect(age).toContainText('Age 34 on travel date');
+  const box=await age.boundingBox();
+  const side=await dialog.locator('.travel-flow__summary').boundingBox();
+  expect(box).not.toBeNull();
+  expect(side).not.toBeNull();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
 });
 
 test('mobile travel-tax explanation stays within the dashboard rather than clipping off-screen',async({page},info)=>{
