@@ -64,6 +64,20 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
+  // The receipt takes over the wizard. Reset its scroll position when it
+  // mounts so the newly created receipt heading remains visible on mobile
+  // and desktop, rather than inheriting the payment form's scroll offset.
+  useEffect(() => {
+    if (!createdReceipt || bankSlipPending) return;
+    const modalBody = document.querySelector<HTMLElement>('.taxpay-modal__body');
+    if (modalBody) {
+      modalBody.scrollTop = 0;
+    } else {
+      document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0 });
+    }
+  }, [createdReceipt, bankSlipPending]);
+
 
   // Preserve the existing simulation-only land and water rates until verified
   // statutory rate and age tables have been approved by the client.
