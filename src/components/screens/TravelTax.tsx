@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Search, Trash2, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Search, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -25,7 +25,6 @@ interface TravelTaxProps {
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
-const PORT_OTHER = 'OTHER_WATER_PORT';
 const PASSPORT_PREVIEW = 'DEMO123456';
 
 function maskPassport(passport: string) {
@@ -441,7 +440,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     </div>
                     <div className="travel-flow__field">
                       <label htmlFor={'travel-age-' + item.id}>{tr('Age category','বয়সের ধরন')} *</label>
-                      <select id={'travel-age-' + item.id} value={item.ageBand} onChange={event =>
+                      <select id={'travel-age-' + item.id} disabled={item.nationality === 'BD'} value={item.ageBand} onChange={event =>
                         changePassenger(item.id, { ageBand: event.target.value as TravelAgeBand })}>
                         <option value="ADULT">{tr('Over 12 — full preview rate','১২ বছরের বেশি — পূর্ণ নমুনা হার')}</option>
                         <option value="CHILD">{tr('Over 5 to 12 — half preview rate','৫–১২ বছর — অর্ধেক নমুনা হার')}</option>
