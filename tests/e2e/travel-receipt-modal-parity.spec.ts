@@ -12,8 +12,7 @@ test('Travel Tax settled receipt uses one shared modal body/footer without the w
   await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
   await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('TRAVEL123');
+
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to review' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
@@ -96,7 +95,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel details');
   await expect(dialog.locator('.travel-flow__steps')).toHaveCount(0);
-  await expect(dialog.locator('.payment-form-section').getByRole('heading', { name: 'Travel details' })).toHaveCount(1);
+  await expect(dialog.locator('.payment-form-section').getByRole('heading', { name: 'Passenger and travel details' })).toHaveCount(1);
   await expect(dialog.locator('.travel-flow__summary')).toBeVisible();
 
   await dialog.locator('#travel-tax-route-0').check();
@@ -117,8 +116,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(dialog.locator('.taxpay-modal__footer .travel-flow__primary')).toBeVisible();
 
   await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await dialog.getByLabel('Passenger name').fill('TEST TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('TRAVEL123');
+
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to review' }).click();
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
@@ -151,8 +149,7 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   expect(wordsBox!.y).toBeGreaterThanOrEqual(totalBox!.y + totalBox!.height);
 
   await dialog.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await dialog.getByLabel('Passenger name').fill('TEST TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('TRAVEL123');
+
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to review' }).click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Review & payment');
