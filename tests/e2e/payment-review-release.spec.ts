@@ -359,7 +359,7 @@ test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview 
   await expect(page.locator('#travel-tax-route-results input[type=radio]')).toHaveCount(2);
   await expect(page.locator('#travel-tax-route-0')).toBeChecked();
   await fillTravelDetails(page);
-  await page.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await page.getByRole('button', { name: 'Continue to add passengers' }).click();
   await fillForeignPassenger(page, { name: 'SAMPLE PASSENGER', passport: 'SAMPLE123' });
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
