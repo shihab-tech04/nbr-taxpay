@@ -48,3 +48,25 @@ test('Other descriptions are required across UI, SQL, guest RPC and Edge validat
   assert.match(sql,/taxpay_beneficiary_other_label_consistency/);
   assert.match(sql,/taxpay_guest_beneficiary_other_label_consistency/);
 });
+test('Edit beneficiary covers fixed tags, family relations, Others and optional move end to end',()=>{
+  const screen=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  const service=readFileSync('src/services/beneficiaries.ts','utf8');
+  const guest=readFileSync('src/services/guestBeneficiaries.ts','utf8');
+  const edge=readFileSync('supabase/functions/taxpay-guest-beneficiaries/index.ts','utf8');
+  const sql=readFileSync('supabase/migrations/20261103170000_taxpay_guest_beneficiary_edit_classification.sql','utf8');
+  assert.match(screen,/id="beneficiary-edit-tag"/);
+  assert.match(screen,/id="beneficiary-edit-relationship"/);
+  assert.match(screen,/id="beneficiary-edit-other-label" required maxLength=\{80\}/);
+  assert.match(screen,/editBeneficiaryClassification\(owner,editPerson,editTargetList,classification\)/);
+  assert.match(screen,/Move to list \(optional\)/);
+  assert.match(screen,/setEditTargetList\(person\.list_id\)/);
+  assert.match(screen,/const editLegacyMove=/);
+  assert.match(screen,/await moveBeneficiary\(owner,editPerson\.id,editPerson\.list_id,editTargetList\)/);
+  assert.doesNotMatch(screen,/editTargetList===editPerson\.list_id\}\>/);
+  assert.match(service,/export async function editBeneficiaryClassification/);
+  assert.match(service,/\.eq\('owner_uid',ownerUid\)\.eq\('list_id',person\.list_id\)/);
+  assert.match(guest,/post\('edit-classification'/);
+  assert.match(edge,/taxpay_guest_beneficiary_edit_classification/);
+  assert.match(sql,/BENEFICIARY_ALREADY_IN_LIST/);
+  assert.match(sql,/revoke all on function public\.taxpay_guest_beneficiary_edit_classification/);
+});
