@@ -1,3 +1,4 @@
+import {TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, FileText } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
@@ -37,16 +38,18 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   },[rows,search]);
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" data-testid="beneficiary-payment-history"
     aria-label={tr('Individual beneficiary payment history','প্রতিটি উপকারভোগীর পেমেন্টের ইতিহাস')}>
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="text-lg font-semibold text-taxpay-text">{tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}</h2>
-      <span className="text-sm text-taxpay-muted" aria-live="polite">{filtered.length} {tr('records','রেকর্ড')}</span>
-    </div>
-    <div className="mt-3 flex items-center gap-2 rounded-lg border border-taxpay-border bg-white px-3">
-      <Search size={17} className="shrink-0 text-taxpay-muted" aria-hidden="true"/>
-      <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
-        aria-label={tr('Search beneficiary, TIN or payment reference','উপকারভোগী, টিআইএন বা রেফারেন্স খুঁজুন')}
-        placeholder={tr('Search beneficiary, TIN or reference','নাম, টিআইএন বা রেফারেন্স খুঁজুন')}
-        className="min-h-11 w-full min-w-0 bg-transparent text-sm outline-none"/>
+    <div className="taxpay-table-toolbar">
+      <div className="taxpay-table-toolbar__actions">
+        <h2 className="taxpay-table-toolbar__title">{tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}</h2>
+        <p className="taxpay-table-count" aria-live="polite">{filtered.length} {tr('records','রেকর্ড')}</p>
+      </div>
+      <div className="taxpay-table-toolbar__search flex min-h-11 min-w-0 items-center gap-2 rounded-lg border border-taxpay-border bg-white px-3">
+        <Search size={17} className="shrink-0 text-taxpay-muted" aria-hidden="true"/>
+        <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+          aria-label={tr('Search beneficiary, TIN or payment reference','উপকারভোগী, টিআইএন বা রেফারেন্স খুঁজুন')}
+          placeholder={tr('Search beneficiary, TIN or reference','নাম, টিআইএন বা রেফারেন্স খুঁজুন')}
+          className="min-h-11 w-full min-w-0 bg-transparent text-sm outline-none"/>
+      </div>
     </div>
     {loading&&<p className="mt-4 text-sm text-taxpay-muted" role="status">{tr('Loading saved payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>}
     {error&&<div className="mt-4" role="alert">
@@ -54,10 +57,11 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       <button className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
         type="button" onClick={()=>setRevision(v=>v+1)}>{tr('Try again','আবার চেষ্টা করুন')}</button>
     </div>}
-    {!loading&&!error&&filtered.length===0&&<p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-taxpay-muted" role="status">
-      {tr('No matching recorded payments.','মিল পাওয়া যায়নি।')}</p>}
-    {!loading&&!error&&filtered.length>0&&<div className="mt-4 overflow-x-auto">
-      <table className="w-full min-w-[680px] text-left text-sm">
+    {!loading&&!error&&filtered.length===0&&<TaxPayTableState className="mt-4 rounded-lg bg-slate-50 p-4">
+      <p>{tr('No matching recorded payments.','মিল পাওয়া যায়নি।')}</p></TaxPayTableState>}
+    {!loading&&!error&&filtered.length>0&&<>
+    <TaxPayTableViewport className="mt-4 hidden md:block">
+      <table className="taxpay-unified-table w-full min-w-[680px] text-left text-sm">
         <thead className="bg-taxpay-background text-taxpay-muted">
           <tr>
             <th scope="col" className="px-3 py-3">{tr('Beneficiary / TIN','উপকারভোগী / টিআইএন')}</th>
@@ -91,7 +95,26 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           </tr>)}
         </tbody>
       </table>
-    </div>}
+    </TaxPayTableViewport>
+    <TaxPayMobileTableCards className="mt-3 md:hidden" data-testid="beneficiary-payment-mobile-cards">
+      {filtered.map(row=><TaxPayMobileTableCard key={row.key}>
+        <div className="taxpay-mobile-table-card__header">
+          <p className="taxpay-mobile-table-card__title">{row.beneficiaryName}</p>
+          <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</p>
+        </div>
+        <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
+        <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
+        {row.economicCode&&<p className="taxpay-mobile-table-card__meta">{row.economicCode}</p>}
+        <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {row.paymentId}</p>
+        {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">
+          {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
+        <div className="taxpay-mobile-table-card__actions">
+          <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button>
+        </div>
+      </TaxPayMobileTableCard>)}
+    </TaxPayMobileTableCards>
+    </>}
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
       <ReceiptView receipt={selected.receipt} embedded/>

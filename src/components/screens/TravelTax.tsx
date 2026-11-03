@@ -545,21 +545,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
               <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
             </div>
-            <div className="travel-flow__table-wrap">
-              <table className="travel-flow__passenger-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
+            <div className="travel-flow__table-wrap taxpay-table-viewport">
+              <table className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
                 <thead><tr>
                   <th scope="col">{tr('Passenger','যাত্রী')}</th>
                   <th scope="col">{tr('Passport','পাসপোর্ট')}</th>
                   <th scope="col">{tr('Age','বয়স')}</th>
-                  <th scope="col">{tr('Tax','কর')}</th>
+                  <th scope="col" className="text-right">{tr('Tax','কর')}</th>
                 </tr></thead>
                 <tbody>{passengers.map(item => <tr key={item.id}>
                   <td>{item.name}</td><td>{maskPassport(item.passport)}</td>
                   <td>{assessTravelPassenger(item, unitRate, travelDate)?.age ?? '—'}</td>
-                  <td>{formatCurrency(assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0, language)}</td>
+                  <td className="text-right tabular-nums">{formatCurrency(assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0, language)}</td>
                 </tr>)}</tbody>
                 <tfoot><tr><th scope="row" colSpan={3}>{tr('Combined payable','মোট প্রদেয়')}</th>
-                  <td>{formatCurrency(totalAmount, language)}</td></tr></tfoot>
+                  <td className="text-right tabular-nums">{formatCurrency(totalAmount, language)}</td></tr></tfoot>
               </table>
             </div>
             <header className="travel-flow__section-header">

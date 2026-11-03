@@ -1,3 +1,4 @@
+import {TaxPayTablePanel} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -406,7 +407,7 @@ export function Beneficiaries(){
         <UiButton type="button" variant="outline" onClick={()=>void reloadData()}>{tr('Try again','আবার চেষ্টা করুন')}</UiButton>
       </div>}
       {!checkingIdentity&&!loading&&!error&&<>
-        <div className="taxpayer-transaction-panel__heading beneficiary-directory__heading">
+        <div className="taxpayer-transaction-panel__heading beneficiary-directory__heading taxpay-table-toolbar">
           <div className="min-w-0">
             <h2 id="beneficiary-list-heading" className="text-xl font-bold text-taxpay-text">{tr('Beneficiary list','উপকারভোগীর তালিকা')}</h2>
             <p className="mt-1 text-sm text-taxpay-muted">{tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}</p>
@@ -423,7 +424,7 @@ export function Beneficiaries(){
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
 
         </div>:<>
-          <div className="taxpayer-transaction-filters beneficiary-directory__filters">
+          <div className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
             <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
@@ -467,7 +468,7 @@ export function Beneficiaries(){
               </span>
             </label>
           </div>
-          <div className="taxpayer-transaction-count beneficiary-directory__count">
+          <div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar">
             <p className="text-xs text-taxpay-muted" aria-live="polite">{tr('Records','রেকর্ড')}: {filteredPeople.length} <span className="text-taxpay-muted">/ {listPeople.length}</span></p>
             <div className="beneficiary-directory__bulk-actions">
               {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
@@ -495,7 +496,7 @@ export function Beneficiaries(){
           </div>:<>
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
-              <div className="beneficiary-directory__table">
+              <TaxPayTablePanel className="beneficiary-directory__table">
               <div className="taxpayer-transaction-list__columns beneficiary-directory__columns" aria-hidden="true">
                 <span>{tr('Beneficiary','উপকারভোগী')}</span>
                 <span>{tr('Actions','কার্যক্রম')}</span>
@@ -530,7 +531,7 @@ export function Beneficiaries(){
                   </div>
                 </li>)}
               </ul>
-              </div>
+              </TaxPayTablePanel>
             </div>
           </>}
         </>}
@@ -665,7 +666,7 @@ export function Beneficiaries(){
           <h3 className="font-semibold">{tr('Review imported rows','আমদানি করা সারি পর্যালোচনা')}</h3>
           <p className="text-sm text-slate-600">{tr(`${valid.length} valid, ${reviewed.length-valid.length} needing attention`,`${valid.length}টি সঠিক, ${reviewed.length-valid.length}টি সংশোধন প্রয়োজন`)}</p>
           <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={valid.length>0&&chosen.length===valid.length} onChange={event=>setRows(old=>old.map(row=>({...row,selected:event.target.checked})))}/>{tr('Select all valid rows','সব সঠিক সারি নির্বাচন')}</label>
-          <div className="beneficiary-import-table max-h-80" data-testid="beneficiary-import-table"><table className="w-full text-sm"><thead><tr className="sticky top-0 bg-white text-left"><th className="p-2">{tr('Add','যোগ')}</th><th className="p-2">{tr('TIN','টিআইএন')}</th><th className="p-2">{tr('Name (optional)','নাম (ঐচ্ছিক)')}</th><th className="p-2">{tr('Validation','যাচাই')}</th></tr></thead>
+          <div className="beneficiary-import-table taxpay-table-viewport max-h-80" data-testid="beneficiary-import-table"><table className="taxpay-unified-table w-full text-sm"><thead><tr className="sticky top-0 bg-white text-left"><th className="p-2">{tr('Add','যোগ')}</th><th className="p-2">{tr('TIN','টিআইএন')}</th><th className="p-2">{tr('Name (optional)','নাম (ঐচ্ছিক)')}</th><th className="p-2">{tr('Validation','যাচাই')}</th></tr></thead>
             <tbody>{reviewed.map((row,index)=><tr key={row.sourceRow} className="border-t border-slate-100">
               <td className="p-2"><input type="checkbox" aria-label={tr('Include row ','সারি যোগ করুন ')+row.sourceRow} checked={!row.error&&row.selected} disabled={!!row.error} onChange={event=>setRows(old=>old.map((value,rowIndex)=>index===rowIndex?{...value,selected:event.target.checked}:value))}/></td>
               <td className="p-2"><UiInput aria-label={tr('TIN row ','টিআইএন সারি ')+row.sourceRow} className="max-w-36 font-mono" value={row.tin} onChange={event=>setRows(old=>old.map((value,rowIndex)=>index===rowIndex?{...value,tin:event.target.value.replace(/\D/g,'').slice(0,12)}:value))}/></td>

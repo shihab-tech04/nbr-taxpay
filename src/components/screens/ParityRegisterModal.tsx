@@ -321,8 +321,8 @@ export const ParityRegisterModal: React.FC = () => {
         </div>
 
         {/* Register Table */}
-        <div className="min-w-0 overflow-x-auto pt-4">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
+        <div className="taxpay-table-viewport min-w-0 pt-4">
+          <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0 z-10">
               <tr>
                 <th className="px-3 py-2 text-left w-12">#</th>

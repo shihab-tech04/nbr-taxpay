@@ -2548,30 +2548,6 @@
    and the column labels sit directly against the records, never in a floating strip. */
 .beneficiary-directory__count { margin: 10px 0 8px; min-height: 32px; }
 .beneficiary-directory__select-all { min-height: 32px; }
-.beneficiary-directory__table {
-  min-width: 0; overflow: hidden;
-  border: 1px solid var(--color-taxpay-border);
-  border-radius: 10px;
-  background: var(--color-taxpay-surface);
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {
-  min-height: 40px;
-  padding-block: 10px;
-  border-bottom: 1px solid var(--color-taxpay-border);
-  background: var(--color-taxpay-surface-subtle);
-  box-sizing: border-box;
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table > ul {
-  margin: 0; padding: 0; list-style: none;
-  border: 0; border-radius: 0; overflow: visible;
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
-  min-height: 76px; padding-block: 12px;
-}
-@media (max-width: 700px) {
-  .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns { display: none; }
-  .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row { min-height: 0; }
-}
 /* Beneficiary records now use the same quiet, bordered record-list pattern as
    Payments & activity. Keep labels, group actions, and bulk selection intact. */
 /* Beneficiaries and Payments & activity share the same quiet, scannable
@@ -2685,56 +2661,6 @@
   .beneficiary-list-edit__footer>div {display:flex;flex:1;justify-content:flex-end;}
   .beneficiary-list-edit__footer button {font-size:14px;}
 }
-
-/* Beneficiaries: the heading and each row must share exactly the same grid.
-   Override the legacy Activity list's roomy header and row sizing only inside
-   this feature, leaving all other taxpayer lists untouched. */
-.taxpay-taxpayer-reference .beneficiary-directory__table {
-  border: 1px solid var(--color-taxpay-border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,320px);
-  align-items: center;
-  gap: 16px;
-  height: auto;
-  min-height: 42px;
-  margin: 0;
-  padding: 10px 16px 10px 50px;
-  border-bottom: 1px solid var(--color-taxpay-border);
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table > ul {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  list-style: none;
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,320px);
-  align-items: center;
-  gap: 16px;
-  min-height: 68px;
-  margin: 0;
-  padding: 10px 16px;
-  border: 0;
-  border-radius: 0;
-}
-.taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row + .beneficiary-directory__row {
-  border-top: 1px solid var(--color-taxpay-border);
-}
-@media (max-width: 700px) {
-  .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns { display: none; }
-  .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {
-    grid-template-columns: minmax(0,1fr);
-    gap: 10px;
-    padding: 12px;
-  }
-}
-
 
 /* Travel Tax 2026 review — scoped to the existing Korbritto tokenized wizard. */
 .travel-flow__field-group { margin-top: 18px; }
