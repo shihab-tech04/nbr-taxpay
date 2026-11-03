@@ -92,6 +92,23 @@ for(const language of ['en','bn'] as const){
     await page.getByRole('dialog',{name:t('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')})
       .getByRole('button',{name:'Clients',exact:true}).click();
     await expect(rows).toHaveCount(2);
+    // Edit reuses the same mandatory classification as Add; no forced list move.
+    await rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true}).click();
+    const edit=page.getByRole('dialog',{name:t('Edit beneficiary','উপকারভোগী সম্পাদনা')});
+    await expect(edit).toBeVisible();
+    await expect(edit.locator('#beneficiary-edit-tag')).toHaveValue('others');
+    await expect(edit.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour');
+    await expect(edit.locator('#beneficiary-edit-other-label')).toHaveAttribute('maxlength','80');
+    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue(lists[0].id);
+    await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
+    await edit.locator('#beneficiary-edit-tag').selectOption('friends_family');
+    await expect(edit.locator('#beneficiary-edit-other-label')).toHaveCount(0);
+    await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
+    await edit.locator('#beneficiary-edit-relationship').selectOption('father');
+    await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeEnabled();
+    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue(lists[0].id);
+    await edit.getByRole('button',{name:t('Cancel','বাতিল')}).click();
+    await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
     await rows.first().getByRole('checkbox',{name:t('Select Shihab','Shihab নির্বাচন')}).check();
     await expect(screen.locator('.beneficiary-directory__selected-count')).toContainText('1');
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();
