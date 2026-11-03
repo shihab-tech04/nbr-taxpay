@@ -183,8 +183,63 @@ begin
   exception when others then
     if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
   end;
+  -- End-to-end guest classification edit uses one atomic, capability-bound write,
+  -- and leaves the immutable taxpayer identity/name untouched.
+  v_data := public.taxpay_guest_beneficiary_edit_classification(
+    v_a,v_person_b,v_list_a_target,v_list_a_target,'friends_family','father',null);
+  if v_data->>'tag' is distinct from 'friends_family' or
+     v_data->>'relationship' is distinct from 'father' or
+     v_data->>'tin' is distinct from '987654321098' or
+     v_data->>'display_name' is distinct from 'Synthetic Guest A2' then
+    raise exception 'Guest tag-only edit lost classification or identity';
+  end if;
+  v_data := public.taxpay_guest_beneficiary_edit_classification(
+    v_a,v_person_b,v_list_a_target,v_list_a_target,'others',null,'Neighbour');
+  if v_data->>'other_label' is distinct from 'Neighbour' or
+     v_data->>'relationship' is not null or v_data->>'tag' is distinct from 'others' then
+    raise exception 'Guest Others edit failed atomic label preservation';
+  end if;
+  begin
+    perform public.taxpay_guest_beneficiary_edit_classification(
+      v_b,v_person_b,v_list_a_target,v_list_a_target,'clients',null,null);
+    raise exception 'Cross-session guest classification edit succeeded';
+  exception when others then
+    if sqlerrm not like '%NOT_FOUND%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_guest_beneficiary_edit_classification(
+      v_a,v_person_b,v_list_a_target,v_list_a_target,'others',null,repeat('x',81));
+    raise exception 'Overlength Others edit succeeded';
+  exception when others then
+    if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
+  end;
+  if public.taxpay_guest_beneficiary_add(v_a,v_list_a,
+    '[{"tin":"987654321098","display_name":"Second-list conflict"}]'::jsonb) <> 1 then
+    raise exception 'Guest duplicate-destination fixture could not be inserted';
+  end if;
+  begin
+    perform public.taxpay_guest_beneficiary_edit_classification(
+      v_a,v_person_b,v_list_a_target,v_list_a,'clients',null,null);
+    raise exception 'Classification/list move ignored destination duplicate';
+  exception when others then
+    if sqlerrm not like '%BENEFICIARY_ALREADY_IN_LIST%' then raise; end if;
+  end;
+  if not exists (
+    select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_rows(v_a,0,500)) item(value)
+    where item.value->>'id'=v_person_b::text
+      and item.value->>'list_id'=v_list_a_target::text
+      and item.value->>'tag'='others' and item.value->>'other_label'='Neighbour'
+  ) then raise exception 'Failed guest edit partially modified a saved row'; end if;
+  if has_function_privilege('anon',
+       'public.taxpay_guest_beneficiary_edit_classification(text,uuid,uuid,uuid,text,text,text)', 'EXECUTE') or
+     has_function_privilege('authenticated',
+       'public.taxpay_guest_beneficiary_edit_classification(text,uuid,uuid,uuid,text,text,text)', 'EXECUTE') or
+     not has_function_privilege('service_role',
+       'public.taxpay_guest_beneficiary_edit_classification(text,uuid,uuid,uuid,text,text,text)', 'EXECUTE') then
+    raise exception 'Guest classification edit RPC permission boundary changed';
+  end if;
 end;
-$$;
+$;
 
 set local role service_role;
 select public.taxpay_guest_beneficiary_open(repeat('c', 64));
