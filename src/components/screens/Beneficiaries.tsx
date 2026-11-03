@@ -688,7 +688,7 @@ export function Beneficiaries(){
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
         <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
         <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
-        <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag','ট্যাগ')} *</label>
+        <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag','ট্যাগ')} {editLegacyMove?tr('(optional for list move)','(তালিকা স্থানান্তরে ঐচ্ছিক)'):'*'}</label>
           <UiSelect id="beneficiary-edit-tag" required={!editLegacyMove} value={editTag} onChange={event=>{setEditTag(event.target.value as BeneficiaryTag|'');setEditRelationship('');setEditOtherLabel('');setModalError('');}}>
             <option value="">{tr('Select a tag','ট্যাগ বাছুন')}</option>
             <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
