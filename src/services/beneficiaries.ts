@@ -1,15 +1,15 @@
 import { supabase } from './supabaseClient';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
-import {validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
+import {normalizeOtherLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
 import {
   addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries, hasStoredGuestBeneficiaries,
   removeGuestBeneficiary, updateGuestBeneficiary, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
 export interface BeneficiaryList { id: string; owner_uid?: string; name: string; created_at: string; }
-export interface Beneficiary { id: string; owner_uid?: string; list_id: string; tin: string; display_name: string; tag:BeneficiaryTag|null; relationship:BeneficiaryRelation|null; created_at: string; updated_at: string; }
+export interface Beneficiary { id: string; owner_uid?: string; list_id: string; tin: string; display_name: string; tag:BeneficiaryTag|null; relationship:BeneficiaryRelation|null; other_label:string|null; created_at: string; updated_at: string; }
 /** Optional only for pre-tag legacy imports and existing saved records; the entry UI requires both choices. */
-export type BeneficiaryInput = Pick<Beneficiary,'tin' | 'display_name'> & Partial<Pick<Beneficiary,'tag'|'relationship'>>;
+export type BeneficiaryInput = Pick<Beneficiary,'tin' | 'display_name'> & Partial<Pick<Beneficiary,'tag'|'relationship'|'other_label'>>;
 
 /** A contact is never a taxpayer authorization or verified TIN/name binding. */
 function client() {
@@ -42,7 +42,7 @@ export async function loadBeneficiaries(ownerUid: string | null = null): Promise
       return (result.data??[]) as BeneficiaryList[];
     }),
     collectBeneficiaryPages<Beneficiary>(async(from,to)=>{
-      const result=await db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,tag,relationship,created_at,updated_at')
+      const result=await db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,tag,relationship,other_label,created_at,updated_at')
         .eq('owner_uid',ownerUid).order('created_at',{ascending:false}).order('id',{ascending:false}).range(from,to);
       if(result.error)throw result.error;
       return (result.data??[]) as Beneficiary[];
@@ -92,7 +92,7 @@ export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promis
     }
     destinations.set(guestList.id,destination.id);
     const rows=source.people.filter(person=>person.list_id===guestList.id)
-      .map(person=>({tin:person.tin,display_name:person.display_name,tag:person.tag??null,relationship:person.relationship??null}));
+      .map(person=>({tin:person.tin,display_name:person.display_name,tag:person.tag??null,relationship:person.relationship??null,other_label:person.other_label??null}));
     for(let offset=0;offset<rows.length;offset+=500){
       await ensureOwner();
       personCount+=await addBeneficiaries(ownerUid,destination.id,rows.slice(offset,offset+500));
@@ -126,15 +126,16 @@ export async function createBeneficiaryList(ownerUid:string | null,name:string):
 export async function addBeneficiaries(ownerUid:string | null,listId:string,rows:BeneficiaryInput[]):Promise<number> {
   if(!rows.length)return 0;
   if(rows.length>1000)throw new Error('Import a maximum of 1,000 beneficiaries at a time.');
-  const normalized=rows.map(row=>({...row,display_name:beneficiaryNameForStorage(row.display_name)}));
+  const normalized=rows.map(row=>({...row,display_name:beneficiaryNameForStorage(row.display_name),
+    other_label:row.tag==='others'?normalizeOtherLabel(row.other_label):null}));
   const valid=normalized.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.length<=160 &&
-    ((row.tag==null && row.relationship==null) || validBeneficiaryClassification(row.tag,row.relationship)));
+    ((row.tag==null && row.relationship==null) || validBeneficiaryClassification(row.tag,row.relationship,row.other_label)));
   // Legacy null tags remain readable; all new single/bulk entry forms enforce a choice.
   if(!valid)throw new Error('Check the beneficiary TIN and name length before saving.');
   if (!ownerUid) return addGuestBeneficiaries(listId,normalized);
   // Database unique constraint + ignoreDuplicates makes retry idempotent and leaves existing names unchanged.
   const {data,error}=await client().from('taxpay_beneficiaries')
-    .upsert(normalized.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name,tag:row.tag??null,relationship:row.relationship??null})),
+    .upsert(normalized.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name,tag:row.tag??null,relationship:row.relationship??null,other_label:row.other_label??null})),
       {onConflict:'list_id,tin',ignoreDuplicates:true})
     .select('id');
   if(error)throw error;
