@@ -357,15 +357,14 @@ test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview 
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
   await expect(page.locator('#travel-tax-route-results')).toHaveCount(0);
+  await fillForeignPassenger(page, { name: 'SAMPLE PASSENGER', passport: 'SAMPLE123' });
   await fillTravelDetails(page);
   await expect(page.locator('#travel-tax-route-0')).toBeChecked();
-  await page.getByRole('button', { name: 'Continue to add passengers' }).click();
-  await fillForeignPassenger(page, { name: 'SAMPLE PASSENGER', passport: 'SAMPLE123' });
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
-  await expect(page.locator('.travel-flow__person').first().getByText('SAMPLE PASSENGER')).toBeVisible();
+  await expect(page.locator('.travel-flow__age-breakdown')).toContainText('SAMPLE PASSENGER');
   await page.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
-  await expect(page.getByRole('heading', { name: 'যাত্রী ও পেমেন্ট যাচাই করুন' })).toBeVisible();
+  await expect(page.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();
   await page.getByRole('radio', { name: 'Nagad' }).check();
