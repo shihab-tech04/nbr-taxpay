@@ -8,6 +8,9 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   const events=page.getByTestId('event-tax-ledger');
   await expect(events).toBeVisible();
   await expect(events.getByRole('navigation',{name:'Event categories'})).toBeVisible();
+  await expect(events.getByRole('navigation',{name:'Event categories'})).toHaveClass(/taxpay-table-tabs/);
+  await expect(events.locator('.taxpay-table-viewport')).toHaveCount(1);
+  await expect(events.getByTestId('event-ledger-table')).toHaveClass(/taxpay-unified-table/);
   if((page.viewportSize()?.width??1280)>=768){
     await expect(events.getByRole('columnheader',{name:'Date / time'})).toBeVisible();
     await expect(events.getByRole('columnheader',{name:'Year · component'})).toBeVisible();
@@ -52,6 +55,7 @@ test('event ledger keeps the mobile viewport free from page-level horizontal ove
   await page.goto(ledger);
   await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
   await expect(page.getByTestId('event-ledger-table')).toBeHidden();
+  await expect(page.getByTestId('event-tax-ledger').locator('.taxpay-mobile-table-card').first()).toBeVisible();
   await expect(page.getByTestId('event-tax-ledger').getByRole('button',{name:/Salary withholding/}).first()).toBeVisible();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);

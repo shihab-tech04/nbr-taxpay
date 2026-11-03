@@ -1,3 +1,4 @@
+import {TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
@@ -110,7 +111,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
       <TaxpayerPageHeading title={trackingActivity?label('Track payment','পেমেন্ট অনুসন্ধান'):label('Payments & activity','পেমেন্ট ও লেনদেন')}
         description={trackingActivity?label('Find a payment by its reference.','রেফারেন্স দিয়ে পেমেন্ট খুঁজুন।'):label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
       {activityTabs && <TaxpayerActivityTabs />}
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
+      <section className="taxpay-table-filters rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <label htmlFor="activity-search" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Search payments','পেমেন্ট খুঁজুন')}</label>
@@ -138,7 +139,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             </select>
           </div>
         </div>
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="taxpay-table-toolbar mt-3">
           <p aria-live="polite" className="text-sm text-taxpay-muted">{label('Records','রেকর্ড')}: {filtered.length}</p>
           <button type="button" onClick={exportDemo} disabled={!filtered.length}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
@@ -146,16 +147,16 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
           </button>
         </div>
       </section>
-      <section aria-label={label('Payment records','পেমেন্টের তথ্য')} className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+      <section aria-label={label('Payment records','পেমেন্টের তথ্য')} className="taxpay-data-table-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
         {filtered.length===0 ? (
-          <div className="rounded-lg bg-taxpay-background p-5">
+          <TaxPayTableState className="rounded-lg bg-taxpay-background p-5">
             <h2 className="text-base font-semibold text-taxpay-text">{label('No matching records','মিল পাওয়া যায়নি')}</h2>
             <p className="mt-1 text-sm text-taxpay-muted">{label('Try another reference, year, or payment type.','অন্য রেফারেন্স, করবর্ষ বা পেমেন্টের ধরন নির্বাচন করুন।')}</p>
-          </div>
+          </TaxPayTableState>
         ) : <>
-          <div className="grid gap-3 md:hidden">
+          <TaxPayMobileTableCards className="md:hidden">
             {filtered.map(r=>(
-              <article key={r.id} className="min-w-0 rounded-lg border border-taxpay-border p-3">
+              <TaxPayMobileTableCard key={r.id}>
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="min-w-0 break-all font-mono-plex text-sm font-semibold text-taxpay-text">{r.challanNo}</h2>
                   <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
@@ -171,11 +172,11 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                   className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
                   {label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/>
                 </button>
-              </article>
+              </TaxPayMobileTableCard>
             ))}
-          </div>
-          <div className="hidden overflow-x-auto md:block">
-            <table className="min-w-full text-left text-sm">
+          </TaxPayMobileTableCards>
+          <TaxPayTableViewport className="hidden md:block">
+            <table className="taxpay-unified-table min-w-full text-left text-sm">
               <thead className="bg-taxpay-background text-xs text-taxpay-muted">
                 <tr>
                   <th scope="col" className="px-3 py-3">{label('Reference','রেফারেন্স')}</th>
@@ -200,7 +201,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
                 </tr>)}
               </tbody>
             </table>
-          </div>
+          </TaxPayTableViewport>
         </>}
       </section>
       {lifecycleReceipt&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}

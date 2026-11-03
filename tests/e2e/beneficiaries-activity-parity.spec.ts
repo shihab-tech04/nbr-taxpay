@@ -55,7 +55,17 @@ for(const language of ['en','bn'] as const){
     await expect(rows.first()).toContainText('Shihab');
     await expect(rows.first()).toContainText('123456789012');
     await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
-    await expect(screen.locator('.beneficiary-directory__table')).toBeVisible();
+    await expect(screen.locator('.beneficiary-directory__table.taxpay-data-table')).toBeVisible();
+    const theme=await screen.locator('.beneficiary-directory__table').evaluate(el=>{
+      const header=el.querySelector('.beneficiary-directory__columns');
+      const row=el.querySelector('.beneficiary-directory__row');
+      return {borderRadius:getComputedStyle(el).borderRadius,
+        headerMinHeight:header?parseFloat(getComputedStyle(header).minHeight):0,
+        rowBackground:row?getComputedStyle(row).backgroundColor:'transparent'};
+    });
+    expect(theme.borderRadius).not.toBe('0px');
+    expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
+    expect(theme.rowBackground).not.toBe('transparent');
     await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toBeVisible();
