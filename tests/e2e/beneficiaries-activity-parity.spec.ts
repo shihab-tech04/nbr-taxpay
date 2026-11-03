@@ -84,6 +84,20 @@ for(const language of ['en','bn'] as const){
     expect(layout.pageOverflow).toBe(false);
     expect(layout.rowColumns).toBe(layout.width<=800?1:4);
     expect(layout.headingVisible).toBe(layout.width>800);
+    // A user-facing table must expose the actual four columns on desktop,
+    // and keep TIN/tag understandable after the header becomes a mobile card.
+    if(layout.width>800){
+      await expect(directory.locator('.taxpay-record-list__heading')).toHaveText([
+        t('Beneficiary','উপকারভোগী'),t('TIN','টিআইএন'),
+        t('Tag / relationship','ট্যাগ / সম্পর্ক'),t('Actions','কার্যক্রম')
+      ]);
+      await expect(rows.first().locator('.beneficiary-directory__mobile-label').first()).toBeHidden();
+    }else{
+      await expect(directory.locator('.taxpay-record-list__columns')).toBeHidden();
+      await expect(rows.first().locator('.beneficiary-directory__mobile-label')).toHaveText([
+        t('TIN','টিআইএন')+': ',t('Tag','ট্যাগ')+': '
+      ]);
+    }
     expect(layout.filterColumns).toBe(layout.width<=700?1:layout.width<=1050?2:3);
     await search.fill('Neighbour');
     await expect(rows).toHaveCount(1);
