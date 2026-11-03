@@ -292,7 +292,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             aria-controls={panelId} aria-selected={item.nationality === nationality}
             tabIndex={item.nationality === nationality ? 0 : -1}
             className={'travel-flow__passenger-tab' + (item.nationality === nationality ? ' travel-flow__passenger-tab--active' : '')}
-            onClick={() => item.nationality !== nationality && changePassengerType(item.id, nationality)}>
+            onClick={() => item.nationality !== nationality && changePassengerType(item.id, nationality)}
+            onKeyDown={event => {
+              if (!['ArrowRight','ArrowLeft','Home','End'].includes(event.key)) return;
+              event.preventDefault();
+              const next: TravellerNationality = event.key === 'Home' ? 'BD' : event.key === 'End'
+                ? 'FOREIGN' : item.nationality === 'BD' ? 'FOREIGN' : 'BD';
+              if (next !== item.nationality) changePassengerType(item.id, next);
+              requestAnimationFrame(() => document.getElementById(
+                'travel-passenger-tab-' + item.id + '-' + next)?.focus());
+            }}>
             {label}
           </button>)}
       </div>
