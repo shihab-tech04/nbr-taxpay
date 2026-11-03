@@ -275,6 +275,107 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     } finally { setProcessing(false); }
   };
 
+
+  /** Each passenger uses a type tab; fields from the other type never appear. */
+  const renderPassengerEditor = (item: TravelPassenger, index: number) => {
+    const panelId = 'travel-passenger-panel-' + item.id;
+    const assessment = assessTravelPassenger(item, unitRate, travelDate);
+    return <>
+      <div className="travel-flow__passenger-tabs" role="tablist"
+        aria-label={tr('Passenger type for passenger ', 'যাত্রীর ধরন, যাত্রী ') + (index + 1)}>
+        {([
+          ['BD', tr('Bangladeshi passenger','বাংলাদেশি যাত্রী')],
+          ['FOREIGN', tr('Foreign passenger','বিদেশি যাত্রী')]
+        ] as const).map(([nationality, label]) =>
+          <button key={nationality} type="button" role="tab"
+            id={'travel-passenger-tab-' + item.id + '-' + nationality}
+            aria-controls={panelId} aria-selected={item.nationality === nationality}
+            tabIndex={item.nationality === nationality ? 0 : -1}
+            className={'travel-flow__passenger-tab' + (item.nationality === nationality ? ' travel-flow__passenger-tab--active' : '')}
+            onClick={() => item.nationality !== nationality && changePassengerType(item.id, nationality)}>
+            {label}
+          </button>)}
+      </div>
+      <div id={panelId} role="tabpanel"
+        aria-labelledby={'travel-passenger-tab-' + item.id + '-' + item.nationality}
+        className="travel-flow__passenger-panel">
+        <div className="travel-flow__fields">
+          <div className="travel-flow__field">
+            <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+            <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
+              onChange={event => changePassenger(item.id, {
+                passport: event.target.value.toUpperCase().replace(/\s+/g, ''),
+                ...(item.nationality === 'BD' ? {name: '', birthDate: '', identitySource: 'PENDING' as const} : {}),
+              })} placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
+          </div>
+          {item.nationality === 'BD' ? <>
+            <div className="travel-flow__field travel-flow__passport-action">
+              <label htmlFor={'travel-lookup-' + item.id}>{tr('Passport details','পাসপোর্টের তথ্য')}</label>
+              <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
+                if (item.passport !== PASSPORT_PREVIEW) {
+                  setError(tr('Government passport lookup is not connected. Use TEST123456 for a clearly marked sample.',
+                    'সরকারি পাসপোর্ট তথ্য অনুসন্ধান সংযুক্ত নয়। নমুনা হিসেবে TEST123456 ব্যবহার করুন।'));
+                } else {
+                  changePassenger(item.id, {
+                    name: 'SAMPLE BANGLADESHI PASSENGER', birthDate: '1992-04-18',
+                    country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'
+                  });
+                }
+              }}>{tr('Retrieve passport details (sample)','পাসপোর্টের নমুনা তথ্য আনুন')}</button>
+            </div>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name (from passport)','যাত্রীর নাম (পাসপোর্ট থেকে)')}</label>
+              <input id={'travel-name-' + item.id} value={item.name} readOnly
+                placeholder={tr('Filled after lookup','অনুসন্ধানের পরে পূরণ হবে')}/>
+            </div>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-birth-date-' + item.id}>{tr('Date of birth (from passport)','জন্মতারিখ (পাসপোর্ট থেকে)')}</label>
+              <input id={'travel-birth-date-' + item.id} type="date" value={item.birthDate} readOnly/>
+            </div>
+          </> : <>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name as on passport','পাসপোর্ট অনুযায়ী নাম')} *</label>
+              <input id={'travel-name-' + item.id} maxLength={100} value={item.name}
+                onChange={event => changePassenger(item.id, {name: event.target.value.toUpperCase()})}
+                placeholder={tr('Enter full name','পূর্ণ নাম লিখুন')}/>
+            </div>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-birth-date-' + item.id}>{tr('Date of birth','জন্মতারিখ')} *</label>
+              <input id={'travel-birth-date-' + item.id} type="date" value={item.birthDate}
+                max={travelDate || undefined} onChange={event => changePassenger(item.id, {birthDate: event.target.value})}/>
+            </div>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-country-' + item.id}>{tr('Country of nationality','জাতীয়তার দেশ')} *</label>
+              <input id={'travel-country-' + item.id} maxLength={80} value={item.country}
+                onChange={event => changePassenger(item.id, {country: event.target.value})}
+                placeholder={tr('Enter country','দেশ লিখুন')}/>
+            </div>
+          </>}
+          <div className="travel-flow__field travel-flow__medical">
+            <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
+            <label className="travel-flow__check">
+              <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
+                onChange={event => changePassenger(item.id, {medicalPortReferral: event.target.checked})}/>
+              <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
+            </label>
+          </div>
+        </div>
+        {item.nationality === 'BD' && <p className="travel-flow__field-hint" role="status">
+          {item.identitySource === 'PASSPORT_SAMPLE'
+            ? tr('Sample identity and birth date only — not verified by passport authority.',
+                 'পরিচয় ও জন্মতারিখ শুধু নমুনা; পাসপোর্ট কর্তৃপক্ষের যাচাই নয়।')
+            : tr('Government passport lookup is pending. For UX review, use TEST123456.',
+                 'সরকারি পাসপোর্ট সেবা সংযুক্ত নয়। শুধু UX পরীক্ষায় TEST123456 ব্যবহার করুন।')}
+        </p>}
+        {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
+          {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
+              'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
+        </p>}
+        {assessment && <p className="travel-flow__age-reason">{ageExplanation(assessment.age)}</p>}
+      </div>
+    </>;
+  };
+
   const primaryAction = createdReceipt && bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip} disabled={processing}>
       <Building2 size={17} aria-hidden="true" />
