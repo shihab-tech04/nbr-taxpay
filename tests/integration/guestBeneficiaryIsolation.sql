@@ -33,6 +33,18 @@ begin
   end if;
   v_data := public.taxpay_guest_beneficiary_rows(v_a, 0, 500);
   if jsonb_array_length(v_data) <> 2 then raise exception 'Guest owner cannot read their rows'; end if;
+  -- New one-call snapshot must preserve the same owner, rows, list and shape.
+  v_data := public.taxpay_guest_beneficiary_snapshot(v_a);
+  if jsonb_array_length(v_data->'lists') <> 1 or
+     jsonb_array_length(v_data->'people') <> 2 or
+     not exists (select 1 from jsonb_array_elements(v_data->'people') item(value)
+       where item.value->>'tin'='012345678901' and item.value->>'display_name'='Synthetic Guest A') then
+    raise exception 'Guest snapshot lost an owned list, TIN or beneficiary name';
+  end if;
+  if jsonb_array_length(public.taxpay_guest_beneficiary_snapshot(v_b)->'people') <> 0 then
+    raise exception 'Guest snapshot exposed a different browser session';
+  end if;
+  v_data := public.taxpay_guest_beneficiary_rows(v_a, 0, 500);
   select (item.value->>'id')::uuid, item.value->>'display_name'
     into v_person_a, v_original_name
   from jsonb_array_elements(v_data) as item(value)
@@ -131,6 +143,11 @@ begin
      has_table_privilege('authenticated', 'taxpay_guest_private.beneficiaries', 'SELECT') or
      has_table_privilege('service_role', 'taxpay_guest_private.beneficiaries', 'SELECT') then
     raise exception 'Guest tables must be reachable only through scoped RPCs';
+  end if;
+  if has_function_privilege('anon', 'public.taxpay_guest_beneficiary_snapshot(text)', 'EXECUTE') or
+     has_function_privilege('authenticated', 'public.taxpay_guest_beneficiary_snapshot(text)', 'EXECUTE') or
+     not has_function_privilege('service_role', 'public.taxpay_guest_beneficiary_snapshot(text)', 'EXECUTE') then
+    raise exception 'Only the service role may read the guest snapshot';
   end if;
   if has_function_privilege('anon', 'public.taxpay_guest_beneficiary_lists(text)', 'EXECUTE') or
      has_function_privilege('authenticated', 'public.taxpay_guest_beneficiary_lists(text)', 'EXECUTE') or
