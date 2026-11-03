@@ -45,6 +45,18 @@
   min-width:0;
 }
 .taxpay-taxpayer-reference .taxpay-table-controls.taxpayer-transaction-filters {margin-block:12px;}
+/* Shared Board-style record filters for correction and receipt registers. */
+.taxpay-taxpayer-reference .taxpay-record-page-filters {
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) minmax(170px,240px) auto;
+  align-items:end;
+  gap:12px;
+  margin-block:12px;
+}
+.taxpay-taxpayer-reference .taxpay-record-page-filters > button {min-height:44px;}
+@media (max-width:700px) {
+  .taxpay-taxpayer-reference .taxpay-record-page-filters {grid-template-columns:minmax(0,1fr);}
+}
 .taxpay-taxpayer-reference .taxpay-table-count {margin:0;font-size:13px;min-height:28px;}
 .taxpay-table-count__total {font-weight:500;opacity:.8;}
 

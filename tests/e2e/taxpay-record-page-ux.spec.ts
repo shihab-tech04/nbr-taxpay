@@ -14,6 +14,10 @@ for (const language of ['en','bn'] as const) {
       tr('Case','বিষয়'),tr('Recorded reason','নথিভুক্ত কারণ'),tr('Status','অবস্থা'),tr('Actions','কার্যক্রম')
     ]);
     await expect(cases.getByRole('listitem').first()).toBeVisible();
+    await page.getByRole('searchbox',{name:tr('Search case references','বিষয়ের রেফারেন্স খুঁজুন')}).fill('zz-no-matches');
+    await expect(cases).toHaveCount(0);
+    await page.getByRole('button',{name:tr('Clear filters','ফিল্টার মুছুন')}).click();
+    await expect(cases.getByRole('listitem').first()).toBeVisible();
     if(desktop){
       const columns=await cases.locator('.taxpay-record-list__row').first().evaluate(
         el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length
@@ -31,6 +35,10 @@ for (const language of ['en','bn'] as const) {
     await expect(records.locator('.taxpay-record-list__heading')).toHaveText([
       tr('Payment','পেমেন্ট'),tr('Reference','রেফারেন্স'),tr('Amount','পরিমাণ'),tr('Actions','কার্যক্রম')
     ]);
+    await expect(records.getByRole('listitem').first()).toBeVisible();
+    await page.getByRole('searchbox',{name:tr('Search payment references','পেমেন্ট রেফারেন্স খুঁজুন')}).fill('zz-no-matches');
+    await expect(records).toHaveCount(0);
+    await page.getByRole('button',{name:tr('Clear search','অনুসন্ধান মুছুন')}).click();
     await expect(records.getByRole('listitem').first()).toBeVisible();
     await records.getByRole('button',{name:new RegExp(tr('View payment details for ','পেমেন্টের বিস্তারিত: '))}).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
