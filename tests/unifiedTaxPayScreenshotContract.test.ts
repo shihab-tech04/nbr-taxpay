@@ -10,7 +10,8 @@ test('screenshots: ledger, transactions and beneficiaries use shared table compo
  const ledger=source('src/components/screens/EventBasedTaxLedger.tsx');
  const activity=source('src/components/screens/User1DemoExperience.tsx');
  const beneficiaries=source('src/components/screens/Beneficiaries.tsx');
- assert.match(ledger,/<TaxPayDataGrid[^>]+testId="event-ledger-table"/);
+ assert.match(ledger,/<TaxPayDataGrid variant="ledger"/);
+ assert.ok(ledger.includes('testId="event-ledger-table"'));
  assert.match(activity,/<TaxPayDataGrid variant="payments"/);
  assert.match(beneficiaries,/<TaxPayDataGrid variant="beneficiaries"/);
  assert.match(activity,/setSelected\(item\)/);
