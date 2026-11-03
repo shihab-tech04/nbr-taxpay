@@ -267,14 +267,14 @@ test('Travel Tax remains separately accessible from its existing public banner',
   const travel = page.getByRole('dialog', { name: 'Travel tax' });
   await expect(travel).toBeVisible();
   await expect(travel.locator('.travel-flow')).toBeVisible();
-  await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(2);
+  await expect(travel.locator('#travel-tax-route-results')).toHaveCount(0);
+  await expect(travel.getByRole('button', {name:'Continue to travel details'})).toBeVisible();
 });
 
 test('Existing Travel Tax banner still provides journey, passenger and payment validation', async ({ page }) => {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const travel = page.getByRole('dialog', { name: 'Travel tax' });
-  await travel.locator('#travel-tax-route-1').check();
   await fillTravelDetails(travel);
   await expect(travel.locator('.travel-flow__total')).toContainText('1,000');
   await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
@@ -291,7 +291,6 @@ test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const travel = page.getByRole('dialog', { name: 'Travel tax' });
-  await travel.locator('#travel-tax-route-0').check();
   await fillTravelDetails(travel);
   await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
 
