@@ -181,7 +181,7 @@ export function TaxPayModal({
         {progress && <div className="taxpay-modal__progress" role="progressbar"
           aria-label="Payment progress" aria-valuemin={0} aria-valuemax={progress.total}
           aria-valuenow={progress.current} aria-valuetext={`Step ${progress.current} of ${progress.total}`}>
-          <MetricBar className="taxpay-modal__progress-fill" value={progress.current} total={progress.total} />
+          <MetricBar className="taxpay-modal__progress-vector" fillClassName="taxpay-modal__progress-fill" value={progress.current} total={progress.total} />
         </div>}
         <div ref={bodyRef} className="taxpay-modal__body public-service-dialog__body">
           {children}

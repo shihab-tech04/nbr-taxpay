@@ -7,11 +7,11 @@ export type MetricSegment = { value: number; tone: MetricTone };
 const safe = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 0;
 const percentage = (value: number, total: number) => safe(total) > 0 ? Math.min(100, 100 * safe(value) / total) : 0;
 
-export function MetricBar({value, total, tone = 'primary', className = ''}: {
-  value: number; total: number; tone?: MetricTone; className?: string;
+export function MetricBar({value, total, tone = 'primary', className = '', fillClassName = ''}: {
+  value: number; total: number; tone?: MetricTone; className?: string; fillClassName?: string;
 }) {
   return <svg className={`ui-metric-bar ${className}`} viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-    <rect className={`ui-metric-tone--${tone}`} x="0" y="0" width={percentage(value, total)} height="1" />
+    <rect className={`${fillClassName} ui-metric-tone--${tone}`.trim()} x="0" y="0" width={percentage(value, total)} height="1" />
   </svg>;
 }
 
