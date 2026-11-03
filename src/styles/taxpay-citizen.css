@@ -2819,3 +2819,13 @@
   .receipt-view__travel-meta { grid-template-columns: 1fr; }
   .travel-flow__mobile-summary > summary p { margin: 0; }
 }
+
+
+/* Travel Tax four-stage standalone fallback; existing modal owns the embedded stepper. */
+.travel-flow__steps { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.travel-flow__person .travel-flow__field-hint,
+.travel-flow__person .travel-flow__field label,
+.receipt-view__travel-meta dt { font-size: 14px; }
+@media (max-width:650px) {
+ .travel-flow__steps { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
