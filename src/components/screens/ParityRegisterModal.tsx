@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React from 'react';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { TaxPayModal } from '../ui/TaxPayModal';
@@ -322,7 +323,7 @@ export const ParityRegisterModal: React.FC = () => {
 
         {/* Register Table */}
         <div className="taxpay-table-viewport min-w-0 pt-4">
-          <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
+          <TaxPayUnifiedTable className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0 z-10">
               <tr>
                 <th className="px-3 py-2 text-left w-12">#</th>
@@ -380,7 +381,7 @@ export const ParityRegisterModal: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TaxPayUnifiedTable>
         </div>
 
     </TaxPayModal>

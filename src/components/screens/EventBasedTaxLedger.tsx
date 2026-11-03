@@ -1,4 +1,4 @@
-import {TaxPayTableViewport} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayTableViewport} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -218,7 +218,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     <TaxPayTableViewport>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
         <>
-          <table className="taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
+          <TaxPayUnifiedTable className="taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
             <thead className="bg-taxpay-background text-taxpay-muted"><tr>
               <th className="p-3">{t('Date / time','তারিখ / সময়')}</th><th className="p-3">{t('Event','ঘটনা')}</th>
               <th className="p-3">{t('Year · component','বর্ষ · খাত')}</th>
@@ -243,7 +243,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
               <td className="p-3">{e.actor}<span className="block text-taxpay-muted">{e.source}</span></td>
               <td className="p-3 break-all font-mono">{e.taxEventId||e.id}</td>
             </tr>)}</tbody>
-          </table>
+          </TaxPayUnifiedTable>
           <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden">{visible.map(e=><li className="taxpay-mobile-table-card" key={e.id}>
             <button type="button" onClick={()=>setSelected(e)} className="flex w-full flex-col gap-1 rounded-lg border border-taxpay-border p-3 text-left text-sm">
               <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>

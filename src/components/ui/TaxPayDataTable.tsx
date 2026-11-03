@@ -1,4 +1,4 @@
-import type {ComponentPropsWithoutRef} from 'react';
+import type {ComponentPropsWithoutRef,ReactNode} from 'react';
 
 /** Shared Korbritto table primitives.
  * The Board Meeting reference guides presentation only; the caller retains
@@ -25,4 +25,28 @@ export function TaxPayMobileTableCard({className,...rest}:ComponentPropsWithoutR
 }
 export function TaxPayTableState({className,...rest}:DivProps) {
   return <div {...rest} role="status" className={merge('taxpay-table-state',className)}/>;
+}
+
+/** A single semantic HTML table for all desktop record grids. Domain data and
+ * interactive cells remain owned by the caller, including official amounts. */
+export function TaxPayUnifiedTable({className,...rest}:ComponentPropsWithoutRef<'table'>){
+  return <table {...rest} className={merge('taxpay-unified-table',className)}/>;
+}
+
+/** Shared Board-Meeting-inspired record-table layout for existing selectable
+ * rows. It keeps list semantics where rows contain forms/buttons and wraps to
+ * the same record card rhythm below the shared mobile breakpoint. */
+type RecordListProps=Omit<DivProps,'children'> & {
+  variant:'payments'|'beneficiaries';
+  headers:readonly string[];
+  children:ReactNode;
+};
+export function TaxPayRecordList({variant,headers,children,className,'aria-label':ariaLabel,...rest}:RecordListProps){
+  const previousHeadingClass=variant==='payments'?'taxpayer-transaction-list__columns':'beneficiary-directory__columns';
+  return <div {...rest} data-record-layout={variant} className={merge('taxpay-record-list',className)}>
+    <div className={merge('taxpay-record-list__columns',previousHeadingClass)} aria-hidden="true">
+      {headers.map((label,index)=><p key={index} className="taxpay-record-list__heading">{label}</p>)}
+    </div>
+    <ul aria-label={ariaLabel} className="taxpay-record-list__rows">{children}</ul>
+  </div>;
 }

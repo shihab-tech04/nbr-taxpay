@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Trash2 } from 'lucide-react';
@@ -546,7 +547,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
             </div>
             <div className="travel-flow__table-wrap taxpay-table-viewport">
-              <table className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
+              <TaxPayUnifiedTable className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
                 <thead><tr>
                   <th scope="col">{tr('Passenger','যাত্রী')}</th>
                   <th scope="col">{tr('Passport','পাসপোর্ট')}</th>
@@ -560,7 +561,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 </tr>)}</tbody>
                 <tfoot><tr><th scope="row" colSpan={3}>{tr('Combined payable','মোট প্রদেয়')}</th>
                   <td className="text-right tabular-nums">{formatCurrency(totalAmount, language)}</td></tr></tfoot>
-              </table>
+              </TaxPayUnifiedTable>
             </div>
             <header className="travel-flow__section-header">
               <h3>{tr('Payment channel','পেমেন্ট চ্যানেল')}</h3>

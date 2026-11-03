@@ -1,3 +1,4 @@
+import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { 
   Search, 
@@ -104,7 +105,7 @@ export const PaymentSearch: React.FC = () => {
           </div>
 
           <div className="taxpay-table-viewport hidden md:block">
-            <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
+            <TaxPayUnifiedTable className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
                 <tr>
                   <th className="px-3 py-2.5">Challan Number</th>
@@ -148,7 +149,7 @@ export const PaymentSearch: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TaxPayUnifiedTable>
           </div>
           <div className="taxpay-mobile-table-cards md:hidden" data-testid="payment-search-mobile-cards">
             {filtered.map(rcpt=><article className="taxpay-mobile-table-card" key={rcpt.id}>
