@@ -28,7 +28,7 @@ function expectSafeSnapshot(input: PaymentInput) {
 }
 async function travelReview(page: Page) {
   await page.goto('/?action=travel');
-  await page.locator('#travel-tax-route-0').check();
+  // Mode choices appear only after the progressive passport-identity step.
   await fillTravelDetails(page);
   await page.getByRole('button', { name: 'Continue to add passengers' }).click();
 

@@ -58,8 +58,8 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
 test('standalone travel form requires explicit payment method and acknowledgement', async ({ page }) => {
   await page.goto('/?action=travel');
   const travel = page.locator('.travel-flow');
-  await travel.locator('#travel-tax-route-1').check();
-  await fillTravelDetails(travel);
+  // The water option is revealed after the progressive identity step.
+  await fillTravelDetails(travel, { mode: 'WATER' });
   await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
 
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');

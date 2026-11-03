@@ -18,8 +18,10 @@ const privateRoutes={
 const visualAudit=async(page:import('@playwright/test').Page,key:string,viewport:string) => {
   const main=page.locator('main');
   await expect(main).toBeVisible();
-  const headingCount=await main.locator('h1,h2').count();
-  expect(headingCount,key+' must have a visible page heading').toBeGreaterThan(0);
+  // Wait for the actual route rather than the temporary lazy-loading status.
+  await expect.poll(() => main.locator('h1,h2').count(), {
+    message: key+' must have a visible page heading after route load',
+  }).toBeGreaterThan(0);
   const width=page.viewportSize()!.width;
   const actualWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(actualWidth, key+' has page-wide horizontal overflow').toBeLessThanOrEqual(width+2);
