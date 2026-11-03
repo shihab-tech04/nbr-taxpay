@@ -71,7 +71,7 @@ test('Travel Tax 2026: Bangladeshi lookup cannot silently invent a real passport
   await modal.getByRole('button',{name:/Retrieve passport details/}).click();
   await expect(modal.getByRole('alert')).toContainText('not connected');
   await expect(name).toHaveValue('');
-  await modal.getByLabel('Passport number').fill('DEMO123456');
+  await modal.getByLabel('Passport number').fill('TEST123456');
   await modal.getByRole('button',{name:/Retrieve passport details/}).click();
   await expect(name).toHaveValue('SAMPLE BANGLADESHI PASSENGER');
   await expect(modal.getByText('Sample identity only', {exact:false})).toBeVisible();
