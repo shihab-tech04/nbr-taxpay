@@ -13,7 +13,7 @@ export function hasStoredGuestBeneficiaries(): boolean {
 }
 
 type GuestList = Pick<BeneficiaryList, 'id' | 'name' | 'created_at'>;
-type GuestPerson = Pick<Beneficiary, 'id' | 'list_id' | 'tin' | 'display_name' | 'created_at' | 'updated_at'>;
+type GuestPerson = Pick<Beneficiary, 'id' | 'list_id' | 'tin' | 'display_name' | 'tag' | 'relationship' | 'created_at' | 'updated_at'>;
 
 function browserStorage(): Storage {
   try {
