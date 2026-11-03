@@ -56,7 +56,7 @@ export const PaymentSearch: React.FC = () => {
         </div>
 
         {/* Multi-Criteria Filters Form */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5 text-xs">
+        <div className="taxpay-table-filters grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5 text-xs">
           <div className="md:col-span-2">
             <label className="block text-slate-600 mb-1 font-semibold">Search Query (Challan, Token, TIN, Name)</label>
             <input
@@ -99,12 +99,12 @@ export const PaymentSearch: React.FC = () => {
 
         {/* Results Count & Table */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="taxpay-table-toolbar text-xs text-slate-500">
             <span>Found <strong>{filtered.length}</strong> matching electronic Treasury records</span>
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="min-w-full divide-y divide-slate-200 text-xs">
+          <div className="taxpay-table-viewport hidden md:block">
+            <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
                 <tr>
                   <th className="px-3 py-2.5">Challan Number</th>
@@ -150,6 +150,22 @@ export const PaymentSearch: React.FC = () => {
               </tbody>
             </table>
           </div>
+          <div className="taxpay-mobile-table-cards md:hidden" data-testid="payment-search-mobile-cards">
+            {filtered.map(rcpt=><article className="taxpay-mobile-table-card" key={rcpt.id}>
+              <div className="taxpay-mobile-table-card__header">
+                <p className="taxpay-mobile-table-card__title">{rcpt.challanNo}</p>
+                <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(rcpt.totalAmount,language)}</p>
+              </div>
+              <p className="taxpay-mobile-table-card__meta">{language==='bn'?'করবর্ষ':'AY'}: {rcpt.assessmentYear}</p>
+              <p className="taxpay-mobile-table-card__meta">{rcpt.payerName} · {rcpt.payerTin}</p>
+              <p className="taxpay-mobile-table-card__meta">{rcpt.treasuryStatus}</p>
+              <div className="taxpay-mobile-table-card__actions">
+                <button className="rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                  type="button" onClick={()=>selectReceipt(rcpt.id)}>{language==='bn'?'বিস্তারিত দেখুন':'Inspect'}</button>
+              </div>
+            </article>)}
+          </div>
+          {filtered.length===0&&<div className="taxpay-table-state" role="status">{language==='bn'?'কোনো মিল পাওয়া যায়নি।':'No matching payment records.'}</div>}
         </div>
       </div>
     </div>
