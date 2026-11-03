@@ -111,6 +111,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(dialog.getByText('1 valid, 0 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
@@ -162,6 +163,7 @@ test('Excel import success notice updates immediately when the user changes lang
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
 
   const notice=page.locator('[data-testid="beneficiaries-page"] > p[role="status"]');
