@@ -335,10 +335,10 @@ test('Travel Tax modal has a top-right close and one fixed workflow action foote
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
   if (page.viewportSize()!.width <= 650) {
-    await expect(footer.locator('[data-testid="mobile-payment-calculation"]')).toBeVisible();
+    await expect(footer.locator('[data-testid="mobile-payment-calculation"]')).toHaveCount(0);
     await expect(body.locator('.travel-flow__summary')).toBeHidden();
   } else {
-    await expect(body.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+    await expect(body.locator('.travel-flow__summary')).toBeHidden();
   }
   await expect(footer.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await expect(footer.getByRole('button',{name:'Continue to travel details'})).toBeVisible();
@@ -364,14 +364,14 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
   if (page.viewportSize()!.width <= 650) {
-    await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toBeVisible();
+    await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toHaveCount(0);
   } else {
-    await expect(modal.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+    await expect(modal.locator('.travel-flow__summary')).toBeHidden();
   }
     await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+  await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
@@ -385,14 +385,12 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const left=modal.locator('.travel-flow__main');
   const side=modal.locator('.travel-flow__summary');
-  await expect(side.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
+  await expect(side).toBeHidden();
     await fillTravelDetails(modal);
+  await expect(side.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
   const initial=await side.evaluate(el=>el.getBoundingClientRect().top);
   await left.evaluate(el=>el.scrollTop=el.scrollHeight);
   expect(Math.abs((await side.evaluate(el=>el.getBoundingClientRect().top))-initial)).toBeLessThan(2);
-  await modal.getByRole('button',{name:'Continue to review'}).click();
-
-  await modal.getByLabel('Mobile number for receipt').fill('01712345678');
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
@@ -412,14 +410,14 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await setWorkspaceLanguage(page,'bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও ভ্রমণের তথ্য');
+ await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
  await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
  await expect(modal.getByRole('button',{name:'ভ্রমণের তথ্য দিতে এগিয়ে যান'})).toBeVisible();
  await expect(modal.locator('.public-service-dialog__notice')).toHaveCount(0);
    await fillTravelDetails(modal);
- await modal.getByRole('button',{name:'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান'}).click();
- await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+ await expect(modal.locator('.taxpay-modal__title')).toHaveText('ভ্রমণের তথ্য');
+ await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
 
  await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
@@ -428,7 +426,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  expect(width.paper).toBeLessThanOrEqual(width.viewport);
  expect(width.scroll).toBeLessThanOrEqual(width.viewport+2);
  await expect(modal.locator('.travel-flow__summary')).toBeHidden();
- await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toBeVisible();
+ await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toHaveCount(0);
 });
 
 
@@ -443,8 +441,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
     await fillTravelDetails(modal);
   await actions.getByRole('button',{name:'Continue to review'}).click();
 
-  await modal.getByLabel('Mobile number for receipt').fill('01712345678');
-  await actions.getByRole('button',{name:'Continue to review'}).click();
+    // Receipt mobile was collected in the passenger stage.
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
@@ -455,9 +452,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await expect(footer.locator('.receipt-view__actions')).toHaveCount(1);
   await expect(actions.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(actions.getByRole('button',{name:'Print receipt'})).toBeVisible();
-  await actions.getByRole('button',{name:'New payment'}).click();
-  await expect(actions.getByRole('button',{name:'Continue to travel details'})).toBeVisible();
-  await expect(modal.locator('.receipt-view__actions')).toHaveCount(0);
+  await expect(actions.getByRole('button',{name:'New payment'})).toHaveCount(0);
 });
 
 test('Travel Tax displays only two mode cards without fixed prices and calculates after passport lookup',async({page})=>{
@@ -475,7 +470,7 @@ test('Travel Tax displays only two mode cards without fixed prices and calculate
   await expect(routes).not.toContainText('1,000');
   await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
   await modal.getByRole('button',{name:'Continue to review'}).click();
-  await expect(modal.locator('.payment-form-section').getByRole('heading',{name:'Passengers and receipt details'})).toBeVisible();
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Review & payment');
 });
 
 test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page},info)=>{
