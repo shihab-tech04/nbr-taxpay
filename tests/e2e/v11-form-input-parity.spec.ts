@@ -60,7 +60,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   const travel = page.locator('.travel-flow');
   await travel.locator('#travel-tax-route-1').check();
   await fillTravelDetails(travel);
-  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
 
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
