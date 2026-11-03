@@ -91,28 +91,43 @@
   min-width: 0;
   background: var(--taxpay-table-surface, #fff);
 }
+/* Ledger category tabs share the same visible, filled selected state as Activity.
+ * Previous high-specificity text color overrode Tailwind text-white on the
+ * primary fill and made the selected "All" label unreadable. */
 .taxpay-table-tabs {
   display: flex;
   min-width: 0;
-  gap: 4px;
+  gap: 8px;
   overflow-x: auto;
-  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+  border-bottom: 0;
   scrollbar-width: thin;
   overscroll-behavior-inline: contain;
 }
 .taxpay-table-tabs > button {
   flex: none;
   min-height: 44px;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  color: var(--taxpay-table-muted, #5f6b7a);
+  min-width: 64px;
+  padding: 8px 14px;
+  border: 1px solid var(--taxpay-table-border, #e1e6ee);
+  border-radius: 8px;
+  background: var(--taxpay-table-surface, #fff);
+  color: var(--taxpay-table-text, #172033);
+  font-size: 14px;
   font-weight: 600;
 }
 .taxpay-table-tabs > button[aria-pressed="true"],
 .taxpay-table-tabs > button[aria-selected="true"],
 .taxpay-table-tabs > button[aria-current] {
-  border-bottom-color: var(--taxpay-table-primary, #2c5ead);
-  color: var(--taxpay-table-primary, #2c5ead);
+  border-color: var(--taxpay-table-primary, #2c5ead);
+  background: var(--taxpay-table-primary, #2c5ead);
+  color: #fff;
+}
+.taxpay-table-tabs > button:not([aria-pressed="true"]):hover {
+  background: var(--taxpay-table-hover, #f1f6ff);
+}
+.taxpay-table-tabs > button:focus-visible {
+  outline: 2px solid var(--taxpay-table-primary, #2c5ead);
+  outline-offset: 2px;
 }
 .taxpay-table-viewport {
   width: 100%;
@@ -453,6 +468,7 @@ table.taxpay-unified-table {
 }
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__tin {font-variant-numeric:tabular-nums;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__tag {color:var(--taxpay-table-muted,#5f6b7a);}
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__mobile-label {display:none;}
 
 @media (max-width:800px) {
   .taxpay-taxpayer-reference .taxpay-record-list {border:0;background:transparent;overflow:visible;}
@@ -471,6 +487,7 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__row {grid-template-columns:minmax(0,1fr);}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__actions {justify-self:start;flex-wrap:wrap;max-width:100%;grid-column:1/-1;}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.beneficiary-directory__tin,.beneficiary-directory__tag) {grid-column:1/-1;}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__mobile-label {display:inline;font-weight:600;color:var(--taxpay-table-text,#172033);}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__row {gap:5px 10px;}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpayer-transaction-row__identity {grid-column:1/-1;}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpayer-transaction-row__amount {justify-self:start;}

@@ -512,8 +512,8 @@ export function Beneficiaries(){
                       <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
                     </label>
                   </div>
-                  <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
-                  <p className="beneficiary-directory__tag">{beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
+                  <p className="beneficiary-directory__tin tabular-nums"><span className="beneficiary-directory__mobile-label">{tr('TIN','টিআইএন')}: </span>{person.tin}</p>
+                  <p className="beneficiary-directory__tag"><span className="beneficiary-directory__mobile-label">{tr('Tag','ট্যাগ')}: </span>{beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
                   <div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
                     <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"

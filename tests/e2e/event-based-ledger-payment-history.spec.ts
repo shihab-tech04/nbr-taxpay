@@ -9,6 +9,17 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   await expect(events).toBeVisible();
   await expect(events.getByRole('navigation',{name:'Event categories'})).toBeVisible();
   await expect(events.getByRole('navigation',{name:'Event categories'})).toHaveClass(/taxpay-table-tabs/);
+  const activeCategory=events.getByRole('button',{name:'All',exact:true});
+  await expect(activeCategory).toBeVisible();
+  await expect(activeCategory).toHaveAttribute('aria-pressed','true');
+  const colors=await activeCategory.evaluate(element=>({
+    text:getComputedStyle(element).color,
+    background:getComputedStyle(element).backgroundColor,
+    width:element.getBoundingClientRect().width
+  }));
+  expect(colors.text).toBe('rgb(255, 255, 255)');
+  expect(colors.background).not.toBe(colors.text);
+  expect(colors.width).toBeGreaterThanOrEqual(64);
   await expect(events.locator('.taxpay-table-viewport')).toHaveCount(1);
   await expect(events.getByTestId('event-ledger-table')).toHaveClass(/taxpay-unified-table/);
   if((page.viewportSize()?.width??1280)>=768){
