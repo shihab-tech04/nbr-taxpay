@@ -207,12 +207,60 @@ jobs:
         env:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
+      - name: Upload responsive citizen screenshots and Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-citizen-browser-evidence
+          path: |
+            test-results/screenshots/
+            playwright-report/
+          if-no-files-found: ignore
+
+
+  beneficiary-picker-e2e:
+    name: Signed-in beneficiary picker acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium
       - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+
+  public-support-e2e:
+    name: Public receipts and workspace acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium
       - name: Verify synthetic receipts and simulated bank slips
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -229,15 +277,6 @@ jobs:
           VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts tests/e2e/account-tax-journey-private.spec.ts
-      - name: Upload responsive citizen screenshots and Playwright evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: taxpay-citizen-browser-evidence
-          path: |
-            test-results/screenshots/
-            playwright-report/
-          if-no-files-found: ignore
 
   route-e2e:
     name: Public routes (shard ${{ matrix.shard }}/3)
@@ -270,7 +309,7 @@ jobs:
 
   verification-gate:
     name: Build and verify static preview
-    needs: [compile, core-e2e, public-e2e, route-e2e]
+    needs: [compile, core-e2e, public-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
