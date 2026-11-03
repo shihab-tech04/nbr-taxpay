@@ -61,8 +61,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.locator('#travel-tax-route-1').check();
   await fillTravelDetails(travel);
   await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport number').fill('EXAMPLE123');
+
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
 
