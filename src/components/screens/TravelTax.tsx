@@ -501,11 +501,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       <Building2 size={17} aria-hidden="true" />
       {tr('Confirm sample bank settlement', 'নমুনা ব্যাংক নিষ্পত্তি নিশ্চিত করুন')}
     </button>
-  ) : createdReceipt ? (
-    <button type="button" className="travel-flow__primary" onClick={reset}>
-      {tr('Start another payment', 'আরেকটি পেমেন্ট শুরু করুন')}
-    </button>
-  ) : step === 2 ? (
+  ) : createdReceipt ? null : step === 2 ? (
     <button type="button" className="travel-flow__primary" disabled={!canSubmit} onClick={() => {
       const form = document.getElementById('travel-tax-form');
       if (form instanceof HTMLFormElement) form.requestSubmit();
@@ -515,9 +511,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     </button>
   ) : (
     <button type="button" className="travel-flow__primary"
-      onClick={step === 0 && !identityRevealed ? confirmIdentity : continueStep}>
-      {step === 0 && !identityRevealed ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
-        : step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান')
+      onClick={continueStep}>
+      {step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
         : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
@@ -525,7 +520,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
 
   // Preserve the shared receipt/modal action owner and full-width receipt.
   if (embedded && createdReceipt && !bankSlipPending) {
-    return <ReceiptView receipt={createdReceipt} embedded onNewPayment={reset}/>;
+    return <ReceiptView receipt={createdReceipt} embedded/>;
   }
 
   return (
@@ -534,7 +529,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
         {!embedded && <nav className="travel-flow__steps" aria-label={tr('Travel tax steps', 'ভ্রমণ করের ধাপ')}>
           {[
-            tr('Passenger and travel details', 'যাত্রী ও ভ্রমণের তথ্য'), tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'),
+            tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'), tr('Travel details', 'ভ্রমণের তথ্য'),
             tr('Payment', 'পেমেন্ট'), tr('Challan', 'চালান'),
           ].map((name, idx) => (
             <button key={name} type="button" disabled={idx > step || !!createdReceipt}
@@ -547,21 +542,70 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         <form id="travel-tax-form" onSubmit={submit} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
 
-          {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')}>
-            <PaymentFormSection number={1} title={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')} staticView={embedded}>
-              <p className="travel-flow__field-hint">{tr(
-                'Select passenger type and enter passport details first. Tax is calculated from date of birth and travel date.',
-                'প্রথমে যাত্রীর ধরন ও পাসপোর্টের তথ্য দিন। জন্মতারিখ ও ভ্রমণের তারিখ থেকে কর হিসাব হবে।'
-              )}</p>
-              {renderPassengerEditor(passengers[0], 0)}
-              {identityRevealed && <>
-              <div className="travel-flow__identity-progress">
-                <p>{tr('Passenger details confirmed for this sample. Continue with travel details.',
-                  'নমুনা যাত্রীর তথ্য নিশ্চিত হয়েছে। এবার ভ্রমণের তথ্য দিন।')}</p>
-                <button type="button" onClick={() => { setIdentityRevealed(false); setError(''); }}>
-                  <Pencil size={15} aria-hidden="true"/>{tr('Edit passenger details','যাত্রীর তথ্য সম্পাদনা')}
-                </button>
+          {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')}>
+            <PaymentFormSection number={1} title={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')} hideHeading={embedded}>
+              <div className="travel-flow__party" data-testid="travel-passenger-list">
+                {passengers.map((item, index) => {
+                  const editing = editingPassengerId === item.id || (!item.name.trim() && index === 0);
+                  const valid = !invalidPassengerIds.has(item.id);
+                  const assessment = assessments[index]?.assessment;
+                  return <section key={item.id} className="travel-flow__person" data-passenger-id={item.id}
+                    data-complete={valid && !editing ? 'true' : 'false'}>
+                    <div className="travel-flow__person-header">
+                      <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
+                      <div className="travel-flow__person-actions">
+                        {!editing && <button type="button" className="travel-flow__edit" onClick={() => {
+                          setEditingPassengerId(item.id); setPassengerIssue(null);
+                        }}><Pencil size={15} aria-hidden="true"/>{tr('Edit', 'সম্পাদনা')}</button>}
+                        {index > 0 && <button type="button" className="travel-flow__member-remove"
+                          aria-label={tr('Remove passenger ', 'যাত্রী বাদ দিন ') + (index + 1)}
+                          onClick={() => {
+                            setPassengers(existing => existing.filter(person => person.id !== item.id));
+                            if (editingPassengerId === item.id) setEditingPassengerId(null);
+                            setPassengerIssue(null); setError(''); setAcknowledged(false);
+                          }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
+                      </div>
+                    </div>
+                    {editing ? <>
+                      {renderPassengerEditor(item, index)}
+                      {passengerIssue?.id === item.id && <p className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
+                    </> : <dl className="travel-flow__person-summary">
+                      <div><dt>{tr('Passenger name', 'যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
+                      <div><dt>{tr('Passport number', 'পাসপোর্ট নম্বর')}</dt><dd>{maskPassport(item.passport)}</dd></div>
+                      <div><dt>{tr('Date of birth', 'জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
+                      <div><dt>{tr('Nationality', 'জাতীয়তা')}</dt><dd>{item.nationality === 'BD' ? tr('Bangladeshi', 'বাংলাদেশি') : item.country}</dd></div>
+                      {assessment && <div><dt>{tr('Illustrative tax', 'নমুনা কর')}</dt><dd>{formatCurrency(assessment.amount, language)}</dd></div>}
+                    </dl>}
+                    {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
+                  </section>;
+                })}
               </div>
+              <button type="button" className="travel-flow__add-member" onClick={() => {
+                const issue = firstIdentityIssue();
+                if (issue) { reportIdentityIssue(issue); return; }
+                const id = crypto.randomUUID();
+                setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
+                setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
+                requestAnimationFrame(() => requestAnimationFrame(() =>
+                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
+                ));
+              }}>
+                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
+              </button>
+              <div className="travel-flow__contact">
+                <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
+                <div className="travel-flow__field">
+                  <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
+                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
+                    value={phone} placeholder="01XXXXXXXXX"
+                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); }}/>
+                </div>
+              </div>
+            </PaymentFormSection>
+          </section>}
+
+          {step === 1 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Travel details', 'ভ্রমণের তথ্য')}>
+            <PaymentFormSection number={2} title={tr('Travel details', 'ভ্রমণের তথ্য')} hideHeading={embedded}>
               <div className="travel-flow__field-group" id="travel-mode-section">
                 <p className="travel-flow__field-title">{tr('Travel mode','যাতায়াতের মাধ্যম')} *</p>
                 <fieldset id="travel-tax-route-results" className="travel-flow__routes">
@@ -608,50 +652,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
               </div>
-              </>}
-            </PaymentFormSection>
-          </section>}
-
-          {step === 1 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details','যাত্রী ও রসিদের তথ্য')}>
-            <PaymentFormSection number={2} title={tr('Passengers and receipt details','যাত্রী ও রসিদের তথ্য')} staticView={embedded}>
-              <div className="travel-flow__party" data-testid="travel-passenger-list">
-                <div className="travel-flow__person">
-                  <div className="travel-flow__person-header">
-                    <h3>{tr('Passenger 1','যাত্রী ১')}</h3>
-                    <button className="travel-flow__member-remove" type="button" onClick={() => stepTo(0)}>
-                      {tr('Edit details','তথ্য সম্পাদনা')}
-                    </button>
-                  </div>
-                  <p>{passengers[0].name} · {maskPassport(passengers[0].passport)}</p>
-                  {assessments[0].assessment && <p className="travel-flow__age-reason">
-                    {ageExplanation(assessments[0].assessment.age)}
-                  </p>}
-                </div>
-                {passengers.slice(1).map((item, index) => <div key={item.id} className="travel-flow__person">
-                  <div className="travel-flow__person-header">
-                    <h3>{tr('Passenger ','যাত্রী ')}{index + 2}</h3>
-                    <button type="button" className="travel-flow__member-remove"
-                      aria-label={tr('Remove passenger ','যাত্রী বাদ দিন ') + (index + 2)}
-                      onClick={() => {
-                        setPassengers(existing => existing.filter(p => p.id !== item.id));
-                        setAcknowledged(false);
-                      }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','বাদ দিন')}</button>
-                  </div>
-                  {renderPassengerEditor(item, index + 1)}
-                </div>)}
-              </div>
-              <button type="button" className="travel-flow__add-member" onClick={() =>
-                setPassengers(existing => [...existing, makeTravelPassenger(crypto.randomUUID(), 'BD')])}>
-                <Plus size={18} aria-hidden="true"/>{tr('Add New Member — family or friend','নতুন সদস্য যোগ করুন — পরিবার বা বন্ধু')}
+              <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}>
+                <Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')} ({passengers.length})
               </button>
-              <div className="travel-flow__fields travel-flow__field-group">
-                <div className="travel-flow__field">
-                  <label htmlFor="travel-mobile">{tr('Mobile number for receipt','রসিদের জন্য মোবাইল')} *</label>
-                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
-                    value={phone} placeholder="01XXXXXXXXX"
-                    onChange={event => setPhone(event.target.value.replace(/\D/g,'').slice(0,11))}/>
-                </div>
-              </div>
             </PaymentFormSection>
           </section>}
 
