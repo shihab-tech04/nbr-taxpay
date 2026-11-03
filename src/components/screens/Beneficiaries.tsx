@@ -40,6 +40,7 @@ export function Beneficiaries(){
   const [tag,setTag]=useState<BeneficiaryTag|''>('');
   const [relationship,setRelationship]=useState<BeneficiaryRelation|''>('');
   const [tagFilter,setTagFilter]=useState('all');
+  const [relationshipFilter,setRelationshipFilter]=useState('all');
   const [searchedBeneficiaryTin,setSearchedBeneficiaryTin]=useState<string|null>(null);
   const [filename,setFilename]=useState('');
   const [rows,setRows]=useState<ImportRow[]>([]);
@@ -120,7 +121,8 @@ export function Beneficiaries(){
   const listPeople=people.filter(person=>person.list_id===activeList);
   const filteredPeople=listPeople.filter(person=>{
     const matchesTag=tagFilter==='all'||(tagFilter==='legacy'? !person.tag :person.tag===tagFilter);
-    return matchesTag&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language))
+    const matchesRelation=tagFilter!=='friends_family'||relationshipFilter==='all'||person.relationship===relationshipFilter;
+    return matchesTag&&matchesRelation&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language))
       .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
@@ -143,7 +145,7 @@ export function Beneficiaries(){
   const allFilteredSelected=filteredPeople.length>0&&filteredPeople.every(person=>selectedIds.includes(person.id));
 
   function switchList(id:string){
-    setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setListMenuOpen(false);
+    setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
     listTriggerRef.current?.focus();
   }
   function openListEditor(list:BeneficiaryList){
@@ -398,7 +400,7 @@ export function Beneficiaries(){
               </div>
             </div>
             <label className="taxpayer-transaction-filter"><span>{tr('Tag','ট্যাগ')}</span>
-              <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setSelectedIds([]);}}>
+              <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);}}>
                 <option value="all">{tr('All tags','সব ট্যাগ')}</option>
                 <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
                 <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
@@ -406,6 +408,12 @@ export function Beneficiaries(){
                 <option value="legacy">{tr('Previously saved · No tag','পূর্বের তথ্য · ট্যাগ নেই')}</option>
               </UiSelect>
             </label>
+            {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
+              <UiSelect aria-label={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')} value={relationshipFilter} onChange={event=>{setRelationshipFilter(event.target.value);setSelectedIds([]);}}>
+                <option value="all">{tr('All relationships','সব সম্পর্ক')}</option>
+                {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
+              </UiSelect>
+            </label>}
             <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
               <span>{tr('Search','খুঁজুন')}</span>
               <span className="taxpayer-transaction-filter__search">
