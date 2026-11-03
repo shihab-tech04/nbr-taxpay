@@ -323,9 +323,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       <div className="travel-flow__passenger-tabs" role="tablist"
         aria-label={tr('Passenger type for passenger ', 'যাত্রীর ধরন, যাত্রী ') + (index + 1)}>
         {([
-          ['BD', tr('Bangladeshi passenger','বাংলাদেশি যাত্রী')],
-          ['FOREIGN', tr('Foreign passenger','বিদেশি যাত্রী')]
-        ] as const).map(([nationality, label]) =>
+          ['BD', tr('Bangladeshi passenger','বাংলাদেশি যাত্রী'), Flag],
+          ['FOREIGN', tr('Foreign passenger','বিদেশি যাত্রী'), Globe2]
+        ] as const).map(([nationality, label, Icon]) =>
           <button key={nationality} type="button" role="tab"
             id={'travel-passenger-tab-' + item.id + '-' + nationality}
             aria-controls={panelId} aria-selected={item.nationality === nationality}
@@ -341,46 +341,82 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               requestAnimationFrame(() => document.getElementById(
                 'travel-passenger-tab-' + item.id + '-' + next)?.focus());
             }}>
-            {label}
+            <Icon size={17} aria-hidden="true" />{label}
           </button>)}
       </div>
       <div id={panelId} role="tabpanel"
         aria-labelledby={'travel-passenger-tab-' + item.id + '-' + item.nationality}
         className="travel-flow__passenger-panel">
         <div className="travel-flow__fields">
-          <div className="travel-flow__field">
-            <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
-            <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
-              onChange={event => changePassenger(item.id, {
-                passport: event.target.value.toUpperCase().replace(/\s+/g, ''),
-                ...(item.nationality === 'BD' ? {name: '', birthDate: '', identitySource: 'PENDING' as const} : {}),
-              })} placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
-          </div>
           {item.nationality === 'BD' ? <>
-            <div className="travel-flow__field travel-flow__passport-action">
-              <label htmlFor={'travel-lookup-' + item.id}>{tr('Passport details','পাসপোর্টের তথ্য')}</label>
-              <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
-                if (item.passport !== PASSPORT_PREVIEW) {
-                  setError(tr('Government passport lookup is not connected. Use TEST123456 for a clearly marked sample.',
-                    'সরকারি পাসপোর্ট তথ্য অনুসন্ধান সংযুক্ত নয়। নমুনা হিসেবে TEST123456 ব্যবহার করুন।'));
-                } else {
-                  changePassenger(item.id, {
-                    name: 'SAMPLE BANGLADESHI PASSENGER', birthDate: '1992-04-18',
-                    country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'
-                  });
-                }
-              }}>{tr('Retrieve passport details (sample)','পাসপোর্টের নমুনা তথ্য আনুন')}</button>
+            <div className="travel-flow__passport-row">
+              <div className="travel-flow__field travel-flow__passport-input">
+                <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+                <input id={'travel-passport-' + item.id} role="combobox" aria-autocomplete="list"
+                  aria-controls={'travel-passport-suggestions-' + item.id}
+                  aria-expanded={passportSuggestionsFor === item.id}
+                  value={item.passport} maxLength={20} autoComplete="off"
+                  onFocus={() => setPassportSuggestionsFor(item.id)}
+                  onKeyDown={event => {
+                    if (event.key === 'Escape') setPassportSuggestionsFor(null);
+                    if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
+                      event.preventDefault();
+                      document.querySelector<HTMLElement>('#travel-passport-suggestions-' + item.id + ' [role="option"]')?.focus();
+                    }
+                  }}
+                  onChange={event => {
+                    changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, ''),
+                      name: '', birthDate: '', identitySource: 'PENDING'});
+                    setPassportSuggestionsFor(item.id);
+                  }}
+                  placeholder={tr('Select or enter a sample passport','একটি নমুনা পাসপোর্ট নির্বাচন বা লিখুন')}/>
+                {passportSuggestionsFor === item.id && <div
+                  className="travel-flow__passport-suggestions"
+                  id={'travel-passport-suggestions-' + item.id}
+                  role="listbox" aria-label={tr('Sample passport suggestions','নমুনা পাসপোর্টের পরামর্শ')}>
+                  {SAMPLE_BD_PASSPORTS.filter(sample => sample.passport.includes(item.passport.toUpperCase()))
+                    .map(sample => <button type="button" role="option" aria-selected={item.passport === sample.passport}
+                      key={sample.passport} onMouseDown={event => event.preventDefault()}
+                      onClick={() => {
+                        changePassenger(item.id, {passport: sample.passport, name: '', birthDate: '', identitySource: 'PENDING'});
+                        setPassportSuggestionsFor(null);
+                      }}>
+                      <span>{sample.passport}</span><span>{tr('Sample','নমুনা')}</span>
+                    </button>)}
+                </div>}
+              </div>
+              <div className="travel-flow__field travel-flow__passport-action">
+                <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
+                  setPassportSuggestionsFor(null);
+                  const sample = SAMPLE_BD_PASSPORTS.find(entry => entry.passport === item.passport.trim().toUpperCase());
+                  if (!sample) {
+                    showError(tr('This passport is not in the ten sample records. Government verification is not connected.',
+                      'এই পাসপোর্টটি ১০টি নমুনা রেকর্ডে নেই। সরকারি যাচাই সংযুক্ত নয়।'));
+                    return;
+                  }
+                  changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
+                    country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
+                }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
+              </div>
             </div>
-            <div className="travel-flow__field">
-              <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name (from passport)','যাত্রীর নাম (পাসপোর্ট থেকে)')}</label>
-              <input id={'travel-name-' + item.id} value={item.name} readOnly
-                placeholder={tr('Filled after lookup','অনুসন্ধানের পরে পূরণ হবে')}/>
-            </div>
-            <div className="travel-flow__field">
-              <label htmlFor={'travel-birth-date-' + item.id}>{tr('Date of birth (from passport)','জন্মতারিখ (পাসপোর্ট থেকে)')}</label>
-              <input id={'travel-birth-date-' + item.id} type="date" value={item.birthDate} readOnly/>
-            </div>
+            {item.identitySource === 'PASSPORT_SAMPLE' && <section className="travel-flow__identity-card"
+              aria-label={tr('Passenger details','যাত্রীর তথ্য')}>
+              <h3>{tr('Passenger details','যাত্রীর তথ্য')}</h3>
+              <dl>
+                <div><dt>{tr('Passenger name','যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
+                <div><dt>{tr('Passport number','পাসপোর্ট নম্বর')}</dt><dd>{item.passport}</dd></div>
+                <div><dt>{tr('Date of birth','জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
+                <div><dt>{tr('Nationality','জাতীয়তা')}</dt><dd>{tr('Bangladeshi','বাংলাদেশি')}</dd></div>
+              </dl>
+            </section>}
           </> : <>
+            <div className="travel-flow__field">
+              <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+              <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
+                onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
+                placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
+            </div>
+          
             <div className="travel-flow__field">
               <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name as on passport','পাসপোর্ট অনুযায়ী নাম')} *</label>
               <input id={'travel-name-' + item.id} maxLength={100} value={item.name}
@@ -399,21 +435,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
-          <div className="travel-flow__field travel-flow__medical">
+          {(step !== 0 || identityRevealed) && <div className="travel-flow__field travel-flow__medical">
             <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
             <label className="travel-flow__check">
               <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
                 onChange={event => changePassenger(item.id, {medicalPortReferral: event.target.checked})}/>
               <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
             </label>
-          </div>
+          </div>}
         </div>
         {item.nationality === 'BD' && <p className="travel-flow__field-hint" role="status">
           {item.identitySource === 'PASSPORT_SAMPLE'
             ? tr('Sample identity and birth date only — not verified by passport authority.',
                  'পরিচয় ও জন্মতারিখ শুধু নমুনা; পাসপোর্ট কর্তৃপক্ষের যাচাই নয়।')
-            : tr('Government passport lookup is pending. For UX review, use TEST123456.',
-                 'সরকারি পাসপোর্ট সেবা সংযুক্ত নয়। শুধু UX পরীক্ষায় TEST123456 ব্যবহার করুন।')}
+            : tr('Government passport verification is unavailable. Choose from ten fictional passports and press Check Passport.',
+                 'সরকারি পাসপোর্ট যাচাই সংযুক্ত নয়। ১০টি কাল্পনিক পাসপোর্টের একটি বেছে পাসপোর্ট যাচাই করুন।')}
         </p>}
         {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
           {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
