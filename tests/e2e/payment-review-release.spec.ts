@@ -213,7 +213,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   expect(paymentPosts).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
   await expect(page.locator('.receipt-view__summary').getByRole('heading', { name: 'রসিদের বিবরণ' })).toBeVisible();
-  await expectResponsiveReceipt(page, info.project.name, 'bn', true);
+  await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
 
@@ -378,7 +378,7 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.getByRole('button', { name: 'নমুনা পেমেন্ট নিশ্চিত করুন' }).click();
   await expect(page.locator('.receipt-view__paper')).toBeVisible();
   await expect(page.locator('.receipt-view__summary').getByRole('heading', { name: 'রসিদের বিবরণ' })).toBeVisible();
-  await expectResponsiveReceipt(page, info.project.name);
+  await expectResponsiveReceipt(page, info.project.name, 'bn', true);
   await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toHaveCount(0);
 
   if (info.project.name === 'mobile-320') {
