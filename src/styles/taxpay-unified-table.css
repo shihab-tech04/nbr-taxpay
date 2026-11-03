@@ -186,7 +186,7 @@ table.taxpay-unified-table {
   border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
   color: var(--taxpay-table-muted, #5f6b7a);
   background: var(--taxpay-table-heading, #f7f9fc);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
   line-height: 1.4;
   letter-spacing: 0;
@@ -463,7 +463,7 @@ table.taxpay-unified-table {
   border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
   background:var(--taxpay-table-heading,#f7f9fc);
   color:var(--taxpay-table-muted,#5f6b7a);
-  font-size:13px;
+  font-size:14px;
   font-weight:650;
   line-height:1.4;
 }

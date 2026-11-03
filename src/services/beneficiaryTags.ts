@@ -35,7 +35,7 @@ const relationLabels:{[K in BeneficiaryRelation]:[string,string]}={
 export function beneficiaryTagLabel(
   tag:BeneficiaryTag|null|undefined,relation:BeneficiaryRelation|null|undefined,language:'en'|'bn',otherLabel?:string|null
 ):string {
-  if(!tag)return language==='bn'?'পূর্বের তথ্য · ট্যাগ নেই':'Previously saved · No tag';
+  if(!tag)return language==='bn'?'শ্রেণিবিহীন':'Uncategorized';
   const label=tagLabels[tag]?.[language==='bn'?1:0];
   if(!label)return language==='bn'?'ট্যাগ নেই':'No tag';
   if(tag==='others')return otherLabel?.trim()?`${label} · ${otherLabel.trim()}`:label;

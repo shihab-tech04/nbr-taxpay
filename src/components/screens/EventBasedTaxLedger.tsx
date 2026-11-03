@@ -190,10 +190,10 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     : null;
   return <section className="space-y-4" data-testid="event-tax-ledger">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><p className="text-sm text-taxpay-muted">{t('Append-only event history','অপরিবর্তনীয় ঘটনার ইতিহাস')}</p>
-        <p className="mt-1 text-xs text-taxpay-muted">{t('Events are recorded independently of confirmed tax credit.','ঘটনাগুলো নিশ্চিত কর ক্রেডিট থেকে পৃথকভাবে সংরক্ষিত।')}</p></div>
+      <div><p className="text-sm text-taxpay-muted">{t('Recorded ledger activity','নথিভুক্ত লেজার কার্যক্রম')}</p>
+        <p className="mt-1 text-xs text-taxpay-muted">{t('A payment record alone does not confirm a tax credit.','শুধু পেমেন্ট রেকর্ড থাকলেই কর ক্রেডিট নিশ্চিত হয় না।')}</p></div>
       <div className="rounded-xl border border-taxpay-border bg-white p-3 text-right">
-        <p className="text-xs text-taxpay-muted">{showRecordedScenarioBalance?t('Selected-year scenario balance','নির্বাচিত করবর্ষের নমুনা ব্যালেন্স'):t('Balance after eligible entries','যোগ্য এন্ট্রির পর ব্যালেন্স')}</p>
+        <p className="text-xs text-taxpay-muted">{showRecordedScenarioBalance?t('Calculated balance for selected year','নির্বাচিত করবর্ষের হিসাবকৃত ব্যালেন্স'):t('Balance after eligible entries','যোগ্য এন্ট্রির পর ব্যালেন্স')}</p>
         <p className="mt-1 text-xl font-semibold tabular-nums">{balance===null?t('Not verified','যাচাই হয়নি'):money(balance,language)}</p>
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
@@ -225,7 +225,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             {key:'event',header:t('Event','ঘটনা'),renderCell:e=><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
               {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button>},
             {key:'year',header:t('Year · component','বর্ষ · খাত'),renderCell:e=><>{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></>},
-            {key:'particulars',header:t('Particulars & Economic Code','বিবরণ ও অর্থনৈতিক কোড'),renderCell:e=><>{e.title}<span className="block text-taxpay-muted">{e.component}</span></>},
+            {key:'particulars',header:t('Description / tax head','বিবরণ / কর খাত'),renderCell:e=><>{e.title}<span className="block text-taxpay-muted">{e.component}</span></>},
             {key:'debit',header:t('Debit (liability)','ডেবিট (দায়)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'},
             {key:'credit',header:t('Credit (payment)','ক্রেডিট (পরিশোধ)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'},
             {key:'effect',header:t('Effect','প্রভাব'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor===null?'—':(e.effectMinor>0?'+':'−')+money(Math.abs(e.effectMinor),language)},
