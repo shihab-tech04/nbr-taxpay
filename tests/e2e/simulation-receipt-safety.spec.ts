@@ -101,7 +101,7 @@ test('travel online records simulation only, with no Treasury scroll', async ({ 
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
   await expect(page.locator('.receipt-view')).toContainText('No Treasury scroll issued');
-  await expect(page.locator('.receipt-view')).toContainText('Payment record');
+  await expect(page.locator('.receipt-view')).toContainText('Simulated payment record');
   await expect(page.locator('.receipt-view')).not.toContainText('BB-SCRL');
 });
 
