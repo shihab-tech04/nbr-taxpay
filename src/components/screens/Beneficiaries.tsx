@@ -66,6 +66,7 @@ export function Beneficiaries(){
   const [confirmListDelete,setConfirmListDelete]=useState(false);
   const listMenuRef=useRef<HTMLDivElement>(null);
   const listTriggerRef=useRef<HTMLButtonElement>(null);
+  const lastFocusRefreshRef=useRef(0);
   const fileRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     if(!listMenuOpen)return;
@@ -107,6 +108,11 @@ export function Beneficiaries(){
     let revision=0;
     const refresh=()=>{
       if(document.visibilityState==='hidden')return;
+      // One browser activation can emit both visibilitychange and focus.
+      // Avoid two identical full-data reads, but keep cross-tab revalidation.
+      const now=Date.now();
+      if(now-lastFocusRefreshRef.current<2000)return;
+      lastFocusRefreshRef.current=now;
       const current=++revision;
       void loadBeneficiaries(owner).then(data=>{
         if(cancelled || current!==revision)return;

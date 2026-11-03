@@ -130,12 +130,21 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
 }
 
 export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
-  const lists = await readGuestPage<GuestList>('lists');
-  const people: GuestPerson[] = [];
-  for (let offset = 0; ; offset += pageSize) {
-    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
-    people.push(...page);
-    if (page.length < pageSize) break;
+  // Both reads use the same browser capability and are independent: do not
+  // serialize two Edge Function network round trips on every navigation.
+  const [lists, firstPage] = await Promise.all([
+    readGuestPage<GuestList>('lists'),
+    readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize }),
+  ]);
+  const people: GuestPerson[] = [...firstPage];
+  // Preserve the complete multi-list address book. An exact full page means
+  // there may be more records, so keep reading until a short page arrives.
+  if (firstPage.length === pageSize) {
+    for (let offset = pageSize; ; offset += pageSize) {
+      const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
+      people.push(...page);
+      if (page.length < pageSize) break;
+    }
   }
   return { lists, people };
 }
