@@ -140,7 +140,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
   const continueStep = () => {
     const problem = step === 0
-      ? validateTravelParty([passengers[0]], travelDate) ?? validateTravelDetails()
+      ? validateTravelParty([passengers[0]]) ?? validateTravelDetails() ??
+        validateTravelParty([passengers[0]], travelDate)
       : validatePassengers();
     if (problem) { setError(problem); return; }
     stepTo(step === 0 ? 1 : 2);
