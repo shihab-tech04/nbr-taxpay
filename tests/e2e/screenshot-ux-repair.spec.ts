@@ -1,3 +1,4 @@
+import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
 
@@ -122,7 +123,8 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   expect(summaryBox!.x+summaryBox!.width).toBeLessThanOrEqual(width+1);
   expect(footerBox!.y).toBeGreaterThanOrEqual(summaryBox!.y);
   await dialog.locator('#travel-tax-route-1').check();
-  await expect(summary.locator('summary')).toContainText('2,000');
+  await fillTravelDetails(dialog);
+  await expect(summary.locator('summary')).toContainText('1,000');
   await summary.locator('summary').click();
   await expect(summary.locator('dl')).toBeVisible();
   await next.click();
@@ -137,11 +139,11 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
   await dialog.locator('#travel-tax-route-0').check();
+  await fillTravelDetails(dialog);
   await dialog.getByRole('button',{name:'Continue to passenger details'}).click();
   await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await dialog.getByLabel('Passport number').fill('FAKE0001');
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
-  await dialog.getByLabel('Travel date').fill('2026-10-25');
   await dialog.getByRole('button',{name:'Continue to review'}).click();
   const row=dialog.locator('.travel-flow__summary-list > div').nth(2);
   await expect(row.locator('dd')).not.toBeEmpty();

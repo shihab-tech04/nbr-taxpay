@@ -309,6 +309,37 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
         </div>
 
+        {receipt.travelDetails && <section className="receipt-view__breakdown" data-testid="travel-family-challan">
+          <h3 className="receipt-view__section-title">{bn ? 'যাত্রীভিত্তিক ভ্রমণ কর' : 'Passenger-wise Travel Tax'}</h3>
+          <dl className="receipt-view__detail receipt-view__travel-meta">
+            <div><dt>{bn ? 'যাত্রার মাধ্যম' : 'Travel mode'}</dt><dd>{receipt.travelDetails.mode === 'LAND' ? (bn ? 'স্থলপথে' : 'Land') : (bn ? 'নৌপথে' : 'Water')}</dd></div>
+            <div><dt>{bn ? 'বন্দর ও নম্বর' : 'Departure port and number'}</dt><dd>{receipt.travelDetails.departurePort} · {receipt.travelDetails.portNumber}</dd></div>
+            <div><dt>{bn ? 'গন্তব্য ও তারিখ' : 'Destination and date'}</dt><dd>{receipt.travelDetails.destination} · {receipt.travelDetails.travelDate}</dd></div>
+            <div><dt>{bn ? 'প্রাতিষ্ঠানিক কোড' : 'Organizational code'}</dt><dd>{receipt.travelDetails.organizationalCode}</dd></div>
+            <div><dt>{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}</dt><dd>{receipt.travelDetails.economicCode}</dd></div>
+          </dl>
+          <div className="receipt-view__table">
+            <table className="receipt-view__financial-table" aria-label={bn ? 'এক চালানে সব যাত্রীর কর' : 'All passengers in one challan'}>
+              <thead><tr>
+                <th scope="col">{bn ? 'যাত্রী' : 'Passenger'}</th>
+                <th scope="col">{bn ? 'পাসপোর্ট' : 'Passport'}</th>
+                <th scope="col">{bn ? 'বয়স' : 'Age'}</th>
+                <th scope="col">{bn ? 'কর' : 'Tax'}</th>
+              </tr></thead>
+              <tbody>{receipt.travelDetails.passengers.map((item,index) => <tr key={index}>
+                <td>{item.name}</td>
+                <td>{item.passportMasked}</td>
+                <td>{item.ageBand}</td>
+                <td>{formatCurrency(item.amount, language)}</td>
+              </tr>)}</tbody>
+              <tfoot><tr><th scope="row" colSpan={3}>{bn ? 'সর্বমোট ভ্রমণ কর' : 'Combined Travel Tax'}</th>
+                <td>{formatCurrency(receipt.totalAmount, language)}</td></tr></tfoot>
+            </table>
+          </div>
+          <p className="receipt-view__summary-subtitle">{bn
+            ? 'এটি নমুনা রসিদ; সরকারি A-Challan বা ট্রেজারি নিষ্পত্তি নয়।'
+            : 'Simulation only: not a government A-Challan or Treasury settlement.'}</p>
+        </section>}
         {/* Keep one financial document view for both standard heads and reconciled allocations. */}
         {allocationBreakdown || (
         <div className="receipt-view__breakdown">

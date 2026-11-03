@@ -26,8 +26,11 @@ test('legacy help URL resolves to maintained guide without an unverified tax cal
 
 test('travel tax simulation cannot be presented as a real immigration challan',async ({page})=>{
   await page.goto('/?action=travel');
-  await expect(page.getByText('Enter your travel details.')).toBeVisible();
-  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
+  await expect(page.getByRole('heading', {name:'Travel tax'})).toBeVisible();
+  await expect(page.locator('#travel-tax-route-0')).toBeChecked();
+  await expect(page.locator('#travel-tax-route-results input[type=radio]')).toHaveCount(2);
+  await expect(page.getByText(/unverified rate/i).first()).toBeVisible();
+  await expect(page.getByText(/government A-Challan issued/i)).toHaveCount(0);
 });
 
 test('public mobile shared navigation keeps public information, EN/BN, and accessible controls',async({page},info)=>{

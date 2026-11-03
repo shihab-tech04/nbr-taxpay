@@ -112,6 +112,23 @@ export interface ChallanReceipt {
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;
+  /** Travel Tax UX contract; no actual government passport/A-Challan verification. */
+  travelDetails?: {
+    mode: 'LAND' | 'WATER';
+    departurePort: string;
+    portNumber: string;
+    destination: string;
+    travelDate: string;
+    organizationalCode: string;
+    economicCode: string;
+    passengers: Array<{
+      name: string;
+      passportMasked: string;
+      nationality: 'BD' | 'FOREIGN';
+      ageBand: 'ADULT' | 'CHILD' | 'UNDER5';
+      amount: number;
+    }>;
+  };
   noticeReference?: string;
   isRepresentativePayment: boolean;
   representativeTin?: string;

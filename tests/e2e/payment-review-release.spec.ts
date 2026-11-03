@@ -1,3 +1,4 @@
+import { fillTravelDetails, fillForeignPassenger } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
@@ -211,7 +212,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড সংরক্ষিত' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await page.getByRole('button', { name: 'রসিদের বিবরণ' }).click();
-  await expect(page.getByRole('heading', { name: 'করবৃত্ত — রসিদের বিবরণ' })).toBeVisible();
+  await expect(page.locator('.receipt-view__summary').getByRole('heading', { name: 'রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ট্রেজারি স্ক্রল রেফারেন্স:')).toBeVisible();
   await expect(page.getByText('সরকারি অর্থ স্থানান্তর হয়নি।')).toHaveCount(0);
@@ -352,39 +353,27 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
 });
 
-test('Travel Tax clearly discloses unverified rates and performs a non-operational bilingual simulation', async ({ page }, info) => {
+test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview and one receipt', async ({ page }, info) => {
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await expect(page.getByText(/Rates and exemptions are not verified/)).toHaveCount(0);
-  await expect(page.getByRole('radio', { name: /By air to North America, South America/ }).first()).toBeVisible();
-  await page.locator('#travel-tax-route-0').check();
+  await expect(page.locator('#travel-tax-route-results input[type=radio]')).toHaveCount(2);
+  await expect(page.locator('#travel-tax-route-0')).toBeChecked();
+  await fillTravelDetails(page);
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await page.getByLabel('Passenger name').fill('SAMPLE PASSENGER');
-  await page.getByLabel('Passport number').fill('SAMPLE123');
-  await page.getByLabel('Mobile number for receipt').fill('01712345678');
-  await page.getByLabel('Travel date').fill('2026-10-25');
+  await fillForeignPassenger(page, { name: 'SAMPLE PASSENGER', passport: 'SAMPLE123' });
   await page.getByRole('button', { name: 'বাংলা' }).click();
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
-  await expect(page.getByText(/হার ও অব্যাহতি যাচাইকৃত নয়/)).toHaveCount(0);
-  await expect(page.getByLabel('যাত্রীর বয়স')).toBeVisible();
-  await page.getByRole('button', { name: 'পর্যালোচনায় যান' }).click();
-  await expect(page.getByRole('heading', { name: 'তথ্য পর্যালোচনা' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' })).toBeVisible();
+  await expect(page.getByLabel('বয়সের ধরন')).toBeVisible();
+  await page.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+  await expect(page.getByRole('heading', { name: 'যাত্রী ও পেমেন্ট যাচাই করুন' })).toBeVisible();
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();
   await page.getByRole('radio', { name: 'Nagad' }).check();
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await page.getByRole('button', { name: 'পেমেন্টে এগিয়ে যান' }).click();
-  await expect(page.getByText('ভ্রমণ করের তথ্য প্রস্তুত')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'করবৃত্ত — রসিদের বিবরণ' })).toBeVisible();
-  await expectResponsiveReceipt(page, info.project.name);
-  await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toHaveCount(0);
-
-  if (info.project.name === 'mobile-320') {
-    expect(await pageWidth(page)).toBeLessThanOrEqual(322);
-    await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/travel-tax-bn-mobile-320.png' });
-  }
-  if (info.project.name === 'desktop-1280') {
-    await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/travel-tax-bn-desktop-1280.png' });
-  }
+  await page.getByRole('button', { name: 'নমুনা পেমেন্ট নিশ্চিত করুন' }).click();
+  await expect(page.locator('.receipt-view__paper')).toBeVisible();
+  await expect(page.getByTestId('travel-family-challan')).toBeVisible();
+  await expect(page.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(1);
+  await expectResponsiveReceipt(page, info.project.name, 'bn', true);
+  if (info.project.name === 'mobile-320') expect(await pageWidth(page)).toBeLessThanOrEqual(322);
 });

@@ -2715,3 +2715,117 @@
     padding: 12px;
   }
 }
+
+
+/* Travel Tax 2026 review — scoped to the existing Korbritto tokenized wizard. */
+.travel-flow__field-group { margin-top: 18px; }
+.travel-flow__party { display: grid; gap: 16px; }
+.travel-flow__person {
+  min-width: 0;
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--citizen-surface);
+}
+.travel-flow__person-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.travel-flow__person-header h3 {
+  margin: 0; font: 700 16px/1.5 Poppins,system-ui,sans-serif;
+  color: var(--citizen-text);
+}
+.travel-flow__member-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; min-height: 44px; padding: 8px 12px;
+  color: var(--citizen-error); border: 1px solid var(--citizen-border);
+  border-radius: 9px; font: 650 14px/1.4 Poppins,system-ui,sans-serif;
+}
+.travel-flow__member-remove:focus-visible,
+.travel-flow__add-member:focus-visible,
+.travel-flow__passport-action button:focus-visible {
+  outline: 3px solid var(--citizen-primary); outline-offset: 2px;
+}
+.travel-flow__person-total {
+  margin: 12px 0 0; padding-top: 10px;
+  color: var(--citizen-text); border-top: 1px solid var(--citizen-border);
+  font-size: 14px;
+}
+.travel-flow__person-total strong { color: var(--citizen-primary-dark); }
+.travel-flow__add-member {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; margin-top: 14px; padding: 10px 14px; width: 100%;
+  border: 1px solid var(--citizen-primary); border-radius: 9px;
+  color: var(--citizen-primary-dark); background: var(--citizen-surface);
+  font: 700 14px/1.5 Poppins,system-ui,sans-serif;
+}
+.travel-flow__add-member:hover,
+.travel-flow__passport-action button:hover { background: var(--citizen-primary-light); }
+.travel-flow__passport-action button {
+  min-height: 46px; padding: 10px 12px; border: 1px solid var(--citizen-primary);
+  border-radius: 9px; color: var(--citizen-primary-dark);
+  background: var(--citizen-surface); text-align: center;
+  font: 700 14px/1.4 Poppins,system-ui,sans-serif;
+}
+.travel-flow__check {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 46px; padding: 8px 10px;
+  border: 1px solid var(--citizen-border); border-radius: 9px;
+}
+.travel-flow__check input {
+  width: 18px; height: 18px; flex: 0 0 18px;
+  min-height: 18px; padding: 0; accent-color: var(--citizen-primary);
+}
+.travel-flow__check p { margin: 0; font-size: 14px; line-height: 1.5; }
+.travel-flow__medical-note {
+  margin: 12px 0 0; padding: 12px;
+  color: var(--citizen-text); background: var(--citizen-bg);
+  border: 1px solid var(--citizen-border); border-radius: 9px;
+  font-size: 14px; line-height: 1.55;
+}
+.travel-flow__table-wrap {
+  max-width: 100%; overflow-x: auto; margin: 16px 0 24px;
+  border: 1px solid var(--citizen-border); border-radius: 9px;
+}
+.travel-flow__passenger-table {
+  border-collapse: collapse; width: 100%; min-width: 370px;
+  font: 500 14px/1.5 Poppins,system-ui,sans-serif;
+  color: var(--citizen-text);
+}
+.travel-flow__passenger-table :is(th,td) {
+  padding: 10px 12px; border-bottom: 1px solid var(--citizen-border);
+  text-align: left; vertical-align: top;
+}
+.travel-flow__passenger-table :is(th,td):last-child { text-align: right; white-space: nowrap; }
+.travel-flow__passenger-table thead,
+.travel-flow__passenger-table tfoot {
+  background: var(--citizen-bg); font-weight: 700;
+}
+.travel-flow__passenger-table tfoot :is(th,td) { border-bottom: 0; }
+.travel-flow__passenger-table td { overflow-wrap: anywhere; }
+.receipt-view__travel-meta {
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px; margin: 12px 0;
+}
+.receipt-view__travel-meta div { min-width: 0; }
+.receipt-view__travel-meta dt { color: var(--citizen-muted); font-size: 13px; }
+.receipt-view__travel-meta dd { margin: 0; overflow-wrap: anywhere; font-size: 14px; }
+@media (max-width:650px) {
+  .travel-flow__person { padding: 12px; }
+  .travel-flow__person-header { align-items: flex-start; }
+  .travel-flow__person-header h3 { font-size: 15px; }
+  .travel-flow__table-wrap { margin: 12px 0 18px; }
+  .receipt-view__travel-meta { grid-template-columns: 1fr; }
+  .travel-flow__mobile-summary > summary p { margin: 0; }
+}
+
+
+/* Travel Tax four-stage standalone fallback; existing modal owns the embedded stepper. */
+.travel-flow__steps { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.travel-flow__person .travel-flow__field-hint,
+.travel-flow__person .travel-flow__field label,
+.receipt-view__travel-meta dt { font-size: 14px; }
+@media (max-width:650px) {
+ .travel-flow__steps { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

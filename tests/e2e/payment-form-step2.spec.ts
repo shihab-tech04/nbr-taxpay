@@ -1,3 +1,4 @@
+import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
@@ -283,26 +284,27 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   expect(width).toBeLessThanOrEqual(376);
 });
 
-test('Travel tax form applies exact v11 journey rates and age bands', async ({ page }) => {
+test('Travel tax keeps land/water and previews individual age bands', async ({ page }) => {
   await page.goto('/?action=travel');
   const travel = page.locator('.travel-flow');
   const summary = travel.locator('.travel-flow__total');
-  await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(6);
-  await travel.locator('#travel-tax-route-1').check();
-  await expect(summary).toContainText('2,000');
-  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await travel.getByLabel('Passenger age').selectOption('CHILD');
+  await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(2);
+  await expect(travel.locator('#travel-tax-route-0')).toBeChecked();
   await expect(summary).toContainText('1,000');
-  await travel.getByLabel('Passenger age').selectOption('UNDER5');
+  await fillTravelDetails(travel);
+  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await travel.getByLabel('Age category').selectOption('CHILD');
+  await expect(summary).toContainText('500');
+  await travel.getByLabel('Age category').selectOption('UNDER5');
   await expect(summary).toContainText('0');
-  await travel.getByLabel('Passenger age').selectOption('ADULT');
-  await expect(summary).toContainText('2,000');
+  await travel.getByLabel('Age category').selectOption('ADULT');
+  await expect(summary).toContainText('1,000');
   await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
   await travel.getByLabel('Passport number').fill('FAKE002');
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
-  await travel.getByLabel('Travel date').fill('2026-10-25');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(travel.getByRole('heading', { name: 'Review travel details' })).toBeVisible();
+  await expect(travel.getByRole('heading', { name: 'Review passengers and payment' })).toBeVisible();
+  await expect(travel.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
 });
 
 test('Other Tax allows different years for the same head, bulk actions and anchored calculation links', async ({ page }, info) => {
