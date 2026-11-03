@@ -34,12 +34,9 @@ export const AuthenticatedHistorySwitch:React.FC<{ownerUid:string;language:'en'|
       <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
     </div>
   </>;
-  if(mode==='reviews')return <>
-    <AccountReviewHistory ownerUid={ownerUid} language={language} activityTabs={activityTabs}/>
-    <div className="mx-auto max-w-5xl px-3 pb-12 sm:px-5">
-      <AccountBeneficiaryHistory ownerUid={ownerUid} language={language}/>
-    </div>
-  </>;
+  // AccountReviewHistory already includes its owner-scoped beneficiary payment history.
+  // Do not mount the same SQL data/receipt controls twice for unbound accounts.
+  if(mode==='reviews')return <AccountReviewHistory ownerUid={ownerUid} language={language} activityTabs={activityTabs}/>;
   return <section className="mx-auto max-w-5xl space-y-4 pb-12">
     <TaxpayerPageHeading title={language==='bn'?'অ্যাকাউন্টের কার্যক্রম':'Account activity'}
       description={language==='bn'?'সংরক্ষিত কার্যক্রম যাচাই হচ্ছে…':'Checking access to saved records…'}/>
