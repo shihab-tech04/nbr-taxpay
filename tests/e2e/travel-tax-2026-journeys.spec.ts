@@ -24,6 +24,31 @@ test('Travel Tax 2026: Land is default, Air is excluded and zone codes follow th
   await expect(modal.locator('#travel-port')).toHaveCount(0);
 });
 
+
+test('Travel Tax 2026: land and water cards share one desktop row and stack on narrow mobile', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name:'Travel tax'});
+  const land = modal.locator('#travel-tax-route-results .travel-flow__route').nth(0);
+  const water = modal.locator('#travel-tax-route-results .travel-flow__route').nth(1);
+  await expect(land).toBeVisible();
+  await expect(water).toBeVisible();
+  const landBox = await land.boundingBox();
+  const waterBox = await water.boundingBox();
+  expect(landBox).not.toBeNull();
+  expect(waterBox).not.toBeNull();
+  if ((page.viewportSize()?.width ?? 0) > 520) {
+    expect(Math.abs(landBox!.y - waterBox!.y)).toBeLessThanOrEqual(2);
+    expect(waterBox!.x).toBeGreaterThanOrEqual(landBox!.x + landBox!.width);
+  } else {
+    expect(waterBox!.y).toBeGreaterThanOrEqual(landBox!.y + landBox!.height);
+  }
+  await water.click();
+  await expect(modal.locator('#travel-tax-route-1')).toBeChecked();
+  await land.click();
+  await expect(modal.locator('#travel-tax-route-0')).toBeChecked();
+});
+
 test('Travel Tax 2026: friends and family share one challan with passenger-wise totals', async ({page}) => {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
