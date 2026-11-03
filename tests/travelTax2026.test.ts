@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_ZONES,
-  makeTravelPassenger, travelPassengerAmount, travelPartyTotal, validateTravelParty } from '../src/data/travelTax2026';
+  makeTravelPassenger, travelPassengerAmount, travelPartyTotal, validateTravelParty, travelPassengerAge, assessTravelPassenger } from '../src/data/travelTax2026';
 
 test('client accounting reference has nine unique organizational codes and one economic code', () => {
   assert.equal(TRAVEL_TAX_ZONES.length, 9);
@@ -28,4 +28,21 @@ test('passport duplicates and false government identity are rejected', () => {
   assert.match(validateTravelParty([a,b])??'', /same passport/);
   assert.match(validateTravelParty([{...a,nationality:'BD',identitySource:'PENDING'}])??'',/verification/);
   assert.match(validateTravelParty([{...a,medicalPortReferral:true}])??'',/Medical/);
+});
+
+test('travel-date DOB calculation explains the preview amount and safely handles unknown age', () => {
+  assert.equal(travelPassengerAge('1992-04-18','2026-11-20'),34);
+  assert.equal(travelPassengerAge('2017-08-10','2026-11-20'),9);
+  assert.equal(travelPassengerAge('2023-08-10','2026-11-20'),3);
+  assert.equal(travelPassengerAge('2027-01-01','2026-11-20'),null);
+  assert.equal(travelPassengerAge('2000-02-30','2026-11-20'),null);
+  const foreign = {...makeTravelPassenger('foreign'), passport:'FOREIGN123', name:'Visitor', country:'India', birthDate:'2017-08-10'};
+  assert.equal(assessTravelPassenger(foreign,1000,'2026-11-20')?.amount,500);
+  assert.equal(assessTravelPassenger({...foreign,birthDate:'2023-08-10'},1000,'2026-11-20')?.amount,0);
+  assert.equal(assessTravelPassenger({...foreign,birthDate:''},1000,'2026-11-20'),null);
+  const bd = {...makeTravelPassenger('bd','BD'), passport:'TEST123456', name:'Sample', birthDate:'1992-04-18'};
+  assert.equal(assessTravelPassenger(bd,1000,'2026-11-20'),null);
+  assert.equal(assessTravelPassenger({...bd,identitySource:'PASSPORT_SAMPLE'},1000,'2026-11-20')?.amount,1000);
+  assert.equal(validateTravelParty([foreign],'2026-11-20'),null);
+  assert.match(validateTravelParty([{...foreign,birthDate:''}],'2026-11-20')??'',/date of birth/);
 });
