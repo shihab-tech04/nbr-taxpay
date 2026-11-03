@@ -149,7 +149,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
           const members=people.filter(person=>person.list_id===list.id);
           const matchesList=list.name.toLocaleLowerCase().includes(normalized);
           const filtered=normalized&&!matchesList
-            ? members.filter(person=>(names(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language)).toLocaleLowerCase().includes(normalized))
+            ? members.filter(person=>(names(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)).toLocaleLowerCase().includes(normalized))
             : members;
           if(normalized&&!matchesList&&!filtered.length)return null;
           const isExpanded=expanded.includes(list.id)||Boolean(normalized);
@@ -176,7 +176,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
                   <span className="min-w-0 flex-1">
                     <span className="block break-words text-sm font-semibold text-taxpay-text">{names(person)}</span>
                     <span className="block break-all text-xs text-slate-600">{tr('TIN','টিআইএন')}: {person.tin}</span>
-                     <span className="block text-xs text-taxpay-muted">{tr('Tag','ট্যাগ')}: {beneficiaryTagLabel(person.tag,person.relationship,language)}</span>
+                     <span className="block text-xs text-taxpay-muted">{tr('Tag','ট্যাগ')}: {beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</span>
                   </span>
                 </label>)}
             </div>}
