@@ -104,7 +104,10 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
         </div>
         <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
         <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
+        {row.economicCode&&<p className="taxpay-mobile-table-card__meta">{row.economicCode}</p>}
         <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {row.paymentId}</p>
+        {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">
+          {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
         <div className="taxpay-mobile-table-card__actions">
           <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
             onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button>
