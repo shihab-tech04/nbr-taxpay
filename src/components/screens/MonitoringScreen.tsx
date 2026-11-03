@@ -36,22 +36,22 @@ export const MonitoringScreen: React.FC = () => {
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Overall Network Uptime:</span>
             <span className="font-mono-plex font-bold text-xl text-emerald-800 mt-1 block">99.89%</span>
-            <span className="text-[10px] text-slate-400">Past 30 Rolling Days</span>
+            <span className="text-sm text-slate-400">Past 30 Rolling Days</span>
           </div>
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Average Response Latency:</span>
             <span className="font-mono-plex font-bold text-xl text-slate-900 mt-1 block">312 ms</span>
-            <span className="text-[10px] text-emerald-700">Within Optimal SLA</span>
+            <span className="text-sm text-emerald-700">Within Optimal SLA</span>
           </div>
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Active Gateways:</span>
             <span className="font-mono-plex font-bold text-xl text-emerald-900 mt-1 block">6 Systems</span>
-            <span className="text-[10px] text-slate-400">All Connected</span>
+            <span className="text-sm text-slate-400">All Connected</span>
           </div>
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Real-Time Incidents:</span>
             <span className="font-mono-plex font-bold text-xl text-amber-700 mt-1 block">3 Active</span>
-            <span className="text-[10px] text-amber-800">Under Investigation</span>
+            <span className="text-sm text-amber-800">Under Investigation</span>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export const MonitoringScreen: React.FC = () => {
                   <span className={`w-2.5 h-2.5 rounded-full ${gw.status === 'OPTIMAL' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                   <h3 className="font-bold text-sm text-slate-900">{gw.gatewayName}</h3>
                 </div>
-                <div className="flex items-center gap-4 text-[11px] text-slate-500 font-mono">
+                <div className="flex items-center gap-4 text-sm text-slate-500 font-mono">
                   <span>Latency: <strong className="text-slate-700">{gw.avgLatencyMs} ms</strong></span>
                   <span>24h Success Rate: <strong className="text-emerald-800">{gw.successRate24h}%</strong></span>
                   <span>Uptime: {gw.uptime24h}%</span>
@@ -77,7 +77,7 @@ export const MonitoringScreen: React.FC = () => {
                 }`}>
                   {gw.status}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-sm text-slate-400 font-mono">
                   Heartbeat: {gw.lastHeartbeat}
                 </span>
               </div>

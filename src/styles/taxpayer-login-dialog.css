@@ -70,7 +70,7 @@
   background: #eef4fc;
   border: 1px solid #cfdef3;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .taxpayer-login-input-wrap input:focus-visible,
 .taxpayer-login-password-toggle:focus-visible,
@@ -80,7 +80,7 @@
   outline-offset: 2px;
 }
 .taxpayer-login-input-wrap input[aria-invalid="true"] { border-color: var(--color-taxpay-error); }
-.taxpayer-login-error { margin: -12px 0 14px; font-size: 13px; color: var(--color-taxpay-error); }
+.taxpayer-login-error { margin: -12px 0 14px; font-size: 14px; color: var(--color-taxpay-error); }
 
 /* Account access inside the Pay Tax journey shares the parent's single modal shell.
    Reuse all login-field styles without drawing a nested card or backdrop. */

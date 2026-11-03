@@ -40,7 +40,7 @@ export const OfficerHome: React.FC = () => {
                 <h1 className="font-serif-fraunces text-2xl font-bold">
                   Revenue Officer Administrative Workspace
                 </h1>
-                <span className="text-[10px] font-mono bg-amber-400 text-emerald-950 px-2 py-0.5 rounded font-bold uppercase">
+                <span className="text-sm font-mono bg-amber-400 text-emerald-950 px-2 py-0.5 rounded font-bold uppercase">
                   {userRole}
                 </span>
               </div>
@@ -72,7 +72,7 @@ export const OfficerHome: React.FC = () => {
           <span className="font-mono-plex font-bold text-lg text-emerald-950 mt-1 block">
             ৳ 148.5 Cr
           </span>
-          <span className="text-emerald-700 font-semibold block text-[10px]">
+          <span className="text-emerald-700 font-semibold block text-sm">
             Target: ৳ 210 Cr (70.7%)
           </span>
         </div>
@@ -82,7 +82,7 @@ export const OfficerHome: React.FC = () => {
           <span className="font-mono-plex font-bold text-lg text-amber-700 mt-1 block">
             {pendingCorrections.length} Tickets
           </span>
-          <span className="text-amber-800 font-medium block text-[10px]">
+          <span className="text-amber-800 font-medium block text-sm">
             Requires M-R-A Workflow
           </span>
         </div>
@@ -92,7 +92,7 @@ export const OfficerHome: React.FC = () => {
           <span className="font-mono-plex font-bold text-lg text-rose-700 mt-1 block">
             {pendingIncidents.length} Pending
           </span>
-          <span className="text-rose-800 font-medium block text-[10px]">
+          <span className="text-rose-800 font-medium block text-sm">
             Gateway Clearing Mismatches
           </span>
         </div>
@@ -102,7 +102,7 @@ export const OfficerHome: React.FC = () => {
           <span className="font-mono-plex font-bold text-lg text-slate-800 mt-1 block">
             {t.auditDemoStatus}
           </span>
-          <span className="text-slate-500 block text-[10px]">
+          <span className="text-slate-500 block text-sm">
             {t.auditDemoDetail}
           </span>
         </div>

@@ -133,14 +133,14 @@ export const PaymentSearch: React.FC = () => {
                       {rcpt.treasuryScrollNo || 'Pending'}
                     </td>
                     <td className="px-3 py-2 text-center whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      <span className="px-2 py-0.5 rounded text-sm font-bold bg-emerald-100 text-emerald-800">
                         {rcpt.treasuryStatus}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-center whitespace-nowrap">
                       <button
                         onClick={() => selectReceipt(rcpt.id)}
-                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-emerald-900 font-semibold cursor-pointer text-[11px]"
+                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-emerald-900 font-semibold cursor-pointer text-sm"
                       >
                         Inspect
                       </button>

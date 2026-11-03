@@ -73,7 +73,7 @@ export const IntelligenceScreen: React.FC = () => {
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Total Cross-System Mismatches:</span>
             <span className="font-mono-plex font-bold text-xl text-slate-900 mt-1 block">3 Active Flags</span>
-            <span className="text-[10px] text-slate-400">Taxes Zone-08 Surveillance</span>
+            <span className="text-sm text-slate-400">Taxes Zone-08 Surveillance</span>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
@@ -81,13 +81,13 @@ export const IntelligenceScreen: React.FC = () => {
             <span className="font-mono-plex font-bold text-xl text-emerald-900 mt-1 block">
               ৳ 8,87,800
             </span>
-            <span className="text-[10px] text-emerald-700">Identified Unassessed Tax</span>
+            <span className="text-sm text-emerald-700">Identified Unassessed Tax</span>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-slate-500 block">Algorithm Confidence:</span>
             <span className="font-mono-plex font-bold text-xl text-indigo-900 mt-1 block">94.8% Average</span>
-            <span className="text-[10px] text-indigo-700">Deterministic Cross-Match</span>
+            <span className="text-sm text-indigo-700">Deterministic Cross-Match</span>
           </div>
         </div>
 
@@ -103,7 +103,7 @@ export const IntelligenceScreen: React.FC = () => {
                   <span className="font-mono text-slate-500">({anom.tin})</span>
                 </div>
 
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                <span className={`px-2 py-0.5 rounded text-sm font-bold ${
                   anom.severity === 'HIGH' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
                   anom.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
                   'bg-blue-100 text-blue-800'
@@ -117,7 +117,7 @@ export const IntelligenceScreen: React.FC = () => {
                 <p className="mt-0.5 text-slate-600 leading-relaxed">{anom.detectedDiscrepancy}</p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm pt-1">
                 <div>
                   Potential Tax Yield: <strong className="font-mono-plex text-emerald-900">{formatCurrency(anom.potentialYield, language)}</strong>
                 </div>

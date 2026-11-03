@@ -168,17 +168,17 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                 <section>
                   <h3 className="receipt-view__section-title">{label('Payment overview', 'পেমেন্টের সারসংক্ষেপ')}</h3>
                   {details.slice(0, 2).map(item => (
-                    <div key={item.label} className="receipt-view__detail">
-                      <span>{item.label}:</span><span>{item.value}</span>
-                    </div>
+                    <dl key={item.label} className="receipt-view__detail">
+                      <dt>{item.label}:</dt><dd>{item.value}</dd>
+                    </dl>
                   ))}
                 </section>
                 <section>
                   <h3 className="receipt-view__section-title">{label('Record information', 'রেকর্ডের তথ্য')}</h3>
                   {details.slice(2).map(item => (
-                    <div key={item.label} className="receipt-view__detail">
-                      <span>{item.label}:</span><span>{item.value}</span>
-                    </div>
+                    <dl key={item.label} className="receipt-view__detail">
+                      <dt>{item.label}:</dt><dd>{item.value}</dd>
+                    </dl>
                   ))}
                 </section>
               </div>

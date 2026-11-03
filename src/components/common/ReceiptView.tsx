@@ -195,7 +195,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </p>
           </div>
           <div className="receipt-view__amount">
-            <span>{bn ? 'সর্বমোট অর্থ' : 'Total amount'}</span>
+            <p>{bn ? 'সর্বমোট অর্থ' : 'Total amount'}</p>
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
           </div>
         </header>
@@ -203,11 +203,11 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         {/* Challan Identifiers Ribbon */}
         <div className="receipt-view__reference-strip">
           <div>
-            <span className="text-slate-700 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</span>
+            <p className="text-slate-700 block">{embedded ? (bn ? 'রেফারেন্স' : 'Reference') : labels.challan}:</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="receipt-view__reference-number font-mono-plex">
+              <p className="receipt-view__reference-number font-mono-plex">
                 {receipt.challanNo}
-              </span>
+              </p>
               <button
                 onClick={() => handleCopy(receipt.challanNo)}
                 type="button"
@@ -221,17 +221,17 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
 
           <div>
-            <span className="text-slate-700 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
-            <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
+            <p className="text-slate-700 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</p>
+            <p className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
               {receipt.tokenNumber}
-            </span>
+            </p>
           </div>
 
           <div>
-            <span className="text-slate-700 block">{embedded ? (bn ? 'তারিখ ও সময়' : 'Date & time') : labels.timestamp}:</span>
-            <span className="font-mono-plex font-medium text-slate-800 mt-0.5 block">
+            <p className="text-slate-700 block">{embedded ? (bn ? 'তারিখ ও সময়' : 'Date & time') : labels.timestamp}:</p>
+            <p className="font-mono-plex font-medium text-slate-800 mt-0.5 block">
               {receipt.completedAt || receipt.createdAt}
-            </span>
+            </p>
           </div>
         </div>
 
@@ -241,62 +241,62 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <h3 className="receipt-view__section-title">
               {labels.payerDetails}
             </h3>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.payer}:</span>
-              <span className="col-span-2 font-semibold text-slate-900">{receipt.payerName}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.tin}:</span>
-              <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{taxpayerTinSummary}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.service}:</span>
-              <span className="col-span-2 font-semibold text-slate-900">{serviceSummary}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.year}:</span>
-              <span className="col-span-2 font-bold text-slate-800">{assessmentYearSummary}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.zone}:</span>
-              <span className="col-span-2 text-slate-800">{receipt.taxZone}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.circle}:</span>
-              <span className="col-span-2 text-slate-800">{receipt.taxCircle}</span>
-            </div>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.payer}:</dt>
+              <dd className="col-span-2 font-semibold text-slate-900">{receipt.payerName}</dd>
+            </dl>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.tin}:</dt>
+              <dd className="col-span-2 font-mono-plex font-bold text-emerald-900">{taxpayerTinSummary}</dd>
+            </dl>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.service}:</dt>
+              <dd className="col-span-2 font-semibold text-slate-900">{serviceSummary}</dd>
+            </dl>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.year}:</dt>
+              <dd className="col-span-2 font-bold text-slate-800">{assessmentYearSummary}</dd>
+            </dl>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.zone}:</dt>
+              <dd className="col-span-2 text-slate-800">{receipt.taxZone}</dd>
+            </dl>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.circle}:</dt>
+              <dd className="col-span-2 text-slate-800">{receipt.taxCircle}</dd>
+            </dl>
           </div>
 
           <div className="space-y-2">
             <h3 className="receipt-view__section-title">
               {labels.treasurySection}
             </h3>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.paymentMethod}:</span>
-              <span className="col-span-2 font-medium text-slate-900">{paymentMethodLabels}</span>
-            </div>
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.transaction}:</span>
-              <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
-            </div>
-            {receipt.taxEventId && <div className="receipt-view__detail">
-              <span className="text-slate-700">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
-              <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</span>
-            </div>}
-            {receipt.paymentTransactionId && <div className="receipt-view__detail">
-              <span className="text-slate-700">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
-              <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</span>
-            </div>}
-            <div className="receipt-view__detail">
-              <span className="text-slate-700">{labels.scroll}:</span>
-              <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.paymentMethod}:</dt>
+              <dd className="col-span-2 font-medium text-slate-900">{paymentMethodLabels}</dd>
+            </dl>
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.transaction}:</dt>
+              <dd className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</dd>
+            </dl>
+            {receipt.taxEventId && <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</dt>
+              <dd className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</dd>
+            </dl>}
+            {receipt.paymentTransactionId && <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</dt>
+              <dd className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</dd>
+            </dl>}
+            <dl className="receipt-view__detail">
+              <dt className="text-slate-700">{labels.scroll}:</dt>
+              <dd className="col-span-2 font-mono-plex font-semibold text-emerald-900">
                 {receipt.isSimulatedDemo ? (bn ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued') : receipt.treasuryScrollNo || labels.pendingScroll}
-              </span>
-            </div>
+              </dd>
+            </dl>
 
             {/* WITHHOLDING SPECIFIC SEPARATION */}
             {receipt.isWithholding && (
-              <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] space-y-1">
+              <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-sm space-y-1">
                 <span className="font-bold text-amber-900 block flex items-center gap-1">
                   <Info className="w-3.5 h-3.5 text-amber-700" />
                   {labels.withholdingTitle}
@@ -320,12 +320,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               {receipt.items.map((item, idx) => (
                 <article key={idx} className="p-3 space-y-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-700">{labels.headCode}</p>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-slate-700">{labels.headCode}</p>
                     <p className="break-all font-mono-plex text-xs font-semibold text-emerald-900">{item.economicCode}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold leading-snug text-slate-900">{itemName(item)}</h4>
-                    {item.note && <p className="mt-1 break-words text-[11px] leading-snug text-slate-600">{item.note}</p>}
+                    {item.note && <p className="mt-1 break-words text-sm leading-snug text-slate-600">{item.note}</p>}
                   </div>
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-200 pt-3 text-xs">
                     <div><dt className="text-slate-700">{labels.tax}</dt><dd className="font-mono-plex font-medium text-slate-900">{formatCurrency(item.taxAmount, language)}</dd></div>
@@ -365,7 +365,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                       <div className="font-medium">
                         {itemName(item)}
                       </div>
-                      {item.note && <div className="text-[11px] text-slate-700 italic">{item.note}</div>}
+                      {item.note && <div className="text-sm text-slate-700 italic">{item.note}</div>}
                     </td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.taxAmount, language)}</td>
                     <td className="px-3 py-2 text-right font-mono-plex">{formatCurrency(item.penaltyAmount, language)}</td>

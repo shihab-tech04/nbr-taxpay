@@ -55,13 +55,6 @@
   .public-information-hub .public-info-section,
   .public-info-topic,
   .public-info-guides article,
-  .citizen-financial-intro,
-  .citizen-hub-lookup,
-  .citizen-hub-support,
-  .citizen-taxpayer-summary,
-  .citizen-taxpayer-profile,
-  .citizen-taxpayer-quick,
-  .citizen-taxpayer-activity,
   .taxpayer-reference-secure > section,
   .taxpayer-reference-secure > article
 ) {
@@ -73,7 +66,7 @@
 .taxpay-citizen-shell :is(.shadow-xs, .shadow-sm, .shadow-md) {
   box-shadow: var(--citizen-shadow-card);
 }
-.taxpay-citizen-shell :is(.shadow-lg, .shadow-xl, .shadow-2xl) {
+.taxpay-citizen-shell :is(.shadow-lg, .shadow-xl) {
   box-shadow: var(--citizen-shadow-modal);
 }
 
@@ -208,12 +201,6 @@
   border-color: var(--choice-border);
   color: var(--choice-text);
 }
-.taxpay-citizen-shell .public-info-topic[data-taxpay-service] .citizen-hub-service-grid__icon {
-  background: var(--citizen-surface);
-  color: var(--service-primary);
-  border-color: var(--service-border);
-  border-radius: var(--citizen-radius-control);
-}
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service] h3 {
   color: var(--service-text);
   font-weight: 700;
@@ -239,7 +226,7 @@
 }
 
 @media print {
-  .taxpay-citizen-shell :is(.public-info-topic, .public-info-guides article, .citizen-taxpayer-summary, .shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+  .taxpay-citizen-shell :is(.public-info-topic, .public-info-guides article, .shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl) {
     box-shadow: none;
   }
 }

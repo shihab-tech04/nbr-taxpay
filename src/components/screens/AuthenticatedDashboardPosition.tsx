@@ -1,4 +1,5 @@
 import React from 'react';
+import {MetricBar, MetricColumn, MetricStack} from '../ui/MetricVisuals';
 import {ArrowRight, CalendarDays, CircleHelp, ClipboardList} from 'lucide-react';
 import {getIllustrativeDashboardYear,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
@@ -74,7 +75,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
         </div>
         {sample&&<div className="mb-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar"
           aria-label={tr('Illustrative liability covered','উদাহরণে করদায়ের সমন্বয়')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={coverage}>
-          <div className="h-full bg-taxpay-primary" style={{width:coverage+'%'}}/>
+          <MetricBar value={coverage} total={100} />
         </div>}
         <p className="text-xs text-taxpay-muted">{exampleMode
           ?tr('Example only — no tax credit has been assigned to this account.','শুধু উদাহরণ — এই অ্যাকাউন্টে কোনো কর ক্রেডিট যোগ করা হয়নি।')
@@ -92,9 +93,9 @@ export const AuthenticatedDashboardPosition: React.FC<{
               const monthLabel=new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(m.month+'-01T00:00:00Z'));
               return <div role="listitem" key={m.month} aria-label={monthLabel+': '+money(total)}
                 className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
-                <span className="text-[10px] text-taxpay-muted">{Math.round(total/1000)}k</span>
-                <div className="w-full max-w-10 rounded-t bg-taxpay-primary" style={{height:Math.max(5,115*total/monthlyMax)}}/>
-                <span className="text-center text-[10px] text-taxpay-muted">{monthLabel}</span>
+                <p className="text-sm text-taxpay-muted">{Math.round(total/1000)}k</p>
+                <div className="h-[115px] w-full max-w-10"><MetricColumn value={total} total={monthlyMax} /></div>
+                <p className="text-center text-sm text-taxpay-muted">{monthLabel}</p>
               </div>;
             })}
           </div>
@@ -143,9 +144,11 @@ export const AuthenticatedDashboardPosition: React.FC<{
           :tr('Credit composition unavailable','ক্রেডিটের বিভাজন পাওয়া যায়নি')}
           className="mt-4 flex h-3 overflow-hidden rounded-full bg-slate-100">
           {sample&&sample.applied>0&&<>
-            <div className="bg-taxpay-primary" style={{width:(100*sample.tds/sample.applied)+'%'}}/>
-            <div className="bg-taxpay-secondary" style={{width:(100*sample.ait/sample.applied)+'%'}}/>
-            <div className="bg-slate-400" style={{width:(100*sample.direct/sample.applied)+'%'}}/>
+            <MetricStack total={sample.applied} segments={[
+              {value:sample.tds,tone:'primary'},
+              {value:sample.ait,tone:'secondary'},
+              {value:sample.direct,tone:'neutral'}
+            ]} />
           </>}
         </div>
         <table className="mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>

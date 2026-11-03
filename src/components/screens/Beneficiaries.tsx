@@ -398,7 +398,7 @@ export function Beneficiaries(){
             </label>
           </div>
           <div className="taxpayer-transaction-count beneficiary-directory__count">
-            <p className="text-xs text-taxpay-muted" aria-live="polite">{tr('Records','রেকর্ড')}: {filteredPeople.length} <span className="text-taxpay-muted">/ {listPeople.length}</span></p>
+            <p className="text-xs text-taxpay-muted" aria-live="polite">{tr('Records','রেকর্ড')}: {filteredPeople.length} / {listPeople.length}</p>
             <div className="beneficiary-directory__bulk-actions">
               {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
                 <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
@@ -531,11 +531,11 @@ export function Beneficiaries(){
         </div>
       </div>}>
       <div className="space-y-4 py-2" data-testid="beneficiary-import">
-        {flow==='bulk'&&<div className="flex items-center gap-2" aria-label={tr('Import progress','আমদানির অগ্রগতি')}>
-          {(['upload','preview','confirm'] as Phase[]).map((value,index)=><div key={value} className={'flex-1 rounded-md border px-2 py-2 text-center text-xs '+(phase===value?'border-taxpay-primary bg-blue-50 text-taxpay-primary':'border-slate-200 text-slate-600')}>
-            {index+1}. {value==='upload'?tr('Upload','আপলোড'):value==='preview'?tr('Preview','পূর্বরূপ'):tr('Review and add','পর্যালোচনা ও যোগ')}
-          </div>)}
-        </div>}
+        {flow==='bulk'&&<ol className="flex items-center gap-2" aria-label={tr('Import progress','আমদানির অগ্রগতি')}>
+          {(['upload','preview','confirm'] as Phase[]).map((value,index)=><li key={value} className={'flex-1 rounded-md border px-2 py-2 text-center text-xs '+(phase===value?'border-taxpay-primary bg-blue-50 text-taxpay-primary':'border-slate-200 text-slate-600')}>
+            <p>{index+1}. {value==='upload'?tr('Upload','আপলোড'):value==='preview'?tr('Preview','পূর্বরূপ'):tr('Review and add','পর্যালোচনা ও যোগ')}</p>
+          </li>)}
+        </ol>}
         <div><label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('Add to list','তালিকায় যোগ করুন')} *</label>
           <UiSelect id="beneficiary-target-list" value={targetList} onChange={event=>setTargetList(event.target.value)}>
             <option value="new">{tr('Create new list','নতুন তালিকা তৈরি')}</option>{lists.map(list=><option key={list.id} value={list.id}>{list.name}</option>)}

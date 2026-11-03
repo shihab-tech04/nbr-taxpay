@@ -10,3 +10,7 @@ coverage/
 test-results/
 playwright-report/
 blob-report/
+
+# Generated static UI audit output
+ui-audit-results.json
+ui-audit-results.md

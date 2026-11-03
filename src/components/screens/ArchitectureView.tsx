@@ -43,7 +43,7 @@ export const ArchitectureView: React.FC = () => {
       <div className="bg-slate-950 text-white rounded-xl p-6 shadow-lg border border-slate-800 space-y-6">
         <h3 className="font-mono text-xs uppercase tracking-wider text-amber-400 font-bold flex items-center gap-2">
           <Network className="w-4 h-4 text-amber-400" />
-          <span>Layered System Architecture & External Boundaries</span>
+          Layered System Architecture & External Boundaries
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
@@ -51,9 +51,9 @@ export const ArchitectureView: React.FC = () => {
           <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3">
             <div className="text-amber-300 font-bold border-b border-slate-800 pb-1 flex items-center gap-1.5">
               <Cpu className="w-4 h-4 text-amber-400" />
-              <span>1. Client Ingress Layer</span>
+              <strong>1. Client Ingress Layer</strong>
             </div>
-            <ul className="space-y-2 text-slate-300 text-[11px]">
+            <ul className="space-y-2 text-slate-300 text-sm">
               <li className="p-2 rounded bg-slate-800/80">
                 <strong className="text-white block">Public Guest Checkout</strong>
                 No auth required; validates 12-digit e-TIN and economic head codes.
@@ -73,9 +73,9 @@ export const ArchitectureView: React.FC = () => {
           <div className="bg-emerald-950 border border-emerald-800 rounded-lg p-4 space-y-3">
             <div className="text-emerald-300 font-bold border-b border-emerald-900 pb-1 flex items-center gap-1.5">
               <Server className="w-4 h-4 text-emerald-400" />
-              <span>2. Core Domain Engine</span>
+              <strong>2. Core Domain Engine</strong>
             </div>
-            <ul className="space-y-2 text-emerald-100 text-[11px]">
+            <ul className="space-y-2 text-emerald-100 text-sm">
               <li className="p-2 rounded bg-emerald-900/60">
                 <strong className="text-white block">170 Payment-Head Engine</strong>
                 Validates ITA 2023 vs ITO 1984 sections; locks blocked heads (#5, #150).
@@ -95,9 +95,9 @@ export const ArchitectureView: React.FC = () => {
           <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3">
             <div className="text-teal-300 font-bold border-b border-slate-800 pb-1 flex items-center gap-1.5">
               <Landmark className="w-4 h-4 text-teal-400" />
-              <span>3. Statutory External Adapters</span>
+              <strong>3. Statutory External Adapters</strong>
             </div>
-            <ul className="space-y-2 text-slate-300 text-[11px]">
+            <ul className="space-y-2 text-slate-300 text-sm">
               <li className="p-2 rounded bg-slate-800/80">
                 <strong className="text-white block">A-Challan / Sonali Bank API</strong>
                 Posts to Treasury Account 1-1141-XXXX-XXXX & scrolls challan token.
@@ -123,40 +123,40 @@ export const ArchitectureView: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-            <span className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
+            <h4 className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
               Invariant 1: Payment Initiation ≠ Treasury Deposit
-            </span>
+            </h4>
             <p className="text-slate-600 leading-relaxed">
               A successful payment initiation or wallet debit does not constitute government deposit until confirmed by Sonali Bank / Bangladesh Bank scroll settlement.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-            <span className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
+            <h4 className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
               Invariant 2: Treasury Receipt ≠ Automatic Tax Credit
-            </span>
+            </h4>
             <p className="text-slate-600 leading-relaxed">
               A valid A-Challan proves that money arrived in the Government Treasury, but tax credit eligibility is recognized only when the TIN is verified and reconciled in the tax ledger.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-            <span className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
+            <h4 className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
               Invariant 3: Withholding Separation Rule
-            </span>
+            </h4>
             <p className="text-slate-600 leading-relaxed">
               A withholding agent\'s tax deposit (TDS) under Chapter VII can never become the agent\'s personal or corporate tax credit. The credit vests solely in the deductee beneficiary.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-            <span className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
+            <h4 className="font-bold text-slate-900 block flex items-center gap-1.5 text-emerald-900">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
               Invariant 4: Three-Tier Maker-Reviewer-Approver
-            </span>
+            </h4>
             <p className="text-slate-600 leading-relaxed">
               No revenue officer can unilaterally re-attribute, cancel, or refund a Treasury challan. Ledger adjustments require formal tripartite segregation of duties.
             </p>
@@ -168,7 +168,7 @@ export const ArchitectureView: React.FC = () => {
             onClick={() => navigate('ontology')}
             className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer"
           >
-            <span>Explore Conceptual Tax Ontology</span>
+            Explore Conceptual Tax Ontology
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

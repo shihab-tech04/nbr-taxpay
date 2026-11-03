@@ -50,7 +50,7 @@ export const OntologyView: React.FC = () => {
           <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
           <div>
             <strong className="block text-amber-900">LEGAL STATUS & ARCHITECTURAL BOUNDARY:</strong>
-            This conceptual ontology is a <strong>draft product model and data architecture design</strong> for system development, not approved statutory law or gazetted NBR rules. Statutory provisions must be validated against the official gazette of the Income Tax Act 2023.
+            <p>This conceptual ontology is a <strong>draft product model and data architecture design</strong> for system development, not approved statutory law or gazetted NBR rules. Statutory provisions must be validated against the official gazette of the Income Tax Act 2023.</p>
           </div>
         </div>
 
@@ -82,9 +82,9 @@ export const OntologyView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left Node Selector */}
           <div className="space-y-2 text-xs">
-            <span className="font-bold text-slate-500 uppercase tracking-wider block text-[10px]">
+            <h3 className="font-bold text-slate-500 uppercase tracking-wider block text-sm">
               Tax Concepts ({filteredNodes.length})
-            </span>
+            </h3>
             <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
               {filteredNodes.map(node => (
                 <button
@@ -99,10 +99,10 @@ export const OntologyView: React.FC = () => {
                   }`}
                 >
                   <span className="block font-bold text-xs">{node.nameEn}</span>
-                  <span className={`block text-[11px] font-bengali ${selectedNodeId === node.id ? 'text-amber-300' : 'text-slate-500'}`}>
+                  <span className={`block text-sm font-bengali ${selectedNodeId === node.id ? 'text-amber-300' : 'text-slate-500'}`}>
                     {node.nameBn}
                   </span>
-                  <span className="block text-[10px] mt-1 font-mono uppercase opacity-75">
+                  <span className="block text-sm mt-1 font-mono uppercase opacity-75">
                     {node.category.replace(/_/g, ' ')}
                   </span>
                 </button>
@@ -118,16 +118,16 @@ export const OntologyView: React.FC = () => {
                   <h2 className="font-serif-fraunces font-bold text-xl text-slate-900">
                     {activeNode.nameEn}
                   </h2>
-                  <div className="text-xs text-slate-500 font-bengali">{activeNode.nameBn}</div>
+                  <p className="text-xs text-slate-500 font-bengali">{activeNode.nameBn}</p>
                 </div>
-                <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 font-mono">
+                <span className="px-2.5 py-1 rounded text-sm font-bold bg-emerald-100 text-emerald-800 font-mono">
                   {activeNode.category}
                 </span>
               </div>
               {activeNode.statutoryReference && (
-                <div className="text-[11px] font-semibold text-emerald-900 mt-2 font-mono">
+                <p className="text-sm font-semibold text-emerald-900 mt-2 font-mono">
                   Statutory Reference: {activeNode.statutoryReference}
-                </div>
+                </p>
               )}
             </div>
 
@@ -152,7 +152,7 @@ export const OntologyView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {activeNode.relationships.map((rel, idx) => (
                   <div key={idx} className="p-2.5 rounded bg-white border border-slate-200 flex items-center justify-between">
-                    <span className="text-slate-500 font-mono text-[10px]">-- {rel.relation} --➔</span>
+                    <p className="text-slate-500 font-mono text-sm">-- {rel.relation} --➔</p>
                     <strong className="text-emerald-900 font-mono">{rel.target}</strong>
                   </div>
                 ))}

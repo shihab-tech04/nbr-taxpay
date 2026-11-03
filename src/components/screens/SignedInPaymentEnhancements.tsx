@@ -126,10 +126,10 @@ export function AuthorizedTaxpayerChoices({ actor, language, selectedTin, addedT
         const taxpayer = getDemoUser(record.taxpayerId);
         return <p key={record.id} className="account-authorizations__pending-item">
           <strong>{taxpayer ? (language === 'bn' ? taxpayer.nameBn : taxpayer.nameEn) : record.taxpayerId}</strong>
-          {taxpayer && <span>{tr('TIN', 'টিআইএন')}: {taxpayer.tin}</span>}
-          <span>{record.status === 'CODE_ISSUED'
+          {taxpayer && <small>{tr('TIN', 'টিআইএন')}: {taxpayer.tin}</small>}
+          <small>{record.status === 'CODE_ISSUED'
             ? tr('Awaiting your code confirmation', 'আপনার কোড নিশ্চিত করার অপেক্ষায়')
-            : tr('Awaiting taxpayer approval', 'করদাতার অনুমোদনের অপেক্ষায়')}</span>
+            : tr('Awaiting taxpayer approval', 'করদাতার অনুমোদনের অপেক্ষায়')}</small>
         </p>;
       })}
     </div>}

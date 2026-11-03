@@ -20,8 +20,6 @@
   --taxpay-shadow-card: 0 1px rgb(0 0 0 / 5%);
   --taxpay-radius-control: 12px;
   --taxpay-radius-card: 16px;
-  --font-text: 'Noto Sans', 'Noto Sans Bengali', system-ui, sans-serif;
-  --font-numeric: 'Noto Sans', 'Noto Sans Bengali', system-ui, sans-serif;
   --sobaike-control-focus: #3A7CA5;
   --sobaike-surface-hover: #E4E6EB;
   --sobaike-type-body: 16px;
@@ -35,8 +33,7 @@
   color: var(--color-taxpay-text);
 }
 .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] {
-  --font-text: 'Noto Sans Bengali', 'Noto Sans', system-ui, sans-serif;
-  --font-numeric: 'Noto Sans Bengali', 'Noto Sans', system-ui, sans-serif;
+  --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif;
   font-family: var(--font-text);
   line-height: 1.65;
 }
@@ -306,7 +303,7 @@
   border-radius: var(--taxpay-radius-control);
   font-size: 16px;
 }
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-transaction-detail, .taxpayer-transaction-detail__summary) {
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(.taxpayer-transaction-detail) {
   border-color: var(--color-taxpay-border);
   border-radius: var(--taxpay-radius-card);
 }
@@ -441,7 +438,7 @@
     min-height: 52px;
     padding: 4px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 16px;
     color: var(--color-taxpay-muted);
   }
@@ -465,7 +462,7 @@
     padding: 4px 6px;
     gap: 2px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 16px;
     background: var(--color-taxpay-primary);
   }

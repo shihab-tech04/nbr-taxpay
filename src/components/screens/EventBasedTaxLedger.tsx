@@ -136,7 +136,7 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
     {Boolean(record.allocations?.length)&&<section className="rounded-xl border border-taxpay-border bg-white p-4">
       <h3 className="mb-2 text-sm font-semibold">{t('Taxpayer allocations','করদাতা অনুযায়ী বরাদ্দ')}</h3>
       <ul className="divide-y divide-taxpay-border">{record.allocations!.map(a=><li key={a.id} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
-        <span>{a.title} · {a.assessmentYear}</span><strong className="tabular-nums">{money(a.amountMinor,language)}</strong>
+        <p>{a.title} · {a.assessmentYear}</p><strong className="tabular-nums">{money(a.amountMinor,language)}</strong>
       </li>)}</ul>
     </section>}
     <div className="grid gap-4 lg:grid-cols-2">
@@ -232,7 +232,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             <tbody className="divide-y divide-taxpay-border">{visible.map(e=><tr key={e.id} className="hover:bg-taxpay-light">
               <td className="whitespace-nowrap p-3">{dateTime(e.occurredAt,language)}</td>
               <td className="p-3"><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
-                {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button></td>
+                {e.title}<span className="mt-1 block break-all text-sm font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-sm font-normal text-taxpay-muted">{e.reference||'—'}</span></button></td>
               <td className="p-3">{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></td>
               <td className="p-3">{e.title}<span className="block text-taxpay-muted">{e.component}</span></td>
               <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'}</td>
@@ -246,7 +246,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <ul className="grid gap-2 p-3 md:hidden">{visible.map(e=><li key={e.id}>
             <button type="button" onClick={()=>setSelected(e)} className="flex w-full flex-col gap-1 rounded-lg border border-taxpay-border p-3 text-left text-sm">
               <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>
-              <span className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</span>
+              <small className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</small>
               <span className="break-all text-xs">{e.reference||e.taxEventId||e.id}</span>
             </button>
           </li>)}</ul>

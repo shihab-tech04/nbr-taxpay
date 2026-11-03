@@ -43,7 +43,7 @@ export const AuditTrail: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded border border-emerald-300 font-bold flex items-center gap-1">
+            <span className="text-sm font-mono text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded border border-emerald-300 font-bold flex items-center gap-1">
               <Lock className="w-3.5 h-3.5" />
               <span>UNVERIFIED LOG</span>
             </span>
@@ -76,17 +76,17 @@ export const AuditTrail: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
               {filteredLogs.map(log => (
-                <tr key={log.id} className="hover:bg-slate-50 font-mono-plex text-[11px]">
+                <tr key={log.id} className="hover:bg-slate-50 font-mono-plex text-sm">
                   <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{log.timestamp}</td>
                   <td className="px-3 py-2 text-slate-900 font-semibold">{log.actor}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 text-[10px]">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 text-sm">
                       {log.action}
                     </span>
                   </td>
                   <td className="px-3 py-2 font-bold text-emerald-950 whitespace-nowrap">{log.targetId}</td>
                   <td className="px-3 py-2 font-sans text-slate-700 min-w-[220px]">{log.details}</td>
-                  <td className="px-3 py-2 text-slate-400 text-[10px] truncate max-w-[120px]" title={log.immutableHash}>
+                  <td className="px-3 py-2 text-slate-400 text-sm truncate max-w-[120px]" title={log.immutableHash}>
                     {log.immutableHash}
                   </td>
                 </tr>

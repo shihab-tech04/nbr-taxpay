@@ -180,12 +180,12 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
      <details className="mt-2 rounded-lg border border-slate-200 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-emerald-900">{labels.details}</summary>
       <div className="mt-3 space-y-2 break-words text-sm text-slate-700">
-       <p><span className="font-semibold">{labels.reasonLabel}: </span>{r.reason}</p>
-       <p><span className="font-semibold">{labels.outcomeLabel}: </span>{r.requested_outcome}</p>
+       <p><strong className="font-semibold">{labels.reasonLabel}: </strong>{r.reason}</p>
+       <p><strong className="font-semibold">{labels.outcomeLabel}: </strong>{r.requested_outcome}</p>
        {r.change_kind&&<div className="space-y-1 border-t border-slate-200 pt-2">
         <p className="font-semibold">{labels.changeLabel}: {labels.changeKinds[r.change_kind]}</p>
-        <p><span className="font-semibold">{labels.oldValueLabel}: </span>{r.old_value}</p>
-        <p><span className="font-semibold">{labels.newValueLabel}: </span>{r.new_value}</p>
+        <p><strong className="font-semibold">{labels.oldValueLabel}: </strong>{r.old_value}</p>
+        <p><strong className="font-semibold">{labels.newValueLabel}: </strong>{r.new_value}</p>
        </div>}
       </div>
      </details>

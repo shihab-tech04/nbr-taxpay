@@ -129,7 +129,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
       brandVariable:shellStyles.getPropertyValue('--color-taxpay-primary').trim()
     };
   });
-  expect(desktop.font).toContain('Noto Sans');
+  expect(desktop.font).toContain('Poppins');
   expect(desktop.page).toBe('rgb(240, 242, 245)');
   expect(desktop.ink).toBe('rgb(5, 5, 5)');
   expect(desktop.railWidth).toBe('250px');
@@ -151,7 +151,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
       overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
     };
   });
-  expect(mobile.font).toContain('Noto Sans');
+  expect(mobile.font).toContain('Poppins');
   expect(mobile.heading).toBe('26px');
   expect(mobile.overflow).toBeLessThanOrEqual(2);
 });

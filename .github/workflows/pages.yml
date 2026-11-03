@@ -40,8 +40,18 @@ jobs:
           npm run lint
           npm run test:domain
 
+      - name: Verify unified UI source contract (no inline styles or broken static href)
+        run: npm run audit:ui:check
+
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
+
+      - name: Verify unified SVG metrics and navigation
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/unified-design-system.spec.ts --project=desktop-1280 --project=mobile-375
 
       - name: Verify preserved ledger and receipt contracts
         env:

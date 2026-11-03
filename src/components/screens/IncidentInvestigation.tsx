@@ -62,7 +62,7 @@ export const IncidentInvestigation: React.FC = () => {
                       <span className="font-medium text-slate-800">{inc.reporterName}</span>
                       <span className="text-slate-500 font-mono">({inc.reporterContact})</span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-sm text-slate-500">
                       Reported: {inc.reportDate} | Channel: <strong>{inc.gateway}</strong>
                     </div>
                   </div>
@@ -81,11 +81,11 @@ export const IncidentInvestigation: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg text-slate-700">
                   <div>
-                    <span className="text-slate-500 block text-[11px]">Txn Reference:</span>
+                    <span className="text-slate-500 block text-sm">Txn Reference:</span>
                     <strong className="font-mono-plex">{inc.transactionReference}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[11px]">Category:</span>
+                    <span className="text-slate-500 block text-sm">Category:</span>
                     <span>{inc.category.replace(/_/g, ' ')}</span>
                   </div>
                 </div>
@@ -96,7 +96,7 @@ export const IncidentInvestigation: React.FC = () => {
 
                 {currentFindings && (
                   <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950">
-                    <strong className="block text-[11px] text-emerald-900">Officer Resolution Record:</strong>
+                    <strong className="block text-sm text-emerald-900">Officer Resolution Record:</strong>
                     <p className="mt-0.5">{currentFindings}</p>
                   </div>
                 )}

@@ -73,7 +73,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Request saved locally: {submittedTicket}</span>
+              <p>Request saved locally: {submittedTicket}</p>
             </div>
             <p className="text-xs text-emerald-700">
               Not submitted to NBR or an official review queue.
@@ -221,7 +221,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
               className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Send className="w-4 h-4" />
-              <span>Save request locally</span>
+              Save request locally
             </button>
           </div>
         </form> : <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No payment records are available for correction.</p>}
@@ -239,10 +239,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-mono-plex font-bold text-slate-900">{corr.ticketNo}</span>
-                  <span className="text-slate-400">•</span>
+                  <span aria-hidden="true" className="text-slate-400 before:content-['•']" />
                   <span className="font-mono-plex text-taxpay-dark">{corr.challanNo}</span>
                 </div>
-                <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                <span className={`px-2.5 py-0.5 rounded text-sm font-bold ${
                   corr.workflowStage === 'APPROVER_FINALIZED' ? 'bg-emerald-100 text-emerald-800' :
                   corr.workflowStage === 'REVIEWER_CHECKED' ? 'bg-indigo-100 text-indigo-800' :
                   corr.workflowStage === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
@@ -254,21 +254,21 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityT
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Amendment:</span>
-                  <strong>AY {corr.currentAssessmentYear}</strong> ➔ <strong className="text-emerald-800">AY {corr.proposedAssessmentYear}</strong>
+                  <p className="text-slate-400 block text-sm">Amendment:</p>
+                  <p><strong>AY {corr.currentAssessmentYear}</strong> ➔ <strong className="text-emerald-800">AY {corr.proposedAssessmentYear}</strong></p>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Jurisdiction:</span>
-                  <span>{corr.currentCircle} ➔ {corr.proposedCircle}</span>
+                  <p className="text-slate-400 block text-sm">Jurisdiction:</p>
+                  <p>{corr.currentCircle} ➔ {corr.proposedCircle}</p>
                 </div>
               </div>
 
-              <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-[11px]">
+              <p className="text-slate-600 bg-white p-2 rounded border border-slate-200 text-sm">
                 {corr.reason}
               </p>
 
               {corr.approverRemarks && (
-                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-[11px] text-taxpay-dark">
+                <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-sm text-taxpay-dark">
                   <strong>Review note:</strong> {corr.approverRemarks}
                 </div>
               )}
