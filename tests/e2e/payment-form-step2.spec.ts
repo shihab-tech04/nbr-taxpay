@@ -284,24 +284,26 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   expect(width).toBeLessThanOrEqual(376);
 });
 
-test('Travel tax keeps land/water and previews individual age bands', async ({ page }) => {
+test('Travel tax calculates age-dependent estimates only after identity and travel date', async ({ page }) => {
   await page.goto('/?action=travel');
-  const travel = page.locator('.travel-flow');
-  const summary = travel.locator('.travel-flow__total');
+  const travel=page.locator('.travel-flow');
+  const summary=travel.locator('.travel-flow__total');
   await expect(travel.locator('#travel-tax-route-results input[type="radio"]')).toHaveCount(2);
   await expect(travel.locator('#travel-tax-route-0')).toBeChecked();
-  await expect(summary).toContainText('1,000');
+  await expect(summary).toContainText('—');
+  await travel.locator('#travel-passenger-tab-first-FOREIGN').click();
+  await travel.locator('#travel-passport-first').fill('FAKE002');
+  await travel.locator('#travel-name-first').fill('SAMPLE TRAVELLER');
+  await travel.locator('#travel-country-first').fill('India');
+  await travel.locator('#travel-birth-date-first').fill('2017-08-10');
   await fillTravelDetails(travel);
-  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await travel.getByLabel('Age category').selectOption('CHILD');
   await expect(summary).toContainText('500');
-  await travel.getByLabel('Age category').selectOption('UNDER5');
+  await travel.locator('#travel-birth-date-first').fill('2023-08-10');
   await expect(summary).toContainText('0');
-  await travel.getByLabel('Age category').selectOption('ADULT');
+  await travel.locator('#travel-birth-date-first').fill('1992-08-10');
   await expect(summary).toContainText('1,000');
-  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport number').fill('FAKE002');
-  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
+  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await expect(travel.getByRole('heading', { name: 'Review passengers and payment' })).toBeVisible();
   await expect(travel.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
