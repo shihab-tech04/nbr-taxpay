@@ -42,6 +42,23 @@ for(const language of ['en','bn'] as const){
           ?root.locator('.taxpay-mobile-table-card').first()
           :root.locator('.taxpay-record-list__row').first());
       await expect(row).toBeVisible();
+      if(!desktop&&view==='ledger'){
+        const nested=await row.locator('button').first().evaluate(element=>({
+          borderTopWidth:getComputedStyle(element).borderTopWidth,
+          paddingLeft:getComputedStyle(element).paddingLeft,
+          minHeight:element.getBoundingClientRect().height
+        }));
+        expect(nested.borderTopWidth,'mobile ledger must not double-border a card').toBe('0px');
+        expect(nested.paddingLeft,'mobile ledger must not double-inset a card').toBe('0px');
+        expect(nested.minHeight).toBeGreaterThanOrEqual(44);
+        const panel=await root.locator('.taxpay-ledger-records').evaluate(element=>({
+          borderTopWidth:getComputedStyle(element).borderTopWidth,
+          background:getComputedStyle(element).backgroundColor,
+          viewportBorder:getComputedStyle(element.querySelector('.taxpay-table-viewport')!).borderTopWidth
+        }));
+        expect(panel.borderTopWidth,'mobile ledger list should not double-wrap cards').toBe('0px');
+        expect(panel.viewportBorder,'mobile ledger viewport should not frame cards').toBe('0px');
+      }
       if(header)await expect(header).toBeVisible();
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'

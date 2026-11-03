@@ -233,7 +233,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             {key:'actor',header:t('Actor · source','কার্যকারী · উৎস'),renderCell:e=><>{e.actor}<span className="block text-taxpay-muted">{e.source}</span></>},
             {key:'taxEvent',header:t('Tax event','কর ঘটনা'),cellClassName:'break-all font-mono',renderCell:e=>e.taxEventId||e.id}
           ]}
-          renderMobileCard={e=><button type="button" onClick={()=>setSelected(e)} className="flex w-full flex-col gap-1 rounded-lg border border-taxpay-border p-3 text-left text-sm">
+          renderMobileCard={e=><button type="button" onClick={()=>setSelected(e)} className="flex min-h-11 w-full flex-col gap-1 rounded-lg p-0 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
             <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>
             <span className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</span>
             <span className="break-all text-xs">{e.reference||e.taxEventId||e.id}</span>
