@@ -1,13 +1,13 @@
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
-  LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
-  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger,
+  LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
+  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge,
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
@@ -25,8 +25,6 @@ interface TravelTaxProps {
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
-
-const PASSPORT_PREVIEW = 'TEST123456';
 
 function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
@@ -51,6 +49,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [identityRevealed, setIdentityRevealed] = useState(false);
+  const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
   const [methodGroup, setMethodGroup] = useState<PaymentMethodGroup | null>(null);
@@ -93,12 +93,22 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     { value: 'WATER', en: 'By water', bn: 'নৌপথে' },
   ];
 
+  const showError = (message: string) => {
+    setError(message);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const alert = document.getElementById('travel-tax-error');
+      alert?.scrollIntoView({ block: 'nearest' });
+      alert?.focus();
+    }));
+  };
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
+    if (id === 'first' && ('passport' in patch || 'nationality' in patch)) setIdentityRevealed(false);
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
   };
   const changePassengerType = (id: string, nationality: TravellerNationality) => {
+    setPassportSuggestionsFor(null);
     changePassenger(id, { nationality, passport: '', name: '', birthDate: '',
       country: nationality === 'BD' ? 'Bangladesh' : '',
       identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL' });
@@ -138,17 +148,44 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     if (!/^01\d{9}$/.test(phone)) return tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
     return null;
   };
+  const confirmIdentity = () => {
+    const passenger = passengers[0];
+    const problem = validateTravelParty([passenger]);
+    if (problem) {
+      showError(bn
+        ? (passenger.nationality === 'BD'
+          ? 'নমুনা পাসপোর্ট নম্বর নির্বাচন করে যাচাই করুন।'
+          : 'বৈধ পাসপোর্ট নম্বর ও যাত্রীর পুরো নাম দিন।')
+        : problem);
+      return;
+    }
+    if (passenger.nationality === 'FOREIGN') {
+      if (!passenger.country.trim()) {
+        showError(tr('Enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।'));
+        return;
+      }
+      if (travelPassengerAge(passenger.birthDate, new Date().toISOString().slice(0, 10)) === null) {
+        showError(tr('Enter a valid date of birth.', 'সঠিক জন্মতারিখ লিখুন।'));
+        return;
+      }
+    }
+    setIdentityRevealed(true);
+    setError('');
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.getElementById('travel-mode-section')?.scrollIntoView({ block: 'nearest' })
+    ));
+  };
   const continueStep = () => {
     const problem = step === 0
       ? validateTravelParty([passengers[0]]) ?? validateTravelDetails() ??
         validateTravelParty([passengers[0]], travelDate)
       : validatePassengers();
-    if (problem) { setError(problem); return; }
+    if (problem) { showError(problem); return; }
     stepTo(step === 0 ? 1 : 2);
   };
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
-    setDestination(''); setTravelDate('');
+    setDestination(''); setTravelDate(''); setIdentityRevealed(false); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -405,8 +442,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       {processing ? tr('Processing…', 'প্রক্রিয়াধীন…') : tr('Confirm preview payment', 'নমুনা পেমেন্ট নিশ্চিত করুন')}
     </button>
   ) : (
-    <button type="button" className="travel-flow__primary" onClick={continueStep}>
-      {step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান') : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
+    <button type="button" className="travel-flow__primary"
+      onClick={step === 0 && !identityRevealed ? confirmIdentity : continueStep}>
+      {step === 0 && !identityRevealed ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
+        : step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান')
+        : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
   );
@@ -433,7 +473,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           ))}
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
-          {error && <p className="travel-flow__error" id="travel-tax-error" role="alert">{error}</p>}
+          {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
 
           {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')}>
             <PaymentFormSection number={1} title={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')} staticView={embedded}>
