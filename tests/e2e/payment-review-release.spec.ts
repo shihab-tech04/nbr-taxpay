@@ -356,9 +356,9 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
 test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview and one receipt', async ({ page }, info) => {
   await page.goto('/?action=travel');
   await expect(page.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await expect(page.locator('#travel-tax-route-results input[type=radio]')).toHaveCount(2);
-  await expect(page.locator('#travel-tax-route-0')).toBeChecked();
+  await expect(page.locator('#travel-tax-route-results')).toHaveCount(0);
   await fillTravelDetails(page);
+  await expect(page.locator('#travel-tax-route-0')).toBeChecked();
   await page.getByRole('button', { name: 'Continue to add passengers' }).click();
   await fillForeignPassenger(page, { name: 'SAMPLE PASSENGER', passport: 'SAMPLE123' });
   await page.getByRole('button', { name: 'বাংলা' }).click();
