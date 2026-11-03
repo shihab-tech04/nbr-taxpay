@@ -25,6 +25,12 @@ interface ReceiptViewProps {
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment }) => {
   const { language, navigate } = useTaxState();
   const footerTarget = useContext(TaxPayModalFooterTarget);
+  const travelPreview = receipt.paymentCategory === 'TRAVEL_TAX' && !!receipt.isSimulatedDemo;
+  const recordedAt = new Date(receipt.completedAt || receipt.createdAt);
+  const readableDate = Number.isNaN(recordedAt.getTime()) ? (receipt.completedAt || receipt.createdAt)
+    : new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-GB', {
+      dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Dhaka',
+    }).format(recordedAt);
   const bn = language === 'bn';
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
@@ -188,8 +194,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         </div>}
         <header className="receipt-view__summary">
           <div className="receipt-view__summary-copy">
-            <p className="receipt-view__eyebrow">{bn ? 'পেমেন্ট রেকর্ড' : 'Payment record'}</p>
-            <h3>{bn ? 'রসিদের বিবরণ' : 'Receipt details'}</h3>
+            <p className="receipt-view__eyebrow">{travelPreview ? (bn ? 'নমুনা পেমেন্ট রেকর্ড' : 'Simulated payment record') : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</p>
+            <h3>{travelPreview ? (bn ? 'সম্মিলিত ভ্রমণ করের বিবরণ' : 'Combined Travel Tax details') : (bn ? 'রসিদের বিবরণ' : 'Receipt details')}</h3>
             <p className="receipt-view__summary-subtitle">
               {serviceSummary}
             </p>
@@ -220,17 +226,17 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </div>
           </div>
 
-          <div>
+          {!travelPreview && <div>
             <span className="text-slate-700 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
               {receipt.tokenNumber}
             </span>
-          </div>
+          </div>}
 
           <div>
             <span className="text-slate-700 block">{embedded ? (bn ? 'তারিখ ও সময়' : 'Date & time') : labels.timestamp}:</span>
             <span className="font-mono-plex font-medium text-slate-800 mt-0.5 block">
-              {receipt.completedAt || receipt.createdAt}
+              {readableDate}
             </span>
           </div>
         </div>
@@ -245,10 +251,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <span className="text-slate-700">{labels.payer}:</span>
               <span className="col-span-2 font-semibold text-slate-900">{receipt.payerName}</span>
             </div>
-            <div className="receipt-view__detail">
+            {receipt.paymentCategory !== 'TRAVEL_TAX' && <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.tin}:</span>
               <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{taxpayerTinSummary}</span>
-            </div>
+            </div>}
             <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.service}:</span>
               <span className="col-span-2 font-semibold text-slate-900">{serviceSummary}</span>
@@ -277,25 +283,26 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <span className="text-slate-700">{labels.paymentMethod}:</span>
               <span className="col-span-2 font-medium text-slate-900">{paymentMethodLabels}</span>
             </div>
-            <div className="receipt-view__detail">
+            {!travelPreview && <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.transaction}:</span>
               <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
-            </div>
-            {receipt.taxEventId && <div className="receipt-view__detail">
+            </div>}
+            {!travelPreview && receipt.taxEventId && <div className="receipt-view__detail">
               <span className="text-slate-700">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
               <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</span>
             </div>}
-            {receipt.paymentTransactionId && <div className="receipt-view__detail">
+            {!travelPreview && receipt.paymentTransactionId && <div className="receipt-view__detail">
               <span className="text-slate-700">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
               <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</span>
             </div>}
-            <div className="receipt-view__detail">
+            {!travelPreview && <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
                 {receipt.isSimulatedDemo ? (bn ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued') : receipt.treasuryScrollNo || labels.pendingScroll}
               </span>
-            </div>
+            </div>}
 
+            {travelPreview && <p className="receipt-view__summary-subtitle" role="status">{bn ? 'এটি সরকারি A-Challan বা ট্রেজারি নিষ্পত্তি নয়।' : 'Not a government A-Challan or Treasury settlement.'}</p>}
             {/* WITHHOLDING SPECIFIC SEPARATION */}
             {receipt.isWithholding && (
               <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] space-y-1">
@@ -330,7 +337,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <tbody>{receipt.travelDetails.passengers.map((item,index) => <tr key={index}>
                 <td>{item.name}</td>
                 <td>{item.passportMasked}</td>
-                <td>{item.age ?? item.ageBand}</td>
+                <td>{item.age ?? item.ageBand}{typeof item.age === 'number' && item.age <= 5 && <p className="receipt-view__summary-subtitle">{bn ? 'নমুনা বয়সভিত্তিক অব্যাহতি' : 'Illustrative age exemption'}</p>}</td>
                 <td>{formatCurrency(item.amount, language)}</td>
               </tr>)}</tbody>
               <tfoot><tr><th scope="row" colSpan={3}>{bn ? 'সর্বমোট ভ্রমণ কর' : 'Combined Travel Tax'}</th>
@@ -342,7 +349,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             : 'Simulation only: not a government A-Challan or Treasury settlement.'}</p>
         </section>}
         {/* Keep one financial document view for both standard heads and reconciled allocations. */}
-        {allocationBreakdown || (
+        {allocationBreakdown || (!receipt.travelDetails && (
         <div className="receipt-view__breakdown">
           <h3 className="receipt-view__section-title">
             {labels.breakdown}
@@ -423,7 +430,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </div>
           </div>
         </div>
-        )}
+        ))}
 
       </div>
     </div>
