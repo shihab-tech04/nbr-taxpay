@@ -404,6 +404,7 @@ table.taxpay-unified-table {
   font-weight:650;
   line-height:1.4;
 }
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__columns {padding-left:46px;}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__heading {margin:0;font:inherit;color:inherit;}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__heading:last-child {text-align:right;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__heading:nth-child(3) {text-align:left;}

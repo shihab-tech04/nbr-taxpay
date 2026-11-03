@@ -41,12 +41,12 @@ type RecordListProps=Omit<DivProps,'children'> & {
   headers:readonly string[];
   children:ReactNode;
 };
-export function TaxPayRecordList({variant,headers,children,className,...rest}:RecordListProps){
+export function TaxPayRecordList({variant,headers,children,className,'aria-label':ariaLabel,...rest}:RecordListProps){
   const previousHeadingClass=variant==='payments'?'taxpayer-transaction-list__columns':'beneficiary-directory__columns';
   return <div {...rest} data-record-layout={variant} className={merge('taxpay-record-list',className)}>
     <div className={merge('taxpay-record-list__columns',previousHeadingClass)} aria-hidden="true">
       {headers.map((label,index)=><p key={index} className="taxpay-record-list__heading">{label}</p>)}
     </div>
-    <ul className="taxpay-record-list__rows">{children}</ul>
+    <ul aria-label={ariaLabel} className="taxpay-record-list__rows">{children}</ul>
   </div>;
 }
