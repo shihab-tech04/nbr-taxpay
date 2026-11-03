@@ -659,17 +659,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           </section>}
 
           {step === 2 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>
-            <header className="travel-flow__section-header">
-              <h3>{tr('Review passengers and payment','যাত্রী ও পেমেন্ট যাচাই করুন')}</h3>
-              <p>{tr('One application and one combined simulated challan for every passenger.',
-                'এক আবেদনে সকল যাত্রীর জন্য একটি সম্মিলিত নমুনা চালান।')}</p>
-            </header>
+            <p className="travel-flow__field-hint">{tr('Review every passenger and travel details before recording a simulated payment.', 'নমুনা পেমেন্ট রেকর্ডের আগে সব যাত্রীর ও ভ্রমণের তথ্য যাচাই করুন।')}</p>
             <div className="travel-flow__review">
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
               <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
-              <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
+              <div><dt>{tr('Edit', 'সম্পাদনা')}</dt><dd><button type="button" className="travel-flow__edit" onClick={() => stepTo(1)}><Pencil size={15} aria-hidden="true"/>{tr('Edit travel details', 'ভ্রমণের তথ্য সম্পাদনা')}</button></dd></div>
             </div>
+            <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers and receipt contact', 'যাত্রী ও রসিদের যোগাযোগ সম্পাদনা')}</button>
             <div className="travel-flow__table-wrap taxpay-table-viewport">
               <TaxPayUnifiedTable className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
                 <thead><tr>
@@ -698,6 +695,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
               simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
             {paymentMethod && <p className="travel-flow__field-hint">{paymentMethodLabel(paymentMethod, language)}</p>}
+            {(!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>
             <label className="travel-flow__channel-option">
               <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
               <p>{tr('I confirm the travel information, all passengers and the combined amount.',
@@ -729,22 +727,24 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         </div>
         <p className="travel-flow__summary-label">{tr('Automatically calculated · illustrative rules','স্বয়ংক্রিয় হিসাব · নমুনা বিধি')}</p>
         <strong className="travel-flow__total travel-flow__total--with-words" data-testid="travel-payment-total">
-          {allCalculated ? formatCurrency(totalAmount, language) : '—'}
+          {allCalculated ? formatCurrency(totalAmount, language) : validAssessments.length > 0 && travelDate ? formatCurrency(provisionalAmount, language) : '—'}
         </strong>
         <p className="travel-flow__amount-words" data-testid="travel-total-in-words">
-          {allCalculated ? amountWords : tr('Enter passport, birth date and travel date to calculate.','কর হিসাবের জন্য পাসপোর্ট, জন্মতারিখ ও ভ্রমণের তারিখ দিন।')}
+          {allCalculated ? amountWords : validAssessments.length > 0 && travelDate
+            ? tr('Provisional subtotal — not yet payable. Correct all passenger details.', 'অস্থায়ী উপমোট — এখনো পরিশোধযোগ্য নয়। সব যাত্রীর তথ্য সংশোধন করুন।')
+            : tr('Complete passenger and travel details to calculate.', 'হিসাবের জন্য যাত্রী ও ভ্রমণের তথ্য পূরণ করুন।')}
         </p>
         <dl className="travel-flow__summary-list">
           <div><dt>{tr('Mode','মাধ্যম')}</dt><dd>{mode === 'LAND' ? tr('Land','স্থল') : tr('Water','নৌ')}</dd></div>
           <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
-          <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : tr('Waiting for passenger information','যাত্রীর তথ্যের অপেক্ষায়')}</dd></div>
+          <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : invalidPassengerIds.size > 0 ? tr('Passenger details need correction','যাত্রীর তথ্য সংশোধন প্রয়োজন') : tr('Awaiting travel details','ভ্রমণের তথ্যের অপেক্ষায়')}</dd></div>
         </dl>
         <div className="travel-flow__age-breakdown" role="status" aria-live="polite">
           {assessments.map(({passenger, assessment}, index) =>
             <div key={passenger.id} className="travel-flow__age-row">
               <p><strong>{passenger.name || tr('Passenger ', 'যাত্রী ') + (index + 1)}</strong>
-                <strong>{assessment ? formatCurrency(assessment.amount, language) : '—'}</strong></p>
-              <p>{assessment ? ageExplanation(assessment.age)
+                <strong>{assessment && !invalidPassengerIds.has(passenger.id) ? formatCurrency(assessment.amount, language) : '—'}</strong></p>
+              <p>{assessment && !invalidPassengerIds.has(passenger.id) ? ageExplanation(assessment.age)
                 : tr('Tax will calculate after passport and age information are available.',
                      'পাসপোর্ট ও বয়সের তথ্য পাওয়া গেলে কর হিসাব হবে।')}</p>
             </div>)}
@@ -758,17 +758,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
 
       {embedded && modalFooterTarget && createPortal(
         <div className="travel-flow__footer-content">
-          <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+          {step > 0 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
-              <strong>{allCalculated ? formatCurrency(totalAmount,language) : '—'}</strong></summary>
+              <strong>{allCalculated ? formatCurrency(totalAmount,language) : validAssessments.length > 0 && travelDate ? formatCurrency(provisionalAmount, language) : '—'}</strong></summary>
             <dl>
               <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
               <div><dt>{tr('Mode','মাধ্যম')}</dt><dd>{mode === 'LAND' ? tr('Land','স্থল') : tr('Water','নৌ')}</dd></div>
-              <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
+              <div><dt>{tr('Status', 'অবস্থা')}</dt><dd>{allCalculated ? tr('Ready for review', 'পর্যালোচনার জন্য প্রস্তুত') : tr('Incomplete', 'অসম্পূর্ণ')}</dd></div>
               <div><dt>{tr('Age-based calculation','বয়সভিত্তিক হিসাব')}</dt><dd>{assessments.map(({passenger,assessment}) => (passenger.name || tr('Passenger','যাত্রী')) + ': ' + (assessment ? ageExplanation(assessment.age) : tr('Pending','অপেক্ষমাণ'))).join(' · ')}</dd></div>
               <div><dt>{tr('Total in words','কথায়')}</dt><dd data-testid="travel-mobile-total-in-words">{amountWords || '—'}</dd></div>
             </dl>
-          </details>
+          </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
             back={!createdReceipt && (step > 0 || onBackToService) && <button type="button" className="tax-service-choice__cancel"
               onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>
