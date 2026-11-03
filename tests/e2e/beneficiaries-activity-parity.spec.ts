@@ -8,8 +8,8 @@ async function mountBeneficiaryLists(page:Page){
     {id:'00000000-0000-4000-8000-000000000102',name:'Family Member',created_at:now},
   ];
   const people=[
-    {id:'00000000-0000-4000-8000-000000000201',list_id:lists[0].id,tin:'123456789012',display_name:'Shihab',created_at:now,updated_at:now},
-    {id:'00000000-0000-4000-8000-000000000202',list_id:lists[0].id,tin:'222222222222',display_name:'User2',created_at:now,updated_at:now},
+    {id:'00000000-0000-4000-8000-000000000201',list_id:lists[0].id,tin:'123456789012',display_name:'Shihab',tag:'others',relationship:null,other_label:'Neighbour',created_at:now,updated_at:now},
+    {id:'00000000-0000-4000-8000-000000000202',list_id:lists[0].id,tin:'222222222222',display_name:'User2',tag:'clients',relationship:null,other_label:null,created_at:now,updated_at:now},
   ];
   await page.route('**/auth/v1/user',route=>route.fulfill({
     status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})
@@ -54,6 +54,8 @@ for(const language of ['en','bn'] as const){
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
     await expect(rows.first()).toContainText('123456789012');
+    await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
+    await expect(screen.locator('.beneficiary-directory__table')).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toBeVisible();
@@ -72,7 +74,10 @@ for(const language of ['en','bn'] as const){
     expect(layout.pageOverflow).toBe(false);
     expect(layout.rowColumns).toBe(layout.width<=700?1:2);
     expect(layout.headingVisible).toBe(layout.width>700);
-    expect(layout.filterColumns).toBe(layout.width<=850?1:2);
+    expect(layout.filterColumns).toBe(layout.width<=700?1:layout.width<=1050?2:3);
+    await search.fill('Neighbour');
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText('Shihab');
     await search.fill('User2');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText('User2');
@@ -90,5 +95,17 @@ for(const language of ['en','bn'] as const){
     await rows.first().getByRole('checkbox',{name:t('Select Shihab','Shihab নির্বাচন')}).check();
     await expect(screen.locator('.beneficiary-directory__selected-count')).toContainText('1');
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();
+    await screen.getByRole('button',{name:t('Add beneficiary','উপকারভোগী যোগ'),exact:true}).click();
+    await page.getByRole('button',{name:t('Add one beneficiary','একজন উপকারভোগী যোগ')}).click();
+    await page.locator('#beneficiary-tag').selectOption('others');
+    const otherInput=page.locator('#beneficiary-other-label');
+    await expect(otherInput).toBeVisible();
+    await expect(otherInput).toHaveAttribute('maxlength','80');
+    await otherInput.fill('a'.repeat(80));
+    await expect(page.getByText(t('80/80 characters','80/80 অক্ষর'))).toBeVisible();
+    await page.locator('#beneficiary-tag').selectOption('clients');
+    await expect(otherInput).toHaveCount(0);
+    await page.locator('#beneficiary-tag').selectOption('others');
+    await expect(otherInput).toHaveValue('');
   });
 }
