@@ -1702,13 +1702,13 @@
   letter-spacing:-.01em;
 }
 .travel-flow__section-header p {margin:0;color:var(--citizen-muted);font-size:.83rem;line-height:1.55;}
-.travel-flow__routes {display:grid;gap:.6rem;min-width:0;margin:0;padding:0;border:0;}
+.travel-flow__routes {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;min-width:0;margin:0;padding:0;border:0;}
 .travel-flow__route {
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto 20px;
+  grid-template-columns:minmax(0,1fr) auto 18px;
   align-items:center;
-  gap:1rem;
-  padding:.85rem .95rem;
+  gap:.5rem;
+  padding:.85rem .7rem;
   min-height:74px;
   border:1px solid var(--citizen-border);
   border-radius:.7rem;
@@ -1730,14 +1730,14 @@
   overflow-wrap:anywhere;
 }
 .travel-flow__route-copy > span {color:var(--citizen-muted);font-size:.7rem;line-height:1.45;}
-.travel-flow__route-price {display:grid;gap:.12rem;text-align:right;white-space:nowrap;}
+.travel-flow__route-price {display:grid;gap:.12rem;min-width:0;text-align:right;white-space:normal;}
 .travel-flow__route-price strong {
   color:var(--citizen-primary-dark);
   font-family:'IBM Plex Mono',ui-monospace,monospace;
   font-size:.83rem;
   font-weight:800;
 }
-.travel-flow__route-price small {color:var(--citizen-muted);font-size:.66rem;}
+.travel-flow__route-price small {color:var(--citizen-muted);font-size:.66rem;line-height:1.4;max-width:145px;}
 .travel-flow__route input {
   appearance:auto;
   accent-color:var(--citizen-primary);
@@ -1893,6 +1893,7 @@
 }
 @media(max-width:520px) {
   .travel-flow__steps {gap:.12rem;}
+  .travel-flow__routes {grid-template-columns:minmax(0,1fr);}
   .travel-flow__step {flex-direction:column;justify-content:center;align-items:center;gap:.25rem;text-align:center;font-size:.7rem;padding:.35rem .15rem;}
   .travel-flow__fields {grid-template-columns:minmax(0,1fr);}
   .travel-flow__fields--five > :last-child {grid-column:auto;}
