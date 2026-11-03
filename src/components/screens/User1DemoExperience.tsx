@@ -213,7 +213,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       ]}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Certificate summaries','সনদের সারসংক্ষেপ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
@@ -510,14 +510,65 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
   </>;
 
-  const documents=<><section className={panel}><h2 className="text-base font-semibold">{tr('Receipts and supporting records','রসিদ ও সহায়ক নথি')}</h2>{sub('Open a record to see its details','বিস্তারিত দেখতে রেকর্ড খুলুন')}
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">{scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds')).map(x=><article key={x.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-2"><FileCheck2 size={18} className="text-sky-700"/><h3 className="text-sm font-semibold">{x.title}</h3></div><p className="mt-2 break-all text-xs text-slate-500">{x.challan||x.ref}</p><p className="mt-2 text-sm font-semibold">{money(x.amount)}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('View details','বিস্তারিত দেখুন')}</button></article>)}</div>
-  </section></>;
+  // Records, exceptions and beneficiary entries use the same column-driven grid.
+  // Preserve the existing case/receipt details modal and never suggest that
+  // a recorded payment automatically means a government receipt was issued.
+  const documentRecords=scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds'));
+  const documents=<section className={panel+' taxpayer-records-panel'} aria-labelledby="taxpayer-documents-heading">
+    <div className="taxpay-table-toolbar">
+      <div>
+        <h2 id="taxpayer-documents-heading" className="text-base font-semibold">{tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}</h2>
+        <p className="mt-1 text-sm text-taxpay-muted">{tr('Open a record to check its payment details. A recorded entry is not itself an issued certificate.','পেমেন্টের বিস্তারিত দেখতে রেকর্ড খুলুন। নথিভুক্ত তথ্য নিজে কোনো ইস্যুকৃত সনদ নয়।')}</p>
+      </div>
+      <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={documentRecords.length}/>
+    </div>
+    {documentRecords.length?<div className="mt-4">
+      <TaxPayDataGrid variant="documents" rows={documentRecords} getRowKey={x=>x.id}
+        ariaLabel={tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}
+        columns={[
+          {key:'name',header:tr('Payment','পেমেন্ট'),renderCell:x=><div>
+            <h3 className="text-sm font-semibold text-taxpay-text">{x.title}</h3>
+            <p className="mt-1 text-sm text-taxpay-muted">{tr(...labels[x.kind])}</p>
+          </div>},
+          {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:x=><p className="break-all text-sm text-taxpay-muted">{x.challan||x.ref}</p>},
+          {key:'amount',header:tr('Amount','পরিমাণ'),renderCell:x=><p className="text-sm font-semibold tabular-nums">{money(x.amount)}</p>},
+          {key:'action',header:tr('Actions','কার্যক্রম'),renderCell:x=><button type="button" className={action}
+            onClick={()=>setSelected(x)} aria-label={tr('View payment details for ','পেমেন্টের বিস্তারিত: ')+x.title}>{tr('View details','বিস্তারিত দেখুন')}</button>}
+        ]}/>
+    </div>:<p role="status" className="taxpay-table-state mt-4">{tr('No recorded payment references for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেফারেন্স নেই।')}</p>}
+  </section>;
   const correctionRecords=scoped.filter(x=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(x.state));
-  const exceptions=<><div className="grid gap-3 sm:grid-cols-3">{card('Pending items','অপেক্ষমাণ',String(correctionRecords.filter(x=>x.state==='PENDING').length),'No credit until resolved','সমাধানের আগে ক্রেডিট নয়')}
-    {card('Refund / adjustment requests','ফেরত / সমন্বয় আবেদন',String(correctionRecords.filter(x=>x.state==='REQUESTED').length),'No approval implied','অনুমোদন বোঝায় না')}
-    {card('Unmatched / failed / reversed','অমিল / ব্যর্থ / রিভার্স',String(correctionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Not included as credits','ক্রেডিট হিসাবে গণনা নয়')}</div>
-    <section className={panel}><h2 className="text-base font-semibold">{tr('Exception and correction tracker','ব্যতিক্রম ও সংশোধন ট্র্যাকার')}</h2><div className="mt-3 space-y-3">{correctionRecords.length?correctionRecords.map(x=><article className="rounded-lg border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.ref} · {x.date}</p><p className="mt-2 text-sm">{x.detail}</p><button type="button" className={action+' mt-3'} onClick={()=>setSelected(x)}>{tr('Review case','কেস দেখুন')}</button></article>):<p className="text-sm text-slate-500">{tr('No exceptions this year','এই করবর্ষে ব্যতিক্রম নেই')}</p>}</div></section></>;
+  const exceptions=<>
+    <div className="grid gap-3 sm:grid-cols-3">
+      {card('Awaiting reconciliation','সমন্বয়ের অপেক্ষায়',String(correctionRecords.filter(x=>x.state==='PENDING').length),'Not yet counted as a tax credit','এখনো কর ক্রেডিট হিসেবে গণনা হয়নি')}
+      {card('Refund or adjustment inquiries','ফেরত বা সমন্বয়ের আবেদন',String(correctionRecords.filter(x=>x.state==='REQUESTED').length),'A request does not mean approval','আবেদন মানেই অনুমোদন নয়')}
+      {card('Failed, reversed or disputed','ব্যর্থ, প্রত্যাবর্তিত বা বিরোধপূর্ণ',String(correctionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Excluded from confirmed tax credits','নিশ্চিত কর ক্রেডিটে অন্তর্ভুক্ত নয়')}
+    </div>
+    <section className={panel+' taxpayer-records-panel'} aria-labelledby="taxpayer-exceptions-heading">
+      <div className="taxpay-table-toolbar">
+        <div>
+          <h2 id="taxpayer-exceptions-heading" className="text-base font-semibold">{tr('Cases requiring attention','যেসব বিষয়ে নজর দেওয়া প্রয়োজন')}</h2>
+          <p className="mt-1 text-sm text-taxpay-muted">{tr('Review the recorded reason and status. These entries do not establish a tax credit.','নথিভুক্ত কারণ ও অবস্থা দেখুন। এসব এন্ট্রি কর ক্রেডিট নিশ্চিত করে না।')}</p>
+        </div>
+        <TaxPayTableCounter label={tr('Cases','বিষয়')} shown={correctionRecords.length}/>
+      </div>
+      {correctionRecords.length?<div className="mt-4">
+        <TaxPayDataGrid variant="exceptions" rows={correctionRecords} getRowKey={x=>x.id}
+          ariaLabel={tr('Correction and exception cases','সংশোধন ও ব্যতিক্রমের তালিকা')}
+          columns={[
+            {key:'case',header:tr('Case','বিষয়'),renderCell:x=><div>
+              <h3 className="text-sm font-semibold text-taxpay-text">{x.title}</h3>
+              <p className="mt-1 text-sm text-taxpay-muted"><time dateTime={x.date}>{formatDate(x.date)}</time></p>
+              <p className="break-all text-xs text-taxpay-muted">{x.ref}</p>
+            </div>},
+            {key:'reason',header:tr('Recorded reason','নথিভুক্ত কারণ'),renderCell:x=><p className="text-sm text-taxpay-text">{x.detail}</p>},
+            {key:'status',header:tr('Status','অবস্থা'),renderCell:x=><div>{tag(x.state)}</div>},
+            {key:'action',header:tr('Actions','কার্যক্রম'),renderCell:x=><button type="button" className={action}
+              onClick={()=>setSelected(x)} aria-label={tr('View case details for ','বিষয়ের বিস্তারিত: ')+x.title}>{tr('View details','বিস্তারিত দেখুন')}</button>}
+          ]}/>
+      </div>:<p role="status" className="taxpay-table-state mt-4">{tr('No unresolved or disputed records for this assessment year.','এই করবর্ষে কোনো অমীমাংসিত বা বিরোধপূর্ণ রেকর্ড নেই।')}</p>}
+    </section>
+  </>;
 
   // The same immutable payment records feed Transactions, Tax Ledger and this journey.
   // Group by calendar year, not assessment year; do not manufacture posting milestones.
@@ -583,7 +634,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <h2 id="taxpayer-receipt-lookup-heading" className="text-base font-semibold">{tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')}</h2>
       <ReceiptLookup hidePageHeading accountContext />
     </section>}
-    {transactionList}
+    {trackingActivity
+      ? <div className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+          <h2 className="text-base font-semibold">{tr('Looking for another transaction?','অন্য লেনদেন খুঁজছেন?')}</h2>
+          <p className="mt-1 text-sm text-taxpay-muted">{tr('Browse your payment history to find a reference or open its details.','রেফারেন্স খুঁজতে বা বিস্তারিত দেখতে লেনদেনের ইতিহাস খুলুন।')}</p>
+          <button type="button" className={action+' mt-3'} onClick={()=>navigate('history')}>
+            {tr('View all transactions','সব লেনদেন দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
+          </button>
+        </div>
+      : transactionList}
   </>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
