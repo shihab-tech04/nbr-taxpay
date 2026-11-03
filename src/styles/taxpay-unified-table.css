@@ -418,7 +418,7 @@ table.taxpay-unified-table {
   line-height:1.4;
 }
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__columns {padding-left:12px;}
-.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__heading:first-child {padding-left:34px;}
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__heading:first-child {margin-left:34px;}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__heading {margin:0;font:inherit;color:inherit;}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__columns {height:var(--taxpay-table-header-height,44px);}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row {min-height:var(--taxpay-table-row-height,76px);}
