@@ -128,7 +128,7 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   await summary.locator('summary').click();
   await expect(summary.locator('dl')).toBeVisible();
   await next.click();
-  await expect(dialog.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+  await expect(dialog.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
