@@ -2,6 +2,32 @@ import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { fillTravelDetails, fillForeignPassenger, fillTravelReceiptMobile } from './travel-tax-test-helper';
 
+test('Travel Tax: Step 1 identifies missing travel fields before age validation', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  const continueButton = modal.getByRole('button', {name: 'Continue to add passengers'});
+
+  await continueButton.click();
+  await expect(modal.getByRole('alert')).toHaveText('Select a departure port.');
+  await modal.locator('#travel-port').selectOption('Benapole');
+
+  await continueButton.click();
+  await expect(modal.getByRole('alert')).toHaveText('Select or enter a destination.');
+  await modal.locator('#travel-destination').fill('India');
+
+  await continueButton.click();
+  await expect(modal.getByRole('alert')).toHaveText('Select your travel date.');
+  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
+
+  await modal.locator('#travel-departure-date').fill('2026-11-20');
+  await continueButton.click();
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
+});
+
 test('Travel Tax: passenger tabs first, Land default, no rate on mode cards or accounting inputs', async ({page}) => {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
