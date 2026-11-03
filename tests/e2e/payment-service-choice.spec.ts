@@ -278,9 +278,8 @@ test('Existing Travel Tax banner still provides journey, passenger and payment v
   await fillTravelDetails(travel);
   await expect(travel.locator('.travel-flow__total')).toContainText('1,000');
   await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await expect(travel.getByLabel('Passenger name')).toBeVisible();
-  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport number').fill('TRAVEL123');
+  await expect(travel.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await expect(travel.getByRole('heading', { name: 'Review passengers and payment' })).toBeVisible();
@@ -295,8 +294,7 @@ test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
   await travel.locator('#travel-tax-route-0').check();
   await fillTravelDetails(travel);
   await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport number').fill('TRAVEL123');
+
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await travel.getByRole('button', { name: 'Pay online' }).click();
