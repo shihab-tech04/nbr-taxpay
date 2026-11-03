@@ -137,7 +137,7 @@ export const NotificationsView:React.FC=()=>{
           :label(`Authorization for ${r.taxpayerId}`,`${r.taxpayerId}-এর অনুমোদন`)}</h2>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
           <p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>
-          <p className="text-sm text-taxpay-muted">{label('Requested','আবেদনের সময়')}: <time dateTime={r.requestedAt}>{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
+          <p className="text-sm text-taxpay-muted">{label('Requested','আবেদনের সময়')}: <time dateTime={new Date(r.requestedAt).toISOString()}>{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
         </div>
         {r.taxpayerId===previewAccount.id && r.status==='CODE_ISSUED' && r.consentCode &&
           <p className="mt-2 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
@@ -157,7 +157,7 @@ export const NotificationsView:React.FC=()=>{
            ?label(`Allocated to you by ${payment.payer}`,`${payment.payer} আপনার জন্য বরাদ্দ করেছেন`)
            :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>
          <p className="mt-1 break-all text-sm text-taxpay-muted">{label('Reference','রেফারেন্স')}: {payment.transactionId}</p>
-         <p className="mt-1 text-sm text-taxpay-muted">{label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : payment.state.replaceAll('_',' ').toLowerCase()}</p>
+         <p className="mt-1 text-sm text-taxpay-muted">{label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : String(payment.state).replaceAll('_',' ').toLowerCase()}</p>
        </li>)}</ul>}
     </section>
     <SessionPaymentNotifications language={language}/>
