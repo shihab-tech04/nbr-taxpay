@@ -122,7 +122,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Review & payment');
   await dialog.getByRole('button', { name: 'Back' }).click();
-  await expect(dialog.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+  await expect(dialog.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
 });
 
 
