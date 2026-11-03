@@ -152,6 +152,14 @@ export async function updateGuestBeneficiary(id: string, name: string): Promise<
   await post('update', { id, name });
 }
 
+/** One atomic capability-bound edit. Preserves TIN/name and supports tag-only changes. */
+export async function editGuestBeneficiaryClassification(
+  id:string,sourceListId:string,listId:string,
+  classification:Pick<Beneficiary,'tag'|'relationship'|'other_label'>
+):Promise<void>{
+  await post('edit-classification',{id,sourceListId,listId,...classification});
+}
+
 /** Guest preview compatibility: server performs one atomic, capability-bound list move. */
 export async function moveGuestBeneficiary(id:string,sourceListId:string,listId:string):Promise<void>{
   await post('move', {id,sourceListId,listId});
