@@ -42,7 +42,7 @@ test('travel-date DOB calculation explains the preview amount and safely handles
   assert.equal(assessTravelPassenger({...foreign,birthDate:''},1000,'2026-11-20'),null);
   const bd = {...makeTravelPassenger('bd','BD'), passport:'TEST123456', name:'Sample', birthDate:'1992-04-18'};
   assert.equal(assessTravelPassenger(bd,1000,'2026-11-20'),null);
-  assert.equal(assessTravelPassenger({...bd,identitySource:'PASSPORT_SAMPLE'},1000,'2026-11-20')?.amount,1000);
+  assert.equal(assessTravelPassenger({...bd,identitySource:'PASSPORT_SAMPLE' as const},1000,'2026-11-20')?.amount,1000);
   assert.equal(validateTravelParty([foreign],'2026-11-20'),null);
   assert.match(validateTravelParty([{...foreign,birthDate:''}],'2026-11-20')??'',/date of birth/);
 });
