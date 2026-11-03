@@ -144,14 +144,13 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
 
   await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
   await dialog.getByRole('button',{name:'Continue to review'}).click();
-  const row=dialog.locator('.travel-flow__summary-list > div').nth(2);
-  await expect(row.locator('dd')).not.toBeEmpty();
-  const values=await row.evaluate(element=>({display:getComputedStyle(element).display,
-    maxWidth:getComputedStyle(element.querySelector('dd')!).maxWidth,
-    rowWidth:element.getBoundingClientRect().width,
-    valueWidth:element.querySelector('dd')!.getBoundingClientRect().width}));
-  expect(values.display).toBe('grid');
-  expect(values.valueWidth).toBeGreaterThan(values.rowWidth*.8);
+  const age=dialog.locator('.travel-flow__age-breakdown');
+  await expect(age).toContainText('Age 34 on travel date');
+  const box=await age.boundingBox();
+  const side=await dialog.locator('.travel-flow__summary').boundingBox();
+  expect(box).not.toBeNull();
+  expect(side).not.toBeNull();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
 });
 
 test('mobile travel-tax explanation stays within the dashboard rather than clipping off-screen',async({page},info)=>{
