@@ -184,7 +184,7 @@ begin
     if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
   end;
 end;
-$;
+$$;
 
 set local role service_role;
 select public.taxpay_guest_beneficiary_open(repeat('c', 64));
