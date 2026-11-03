@@ -1,3 +1,4 @@
+import {TaxPayTableViewport} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -197,8 +198,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
     </div>
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <nav className="flex max-w-full gap-2 overflow-x-auto pb-1" aria-label={t('Event categories','ঘটনার শ্রেণি')}>
+    <div className="taxpay-table-toolbar taxpay-table-filters">
+      <nav className="taxpay-table-tabs flex max-w-full gap-2 overflow-x-auto" aria-label={t('Event categories','ঘটনার শ্রেণি')}>
         {filters.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>setType(key)}
           className={'min-h-10 shrink-0 rounded-full border px-3 text-xs font-medium '+(type===key?'border-taxpay-primary bg-taxpay-primary text-white':'border-taxpay-border bg-white text-taxpay-text')}>
           {language==='bn'?({all:'সব',liabilities:'দায়',credits:'ক্রেডিট',payments:'পেমেন্টের ধাপ',corrections:'সংশোধন',refunds:'ফেরত'} as Record<string,string>)[key]:label}
@@ -214,10 +215,10 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         </select>
       </label>
     </div>
-    <div className="overflow-x-auto rounded-xl border border-taxpay-border bg-white">
-      {visible.length===0&&<p role="status" className="p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
+    <TaxPayTableViewport>
+      {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
         <>
-          <table className="hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
+          <table className="taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
             <thead className="bg-taxpay-background text-taxpay-muted"><tr>
               <th className="p-3">{t('Date / time','তারিখ / সময়')}</th><th className="p-3">{t('Event','ঘটনা')}</th>
               <th className="p-3">{t('Year · component','বর্ষ · খাত')}</th>
@@ -243,7 +244,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
               <td className="p-3 break-all font-mono">{e.taxEventId||e.id}</td>
             </tr>)}</tbody>
           </table>
-          <ul className="grid gap-2 p-3 md:hidden">{visible.map(e=><li key={e.id}>
+          <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden">{visible.map(e=><li className="taxpay-mobile-table-card" key={e.id}>
             <button type="button" onClick={()=>setSelected(e)} className="flex w-full flex-col gap-1 rounded-lg border border-taxpay-border p-3 text-left text-sm">
               <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>
               <span className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</span>
@@ -251,7 +252,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             </button>
           </li>)}</ul>
         </>
-    </div>
+    </TaxPayTableViewport>
     {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <section className="space-y-4 p-1" data-testid="tax-event-details">
         <div className="flex items-center gap-2 text-xs text-taxpay-muted"><Clock3 size={16}/>{dateTime(selected.occurredAt,language)}</div>
