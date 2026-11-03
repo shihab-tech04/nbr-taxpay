@@ -161,8 +161,8 @@ export const OfflineEvidence: React.FC = () => {
         </form>
 
         {/* Existing Offline Records */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
+        <div className="taxpay-table-viewport hidden md:block">
+          <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
                 <th className="px-3 py-2.5">Batch Ref</th>
@@ -198,6 +198,18 @@ export const OfflineEvidence: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="taxpay-mobile-table-cards md:hidden" data-testid="offline-evidence-mobile-cards">
+          {evidenceList.map(item=><article key={item.id} className="taxpay-mobile-table-card">
+            <div className="taxpay-mobile-table-card__header">
+              <p className="taxpay-mobile-table-card__title">{item.paperChallanNo}</p>
+              <p className="font-semibold tabular-nums">{formatCurrency(item.amount,language)}</p>
+            </div>
+            <p className="taxpay-mobile-table-card__meta">{item.taxpayerName} · {item.tin}</p>
+            <p className="taxpay-mobile-table-card__meta">{item.bankName}</p>
+            <p className="taxpay-mobile-table-card__meta">{item.batchNumber} · {item.status}</p>
+          </article>)}
+        </div>
+        {evidenceList.length===0&&<p className="taxpay-table-state" role="status">No offline records found.</p>}
       </div>
     </div>
   );
