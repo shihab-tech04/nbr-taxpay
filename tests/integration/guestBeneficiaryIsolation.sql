@@ -239,7 +239,7 @@ begin
     raise exception 'Guest classification edit RPC permission boundary changed';
   end if;
 end;
-$;
+$$;
 
 set local role service_role;
 select public.taxpay_guest_beneficiary_open(repeat('c', 64));
