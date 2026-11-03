@@ -305,8 +305,9 @@ export function Beneficiaries(){
       }
       const saved=await reload(editTargetList);
       const matching=saved.people.find(person=>person.id===editPerson.id);
-      if(!matching||matching.list_id!==editTargetList||matching.tag!==classification.tag||
-        matching.relationship!==classification.relationship||matching.other_label!==classification.other_label){
+      if(!matching||matching.list_id!==editTargetList||(matching.tag??null)!==classification.tag||
+        (matching.relationship??null)!==classification.relationship||
+        (matching.other_label??null)!==classification.other_label){
         throw new Error(tr('Updated beneficiary could not be verified. Refresh and retry.',
           'উপকারভোগীর পরিবর্তন যাচাই করা যায়নি। রিফ্রেশ করে আবার চেষ্টা করুন।'));
       }
