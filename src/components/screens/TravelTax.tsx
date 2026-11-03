@@ -49,7 +49,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const [identityRevealed, setIdentityRevealed] = useState(false);
+  const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
+  const [passengerIssue, setPassengerIssue] = useState<{ id: string; message: string } | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
@@ -83,10 +84,26 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route.amount;
   const assessments = passengers.map(passenger => ({ passenger, assessment: assessTravelPassenger(passenger, unitRate, travelDate) }));
-  const allCalculated = assessments.every(item => item.assessment !== null);
-  const totalAmount = travelPartyTotal(passengers, unitRate, travelDate);
-  const amountWords = allCalculated ? amountInTakaWords(totalAmount, language) : '';
   const selectedPort = mode === 'WATER' ? waterPort.trim() : port;
+  const seenPassports = new Set<string>();
+  const invalidPassengerIds = new Set<string>();
+  passengers.forEach(item => {
+    const passport = item.passport.trim().toUpperCase();
+    const repeated = !!passport && seenPassports.has(passport);
+    if (passport) seenPassports.add(passport);
+    if (repeated || item.passport.trim().length < 6 || item.name.trim().length < 2 ||
+        (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE') ||
+        (item.nationality === 'FOREIGN' && (!item.country.trim() || !item.birthDate)) ||
+        item.medicalPortReferral) invalidPassengerIds.add(item.id);
+  });
+  const validAssessments = assessments.filter(({passenger, assessment}) =>
+    assessment !== null && !invalidPassengerIds.has(passenger.id));
+  const provisionalAmount = validAssessments.reduce((sum, item) => sum + (item.assessment?.amount ?? 0), 0);
+  const allCalculated = !!travelDate && !!selectedPort && !!destination.trim() &&
+    invalidPassengerIds.size === 0 && assessments.every(item => item.assessment !== null) &&
+    validateTravelParty(passengers, travelDate) === null;
+  const totalAmount = allCalculated ? travelPartyTotal(passengers, unitRate, travelDate) : provisionalAmount;
+  const amountWords = allCalculated ? amountInTakaWords(totalAmount, language) : '';
   const canSubmit = allCalculated && totalAmount > 0 && !processing && !!paymentMethod && !!paymentChannel && acknowledged;
   const routeOptions: { value: TravelMode; en: string; bn: string }[] = [
     { value: 'LAND', en: 'By land', bn: 'স্থলপথে' },
@@ -102,7 +119,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     }));
   };
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
-    if (id === 'first' && ('passport' in patch || 'nationality' in patch)) setIdentityRevealed(false);
+    setPassengerIssue(previous => previous?.id === id ? null : previous);
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
@@ -133,6 +150,38 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     if (!travelDate) return tr('Select your travel date.', 'ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
+  const firstIdentityIssue = (): {id: string; message: string} | null => {
+    const used = new Set<string>();
+    for (let index = 0; index < passengers.length; index++) {
+      const item = passengers[index];
+      const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
+      if (item.passport.trim().length < 6)
+        return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।')};
+      const passport = item.passport.trim().toUpperCase();
+      if (used.has(passport))
+        return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')};
+      used.add(passport);
+      if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
+        return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।')};
+      if (item.name.trim().length < 2)
+        return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।')};
+      if (item.nationality === 'FOREIGN') {
+        if (!item.country.trim())
+          return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।')};
+        if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
+          return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।')};
+      }
+      if (item.medicalPortReferral)
+        return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।')};
+    }
+    return null;
+  };
+  const reportIdentityIssue = (issue: {id: string; message: string}) => {
+    setEditingPassengerId(issue.id); setPassengerIssue(issue);
+    showError(issue.message);
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.getElementById('travel-passport-' + issue.id)?.focus()));
+  };
   const validatePassengers = () => {
     const problem = validateTravelParty(passengers, travelDate);
     if (problem) {
@@ -148,44 +197,24 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     if (!/^01\d{9}$/.test(phone)) return tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
     return null;
   };
-  const confirmIdentity = () => {
-    const passenger = passengers[0];
-    const problem = validateTravelParty([passenger]);
-    if (problem) {
-      showError(bn
-        ? (passenger.nationality === 'BD'
-          ? 'নমুনা পাসপোর্ট নম্বর নির্বাচন করে যাচাই করুন।'
-          : 'বৈধ পাসপোর্ট নম্বর ও যাত্রীর পুরো নাম দিন।')
-        : problem);
-      return;
-    }
-    if (passenger.nationality === 'FOREIGN') {
-      if (!passenger.country.trim()) {
-        showError(tr('Enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।'));
-        return;
-      }
-      if (travelPassengerAge(passenger.birthDate, new Date().toISOString().slice(0, 10)) === null) {
-        showError(tr('Enter a valid date of birth.', 'সঠিক জন্মতারিখ লিখুন।'));
-        return;
-      }
-    }
-    setIdentityRevealed(true);
-    setError('');
-    requestAnimationFrame(() => requestAnimationFrame(() =>
-      document.getElementById('travel-mode-section')?.scrollIntoView({ block: 'nearest' })
-    ));
-  };
   const continueStep = () => {
-    const problem = step === 0
-      ? validateTravelParty([passengers[0]]) ?? validateTravelDetails() ??
-        validateTravelParty([passengers[0]], travelDate)
-      : validatePassengers();
+    if (step === 0) {
+      const issue = firstIdentityIssue();
+      if (issue) { reportIdentityIssue(issue); return; }
+      if (!/^01\d{9}$/.test(phone)) {
+        showError(tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।'));
+        requestAnimationFrame(() => document.getElementById('travel-mobile')?.focus());
+        return;
+      }
+      setEditingPassengerId(null); stepTo(1); return;
+    }
+    const problem = validateTravelDetails() ?? validatePassengers();
     if (problem) { showError(problem); return; }
-    stepTo(step === 0 ? 1 : 2);
+    stepTo(2);
   };
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
-    setDestination(''); setTravelDate(''); setIdentityRevealed(false); setPassportSuggestionsFor(null);
+    setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -279,7 +308,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     event.preventDefault();
     if (step !== 2 || processing) return;
     const problem = validateTravelDetails() ?? validatePassengers();
-    if (problem) { setError(problem); return; }
+    if (problem) { showError(problem); return; }
     if (!paymentMethod || !paymentChannel || !acknowledged) {
       setError(tr('Choose a payment method and confirm the details.', 'পেমেন্ট পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করুন।'));
       return;
@@ -389,6 +418,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
                   setPassportSuggestionsFor(null);
                   const sample = SAMPLE_BD_PASSPORTS.find(entry => entry.passport === item.passport.trim().toUpperCase());
+                  const duplicate = sample && passengers.some(other =>
+                    other.id !== item.id && other.passport.toUpperCase().trim() === sample.passport);
+                  if (duplicate) {
+                    reportIdentityIssue({id: item.id, message: tr('This passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')});
+                    return;
+                  }
                   if (!sample) {
                     showError(tr('This passport is not in the ten sample records. Government verification is not connected.',
                       'এই পাসপোর্টটি ১০টি নমুনা রেকর্ডে নেই। সরকারি যাচাই সংযুক্ত নয়।'));
@@ -396,6 +431,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }
                   changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
+                  setEditingPassengerId(null);
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
             </div>
@@ -435,7 +471,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
-          {(step !== 0 || identityRevealed) && <div className="travel-flow__field travel-flow__medical">
+          {<div className="travel-flow__field travel-flow__medical">
             <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
             <label className="travel-flow__check">
               <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
