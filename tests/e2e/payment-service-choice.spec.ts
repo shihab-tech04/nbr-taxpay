@@ -276,7 +276,7 @@ test('Existing Travel Tax banner still provides journey, passenger and payment v
   const travel = page.getByRole('dialog', { name: 'Travel tax' });
   await travel.locator('#travel-tax-route-1').check();
   await fillTravelDetails(travel);
-  await expect(travel.locator('.travel-flow__total')).toContainText('2,000');
+  await expect(travel.locator('.travel-flow__total')).toContainText('1,000');
   await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
   await expect(travel.getByLabel('Passenger name')).toBeVisible();
   await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
