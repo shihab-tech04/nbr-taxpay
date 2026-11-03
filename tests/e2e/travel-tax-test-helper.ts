@@ -9,7 +9,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await primary.fill('TEST123456');
     await root.locator('#travel-lookup-first').click();
   }
-  const continueToTravel = root.getByRole('button', { name: 'Continue to travel details' });
+  const continueToTravel = root.locator('.travel-flow__primary').filter({ hasText: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/ });
   if (await continueToTravel.isVisible()) await continueToTravel.click();
   const mode = options?.mode ?? (await root.locator('#travel-tax-route-1').isChecked() ? 'WATER' : 'LAND');
   if (mode === 'WATER') {
