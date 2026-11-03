@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayRecordList,TaxPayTablePanel} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayRecordList,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -424,7 +424,7 @@ export function Beneficiaries(){
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
 
         </div>:<>
-          <div className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
+          <TaxPayTableControls className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
             <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
@@ -467,9 +467,9 @@ export function Beneficiaries(){
                   placeholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}/>
               </span>
             </label>
-          </div>
+          </TaxPayTableControls>
           <div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar">
-            <p className="text-xs text-taxpay-muted" aria-live="polite">{tr('Records','রেকর্ড')}: {filteredPeople.length} <span className="text-taxpay-muted">/ {listPeople.length}</span></p>
+            <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={filteredPeople.length} total={listPeople.length}/>
             <div className="beneficiary-directory__bulk-actions">
               {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
                 <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
@@ -497,7 +497,7 @@ export function Beneficiaries(){
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
               <TaxPayTablePanel className="beneficiary-directory__table">
-              <TaxPayRecordList variant="beneficiaries" headers={[tr('Beneficiary','উপকারভোগী'),tr('Actions','কার্যক্রম')]} aria-label={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}>
+              <TaxPayRecordList variant="beneficiaries" headers={[tr('Beneficiary','উপকারভোগী'),tr('TIN','টিআইএন'),tr('Tag / relationship','ট্যাগ / সম্পর্ক'),tr('Actions','কার্যক্রম')]} aria-label={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}>
                 {filteredPeople.map(person=><li key={person.id}
                   className="taxpayer-transaction-row beneficiary-directory__row taxpay-record-list__row"
                   data-selected={selectedIds.includes(person.id)?'true':'false'}>
@@ -510,10 +510,10 @@ export function Beneficiaries(){
                         :current.filter(id=>id!==person.id))}/>
                     <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
                       <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
-                      <p className="taxpayer-transaction-row__ref">{tr('TIN','টিআইএন')}: <span className="tabular-nums">{person.tin}</span></p>
-                      <p className="taxpayer-transaction-row__ref">{tr('Tag','ট্যাগ')}: {beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
                     </label>
                   </div>
+                  <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
+                  <p className="beneficiary-directory__tag">{beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
                   <div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
                     <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"

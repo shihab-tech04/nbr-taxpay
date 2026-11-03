@@ -23,6 +23,14 @@ export function TaxPayMobileTableCards({className,...rest}:DivProps) {
 export function TaxPayMobileTableCard({className,...rest}:ComponentPropsWithoutRef<'article'>) {
   return <article {...rest} className={merge('taxpay-mobile-table-card',className)}/>;
 }
+/** A single filter container used by ledger, activity, and beneficiary grids. */
+export function TaxPayTableControls({className,...rest}:DivProps) {
+  return <div {...rest} className={merge('taxpay-table-controls',className)}/>;
+}
+/** Count presentation is centralized; caller owns filtering and totals. */
+export function TaxPayTableCounter({shown,total,label}:{shown:number;total?:number;label:string}) {
+  return <p className="taxpay-table-count" role="status" aria-live="polite">{label}: {shown}{total!==undefined&&<span className="taxpay-table-count__total">/ {total}</span>}</p>;
+}
 export function TaxPayTableState({className,...rest}:DivProps) {
   return <div {...rest} role="status" className={merge('taxpay-table-state',className)}/>;
 }
@@ -30,7 +38,7 @@ export function TaxPayTableState({className,...rest}:DivProps) {
 /** A single semantic HTML table for all desktop record grids. Domain data and
  * interactive cells remain owned by the caller, including official amounts. */
 export function TaxPayUnifiedTable({className,...rest}:ComponentPropsWithoutRef<'table'>){
-  return <table {...rest} className={merge('taxpay-unified-table',className)}/>;
+  return <table {...rest} data-unified-table="true" className={merge('taxpay-unified-table',className)}/>;
 }
 
 /** Shared Board-Meeting-inspired record-table layout for existing selectable
@@ -43,7 +51,7 @@ type RecordListProps=Omit<DivProps,'children'> & {
 };
 export function TaxPayRecordList({variant,headers,children,className,'aria-label':ariaLabel,...rest}:RecordListProps){
   const previousHeadingClass=variant==='payments'?'taxpayer-transaction-list__columns':'beneficiary-directory__columns';
-  return <div {...rest} data-record-layout={variant} className={merge('taxpay-record-list',className)}>
+  return <div {...rest} data-unified-table="true" data-record-layout={variant} className={merge('taxpay-record-list',className)}>
     <div className={merge('taxpay-record-list__columns',previousHeadingClass)} aria-hidden="true">
       {headers.map((label,index)=><p key={index} className="taxpay-record-list__heading">{label}</p>)}
     </div>
