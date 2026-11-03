@@ -159,6 +159,7 @@ export const PaymentSearch: React.FC = () => {
               <p className="taxpay-mobile-table-card__meta">{language==='bn'?'করবর্ষ':'AY'}: {rcpt.assessmentYear}</p>
               <p className="taxpay-mobile-table-card__meta">{rcpt.payerName} · {rcpt.payerTin}</p>
               <p className="taxpay-mobile-table-card__meta">{rcpt.treasuryStatus}</p>
+              <p className="taxpay-mobile-table-card__meta">{language==='bn'?'স্ক্রল নম্বর':'Scroll number'}: {rcpt.treasuryScrollNo||'Pending'}</p>
               <div className="taxpay-mobile-table-card__actions">
                 <button className="rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
                   type="button" onClick={()=>selectReceipt(rcpt.id)}>{language==='bn'?'বিস্তারিত দেখুন':'Inspect'}</button>
