@@ -1,3 +1,4 @@
+import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 const paymentId = '10000000-0000-4000-8000-000000000002';
@@ -28,11 +29,11 @@ function expectSafeSnapshot(input: PaymentInput) {
 async function travelReview(page: Page) {
   await page.goto('/?action=travel');
   await page.locator('#travel-tax-route-0').check();
+  await fillTravelDetails(page);
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await page.locator('#travel-passenger-name').fill('SAMPLE TRAVELLER');
-  await page.locator('#travel-passport').fill('DEMO1234');
+  await page.locator('#travel-name-first').fill('SAMPLE TRAVELLER');
+  await page.locator('#travel-passport-first').fill('DEMO1234');
   await page.locator('#travel-mobile').fill('01712345678');
-  await page.locator('#travel-departure-date').fill('2026-12-01');
   await page.getByRole('button', { name: 'Continue to review' }).click();
 }
 
@@ -98,7 +99,7 @@ test('travel online records simulation only, with no Treasury scroll', async ({ 
   await page.getByRole('button', { name: 'Mobile banking' }).click();
   await page.getByRole('radio', { name: 'bKash' }).check();
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await page.getByRole('button', { name: 'Continue payment' }).click();
+  await page.getByRole('button', { name: 'Confirm preview payment' }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   expect(submissions).toHaveLength(1);
   expectSafeSnapshot(submissions[0]);
@@ -113,7 +114,7 @@ test('travel bank-slip simulation cannot instruct a real bank payment', async ({
   await page.getByRole('button', { name: 'Pay at a bank branch' }).click();
   await expect(page.getByText('Bank settlement is not connected; tax credit is not confirmed.')).toBeVisible();
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await page.getByRole('button', { name: 'Continue payment' }).click();
+  await page.getByRole('button', { name: 'Confirm preview payment' }).click();
   await expect(page.getByText('Bank slip ready — payment not confirmed')).toBeVisible();
   await expect(page.getByText('Bank settlement is not connected; payment and tax credit are not confirmed.')).toBeVisible();
   expect(submissions).toHaveLength(0);
