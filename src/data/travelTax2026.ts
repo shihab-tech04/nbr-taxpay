@@ -43,6 +43,20 @@ export const LAND_PORT_NAMES = [
   'Sonahat', 'Dhanua Kamalpur', 'Gobrakura-Koroitoli', 'Teknaf',
 ] as const;
 
+/** Clearly fictional identities for local UI review only. Never represent as real government results. */
+export const SAMPLE_BD_PASSPORTS = [
+  { passport: 'TEST123456', name: 'SAMPLE BANGLADESHI PASSENGER', birthDate: '1992-04-18' },
+  { passport: 'TEST230001', name: 'SAMPLE PASSENGER TWO', birthDate: '1988-11-10' },
+  { passport: 'TEST230002', name: 'SAMPLE PASSENGER THREE', birthDate: '1995-07-22' },
+  { passport: 'TEST230003', name: 'SAMPLE PASSENGER FOUR', birthDate: '2000-03-15' },
+  { passport: 'TEST230004', name: 'SAMPLE PASSENGER FIVE', birthDate: '1979-09-04' },
+  { passport: 'TEST230005', name: 'SAMPLE PASSENGER SIX', birthDate: '2017-08-10' },
+  { passport: 'TEST230006', name: 'SAMPLE PASSENGER SEVEN', birthDate: '2022-01-09' },
+  { passport: 'TEST230007', name: 'SAMPLE PASSENGER EIGHT', birthDate: '1990-12-25' },
+  { passport: 'TEST230008', name: 'SAMPLE PASSENGER NINE', birthDate: '2004-06-01' },
+  { passport: 'TEST230009', name: 'SAMPLE PASSENGER TEN', birthDate: '2014-10-30' },
+] as const;
+
 export function makeTravelPassenger(id: string, nationality: TravellerNationality = 'FOREIGN'): TravelPassenger {
   return {
     id, nationality, passport: '', name: '', birthDate: '', country: nationality === 'BD' ? 'Bangladesh' : '',
