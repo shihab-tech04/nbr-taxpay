@@ -115,8 +115,8 @@ export const AuthenticatedDashboardPosition: React.FC<{
         <h2 className="text-base font-semibold text-taxpay-text">{tr('By assessment year','করবর্ষ অনুযায়ী')}</h2>
         <span className="text-xs text-taxpay-muted">{exampleMode?tr('Example figures only','শুধু উদাহরণের পরিমাণ'):tr('Balances unavailable','ব্যালেন্স পাওয়া যায়নি')}</span>
       </div>
-      <div className="mt-3 max-w-full overflow-x-auto" role="region" aria-label={tr('Assessment-year table scroll area','করবর্ষের তালিকা স্ক্রল')} tabIndex={0}>
-        <table className="min-w-[660px] w-full text-left text-sm">
+      <div className="taxpay-table-viewport mt-3" role="region" aria-label={tr('Assessment-year table scroll area','করবর্ষের তালিকা স্ক্রল')} tabIndex={0}>
+        <table className="taxpay-unified-table min-w-[660px] w-full text-left text-sm">
           <thead className="bg-slate-50 text-taxpay-muted"><tr>
             {[tr('Assessment year','করবর্ষ'),tr('Liability','করদায়'),tr('TDS & AIT','উৎসে ও অগ্রিম কর'),tr('Direct paid','সরাসরি পরিশোধ'),tr('Remaining','অবশিষ্ট')].map((heading,index)=>
               <th key={heading} scope="col" className={'px-3 py-3 '+(index?'text-right':'')}>{heading}</th>)}
@@ -148,7 +148,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
             <div className="bg-slate-400" style={{width:(100*sample.direct/sample.applied)+'%'}}/>
           </>}
         </div>
-        <table className="mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>
+        <table className="taxpay-unified-table mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>
           <tbody>{credits.map(item=><tr className="border-b border-taxpay-border" key={item.en}>
             <th scope="row" className="py-3 text-left font-normal text-taxpay-muted">{tr(item.en,item.bn)}</th>
             <td className="py-3 text-right font-semibold tabular-nums">{money(sample?[sample.tds,sample.ait,sample.direct][credits.indexOf(item)]:undefined)}</td>
