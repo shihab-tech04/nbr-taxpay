@@ -16,190 +16,34 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-    name: Build and verify static preview
+
+  # Compile and browser acceptance execute independently. The original named
+  # required gate still blocks Pages until every original test has passed.
+  compile:
+    name: Compile, typecheck, domain and production bundle
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     permissions:
       contents: read
       pages: read
     steps:
       - name: Check out source
         uses: actions/checkout@v7
-
       - name: Set up Node.js 24.21.0
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
-
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
-
       - name: Verify TypeScript and domain constraints
         run: |
           npm run lint
           npm run test:domain
-
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
-
-      - name: Verify preserved ledger and receipt contracts
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: |
-          npx playwright test tests/e2e/user1-scenario.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/navigation-integrity.spec.ts --project=desktop-1280 --grep "user1 dashboard, payment history|user1 year selection|history uses one content panel|ten user1 routes|taxpayer ledger table|All taxpayer inner pages|Taxpayer receipt inspection"
-          npx playwright test tests/e2e/taxpayer-account-integrity.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --grep "generic taxpayer preview|other URL-selected fictional accounts"
-
-      - name: Verify event-based ledger, payment identity and narrow-mobile layout
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/event-based-ledger-payment-history.spec.ts --project=desktop-1280 --project=mobile-320
-
-      - name: Verify User1 inline payment suggestion UX
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-suggestions-prefill.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
-
-      - name: Verify shared public and signed-in mobile navigation parity
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/mobile-public-shell-parity.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
-
-      - name: Verify current live auth and Beneficiaries smoke contract in Chromium
-        if: github.event_name == 'pull_request'
-        env:
-          TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
-        run: node scripts/verify-live-public-auth.mjs
-
-      - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts tests/e2e/beneficiaries-activity-parity.spec.ts tests/e2e/beneficiaries-bulk-remove.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
-
-      - name: Upload Beneficiaries English and Bengali screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: beneficiaries-acceptance-screenshots
-          path: test-results/screenshots/beneficiaries-*.png
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Verify payment wizard UX and large-amount precision
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/mobile-payment-footer-calculation.spec.ts tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts
-
-      - name: Verify four-stage payment progress in English and Bengali
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-progress-states.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
-
-      - name: Verify v11 form input parity on mobile and desktop
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/v11-form-input-parity.spec.ts
-
-      - name: Verify direct-service banner referral retains service and skips duplicate chooser
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/taxpay-direct-service-entry.spec.ts --project=desktop-1280 --project=mobile-375
-
-      - name: Verify SQL-backed stationary banner copy and image override contract
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://banner-cms-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/banner-cms-sql-sync.spec.ts --project=desktop-1280 --project=mobile-320
-
-      - name: Check public routes and disconnected backend state
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts
-
-      - name: Verify purposeful public homepage and selected navigation state
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/public-homepage-redesign.spec.ts
-
-      - name: Verify screenshot-reported responsive UX repairs
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts tests/e2e/travel-receipt-modal-parity.spec.ts tests/e2e/travel-tax-2026-journeys.spec.ts
-
-      - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
-
-      - name: Verify the separate two-field TaxPay login popup
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
-
-      - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
-
-      - name: Verify synthetic receipts and simulated bank slips
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/simulation-receipt-safety.spec.ts
-
-      - name: Verify connected fictional Start Payment entry on a mobile viewport
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/connected-simulation-navigation.spec.ts --project=mobile-375
-
-      - name: Verify isolated synthetic workspace browser journeys (mock transport only)
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts tests/e2e/account-tax-journey-private.spec.ts
-
-      - name: Upload responsive citizen screenshots and Playwright evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: taxpay-citizen-browser-evidence
-          path: |
-            test-results/screenshots/
-            playwright-report/
-          if-no-files-found: ignore
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
-
       - name: Compile public review-only application with scoped hosted Auth / RLS
         env:
           GITHUB_PAGES: 'true'
@@ -208,7 +52,6 @@ jobs:
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
-
       - name: Verify Pages base, scoped public endpoint and financial safety
         shell: bash
         run: |
@@ -224,20 +67,222 @@ jobs:
           ! grep -REq '\+?880[0-9 ()-]{8,}' dist/assets
           find dist/assets -type f -name '*.js' -size +0c | grep -q .
           echo 'PASS: public Pages build has approved publishable-only review endpoint; no privileged key shipped'
-
       - name: Verify actual production bundle blocks unauthenticated taxpayer/sample routes
         run: npx playwright test --config playwright.production.config.ts
-
       - name: Upload Pages artifact (main only)
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
+  core-e2e:
+    name: Payment, ledger and beneficiaries acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium
+      - name: Verify preserved ledger and receipt contracts
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: |
+          npx playwright test tests/e2e/user1-scenario.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/navigation-integrity.spec.ts --project=desktop-1280 --grep "user1 dashboard, payment history|user1 year selection|history uses one content panel|ten user1 routes|taxpayer ledger table|All taxpayer inner pages|Taxpayer receipt inspection"
+          npx playwright test tests/e2e/taxpayer-account-integrity.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375 --grep "generic taxpayer preview|other URL-selected fictional accounts"
+      - name: Verify event-based ledger, payment identity and narrow-mobile layout
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/event-based-ledger-payment-history.spec.ts --project=desktop-1280 --project=mobile-320
+      - name: Verify User1 inline payment suggestion UX
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/payment-suggestions-prefill.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify shared public and signed-in mobile navigation parity
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/mobile-public-shell-parity.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
+      - name: Verify current live auth and Beneficiaries smoke contract in Chromium
+        if: github.event_name == 'pull_request'
+        env:
+          TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
+        run: node scripts/verify-live-public-auth.mjs
+      - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/beneficiary-xlsx-import.spec.ts tests/e2e/beneficiary-optional-name.spec.ts tests/e2e/beneficiaries-activity-parity.spec.ts tests/e2e/beneficiaries-bulk-remove.spec.ts --project=desktop-1280 --project=mobile-375 --project=mobile-320
+      - name: Upload Beneficiaries English and Bengali screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beneficiaries-acceptance-screenshots
+          path: test-results/screenshots/beneficiaries-*.png
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Verify payment wizard UX and large-amount precision
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/mobile-payment-footer-calculation.spec.ts tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts
+      - name: Verify four-stage payment progress in English and Bengali
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/payment-progress-states.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
+      - name: Verify v11 form input parity on mobile and desktop
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/v11-form-input-parity.spec.ts
+      - name: Verify direct-service banner referral retains service and skips duplicate chooser
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/taxpay-direct-service-entry.spec.ts --project=desktop-1280 --project=mobile-375
+      - name: Verify SQL-backed stationary banner copy and image override contract
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://banner-cms-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/banner-cms-sql-sync.spec.ts --project=desktop-1280 --project=mobile-320
+
+  public-e2e:
+    name: Public and signed-in journey acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium
+      - name: Verify purposeful public homepage and selected navigation state
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/public-homepage-redesign.spec.ts
+      - name: Verify screenshot-reported responsive UX repairs
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts tests/e2e/travel-receipt-modal-parity.spec.ts tests/e2e/travel-tax-2026-journeys.spec.ts
+      - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify the separate two-field TaxPay login popup
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
+      - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify synthetic receipts and simulated bank slips
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/simulation-receipt-safety.spec.ts
+      - name: Verify connected fictional Start Payment entry on a mobile viewport
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/connected-simulation-navigation.spec.ts --project=mobile-375
+      - name: Verify isolated synthetic workspace browser journeys (mock transport only)
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://nbr-taxpay-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts tests/e2e/account-tax-journey-private.spec.ts
+      - name: Upload responsive citizen screenshots and Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-citizen-browser-evidence
+          path: |
+            test-results/screenshots/
+            playwright-report/
+          if-no-files-found: ignore
+
+  route-e2e:
+    name: Public routes (shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium
+      - name: Check public routes and disconnected backend state
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/3
+
+  verification-gate:
+    name: Build and verify static preview
+    needs: [compile, core-e2e, public-e2e, route-e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Confirm all unchanged acceptance suites and production checks passed
+        run: echo "PASS: compiled artifact, domain, release safety, and all parallel browser acceptance lanes succeeded"
+
+
   deploy:
     name: Publish verified static build
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    needs: build
+    needs: verification-gate
     runs-on: ubuntu-latest
     environment:
       name: github-pages
