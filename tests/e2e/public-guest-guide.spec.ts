@@ -375,7 +375,7 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await expect(modal.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+  await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
@@ -425,7 +425,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await modal.locator('#travel-tax-route-0').check();
   await fillTravelDetails(modal);
  await modal.getByRole('button',{name:'যাত্রীর তথ্যে এগিয়ে যান'}).click();
- await expect(modal.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+ await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
 
  await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
