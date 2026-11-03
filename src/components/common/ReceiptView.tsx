@@ -302,7 +302,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               </span>
             </div>}
 
-            {travelPreview && <p className="receipt-view__summary-subtitle" role="status">{bn ? 'এটি সরকারি A-Challan বা ট্রেজারি নিষ্পত্তি নয়।' : 'Not a government A-Challan or Treasury settlement.'}</p>}
+            {travelPreview && <p className="receipt-view__summary-subtitle" role="status">{bn ? 'এটি সরকারি A-Challan বা ট্রেজারি নিষ্পত্তি নয়। ট্রেজারি স্ক্রল ইস্যু হয়নি।' : 'Not a government A-Challan or Treasury settlement. No Treasury scroll issued.'}</p>}
             {/* WITHHOLDING SPECIFIC SEPARATION */}
             {receipt.isWithholding && (
               <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] space-y-1">
