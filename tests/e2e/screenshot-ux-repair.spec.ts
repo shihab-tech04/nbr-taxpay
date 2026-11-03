@@ -110,7 +110,7 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   // The approved mobile journey places a collapsible calculation in its fixed footer,
   // not the old desktop rail. Keep the total above the primary action without overflow.
   const summary=dialog.getByTestId('mobile-payment-calculation');
-  const next=footer.getByRole('button',{name:'Continue to add passengers'});
+  const next=footer.getByRole('button',{name:'Continue to travel details'});
   await expect(summary).toBeVisible();
   await expect(next).toBeVisible();
   const [nextBox,summaryBox,footerBox]=await Promise.all([next.boundingBox(),summary.boundingBox(),footer.boundingBox()]);
@@ -138,7 +138,6 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   // Use the existing tested public Travel Tax entry without the removed subtype picker.
   await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
-  await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
   await dialog.getByRole('button',{name:'Continue to add passengers'}).click();
 
