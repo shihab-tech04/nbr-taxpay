@@ -31,8 +31,7 @@ async function travelReview(page: Page) {
   await page.locator('#travel-tax-route-0').check();
   await fillTravelDetails(page);
   await page.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await page.locator('#travel-name-first').fill('SAMPLE TRAVELLER');
-  await page.locator('#travel-passport-first').fill('DEMO1234');
+
   await page.locator('#travel-mobile').fill('01712345678');
   await page.getByRole('button', { name: 'Continue to review' }).click();
 }
