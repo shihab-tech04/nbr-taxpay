@@ -151,8 +151,40 @@ begin
        and cmd='SELECT' and policyname like '%verified_portal_admin') <> 2 then
     raise exception 'Existing account-owned beneficiary RLS contract changed';
   end if;
+  -- Fixed tags remain fixed; a free-text description is allowed only for Others.
+  if public.taxpay_guest_beneficiary_add(v_a,v_list_a_target,
+    '[{"tin":"444444444444","display_name":"Other contact","tag":"others","relationship":null,"other_label":"Neighbour"}]'::jsonb) <> 1 then
+    raise exception 'Custom Others tag was not persisted';
+  end if;
+  if not exists(
+    select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_rows(v_a,0,500)) as item(value)
+    where item.value->>'tin'='444444444444' and item.value->>'other_label'='Neighbour'
+      and item.value->>'tag'='others'
+  ) then raise exception 'Others label not returned by isolated guest SQL readback'; end if;
+  begin
+    perform public.taxpay_guest_beneficiary_add(v_a,v_list_a_target,
+      jsonb_build_array(jsonb_build_object('tin','555555555555','display_name','Too long','tag','others',
+        'relationship',null,'other_label',repeat('x',81))));
+    raise exception 'Overlength Others label was accepted';
+  exception when others then
+    if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_guest_beneficiary_add(v_a,v_list_a_target,
+      '[{"tin":"666666666666","display_name":"Missing label","tag":"others","relationship":null}]'::jsonb);
+    raise exception 'Missing Others label was accepted';
+  exception when others then
+    if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_guest_beneficiary_add(v_a,v_list_a_target,
+      '[{"tin":"777777777777","display_name":"Unrelated label","tag":"clients","relationship":null,"other_label":"Invalid"}]'::jsonb);
+    raise exception 'Clients accepted an Others label';
+  exception when others then
+    if sqlerrm not like '%INVALID_BENEFICIARY%' then raise; end if;
+  end;
 end;
-$$;
+$;
 
 set local role service_role;
 select public.taxpay_guest_beneficiary_open(repeat('c', 64));
