@@ -36,7 +36,7 @@ export async function fillForeignPassenger(root: Locator | Page, options?: {
   await root.locator('#travel-name-first').fill(options?.name ?? 'SAMPLE TRAVELLER');
   await root.locator('#travel-birth-date-first').fill(options?.birthDate ?? '1992-05-10');
   await root.locator('#travel-country-first').fill(options?.country ?? 'India');
-  if (returnedToStageOne) await root.getByRole('button', { name: 'Continue to passenger details' }).click();
+  if (returnedToStageOne) await root.getByRole('button', { name: 'Continue to add passengers' }).click();
   if (await root.locator('#travel-mobile').isVisible()) await root.locator('#travel-mobile').fill('01712345678');
 }
 
