@@ -139,7 +139,14 @@ Deno.serve(async (request: Request) => {
         const tin = value.tin;
         const display_name = validateName(value.display_name, 160, 'INVALID_BENEFICIARY');
         if (typeof tin !== 'string' || !/^\d{12}$/.test(tin)) throw new Error('INVALID_BENEFICIARY');
-        return { tin, display_name };
+        const tag = value.tag ?? null;
+        const relationship = value.relationship ?? null;
+        if (!((tag === null && relationship === null) ||
+          ((tag === 'clients' || tag === 'others') && relationship === null) ||
+          (tag === 'friends_family' && typeof relationship === 'string' &&
+            ['father','mother','siblings','son','daughter','spouse','friends'].includes(relationship))))
+          throw new Error('INVALID_BENEFICIARY');
+        return { tin, display_name, tag, relationship };
       });
       data = await rpc(client, 'taxpay_guest_beneficiary_add', {
         p_capability_hash, p_list_id: body.listId, p_rows: rows,
