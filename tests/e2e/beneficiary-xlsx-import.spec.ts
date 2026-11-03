@@ -140,6 +140,7 @@ test('failed new-list import stays recoverable and retries against the same crea
 
   transport.failNextAdd();
   await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(dialog.getByRole('alert')).toBeVisible();
   const retryTarget=await dialog.locator('#beneficiary-target-list').inputValue();
@@ -149,6 +150,7 @@ test('failed new-list import stays recoverable and retries against the same crea
   await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
 
   await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
   expect(transport.createListCount()).toBe(2);
@@ -204,6 +206,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(dialog.getByText('1 valid, 1 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expectRecord('Local Beneficiary Two');
   // Both breakpoints use the approved Activity record list, not separate table/card DOM.
