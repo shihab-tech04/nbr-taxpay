@@ -55,7 +55,7 @@ export function TaxPayRecordList({variant,headers,children,className,'aria-label
     <div className={merge('taxpay-record-list__columns',previousHeadingClass)} aria-hidden="true">
       {headers.map((label,index)=><p key={index} className="taxpay-record-list__heading">{label}</p>)}
     </div>
-    <ul aria-label={ariaLabel+' — '+headers.join(', ')} className="taxpay-record-list__rows">{children}</ul>
+    <ul aria-label={ariaLabel} className="taxpay-record-list__rows">{children}</ul>
   </div>;
 }
 
