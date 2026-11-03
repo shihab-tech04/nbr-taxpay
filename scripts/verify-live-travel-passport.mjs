@@ -24,6 +24,13 @@ try {
     const modal = page.getByRole('dialog', { name: 'Travel tax' });
     await expect(modal).toBeVisible();
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+    await expect(modal.locator('.travel-flow__summary')).toBeHidden();
+    if (!mobile) {
+      const bounds = await modal.boundingBox();
+      if (!bounds || bounds.width > 900 || bounds.height > viewport.height * 0.95) {
+        throw new Error('Passport-first stage must use a compact, content-aware modal without an empty payment rail');
+      }
+    }
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Continue to travel details' })).toBeVisible();
     await modal.locator('#travel-passport-first').click();
