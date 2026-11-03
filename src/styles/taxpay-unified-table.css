@@ -118,10 +118,9 @@
   border: 0;
   border-radius: 0;
 }
-.taxpay-table-viewport > table.taxpay-unified-table,
-.taxpay-data-table table.taxpay-unified-table {
+table.taxpay-unified-table {
   width: 100%;
-  min-width: max-content;
+  min-width: 100%;
   border: 0;
   border-collapse: separate;
   border-spacing: 0;
@@ -130,6 +129,7 @@
   font-size: 14px;
   line-height: 1.5;
 }
+.taxpay-table-viewport > table.taxpay-unified-table {min-width:max-content;}
 .taxpay-unified-table thead tr {
   background: var(--taxpay-table-heading, #f7f9fc);
 }
