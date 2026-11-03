@@ -13,8 +13,8 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
   const isTravel = service === 'travel';
   const travelTitle = bn ? 'ভ্রমণ কর' : 'Travel tax';
   const travelStages = bn
-    ? ['যাত্রাপথ', 'যাত্রীর তথ্য', 'পেমেন্ট চ্যানেল', 'নিশ্চিতকরণ']
-    : ['Travel route', 'Passenger details', 'Payment channel', 'Confirmation'];
+    ? ['ভ্রমণের তথ্য', 'যাত্রীর তথ্য', 'পর্যালোচনা ও পেমেন্ট', 'সম্মিলিত চালান']
+    : ['Travel details', 'Passenger details', 'Review & payment', 'Combined challan'];
   const title = isTravel
     ? travelStages[travelStage - 1]
     : (bn ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt');
