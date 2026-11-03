@@ -101,7 +101,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await dialog.locator('#travel-tax-route-0').check();
   await fillTravelDetails(dialog);
   await dialog.getByRole('button', { name: 'Continue to add passengers' }).click();
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Additional passengers & receipt');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
   await dialog.getByRole('button', { name: 'Back' }).click();
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
