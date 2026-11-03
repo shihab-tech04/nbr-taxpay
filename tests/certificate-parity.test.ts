@@ -22,6 +22,12 @@ test('existing SQL payment without snapshot renders actual persisted data, not i
  assert.equal(result.items[0].penaltyAmount,2600);
  assert.equal(result.taxCreditStatus,'PENDING_RECONCILIATION');
 });
+test('SQL receipt fallback preserves an optional recorded email without inventing one',()=>{
+ const withEmail=makeConfirmedReceipt({...record,details:{...record.details,receiptEmail:'payer@example.com'}});
+ assert.equal(withEmail.receiptEmail,'payer@example.com');
+ const withoutEmail=makeConfirmedReceipt(record);
+ assert.equal(withoutEmail.receiptEmail,'');
+});
 test('new TaxPay receipt snapshot retains same head/item/reference from both SQL stores',()=>{
  const snapshot=makeConfirmedReceipt(record);
  const result=makeConfirmedReceipt({...record,details:{...record.details,receiptSnapshot:snapshot}});
