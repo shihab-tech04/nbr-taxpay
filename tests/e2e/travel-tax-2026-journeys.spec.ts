@@ -6,6 +6,8 @@ test('Travel Tax: passenger tabs first, Land default, no rate on mode cards or a
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger and travel details');
+  await expect(modal.getByRole('button', {name:'Continue to add passengers'})).toBeVisible();
   await expect(modal.locator('#travel-passenger-tab-first-BD')).toHaveAttribute('aria-selected', 'true');
   await expect(modal.locator('#travel-name-first')).toHaveAttribute('readonly', '');
   await expect(modal.locator('#travel-birth-date-first')).toHaveAttribute('readonly', '');
@@ -29,8 +31,9 @@ test('Travel Tax: passenger tabs first, Land default, no rate on mode cards or a
   await fillTravelDetails(modal);
   await expect(modal.getByTestId('travel-payment-total')).toContainText('1,000');
   await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 34 on travel date');
-  await modal.getByRole('button', {name:'Continue to passenger details'}).click();
+  await modal.getByRole('button', {name:'Continue to add passengers'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Additional passengers & receipt');
   await expect(modal.locator('#travel-port-number, #travel-tax-zone, #travel-organization-code')).toHaveCount(0);
   await modal.getByRole('button', {name:'Back',exact:true}).click();
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
@@ -49,7 +52,7 @@ test('Travel Tax: foreign tab shows only manual identity fields and derives rate
   await fillTravelDetails(modal,{mode:'WATER'});
   await expect(modal.getByTestId('travel-payment-total')).toContainText('500');
   await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 9 on travel date');
-  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
+  await modal.getByRole('button',{name:'Continue to add passengers'}).click();
   await fillTravelReceiptMobile(modal);
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
@@ -61,7 +64,7 @@ test('Travel Tax: family and friends share one passenger-wise preview challan',a
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   await fillTravelDetails(modal);
-  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
+  await modal.getByRole('button',{name:'Continue to add passengers'}).click();
   await fillTravelReceiptMobile(modal);
   await modal.getByRole('button',{name:/Add New Member/}).click();
   const people=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person');
@@ -112,7 +115,7 @@ test('Travel Tax: medical referral is never an online tax exemption',async({page
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   await fillTravelDetails(modal);
   await modal.locator('#travel-medical-first').check();
-  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
+  await modal.getByRole('button',{name:'Continue to add passengers'}).click();
   await expect(modal.getByRole('alert')).toContainText('manual documentation');
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
 });
@@ -126,7 +129,7 @@ test('Travel Tax: mobile age breakdown and payment summary remain within viewpor
   const footer=modal.getByTestId('mobile-payment-calculation');
   await expect(footer).toBeVisible();
   await expect(modal.locator('.travel-flow__summary')).toBeHidden();
-  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
+  await modal.getByRole('button',{name:'Continue to add passengers'}).click();
   await fillTravelReceiptMobile(modal);
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await expect(footer.locator('summary')).toContainText('1,000');
