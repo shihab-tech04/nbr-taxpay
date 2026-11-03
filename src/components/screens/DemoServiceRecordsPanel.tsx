@@ -240,8 +240,8 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
           ) : (
             <>
               <h3 className="text-base font-semibold text-taxpay-text">{tr('Service record details', 'সেবার রেকর্ডের বিস্তারিত')}</h3>
-              <div className="hidden overflow-x-auto rounded-xl border border-taxpay-border md:block">
-                <table className="min-w-full text-left text-sm">
+              <div className="taxpay-table-viewport hidden md:block">
+                <table className="taxpay-unified-table min-w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-semibold text-taxpay-muted">
                     <tr>
                       <th scope="col" className="px-3 py-3">{tr('Service', 'সেবা')}</th>
@@ -272,9 +272,9 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                   </tbody>
                 </table>
               </div>
-              <ul className="space-y-3 md:hidden" aria-label={tr('Service records', 'সেবার রেকর্ড')}>
+              <ul className="taxpay-mobile-table-cards md:hidden" aria-label={tr('Service records', 'সেবার রেকর্ড')}>
                 {records.map(record => (
-                  <li key={record.recordId} className="rounded-xl border border-taxpay-border p-3">
+                  <li key={record.recordId} className="taxpay-mobile-table-card">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <h4 className="min-w-0 text-sm"><ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag></h4>
                       {renderState(record)}
