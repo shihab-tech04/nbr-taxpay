@@ -518,7 +518,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 'প্রথমে যাত্রীর ধরন ও পাসপোর্টের তথ্য দিন। জন্মতারিখ ও ভ্রমণের তারিখ থেকে কর হিসাব হবে।'
               )}</p>
               {renderPassengerEditor(passengers[0], 0)}
-              <div className="travel-flow__field-group">
+              {identityRevealed && <>
+              <div className="travel-flow__identity-progress">
+                <p>{tr('Passenger details confirmed for this sample. Continue with travel details.',
+                  'নমুনা যাত্রীর তথ্য নিশ্চিত হয়েছে। এবার ভ্রমণের তথ্য দিন।')}</p>
+                <button type="button" onClick={() => { setIdentityRevealed(false); setError(''); }}>
+                  <Pencil size={15} aria-hidden="true"/>{tr('Edit passenger details','যাত্রীর তথ্য সম্পাদনা')}
+                </button>
+              </div>
+              <div className="travel-flow__field-group" id="travel-mode-section">
                 <p className="travel-flow__field-title">{tr('Travel mode','যাতায়াতের মাধ্যম')} *</p>
                 <fieldset id="travel-tax-route-results" className="travel-flow__routes">
                   <legend className="sr-only">{tr('Travel mode','যাতায়াতের মাধ্যম')}</legend>
@@ -528,11 +536,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       className={'travel-flow__route' + (mode === item.value ? ' travel-flow__route--selected' : '')}>
                       <span className="travel-flow__route-copy">
                         <strong>{bn ? item.bn : item.en}</strong>
-                        <span>{bn ? item.en : item.bn}</span>
                       </span>
                       <input id={'travel-tax-route-' + index} name="travel-tax-route" type="radio"
                         checked={mode === item.value} onChange={() => {
-                          setMode(item.value); setPort(''); setWaterPort(''); setAcknowledged(false);
+                          setMode(item.value); setPort(''); setWaterPort(''); setError(''); setAcknowledged(false);
                         }}/>
                     </label>;
                   })}
@@ -541,7 +548,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               <div className="travel-flow__fields travel-flow__field-group">
                 {mode === 'LAND' ? <div className="travel-flow__field">
                   <label htmlFor="travel-port">{tr('Departure land port','স্থলবন্দর')} *</label>
-                  <select id="travel-port" value={port} onChange={e => setPort(e.target.value)}>
+                  <select id="travel-port" value={port} onChange={e => { setPort(e.target.value); setError(''); }}>
                     <option value="">{tr('Select departure port','বন্দর নির্বাচন করুন')}</option>
                     {LAND_PORT_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
                   </select>
@@ -549,7 +556,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     'ঐতিহাসিক বন্দরের তালিকা; বর্তমান কার্যক্রম যাচাই প্রয়োজন।')}</p>
                 </div> : <div className="travel-flow__field">
                   <label htmlFor="travel-water-port">{tr('Departure water port','নৌবন্দর')} *</label>
-                  <input id="travel-water-port" value={waterPort} onChange={e => setWaterPort(e.target.value)}
+                  <input id="travel-water-port" value={waterPort} onChange={e => { setWaterPort(e.target.value); setError(''); }}
                     placeholder={tr('Enter water port','নৌবন্দর লিখুন')} list="travel-water-port-options"/>
                   <datalist id="travel-water-port-options"><option value="Chattogram"/><option value="Mongla"/><option value="Payra"/></datalist>
                   <p className="travel-flow__field-hint">{tr('Water-port catalogue pending approval.','নৌবন্দরের তালিকা অনুমোদনের অপেক্ষায়।')}</p>
@@ -557,14 +564,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 <div className="travel-flow__field">
                   <label htmlFor="travel-destination">{tr('Destination','গন্তব্য')} *</label>
                   <input id="travel-destination" list="travel-destinations" value={destination}
-                    onChange={e => setDestination(e.target.value)} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
+                    onChange={e => { setDestination(e.target.value); setError(''); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
                   <datalist id="travel-destinations"><option value="India"/><option value="Nepal"/><option value="Bhutan"/><option value="Myanmar"/></datalist>
                 </div>
                 <div className="travel-flow__field">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
-                  <input id="travel-departure-date" type="date" value={travelDate} onChange={e => setTravelDate(e.target.value)}/>
+                  <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
               </div>
+              </>}
             </PaymentFormSection>
           </section>}
 
