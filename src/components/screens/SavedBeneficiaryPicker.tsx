@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -33,6 +33,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [restoring,setRestoring]=useState(false);
   const [recoveryDone,setRecoveryDone]=useState(false);
   const [restoreInfo,setRestoreInfo]=useState('');
+  const lastFocusRefreshRef=useRef(0);
   useEffect(()=>{
     let cancelled=false;
     setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
@@ -71,7 +72,13 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   // A payment step can remain mounted while beneficiaries change in another
   // tab. Re-read the same identity-scoped source on return to the tab.
   useEffect(()=>{
-    const refreshVisible=()=>{if(document.visibilityState!=='hidden')setRefresh(value=>value+1);};
+    const refreshVisible=()=>{
+      if(document.visibilityState==='hidden')return;
+      const now=Date.now();
+      if(now-lastFocusRefreshRef.current<2000)return;
+      lastFocusRefreshRef.current=now;
+      setRefresh(value=>value+1);
+    };
     window.addEventListener('focus',refreshVisible);
     document.addEventListener('visibilitychange',refreshVisible);
     return()=>{window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};

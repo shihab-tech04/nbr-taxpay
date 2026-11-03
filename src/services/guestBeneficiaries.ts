@@ -129,13 +129,45 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
   throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
 }
 
+/** The hosted snapshot combines the first page and lists in one Edge request.
+ * Legacy/mocked transports may lack this additive action: fall back without
+ * changing guest capabilities, write behavior or complete pagination.
+ */
+async function firstGuestPage(): Promise<{lists:GuestList[]; people:GuestPerson[]}> {
+  for(let attempt=0;attempt<2;attempt++) {
+    try {
+      const snapshot=await post<{lists:GuestList[];people:GuestPerson[]}>('snapshot');
+      if (snapshot && Array.isArray(snapshot.lists) && Array.isArray(snapshot.people) && snapshot.people.length<=pageSize) {
+        return snapshot;
+      }
+      // Older test transports return an unrecognized success shape.
+      break;
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      if (error.message.includes('selected beneficiary was not found')) break;
+      // Preserve the established single retry for idempotent read failures.
+      if (attempt===0 && error.message==='Guest beneficiaries are temporarily unavailable. Please try again later.') continue;
+      throw error;
+    }
+  }
+  const [lists,people]=await Promise.all([
+    readGuestPage<GuestList>('lists'),
+    readGuestPage<GuestPerson>('people',{offset:0,limit:pageSize}),
+  ]);
+  return {lists,people};
+}
+
 export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
-  const lists = await readGuestPage<GuestList>('lists');
-  const people: GuestPerson[] = [];
-  for (let offset = 0; ; offset += pageSize) {
-    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
-    people.push(...page);
-    if (page.length < pageSize) break;
+  const {lists,people:firstPage}=await firstGuestPage();
+  const people: GuestPerson[] = [...firstPage];
+  // Preserve the complete multi-list address book. An exact full page means
+  // there may be more records, so keep reading until a short page arrives.
+  if (firstPage.length === pageSize) {
+    for (let offset = pageSize; ; offset += pageSize) {
+      const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
+      people.push(...page);
+      if (page.length < pageSize) break;
+    }
   }
   return { lists, people };
 }

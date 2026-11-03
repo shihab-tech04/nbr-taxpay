@@ -28,7 +28,22 @@ export async function collectBeneficiaryPages<T>(
     if(page.length<pageSize)return all;
   }
 }
-export async function loadBeneficiaries(ownerUid: string | null = null): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
+type BeneficiarySnapshot = {lists:BeneficiaryList[]; people:Beneficiary[]};
+// One in-flight fetch per identity, shared by the management page and payment
+// picker. Entries disappear after completion: writes and tab changes never
+// reuse a stale success, and failures are never cached.
+const beneficiaryReads = new Map<string, Promise<BeneficiarySnapshot>>();
+export function loadBeneficiaries(ownerUid: string | null = null): Promise<BeneficiarySnapshot> {
+  const key = ownerUid ?? 'guest';
+  const existing = beneficiaryReads.get(key);
+  if (existing) return existing;
+  const request = fetchBeneficiaries(ownerUid).finally(() => {
+    if (beneficiaryReads.get(key) === request) beneficiaryReads.delete(key);
+  });
+  beneficiaryReads.set(key, request);
+  return request;
+}
+async function fetchBeneficiaries(ownerUid: string | null): Promise<BeneficiarySnapshot> {
   if (!ownerUid) return loadGuestBeneficiaries();
   const db=client();
   // PostgREST truncates unpaged SELECT results at the project row limit.

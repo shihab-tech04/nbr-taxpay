@@ -13,6 +13,7 @@ type RpcName =
   | 'taxpay_guest_beneficiary_open'
   | 'taxpay_guest_beneficiary_lists'
   | 'taxpay_guest_beneficiary_rows'
+  | 'taxpay_guest_beneficiary_snapshot'
   | 'taxpay_guest_beneficiary_create_list'
   | 'taxpay_guest_beneficiary_add'
   | 'taxpay_guest_beneficiary_update'
@@ -107,6 +108,10 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_open', { p_capability_hash });
     } else if (action === 'lists') {
       data = await rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash });
+    } else if (action === 'snapshot') {
+      // One SQL call verifies the capability, touches the session once and
+      // returns the bounded first page plus all named lists atomically.
+      data = await rpc(client, 'taxpay_guest_beneficiary_snapshot', { p_capability_hash });
     } else if (action === 'people') {
       const offset = body.offset ?? 0;
       const limit = body.limit ?? 500;

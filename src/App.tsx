@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
@@ -12,36 +12,37 @@ import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceC
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
-import { PublicUserGuide } from './components/screens/PublicUserGuide';
-import { PublicReport } from './components/screens/PublicReport';
-import { GuestPayment } from './components/screens/GuestPayment';
-import { Beneficiaries } from './components/screens/Beneficiaries';
-import { TravelTax } from './components/screens/TravelTax';
+const PublicUserGuide = lazy(() => import('./components/screens/PublicUserGuide').then(module => ({ default: module.PublicUserGuide })));
+const PublicReport = lazy(() => import('./components/screens/PublicReport').then(module => ({ default: module.PublicReport })));
+const GuestPayment = lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
+const Beneficiaries = lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
+const TravelTax = lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
 import { TaxPayModal } from './components/ui/TaxPayModal';
 import { receiptReturnRoute } from './services/routeContract';
-import { IncidentReporting } from './components/screens/IncidentReporting';
-import { ArchitectureView } from './components/screens/ArchitectureView';
-import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
-import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
-import { PaymentWizard } from './components/screens/PaymentWizard';
-import { PaymentHistory } from './components/screens/PaymentHistory';
-import { ReceiptLookup } from './components/screens/ReceiptLookup';
-import { PaymentDetailView } from './components/screens/PaymentDetailView';
-import { TaxLedger } from './components/screens/TaxLedger';
-import { TaxJourney } from './components/screens/TaxJourney';
-import { CertificatesView } from './components/screens/CertificatesView';
-import { CorrectionRequests } from './components/screens/CorrectionRequests';
-import { CorrectionInquiries } from './components/screens/CorrectionInquiries';
-import { NotificationsView } from './components/screens/NotificationsView';
-import { AccountCenter } from './components/screens/AccountCenter';
-import { ManageAuthorization } from './components/screens/ManageAuthorization';
+const IncidentReporting = lazy(() => import('./components/screens/IncidentReporting').then(module => ({ default: module.IncidentReporting })));
+const ArchitectureView = lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
+const TaxpayerDashboard = lazy(() => import('./components/screens/TaxpayerDashboard').then(module => ({ default: module.TaxpayerDashboard })));
+import { user1DemoRoutes } from './components/screens/user1DemoRoutes';
+const User1DemoExperience = lazy(() => import('./components/screens/User1DemoExperience').then(module => ({ default: module.User1DemoExperience })));
+const PaymentWizard = lazy(() => import('./components/screens/PaymentWizard').then(module => ({ default: module.PaymentWizard })));
+const PaymentHistory = lazy(() => import('./components/screens/PaymentHistory').then(module => ({ default: module.PaymentHistory })));
+const ReceiptLookup = lazy(() => import('./components/screens/ReceiptLookup').then(module => ({ default: module.ReceiptLookup })));
+const PaymentDetailView = lazy(() => import('./components/screens/PaymentDetailView').then(module => ({ default: module.PaymentDetailView })));
+const TaxLedger = lazy(() => import('./components/screens/TaxLedger').then(module => ({ default: module.TaxLedger })));
+const TaxJourney = lazy(() => import('./components/screens/TaxJourney').then(module => ({ default: module.TaxJourney })));
+const CertificatesView = lazy(() => import('./components/screens/CertificatesView').then(module => ({ default: module.CertificatesView })));
+const CorrectionRequests = lazy(() => import('./components/screens/CorrectionRequests').then(module => ({ default: module.CorrectionRequests })));
+const CorrectionInquiries = lazy(() => import('./components/screens/CorrectionInquiries').then(module => ({ default: module.CorrectionInquiries })));
+const NotificationsView = lazy(() => import('./components/screens/NotificationsView').then(module => ({ default: module.NotificationsView })));
+const AccountCenter = lazy(() => import('./components/screens/AccountCenter').then(module => ({ default: module.AccountCenter })));
+const ManageAuthorization = lazy(() => import('./components/screens/ManageAuthorization').then(module => ({ default: module.ManageAuthorization })));
 import { AuthorizationRequestPopup } from './components/screens/AuthorizationRequestPopup';
-import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
-import { OntologyView } from './components/screens/OntologyView';
-import { GlossaryView } from './components/screens/GlossaryView';
-import { SecureWorkspace } from './components/screens/SecureWorkspace';
-import { HeadCatalogue } from './components/screens/HeadCatalogue';
+const PaymentServicesPage = lazy(() => import('./components/screens/PaymentServicesPage').then(module => ({ default: module.PaymentServicesPage })));
+const OntologyView = lazy(() => import('./components/screens/OntologyView').then(module => ({ default: module.OntologyView })));
+const GlossaryView = lazy(() => import('./components/screens/GlossaryView').then(module => ({ default: module.GlossaryView })));
+const SecureWorkspace = lazy(() => import('./components/screens/SecureWorkspace').then(module => ({ default: module.SecureWorkspace })));
+const HeadCatalogue = lazy(() => import('./components/screens/HeadCatalogue').then(module => ({ default: module.HeadCatalogue })));
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
@@ -243,7 +244,7 @@ const MainRouter: React.FC = () => {
             </button>
           </section>
         ) : <>
-          {renderActiveScreen()}
+          <Suspense fallback={<p role="status">{language === 'bn' ? 'পাতা লোড হচ্ছে…' : 'Loading page…'}</p>}>{renderActiveScreen()}</Suspense>
         </>}
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
@@ -253,7 +254,7 @@ const MainRouter: React.FC = () => {
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
             service="status" className="receipt-modal" footer={<></>}
             onClose={() => navigate(receiptReturnRoute(routeParams.returnTo))}>
-            <PaymentDetailView embedded />
+            <Suspense fallback={<p role="status">{language === 'bn' ? 'রসিদ লোড হচ্ছে…' : 'Loading receipt…'}</p>}><PaymentDetailView embedded /></Suspense>
           </TaxPayModal>)}
       <ParityRegisterModal />
       {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}

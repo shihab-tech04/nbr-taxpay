@@ -203,16 +203,6 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
-      - name: Verify the separate two-field TaxPay login popup
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
-      - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Verify synthetic receipts and simulated bank slips
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -239,6 +229,34 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
 
+  public-auth-e2e:
+    name: Authentication and beneficiary selection acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium
+      - name: Verify the separate two-field TaxPay login popup
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
+      - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
   route-e2e:
     name: Public routes (shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
@@ -270,7 +288,7 @@ jobs:
 
   verification-gate:
     name: Build and verify static preview
-    needs: [compile, core-e2e, public-e2e, route-e2e]
+    needs: [compile, core-e2e, public-e2e, public-auth-e2e, route-e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read

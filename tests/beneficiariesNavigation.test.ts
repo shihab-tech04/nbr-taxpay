@@ -68,7 +68,9 @@ test('all account-private beneficiary rows load beyond the first 1,000 in determ
   assert.deepEqual(ranges,[[0,499],[500,999],[1000,1499]]);
   // The service must page the list table as well as the people table.
   const service=readFileSync('src/services/beneficiaries.ts','utf8');
-  const load=service.slice(service.indexOf('export async function loadBeneficiaries('),service.indexOf('/** Explicit, idempotent recovery'));
+  const loadStart=service.indexOf('export function loadBeneficiaries(');
+  assert.ok(loadStart>=0, 'the identity-scoped loader must remain exported');
+  const load=service.slice(loadStart,service.indexOf('/** Explicit, idempotent recovery'));
   assert.match(load,/collectBeneficiaryPages<BeneficiaryList>/);
   assert.match(load,/collectBeneficiaryPages<Beneficiary>/);
   assert.match(load,/\.order\('name'\)\.order\('id'\)\.range\(from,to\)/);
