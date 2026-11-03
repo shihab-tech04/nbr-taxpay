@@ -32,7 +32,7 @@
 ### 2. Passengers
 - One initial passenger. Add, edit or remove family/friend member; remove targets only that passenger.
 - Per passenger: nationality, passport, full name, age band, medical-port referral.
-- Foreign: manually enter name/passport. Bangladeshi: name read-only until lookup. As a **UX-only sample**, passport DEMO123456 may return visibly synthetic name SAMPLE BANGLADESHI PASSENGER; all other passports show the government API is not connected, never fabricate an identity.
+- Foreign: manually enter name/passport. Bangladeshi: name read-only until lookup. As a **UX-only sample**, passport TEST123456 may return visibly synthetic name SAMPLE BANGLADESHI PASSENGER; all other passports show the government API is not connected, never fabricate an identity.
 - Application receipt mobile collected once.
 - Duplicate passports rejected case-insensitively. Medical referral cannot silently be treated as a granted exemption.
 - Age bands and land/water amounts are from previous illustrative application configuration, not legally verified.
