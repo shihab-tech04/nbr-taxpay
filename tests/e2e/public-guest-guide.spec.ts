@@ -417,14 +417,14 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await setWorkspaceLanguage(page,'bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('ভ্রমণের তথ্য');
+ await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও ভ্রমণের তথ্য');
  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
  await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
- await expect(modal.getByRole('button',{name:'যাত্রীর তথ্যে এগিয়ে যান'})).toBeVisible();
+ await expect(modal.getByRole('button',{name:'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান'})).toBeVisible();
  await expect(modal.locator('.public-service-dialog__notice')).toHaveCount(0);
  await modal.locator('#travel-tax-route-0').check();
   await fillTravelDetails(modal);
- await modal.getByRole('button',{name:'যাত্রীর তথ্যে এগিয়ে যান'}).click();
+ await modal.getByRole('button',{name:'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান'}).click();
  await expect(modal.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
 
  await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
