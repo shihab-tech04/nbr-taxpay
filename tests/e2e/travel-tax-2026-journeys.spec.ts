@@ -33,7 +33,7 @@ test('Travel Tax: passenger tabs first, Land default, no rate on mode cards or a
   await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 34 on travel date');
   await modal.getByRole('button', {name:'Continue to add passengers'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Additional passengers & receipt');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
   await expect(modal.locator('#travel-port-number, #travel-tax-zone, #travel-organization-code')).toHaveCount(0);
   await modal.getByRole('button', {name:'Back',exact:true}).click();
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
