@@ -420,7 +420,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
         {!embedded && <nav className="travel-flow__steps" aria-label={tr('Travel tax steps', 'ভ্রমণ করের ধাপ')}>
           {[
-            tr('Passenger and travel details', 'যাত্রী ও ভ্রমণের তথ্য'), tr('Additional passengers & receipt', 'অতিরিক্ত যাত্রী ও রসিদের তথ্য'),
+            tr('Passenger and travel details', 'যাত্রী ও ভ্রমণের তথ্য'), tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'),
             tr('Payment', 'পেমেন্ট'), tr('Challan', 'চালান'),
           ].map((name, idx) => (
             <button key={name} type="button" disabled={idx > step || !!createdReceipt}
