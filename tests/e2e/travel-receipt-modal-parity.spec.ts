@@ -134,8 +134,8 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   await expect(calculation.getByTestId('travel-payment-total')).toContainText('—');
   await expect(calculation.getByTestId('travel-total-in-words')).toHaveCount(1);
 
-  await dialog.locator('#travel-tax-route-1').check();
-  await fillTravelDetails(dialog);
+  await fillTravelDetails(dialog, { mode: 'WATER' });
+  await expect(dialog.locator('#travel-tax-route-1')).toBeChecked();
   await expect(calculation.getByTestId('travel-payment-total')).toContainText('1,000');
   const words = calculation.getByTestId('travel-total-in-words');
   await expect(words).toHaveText('One Thousand Taka only');
