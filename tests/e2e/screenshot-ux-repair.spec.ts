@@ -122,12 +122,11 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   expect(summaryBox!.x).toBeGreaterThanOrEqual(0);
   expect(summaryBox!.x+summaryBox!.width).toBeLessThanOrEqual(width+1);
   expect(footerBox!.y).toBeGreaterThanOrEqual(summaryBox!.y);
-  await dialog.locator('#travel-tax-route-1').check();
-  await fillTravelDetails(dialog);
+  await fillTravelDetails(dialog, { mode: 'WATER' });
   await expect(summary.locator('summary')).toContainText('1,000');
   await summary.locator('summary').click();
   await expect(summary.locator('dl')).toBeVisible();
-  await next.click();
+  await footer.getByRole('button', { name: 'Continue to add passengers' }).click();
   await expect(dialog.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
