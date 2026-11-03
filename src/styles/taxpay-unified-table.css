@@ -245,7 +245,9 @@ table.taxpay-unified-table {
   gap: 8px;
 }
 @media (min-width:768px) {
-  .taxpay-citizen-shell .taxpay-ledger-records .taxpay-mobile-table-cards {display:none;}
+  /* Root fix: the later shared stylesheet must not override Tailwind md:hidden.
+   * This applies to ALL record modules that opt into mobile card fallback. */
+  .taxpay-citizen-shell .taxpay-mobile-table-cards.md\\:hidden {display:none;}
 }
 .taxpay-mobile-table-card {
   min-width: 0;
