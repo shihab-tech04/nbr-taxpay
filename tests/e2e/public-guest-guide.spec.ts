@@ -458,7 +458,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await expect(actions.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(actions.getByRole('button',{name:'Print receipt'})).toBeVisible();
   await actions.getByRole('button',{name:'New payment'}).click();
-  await expect(actions.getByRole('button',{name:'Continue to add passengers'})).toBeVisible();
+  await expect(actions.getByRole('button',{name:'Continue to travel details'})).toBeVisible();
   await expect(modal.locator('.receipt-view__actions')).toHaveCount(0);
 });
 
