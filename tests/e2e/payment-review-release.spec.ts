@@ -377,7 +377,7 @@ test('Travel Tax clearly discloses unverified rates and performs a non-operation
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'নমুনা পেমেন্ট নিশ্চিত করুন' }).click();
   await expect(page.locator('.receipt-view__paper')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'করবৃত্ত — রসিদের বিবরণ' })).toBeVisible();
+  await expect(page.locator('.receipt-view__summary').getByRole('heading', { name: 'রসিদের বিবরণ' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name);
   await expect(page.getByText('ব্যক্তিগত কর ক্রেডিট যাচাই হয়নি।')).toHaveCount(0);
 
