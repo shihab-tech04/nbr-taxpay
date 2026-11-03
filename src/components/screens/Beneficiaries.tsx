@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayRecordList,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -497,11 +497,10 @@ export function Beneficiaries(){
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
               <TaxPayTablePanel className="beneficiary-directory__table">
-              <TaxPayRecordList variant="beneficiaries" headers={[tr('Beneficiary','উপকারভোগী'),tr('TIN','টিআইএন'),tr('Tag / relationship','ট্যাগ / সম্পর্ক'),tr('Actions','কার্যক্রম')]} aria-label={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}>
-                {filteredPeople.map(person=><li key={person.id}
-                  className="taxpayer-transaction-row beneficiary-directory__row taxpay-record-list__row"
-                  data-selected={selectedIds.includes(person.id)?'true':'false'}>
-                  <div className="beneficiary-directory__identity">
+              <TaxPayDataGrid variant="beneficiaries" rows={filteredPeople} getRowKey={person=>person.id}
+                isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"taxpayer-transaction-row beneficiary-directory__row"}
+                columns={[
+                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),renderCell:person=><div className="beneficiary-directory__identity">
                     <input id={'beneficiary-select-'+person.id} type="checkbox"
                       aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)}
                       checked={selectedIds.includes(person.id)}
@@ -511,10 +510,10 @@ export function Beneficiaries(){
                     <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
                       <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
                     </label>
-                  </div>
-                  <p className="beneficiary-directory__tin tabular-nums"><span className="beneficiary-directory__mobile-label">{tr('TIN','টিআইএন')}: </span>{person.tin}</p>
-                  <p className="beneficiary-directory__tag"><span className="beneficiary-directory__mobile-label">{tr('Tag','ট্যাগ')}: </span>{beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
-                  <div className="beneficiary-directory__actions" role="group"
+                  </div>},
+                  {key:'tin',header:tr('TIN','টিআইএন'),renderCell:person=><p className="beneficiary-directory__tin tabular-nums"><span className="beneficiary-directory__mobile-label">{tr('TIN','টিআইএন')}: </span>{person.tin}</p>},
+                  {key:'tag',header:tr('Tag / relationship','ট্যাগ / সম্পর্ক'),renderCell:person=><p className="beneficiary-directory__tag"><span className="beneficiary-directory__mobile-label">{tr('Tag','ট্যাগ')}: </span>{beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>},
+                  {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
                     <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
@@ -524,9 +523,9 @@ export function Beneficiaries(){
                     <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary gap-2 text-sm text-taxpay-error"
                       aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
                       onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
-                  </div>
-                </li>)}
-              </TaxPayRecordList>
+                  </div>}
+                ]}
+                ariaLabel={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}/>
               </TaxPayTablePanel>
             </div>
           </>}

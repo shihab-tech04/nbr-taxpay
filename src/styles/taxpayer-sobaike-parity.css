@@ -292,11 +292,15 @@
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(table, .taxpayer-transaction-list) {
   font-variant-numeric: tabular-nums;
 }
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(th,td) {
+/* Generic taxpayer tables retain their historical styling; shared data-grid
+ * headers get their typography, contrast and surface from taxpay-unified-table.
+ * Do not let this legacy rule overwrite the unified header contract. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace td,
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace table:not(.taxpay-unified-table) th {
   border-color: var(--color-taxpay-border);
   color: var(--color-taxpay-text);
 }
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(th) {
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace table:not(.taxpay-unified-table) th {
   font-size: 14px;
   font-weight: 600;
   background: var(--color-taxpay-background);

@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -218,41 +218,27 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     <TaxPayTablePanel className="taxpay-ledger-records">
     <TaxPayTableViewport>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
-        <>
-          <TaxPayUnifiedTable className="taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table" data-testid="event-ledger-table">
-            <thead className="bg-taxpay-background text-taxpay-muted"><tr>
-              <th className="p-3">{t('Date / time','তারিখ / সময়')}</th><th className="p-3">{t('Event','ঘটনা')}</th>
-              <th className="p-3">{t('Year · component','বর্ষ · খাত')}</th>
-              <th className="p-3">{t('Particulars & Economic Code','বিবরণ ও অর্থনৈতিক কোড')}</th>
-              <th className="p-3 text-right">{t('Debit (liability)','ডেবিট (দায়)')}</th>
-              <th className="p-3 text-right">{t('Credit (payment)','ক্রেডিট (পরিশোধ)')}</th>
-              <th className="p-3 text-right">{t('Effect','প্রভাব')}</th>
-              <th className="p-3 text-right">{t('Balance after','পরবর্তী ব্যালেন্স')}</th>
-              <th className="p-3">{t('Actor · source','কার্যকারী · উৎস')}</th>
-              <th className="p-3">{t('Tax event','কর ঘটনা')}</th>
-            </tr></thead>
-            <tbody className="divide-y divide-taxpay-border">{visible.map(e=><tr key={e.id} className="hover:bg-taxpay-light">
-              <td className="whitespace-nowrap p-3">{dateTime(e.occurredAt,language)}</td>
-              <td className="p-3"><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
-                {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button></td>
-              <td className="p-3">{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></td>
-              <td className="p-3">{e.title}<span className="block text-taxpay-muted">{e.component}</span></td>
-              <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'}</td>
-              <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'}</td>
-              <td className="whitespace-nowrap p-3 text-right tabular-nums">{e.effectMinor===null?'—':(e.effectMinor>0?'+':'−')+money(Math.abs(e.effectMinor),language)}</td>
-              <td className="whitespace-nowrap p-3 text-right font-semibold tabular-nums">{canShowBalance&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):'—'}</td>
-              <td className="p-3">{e.actor}<span className="block text-taxpay-muted">{e.source}</span></td>
-              <td className="p-3 break-all font-mono">{e.taxEventId||e.id}</td>
-            </tr>)}</tbody>
-          </TaxPayUnifiedTable>
-          <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden">{visible.map(e=><li className="taxpay-mobile-table-card" key={e.id}>
-            <button type="button" onClick={()=>setSelected(e)} className="flex w-full flex-col gap-1 rounded-lg border border-taxpay-border p-3 text-left text-sm">
-              <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>
-              <span className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</span>
-              <span className="break-all text-xs">{e.reference||e.taxEventId||e.id}</span>
-            </button>
-          </li>)}</ul>
-        </>
+        <TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
+          testId="event-ledger-table" ariaLabel={t('Tax event ledger','কর ঘটনার লেজার')}
+          columns={[
+            {key:'date',header:t('Date / time','তারিখ / সময়'),cellClassName:'whitespace-nowrap',renderCell:e=>dateTime(e.occurredAt,language)},
+            {key:'event',header:t('Event','ঘটনা'),renderCell:e=><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
+              {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button>},
+            {key:'year',header:t('Year · component','বর্ষ · খাত'),renderCell:e=><>{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></>},
+            {key:'particulars',header:t('Particulars & Economic Code','বিবরণ ও অর্থনৈতিক কোড'),renderCell:e=><>{e.title}<span className="block text-taxpay-muted">{e.component}</span></>},
+            {key:'debit',header:t('Debit (liability)','ডেবিট (দায়)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'},
+            {key:'credit',header:t('Credit (payment)','ক্রেডিট (পরিশোধ)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'},
+            {key:'effect',header:t('Effect','প্রভাব'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor===null?'—':(e.effectMinor>0?'+':'−')+money(Math.abs(e.effectMinor),language)},
+            {key:'balance',header:t('Balance after','পরবর্তী ব্যালেন্স'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right font-semibold tabular-nums',renderCell:e=>canShowBalance&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):'—'},
+            {key:'actor',header:t('Actor · source','কার্যকারী · উৎস'),renderCell:e=><>{e.actor}<span className="block text-taxpay-muted">{e.source}</span></>},
+            {key:'taxEvent',header:t('Tax event','কর ঘটনা'),cellClassName:'break-all font-mono',renderCell:e=>e.taxEventId||e.id}
+          ]}
+          renderMobileCard={e=><button type="button" onClick={()=>setSelected(e)} className="flex w-full flex-col gap-1 rounded-lg border border-taxpay-border p-3 text-left text-sm">
+            <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>
+            <span className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</span>
+            <span className="break-all text-xs">{e.reference||e.taxEventId||e.id}</span>
+          </button>}/>
+
     </TaxPayTableViewport>
     </TaxPayTablePanel>
     {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
