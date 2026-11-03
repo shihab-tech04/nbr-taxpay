@@ -60,6 +60,17 @@ for(const language of ['en','bn'] as const){
         expect(panel.viewportBorder,'mobile ledger viewport should not frame cards').toBe('0px');
       }
       if(header)await expect(header).toBeVisible();
+      if(view==='ledger') {
+        const ledgerMobileList=root.locator('.taxpay-mobile-table-cards');
+        const ledgerDesktopTable=root.locator('table.taxpay-unified-table');
+        if(desktop){
+          await expect(ledgerMobileList).toBeHidden();
+          await expect(ledgerDesktopTable).toBeVisible();
+        } else {
+          await expect(ledgerMobileList).toBeVisible();
+          await expect(ledgerDesktopTable).toBeHidden();
+        }
+      }
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'
           ?document.querySelector('[data-testid="event-tax-ledger"]')
