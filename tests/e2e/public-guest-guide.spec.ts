@@ -493,7 +493,7 @@ test('Travel Tax searches only Land and Water in English while preserving the se
  await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
  await fillTravelDetails(modal,{mode:'WATER'});
  await modal.getByRole('button',{name:'Continue to passenger details'}).click();
- await expect(modal.getByRole('heading',{name:'Passenger details'})).toBeVisible();
+ await expect(modal.locator('.payment-form-section').getByRole('heading',{name:'Passenger details'})).toBeVisible();
 });
 
 test('Travel Tax Bengali mode search remains accessible at 320px',async({page},info)=>{
