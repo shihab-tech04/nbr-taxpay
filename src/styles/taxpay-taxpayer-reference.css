@@ -8,12 +8,12 @@
   --reference-focus: var(--color-taxpay-secondary);
   --reference-overlay: rgba(5,5,5,.55);
   --reference-shadow: var(--taxpay-shadow-card);
-  font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif;
+  font-family: var(--font-text);
   background: var(--color-taxpay-background);
   color: var(--color-taxpay-text);
 }
 .taxpay-taxpayer-reference[lang="bn"] {
-  font-family: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif;
+  font-family: var(--font-text);
 }
 .taxpay-taxpayer-reference :is(button, input, select, textarea, a):focus-visible {
   outline: 2px solid var(--reference-focus);
@@ -488,7 +488,7 @@
 .taxpay-taxpayer-reference .taxpay-auth-person > div {min-width:0;}
 .taxpay-taxpayer-reference .taxpay-auth-person h3 {font-size:16px;font-weight:700;margin:0;color:var(--color-taxpay-text);}
 .taxpay-taxpayer-reference .taxpay-auth-person p {font-size:14px;color:var(--color-taxpay-muted);margin-top:4px;}
-.taxpay-taxpayer-reference .taxpay-auth-tin {font-family:var(--font-numeric),monospace;letter-spacing:.02em;}
+.taxpay-taxpayer-reference .taxpay-auth-tin {font-family:var(--font-numeric);letter-spacing:.02em;}
 .taxpay-taxpayer-reference .taxpay-auth-status {
   flex:none;white-space:nowrap;padding:4px 9px;border:1px solid var(--color-taxpay-border);
   border-radius:99px;background:var(--color-taxpay-background);color:var(--color-taxpay-muted);font-size:14px;font-weight:650;

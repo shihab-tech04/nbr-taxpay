@@ -78,16 +78,17 @@
 }
 @layer base {
   body {
-    font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-text);
   }
 }
 
 .font-serif-fraunces {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: var(--font-text);
 }
 
 .font-mono-plex {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
 }
 
 .font-bengali {
@@ -116,10 +117,10 @@
 .taxpay-citizen-shell { font-family: var(--font-text); }
 
 /* TaxPay citizen font contract; Office routes are explicitly outside this selector. */
-:root { --font-text: 'Poppins', 'Noto Sans Bengali', sans-serif; --font-numeric: 'IBM Plex Mono', 'Noto Sans Bengali', monospace; }
+:root { --font-text: 'Poppins', 'Noto Sans Bengali', sans-serif; --font-numeric: var(--font-text); }
 .taxpay-citizen-shell :is(.numeric,.font-mono,.font-mono-plex,.tabular-nums) { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell :is(input,select,textarea,button) { font-family: inherit; }
-.taxpay-citizen-shell[lang="bn"] { --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif; font-family: var(--font-text); }
+.taxpay-citizen-shell[lang="bn"] { --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif; --font-numeric: var(--font-text); font-family: var(--font-text); }
 
 .taxpay-citizen-shell .font-serif-fraunces {font-family:var(--font-text);}
 .taxpay-citizen-shell .font-bengali {font-family:'Noto Sans Bengali','Poppins',sans-serif;}

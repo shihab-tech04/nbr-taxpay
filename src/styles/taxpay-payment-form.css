@@ -54,7 +54,7 @@
 .payment-form-summary__rows>div{display:grid;gap:3px}
 .payment-form-summary__rows dt{font-size:14px;color:var(--color-taxpay-form-muted);font-weight:400}
 .payment-form-summary__rows dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
-.payment-form-summary__mono{font-family:ui-monospace,monospace}
+.payment-form-summary__mono{font-family:var(--font-numeric);font-variant-numeric:tabular-nums}
 .payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
 .payment-form-summary__breakdown h3{font-size:14px;font-weight:700;margin:0 0 2px}
 .payment-form-summary__breakdown>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(75px,auto);align-items:start;gap:9px;font-size:14px;line-height:1.5;color:#516681}
@@ -151,7 +151,7 @@
 .payment-lifecycle__overview>div{display:grid;gap:6px;min-width:0}
 .payment-lifecycle__overview span{font-size:14px;color:var(--color-taxpay-form-muted)}
 .payment-lifecycle__overview strong{font-size:clamp(17px,2vw,23px);font-weight:700;line-height:1.4;color:#1f56a1;overflow-wrap:anywhere}
-.payment-lifecycle__overview .payment-lifecycle__reference-value{font-size:14px;color:#204269;font-family:ui-monospace,monospace}
+.payment-lifecycle__overview .payment-lifecycle__reference-value{font-size:14px;color:#204269;font-family:var(--font-numeric);font-variant-numeric:tabular-nums}
 .payment-lifecycle__progress-detail{border-top:1px solid #e5edf6}
 .payment-lifecycle__progress-detail>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 21px;font-size:14px;font-weight:600;color:#35577e;cursor:pointer}
 .payment-lifecycle__progress-detail>summary:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:-2px}
@@ -167,7 +167,7 @@
 .payment-lifecycle__references{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;margin:0;padding-top:16px;border-top:1px solid var(--citizen-border)}
 .payment-lifecycle__references>div{display:grid;gap:4px;min-width:0}
 .payment-lifecycle__references dt{font-size:14px;color:var(--color-taxpay-form-text);font-weight:650}
-.payment-lifecycle__references dd{font-size:14px;font-weight:800;font-family:ui-monospace,monospace;overflow-wrap:anywhere;margin:0;color:#204269}
+.payment-lifecycle__references dd{font-size:14px;font-weight:800;font-family:var(--font-numeric);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin:0;color:#204269}
 .payment-lifecycle__timeline{list-style:none;margin:0;padding:0;display:grid;gap:11px}
 .payment-lifecycle__timeline li{display:grid;grid-template-columns:23px minmax(0,1fr);align-items:start;gap:10px;font-size:14px;font-weight:650;line-height:1.55;color:var(--citizen-text)}
 .payment-lifecycle__timeline small{display:none}

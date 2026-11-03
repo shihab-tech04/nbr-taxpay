@@ -851,7 +851,7 @@
 .receipt-lookup__page-header h1 {
   margin:0;
   color:var(--citizen-text);
-  font-family:'Fraunces',Georgia,serif;
+  font-family:var(--font-text);
   font-size:1.65rem;
   line-height:1.25;
 }
@@ -880,7 +880,7 @@
   font-size:.88rem;
   line-height:1.4;
 }
-.receipt-lookup__input::placeholder {color:var(--citizen-muted);opacity:1;font-family:'Manrope',sans-serif;}
+.receipt-lookup__input::placeholder {color:var(--citizen-muted);opacity:1;font-family:var(--font-text);}
 .receipt-lookup__input:focus-visible {
   border-color:var(--citizen-primary);
   outline:3px solid color-mix(in srgb,var(--citizen-primary) 22%,transparent);
@@ -1296,7 +1296,7 @@
   min-width:0;
   margin:0;
   color:var(--citizen-text);
-  font-family:'Manrope',system-ui,sans-serif;
+  font-family:var(--font-text);
   font-size:clamp(1.05rem,1.8vw,1.25rem);
   font-weight:800;
   line-height:1.4;
@@ -1429,7 +1429,7 @@
 .travel-flow__standalone-title {
   margin:0 0 1rem;
   color:var(--citizen-text);
-  font-family:'Manrope',system-ui,sans-serif;
+  font-family:var(--font-text);
   font-size:1.5rem;
   font-weight:800;
   line-height:1.4;
@@ -1507,7 +1507,7 @@
 .travel-flow__section-header h3 {
   margin:0 0 .3rem;
   color:var(--citizen-text);
-  font-family:'Manrope',system-ui,sans-serif;
+  font-family:var(--font-text);
   font-size:1.05rem;
   line-height:1.45;
   font-weight:800;
@@ -1545,7 +1545,7 @@
 .travel-flow__route-price {display:grid;gap:.12rem;text-align:right;white-space:nowrap;}
 .travel-flow__route-price strong {
   color:var(--citizen-primary-dark);
-  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-family:var(--font-numeric);font-variant-numeric:tabular-nums;
   font-size:14px;
   font-weight:800;
 }
@@ -1628,7 +1628,7 @@
   padding-bottom:1.1rem;
   border-bottom:1px solid var(--citizen-border);
   color:var(--citizen-primary-dark);
-  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-family:var(--font-numeric);font-variant-numeric:tabular-nums;
   font-weight:800;
   font-size:clamp(1.55rem,3vw,2rem);
   line-height:1.3;
