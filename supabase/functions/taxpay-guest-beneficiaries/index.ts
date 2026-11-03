@@ -107,6 +107,14 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_open', { p_capability_hash });
     } else if (action === 'lists') {
       data = await rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash });
+    } else if (action === 'snapshot') {
+      // Both read-only SQL functions independently validate this same opaque
+      // capability. Run them concurrently to save a browser -> Edge round trip.
+      const [lists, people] = await Promise.all([
+        rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash }),
+        rpc(client, 'taxpay_guest_beneficiary_rows', { p_capability_hash, p_offset: 0, p_limit: 500 }),
+      ]);
+      data = { lists, people };
     } else if (action === 'people') {
       const offset = body.offset ?? 0;
       const limit = body.limit ?? 500;

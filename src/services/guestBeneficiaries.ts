@@ -129,13 +129,30 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
   throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
 }
 
-export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
-  // Both reads use the same browser capability and are independent: do not
-  // serialize two Edge Function network round trips on every navigation.
-  const [lists, firstPage] = await Promise.all([
+/** The hosted snapshot combines the first page and lists in one Edge request.
+ * Legacy/mocked transports may lack this additive action: fall back without
+ * changing guest capabilities, write behavior or complete pagination.
+ */
+async function firstGuestPage(): Promise<{lists:GuestList[]; people:GuestPerson[]}> {
+  try {
+    const snapshot=await post<{lists:GuestList[];people:GuestPerson[]}>('snapshot');
+    if (snapshot && Array.isArray(snapshot.lists) && Array.isArray(snapshot.people) && snapshot.people.length<=pageSize) {
+      return snapshot;
+    }
+  } catch (error) {
+    // Only the *unsupported endpoint* can fall back. Never conceal an expired
+    // capability, account isolation error, or real service interruption.
+    if (!(error instanceof Error) || !error.message.includes('selected beneficiary was not found')) throw error;
+  }
+  const [lists,people]=await Promise.all([
     readGuestPage<GuestList>('lists'),
-    readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize }),
+    readGuestPage<GuestPerson>('people',{offset:0,limit:pageSize}),
   ]);
+  return {lists,people};
+}
+
+export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
+  const {lists,people:firstPage}=await firstGuestPage();
   const people: GuestPerson[] = [...firstPage];
   // Preserve the complete multi-list address book. An exact full page means
   // there may be more records, so keep reading until a short page arrives.

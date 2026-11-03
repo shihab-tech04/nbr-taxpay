@@ -24,7 +24,7 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     const headers = Object.fromEntries(new Headers(init?.headers).entries());
     const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, any>;
     requests.push({ url, headers, body });
-    if (body.action === 'lists' && transientReadFailures > 0) {
+    if ((body.action === 'lists' || body.action === 'snapshot') && transientReadFailures > 0) {
       transientReadFailures--;
       throw new TypeError('Temporary simulated network failure');
     }
@@ -34,7 +34,8 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     const session = sessions.get(capability);
     if (!session) return new Response(JSON.stringify({ success: false, code: 'GUEST_SESSION_UNAVAILABLE' }), { status: 410 });
     let data: unknown;
-    if (body.action === 'lists') data = session.lists;
+    if (body.action === 'snapshot') data = { lists: session.lists, people: session.people.slice(0, 500) };
+    else if (body.action === 'lists') data = session.lists;
     else if (body.action === 'people') data = session.people.slice(body.offset, body.offset + body.limit);
     else if (body.action === 'create-list') {
       const list = session.lists.find(value => value.name.toLowerCase() === body.name.toLowerCase()) ?? {
@@ -98,6 +99,20 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     (globalThis as any).window = { localStorage: storageA };
     const restored = await guest.loadGuestBeneficiaries();
     assert.equal(restored.people[0]?.display_name, 'Synthetic Guest A');
+    assert.ok(requests.some(request => request.body.action === 'snapshot'), 'one initial snapshot request replaces two reads');
+    // The snapshot is bounded to 500 records. Pagination must still retrieve
+    // the complete address book, never quietly dropping a 501st person.
+    const sessionA=sessions.get(capabilityA!);
+    assert.ok(sessionA);
+    for(let i=0;i<500;i++)sessionA.people.push({
+      id:crypto.randomUUID(),list_id:listA.id,tin:String(i+20).padStart(12,'0'),
+      display_name:'Synthetic extra '+i,tag:null,relationship:null,other_label:null,
+      created_at:new Date().toISOString(),updated_at:new Date().toISOString(),
+    });
+    assert.equal((await guest.loadGuestBeneficiaries()).people.length,501);
+    assert.ok(requests.some(request=>request.body.action==='people' && request.body.offset===500));
+    sessionA.people.splice(1);
+
     assert.equal(storageA.getItem('korbritto.guest-beneficiaries.capability.v1'), capabilityA);
     transientReadFailures = 2;
     await assert.rejects(guest.loadGuestBeneficiaries(), /temporarily unavailable/);
