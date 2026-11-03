@@ -695,7 +695,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
               simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
             {paymentMethod && <p className="travel-flow__field-hint">{paymentMethodLabel(paymentMethod, language)}</p>}
-            {(!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>
+            {(!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
             <label className="travel-flow__channel-option">
               <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
               <p>{tr('I confirm the travel information, all passengers and the combined amount.',
