@@ -33,6 +33,12 @@ for(const language of ['en','bn'] as const){
     const t=(en:string,bengali:string)=>bn?bengali:en;
     const screen=page.getByTestId('beneficiaries-page');
     await expect(screen).toBeVisible();
+    // A saved-list preview must not inject an unsolicited account sign-in banner.
+    // The existing entry-point/authentication flows remain unchanged elsewhere.
+    await expect(screen.getByTestId('beneficiaries-account-sync')).toHaveCount(0);
+    await expect(screen.getByText(t('For lists across devices, use your email account.',
+      'সব ডিভাইসে একই তালিকা পেতে ইমেইল অ্যাকাউন্ট ব্যবহার করুন।'))).toHaveCount(0);
+    await expect(screen.getByRole('button',{name:t('Sign in with email','ইমেইল দিয়ে সাইন ইন')})).toHaveCount(0);
     await expect(screen.getByRole('heading',{level:1,name:t('Beneficiaries','উপকারভোগী')})).toBeVisible();
     await expect(screen.getByRole('heading',{level:2,name:t('Beneficiary list','উপকারভোগীর তালিকা')})).toBeVisible();
     const filters=screen.locator('.taxpayer-transaction-filters.beneficiary-directory__filters');
