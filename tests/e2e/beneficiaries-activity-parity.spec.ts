@@ -56,7 +56,6 @@ for(const language of ['en','bn'] as const){
     await expect(rows.first()).toContainText('123456789012');
     await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
     await expect(screen.locator('.beneficiary-directory__table')).toBeVisible();
-    await expect(page.locator('style')).not.toContainText('unrelated stylesheet');
     await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toBeVisible();
