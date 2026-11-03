@@ -532,9 +532,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             </header>
             <div className="travel-flow__review">
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
-              <div><dt>{tr('Port / number','বন্দর / নম্বর')}</dt><dd>{selectedPort} / {portNumber}</dd></div>
+              <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
-              <div><dt>{tr('Tax zone / org. code','কর অঞ্চল / প্রাতিষ্ঠানিক কোড')}</dt><dd>{zone?.name} / {taxZoneCode}</dd></div>
               <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
             </div>
             <div className="travel-flow__table-wrap">
@@ -547,8 +546,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 </tr></thead>
                 <tbody>{passengers.map(item => <tr key={item.id}>
                   <td>{item.name}</td><td>{maskPassport(item.passport)}</td>
-                  <td>{item.ageBand}</td>
-                  <td>{formatCurrency(travelPassengerAmount(unitRate, item.ageBand), language)}</td>
+                  <td>{assessTravelPassenger(item, unitRate, travelDate)?.age ?? '—'}</td>
+                  <td>{formatCurrency(assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0, language)}</td>
                 </tr>)}</tbody>
                 <tfoot><tr><th scope="row" colSpan={3}>{tr('Combined payable','মোট প্রদেয়')}</th>
                   <td>{formatCurrency(totalAmount, language)}</td></tr></tfoot>
@@ -594,19 +593,32 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         <div className="travel-flow__summary-title"><CreditCard size={18} aria-hidden="true"/>
           <h3>{tr('Payment calculation','পেমেন্টের হিসাব')}</h3>
         </div>
-        <p className="travel-flow__summary-label">{tr('Combined amount · illustrative rates','মোট টাকা · নমুনা হার')}</p>
+        <p className="travel-flow__summary-label">{tr('Automatically calculated · illustrative rules','স্বয়ংক্রিয় হিসাব · নমুনা বিধি')}</p>
         <strong className="travel-flow__total travel-flow__total--with-words" data-testid="travel-payment-total">
-          {formatCurrency(totalAmount, language)}
+          {allCalculated ? formatCurrency(totalAmount, language) : '—'}
         </strong>
-        <p className="travel-flow__amount-words" data-testid="travel-total-in-words">{amountWords}</p>
+        <p className="travel-flow__amount-words" data-testid="travel-total-in-words">
+          {allCalculated ? amountWords : tr('Enter passport, birth date and travel date to calculate.','কর হিসাবের জন্য পাসপোর্ট, জন্মতারিখ ও ভ্রমণের তারিখ দিন।')}
+        </p>
         <dl className="travel-flow__summary-list">
           <div><dt>{tr('Mode','মাধ্যম')}</dt><dd>{mode === 'LAND' ? tr('Land','স্থল') : tr('Water','নৌ')}</dd></div>
           <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
-          <div><dt>{tr('Base rate','মূল হার')}</dt><dd>{formatCurrency(unitRate,language)}</dd></div>
-          <div><dt>{tr('Tax zone','কর অঞ্চল')}</dt><dd>{zone?.name ?? '—'}</dd></div>
-          <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
-          <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : tr('Awaiting review','পর্যালোচনার অপেক্ষায়')}</dd></div>
+          <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : tr('Waiting for passenger information','যাত্রীর তথ্যের অপেক্ষায়')}</dd></div>
         </dl>
+        <div className="travel-flow__age-breakdown" role="status" aria-live="polite">
+          {assessments.map(({passenger, assessment}, index) =>
+            <div key={passenger.id} className="travel-flow__age-row">
+              <p><strong>{passenger.name || tr('Passenger ', 'যাত্রী ') + (index + 1)}</strong>
+                <strong>{assessment ? formatCurrency(assessment.amount, language) : '—'}</strong></p>
+              <p>{assessment ? ageExplanation(assessment.age)
+                : tr('Tax will calculate after passport and age information are available.',
+                     'পাসপোর্ট ও বয়সের তথ্য পাওয়া গেলে কর হিসাব হবে।')}</p>
+            </div>)}
+          <p className="travel-flow__field-hint">
+            {tr('Rates and age rules in this preview are illustrative, not government-verified.',
+                'এখানে হার ও বয়সের বিধি নমুনা; সরকারি যাচাইকৃত নয়।')}
+          </p>
+        </div>
         {!embedded && primaryAction}
       </aside>
 
@@ -614,12 +626,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         <div className="travel-flow__footer-content">
           <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
-              <strong>{formatCurrency(totalAmount,language)}</strong></summary>
+              <strong>{allCalculated ? formatCurrency(totalAmount,language) : '—'}</strong></summary>
             <dl>
               <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
               <div><dt>{tr('Mode','মাধ্যম')}</dt><dd>{mode === 'LAND' ? tr('Land','স্থল') : tr('Water','নৌ')}</dd></div>
               <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
-              <div><dt>{tr('Total in words','কথায়')}</dt><dd data-testid="travel-mobile-total-in-words">{amountWords}</dd></div>
+              <div><dt>{tr('Age-based calculation','বয়সভিত্তিক হিসাব')}</dt><dd>{assessments.map(({passenger,assessment}) => (passenger.name || tr('Passenger','যাত্রী')) + ': ' + (assessment ? ageExplanation(assessment.age) : tr('Pending','অপেক্ষমাণ'))).join(' · ')}</dd></div>
+              <div><dt>{tr('Total in words','কথায়')}</dt><dd data-testid="travel-mobile-total-in-words">{amountWords || '—'}</dd></div>
             </dl>
           </details>
           <PaymentJourneyFooter className="travel-flow__footer-actions"
