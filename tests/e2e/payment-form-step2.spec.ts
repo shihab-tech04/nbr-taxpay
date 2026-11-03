@@ -302,7 +302,7 @@ test('Travel tax calculates age-dependent estimates only after identity and trav
   await expect(summary).toContainText('0');
   await travel.locator('#travel-birth-date-first').fill('1992-08-10');
   await expect(summary).toContainText('1,000');
-  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
+  await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
   await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
   await expect(travel.getByRole('heading', { name: 'Review passengers and payment' })).toBeVisible();
