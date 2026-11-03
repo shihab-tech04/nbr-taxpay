@@ -6,7 +6,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
-import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
@@ -133,10 +133,14 @@ export function Beneficiaries(){
   const activeListRecord=lists.find(list=>list.id===activeList);
   const editHasChanges=Boolean(editPerson && (
     editTargetList!==editPerson.list_id ||
-    editTag!==editPerson.tag ||
+    (editTag||null)!==editPerson.tag ||
     (editTag==='friends_family'?editRelationship||null:null)!==editPerson.relationship ||
     (editTag==='others'?editOtherLabel.trim():null)!==editPerson.other_label
   ));
+  // Legacy untagged contacts must remain movable without retroactively assigning a tag.
+  const editLegacyMove=Boolean(editPerson && !editPerson.tag && !editTag &&
+    editTargetList!==editPerson.list_id);
+  const editValid=validBeneficiaryClassification(editTag,editRelationship,editOtherLabel) || editLegacyMove;
   const existingTins=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
   const reviewed=useMemo<ReviewedRow[]>(()=>{
     const seen=new Set<string>();
@@ -282,19 +286,23 @@ export function Beneficiaries(){
     if(!lists.some(list=>list.id===editTargetList)){
       setModalError(tr('Choose a valid saved list.','সঠিক সংরক্ষিত তালিকা বাছুন।'));return;
     }
-    if(!validBeneficiaryClassification(editTag,editRelationship,editOtherLabel)){
+    if(!editValid){
       setModalError(tr('Select a tag and provide the required relationship or Others description (maximum 80 characters).',
         'ট্যাগ বাছুন এবং প্রয়োজনীয় সম্পর্ক বা অন্যান্য বর্ণনা (সর্বোচ্চ ৮০ অক্ষর) লিখুন।'));return;
     }
     if(!editHasChanges)return;
     const classification={
-      tag:editTag as BeneficiaryTag,
+      tag:editLegacyMove?null:editTag as BeneficiaryTag,
       relationship:editTag==='friends_family'?editRelationship as BeneficiaryRelation:null,
       other_label:editTag==='others'?editOtherLabel.trim():null,
     };
     setBusy(true);setModalError('');
     try{
-      await editBeneficiaryClassification(owner,editPerson,editTargetList,classification);
+      if(editLegacyMove){
+        await moveBeneficiary(owner,editPerson.id,editPerson.list_id,editTargetList);
+      }else{
+        await editBeneficiaryClassification(owner,editPerson,editTargetList,classification);
+      }
       const saved=await reload(editTargetList);
       const matching=saved.people.find(person=>person.id===editPerson.id);
       if(!matching||matching.list_id!==editTargetList||matching.tag!==classification.tag||
@@ -669,7 +677,7 @@ export function Beneficiaries(){
 
     {editPerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
       onClose={()=>{if(!busy){setEditPerson(null);setEditTargetList('');setModalError('');}}} initialFocusSelector="#beneficiary-edit-tag"
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!validBeneficiaryClassification(editTag,editRelationship,editOtherLabel)}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
         <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
         <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
