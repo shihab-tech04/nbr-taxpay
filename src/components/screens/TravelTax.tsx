@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Plus, Trash2 } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
-  LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR, TRAVEL_TAX_ZONES,
-  makeTravelPassenger, travelPassengerAmount, travelPartyTotal, validateTravelParty,
-  type TravelAgeBand, type TravelMode, type TravelPassenger, type TravellerNationality,
+  LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
+  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger,
+  type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
 import { amountInTakaWords } from '../../services/amountInWords';
@@ -43,14 +43,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [mode, setMode] = useState<TravelMode>('LAND');
-  const [routeSearch, setRouteSearch] = useState('');
   const [port, setPort] = useState('');
   const [waterPort, setWaterPort] = useState('');
-  const [portNumber, setPortNumber] = useState('');
   const [destination, setDestination] = useState('');
   const [travelDate, setTravelDate] = useState('');
-  const [taxZoneCode, setTaxZoneCode] = useState('');
-  const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first')]);
+  const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
@@ -84,22 +81,36 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const selectedRouteIdx = mode === 'LAND' ? 4 : 5;
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route.amount;
-  const totalAmount = travelPartyTotal(passengers, unitRate);
-  const amountWords = amountInTakaWords(totalAmount, language);
-  const zone = TRAVEL_TAX_ZONES.find(item => item.code === taxZoneCode);
+  const assessments = passengers.map(passenger => ({ passenger, assessment: assessTravelPassenger(passenger, unitRate, travelDate) }));
+  const allCalculated = assessments.every(item => item.assessment !== null);
+  const totalAmount = travelPartyTotal(passengers, unitRate, travelDate);
+  const amountWords = allCalculated ? amountInTakaWords(totalAmount, language) : '';
   const selectedPort = mode === 'WATER' ? waterPort.trim() : port;
-  const canSubmit = totalAmount > 0 && !processing && !!paymentMethod && !!paymentChannel && acknowledged;
+  const canSubmit = allCalculated && totalAmount > 0 && !processing && !!paymentMethod && !!paymentChannel && acknowledged;
   const routeOptions: { value: TravelMode; en: string; bn: string }[] = [
     { value: 'LAND', en: 'By land', bn: 'স্থলপথে' },
     { value: 'WATER', en: 'By water', bn: 'নৌপথে' },
   ];
-  const matchingRoutes = routeOptions.filter(item =>
-    !routeSearch.trim() || (item.en + ' ' + item.bn).toLowerCase().includes(routeSearch.trim().toLowerCase()));
 
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
+    setError('');
     setAcknowledged(false);
   };
+  const changePassengerType = (id: string, nationality: TravellerNationality) => {
+    changePassenger(id, { nationality, passport: '', name: '', birthDate: '',
+      country: nationality === 'BD' ? 'Bangladesh' : '',
+      identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL' });
+  };
+  const ageExplanation = (age: number) => age <= 5
+    ? tr('Age ' + age + ' on travel date: illustrative exemption (age 5 or younger).',
+         'ভ্রমণের তারিখে বয়স ' + age + ': নমুনা অব্যাহতি (৫ বছর বা কম)।')
+    : age <= 12
+    ? tr('Age ' + age + ' on travel date: illustrative half rate (ages 6–12).',
+         'ভ্রমণের তারিখে বয়স ' + age + ': নমুনা অর্ধেক হার (৬–১২ বছর)।')
+    : tr('Age ' + age + ' on travel date: illustrative full rate (over 12).',
+         'ভ্রমণের তারিখে বয়স ' + age + ': নমুনা পূর্ণ হার (১২ বছরের বেশি)।');
+
   const stepTo = (next: 0 | 1 | 2 | 3) => {
     setError('');
     setStep(next);
@@ -107,14 +118,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
   const validateTravelDetails = () => {
     if (!selectedPort) return tr('Select a departure port.', 'যাত্রা শুরুর বন্দর নির্বাচন করুন।');
-    if (!portNumber.trim()) return tr('Enter the port number/reference.', 'পোর্ট নম্বর বা রেফারেন্স লিখুন।');
     if (!destination.trim()) return tr('Select or enter a destination.', 'গন্তব্য নির্বাচন বা লিখুন।');
     if (!travelDate) return tr('Select your travel date.', 'ভ্রমণের তারিখ নির্বাচন করুন।');
-    if (!zone) return tr('Select the tax zone for accounting.', 'হিসাবের জন্য কর অঞ্চল নির্বাচন করুন।');
     return null;
   };
   const validatePassengers = () => {
-    const problem = validateTravelParty(passengers);
+    const problem = validateTravelParty(passengers, travelDate);
     if (problem) {
       const translated = problem.includes('same passport')
         ? tr(problem, 'একটি পাসপোর্ট একাধিকবার যোগ করা যাবে না।')
@@ -129,14 +138,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     return null;
   };
   const continueStep = () => {
-    const problem = step === 0 ? validateTravelDetails() : validatePassengers();
+    const problem = step === 0
+      ? validateTravelParty([passengers[0]], travelDate) ?? validateTravelDetails()
+      : validatePassengers();
     if (problem) { setError(problem); return; }
     stepTo(step === 0 ? 1 : 2);
   };
   const reset = () => {
-    setStep(0); setMode('LAND'); setRouteSearch(''); setPort(''); setWaterPort('');
-    setPortNumber(''); setDestination(''); setTravelDate(''); setTaxZoneCode('');
-    setPassengers([makeTravelPassenger('first')]); setPhone(''); setError('');
+    setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
+    setDestination(''); setTravelDate('');
+    setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
     setCreatedReceipt(null); setProcessing(false); setPaymentNonce(crypto.randomUUID());
@@ -157,28 +168,31 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       payerTin: 'NON-TIN-PASSENGER',
       receiptMobile: phone,
       isRepresentativePayment: false,
-      taxZone: zone?.name ?? 'Unselected',
-      taxCircle: tr('Travel tax — port reference', 'ভ্রমণ কর — বন্দর রেফারেন্স'),
+      taxZone: '',
+      taxCircle: '',
       isWithholding: false,
       travelDetails: {
-        mode, departurePort: selectedPort, portNumber: portNumber.trim(),
+        mode, departurePort: selectedPort,
         destination: destination.trim(), travelDate,
-        organizationalCode: taxZoneCode, economicCode: TRAVEL_TAX_ECONOMIC_CODE,
-        passengers: passengers.map(item => ({
-          name: item.name.trim(), passportMasked: maskPassport(item.passport),
-          nationality: item.nationality, ageBand: item.ageBand,
-          amount: travelPassengerAmount(unitRate, item.ageBand),
-        })),
+        economicCode: TRAVEL_TAX_ECONOMIC_CODE,
+        passengers: passengers.map(item => {
+          const assessment = assessTravelPassenger(item, unitRate, travelDate);
+          return { name: item.name.trim(), passportMasked: maskPassport(item.passport),
+            nationality: item.nationality, country: item.country,
+            ageBand: assessment?.ageBand ?? 'ADULT', age: assessment?.age,
+            amount: assessment?.amount ?? 0 };
+        }),
       },
       items: passengers.map((item, idx) => {
-        const amount = travelPassengerAmount(unitRate, item.ageBand);
+        const assessment = assessTravelPassenger(item, unitRate, travelDate);
+        const amount = assessment?.amount ?? 0;
         return {
           headId: 155 + idx, economicCode: TRAVEL_TAX_ECONOMIC_CODE,
           headNameEn: 'Travel tax — ' + item.name.trim(),
           taxAmount: amount, penaltyAmount: 0, surchargeAmount: 0, interestAmount: 0,
           totalAmount: amount,
           note: mode + ' | ' + selectedPort + ' | ' + destination + ' | ' + travelDate +
-            ' | ' + item.ageBand + ' | Passport ' + maskPassport(item.passport),
+            ' | age ' + (assessment?.age ?? 'unavailable') + ' | Passport ' + maskPassport(item.passport),
         };
       }),
       totalAmount,
@@ -206,9 +220,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           assessmentYear: TRAVEL_TAX_YEAR,
           paymentMethod, paymentChannel,
           receiptReference: receipt.tokenNumber, receiptMobile: phone,
-          travelMode: mode, departurePort: selectedPort, portNumber: portNumber.trim(),
+          travelMode: mode, departurePort: selectedPort,
           destination: destination.trim(), travelDate,
-          taxZone: zone?.name, organizationalCode: taxZoneCode,
           economicCode: TRAVEL_TAX_ECONOMIC_CODE,
           passengers: receipt.travelDetails?.passengers,
           lines: receipt.items, receiptSnapshot: receipt,
