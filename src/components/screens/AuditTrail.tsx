@@ -62,8 +62,8 @@ export const AuditTrail: React.FC = () => {
         </div>
 
         {/* Audit Log Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
+        <div className="taxpay-table-viewport hidden md:block">
+          <table className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
               <tr>
                 <th className="px-3 py-2.5">Timestamp</th>
@@ -94,6 +94,18 @@ export const AuditTrail: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="taxpay-mobile-table-cards md:hidden" data-testid="audit-trail-mobile-cards">
+          {filteredLogs.map(log=><article className="taxpay-mobile-table-card" key={log.id}>
+            <div className="taxpay-mobile-table-card__header">
+              <p className="taxpay-mobile-table-card__title">{log.actor}</p>
+              <p className="text-xs text-taxpay-muted">{log.timestamp}</p>
+            </div>
+            <p className="taxpay-mobile-table-card__meta">{log.action} · {log.targetId}</p>
+            <p className="taxpay-mobile-table-card__meta">{log.details}</p>
+            <p className="taxpay-mobile-table-card__meta break-all" title={log.immutableHash}>{log.immutableHash}</p>
+          </article>)}
+        </div>
+        {filteredLogs.length===0&&<p className="taxpay-table-state" role="status">No matching audit records.</p>}
       </div>
     </div>
   );
