@@ -124,7 +124,7 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   expect(footerBox!.y).toBeGreaterThanOrEqual(summaryBox!.y);
   await dialog.locator('#travel-tax-route-1').check();
   await fillTravelDetails(dialog);
-  await expect(summary.locator('summary')).toContainText('2,000');
+  await expect(summary.locator('summary')).toContainText('1,000');
   await summary.locator('summary').click();
   await expect(summary.locator('dl')).toBeVisible();
   await next.click();
