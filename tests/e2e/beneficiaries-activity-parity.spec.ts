@@ -99,14 +99,14 @@ for(const language of ['en','bn'] as const){
     await expect(edit.locator('#beneficiary-edit-tag')).toHaveValue('others');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveAttribute('maxlength','80');
-    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue(lists[0].id);
+    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue('00000000-0000-4000-8000-000000000101');
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
     await edit.locator('#beneficiary-edit-tag').selectOption('friends_family');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveCount(0);
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
     await edit.locator('#beneficiary-edit-relationship').selectOption('father');
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeEnabled();
-    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue(lists[0].id);
+    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue('00000000-0000-4000-8000-000000000101');
     await edit.getByRole('button',{name:t('Cancel','বাতিল')}).click();
     await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
     await rows.first().getByRole('checkbox',{name:t('Select Shihab','Shihab নির্বাচন')}).check();
