@@ -40,6 +40,26 @@ jobs:
           tar -xzf recovery/pre-release-source.tar.gz -C /tmp/pre-release-restore/source
           test -f /tmp/pre-release-restore/source/package.json
           echo "RECOVERY_RESTORE_PASS_SHA=$BASE_SHA"
+      # A short-lived review snapshot lets the auditor inspect the entire exact PR
+      # source (not an older main checkout), including dynamic CSS and tests.
+      - name: Checkout exact PR source for line-by-line audit
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: review-head
+          persist-credentials: false
+      - name: Archive and checksum exact PR source
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA="$(git -C review-head rev-parse HEAD)"
+          test "$HEAD_SHA" = "${{ github.event.pull_request.head.sha }}"
+          git -C review-head archive --format=tar.gz -o ../recovery/review-head-source.tar.gz "$HEAD_SHA"
+          printf '%s\n' "$HEAD_SHA" > recovery/REVIEW_HEAD_SHA
+          (cd recovery && sha256sum review-head-source.tar.gz REVIEW_HEAD_SHA > REVIEW_SHA256SUMS)
+          (cd recovery && sha256sum --check REVIEW_SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: pre-release-recovery-${{ github.event.pull_request.number || github.run_id }}
