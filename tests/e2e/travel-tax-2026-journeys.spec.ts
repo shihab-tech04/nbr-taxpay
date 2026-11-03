@@ -17,7 +17,7 @@ test('Travel Tax 2026: Land is default, Air is excluded and zone codes follow th
   await expect(modal.locator('#travel-economic-code')).toHaveValue('1144102');
   await modal.getByRole('button', {name:'Continue to passenger details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await modal.getByRole('button', {name:'Back'}).click();
+  await modal.locator('.travel-flow__footer-actions .tax-service-choice__cancel').click();
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
   await modal.locator('#travel-tax-route-1').check();
   await expect(modal.locator('#travel-water-port')).toBeVisible();
