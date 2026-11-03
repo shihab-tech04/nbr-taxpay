@@ -278,7 +278,7 @@ test('Existing Travel Tax banner still provides journey, passenger and payment v
   await fillTravelDetails(travel);
   await expect(travel.locator('.travel-flow__total')).toContainText('1,000');
   await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await expect(travel.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
+  await expect(travel.locator('.travel-flow__person').first().getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
 
   await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
