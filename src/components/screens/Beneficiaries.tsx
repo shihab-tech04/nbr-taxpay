@@ -310,8 +310,14 @@ export function Beneficiaries(){
         throw new Error(tr('Updated beneficiary could not be verified. Refresh and retry.',
           'উপকারভোগীর পরিবর্তন যাচাই করা যায়নি। রিফ্রেশ করে আবার চেষ্টা করুন।'));
       }
+      const onlyMoved=editTargetList!==editPerson.list_id &&
+        classification.tag===editPerson.tag &&
+        classification.relationship===editPerson.relationship &&
+        classification.other_label===editPerson.other_label;
       setEditPerson(null);setEditTargetList('');
-      setNotice({en:'Beneficiary details updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে।'});
+      setNotice(onlyMoved
+        ?{en:'Beneficiary moved to the selected list.',bn:'উপকারভোগী নির্বাচিত তালিকায় স্থানান্তরিত হয়েছেন।'}
+        :{en:'Beneficiary details updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
