@@ -134,15 +134,21 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
  * changing guest capabilities, write behavior or complete pagination.
  */
 async function firstGuestPage(): Promise<{lists:GuestList[]; people:GuestPerson[]}> {
-  try {
-    const snapshot=await post<{lists:GuestList[];people:GuestPerson[]}>('snapshot');
-    if (snapshot && Array.isArray(snapshot.lists) && Array.isArray(snapshot.people) && snapshot.people.length<=pageSize) {
-      return snapshot;
+  for(let attempt=0;attempt<2;attempt++) {
+    try {
+      const snapshot=await post<{lists:GuestList[];people:GuestPerson[]}>('snapshot');
+      if (snapshot && Array.isArray(snapshot.lists) && Array.isArray(snapshot.people) && snapshot.people.length<=pageSize) {
+        return snapshot;
+      }
+      // Older test transports return an unrecognized success shape.
+      break;
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      if (error.message.includes('selected beneficiary was not found')) break;
+      // Preserve the established single retry for idempotent read failures.
+      if (attempt===0 && error.message==='Guest beneficiaries are temporarily unavailable. Please try again later.') continue;
+      throw error;
     }
-  } catch (error) {
-    // Only the *unsupported endpoint* can fall back. Never conceal an expired
-    // capability, account isolation error, or real service interruption.
-    if (!(error instanceof Error) || !error.message.includes('selected beneficiary was not found')) throw error;
   }
   const [lists,people]=await Promise.all([
     readGuestPage<GuestList>('lists'),
