@@ -73,6 +73,8 @@ for(const language of ['en','bn'] as const){
       else expect(style.borderRadius,view+' card corners').not.toBe('0px');
       observations.push({view,background:style.background,fontSize:style.fontSize,
         color:style.color,borderRadius:style.borderRadius,rowHeight:style.rowHeight});
+      // Capture the actual table rows, not just the top of a long mobile page.
+      await row.scrollIntoViewIfNeeded();
       const output='test-results/screenshots';
       mkdirSync(output,{recursive:true});
       await page.screenshot({path:output+'/taxpay-unified-'+view+'-'+language+'-'+info.project.name+'.png',
