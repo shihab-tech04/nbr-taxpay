@@ -175,54 +175,13 @@
   font-size: 14px;
   line-height: 1.6;
 }
-
-/* Preserve financial and identity labels. Never recolor data status to imply paid. */
-.taxpay-taxpayer-reference .citizen-taxpayer-hero {
-  background: var(--color-taxpay-surface);
-  border: 1px solid var(--color-taxpay-border);
-  border-radius: 14px;
-  color: var(--color-taxpay-text);
-  box-shadow: var(--reference-shadow);
-  gap: 16px;
-}
 .taxpay-taxpayer-reference .citizen-taxpayer-hero :is(h1,p),
 .taxpay-taxpayer-reference .citizen-taxpayer-hero__eyebrow { color: var(--color-taxpay-text); opacity: 1; }
-.taxpay-taxpayer-reference .citizen-taxpayer-hero__eyebrow { color: var(--color-taxpay-primary); }
-.taxpay-taxpayer-reference .citizen-taxpayer-primary {
-  background: var(--color-taxpay-primary);
-  color: white;
-}
-.taxpay-taxpayer-reference .citizen-taxpayer-primary:hover { background: var(--color-taxpay-dark); }
-.taxpay-taxpayer-reference .citizen-taxpayer-secondary {
-  border-color: var(--color-taxpay-border) !important;
-  color: var(--color-taxpay-primary);
-  background: var(--color-taxpay-background);
-}
-.taxpay-taxpayer-reference .citizen-taxpayer-secondary:hover { background: var(--color-taxpay-border); }
-.taxpay-taxpayer-reference .citizen-taxpayer-hero__badge {
-  border-color: var(--color-taxpay-border);
-  color: var(--color-taxpay-primary);
-  background: var(--color-taxpay-background);
-}
 .taxpay-taxpayer-reference :is(.citizen-taxpayer-summary,.citizen-taxpayer-profile,.citizen-taxpayer-quick,.citizen-taxpayer-activity,.citizen-taxpayer-more) {
   border-radius: 13px;
   background: var(--color-taxpay-surface);
   border-color: var(--color-taxpay-border);
   box-shadow: var(--reference-shadow);
-}
-.taxpay-taxpayer-reference .citizen-taxpayer-quick__grid button {
-  border: 1px solid var(--color-taxpay-border);
-  border-radius: 12px;
-  background: var(--color-taxpay-surface);
-}
-.taxpay-taxpayer-reference .citizen-taxpayer-quick__grid button:hover {
-  border-color: var(--color-taxpay-secondary);
-  background: var(--color-taxpay-background);
-}
-.taxpay-taxpayer-reference .citizen-taxpayer-summary__notice,
-.taxpay-taxpayer-reference .citizen-taxpayer-activity__notice {
-  border-left-color: var(--color-taxpay-warning);
-  background: var(--color-taxpay-background);
 }
 
 /* The authenticated application-account UI uses the same reference components.
@@ -780,18 +739,6 @@
   outline: 2px solid var(--color-taxpay-primary);
   outline-offset: 2px;
 }
-.taxpayer-reference-links .taxpayer-reference-account__links {
-  display: grid;
-  gap: 2px;
-  padding: 3px 0 5px 17px;
-  border-left: 1px solid var(--color-taxpay-border);
-  margin-left: 20px;
-}
-.taxpayer-reference-links .taxpayer-reference-account__links button {
-  min-height: 42px;
-  padding: 9px 8px;
-  font-size: 14px;
-}
 @media (prefers-reduced-motion: reduce) {
   .taxpay-taxpayer-reference .taxpayer-monthly-bar,
   .taxpay-taxpayer-reference .taxpayer-review-tile,
@@ -893,56 +840,11 @@
 .taxpay-taxpayer-reference .taxpayer-transaction-row__action {
   justify-self:end; white-space:nowrap;
 }
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__overlay {
-  position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
-  padding:16px;background:rgba(15,23,42,.6);
-}
 .taxpay-taxpayer-reference .taxpayer-transaction-detail {
   display:flex;flex-direction:column;min-width:0;width:100%;max-width:576px;
   max-height:85dvh;overflow:hidden;border-radius:16px;background:white;
   box-shadow:var(--taxpay-shadow-modal,0 6px 20px rgba(0,0,0,.12));
 }
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {
-  display:flex;flex:0 0 auto;justify-content:space-between;align-items:flex-start;gap:16px;
-  padding:18px 20px;border-bottom:1px solid var(--color-taxpay-border);
-}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading > div {min-width:0;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading p {color:var(--color-taxpay-muted);font-size:14px;line-height:1.5;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading h2 {margin:4px 0 0;font-size:18px;line-height:1.4;font-weight:700;overflow-wrap:anywhere;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__close {
-  display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
-  border:1px solid var(--color-taxpay-border);border-radius:10px;color:var(--color-taxpay-primary);background:white;
-}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__body {min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px 20px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__summary {
-  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;
-  gap:12px; margin-top:20px; padding:16px;
-  border:1px solid var(--color-taxpay-border); border-radius:12px;
-  background:var(--color-taxpay-background);
-}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__summary > span {font-size:14px;font-weight:600;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__facts {
-  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 24px; margin-top:24px;
-}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__facts > div {min-width:0;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__facts > div:last-child {grid-column:1 / -1;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__facts dt {
-  color:var(--color-taxpay-muted); font-size:14px; line-height:1.5;
-}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__facts dd {
-  margin-top:5px; overflow-wrap:anywhere; color:var(--color-taxpay-text);
-  font-size:14px; font-weight:550; line-height:1.55;
-}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__mobile {display:grid;gap:10px;}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__card {min-width:0;padding:14px;border:1px solid var(--color-taxpay-border);border-radius:12px;background:white;}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__identity {display:grid;gap:3px;padding-bottom:12px;border-bottom:1px solid var(--color-taxpay-border);}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__identity time {font-size:14px;color:var(--color-taxpay-muted);}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__identity p {font:600 13px/1.5 var(--font-numeric),monospace;overflow-wrap:anywhere;}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dl {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dl > div {display:grid;gap:3px;min-width:0;}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dl > div:last-child {grid-column:1/-1;padding-top:9px;border-top:1px solid var(--color-taxpay-border);}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dt {font-size:14px;color:var(--color-taxpay-muted);}
-.taxpay-taxpayer-reference .taxpayer-ledger-journal__card dd {font:650 14px/1.5 var(--font-numeric),monospace;overflow-wrap:anywhere;}
 @media(min-width:640px) {.taxpay-taxpayer-reference .taxpayer-ledger-journal__mobile {display:none;}}
 @media(max-width:850px) {
   .taxpay-taxpayer-reference .taxpayer-transaction-filters {grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -962,27 +864,8 @@
 @media(max-width:440px) {
   .taxpay-taxpayer-reference .taxpayer-transaction-filters {grid-template-columns:minmax(0,1fr);}
   .taxpay-taxpayer-reference .taxpayer-transaction-filter--search {grid-column:auto;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail__overlay {align-items:flex-end;padding:0;}
   .taxpay-taxpayer-reference .taxpayer-transaction-detail {max-width:none;max-height:min(88dvh,850px);height:auto;border-radius:16px 16px 0 0;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {padding:14px 16px;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail__body {padding:0 16px calc(20px + env(safe-area-inset-bottom));}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail__facts {grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 12px;margin-top:18px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-detail__facts > :is(:first-child,:nth-child(6),:last-child) {grid-column:1/-1;}
-  .taxpay-taxpayer-reference .taxpayer-transaction-detail__summary {margin-top:16px;padding:12px;}
-}
-
-/* Canonical payment-type directory replaces the retired connection-status screen. */
-.taxpay-taxpayer-reference .taxpayer-service-directory__header {
-  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1.25rem;
-  padding:clamp(1.1rem,2vw,1.5rem); background:var(--color-taxpay-surface);
-  border:1px solid var(--color-taxpay-border); border-radius:16px;
-}
-.taxpay-taxpayer-reference .taxpayer-service-directory__header > div { flex:1 1 330px; min-width:0; }
-.taxpay-taxpayer-reference .taxpayer-service-directory__eyebrow {
-  margin-bottom:.35rem; font-size:14px; font-weight:650; color:var(--color-taxpay-primary);
-}
-.taxpay-taxpayer-reference .taxpayer-service-directory__header h1 {
-  font-size:clamp(1.5rem,2vw,1.75rem); line-height:1.3; font-weight:650; letter-spacing:-.025em;
 }
 .taxpay-taxpayer-reference .taxpayer-service-directory__header p:not(.taxpayer-service-directory__eyebrow) {
   margin-top:.55rem; font-size:.9375rem; line-height:1.65; color:var(--color-taxpay-muted); max-width:70ch;
@@ -1073,13 +956,6 @@
   .taxpay-taxpayer-reference .taxpayer-service-directory__grid { grid-template-columns:minmax(0,1fr); }
   .taxpay-taxpayer-reference .taxpayer-service-directory__primary { width:100%; }
 }
-
-
-/* Keep taxpayer transaction details aligned with the shared modal heading. */
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:.75rem;align-items:center;min-height:76px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading::before {content:'';grid-column:1;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading > div {grid-column:2;text-align:center;}
-.taxpay-taxpayer-reference .taxpayer-transaction-detail__close {grid-column:3;grid-row:1;}
 @media(max-width:440px) {.taxpay-taxpayer-reference .taxpayer-transaction-detail__heading {grid-template-columns:40px minmax(0,1fr) 40px;gap:.5rem;}}
 
 /* Shared modal shell for read-only taxpayer transaction details. */
@@ -1090,10 +966,6 @@
 }
 .taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpay-modal__body {
   overflow-y: auto;
-}
-.taxpay-citizen-shell .taxpay-modal.taxpayer-transaction-detail .taxpayer-transaction-detail__body {
-  padding: 0;
-  overflow: visible;
 }
 @media (max-width: 650px) {
   .taxpay-citizen-shell .taxpay-modal__overlay:has(.taxpayer-transaction-detail) {

@@ -59,18 +59,6 @@
   border-color: var(--choice-border);
 }
 
-.public-hero-carousel__track {
-  display: flex;
-  width: 100%;
-  align-items: stretch;
-  transition: transform 500ms cubic-bezier(0, 0, .2, 1);
-}
-
-.public-hero-carousel[data-active-slide="1"] .public-hero-carousel__track { transform: translateX(-100%); }
-.public-hero-carousel[data-active-slide="2"] .public-hero-carousel__track { transform: translateX(-200%); }
-.public-hero-carousel[data-active-slide="3"] .public-hero-carousel__track { transform: translateX(-300%); }
-.public-hero-carousel[data-active-slide="4"] .public-hero-carousel__track { transform: translateX(-400%); }
-
 .public-hero-carousel__slide.public-information-hero {
   flex: 0 0 100%;
   width: 100%;
@@ -125,13 +113,6 @@
   background: rgb(255 255 255 / 76%);
   color: var(--choice-text);
   border-color: var(--choice-primary);
-}
-.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary {
-  background: rgb(255 255 255 / 52%);
-}
-.public-hero-carousel__slide[data-banner-service="intro"] .public-guest-actions .citizen-public-secondary:hover {
-  background: rgb(255 255 255 / 76%);
-  color: var(--citizen-primary-dark);
 }
 .public-hero-carousel__slide[data-payment-service] .public-guest-actions .citizen-public-primary:focus-visible {
   outline: 2px solid var(--choice-primary);
@@ -560,16 +541,6 @@
   font-size: .875rem; font-weight: 650; overflow-wrap: anywhere;
 }
 .public-record-suggestions__kind { flex: none; margin: 0; color: var(--citizen-muted); font-size: .875rem; }
-.public-record-suggestions__links { display: flex; flex-wrap: wrap; gap: .45rem 1rem; }
-.public-record-suggestions__link {
-  display: inline-flex; align-items: center; max-width: 100%; min-height: 36px;
-  padding: .2rem 0; color: var(--citizen-primary-dark);
-  font-family: var(--font-numeric); font-size: .875rem; font-weight: 650;
-  text-decoration: none; overflow-wrap: anywhere;
-}
-.public-record-suggestions__link:hover, .public-record-suggestions__link:focus-visible {
-  color: var(--citizen-primary); text-decoration: none;
-}
 .public-record-suggestions a, .public-record-suggestions a:hover, .public-record-suggestions a:focus-visible {
   text-decoration: none;
 }
@@ -580,7 +551,6 @@
   .public-record-search input { padding-inline: .7rem; font-size: 1rem; }
   .public-record-search button { flex-basis: 48px; }
   .public-record-suggestions__option { flex-wrap: wrap; gap: .15rem .5rem; }
-  .public-record-suggestions__links { display: grid; grid-template-columns: minmax(0, 1fr); gap: .1rem; }
 }
 
 

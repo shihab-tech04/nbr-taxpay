@@ -208,12 +208,6 @@
   border-color: var(--choice-border);
   color: var(--choice-text);
 }
-.taxpay-citizen-shell .public-info-topic[data-taxpay-service] .citizen-hub-service-grid__icon {
-  background: var(--citizen-surface);
-  color: var(--service-primary);
-  border-color: var(--service-border);
-  border-radius: var(--citizen-radius-control);
-}
 .taxpay-citizen-shell .public-info-topic[data-taxpay-service] h3 {
   color: var(--service-text);
   font-weight: 700;
