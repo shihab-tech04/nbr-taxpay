@@ -62,3 +62,19 @@ test('official receipt and certificate print tables remain outside generic table
     assert.doesNotMatch(source,/taxpay-unified-table/);
   }
 });
+
+test('ledger, Activity and Beneficiaries share one column-driven data renderer with preserved actions',()=>{
+  const component=read('src/components/ui/TaxPayDataTable.tsx');
+  assert.ok(component.includes('export function TaxPayDataGrid<Row>'));
+  assert.ok(component.includes('columns.map(column=>'));
+  assert.ok(component.includes('rows.map(row=>'));
+  for(const screen of ['EventBasedTaxLedger','User1DemoExperience','Beneficiaries']){
+    const source=read('src/components/screens/'+screen+'.tsx');
+    assert.ok(source.includes('<TaxPayDataGrid'),screen);
+    assert.ok(source.includes('columns={['),screen);
+    assert.ok(source.includes('getRowKey='),screen);
+  }
+  const beneficiaries=read('src/components/screens/Beneficiaries.tsx');
+  for(const action of ['payWith([person])','openPersonEditor(person)','setDeletePerson(person)'])assert.ok(beneficiaries.includes(action),action);
+  assert.ok(read('src/components/screens/EventBasedTaxLedger.tsx').includes('renderMobileCard='));
+});
