@@ -49,7 +49,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const [identityRevealed, setIdentityRevealed] = useState(false);
+  const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
+  const [passengerIssue, setPassengerIssue] = useState<{ id: string; message: string } | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
@@ -83,10 +84,26 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const route = TRAVEL_TAX_RATES[selectedRouteIdx];
   const unitRate = route.amount;
   const assessments = passengers.map(passenger => ({ passenger, assessment: assessTravelPassenger(passenger, unitRate, travelDate) }));
-  const allCalculated = assessments.every(item => item.assessment !== null);
-  const totalAmount = travelPartyTotal(passengers, unitRate, travelDate);
-  const amountWords = allCalculated ? amountInTakaWords(totalAmount, language) : '';
   const selectedPort = mode === 'WATER' ? waterPort.trim() : port;
+  const seenPassports = new Set<string>();
+  const invalidPassengerIds = new Set<string>();
+  passengers.forEach(item => {
+    const passport = item.passport.trim().toUpperCase();
+    const repeated = !!passport && seenPassports.has(passport);
+    if (passport) seenPassports.add(passport);
+    if (repeated || item.passport.trim().length < 6 || item.name.trim().length < 2 ||
+        (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE') ||
+        (item.nationality === 'FOREIGN' && (!item.country.trim() || !item.birthDate)) ||
+        item.medicalPortReferral) invalidPassengerIds.add(item.id);
+  });
+  const validAssessments = assessments.filter(({passenger, assessment}) =>
+    assessment !== null && !invalidPassengerIds.has(passenger.id));
+  const provisionalAmount = validAssessments.reduce((sum, item) => sum + (item.assessment?.amount ?? 0), 0);
+  const allCalculated = !!travelDate && !!selectedPort && !!destination.trim() &&
+    invalidPassengerIds.size === 0 && assessments.every(item => item.assessment !== null) &&
+    validateTravelParty(passengers, travelDate) === null;
+  const totalAmount = allCalculated ? travelPartyTotal(passengers, unitRate, travelDate) : provisionalAmount;
+  const amountWords = allCalculated ? amountInTakaWords(totalAmount, language) : '';
   const canSubmit = allCalculated && totalAmount > 0 && !processing && !!paymentMethod && !!paymentChannel && acknowledged;
   const routeOptions: { value: TravelMode; en: string; bn: string }[] = [
     { value: 'LAND', en: 'By land', bn: 'স্থলপথে' },
@@ -102,7 +119,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     }));
   };
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
-    if (id === 'first' && ('passport' in patch || 'nationality' in patch)) setIdentityRevealed(false);
+    setPassengerIssue(previous => previous?.id === id ? null : previous);
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
@@ -133,6 +150,38 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     if (!travelDate) return tr('Select your travel date.', 'ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
+  const firstIdentityIssue = (): {id: string; message: string} | null => {
+    const used = new Set<string>();
+    for (let index = 0; index < passengers.length; index++) {
+      const item = passengers[index];
+      const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
+      if (item.passport.trim().length < 6)
+        return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।')};
+      const passport = item.passport.trim().toUpperCase();
+      if (used.has(passport))
+        return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')};
+      used.add(passport);
+      if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
+        return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।')};
+      if (item.name.trim().length < 2)
+        return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।')};
+      if (item.nationality === 'FOREIGN') {
+        if (!item.country.trim())
+          return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।')};
+        if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
+          return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।')};
+      }
+      if (item.medicalPortReferral)
+        return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।')};
+    }
+    return null;
+  };
+  const reportIdentityIssue = (issue: {id: string; message: string}) => {
+    setEditingPassengerId(issue.id); setPassengerIssue(issue);
+    showError(issue.message);
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.getElementById('travel-passport-' + issue.id)?.focus()));
+  };
   const validatePassengers = () => {
     const problem = validateTravelParty(passengers, travelDate);
     if (problem) {
@@ -148,44 +197,24 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     if (!/^01\d{9}$/.test(phone)) return tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
     return null;
   };
-  const confirmIdentity = () => {
-    const passenger = passengers[0];
-    const problem = validateTravelParty([passenger]);
-    if (problem) {
-      showError(bn
-        ? (passenger.nationality === 'BD'
-          ? 'নমুনা পাসপোর্ট নম্বর নির্বাচন করে যাচাই করুন।'
-          : 'বৈধ পাসপোর্ট নম্বর ও যাত্রীর পুরো নাম দিন।')
-        : problem);
-      return;
-    }
-    if (passenger.nationality === 'FOREIGN') {
-      if (!passenger.country.trim()) {
-        showError(tr('Enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।'));
-        return;
-      }
-      if (travelPassengerAge(passenger.birthDate, new Date().toISOString().slice(0, 10)) === null) {
-        showError(tr('Enter a valid date of birth.', 'সঠিক জন্মতারিখ লিখুন।'));
-        return;
-      }
-    }
-    setIdentityRevealed(true);
-    setError('');
-    requestAnimationFrame(() => requestAnimationFrame(() =>
-      document.getElementById('travel-mode-section')?.scrollIntoView({ block: 'nearest' })
-    ));
-  };
   const continueStep = () => {
-    const problem = step === 0
-      ? validateTravelParty([passengers[0]]) ?? validateTravelDetails() ??
-        validateTravelParty([passengers[0]], travelDate)
-      : validatePassengers();
+    if (step === 0) {
+      const issue = firstIdentityIssue();
+      if (issue) { reportIdentityIssue(issue); return; }
+      if (!/^01\d{9}$/.test(phone)) {
+        showError(tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।'));
+        requestAnimationFrame(() => document.getElementById('travel-mobile')?.focus());
+        return;
+      }
+      setEditingPassengerId(null); stepTo(1); return;
+    }
+    const problem = validateTravelDetails() ?? validatePassengers();
     if (problem) { showError(problem); return; }
-    stepTo(step === 0 ? 1 : 2);
+    stepTo(2);
   };
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
-    setDestination(''); setTravelDate(''); setIdentityRevealed(false); setPassportSuggestionsFor(null);
+    setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -279,7 +308,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     event.preventDefault();
     if (step !== 2 || processing) return;
     const problem = validateTravelDetails() ?? validatePassengers();
-    if (problem) { setError(problem); return; }
+    if (problem) { showError(problem); return; }
     if (!paymentMethod || !paymentChannel || !acknowledged) {
       setError(tr('Choose a payment method and confirm the details.', 'পেমেন্ট পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করুন।'));
       return;
@@ -389,6 +418,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 <button id={'travel-lookup-' + item.id} type="button" onClick={() => {
                   setPassportSuggestionsFor(null);
                   const sample = SAMPLE_BD_PASSPORTS.find(entry => entry.passport === item.passport.trim().toUpperCase());
+                  const duplicate = sample && passengers.some(other =>
+                    other.id !== item.id && other.passport.toUpperCase().trim() === sample.passport);
+                  if (duplicate) {
+                    reportIdentityIssue({id: item.id, message: tr('This passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')});
+                    return;
+                  }
                   if (!sample) {
                     showError(tr('This passport is not in the ten sample records. Government verification is not connected.',
                       'এই পাসপোর্টটি ১০টি নমুনা রেকর্ডে নেই। সরকারি যাচাই সংযুক্ত নয়।'));
@@ -396,6 +431,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }
                   changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
+                  setEditingPassengerId(null);
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
             </div>
@@ -435,7 +471,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
-          {(step !== 0 || identityRevealed) && <div className="travel-flow__field travel-flow__medical">
+          {<div className="travel-flow__field travel-flow__medical">
             <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
             <label className="travel-flow__check">
               <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
@@ -465,11 +501,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       <Building2 size={17} aria-hidden="true" />
       {tr('Confirm sample bank settlement', 'নমুনা ব্যাংক নিষ্পত্তি নিশ্চিত করুন')}
     </button>
-  ) : createdReceipt ? (
-    <button type="button" className="travel-flow__primary" onClick={reset}>
-      {tr('Start another payment', 'আরেকটি পেমেন্ট শুরু করুন')}
-    </button>
-  ) : step === 2 ? (
+  ) : createdReceipt ? null : step === 2 ? (
     <button type="button" className="travel-flow__primary" disabled={!canSubmit} onClick={() => {
       const form = document.getElementById('travel-tax-form');
       if (form instanceof HTMLFormElement) form.requestSubmit();
@@ -479,9 +511,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     </button>
   ) : (
     <button type="button" className="travel-flow__primary"
-      onClick={step === 0 && !identityRevealed ? confirmIdentity : continueStep}>
-      {step === 0 && !identityRevealed ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
-        : step === 0 ? tr('Continue to add passengers', 'অতিরিক্ত যাত্রী যোগ করতে এগিয়ে যান')
+      onClick={continueStep}>
+      {step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
         : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
@@ -489,7 +520,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
 
   // Preserve the shared receipt/modal action owner and full-width receipt.
   if (embedded && createdReceipt && !bankSlipPending) {
-    return <ReceiptView receipt={createdReceipt} embedded onNewPayment={reset}/>;
+    return <ReceiptView receipt={createdReceipt} embedded/>;
   }
 
   return (
@@ -498,7 +529,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
         {!embedded && <nav className="travel-flow__steps" aria-label={tr('Travel tax steps', 'ভ্রমণ করের ধাপ')}>
           {[
-            tr('Passenger and travel details', 'যাত্রী ও ভ্রমণের তথ্য'), tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'),
+            tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'), tr('Travel details', 'ভ্রমণের তথ্য'),
             tr('Payment', 'পেমেন্ট'), tr('Challan', 'চালান'),
           ].map((name, idx) => (
             <button key={name} type="button" disabled={idx > step || !!createdReceipt}
@@ -511,21 +542,70 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         <form id="travel-tax-form" onSubmit={submit} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
 
-          {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')}>
-            <PaymentFormSection number={1} title={tr('Passenger and travel details','যাত্রী ও ভ্রমণের তথ্য')} staticView={embedded}>
-              <p className="travel-flow__field-hint">{tr(
-                'Select passenger type and enter passport details first. Tax is calculated from date of birth and travel date.',
-                'প্রথমে যাত্রীর ধরন ও পাসপোর্টের তথ্য দিন। জন্মতারিখ ও ভ্রমণের তারিখ থেকে কর হিসাব হবে।'
-              )}</p>
-              {renderPassengerEditor(passengers[0], 0)}
-              {identityRevealed && <>
-              <div className="travel-flow__identity-progress">
-                <p>{tr('Passenger details confirmed for this sample. Continue with travel details.',
-                  'নমুনা যাত্রীর তথ্য নিশ্চিত হয়েছে। এবার ভ্রমণের তথ্য দিন।')}</p>
-                <button type="button" onClick={() => { setIdentityRevealed(false); setError(''); }}>
-                  <Pencil size={15} aria-hidden="true"/>{tr('Edit passenger details','যাত্রীর তথ্য সম্পাদনা')}
-                </button>
+          {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')}>
+            <PaymentFormSection number={1} title={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')} hideHeading={embedded}>
+              <div className="travel-flow__party" data-testid="travel-passenger-list">
+                {passengers.map((item, index) => {
+                  const editing = editingPassengerId === item.id || (!item.name.trim() && index === 0);
+                  const valid = !invalidPassengerIds.has(item.id);
+                  const assessment = assessments[index]?.assessment;
+                  return <section key={item.id} className="travel-flow__person" data-passenger-id={item.id}
+                    data-complete={valid && !editing ? 'true' : 'false'}>
+                    <div className="travel-flow__person-header">
+                      <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
+                      <div className="travel-flow__person-actions">
+                        {!editing && <button type="button" className="travel-flow__edit" onClick={() => {
+                          setEditingPassengerId(item.id); setPassengerIssue(null);
+                        }}><Pencil size={15} aria-hidden="true"/>{tr('Edit', 'সম্পাদনা')}</button>}
+                        {index > 0 && <button type="button" className="travel-flow__member-remove"
+                          aria-label={tr('Remove passenger ', 'যাত্রী বাদ দিন ') + (index + 1)}
+                          onClick={() => {
+                            setPassengers(existing => existing.filter(person => person.id !== item.id));
+                            if (editingPassengerId === item.id) setEditingPassengerId(null);
+                            setPassengerIssue(null); setError(''); setAcknowledged(false);
+                          }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
+                      </div>
+                    </div>
+                    {editing ? <>
+                      {renderPassengerEditor(item, index)}
+                      {passengerIssue?.id === item.id && <p className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
+                    </> : <dl className="travel-flow__person-summary">
+                      <div><dt>{tr('Passenger name', 'যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
+                      <div><dt>{tr('Passport number', 'পাসপোর্ট নম্বর')}</dt><dd>{maskPassport(item.passport)}</dd></div>
+                      <div><dt>{tr('Date of birth', 'জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
+                      <div><dt>{tr('Nationality', 'জাতীয়তা')}</dt><dd>{item.nationality === 'BD' ? tr('Bangladeshi', 'বাংলাদেশি') : item.country}</dd></div>
+                      {assessment && <div><dt>{tr('Illustrative tax', 'নমুনা কর')}</dt><dd>{formatCurrency(assessment.amount, language)}</dd></div>}
+                    </dl>}
+                    {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
+                  </section>;
+                })}
               </div>
+              <button type="button" className="travel-flow__add-member" onClick={() => {
+                const issue = firstIdentityIssue();
+                if (issue) { reportIdentityIssue(issue); return; }
+                const id = crypto.randomUUID();
+                setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
+                setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
+                requestAnimationFrame(() => requestAnimationFrame(() =>
+                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
+                ));
+              }}>
+                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
+              </button>
+              <div className="travel-flow__contact">
+                <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
+                <div className="travel-flow__field">
+                  <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
+                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
+                    value={phone} placeholder="01XXXXXXXXX"
+                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); }}/>
+                </div>
+              </div>
+            </PaymentFormSection>
+          </section>}
+
+          {step === 1 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Travel details', 'ভ্রমণের তথ্য')}>
+            <PaymentFormSection number={2} title={tr('Travel details', 'ভ্রমণের তথ্য')} hideHeading={embedded}>
               <div className="travel-flow__field-group" id="travel-mode-section">
                 <p className="travel-flow__field-title">{tr('Travel mode','যাতায়াতের মাধ্যম')} *</p>
                 <fieldset id="travel-tax-route-results" className="travel-flow__routes">
@@ -572,65 +652,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
               </div>
-              </>}
-            </PaymentFormSection>
-          </section>}
-
-          {step === 1 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details','যাত্রী ও রসিদের তথ্য')}>
-            <PaymentFormSection number={2} title={tr('Passengers and receipt details','যাত্রী ও রসিদের তথ্য')} staticView={embedded}>
-              <div className="travel-flow__party" data-testid="travel-passenger-list">
-                <div className="travel-flow__person">
-                  <div className="travel-flow__person-header">
-                    <h3>{tr('Passenger 1','যাত্রী ১')}</h3>
-                    <button className="travel-flow__member-remove" type="button" onClick={() => stepTo(0)}>
-                      {tr('Edit details','তথ্য সম্পাদনা')}
-                    </button>
-                  </div>
-                  <p>{passengers[0].name} · {maskPassport(passengers[0].passport)}</p>
-                  {assessments[0].assessment && <p className="travel-flow__age-reason">
-                    {ageExplanation(assessments[0].assessment.age)}
-                  </p>}
-                </div>
-                {passengers.slice(1).map((item, index) => <div key={item.id} className="travel-flow__person">
-                  <div className="travel-flow__person-header">
-                    <h3>{tr('Passenger ','যাত্রী ')}{index + 2}</h3>
-                    <button type="button" className="travel-flow__member-remove"
-                      aria-label={tr('Remove passenger ','যাত্রী বাদ দিন ') + (index + 2)}
-                      onClick={() => {
-                        setPassengers(existing => existing.filter(p => p.id !== item.id));
-                        setAcknowledged(false);
-                      }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','বাদ দিন')}</button>
-                  </div>
-                  {renderPassengerEditor(item, index + 1)}
-                </div>)}
-              </div>
-              <button type="button" className="travel-flow__add-member" onClick={() =>
-                setPassengers(existing => [...existing, makeTravelPassenger(crypto.randomUUID(), 'BD')])}>
-                <Plus size={18} aria-hidden="true"/>{tr('Add New Member — family or friend','নতুন সদস্য যোগ করুন — পরিবার বা বন্ধু')}
+              <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}>
+                <Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')} ({passengers.length})
               </button>
-              <div className="travel-flow__fields travel-flow__field-group">
-                <div className="travel-flow__field">
-                  <label htmlFor="travel-mobile">{tr('Mobile number for receipt','রসিদের জন্য মোবাইল')} *</label>
-                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
-                    value={phone} placeholder="01XXXXXXXXX"
-                    onChange={event => setPhone(event.target.value.replace(/\D/g,'').slice(0,11))}/>
-                </div>
-              </div>
             </PaymentFormSection>
           </section>}
 
           {step === 2 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>
-            <header className="travel-flow__section-header">
-              <h3>{tr('Review passengers and payment','যাত্রী ও পেমেন্ট যাচাই করুন')}</h3>
-              <p>{tr('One application and one combined simulated challan for every passenger.',
-                'এক আবেদনে সকল যাত্রীর জন্য একটি সম্মিলিত নমুনা চালান।')}</p>
-            </header>
+            <p className="travel-flow__field-hint">{tr('Review every passenger and travel details before recording a simulated payment.', 'নমুনা পেমেন্ট রেকর্ডের আগে সব যাত্রীর ও ভ্রমণের তথ্য যাচাই করুন।')}</p>
             <div className="travel-flow__review">
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
               <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
-              <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
+              <div><dt>{tr('Edit', 'সম্পাদনা')}</dt><dd><button type="button" className="travel-flow__edit" onClick={() => stepTo(1)}><Pencil size={15} aria-hidden="true"/>{tr('Edit travel details', 'ভ্রমণের তথ্য সম্পাদনা')}</button></dd></div>
             </div>
+            <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers and receipt contact', 'যাত্রী ও রসিদের যোগাযোগ সম্পাদনা')}</button>
             <div className="travel-flow__table-wrap taxpay-table-viewport">
               <TaxPayUnifiedTable className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
                 <thead><tr>
@@ -659,6 +695,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
               simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
             {paymentMethod && <p className="travel-flow__field-hint">{paymentMethodLabel(paymentMethod, language)}</p>}
+            {(!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
             <label className="travel-flow__channel-option">
               <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
               <p>{tr('I confirm the travel information, all passengers and the combined amount.',
@@ -690,22 +727,24 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         </div>
         <p className="travel-flow__summary-label">{tr('Automatically calculated · illustrative rules','স্বয়ংক্রিয় হিসাব · নমুনা বিধি')}</p>
         <strong className="travel-flow__total travel-flow__total--with-words" data-testid="travel-payment-total">
-          {allCalculated ? formatCurrency(totalAmount, language) : '—'}
+          {allCalculated ? formatCurrency(totalAmount, language) : validAssessments.length > 0 && travelDate ? formatCurrency(provisionalAmount, language) : '—'}
         </strong>
         <p className="travel-flow__amount-words" data-testid="travel-total-in-words">
-          {allCalculated ? amountWords : tr('Enter passport, birth date and travel date to calculate.','কর হিসাবের জন্য পাসপোর্ট, জন্মতারিখ ও ভ্রমণের তারিখ দিন।')}
+          {allCalculated ? amountWords : validAssessments.length > 0 && travelDate
+            ? tr('Provisional subtotal — not yet payable. Correct all passenger details.', 'অস্থায়ী উপমোট — এখনো পরিশোধযোগ্য নয়। সব যাত্রীর তথ্য সংশোধন করুন।')
+            : tr('Complete passenger and travel details to calculate.', 'হিসাবের জন্য যাত্রী ও ভ্রমণের তথ্য পূরণ করুন।')}
         </p>
         <dl className="travel-flow__summary-list">
           <div><dt>{tr('Mode','মাধ্যম')}</dt><dd>{mode === 'LAND' ? tr('Land','স্থল') : tr('Water','নৌ')}</dd></div>
           <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
-          <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : tr('Waiting for passenger information','যাত্রীর তথ্যের অপেক্ষায়')}</dd></div>
+          <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : invalidPassengerIds.size > 0 ? tr('Passenger details need correction','যাত্রীর তথ্য সংশোধন প্রয়োজন') : tr('Awaiting travel details','ভ্রমণের তথ্যের অপেক্ষায়')}</dd></div>
         </dl>
         <div className="travel-flow__age-breakdown" role="status" aria-live="polite">
           {assessments.map(({passenger, assessment}, index) =>
             <div key={passenger.id} className="travel-flow__age-row">
               <p><strong>{passenger.name || tr('Passenger ', 'যাত্রী ') + (index + 1)}</strong>
-                <strong>{assessment ? formatCurrency(assessment.amount, language) : '—'}</strong></p>
-              <p>{assessment ? ageExplanation(assessment.age)
+                <strong>{assessment && !invalidPassengerIds.has(passenger.id) ? formatCurrency(assessment.amount, language) : '—'}</strong></p>
+              <p>{assessment && !invalidPassengerIds.has(passenger.id) ? ageExplanation(assessment.age)
                 : tr('Tax will calculate after passport and age information are available.',
                      'পাসপোর্ট ও বয়সের তথ্য পাওয়া গেলে কর হিসাব হবে।')}</p>
             </div>)}
@@ -719,17 +758,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
 
       {embedded && modalFooterTarget && createPortal(
         <div className="travel-flow__footer-content">
-          <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+          {step > 0 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
-              <strong>{allCalculated ? formatCurrency(totalAmount,language) : '—'}</strong></summary>
+              <strong>{allCalculated ? formatCurrency(totalAmount,language) : validAssessments.length > 0 && travelDate ? formatCurrency(provisionalAmount, language) : '—'}</strong></summary>
             <dl>
               <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
               <div><dt>{tr('Mode','মাধ্যম')}</dt><dd>{mode === 'LAND' ? tr('Land','স্থল') : tr('Water','নৌ')}</dd></div>
-              <div><dt>{tr('Economic code','অর্থনৈতিক কোড')}</dt><dd>{TRAVEL_TAX_ECONOMIC_CODE}</dd></div>
+              <div><dt>{tr('Status', 'অবস্থা')}</dt><dd>{allCalculated ? tr('Ready for review', 'পর্যালোচনার জন্য প্রস্তুত') : tr('Incomplete', 'অসম্পূর্ণ')}</dd></div>
               <div><dt>{tr('Age-based calculation','বয়সভিত্তিক হিসাব')}</dt><dd>{assessments.map(({passenger,assessment}) => (passenger.name || tr('Passenger','যাত্রী')) + ': ' + (assessment ? ageExplanation(assessment.age) : tr('Pending','অপেক্ষমাণ'))).join(' · ')}</dd></div>
               <div><dt>{tr('Total in words','কথায়')}</dt><dd data-testid="travel-mobile-total-in-words">{amountWords || '—'}</dd></div>
             </dl>
-          </details>
+          </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
             back={!createdReceipt && (step > 0 || onBackToService) && <button type="button" className="tax-service-choice__cancel"
               onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>

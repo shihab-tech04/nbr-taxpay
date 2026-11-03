@@ -58,17 +58,15 @@
   background: var(--citizen-primary-light);
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 30;
-  max-height: 250px;
+  position: static;
+  width: 100%;
+  margin-top: 4px;
+  max-height: 240px;
   overflow-y: auto;
   background: var(--citizen-surface);
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
-  box-shadow: 0 8px 22px rgb(0 0 0 / 12%);
+  box-shadow: none;
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions [role="option"] {
   display: flex;
@@ -157,14 +155,51 @@
     gap: 10px;
   }
   /* Inline suggestions on narrow screens cannot cover the Check Passport action. */
-  .taxpay-citizen-shell .travel-flow__passport-suggestions {
-    position: static;
-    max-height: 190px;
-    margin-top: 4px;
-    box-shadow: none;
-  }
+  .taxpay-citizen-shell .travel-flow__passport-suggestions { max-height: 190px; }
   .taxpay-citizen-shell .travel-flow__passport-action button { width: 100%; }
   .taxpay-citizen-shell .travel-flow__identity-card dl {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+/* Scoped passenger-first cards: existing citizen tokens and controls remain authoritative. */
+.taxpay-citizen-shell .travel-flow__person[data-complete="true"] {
+  padding: 14px 16px;
+}
+.taxpay-citizen-shell .travel-flow__person[data-complete="true"] .travel-flow__person-header {
+  margin-bottom: 12px;
+}
+.taxpay-citizen-shell .travel-flow__person-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.taxpay-citizen-shell .travel-flow__edit,
+.taxpay-citizen-shell .travel-flow__edit-travel {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 8px 12px; border: 1px solid var(--citizen-border);
+  border-radius: 9px; background: var(--citizen-surface);
+  color: var(--citizen-primary-dark); font: 500 14px/1.4 Poppins,system-ui,sans-serif;
+  cursor: pointer;
+}
+.taxpay-citizen-shell .travel-flow__edit-travel { margin-top: 16px; }
+.taxpay-citizen-shell .travel-flow__person-summary {
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px 18px; margin: 0;
+}
+.taxpay-citizen-shell .travel-flow__person-summary div { min-width: 0; }
+.taxpay-citizen-shell .travel-flow__person-summary dt {
+  color: var(--citizen-muted); font-size: 14px; font-weight: 500;
+}
+.taxpay-citizen-shell .travel-flow__person-summary dd {
+  margin: 4px 0 0; overflow-wrap: anywhere; font-size: 14px; font-weight: 550;
+}
+.taxpay-citizen-shell .travel-flow__contact { margin-top: 18px; }
+.taxpay-citizen-shell .travel-flow__contact h3 {
+  margin: 0 0 12px; font: 600 15px/1.4 Poppins,system-ui,sans-serif;
+}
+.taxpay-citizen-shell .travel-flow__contact .travel-flow__field { max-width: 350px; }
+.taxpay-citizen-shell .travel-flow__inline-error {
+  margin: 10px 0 0; color: var(--citizen-error); font-size: 14px;
+}
+.taxpay-citizen-shell .travel-flow__field-title { font-weight: 500; }
+@media(max-width:560px) {
+  .taxpay-citizen-shell .travel-flow__person-summary { grid-template-columns: minmax(0,1fr); }
+  .taxpay-citizen-shell .travel-flow__person-actions { justify-content: flex-end; }
 }

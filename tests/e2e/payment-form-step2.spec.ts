@@ -298,14 +298,17 @@ test('Travel tax calculates age-dependent estimates only after identity and trav
   await fillTravelDetails(travel);
   await expect(travel.locator('#travel-tax-route-0')).toBeChecked();
   await expect(summary).toContainText('500');
+  await travel.getByRole('button', { name: /Edit passengers/ }).click();
+  await travel.locator('[data-passenger-id="first"]').getByRole('button', { name: 'Edit' }).click();
   await travel.locator('#travel-birth-date-first').fill('2023-08-10');
+  await travel.getByRole('button', { name: 'Continue to travel details' }).click();
   await expect(summary).toContainText('0');
+  await travel.getByRole('button', { name: /Edit passengers/ }).click();
+  await travel.locator('[data-passenger-id="first"]').getByRole('button', { name: 'Edit' }).click();
   await travel.locator('#travel-birth-date-first').fill('1992-08-10');
+  await travel.getByRole('button', { name: 'Continue to travel details' }).click();
   await expect(summary).toContainText('1,000');
-  await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
-  await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(travel.getByRole('heading', { name: 'Review passengers and payment' })).toBeVisible();
   await expect(travel.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
 });
 

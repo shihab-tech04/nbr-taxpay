@@ -61,9 +61,6 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await expect(travel.locator('#travel-tax-route-results')).toHaveCount(0);
   await fillTravelDetails(travel, { mode: 'WATER' });
   await expect(travel.locator('#travel-tax-route-1')).toBeChecked();
-  await travel.getByRole('button', { name: 'Continue to add passengers' }).click();
-
-  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
 
   const submit = travel.getByRole('button', { name: 'Confirm preview payment' });

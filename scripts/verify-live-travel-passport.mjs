@@ -23,18 +23,31 @@ try {
     await hero.getByRole('button', { name: 'Pay Travel Tax' }).click();
     const modal = page.getByRole('dialog', { name: 'Travel tax' });
     await expect(modal).toBeVisible();
-    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger and travel details');
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+    await expect(modal.locator('.travel-flow__summary')).toBeHidden();
+    if (!mobile) {
+      const bounds = await modal.boundingBox();
+      if (!bounds || bounds.width > 900 || bounds.height > viewport.height * 0.95) {
+        throw new Error('Passport-first stage must use a compact, content-aware modal without an empty payment rail');
+      }
+    }
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Continue to travel details' })).toBeVisible();
     await modal.locator('#travel-passport-first').click();
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
     await expect(options).toHaveCount(10);
+    await expect(options.first()).toBeVisible();
+    const suggestionGeometry = await modal.locator('#travel-passport-suggestions-first').evaluate(element => ({scroll:element.scrollHeight,visible:element.clientHeight}));
+    if (suggestionGeometry.scroll <= suggestionGeometry.visible) throw new Error('Passport suggestion list should be independently scrollable with ten entries');
     await options.filter({ hasText: 'TEST230005' }).click();
     await modal.getByRole('button', { name: 'Check Passport' }).click();
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+    await modal.locator('#travel-mobile').fill('01712345678');
     await modal.getByRole('button', { name: 'Continue to travel details' }).click();
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel details');
+    await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     const modes = modal.locator('#travel-tax-route-results');
     await expect(modes.locator('input[type=radio]')).toHaveCount(2);
     await expect(modes.locator('#travel-tax-route-0')).toBeChecked();
@@ -43,8 +56,8 @@ try {
     await modal.locator('#travel-port').selectOption('Benapole');
     await modal.locator('#travel-destination').fill('India');
     await modal.locator('#travel-departure-date').fill('2026-11-20');
-    await modal.getByRole('button', { name: 'Continue to add passengers' }).click();
-    await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
+    await modal.getByRole('button', { name: 'Continue to review' }).click();
+    await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await modal.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
     if (mobile) {
