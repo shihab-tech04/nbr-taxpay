@@ -46,7 +46,7 @@ for (const language of ['en','bn'] as const) {
 
   test('track payment focuses lookup instead of duplicating the transaction table in '+language,async({page})=>{
     await page.goto('/?action=history&demoUser=user1&lang='+language);
-    const nav=page.getByRole('navigation',{name:tr('Activity sections','কার্যক্রমের বিভাগ')});
+    const nav=page.getByRole('navigation',{name:tr('Activity sections','লেনদেনের বিভাগ')});
     await nav.getByRole('button',{name:tr('Track payment','পেমেন্ট অনুসন্ধান')}).click();
     await expect(page.getByRole('heading',{name:tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')})).toBeVisible();
     await expect(page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')})).toBeVisible();
