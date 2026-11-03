@@ -1,4 +1,4 @@
-import type {ComponentPropsWithoutRef,ReactNode} from 'react';
+import {Fragment,type ComponentPropsWithoutRef,type ReactNode} from 'react';
 
 /** Shared Korbritto table primitives.
  * The Board Meeting reference guides presentation only; the caller retains
@@ -57,4 +57,54 @@ export function TaxPayRecordList({variant,headers,children,className,'aria-label
     </div>
     <ul aria-label={ariaLabel} className="taxpay-record-list__rows">{children}</ul>
   </div>;
+}
+
+/**
+ * Column-driven source of truth for Tax ledger, Payments & activity, and
+ * Beneficiaries. Domain screens own business rules and cell interactions;
+ * this component owns headers, row identity, responsive rendering and rhythm.
+ * Official receipt and certificate print tables are excluded.
+ */
+export type TaxPayDataColumn<Row> = {
+  key: string;
+  header: string;
+  renderCell: (row:Row) => ReactNode;
+  cellClassName?: string;
+  headerClassName?: string;
+};
+type UnifiedDataProps<Row> = {
+  rows: readonly Row[];
+  columns: readonly TaxPayDataColumn<Row>[];
+  getRowKey: (row:Row) => string;
+  variant: 'ledger' | 'payments' | 'beneficiaries';
+  ariaLabel: string;
+  className?: string;
+  testId?: string;
+  getRowClassName?: (row:Row) => string;
+  isSelected?: (row:Row) => boolean;
+  renderMobileCard?: (row:Row) => ReactNode;
+};
+export function TaxPayDataGrid<Row>({
+  rows,columns,getRowKey,variant,ariaLabel,className,testId,
+  getRowClassName,isSelected,renderMobileCard
+}:UnifiedDataProps<Row>){
+  if(variant==='ledger')return <>
+    <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
+      className={merge('taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table',className)}>
+      <thead><tr>{columns.map(column=><th scope="col" key={column.key} className={merge('p-3',column.headerClassName)}>{column.header}</th>)}</tr></thead>
+      <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}>
+        {columns.map(column=><td key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
+      </tr>)}</tbody>
+    </TaxPayUnifiedTable>
+    <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" aria-label={ariaLabel}>
+      {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}>{renderMobileCard?.(row)}</li>)}
+    </ul>
+  </>;
+  return <TaxPayRecordList variant={variant} aria-label={ariaLabel} className={className}
+    headers={columns.map(column=>column.header)} data-testid={testId}>
+    {rows.map(row=><li key={getRowKey(row)} data-selected={isSelected?.(row)?'true':'false'}
+      className={merge('taxpay-record-list__row',getRowClassName?.(row))}>
+      {columns.map(column=><Fragment key={column.key}>{column.renderCell(row)}</Fragment>)}
+    </li>)}
+  </TaxPayRecordList>;
 }
