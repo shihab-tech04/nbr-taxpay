@@ -430,7 +430,7 @@ test('travel tax mobile keeps a compact anchored estimate and Bengali step navig
  await expect(modal.getByLabel('যাত্রীর নাম')).toBeVisible();
  await modal.getByLabel('যাত্রীর নাম').fill('DEMO NAME');
  await modal.getByLabel('পাসপোর্ট নম্বর').fill('FAKE001');
- await modal.getByLabel('রসিদের জন্য মোবাইল নম্বর').fill('01712345678');
+ await modal.getByLabel('রসিদের জন্য মোবাইল').fill('01712345678');
  await modal.getByRole('button',{name:'পেমেন্ট পর্যালোচনায় যান'}).click();
  await expect(modal.getByRole('heading',{name:'যাত্রী ও পেমেন্ট যাচাই করুন'})).toBeVisible();
  const width=await modal.evaluate(el=>({viewport:innerWidth,paper:el.getBoundingClientRect().width,scroll:document.documentElement.scrollWidth}));
