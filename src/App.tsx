@@ -11,40 +11,42 @@ import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
 
 // Screens
-import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
-import { PublicReport } from './components/screens/PublicReport';
 import { GuestPayment } from './components/screens/GuestPayment';
-import { Beneficiaries } from './components/screens/Beneficiaries';
 import { TravelTax } from './components/screens/TravelTax';
+import { ReceiptLookup } from './components/screens/ReceiptLookup';
+import { PublicLanding } from './components/screens/PublicLanding';
+import { PublicReport } from './components/screens/PublicReport';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
 import { TaxPayModal } from './components/ui/TaxPayModal';
 import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
-import { ArchitectureView } from './components/screens/ArchitectureView';
-import { TaxpayerDashboard } from './components/screens/TaxpayerDashboard';
 import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
-import { PaymentWizard } from './components/screens/PaymentWizard';
-import { PaymentHistory } from './components/screens/PaymentHistory';
-import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { PaymentDetailView } from './components/screens/PaymentDetailView';
-import { TaxLedger } from './components/screens/TaxLedger';
-import { TaxJourney } from './components/screens/TaxJourney';
-import { CertificatesView } from './components/screens/CertificatesView';
-import { CorrectionRequests } from './components/screens/CorrectionRequests';
-import { CorrectionInquiries } from './components/screens/CorrectionInquiries';
-import { NotificationsView } from './components/screens/NotificationsView';
-import { AccountCenter } from './components/screens/AccountCenter';
-import { ManageAuthorization } from './components/screens/ManageAuthorization';
 import { AuthorizationRequestPopup } from './components/screens/AuthorizationRequestPopup';
-import { PaymentServicesPage } from './components/screens/PaymentServicesPage';
-import { OntologyView } from './components/screens/OntologyView';
-import { GlossaryView } from './components/screens/GlossaryView';
-import { SecureWorkspace } from './components/screens/SecureWorkspace';
-import { HeadCatalogue } from './components/screens/HeadCatalogue';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
+
+// Defer non-entry screens until visited, preserving the public shell and auth gates.
+const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
+const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
+const TaxpayerDashboard = React.lazy(() => import('./components/screens/TaxpayerDashboard').then(module => ({ default: module.TaxpayerDashboard })));
+const PaymentWizard = React.lazy(() => import('./components/screens/PaymentWizard').then(module => ({ default: module.PaymentWizard })));
+const PaymentHistory = React.lazy(() => import('./components/screens/PaymentHistory').then(module => ({ default: module.PaymentHistory })));
+const TaxLedger = React.lazy(() => import('./components/screens/TaxLedger').then(module => ({ default: module.TaxLedger })));
+const TaxJourney = React.lazy(() => import('./components/screens/TaxJourney').then(module => ({ default: module.TaxJourney })));
+const CertificatesView = React.lazy(() => import('./components/screens/CertificatesView').then(module => ({ default: module.CertificatesView })));
+const CorrectionRequests = React.lazy(() => import('./components/screens/CorrectionRequests').then(module => ({ default: module.CorrectionRequests })));
+const CorrectionInquiries = React.lazy(() => import('./components/screens/CorrectionInquiries').then(module => ({ default: module.CorrectionInquiries })));
+const NotificationsView = React.lazy(() => import('./components/screens/NotificationsView').then(module => ({ default: module.NotificationsView })));
+const AccountCenter = React.lazy(() => import('./components/screens/AccountCenter').then(module => ({ default: module.AccountCenter })));
+const ManageAuthorization = React.lazy(() => import('./components/screens/ManageAuthorization').then(module => ({ default: module.ManageAuthorization })));
+const PaymentServicesPage = React.lazy(() => import('./components/screens/PaymentServicesPage').then(module => ({ default: module.PaymentServicesPage })));
+const OntologyView = React.lazy(() => import('./components/screens/OntologyView').then(module => ({ default: module.OntologyView })));
+const GlossaryView = React.lazy(() => import('./components/screens/GlossaryView').then(module => ({ default: module.GlossaryView })));
+const SecureWorkspace = React.lazy(() => import('./components/screens/SecureWorkspace').then(module => ({ default: module.SecureWorkspace })));
+const HeadCatalogue = React.lazy(() => import('./components/screens/HeadCatalogue').then(module => ({ default: module.HeadCatalogue })));
 
 const previewReadOnlyRoutes = new Set([
   'taxpayer_home', 'dashboard', 'history', 'ledger', 'journey', 'certificates', 'corrections',
@@ -243,7 +245,9 @@ const MainRouter: React.FC = () => {
             </button>
           </section>
         ) : <>
-          {renderActiveScreen()}
+          <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেজ লোড হচ্ছে…' : 'Loading page…'}</p>}>
+            {renderActiveScreen()}
+          </React.Suspense>
         </>}
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
