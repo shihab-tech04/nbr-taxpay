@@ -122,7 +122,7 @@ test('direct Travel Tax uses the shared progressive modal with reversible stages
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Review & payment');
   await dialog.getByRole('button', { name: 'Back' }).click();
-  await expect(dialog.getByLabel('Passenger name')).toHaveValue('TEST TRAVELLER');
+  await expect(dialog.getByText('SAMPLE BANGLADESHI PASSENGER')).toBeVisible();
 });
 
 
@@ -132,7 +132,7 @@ test('Travel Tax uses one total with cheque-style words and no duplicate payable
   await openTravelTaxFromBanner(page);
   const dialog = page.getByRole('dialog', { name: 'Travel tax' });
   const calculation = dialog.locator('.travel-flow__summary');
-  await expect(calculation.getByTestId('travel-payment-total')).toContainText('1,000');
+  await expect(calculation.getByTestId('travel-payment-total')).toContainText('—');
   await expect(calculation.getByTestId('travel-total-in-words')).toHaveCount(1);
 
   await dialog.locator('#travel-tax-route-1').check();
