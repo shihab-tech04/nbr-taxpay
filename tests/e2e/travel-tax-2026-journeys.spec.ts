@@ -41,7 +41,7 @@ test('Travel Tax 2026: friends and family share one challan with passenger-wise 
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
   await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('1,500');
-  await expect(modal.getByText('1144102')).toHaveCount(1);
+  await expect(modal.locator('.travel-flow__review')).toContainText('1144102');
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'Nagad'}).check();
@@ -84,7 +84,7 @@ test('Travel Tax 2026: medical referral requires port procedure, not online exem
   await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to passenger details'}).click();
   await fillForeignPassenger(modal);
-  await modal.getByLabel('Medical exemption').check();
+  await modal.locator('#travel-medical-first').check();
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await expect(modal.getByRole('alert')).toContainText('manual documentation');
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
