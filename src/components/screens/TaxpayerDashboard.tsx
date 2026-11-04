@@ -124,18 +124,18 @@ export const TaxpayerDashboard: React.FC = () => {
       <section aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {([
-          {en:'Income tax liability',bn:'আয়কর দায়',
-            helpEn:'No verified assessed liability is available for this account.',
-            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত নির্ধারিত করদায় পাওয়া যায়নি।'},
-          {en:'TDS & advance tax',bn:'উৎসে কর ও অগ্রিম কর',
-            helpEn:'Verified withholding and advance-tax credits are not available for this account.',
-            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত উৎসে কর ও অগ্রিম কর ক্রেডিট পাওয়া যায়নি।'},
-          {en:'Direct payments',bn:'সরাসরি পরিশোধ',
-            helpEn:'Verified posted direct-payment credits are not available for this account.',
-            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত সরাসরি পরিশোধের ক্রেডিট পাওয়া যায়নি।'},
-          {en:'Remaining balance',bn:'অবশিষ্ট দায়',
-            helpEn:'A verified balance requires an assessed liability and eligible posted credits.',
-            helpBn:'যাচাইকৃত অবশিষ্ট দায়ের জন্য নির্ধারিত করদায় ও প্রযোজ্য পোস্টকৃত ক্রেডিট প্রয়োজন।'}
+          {en:'Tax assessed for the year',bn:'করবর্ষের নির্ধারিত আয়কর',
+            helpEn:'A verified tax assessment amount is not available for this account and year.',
+            helpBn:'এই অ্যাকাউন্ট ও করবর্ষের যাচাইকৃত নির্ধারিত আয়করের তথ্য পাওয়া যায়নি।'},
+          {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম দেওয়া কর',
+            helpEn:'We cannot verify how much tax was deducted from income or paid in advance for this year.',
+            helpBn:'এই করবর্ষে আয়ের উৎসে কাটা বা অগ্রিম দেওয়া কত কর সমন্বিত হয়েছে তা যাচাই করা যায়নি।'},
+          {en:'Income tax payments made',bn:'সরাসরি পরিশোধিত আয়কর',
+            helpEn:'Verified direct income-tax payments for this year are not available.',
+            helpBn:'এই করবর্ষের যাচাইকৃত সরাসরি আয়কর পরিশোধের তথ্য পাওয়া যায়নি।'},
+          {en:'Tax left after payments',bn:'পরিশোধের পর বাকি কর',
+            helpEn:'We need verified assessed tax and eligible posted payments to show what is left.',
+            helpBn:'কত কর বাকি আছে তা জানাতে যাচাইকৃত নির্ধারিত কর ও সমন্বিত পরিশোধের তথ্য প্রয়োজন।'}
         ] as const).map((item,index)=><TaxpayerFinancialKpi
           key={item.en} language={language} titleEn={item.en} titleBn={item.bn}
           value={exampleYear ? formatIllustrativeTaka(
