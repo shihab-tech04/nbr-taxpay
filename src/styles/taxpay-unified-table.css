@@ -524,9 +524,33 @@ table.taxpay-unified-table {
   }
 }
 @media(max-width:700px) {
+  /* On narrow mobile: Selected list spans row 1, Tag and Search share row 2,
+     and the conditional Relationship filter follows on row 3. */
   .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters,
   .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters:has([aria-label="Filter by relationship"]) {
-    grid-template-columns: minmax(0,1fr);
+    grid-template-columns: minmax(104px,.85fr) minmax(0,1.15fr);
+    column-gap: 8px;
+    row-gap: 12px;
+    align-items: end;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__list-filter {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__tag-filter {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__search-filter {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__relationship-filter {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters .taxpayer-transaction-filter {
+    font-size: 14px;
   }
   .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {display:none;}
   .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {

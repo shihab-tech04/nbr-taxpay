@@ -97,7 +97,13 @@ try {
     await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
     await expect(continueToTravel).toBeDisabled();
     await second.getByRole('button', { name: 'Remove passenger 2' }).click();
-    await expect(addPassenger).toBeEnabled();
+    // The first passenger was already confirmed. Removing the unfinished
+    // second entry must not reopen or silently duplicate confirmation.
+    await expect(modal.locator('[data-passenger-id]')).toHaveCount(1);
+    await expect(modal.locator('[data-passenger-id="first"]')).toHaveAttribute('data-complete', 'true');
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toBeEnabled();
+    await expect(continueToTravel).toBeDisabled();
     await modal.locator('#travel-mobile').fill('01712345678');
     await expect(continueToTravel).toBeEnabled();
     await continueToTravel.click();

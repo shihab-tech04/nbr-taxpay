@@ -443,7 +443,7 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
-            <label className="taxpayer-transaction-filter"><span>{tr('Tag','ট্যাগ')}</span>
+            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag','ট্যাগ')}</span>
               <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);}}>
                 <option value="all">{tr('All tags','সব ট্যাগ')}</option>
                 <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
@@ -452,13 +452,13 @@ export function Beneficiaries(){
                 <option value="legacy">{tr('Uncategorized','শ্রেণিবিহীন')}</option>
               </UiSelect>
             </label>
-            {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
+            {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter beneficiary-directory__relationship-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
               <UiSelect aria-label={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')} value={relationshipFilter} onChange={event=>{setRelationshipFilter(event.target.value);setSelectedIds([]);}}>
                 <option value="all">{tr('All relationships','সব সম্পর্ক')}</option>
                 {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
               </UiSelect>
             </label>}
-            <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
+            <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search beneficiary-directory__search-filter">
               <span>{tr('Search','খুঁজুন')}</span>
               <span className="taxpayer-transaction-filter__search">
                 <Search size={17} aria-hidden="true"/>
