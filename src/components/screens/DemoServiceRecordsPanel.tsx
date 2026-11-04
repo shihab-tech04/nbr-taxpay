@@ -306,7 +306,7 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                     {key:'date',header:tr('Date','তারিখ'),renderCell:record=><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time>},
                     {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:record=>
                       <button type="button" className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light"
-                        onClick={()=>setSelectedRecordId(record.recordId)} aria-label={tr('View record','রেকর্ড দেখুন')+': '+record.recordId}>
+                        onClick={()=>setSelectedRecordId(record.recordId)} aria-label={tr('Open details for record','রেকর্ডের বিস্তারিত খুলুন')+': '+record.recordId}>
                         {tr('Details','বিস্তারিত')}
                       </button>}
                   ]}
