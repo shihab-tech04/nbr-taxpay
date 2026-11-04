@@ -397,7 +397,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   aria-invalid={passportAlreadyAdded}
                   aria-describedby={passportAlreadyAdded ? 'travel-passport-duplicate-' + item.id : undefined}
                   value={item.passport} maxLength={20} autoComplete="off"
-                  onFocus={() => setPassportSuggestionsFor(item.id)}
+                  onFocus={() => setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id)}
                   onKeyDown={event => {
                     if (event.key === 'Escape') setPassportSuggestionsFor(null);
                     if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
