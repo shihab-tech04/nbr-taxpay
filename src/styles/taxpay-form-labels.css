@@ -262,6 +262,8 @@
 }
 .taxpay-citizen-shell .travel-flow__medical-tooltip {
   display: none;
+  /* The accessible help popup must never block passport inputs or other actions. */
+  pointer-events: none;
   position: absolute;
   z-index: 60;
   right: 0;

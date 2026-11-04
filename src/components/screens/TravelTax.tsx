@@ -1,5 +1,5 @@
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2 } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
@@ -49,6 +49,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const errorFocusRevision = useRef(0);
   const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
   const [passengerIssue, setPassengerIssue] = useState<{ id: string; message: string } | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
@@ -112,14 +113,18 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   ];
 
   const showError = (message: string) => {
+    const revision = ++errorFocusRevision.current;
     setError(message);
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      // Never steal focus after someone has resumed editing the invalid field.
+      if (revision !== errorFocusRevision.current) return;
       const alert = document.getElementById('travel-tax-error');
       alert?.scrollIntoView({ block: 'nearest' });
       alert?.focus();
     }));
   };
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
+    errorFocusRevision.current += 1;
     setPassengerIssue(previous => previous?.id === id ? null : previous);
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
@@ -397,7 +402,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   aria-invalid={passportAlreadyAdded}
                   aria-describedby={passportAlreadyAdded ? 'travel-passport-duplicate-' + item.id : undefined}
                   value={item.passport} maxLength={20} autoComplete="off"
-                  onFocus={() => setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id)}
+                  onFocus={() => {
+                    errorFocusRevision.current += 1;
+                    setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
+                  }}
                   onKeyDown={event => {
                     if (event.key === 'Escape') setPassportSuggestionsFor(null);
                     if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
