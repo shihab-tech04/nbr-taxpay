@@ -166,7 +166,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
 
     <div className="grid gap-4 lg:grid-cols-2">
       <section className={panel} aria-labelledby="account-credit-composition-title">
-        <h2 id="account-credit-composition-title" className="text-base font-semibold text-taxpay-text">{tr('How your credits are made up','আপনার ক্রেডিটের বিবরণ')}</h2>
+        <h2 id="account-credit-composition-title" className="text-base font-semibold text-taxpay-text">{tr('Tax payments and adjustments','কর পরিশোধ ও সমন্বয়')}</h2>
         {sample ? <>
           <div role="img" aria-label={tr('Illustrative TDS, AIT and direct-payment composition','উদাহরণের উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধের বিভাজন')}
             className="mt-4 flex h-3 overflow-hidden rounded-full bg-slate-100">
