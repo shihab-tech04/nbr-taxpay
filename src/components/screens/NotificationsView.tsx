@@ -169,7 +169,7 @@ export const NotificationsView:React.FC=()=>{
                 {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
           </div>},
           {key:'status',header:label('Status','অবস্থা'),renderCell:r=><p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>},
-          {key:'requested',header:label('Requested','অনুরোধের সময়'),renderCell:r=><time dateTime={r.requestedAt} className="text-sm text-taxpay-muted">{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
+          {key:'requested',header:label('Requested','অনুরোধের সময়'),renderCell:r=><time dateTime={new Date(r.requestedAt).toISOString()} className="text-sm text-taxpay-muted">{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
           {key:'actions',header:label('Actions','কার্যক্রম'),renderCell:()=><button type="button" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
             onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>}
         ]}/>
