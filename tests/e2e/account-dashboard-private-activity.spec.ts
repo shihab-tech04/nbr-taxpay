@@ -94,6 +94,33 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
   });
 }
 
+test('record count follows the selected assessment year, not the all-year total',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.route(`${supabaseUrl}/rest/v1/rpc/sim_my_payment_history`,async route=>{
+    const request=route.request();
+    const body=request.postDataJSON() as {p_view:'payer'|'beneficiary'};
+    if(body.p_view!=='beneficiary')return route.fallback();
+    const additional={
+      ...privateHistory[0],id:'SIM-PAY-OWNER-2025-SECOND',
+      transactionId:'00000000-0000-4000-8000-000000000902',
+      totalMinor:2000,createdAt:'2026-01-10T09:00:00Z',
+      allocations:[{id:'additional-2025',lineNo:1,beneficiary:'user2',category:'PENALTY',assessmentYear:'2025-26',amountMinor:2000}],
+    };
+    const first={...privateHistory[0],
+      allocations:privateHistory[0].allocations.filter(a=>a.beneficiary==='user2')};
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:JSON.stringify([first,additional])});
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const countCard=dashboard.getByText('Scenario payment records').locator('..');
+  await expect(countCard.locator('p').last()).toHaveText('1');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(countCard.locator('p').last()).toHaveText('2');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard.getByText('সিনারিও পেমেন্ট রেকর্ড').locator('..').locator('p').last()).toHaveText('২');
+});
+
 test('verified profile shows owner-scoped activity, linked scenario allocations and assessment-year filtering',async({page})=>{
   await mockPrivateAccount(page,'user2');
   await page.goto('/?action=taxpayer_home');
