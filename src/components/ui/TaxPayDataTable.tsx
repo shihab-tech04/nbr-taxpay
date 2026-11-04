@@ -100,7 +100,14 @@ export function TaxPayDataGrid<Row>({
     return <>
       {variant==='tabular'?<TaxPayTableViewport className="hidden md:block">{desktopTable}</TaxPayTableViewport>:desktopTable}
     <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
-      {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}>{renderMobileCard?.(row)}</li>)}
+      {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}>
+        {renderMobileCard ? renderMobileCard(row) : <dl className="taxpay-mobile-table-card__fields">
+          {columns.map(column=><div className="taxpay-mobile-table-card__field" key={column.key}>
+            <dt>{column.header}</dt>
+            <dd>{column.renderCell(row)}</dd>
+          </div>)}
+        </dl>}
+      </li>)}
     </ul>
   </>;
   }
