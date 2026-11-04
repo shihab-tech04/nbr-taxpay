@@ -327,16 +327,18 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
          mobileTestId="signed-in-payment-activity-cards" columns={[
            {key:'reference',header:txt('Reference / date','রেফারেন্স / তারিখ'),renderCell:tx=><div>
              <p className="break-all font-mono-plex font-semibold">{tx.id}</p>
-             <time dateTime={tx.createdAt} className="text-sm text-taxpay-muted">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
+             <time dateTime={tx.createdAt} className="block text-sm text-taxpay-muted">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
+             <p className="text-sm text-taxpay-muted">{txt('Payer','প্রদানকারী')}: {tx.payer}</p>
            </div>},
-           {key:'payer',header:txt('Payer','প্রদানকারী'),renderCell:tx=><p>{tx.payer}</p>},
-           {key:'allocation',header:txt('Allocations','বরাদ্দ'),renderCell:tx=><details className="rounded-lg border border-taxpay-border p-2">
-             <summary className="min-h-11 cursor-pointer font-semibold">{txt('View allocations','বরাদ্দ দেখুন')} ({tx.allocations.length})</summary>
-             <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
-               <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
-               <p className="text-taxpay-muted">{a.assessmentYear} · {formatSimulatedAmount(a.amountMinor)}</p>
-             </li>)}</ul>
-           </details>},
+           {key:'allocation',header:txt('Allocations / status','বরাদ্দ / অবস্থা'),renderCell:tx=><div className="space-y-1">
+             <p className="font-medium">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')}</p>
+             {tx.allocations.slice(0,2).map(a=><p key={a.id} className="break-words text-sm text-taxpay-muted">
+               {a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']} · {a.assessmentYear}
+             </p>)}
+             {tx.allocations.length>2&&<p className="text-sm text-taxpay-muted">+{tx.allocations.length-2} {txt('more in details','টি বিস্তারিত দেখুন')}</p>}
+             <p className="text-sm">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
+             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           </div>},
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
              renderCell:tx=><p className="font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
            {key:'status',header:txt('Status / actions','অবস্থা / কার্যক্রম'),renderCell:tx=><div className="space-y-2">
