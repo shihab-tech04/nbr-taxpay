@@ -248,6 +248,36 @@ table.taxpay-unified-table {
 .taxpay-unified-table tbody tr:hover {
   background: var(--taxpay-table-hover, #f1f6ff);
 }
+/* Beneficiary selections use the same selected row treatment as other registers.
+ * The mobile checkbox/card and desktop table have one selection state. */
+.taxpay-unified-table tbody tr[data-selected="true"] {
+  background: var(--taxpay-table-selected, #eaf2ff);
+}
+.taxpay-unified-table tbody tr[data-selected="true"]:hover {
+  background: var(--taxpay-table-selected, #eaf2ff);
+}
+.beneficiary-directory__table .taxpay-table-viewport {max-width:100%;overflow-x:auto;}
+.beneficiary-directory__table .taxpay-unified-table th,
+.beneficiary-directory__table .taxpay-unified-table td {vertical-align:middle;}
+.beneficiary-directory__table .taxpay-unified-table th:last-child,
+.beneficiary-directory__table .taxpay-unified-table td:last-child {min-width:240px;}
+.beneficiary-directory__table .taxpay-unified-table .beneficiary-directory__actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  align-items:center;
+}
+.beneficiary-directory__table .taxpay-unified-table tbody tr[data-selected="true"] td {
+  background:transparent;
+}
+@media(max-width:767px) {
+  .beneficiary-directory__table .taxpay-mobile-table-cards {padding:8px;}
+  .beneficiary-directory__table .taxpay-mobile-table-card:has(input[type="checkbox"]:checked) {
+    border-color:var(--taxpay-table-primary,#2c5ead);
+    background:var(--taxpay-table-selected,#eaf2ff);
+  }
+}
 .taxpay-unified-table tbody tr[data-clickable-row="true"] {cursor:pointer;}
 .taxpay-unified-table tbody tr[data-clickable-row="true"]:focus-visible {
   outline:2px solid var(--taxpay-table-primary,#2c5ead);
