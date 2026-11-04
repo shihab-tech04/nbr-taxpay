@@ -77,6 +77,25 @@ for(const language of ['en','bn'] as const){
           await expect(ledgerDesktopTable).toBeHidden();
         }
       }
+      if(view==='beneficiaries'&&!desktop){
+        const filters=page.locator('.beneficiary-directory__filters');
+        const list=filters.locator('.beneficiary-directory__list-filter');
+        const tag=filters.locator('.beneficiary-directory__tag-filter');
+        const search=filters.locator('.beneficiary-directory__search-filter');
+        const [listBox,tagBox,searchBox]=await Promise.all([list.boundingBox(),tag.boundingBox(),search.boundingBox()]);
+        if(!listBox||!tagBox||!searchBox)throw Error('Missing beneficiary mobile filter controls');
+        expect(Math.abs(tagBox.y-searchBox.y),'mobile Tag and Search should share a row').toBeLessThanOrEqual(3);
+        expect(listBox.y+listBox.height,'selected list should precede Tag and Search').toBeLessThanOrEqual(tagBox.y);
+        expect(searchBox.width,'search remains usable at 375px').toBeGreaterThan(120);
+        await tag.locator('select').selectOption('friends_family');
+        const relationship=filters.locator('.beneficiary-directory__relationship-filter');
+        await expect(relationship).toBeVisible();
+        const relationBox=await relationship.boundingBox();
+        if(!relationBox)throw Error('Missing mobile Relationship filter');
+        expect(relationBox.y,'relationship appears below shared Tag/Search row').toBeGreaterThan(tagBox.y+tagBox.height-2);
+        await tag.locator('select').selectOption('all');
+        await expect(root).toBeVisible();
+      }
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'
           ?document.querySelector('[data-testid="event-tax-ledger"]')
