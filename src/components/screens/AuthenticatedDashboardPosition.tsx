@@ -43,6 +43,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
   ];
   const visibleYears=[...new Set([year,...years.slice(0,3)])];
   return <div className="space-y-4" data-testid="authenticated-dashboard-v11">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
     <section aria-labelledby="account-needs-review-title" className={panel}>
       <div className="flex items-center gap-2">
         <ClipboardList size={19} className="text-taxpay-primary" aria-hidden="true"/>
@@ -59,6 +60,25 @@ export const AuthenticatedDashboardPosition: React.FC<{
         </button>)}
       </div>
     </section>
+    <section aria-labelledby="account-deadlines-title" className={panel}>
+      <div className="flex items-center gap-2">
+        <CalendarDays size={19} className="text-taxpay-primary" aria-hidden="true"/>
+        <h2 id="account-deadlines-title" className="text-base font-semibold text-taxpay-text">
+          {tr('Payment deadlines & demands','কর পরিশোধের সময়সীমা ও দাবি')}
+        </h2>
+      </div>
+      <p className="mt-3 text-sm font-medium text-taxpay-text">
+        {tr('No verified due dates available','যাচাইকৃত পরিশোধের শেষ তারিখ পাওয়া যায়নি')}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-taxpay-muted">
+        {tr('This account is not connected to a verified assessment and demand schedule. An unavailable balance does not mean nothing is owed.',
+          'এই অ্যাকাউন্টে যাচাইকৃত কর নির্ধারণ ও দাবির সময়সূচির তথ্য সংযুক্ত নেই। ব্যালেন্স পাওয়া না যাওয়ার অর্থ করদায় নেই—এমন নয়।')}
+      </p>
+      <button type="button" className={action+' mt-4'} onClick={()=>onNavigate('ledger')}>
+        {tr('Review tax ledger','কর লেজার পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+      </button>
+    </section>
+    </div>
 
     <div className="grid gap-4 lg:grid-cols-2">
       <section className={panel} aria-labelledby="account-tax-coverage-title">
@@ -113,7 +133,10 @@ export const AuthenticatedDashboardPosition: React.FC<{
 
     <section className={panel} aria-label={tr('Assessment-year tax position','করবর্ষ অনুযায়ী কর অবস্থান')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-taxpay-text">{tr('By assessment year','করবর্ষ অনুযায়ী')}</h2>
+        <div>
+          <h2 className="text-base font-semibold text-taxpay-text">{tr('By assessment year','করবর্ষ অনুযায়ী')}</h2>
+          <p className="mt-1 text-sm text-taxpay-muted">{tr('Select a year to update the summary and recent activity. Unverified amounts remain blank.','করবর্ষ নির্বাচন করলে সারসংক্ষেপ ও সাম্প্রতিক কার্যক্রম হালনাগাদ হবে। যাচাই হয়নি এমন পরিমাণ ফাঁকা থাকবে।')}</p>
+        </div>
         <span className="text-xs text-taxpay-muted">{exampleMode?tr('Example figures only','শুধু উদাহরণের পরিমাণ'):tr('Balances unavailable','ব্যালেন্স পাওয়া যায়নি')}</span>
       </div>
       <div className="taxpay-table-viewport mt-3" role="region" aria-label={tr('Assessment-year table scroll area','করবর্ষের তালিকা স্ক্রল')} tabIndex={0}>
