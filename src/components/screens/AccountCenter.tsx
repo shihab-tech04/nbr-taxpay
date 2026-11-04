@@ -6,6 +6,7 @@ import { useTaxState } from '../../services/taxState';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -75,6 +76,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [reviewNotices, setReviewNotices] = useState<ReviewNotice[]>([]);
   const [loadState, setLoadState] = useState<'idle'|'loading'|'error'|'ready'>('idle');
   const [revision, setRevision] = useState(0);
+  const [notificationSearch,setNotificationSearch]=useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; content: string } | null>(null);
   const title = page === 'profile' ? t.profile : page === 'settings' ? t.settings : t.notifications;
@@ -185,6 +187,13 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
     return new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-GB', {day:'numeric',month:'short',year:'numeric'}).format(new Date(value));
   };
+  const normalizedNotificationSearch=notificationSearch.trim().toLocaleLowerCase(language==='bn'?'bn-BD':'en-GB');
+  const filteredReviewNotices=reviewNotices.filter(item=>
+    !normalizedNotificationSearch || [item.request_id,item.message_code,
+      date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
+  const filteredDraftNotices=notices.filter(item=>
+    !normalizedNotificationSearch || [item.category,item.assessment_year,item.id,
+      date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
   const sampleOnly = !user && sample;
   return (
     <section className="taxpayer-account-center" lang={language} aria-labelledby="taxpay-account-title">
@@ -282,39 +291,68 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 {!allowed ? <p role="status">{t.off}</p> : loadState === 'loading' ? <p role="status">{t.load}</p>
                   : loadState === 'error' ? <div><p role="alert">{t.loadError}</p>
                       <button type="button" onClick={()=>setRevision(n=>n+1)}>{t.retry} <RefreshCcw size={16} aria-hidden /></button></div>
-                  : loadState === 'ready' && (notices.length || reviewNotices.length) ? <>
-                     {reviewNotices.length > 0 && <section>
-                       <h3>{t.reviewTitle}</h3>
-                       <ul className="taxpayer-account-notices">
-                         {reviewNotices.map(item => {
-                           const codes:Record<string,string>={
-                             REQUEST_SUBMITTED:t.reviewReceived,
-                             REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
-                             REQUEST_INFO_REQUESTED:t.reviewInfo,
-                             REQUEST_REVIEW_CLOSED:t.reviewClosed
-                           };
-                           return <li key={item.id}>
-                             <div><strong>{codes[item.message_code] ?? t.reviewLabel}</strong><span>{item.is_read?t.viewed:t.new}</span></div>
-                             <p>{item.request_id} · {date(item.created_at)}</p>
-                             <p>{t.draftCaption}</p>
-                           </li>;
-                         })}
-                       </ul>
-                     </section>}
-                    <button type="button" className="taxpayer-account-secondary" disabled={busy} onClick={markViewed}>
-                      <CheckCheck size={17} aria-hidden />{t.markRead}
-                    </button>
-                    <ul className="taxpayer-account-notices">
-                      {notices.map(item => {
-                        const isNew = !Number.isFinite(readAt) || Date.parse(item.created_at) > readAt;
-                        return <li key={item.id}>
-                          <div><strong>{t.draft}</strong><span>{isNew ? t.new : t.viewed}</span></div>
-                          <p>{item.assessment_year} · <span className="taxpay-service-value" data-payment-service={item.category}>{item.category}</span> · {date(item.created_at)}</p>
-                          <p>{t.draftCaption}</p>
-                        </li>;
-                      })}
-                    </ul>
-                  </> : <p role="status">{t.noNotices}</p>}
+                  : loadState === 'ready' && (notices.length || reviewNotices.length) ? <div className="space-y-4" data-testid="authenticated-notification-registers">
+                    <TaxPayTableControls className="taxpay-record-page-filters">
+                      <label className="taxpayer-transaction-filter">
+                        <span>{language==='bn'?'বিজ্ঞপ্তি খুঁজুন':'Search account notifications'}</span>
+                        <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-base"
+                          aria-label={language==='bn'?'বিজ্ঞপ্তি খুঁজুন':'Search account notifications'}
+                          placeholder={language==='bn'?'রেফারেন্স, খাত বা অবস্থা':'Search reference, category or status'}
+                          value={notificationSearch} onChange={event=>setNotificationSearch(event.target.value)}/>
+                      </label>
+                      {notificationSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                        onClick={()=>setNotificationSearch('')}>{language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}</button>}
+                    </TaxPayTableControls>
+                    <div className="taxpay-table-toolbar">
+                      <TaxPayTableCounter label={language==='bn'?'রেকর্ড':'Records'}
+                        shown={filteredReviewNotices.length+filteredDraftNotices.length}
+                        total={reviewNotices.length+notices.length}/>
+                      <button type="button" className="taxpayer-account-secondary" disabled={busy}
+                        onClick={markViewed}><CheckCheck size={17} aria-hidden />{t.markRead}</button>
+                    </div>
+                    {reviewNotices.length>0&&<section className="space-y-3" aria-label={t.reviewTitle}>
+                      <h3>{t.reviewTitle}</h3>
+                      {filteredReviewNotices.length===0?
+                        <TaxPayTableState>{language==='bn'?'এই অনুসন্ধানে কোনো পর্যালোচনার বিজ্ঞপ্তি নেই।':'No review updates match your search.'}</TaxPayTableState>:
+                        <TaxPayDataGrid variant="exceptions" rows={filteredReviewNotices} getRowKey={item=>item.id}
+                          ariaLabel={t.reviewTitle} testId="authenticated-review-notification-register"
+                          columns={[
+                            {key:'update',header:language==='bn'?'হালনাগাদ':'Update',renderCell:item=><p className="font-semibold">{({
+                              REQUEST_SUBMITTED:t.reviewReceived,
+                              REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
+                              REQUEST_INFO_REQUESTED:t.reviewInfo,
+                              REQUEST_REVIEW_CLOSED:t.reviewClosed
+                            } as Record<string,string>)[item.message_code]??t.reviewLabel}</p>},
+                            {key:'reference',header:language==='bn'?'অনুরোধের রেফারেন্স':'Request reference',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.request_id}</p>},
+                            {key:'recorded',header:language==='bn'?'রেকর্ডের তারিখ':'Recorded',renderCell:item=><time dateTime={item.created_at} className="text-sm text-taxpay-muted">{date(item.created_at)}</time>},
+                            {key:'status',header:language==='bn'?'অবস্থা':'Status',renderCell:item=><p className="font-semibold">{item.is_read?t.viewed:t.new}</p>}
+                          ]}/>
+                      }
+                    </section>}
+                    {notices.length>0&&<section className="space-y-3" aria-label={language==='bn'?'সংরক্ষিত খসড়া':'Saved drafts'}>
+                      <h3>{language==='bn'?'সংরক্ষিত খসড়া':'Saved drafts'}</h3>
+                      {filteredDraftNotices.length===0?
+                        <TaxPayTableState>{language==='bn'?'এই অনুসন্ধানে কোনো খসড়া নেই।':'No saved drafts match your search.'}</TaxPayTableState>:
+                        <TaxPayDataGrid variant="documents" rows={filteredDraftNotices} getRowKey={item=>item.id}
+                          ariaLabel={language==='bn'?'সংরক্ষিত খসড়া':'Saved drafts'}
+                          testId="authenticated-draft-notification-register"
+                          columns={[
+                            {key:'category',header:language==='bn'?'খসড়া':'Draft',renderCell:item=><div>
+                              <p className="font-semibold">{t.draft}</p>
+                              <p className="text-sm text-taxpay-muted">{t.draftCaption}</p>
+                            </div>},
+                            {key:'reference',header:language==='bn'?'কর খাত':'Payment category',renderCell:item=><p className="break-words" data-payment-service={item.category}>{item.category}</p>},
+                            {key:'assessment',header:language==='bn'?'করবর্ষ ও তারিখ':'Assessment year and date',renderCell:item=><div>
+                              <p>{item.assessment_year}</p>
+                              <time dateTime={item.created_at} className="text-sm text-taxpay-muted">{date(item.created_at)}</time>
+                            </div>},
+                            {key:'status',header:language==='bn'?'অবস্থা':'Status',renderCell:item=><p className="font-semibold">{!Number.isFinite(readAt)||Date.parse(item.created_at)>readAt?t.new:t.viewed}</p>}
+                          ]}/>
+                      }
+                    </section>}
+                    {filteredReviewNotices.length===0&&filteredDraftNotices.length===0&&
+                      <TaxPayTableState>{language==='bn'?'মিল পাওয়া যায়নি। অন্য শব্দ ব্যবহার করুন।':'No matching notifications. Try another search.'}</TaxPayTableState>}
+                  </div> : <p role="status">{t.noNotices}</p>}
               </section>
             )}
             {page === 'notifications' && <SessionPaymentNotifications language={language} />}
