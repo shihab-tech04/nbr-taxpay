@@ -655,6 +655,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 })}
               </div>
               {editingPassengerId !== null && <button type="button" className="travel-flow__add-member"
+                disabled={firstIdentityIssue() !== null}
                 onClick={() => {
                   const issue = firstIdentityIssue();
                   if (issue) { reportIdentityIssue(issue); return; }
