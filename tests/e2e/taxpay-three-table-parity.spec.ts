@@ -230,6 +230,7 @@ for(const language of ['en','bn'] as const){
       await expect(table).toBeHidden();
       await expect(cards).toBeVisible();
       await expect(cards.locator('li')).toHaveCount(1);
+      await expect(cards.getByText(language==='bn'?'মোট: ৳50.00':'Total: ৳50.00',{exact:true})).toBeVisible();
       await cards.getByText(expand).click();
       await expect(cards.getByText('৳35.00',{exact:true})).toBeVisible();
       await cards.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details'}).click();
