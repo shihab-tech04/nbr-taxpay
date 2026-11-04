@@ -454,7 +454,7 @@ table.taxpay-unified-table {
   padding-inline:12px;
 }
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] :is(.taxpay-record-list__columns,.taxpay-record-list__row) {
-  grid-template-columns:minmax(0,1fr) minmax(110px,.18fr) minmax(145px,.24fr) minmax(90px,auto);
+  grid-template-columns:minmax(240px,2.4fr) minmax(140px,.8fr) minmax(180px,1fr) minmax(104px,.5fr);
 }
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.taxpay-record-list__columns,.taxpay-record-list__row) {
   grid-template-columns:minmax(135px,1.05fr) minmax(118px,.7fr) minmax(130px,1fr) minmax(280px,auto);
@@ -510,6 +510,9 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row:focus-within {outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:-2px;}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row[data-selected="true"] {background:var(--taxpay-table-selected,#eaf2ff);}
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row :is(button,input):focus-visible {outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;}
+/* Preserve usable action targets and readable reference metadata at every width. */
+.taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row button {min-height:44px;}
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] :is(.taxpayer-transaction-row__meta,.taxpayer-transaction-row__ref) {font-size:14px;line-height:1.5;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpayer-transaction-row__amount {justify-self:end;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__actions {justify-self:end;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.beneficiary-directory__tin,.beneficiary-directory__tag) {

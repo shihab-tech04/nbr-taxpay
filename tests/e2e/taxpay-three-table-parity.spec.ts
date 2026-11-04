@@ -42,6 +42,12 @@ for(const language of ['en','bn'] as const){
           ?root.locator('.taxpay-mobile-table-card').first()
           :root.locator('.taxpay-record-list__row').first());
       await expect(row).toBeVisible();
+      if(view!=='ledger'){
+        await expect(row.locator('[data-record-column-label]')).toHaveCount(4);
+        await expect(row.locator('[data-record-column-label]').first()).toContainText(
+          view==='history'?(language==='bn'?'পেমেন্ট':'Payment'):(language==='bn'?'উপকারভোগী':'Beneficiary')
+        );
+      }
       if(!desktop&&view==='ledger'){
         const nested=await row.locator('button').first().evaluate(element=>({
           borderTopWidth:getComputedStyle(element).borderTopWidth,
