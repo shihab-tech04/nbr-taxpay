@@ -132,11 +132,11 @@ test('owner can recover a failed private inquiry history load without duplicatin
   expect(inquiryReads).toBeGreaterThan(failedReadCount + 1);
   allowPostSaveHistoryRetry = true;
   await history.getByRole('button', { name: 'Retry loading inquiries' }).click();
-  await expect(history.getByText('SYN-REF-123456 — Pending evidence — not an approved correction')).toBeVisible();
+  await expect(history.getByText('SYN-REF-123456 — Pending evidence — not an approved correction').filter({visible:true})).toBeVisible();
   expect(postSaveHistorySuccesses).toBeGreaterThan(0);
   expect(insertCount).toBe(1);
   await expect(history.getByRole('button', { name: 'Retry loading inquiries' })).toHaveCount(0);
-  await history.locator('summary').click();
+  await history.locator('summary:visible').click();
   await expect(history.getByText('Reason provided: Synthetic request for review.')).toBeVisible();
   await expect(history.getByText('Requested outcome: Please review this synthetic sample.')).toBeVisible();
   await expect(history.getByText('Unverified attribution proposal: Assessment year')).toBeVisible();
@@ -149,7 +149,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
   await setWorkspaceLanguage(page, 'bn');
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
-  await expect(historyBn.locator('summary')).toHaveText('অনুরোধের বিবরণ');
+  await expect(historyBn.locator('summary:visible')).toHaveText('অনুরোধের বিবরণ');
   await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.')).toBeVisible();
   await expect(historyBn.getByText('অনুরোধের ফলাফল: Please review this synthetic sample.')).toBeVisible();
   await expect(historyBn.getByText('যাচাই না হওয়া পরিচিতি প্রস্তাব: করবর্ষ')).toBeVisible();
