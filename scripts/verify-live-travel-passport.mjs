@@ -32,7 +32,28 @@ try {
       }
     }
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
-    await expect(modal.getByRole('button', { name: 'Continue to travel details' })).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+    const addPassenger = modal.getByRole('button', { name: 'Add passenger' });
+    const continueToTravel = modal.getByRole('button', { name: 'Continue to travel details' });
+    await expect(addPassenger).toBeDisabled();
+    await expect(continueToTravel).toBeDisabled();
+    await expect(modal.locator('#travel-lookup-first')).toBeDisabled();
+    const medicalRow = modal.locator('.travel-flow__medical-option');
+    const medicalBounds = await medicalRow.boundingBox();
+    const passengerBounds = await modal.locator('[data-passenger-id="first"]').boundingBox();
+    if (!medicalBounds || !passengerBounds || medicalBounds.width < .8 * passengerBounds.width) {
+      throw new Error('Manual assessment must use the available passenger-card width');
+    }
+    const medicalHelp = medicalRow.getByRole('button', { name: 'What is manual assessment?' });
+    await medicalHelp.click();
+    await expect(modal.getByRole('tooltip')).toContainText('does not approve a tax exemption online');
+    await medicalHelp.click();
+    const receiptContact = modal.locator('.travel-flow__contact');
+    const contactBounds = await receiptContact.boundingBox();
+    const phoneBounds = await modal.locator('#travel-mobile').boundingBox();
+    if (!contactBounds || !phoneBounds || phoneBounds.width < .92 * contactBounds.width) {
+      throw new Error('Receipt mobile field must use the available contact-column width');
+    }
     await modal.locator('#travel-passport-first').click();
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
     await expect(options).toHaveCount(10);
@@ -40,12 +61,27 @@ try {
     const suggestionGeometry = await modal.locator('#travel-passport-suggestions-first').evaluate(element => ({scroll:element.scrollHeight,visible:element.clientHeight}));
     if (suggestionGeometry.scroll <= suggestionGeometry.visible) throw new Error('Passport suggestion list should be independently scrollable with ten entries');
     await options.filter({ hasText: 'TEST230005' }).click();
+    await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
     await modal.getByRole('button', { name: 'Check Passport' }).click();
+    await expect(addPassenger).toBeEnabled();
+    await expect(continueToTravel).toBeDisabled();
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+    await addPassenger.click();
+    const second = modal.locator('[data-passenger-id]').nth(1);
+    await second.locator('input[role="combobox"]').click();
+    const secondOptions = second.locator('.travel-flow__passport-suggestions [role="option"]');
+    await expect(secondOptions).toHaveCount(9);
+    await expect(secondOptions.filter({ hasText: 'TEST230005' })).toHaveCount(0);
+    await second.locator('input[role="combobox"]').fill('TEST230005');
+    await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
+    await expect(continueToTravel).toBeDisabled();
+    await second.getByRole('button', { name: 'Remove passenger 2' }).click();
+    await expect(addPassenger).toBeEnabled();
     await modal.locator('#travel-mobile').fill('01712345678');
-    await modal.getByRole('button', { name: 'Continue to travel details' }).click();
+    await expect(continueToTravel).toBeEnabled();
+    await continueToTravel.click();
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel details');
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     const modes = modal.locator('#travel-tax-route-results');
@@ -67,7 +103,7 @@ try {
     await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png', fullPage: false });
     await page.close();
   }
-  console.log('PASS: production Travel Tax passport suggestions, identity card, progressive travel fields, localized modes, stage navigation and mobile containment');
+  console.log('PASS: production Travel Tax conditional actions, unique passport suggestions, manual duplicate warning, full-width fields, stage navigation and mobile containment');
 } finally {
   await browser.close();
 }

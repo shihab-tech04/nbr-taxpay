@@ -1850,7 +1850,7 @@
   line-height:1.4;
 }
 .travel-flow__primary:hover:not(:disabled) {background:var(--citizen-primary-dark);}
-.travel-flow__primary:disabled {opacity:.5;cursor:wait;}
+.travel-flow__primary:disabled {opacity:.5;cursor:not-allowed;}
 .travel-flow__summary > .travel-flow__primary {margin-top:auto;}
 .travel-flow__review {display:grid;gap:0;margin:0;border:1px solid var(--citizen-border);border-radius:.75rem;overflow:hidden;}
 .travel-flow__review > div {display:grid;grid-template-columns:minmax(110px,30%) minmax(0,1fr);gap:.7rem;padding:.75rem 1rem;border-bottom:1px solid var(--citizen-border);}
