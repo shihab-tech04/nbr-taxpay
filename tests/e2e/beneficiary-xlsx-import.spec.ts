@@ -209,18 +209,18 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expectRecord('Local Beneficiary Two');
-  // Both breakpoints use the approved Activity record list, not separate table/card DOM.
+  // One set of records drives semantic desktop table columns and mobile action cards.
   await expect(page.getByTestId('beneficiary-records')).toHaveClass(/taxpayer-transaction-list/);
   await expect(recordList).toHaveCount(2);
-  await expect(recordList.first()).toHaveClass(/taxpayer-transaction-row/);
+  await expect(recordList.first()).toHaveClass(/beneficiary-directory__tabular-row|taxpay-mobile-table-card/);
   await expect(page.getByRole('checkbox',{name:'Select all visible beneficiaries'})).toBeVisible();
-  await expect(page.getByTestId('beneficiary-records').locator('table')).toHaveCount(0);
+  await expect(page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table')).toHaveCount(1);
   const searchControl=page.locator('.beneficiary-directory__filters .taxpayer-transaction-filter__search');
   await expect(searchControl).toHaveCSS('border-top-width','1px');
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('border-top-width','0px');
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
   if(info.project.name.startsWith('mobile')){
-    const actions=recordList.first().locator('.beneficiary-directory__actions');
+    const actions=recordList.first().locator('.taxpay-mobile-table-card__actions');
     const payButton=actions.getByRole('button',{name:'Pay Tax for Others'});
     const groupBox=await actions.boundingBox(),payBox=await payButton.boundingBox();
     expect(groupBox&&payBox&&payBox.width>=groupBox.width-2,'Mobile payment action occupies its own full row').toBeTruthy();
