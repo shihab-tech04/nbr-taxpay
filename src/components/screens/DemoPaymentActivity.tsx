@@ -200,6 +200,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const visibleRows=rows.filter(tx=>(recordYear==='all'||tx.allocations.some(a=>a.assessmentYear===recordYear))&&
     (!needle||[tx.id,tx.transactionId,tx.payer,tx.state,tx.reviewStatus,...tx.allocations.flatMap(a=>
       [a.beneficiary,a.category,a.assessmentYear])].some(v=>String(v).toLocaleLowerCase().includes(needle))));
+  // Keep every SQL allocation and event in the existing detail modal after compacting table cells.
+  const lifecycleParts=(tx:SimulationTransaction)=>({
+    events:tx.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
+      occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
+    allocations:tx.allocations.map(a=>({id:a.id,
+      title:a.beneficiary+' · '+simulationCategoryLabels[a.category][bn?'bn':'en'],
+      assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
+  });
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <TaxpayerPageHeading title={txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}
@@ -381,10 +389,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         amountMinor:selectedPayment.totalMinor,createdAt:selectedPayment.createdAt,
         status:selectedPayment.state,financialReceiptStatus:txt('Not verified','যাচাই হয়নি'),
         taxCreditStatus:txt('Not verified','যাচাই হয়নি'),source:'TaxPay SQL',
-        events:selectedPayment.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
-          occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
-        allocations:selectedPayment.allocations.map(a=>({id:a.id,title:a.beneficiary+' · '+simulationCategoryLabels[a.category][bn?'bn':'en'],
-          assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
+        ...lifecycleParts(selectedPayment)
       }}/>
     </TaxPayModal>}
   </main>;
