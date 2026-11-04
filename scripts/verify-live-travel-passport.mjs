@@ -44,6 +44,10 @@ try {
     if (!medicalBounds || !passengerBounds || medicalBounds.width < .8 * passengerBounds.width) {
       throw new Error('Manual assessment must use the available passenger-card width');
     }
+    const medicalHelp = medicalRow.getByRole('button', { name: 'What is manual assessment?' });
+    await medicalHelp.click();
+    await expect(modal.getByRole('tooltip')).toContainText('does not approve a tax exemption online');
+    await medicalHelp.click();
     const receiptContact = modal.locator('.travel-flow__contact');
     const contactBounds = await receiptContact.boundingBox();
     const phoneBounds = await modal.locator('#travel-mobile').boundingBox();
