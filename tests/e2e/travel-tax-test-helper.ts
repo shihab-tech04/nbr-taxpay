@@ -9,6 +9,10 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await passport.fill('TEST123456');
     await root.locator('#travel-lookup-first').click();
   }
+  const addPassenger = root.getByRole('button', {name: 'Add passenger', exact: true});
+  if (await addPassenger.isVisible() && await addPassenger.isEnabled()) await addPassenger.click();
+  const addPassenger = root.getByRole('button', {name: 'Add passenger', exact: true});
+  if (await addPassenger.isVisible() && await addPassenger.isEnabled()) await addPassenger.click();
   const mobile = root.locator('#travel-mobile');
   if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
   const continueToTravel = root.locator('.travel-flow__primary').filter({ hasText: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/ });
