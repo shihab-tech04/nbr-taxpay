@@ -10,7 +10,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await root.locator('#travel-lookup-first').click();
   }
   // Lookup/manual entry only previews identity; explicitly confirm the passenger.
-  const confirm = root.getByRole('button', { name: /^(Add passenger|Save passenger)$/ });
+  const confirm = root.getByRole('button', { name: /^(Add passenger|Save passenger|যাত্রী যোগ করুন|যাত্রীর তথ্য সংরক্ষণ করুন)$/ });
   if (await confirm.count() === 1 && await confirm.isEnabled()) await confirm.click();
   const mobile = root.locator('#travel-mobile');
   if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
@@ -49,7 +49,7 @@ export async function fillForeignPassenger(root: Locator | Page, options?: {
   await root.locator('#travel-name-first').fill(options?.name ?? 'SAMPLE TRAVELLER');
   await root.locator('#travel-birth-date-first').fill(options?.birthDate ?? '1992-05-10');
   await root.locator('#travel-country-first').fill(options?.country ?? 'India');
-  const confirm = root.getByRole('button', { name: /^(Add passenger|Save passenger)$/ });
+  const confirm = root.getByRole('button', { name: /^(Add passenger|Save passenger|যাত্রী যোগ করুন|যাত্রীর তথ্য সংরক্ষণ করুন)$/ });
   if (await confirm.isEnabled()) await confirm.click();
   const mobile = root.locator('#travel-mobile');
   if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
