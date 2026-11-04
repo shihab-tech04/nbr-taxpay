@@ -80,8 +80,11 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  expect((admin.data as Array<{transactionId:string}>).some(t=>t.transactionId===tx!.transactionId)).toBe(true);
  const two=await visit(beneficiary,'history',{width:320,height:730});
  await expect(two.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
- await expect(two.page.getByText(tx!.id).first()).toBeVisible({timeout:15000});
- await expect(two.page.getByText('৳23.50').first()).toBeVisible();
+ const transactionCard=two.page.getByTestId('signed-in-payment-activity-cards')
+   .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(transactionCard.getByText(tx!.id)).toBeVisible({timeout:15000});
+ await transactionCard.getByText('View allocations',{exact:false}).click();
+ await expect(transactionCard.getByText('৳23.50')).toBeVisible();
  await two.page.goto('/?action=notifications');
  await expect(two.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
  await expect(two.page.getByRole('button',{name:'Mark read'})).toBeVisible({timeout:15000});
