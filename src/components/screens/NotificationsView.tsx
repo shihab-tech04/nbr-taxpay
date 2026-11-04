@@ -7,7 +7,7 @@ import {reconcileDemoSimulationActivity,type DemoSimulationActivity} from '../..
 import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import {reconcilePrivateSimulationNotices,type VerifiedPrivateSimulationNotice} from '../../services/privateSimulationNotices';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
-import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
@@ -32,6 +32,9 @@ export const NotificationsView:React.FC=()=>{
   const [authorizationError,setAuthorizationError]=useState('');
   const [previewPaymentEvents,setPreviewPaymentEvents]=useState<DemoSimulationActivity[]>([]);
   const [previewPaymentError,setPreviewPaymentError]=useState('');
+  const [authorizationSearch,setAuthorizationSearch]=useState('');
+  const [authorizationFilter,setAuthorizationFilter]=useState('all');
+  const [paymentSearch,setPaymentSearch]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
   const authorizationStatus=(state:string)=>{
@@ -123,14 +126,17 @@ export const NotificationsView:React.FC=()=>{
     finally{setBusyNotice(null);}
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
-  if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
+  const visibleAuthorizations=authorizationNotices.filter(r=>(authorizationFilter==="all"||r.status===authorizationFilter)&&
+    (r.payerId+" "+r.taxpayerId+" "+r.status).toLocaleLowerCase().includes(authorizationSearch.trim().toLocaleLowerCase()));
+  const visiblePayments=previewPaymentEvents.filter(p=>(p.transactionId+" "+p.payer+" "+p.state).toLocaleLowerCase().includes(paymentSearch.trim().toLocaleLowerCase()));
+  if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')}/>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title" aria-live="polite">
       <h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Permission requests and their current recorded status.','অনুমতির আবেদন এবং সেগুলোর বর্তমান নথিভুক্ত অবস্থা।')}</p>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
-      {!authorizationNotices.length?<p className="text-taxpay-muted">{label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
-      <TaxPayDataGrid variant="documents" rows={authorizationNotices} getRowKey={r=>String(r.id)}
+      {!visibleAuthorizations.length?<p role="status" className="taxpay-table-state">{authorizationNotices.length?label('No authorization requests match your filters.','ফিল্টারে কোনো অনুমোদনের অনুরোধ মেলেনি।'):label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
+      <TaxPayDataGrid variant="documents" rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
         ariaLabel={label('Authorization requests','অনুমোদনের অনুরোধ')}
         columns={[
           {key:'request',header:label('Authorization','অনুমোদন'),renderCell:r=><div>
@@ -153,8 +159,8 @@ export const NotificationsView:React.FC=()=>{
       <h2 className="font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
-       !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
-       <TaxPayDataGrid variant="documents" rows={previewPaymentEvents}
+       !visiblePayments.length?<p role="status" className="taxpay-table-state">{previewPaymentEvents.length?label('No payment updates match this search.','এই অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।'):label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
+       <TaxPayDataGrid variant="documents" rows={visiblePayments}
          getRowKey={p=>p.transactionId+':'+p.perspective}
          ariaLabel={label('Recorded payment updates','সংরক্ষিত পেমেন্টের হালনাগাদ')}
          columns={[
