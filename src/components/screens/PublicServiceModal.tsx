@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTaxState } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptLookup } from './ReceiptLookup';
@@ -10,6 +10,7 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
   const { language } = useTaxState();
   const bn = language === 'bn';
   const [travelStage, setTravelStage] = useState<1 | 2 | 3 | 4>(1);
+  const receiptBackRef = useRef<(() => void) | null>(null);
   const isTravel = service === 'travel';
   const travelTitle = bn ? 'ভ্রমণ কর' : 'Travel tax';
   const travelStages = bn
@@ -22,7 +23,15 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
   // The top-left control owns stage navigation, exactly as it does in the
   // approved Pay Tax wizard. Stage handlers remain inside the travel form.
   const back = () => {
-    if (travelStage === 1 || travelStage === 4) {
+    if (travelStage === 4) {
+      receiptBackRef.current?.();
+      return;
+    }
+    if (travelStage === 3 && receiptBackRef.current) {
+      receiptBackRef.current();
+      return;
+    }
+    if (travelStage === 1) {
       onClose();
       return;
     }
@@ -46,7 +55,7 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
       onClose={onClose}
     >
       {isTravel ? (
-        <TravelTax embedded onStageChange={setTravelStage} />
+        <TravelTax embedded onStageChange={setTravelStage} receiptBackRef={receiptBackRef} />
       ) : (
         <ReceiptLookup embedded />
       )}

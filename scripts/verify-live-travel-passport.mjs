@@ -69,6 +69,10 @@ try {
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await addPassenger.click();
+    await expect(modal.locator('#travel-medical-first')).toBeVisible();
+    const addAnother = modal.getByRole('button', { name: 'Add another passenger' });
+    await expect(addAnother).toBeEnabled();
+    await addAnother.click();
     const second = modal.locator('[data-passenger-id]').nth(1);
     await second.locator('input[role="combobox"]').click();
     const secondOptions = second.locator('.travel-flow__passport-suggestions [role="option"]');
@@ -77,8 +81,13 @@ try {
     await second.locator('input[role="combobox"]').fill('TEST230005');
     await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
     await expect(continueToTravel).toBeDisabled();
-    await second.getByRole('button', { name: 'Remove passenger 2' }).click();
-    await expect(addPassenger).toBeEnabled();
+    await second.locator('input[role="combobox"]').fill('TEST230001');
+    await second.getByRole('button', { name: 'Check Passport' }).click();
+    await second.getByRole('button', { name: 'Add passenger' }).click();
+    await expect(modal.locator('.travel-flow__person')).toHaveCount(2);
+    await expect(addAnother).toBeEnabled();
+    await expect(modal.locator('#travel-medical-first')).toBeVisible();
+    await expect(modal.locator('#travel-medical-first')).not.toBeChecked();
     await modal.locator('#travel-mobile').fill('01712345678');
     await expect(continueToTravel).toBeEnabled();
     await continueToTravel.click();
@@ -96,6 +105,14 @@ try {
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await modal.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
+    await modal.getByRole('button', { name: 'Continue to review' }).click();
+    await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
+    // Production smoke remains read-only with respect to SQL: do not create
+    // test payment records merely to verify a release. Receipt rendering,
+    // recorded Back behavior and total accounting have dedicated CI tests.
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toBeVisible();
+    await modal.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
     if (mobile) {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       if (overflow > 2) throw new Error('Live mobile Travel Tax has horizontal overflow: ' + overflow + 'px');
@@ -103,7 +120,7 @@ try {
     await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png', fullPage: false });
     await page.close();
   }
-  console.log('PASS: production Travel Tax conditional actions, unique passport suggestions, manual duplicate warning, full-width fields, stage navigation and mobile containment');
+  console.log('PASS: deployed Travel Tax confirms two passengers, preserves medical option, validates stages and mobile/desktop containment without writing QA records to production SQL');
 } finally {
   await browser.close();
 }

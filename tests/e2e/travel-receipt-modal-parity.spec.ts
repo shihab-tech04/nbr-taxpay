@@ -110,3 +110,29 @@ test('Travel Tax desktop and mobile calculation retain one total and Taka amount
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
+
+
+test('Travel Tax: receipt Back opens immutable review and returns to the same challan', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const dialog = page.getByRole('dialog', {name:'Travel tax'});
+  await fillTravelDetails(dialog);
+  await dialog.getByRole('button',{name:'Continue to review'}).click();
+  await dialog.getByRole('button',{name:'Pay online'}).click();
+  await dialog.getByRole('button',{name:'Mobile banking'}).click();
+  await dialog.getByRole('radio',{name:'Nagad'}).check();
+  await dialog.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
+  await dialog.getByRole('button',{name:'Confirm preview payment'}).click();
+  const receipt=dialog.getByTestId('travel-family-challan');
+  await expect(receipt).toBeVisible({timeout:12000});
+  const reference=await receipt.locator('..').locator('.receipt-view__reference-number').textContent();
+  await dialog.getByRole('button',{name:'Back',exact:true}).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId('travel-recorded-review')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
+  await expect(dialog.getByRole('button',{name:'Confirm preview payment'})).toHaveCount(0);
+  await dialog.getByRole('button',{name:'View combined challan'}).click();
+  await expect(receipt).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','4');
+  await expect(dialog.locator('.receipt-view__reference-number')).toHaveText(reference?.trim() ?? '');
+});

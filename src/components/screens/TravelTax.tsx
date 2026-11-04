@@ -24,6 +24,7 @@ interface TravelTaxProps {
   fourStepJourney?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+  receiptBackRef?: { current: (() => void) | null };
 }
 
 function maskPassport(passport: string) {
@@ -35,7 +36,7 @@ function maskPassport(passport: string) {
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange, receiptBackRef }) => {
   const { language, navigate, addPaymentReceipt } = useTaxState();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
@@ -47,6 +48,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [destination, setDestination] = useState('');
   const [travelDate, setTravelDate] = useState('');
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
+  const [confirmedPassengerIds, setConfirmedPassengerIds] = useState<string[]>([]);
+  const [editingExistingPassengerId, setEditingExistingPassengerId] = useState<string | null>(null);
+  const [reviewingRecordedPayment, setReviewingRecordedPayment] = useState(false);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const errorFocusRevision = useRef(0);
@@ -65,6 +69,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
+  // Once payment is recorded, the modal Back action reveals a read-only review.
+  // Returning to the challan never resets the payment or records a second charge.
+  useEffect(() => {
+    if (!receiptBackRef) return;
+    receiptBackRef.current = createdReceipt ? () => {
+      setReviewingRecordedPayment(wasReviewing => !wasReviewing);
+      setStep(current => current === 3 ? 2 : 3);
+    } : null;
+    return () => { receiptBackRef.current = null; };
+  }, [receiptBackRef, createdReceipt]);
   // The receipt takes over the wizard. Reset its scroll position when it
   // mounts so the newly created receipt heading remains visible on mobile
   // and desktop, rather than inheriting the payment form's scroll offset.
@@ -129,6 +143,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
+    setConfirmedPassengerIds(current => current.filter(passengerId => passengerId !== id));
   };
   const changePassengerType = (id: string, nationality: TravellerNationality) => {
     setPassportSuggestionsFor(null);
@@ -182,7 +197,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     }
     return null;
   };
-  const allPassengersComplete = firstIdentityIssue() === null;
+  const allPassengersComplete = firstIdentityIssue() === null &&
+    passengers.length > 0 && passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
   const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
   const reportIdentityIssue = (issue: {id: string; message: string}) => {
@@ -223,7 +239,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
-    setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
+    setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null);
+    setConfirmedPassengerIds([]); setEditingExistingPassengerId(null); setReviewingRecordedPayment(false); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -353,6 +370,61 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
 
 
+  // Medical referral is a passenger-level choice, not a transient editor field.
+  // Keep it visible after lookup and when viewing a confirmed passenger.
+  const changeMedicalReferral = (id: string, checked: boolean) => {
+    setPassengers(current => current.map(item =>
+      item.id === id ? {...item, medicalPortReferral: checked} : item));
+    setError('');
+    setAcknowledged(false);
+  };
+  const canConfirmPassenger = (item: TravelPassenger) =>
+    !invalidPassengerIds.has(item.id) &&
+    (item.nationality !== 'FOREIGN' ||
+      travelPassengerAge(item.birthDate, new Date().toISOString().slice(0, 10)) !== null);
+  const confirmPassenger = (item: TravelPassenger) => {
+    if (!canConfirmPassenger(item)) return;
+    setConfirmedPassengerIds(ids => ids.includes(item.id) ? ids : [...ids, item.id]);
+    setEditingPassengerId(null);
+    setEditingExistingPassengerId(null);
+    setPassengerIssue(null);
+    setPassportSuggestionsFor(null);
+    setError('');
+    // The confirmation button unmounts; keep keyboard focus in the journey.
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__add-member')?.focus()));
+  };
+  const renderMedicalReferral = (item: TravelPassenger) => (<>
+          <div className="travel-flow__field travel-flow__medical">
+            <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
+            <div className="travel-flow__medical-option">
+              <label className="travel-flow__check" htmlFor={'travel-medical-' + item.id}>
+                <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
+                  onChange={event => changeMedicalReferral(item.id, event.target.checked)}/>
+                <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
+              </label>
+              <div className="travel-flow__medical-help" data-open={medicalHelpFor === item.id}>
+                <button type="button" aria-label={tr('What is manual assessment?', 'সরাসরি যাচাই কী?')}
+                  aria-expanded={medicalHelpFor === item.id}
+                  aria-describedby={'travel-medical-tooltip-' + item.id}
+                  onClick={() => setMedicalHelpFor(previous => previous === item.id ? null : item.id)}
+                  onKeyDown={event => { if (event.key === 'Escape') setMedicalHelpFor(null); }}>
+                  <Info size={18} aria-hidden="true"/>
+                </button>
+                <p className="travel-flow__medical-tooltip" role="tooltip"
+                  id={'travel-medical-tooltip-' + item.id}>
+                  {tr('A request to present medical documents for an in-person assessment at the departure port. This does not approve a tax exemption online; the sample payment cannot proceed with an unresolved request.',
+                    'যাত্রা শুরুর বন্দরে চিকিৎসার কাগজপত্র জমা দিয়ে সরাসরি যাচাইয়ের অনুরোধ। এটি অনলাইনে কর অব্যাহতির অনুমোদন নয়; অনিষ্পন্ন অনুরোধসহ নমুনা পেমেন্টে এগোনো যাবে না।')}
+                </p>
+              </div>
+            </div>
+          </div>
+        {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
+          {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
+              'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
+        </p>}
+  </>);
+
   /** Each passenger uses a type tab; fields from the other type never appear. */
   const renderPassengerEditor = (item: TravelPassenger, index: number) => {
     const panelId = 'travel-passenger-panel-' + item.id;
@@ -443,7 +515,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }
                   changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
-                  setEditingPassengerId(null);
+                  // Show the retrieved identity first; the passenger is added
+                  // only after the explicit Add passenger confirmation.
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
               {passportSuggestionsFor === item.id && <div
@@ -504,30 +577,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
-          <div className="travel-flow__field travel-flow__medical">
-            <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
-            <div className="travel-flow__medical-option">
-              <label className="travel-flow__check" htmlFor={'travel-medical-' + item.id}>
-                <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
-                  onChange={event => changePassenger(item.id, {medicalPortReferral: event.target.checked})}/>
-                <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
-              </label>
-              <div className="travel-flow__medical-help" data-open={medicalHelpFor === item.id}>
-                <button type="button" aria-label={tr('What is manual assessment?', 'সরাসরি যাচাই কী?')}
-                  aria-expanded={medicalHelpFor === item.id}
-                  aria-describedby={'travel-medical-tooltip-' + item.id}
-                  onClick={() => setMedicalHelpFor(previous => previous === item.id ? null : item.id)}
-                  onKeyDown={event => { if (event.key === 'Escape') setMedicalHelpFor(null); }}>
-                  <Info size={18} aria-hidden="true"/>
-                </button>
-                <p className="travel-flow__medical-tooltip" role="tooltip"
-                  id={'travel-medical-tooltip-' + item.id}>
-                  {tr('A request to present medical documents for an in-person assessment at the departure port. This does not approve a tax exemption online; the sample payment cannot proceed with an unresolved request.',
-                    'যাত্রা শুরুর বন্দরে চিকিৎসার কাগজপত্র জমা দিয়ে সরাসরি যাচাইয়ের অনুরোধ। এটি অনলাইনে কর অব্যাহতির অনুমোদন নয়; অনিষ্পন্ন অনুরোধসহ নমুনা পেমেন্টে এগোনো যাবে না।')}
-                </p>
-              </div>
-            </div>
-          </div>
+
         </div>
         {item.nationality === 'BD' && <p className="travel-flow__field-hint" role="status">
           {item.identitySource === 'PASSPORT_SAMPLE'
@@ -536,16 +586,22 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             : tr('Government passport verification is unavailable. Choose from ten fictional passports and press Check Passport.',
                  'সরকারি পাসপোর্ট যাচাই সংযুক্ত নয়। ১০টি কাল্পনিক পাসপোর্টের একটি বেছে পাসপোর্ট যাচাই করুন।')}
         </p>}
-        {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
-          {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
-              'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
-        </p>}
+
         {assessment && <p className="travel-flow__age-reason">{ageExplanation(assessment.age)}</p>}
       </div>
+
     </>;
   };
 
-  const primaryAction = createdReceipt && bankSlipPending ? (
+  const primaryAction = createdReceipt && reviewingRecordedPayment ? (
+    <button type="button" className="travel-flow__primary" onClick={() => {
+      setReviewingRecordedPayment(false);
+      stepTo(3);
+    }}>
+      <FileText size={17} aria-hidden="true" />
+      {tr('View combined challan', 'সম্মিলিত চালান দেখুন')}
+    </button>
+  ) : createdReceipt && bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip} disabled={processing}>
       <Building2 size={17} aria-hidden="true" />
       {tr('Confirm sample bank settlement', 'নমুনা ব্যাংক নিষ্পত্তি নিশ্চিত করুন')}
@@ -568,7 +624,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   );
 
   // Preserve the shared receipt/modal action owner and full-width receipt.
-  if (embedded && createdReceipt && !bankSlipPending) {
+  if (embedded && createdReceipt && !bankSlipPending && !reviewingRecordedPayment) {
     return <ReceiptView receipt={createdReceipt} embedded/>;
   }
 
@@ -604,12 +660,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
                       <div className="travel-flow__person-actions">
                         {!editing && <button type="button" className="travel-flow__edit" onClick={() => {
-                          setEditingPassengerId(item.id); setPassengerIssue(null);
+                          setEditingPassengerId(item.id); setEditingExistingPassengerId(item.id);
+                          setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id)); setPassengerIssue(null);
                         }}><Pencil size={15} aria-hidden="true"/>{tr('Edit', 'সম্পাদনা')}</button>}
                         {index > 0 && <button type="button" className="travel-flow__member-remove"
                           aria-label={tr('Remove passenger ', 'যাত্রী বাদ দিন ') + (index + 1)}
                           onClick={() => {
                             setPassengers(existing => existing.filter(person => person.id !== item.id));
+                            setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id));
                             if (editingPassengerId === item.id) setEditingPassengerId(null);
                             setPassengerIssue(null); setError(''); setAcknowledged(false);
                           }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
@@ -625,23 +683,31 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       <div><dt>{tr('Nationality', 'জাতীয়তা')}</dt><dd>{item.nationality === 'BD' ? tr('Bangladeshi', 'বাংলাদেশি') : item.country}</dd></div>
                       {assessment && <div><dt>{tr('Illustrative tax', 'নমুনা কর')}</dt><dd>{formatCurrency(assessment.amount, language)}</dd></div>}
                     </dl>}
+                    {renderMedicalReferral(item)}
+                    {editing && <button type="button" className="travel-flow__confirm-passenger"
+        disabled={!canConfirmPassenger(item)} onClick={() => confirmPassenger(item)}>
+        {editingExistingPassengerId === item.id
+          ? tr('Save passenger','যাত্রীর তথ্য সংরক্ষণ করুন')
+          : tr('Add passenger','যাত্রী যোগ করুন')}
+      </button>}
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                   </section>;
                 })}
               </div>
-              <button type="button" className="travel-flow__add-member"
+              {confirmedPassengerIds.length > 0 && <button type="button" className="travel-flow__add-member"
                 disabled={!allPassengersComplete} onClick={() => {
                 const issue = firstIdentityIssue();
                 if (issue) { reportIdentityIssue(issue); return; }
                 const id = crypto.randomUUID();
                 setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
-                setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
-                requestAnimationFrame(() => requestAnimationFrame(() =>
-                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
-                ));
+                setEditingPassengerId(id); setEditingExistingPassengerId(null); setPassengerIssue(null); setAcknowledged(false);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' });
+                  document.getElementById('travel-passport-' + id)?.focus();
+                }));
               }}>
-                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
-              </button>
+                <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
+              </button>}
               <div className="travel-flow__contact">
                 <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
                 <div className="travel-flow__field">
@@ -706,6 +772,37 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 <Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')} ({passengers.length})
               </button>
             </PaymentFormSection>
+          </section>}
+
+          {step === 2 && createdReceipt && reviewingRecordedPayment && <section
+            className="travel-flow__panel" data-testid="travel-recorded-review"
+            aria-label={tr('Recorded payment review', 'রেকর্ডকৃত পেমেন্ট পর্যালোচনা')}>
+            <h3>{tr('Recorded payment review', 'রেকর্ডকৃত পেমেন্ট পর্যালোচনা')}</h3>
+            <p className="travel-flow__field-hint">{tr(
+              'This payment is already recorded. Review its passengers and amount, then return to the combined challan. No second payment will be created.',
+              'এই পেমেন্ট ইতিমধ্যে রেকর্ড হয়েছে। যাত্রী ও টাকার পরিমাণ দেখে সম্মিলিত চালানে ফিরুন। নতুন পেমেন্ট তৈরি হবে না।')}</p>
+            <dl className="travel-flow__review">
+              <div><dt>{tr('Reference', 'রেফারেন্স')}</dt><dd>{createdReceipt.challanNo}</dd></div>
+              <div><dt>{tr('Departure port', 'যাত্রা বন্দর')}</dt><dd>{createdReceipt.travelDetails?.departurePort}</dd></div>
+              <div><dt>{tr('Destination and date', 'গন্তব্য ও তারিখ')}</dt><dd>{createdReceipt.travelDetails?.destination} · {createdReceipt.travelDetails?.travelDate}</dd></div>
+              <div><dt>{tr('Combined payable', 'মোট প্রদেয়')}</dt><dd>{formatCurrency(createdReceipt.totalAmount, language)}</dd></div>
+            </dl>
+            <div className="travel-flow__table-wrap taxpay-table-viewport">
+              <TaxPayUnifiedTable aria-label={tr('Passengers in recorded payment','রেকর্ডকৃত পেমেন্টের যাত্রী')}
+                className="travel-flow__passenger-table taxpay-unified-table">
+                <thead><tr>
+                  <th scope="col">{tr('Passenger','যাত্রী')}</th>
+                  <th scope="col">{tr('Passport','পাসপোর্ট')}</th>
+                  <th scope="col">{tr('Age','বয়স')}</th>
+                  <th scope="col">{tr('Tax','কর')}</th>
+                </tr></thead>
+                <tbody>{(createdReceipt.travelDetails?.passengers ?? []).map((item,index) =>
+                  <tr key={index}>
+                    <td>{item.name}</td><td>{item.passportMasked}</td>
+                    <td>{item.age ?? item.ageBand}</td><td>{formatCurrency(item.amount,language)}</td>
+                  </tr>)}</tbody>
+              </TaxPayUnifiedTable>
+            </div>
           </section>}
 
           {step === 2 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>

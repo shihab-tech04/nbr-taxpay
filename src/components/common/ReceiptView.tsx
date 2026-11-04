@@ -326,7 +326,22 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div><dt>{bn ? 'গন্তব্য ও তারিখ' : 'Destination and date'}</dt><dd>{receipt.travelDetails.destination} · {receipt.travelDetails.travelDate}</dd></div>
             <div><dt>{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}</dt><dd>{receipt.travelDetails.economicCode}</dd></div>
           </dl>
-          <div className="receipt-view__table">
+          <div className="receipt-view__cards receipt-view__travel-cards" data-testid="travel-receipt-passenger-cards">
+            {receipt.travelDetails.passengers.map((item, index) => (
+              <article key={index} className="receipt-view__travel-passenger">
+                <h4>{bn ? 'যাত্রী' : 'Passenger'} {index + 1}: {item.name}</h4>
+                <dl>
+                  <div><dt>{bn ? 'পাসপোর্ট' : 'Passport'}</dt><dd>{item.passportMasked}</dd></div>
+                  <div><dt>{bn ? 'বয়স' : 'Age'}</dt><dd>{item.age ?? item.ageBand}</dd></div>
+                  <div><dt>{bn ? 'কর' : 'Tax'}</dt><dd>{formatCurrency(item.amount, language)}</dd></div>
+                </dl>
+              </article>
+            ))}
+            <p className="receipt-view__travel-grand-total">
+              {bn ? 'সর্বমোট ভ্রমণ কর' : 'Combined Travel Tax'}: <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
+            </p>
+          </div>
+          <div className="receipt-view__table receipt-view__travel-table">
             <table className="receipt-view__financial-table" aria-label={bn ? 'এক চালানে সব যাত্রীর কর' : 'All passengers in one challan'}>
               <thead><tr>
                 <th scope="col">{bn ? 'যাত্রী' : 'Passenger'}</th>
