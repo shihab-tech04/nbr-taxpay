@@ -218,7 +218,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     <TaxPayTablePanel className="taxpay-ledger-records">
     <TaxPayTableViewport>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
-        <TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
+        {visible.length>0&&<TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
           testId="event-ledger-table" ariaLabel={t('Tax event ledger','কর ঘটনার লেজার')}
           columns={[
             {key:'date',header:t('Date / time','তারিখ / সময়'),cellClassName:'whitespace-nowrap',renderCell:e=>dateTime(e.occurredAt,language)},
@@ -248,7 +248,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
                 <strong className="block break-words text-sm">{e.status||t('Not recorded','নথিভুক্ত নয়')}</strong></span>
             </span>
             <span className="w-full break-words text-sm text-taxpay-muted">{t('Source','উৎস')}: {e.source}</span>
-          </button>}/>
+          </button>}/>}
 
     </TaxPayTableViewport>
     </TaxPayTablePanel>
