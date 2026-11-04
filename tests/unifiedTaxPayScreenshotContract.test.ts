@@ -25,7 +25,8 @@ test('desktop table markup is semantic, and all existing record tables use the s
  for(const name of names){
   const s=source('src/components/screens/'+name+'.tsx');
   assert.doesNotMatch(s,/<table\\b[^>]*taxpay-unified-table/);
-  if(["EventBasedTaxLedger"].includes(name))assert.match(s,/<TaxPayDataGrid/);
+  if(["EventBasedTaxLedger","PaymentHistory","AccountBeneficiaryHistory","PaymentSearch","AuditTrail","Beneficiaries","User1DemoExperience"].includes(name))
+    assert.match(s,/<TaxPayDataGrid/,name+" should define columns through the shared data grid");
   else assert.match(s,/<TaxPayUnifiedTable/);
  }
 });

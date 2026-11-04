@@ -7,6 +7,7 @@ import {reconcileDemoSimulationActivity,type DemoSimulationActivity} from '../..
 import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import {reconcilePrivateSimulationNotices,type VerifiedPrivateSimulationNotice} from '../../services/privateSimulationNotices';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
@@ -31,6 +32,9 @@ export const NotificationsView:React.FC=()=>{
   const [authorizationError,setAuthorizationError]=useState('');
   const [previewPaymentEvents,setPreviewPaymentEvents]=useState<DemoSimulationActivity[]>([]);
   const [previewPaymentError,setPreviewPaymentError]=useState('');
+  const [authorizationSearch,setAuthorizationSearch]=useState('');
+  const [authorizationFilter,setAuthorizationFilter]=useState('all');
+  const [paymentSearch,setPaymentSearch]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
   const authorizationStatus=(state:string)=>{
@@ -122,43 +126,81 @@ export const NotificationsView:React.FC=()=>{
     finally{setBusyNotice(null);}
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
-  if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
-    <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')}/>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title" aria-live="polite">
-      <h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2>
+  const visibleAuthorizations=authorizationNotices.filter(r=>(authorizationFilter==="all"||r.status===authorizationFilter)&&
+    (r.payerId+" "+r.taxpayerId+" "+r.status).toLocaleLowerCase().includes(authorizationSearch.trim().toLocaleLowerCase()));
+  const visiblePayments=previewPaymentEvents.filter(p=>(p.transactionId+" "+p.payer+" "+p.state).toLocaleLowerCase().includes(paymentSearch.trim().toLocaleLowerCase()));
+  if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
+    <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')} description={label('Review requests and recorded payment updates.','অনুমোদনের অনুরোধ ও সংরক্ষিত পেমেন্টের হালনাগাদ দেখুন।')}/>
+    <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title">
+      <div className="taxpay-table-toolbar"><h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2><TaxPayTableCounter label={label('Requests','অনুরোধ')} shown={visibleAuthorizations.length} total={authorizationNotices.length}/></div>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Permission requests and their current recorded status.','অনুমতির আবেদন এবং সেগুলোর বর্তমান নথিভুক্ত অবস্থা।')}</p>
+      <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
+        <label className="taxpayer-transaction-filter">
+          <span>{label('Search authorizations','অনুমোদন খুঁজুন')}</span>
+          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+            value={authorizationSearch} onChange={e=>setAuthorizationSearch(e.target.value)}
+            placeholder={label('Search payer or taxpayer','পরিশোধকারী বা করদাতা খুঁজুন')}/>
+        </label>
+        <label className="taxpayer-transaction-filter">
+          <span>{label('Status','অবস্থা')}</span>
+          <select className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+            value={authorizationFilter} onChange={e=>setAuthorizationFilter(e.target.value)}>
+            <option value="all">{label('All statuses','সব অবস্থা')}</option>
+            {['ACTIVE','PENDING','CODE_ISSUED','APPROVED','REJECTED','EXPIRED','REVOKED'].map(state=>
+              <option key={state} value={state}>{authorizationStatus(state)}</option>)}
+          </select>
+        </label>
+        {(authorizationSearch||authorizationFilter!=='all')&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+          onClick={()=>{setAuthorizationSearch('');setAuthorizationFilter('all');}}>{label('Clear filters','ফিল্টার মুছুন')}</button>}
+      </TaxPayTableControls>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
-      {!authorizationNotices.length?<p className="text-taxpay-muted">{label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
-      <ul className="mt-3 divide-y divide-taxpay-border">{authorizationNotices.map(r=><li key={r.id} className="py-4">
-        <h2 className="font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
-          ? r.status==='CODE_ISSUED' && (r.codeResends??0)>0
-            ?label(`New authorization code requested by ${r.payerId}`,`${r.payerId} নতুন অনুমোদন কোড চেয়েছেন`)
-            :label(`${r.payerId} requested permission to pay for you`,`${r.payerId} আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন`)
-          :label(`Authorization for ${r.taxpayerId}`,`${r.taxpayerId}-এর অনুমোদন`)}</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>
-          <p className="text-sm text-taxpay-muted">{label('Requested','আবেদনের সময়')}: <time dateTime={new Date(r.requestedAt).toISOString()}>{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
-        </div>
-        {r.taxpayerId===previewAccount.id && r.status==='CODE_ISSUED' && r.consentCode &&
-          <p className="mt-2 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
-            {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
-        <button type="button" className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 py-2 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
-          onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
-      </li>)}</ul>}
+      {!visibleAuthorizations.length?<p role="status" className="taxpay-table-state">{authorizationNotices.length?label('No authorization requests match your filters.','ফিল্টারে কোনো অনুমোদনের অনুরোধ মেলেনি।'):label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
+      <TaxPayDataGrid variant="documents" rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
+        ariaLabel={label('Authorization requests','অনুমোদনের অনুরোধ')}
+        columns={[
+          {key:'request',header:label('Authorization','অনুমোদন'),renderCell:r=><div>
+            <p className="text-sm font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
+              ?r.status==='CODE_ISSUED'&&(r.codeResends??0)>0
+                ?label('New authorization code requested by '+r.payerId,r.payerId+' নতুন অনুমোদন কোড চেয়েছেন')
+                :label(r.payerId+' requested permission to pay for you',r.payerId+' আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন')
+              :label('Authorization for '+r.taxpayerId,r.taxpayerId+'-এর অনুমোদন')}</p>
+            {r.taxpayerId===previewAccount.id&&r.status==='CODE_ISSUED'&&r.consentCode&&
+              <p className="mt-1 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
+                {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
+          </div>},
+          {key:'status',header:label('Status','অবস্থা'),renderCell:r=><p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>},
+          {key:'requested',header:label('Requested','অনুরোধের সময়'),renderCell:r=><time dateTime={new Date(r.requestedAt).toISOString()} className="text-sm text-taxpay-muted">{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
+          {key:'actions',header:label('Actions','কার্যক্রম'),renderCell:()=><button type="button" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+            onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>}
+        ]}/>}
     </section>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
-      <h2 className="font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2>
+    <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
+      <div className="taxpay-table-toolbar"><h2 className="text-base font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2><TaxPayTableCounter label={label('Records','রেকর্ড')} shown={visiblePayments.length} total={previewPaymentEvents.length}/></div>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
+      <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
+        <label className="taxpayer-transaction-filter">
+          <span>{label('Search payment updates','পেমেন্টের হালনাগাদ খুঁজুন')}</span>
+          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+            value={paymentSearch} onChange={e=>setPaymentSearch(e.target.value)}
+            placeholder={label('Search payer or reference','পরিশোধকারী বা রেফারেন্স খুঁজুন')}/>
+        </label>
+        {paymentSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+          onClick={()=>setPaymentSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>}
+      </TaxPayTableControls>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
-       !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
-       <ul className="mt-3 divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-4">
-         <p className="text-base font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.amountMinor)}</p>
-         <p className="text-sm text-taxpay-muted">{payment.perspective==='beneficiary'
-           ?label(`Allocated to you by ${payment.payer}`,`${payment.payer} আপনার জন্য বরাদ্দ করেছেন`)
-           :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>
-         <p className="mt-1 break-all text-sm text-taxpay-muted">{label('Reference','রেফারেন্স')}: {payment.transactionId}</p>
-         <p className="mt-1 text-sm text-taxpay-muted">{label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : String(payment.state).replaceAll('_',' ').toLowerCase()}</p>
-       </li>)}</ul>}
+       !visiblePayments.length?<p role="status" className="taxpay-table-state">{previewPaymentEvents.length?label('No payment updates match this search.','এই অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।'):label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
+       <TaxPayDataGrid variant="documents" rows={visiblePayments}
+         getRowKey={p=>p.transactionId+':'+p.perspective}
+         ariaLabel={label('Recorded payment updates','সংরক্ষিত পেমেন্টের হালনাগাদ')}
+         columns={[
+           {key:'payment',header:label('Payment','পেমেন্ট'),renderCell:p=><p className="text-sm font-semibold text-taxpay-text">{p.perspective==='beneficiary'
+             ?label('Allocated to you by '+p.payer,p.payer+' আপনার জন্য বরাদ্দ করেছেন')
+             :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>},
+           {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:p=><p className="break-all text-sm text-taxpay-muted">{p.transactionId}</p>},
+           {key:'amount',header:label('Amount','পরিমাণ'),renderCell:p=><p className="text-sm font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(p.amountMinor)}</p>},
+           {key:'status',header:label('Status','অবস্থা'),renderCell:p=><p className="text-sm text-taxpay-muted">{p.state==='SIMULATED'
+             ?label('Recorded','সংরক্ষিত'):String(p.state).replaceAll('_',' ').toLowerCase()}</p>}
+         ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
   </main>;
@@ -175,11 +217,14 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <ul className="divide-y divide-taxpay-border">{guestNotices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>
-          <p className="font-semibold tabular-nums text-taxpay-text">{label('Amount','পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
-          <p className="break-all text-sm text-taxpay-muted">{n.paymentId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
-        </li>)}</ul>}
+        <TaxPayDataGrid variant="documents" rows={guestNotices} getRowKey={n=>String(n.id)}
+          ariaLabel={label('Payment notices','পেমেন্ট বিজ্ঞপ্তি')}
+          columns={[
+            {key:'update',header:label('Update','হালনাগাদ'),renderCell:()=><h2 className="text-sm font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>},
+            {key:'amount',header:label('Amount','পরিমাণ'),renderCell:n=><p className="font-semibold tabular-nums text-taxpay-text">{label('Amount','পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>},
+            {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:n=><p className="break-all text-sm text-taxpay-muted">{n.paymentId}</p>},
+            {key:'date',header:label('Recorded','সংরক্ষণের সময়'),renderCell:n=><time className="text-sm text-taxpay-muted" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>}
+          ]}/>}
     </section>
   </main>;
   // Authenticated general TaxPay users can receive review/draft notifications
@@ -195,19 +240,28 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !notices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <ul className="divide-y divide-taxpay-border">{notices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{({
-            SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
-            SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
-            SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
-          } as Record<string,string>)[n.messageCode] ??
-          label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে')}</h2>
-          {n.amountMinor!==null?<p className="font-semibold tabular-nums text-taxpay-text">{label(n.perspective==='beneficiary'?'Your allocation':'Amount',n.perspective==='beneficiary'?'আপনার বরাদ্দ':'পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>:
-            <p className="text-sm text-taxpay-muted">{label('Amount not verified','পরিমাণ যাচাই করা যায়নি')}</p>}
-          <p className="break-all text-sm text-taxpay-muted">{n.transactionId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
-          <p className="text-xs text-taxpay-muted">{n.isRead?label('Read','পঠিত'):label('Unread','অপঠিত')}</p>
-          {privateMode&&<button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50" disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}
-        </li>)}</ul>}
+        <TaxPayDataGrid variant="documents" rows={notices} getRowKey={n=>String(n.id)}
+          ariaLabel={label('Account payment notifications','অ্যাকাউন্টের পেমেন্ট বিজ্ঞপ্তি')}
+          columns={[
+            {key:'update',header:label('Update','হালনাগাদ'),renderCell:n=><div>
+              <h2 className="text-sm font-semibold text-taxpay-text">{({
+                SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
+                SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
+                SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
+              } as Record<string,string>)[n.messageCode]??label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে')}</h2>
+              <p className="mt-1 text-sm text-taxpay-muted">{n.isRead?label('Read','পঠিত'):label('Unread','অপঠিত')}</p>
+            </div>},
+            {key:'amount',header:label('Amount','পরিমাণ'),renderCell:n=>n.amountMinor!==null
+              ?<p className="font-semibold tabular-nums text-taxpay-text">{label(n.perspective==='beneficiary'?'Your allocation':'Amount',n.perspective==='beneficiary'?'আপনার বরাদ্দ':'পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
+              :<p className="text-sm text-taxpay-muted">{label('Amount not verified','পরিমাণ যাচাই করা যায়নি')}</p>},
+            {key:'reference',header:label('Reference and date','রেফারেন্স ও তারিখ'),renderCell:n=><div>
+              <p className="break-all text-sm text-taxpay-muted">{n.transactionId}</p>
+              <time className="text-sm text-taxpay-muted" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
+            </div>},
+            {key:'action',header:label('Actions','কার্যক্রম'),renderCell:n=><button type="button"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50"
+              disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}
+          ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
   </main>;

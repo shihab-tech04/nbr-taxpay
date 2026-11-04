@@ -76,30 +76,34 @@ type UnifiedDataProps<Row> = {
   rows: readonly Row[];
   columns: readonly TaxPayDataColumn<Row>[];
   getRowKey: (row:Row) => string;
-  variant: 'ledger' | 'payments' | 'beneficiaries' | 'documents' | 'exceptions';
+  variant: 'ledger' | 'tabular' | 'payments' | 'beneficiaries' | 'documents' | 'exceptions';
   ariaLabel: string;
   className?: string;
   testId?: string;
+  mobileTestId?: string;
   getRowClassName?: (row:Row) => string;
   isSelected?: (row:Row) => boolean;
   renderMobileCard?: (row:Row) => ReactNode;
 };
 export function TaxPayDataGrid<Row>({
-  rows,columns,getRowKey,variant,ariaLabel,className,testId,
+  rows,columns,getRowKey,variant,ariaLabel,className,testId,mobileTestId,
   getRowClassName,isSelected,renderMobileCard
 }:UnifiedDataProps<Row>){
-  if(variant==='ledger')return <>
-    <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
-      className={merge('taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table',className)}>
+  if(variant==='ledger'||variant==='tabular') {
+    const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
+      className={merge(variant==='ledger'?'taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table':'taxpay-unified-table hidden min-w-full w-full text-left text-sm md:table',className)}>
       <thead><tr>{columns.map(column=><th scope="col" key={column.key} className={merge('p-3',column.headerClassName)}>{column.header}</th>)}</tr></thead>
       <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}>
         {columns.map(column=><td key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
       </tr>)}</tbody>
-    </TaxPayUnifiedTable>
-    <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" aria-label={ariaLabel}>
+    </TaxPayUnifiedTable>;
+    return <>
+      {variant==='tabular'?<TaxPayTableViewport className="hidden md:block">{desktopTable}</TaxPayTableViewport>:desktopTable}
+    <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
       {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}>{renderMobileCard?.(row)}</li>)}
     </ul>
   </>;
+  }
   return <TaxPayRecordList variant={variant} aria-label={ariaLabel} className={className}
     headers={columns.map(column=>column.header)} data-testid={testId}>
     {rows.map(row=><li key={getRowKey(row)} data-selected={isSelected?.(row)?'true':'false'}

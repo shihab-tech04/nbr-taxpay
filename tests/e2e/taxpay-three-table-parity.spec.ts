@@ -128,3 +128,47 @@ for(const language of ['en','bn'] as const){
     }
   });
 }
+
+
+/** Screenshots of real notification rows complete the same three-table visual evidence. */
+for(const language of ['en','bn'] as const){
+  test('notification record rows share the same four-column header and mobile card contract in '+language,async({page},info)=>{
+    await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
+    await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([
+        {id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
+         createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:234567,
+         reviewStatus:'PENDING_OFFICER',allocations:[],events:[]}
+      ])});
+    });
+    await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[
+        {id:'a1',payerId:'user1',taxpayerId:'user2',status:'ACTIVE',requestedAt:1793277508000}
+      ]})});
+    });
+    await page.goto('/?action=notifications&lang='+language);
+    const registers=page.locator('[data-record-layout="documents"]');
+    await expect(registers).toHaveCount(2);
+    const desktop=info.project.name==='desktop-1280';
+    const expectedHead=language==='bn'?['অনুমোদন','অবস্থা','অনুরোধের সময়','কার্যক্রম']
+       :['Authorization','Status','Requested','Actions'];
+    await expect(registers.first().locator('.taxpay-record-list__heading')).toHaveText(expectedHead);
+    const row=registers.first().getByRole('listitem').first();
+    await expect(row).toBeVisible();
+    const style=await row.evaluate(element=>{
+      const head=element.closest('[data-record-layout]')?.querySelector('.taxpay-record-list__columns');
+      return {rowColumns:getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length,
+        headVisible:head?getComputedStyle(head).display!=='none':false,
+        rowHeight:element.getBoundingClientRect().height,
+        pageOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+    });
+    expect(style.rowColumns).toBe(desktop?4:1);
+    expect(style.headVisible).toBe(desktop);
+    expect(style.pageOverflow).toBeLessThanOrEqual(2);
+    if(desktop)expect(style.rowHeight).toBeGreaterThanOrEqual(76);
+    await row.scrollIntoViewIfNeeded();
+    mkdirSync('test-results/screenshots',{recursive:true});
+    await page.screenshot({path:'test-results/screenshots/taxpay-unified-notifications-'+language+'-'+info.project.name+'.png',
+      fullPage:false,animations:'disabled'});
+  });
+}
