@@ -24,6 +24,7 @@ interface TravelTaxProps {
   fourStepJourney?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+  receiptBackRef?: { current: (() => void) | null };
 }
 
 function maskPassport(passport: string) {
@@ -35,7 +36,7 @@ function maskPassport(passport: string) {
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange, receiptBackRef }) => {
   const { language, navigate, addPaymentReceipt } = useTaxState();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
@@ -47,6 +48,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [destination, setDestination] = useState('');
   const [travelDate, setTravelDate] = useState('');
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
+  const [confirmedPassengerIds, setConfirmedPassengerIds] = useState<string[]>([]);
+  const [editingExistingPassengerId, setEditingExistingPassengerId] = useState<string | null>(null);
+  const [reviewingRecordedPayment, setReviewingRecordedPayment] = useState(false);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const errorFocusRevision = useRef(0);
@@ -65,6 +69,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
+  // Once payment is recorded, the modal Back action reveals a read-only review.
+  // Returning to the challan never resets the payment or records a second charge.
+  useEffect(() => {
+    if (!receiptBackRef) return;
+    receiptBackRef.current = createdReceipt ? () => {
+      setReviewingRecordedPayment(wasReviewing => !wasReviewing);
+      setStep(current => current === 3 ? 2 : 3);
+    } : null;
+    return () => { receiptBackRef.current = null; };
+  }, [receiptBackRef, createdReceipt]);
   // The receipt takes over the wizard. Reset its scroll position when it
   // mounts so the newly created receipt heading remains visible on mobile
   // and desktop, rather than inheriting the payment form's scroll offset.
@@ -129,6 +143,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
+    setConfirmedPassengerIds(current => current.filter(passengerId => passengerId !== id));
   };
   const changePassengerType = (id: string, nationality: TravellerNationality) => {
     setPassportSuggestionsFor(null);
@@ -182,7 +197,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     }
     return null;
   };
-  const allPassengersComplete = firstIdentityIssue() === null;
+  const allPassengersComplete = firstIdentityIssue() === null &&
+    passengers.length > 0 && passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
   const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
   const reportIdentityIssue = (issue: {id: string; message: string}) => {
@@ -223,7 +239,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
-    setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
+    setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null);
+    setConfirmedPassengerIds([]); setEditingExistingPassengerId(null); setReviewingRecordedPayment(false); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -443,7 +460,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }
                   changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
-                  setEditingPassengerId(null);
+                  // Show the retrieved identity first; the passenger is added
+                  // only after the explicit Add passenger confirmation.
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
               {passportSuggestionsFor === item.id && <div
