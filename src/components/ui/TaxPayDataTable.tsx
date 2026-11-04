@@ -116,6 +116,7 @@ type UnifiedDataProps<Row> = {
   getRowClassName?: (row:Row) => string;
   isSelected?: (row:Row) => boolean;
   renderMobileCard?: (row:Row) => ReactNode;
+  onViewRow?: (row:Row)=>void;
   toolbar?: TaxPayRecordToolbarProps;
   emptyLabel?: string;
   loading?: boolean;
@@ -124,13 +125,23 @@ type UnifiedDataProps<Row> = {
 };
 export function TaxPayDataGrid<Row>({
   rows,columns,getRowKey,variant,ariaLabel,className,testId,mobileTestId,
-  getRowClassName,isSelected,renderMobileCard,toolbar,emptyLabel,loading=false,error,onRetry
+  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,loading=false,error,onRetry
 }:UnifiedDataProps<Row>){
   if(variant==='ledger'||variant==='tabular') {
     const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
       className={merge(variant==='ledger'?'taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table':'taxpay-unified-table hidden min-w-full w-full text-left text-sm md:table',className)}>
       <thead><tr>{columns.map(column=><th scope="col" key={column.key} className={merge('p-3',column.headerClassName)}>{column.header}</th>)}</tr></thead>
-      <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}>
+      <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}
+        data-clickable-row={onViewRow?'true':undefined} tabIndex={onViewRow?0:undefined}
+        onClick={onViewRow?(event)=>{
+          if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]'))return;
+          onViewRow(row);
+        }:undefined}
+        onKeyDown={onViewRow?(event)=>{
+          if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){
+            event.preventDefault();onViewRow(row);
+          }
+        }:undefined}>
         {columns.map(column=><td key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
       </tr>)}</tbody>
     </TaxPayUnifiedTable>;
