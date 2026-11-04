@@ -234,7 +234,7 @@ export const TaxpayerDashboard: React.FC = () => {
           <div className="taxpay-mobile-table-card__actions"><button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
             onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button></div>
         </>}/>:
-      <div className="mt-4">{empty(tr(      <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another assessment year or category.','অন্য করবর্ষ বা খাত নির্বাচন করুন।'))}</div>}
+      <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another assessment year or category.','অন্য করবর্ষ বা খাত নির্বাচন করুন।'))}</div>}
       <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" onClick={()=>navigate('history')}>{tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')}<ArrowRight size={16}/></button>
     </section>
     </>}
