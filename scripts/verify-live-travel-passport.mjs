@@ -69,6 +69,10 @@ try {
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await addPassenger.click();
+    await expect(modal.locator('#travel-medical-first')).toBeVisible();
+    const addAnother = modal.getByRole('button', { name: 'Add another passenger' });
+    await expect(addAnother).toBeEnabled();
+    await addAnother.click();
     const second = modal.locator('[data-passenger-id]').nth(1);
     await second.locator('input[role="combobox"]').click();
     const secondOptions = second.locator('.travel-flow__passport-suggestions [role="option"]');
@@ -77,8 +81,13 @@ try {
     await second.locator('input[role="combobox"]').fill('TEST230005');
     await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
     await expect(continueToTravel).toBeDisabled();
-    await second.getByRole('button', { name: 'Remove passenger 2' }).click();
-    await expect(addPassenger).toBeEnabled();
+    await second.locator('input[role="combobox"]').fill('TEST230001');
+    await second.getByRole('button', { name: 'Check Passport' }).click();
+    await second.getByRole('button', { name: 'Add passenger' }).click();
+    await expect(modal.locator('.travel-flow__person')).toHaveCount(2);
+    await expect(addAnother).toBeEnabled();
+    await expect(modal.locator('#travel-medical-first')).toBeVisible();
+    await expect(modal.locator('#travel-medical-first')).not.toBeChecked();
     await modal.locator('#travel-mobile').fill('01712345678');
     await expect(continueToTravel).toBeEnabled();
     await continueToTravel.click();
@@ -96,6 +105,30 @@ try {
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await modal.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
+    await modal.getByRole('button', { name: 'Continue to review' }).click();
+    await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
+    await modal.getByRole('button', { name: 'Pay online' }).click();
+    await modal.getByRole('button', { name: 'Mobile banking' }).click();
+    await modal.getByRole('radio', { name: 'Nagad' }).check();
+    await modal.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
+    await modal.getByRole('button', { name: 'Confirm preview payment' }).click();
+    const combined = modal.getByTestId('travel-family-challan');
+    await expect(combined).toBeVisible({ timeout: 15000 });
+    await expect(combined.locator('tbody tr')).toHaveCount(2);
+    if (mobile) {
+      await expect(combined.getByTestId('travel-receipt-passenger-cards')).toBeVisible();
+      await expect(combined.getByTestId('travel-receipt-passenger-cards').locator('article')).toHaveCount(2);
+    } else {
+      await expect(combined.locator('.receipt-view__travel-table')).toBeVisible();
+    }
+    const reference = await modal.locator('.receipt-view__reference-number').textContent();
+    await modal.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(modal.getByTestId('travel-recorded-review')).toBeVisible();
+    await expect(modal).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Confirm preview payment' })).toHaveCount(0);
+    await modal.getByRole('button', { name: 'View combined challan' }).click();
+    await expect(combined).toBeVisible();
+    await expect(modal.locator('.receipt-view__reference-number')).toHaveText(reference?.trim() ?? '');
     if (mobile) {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       if (overflow > 2) throw new Error('Live mobile Travel Tax has horizontal overflow: ' + overflow + 'px');
@@ -103,7 +136,7 @@ try {
     await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png', fullPage: false });
     await page.close();
   }
-  console.log('PASS: production Travel Tax conditional actions, unique passport suggestions, manual duplicate warning, full-width fields, stage navigation and mobile containment');
+  console.log('PASS: deployed Travel Tax confirmed two passengers, preserved medical option, generated combined challan, retained Back navigation and mobile/desktop containment');
 } finally {
   await browser.close();
 }
