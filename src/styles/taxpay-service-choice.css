@@ -1895,9 +1895,7 @@
   height: 100%;
   min-height: 0;
   padding: 0 18px 18px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  overflow: hidden;
   border-top: 0;
   border-left: 1px solid var(--citizen-border);
   background: var(--citizen-bg);
@@ -1934,6 +1932,15 @@
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__field--full {
   grid-column: 1 / -1;
   width: 100%;
+}
+/* Keep the calculation rail fixed; only its potentially long passenger breakdown scrolls. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__age-breakdown {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__age-row p:first-child {
   display: grid;
