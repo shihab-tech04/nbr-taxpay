@@ -10,6 +10,7 @@ import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {PaymentLifecycleDetails} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {
   simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,getDemoStoryPaymentHistory,
@@ -34,6 +35,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [selectedPayment,setSelectedPayment]=useState<SimulationTransaction|null>(null);
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState('');
+  const [recordQuery,setRecordQuery]=useState('');
+  const [recordYear,setRecordYear]=useState('all');
   const [revision,setRevision]=useState(0);
   const [lines,setLines]=useState<EditableLine[]>([freshLine('user1')]);
   const [nonce,setNonce]=useState(()=>crypto.randomUUID());
@@ -192,6 +195,11 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     <p role="status">{bindingError||'Checking your verified account assignment…'}</p>
     <p className="text-sm text-taxpay-muted">Ask your account administrator to assign a taxpayer profile.</p>
   </main>;
+  const availableRecordYears=[...new Set(rows.flatMap(tx=>tx.allocations.map(a=>a.assessmentYear)))].sort((a,b)=>b.localeCompare(a));
+  const needle=recordQuery.trim().toLocaleLowerCase();
+  const visibleRows=rows.filter(tx=>(recordYear==='all'||tx.allocations.some(a=>a.assessmentYear===recordYear))&&
+    (!needle||[tx.id,tx.transactionId,tx.payer,tx.state,tx.reviewStatus,...tx.allocations.flatMap(a=>
+      [a.beneficiary,a.category,a.assessmentYear])].some(v=>String(v).toLocaleLowerCase().includes(needle))));
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <TaxpayerPageHeading title={txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}
