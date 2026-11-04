@@ -98,7 +98,10 @@ for(const language of ['en','bn'] as const){
         t('TIN','টিআইএন')+': ',t('Tag','ট্যাগ')+': '
       ]);
     }
-    expect(layout.filterColumns).toBe(layout.width<=700?1:layout.width<=1050?2:3);
+    // The compact mobile contract now uses two columns: Tag and Search together,
+    // with Selected list full-width and Relationship conditionally below.
+    // The dedicated EN/BN three-table suite verifies their actual geometry.
+    expect(layout.filterColumns).toBe(layout.width<=1050?2:3);
     await search.fill('Neighbour');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText('Shihab');
