@@ -164,7 +164,7 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   const ownerAHistory = page.getByRole('region', { name: 'My review inquiries' });
   await expect(ownerAHistory.getByText('SYN-A-REF-100001 — Pending evidence — not an approved correction').filter({visible:true})).toBeVisible();
   await ownerAHistory.locator('summary:visible').click();
-  await expect(ownerAHistory.getByText('Reason provided: PRIVATE-OWNER-A-INQUIRY')).toBeVisible();
+  await expect(ownerAHistory.getByText('Reason provided: PRIVATE-OWNER-A-INQUIRY').filter({visible:true})).toBeVisible();
 
   await page.locator('#main-content').getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Signed out on this browser. The server could not confirm revoking the session:' })).toBeVisible();
