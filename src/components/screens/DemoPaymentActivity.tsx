@@ -324,7 +324,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
        visibleRows.length===0?<TaxPayTableState>{txt('No transactions match your filters.','ফিল্টারে কোনো লেনদেন নেই।')}</TaxPayTableState>:
        <TaxPayDataGrid variant="tabular" rows={visibleRows} getRowKey={tx=>tx.transactionId}
          ariaLabel={txt('Transactions','লেনদেন')} testId="signed-in-payment-activity-table"
-         mobileTestId="signed-in-payment-activity-cards" columns={[
+         mobileTestId="signed-in-payment-activity-cards" onViewRow={tx=>setSelectedPayment(tx)} columns={[
            {key:'reference',header:txt('Reference / date','রেফারেন্স / তারিখ'),renderCell:tx=><div>
              <p className="break-all font-mono-plex font-semibold">{tx.id}</p>
              <time dateTime={tx.createdAt} className="block text-sm text-taxpay-muted">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
@@ -341,18 +341,32 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            </div>},
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
              renderCell:tx=><p className="font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
-           {key:'status',header:txt('Status / actions','অবস্থা / কার্যক্রম'),renderCell:tx=><div className="space-y-2">
-             <p className="font-semibold">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           {key:'actions',header:txt('Actions','কার্যক্রম'),renderCell:tx=><div className="flex flex-wrap gap-2">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
-               className="min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-3 font-semibold text-taxpay-primary">
-               {txt('View payment details','পেমেন্টের বিবরণ দেখুন')}</button>
-             <details><summary className="min-h-11 cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
-               <ol>{tx.events.map(e=><li key={e.id} className="py-2 text-sm"><p>{e.action}</p>
-                 <p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p>
-               </li>)}</ol></details>
+               className="min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-3 text-sm font-medium text-taxpay-primary">
+               {txt('View details','বিস্তারিত দেখুন')}</button>
+             <button type="button" onClick={()=>setSelectedPayment(tx)}
+               className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
+               {txt('Timeline','সময়রেখা')}</button>
            </div>}
-         ]}/>}
+         ]}
+         renderMobileCard={tx=><div className="space-y-2">
+           <div className="flex items-start justify-between gap-2">
+             <p className="min-w-0 break-all font-mono-plex font-semibold">{tx.id}</p>
+             <p className="shrink-0 font-semibold tabular-nums">{formatSimulatedAmount(tx.totalMinor)}</p>
+           </div>
+           <p className="text-sm text-taxpay-muted">
+             <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time> · {txt('Payer','প্রদানকারী')}: {tx.payer}
+           </p>
+           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
+           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           <div className="taxpay-mobile-table-card__actions">
+             <button type="button" onClick={()=>setSelectedPayment(tx)}
+               className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
+             <button type="button" onClick={()=>setSelectedPayment(tx)}
+               className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
+           </div>
+         </div>}/>}
     </section>
     {selectedPayment&&<TaxPayModal
       title={txt('Payment details','পেমেন্টের বিবরণ')}
