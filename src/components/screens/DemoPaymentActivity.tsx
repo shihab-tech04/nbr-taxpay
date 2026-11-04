@@ -340,10 +340,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            </div>},
            {key:'allocation',header:txt('Allocations / status','বরাদ্দ / অবস্থা'),renderCell:tx=><div className="space-y-1">
              <p className="font-medium">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')}</p>
-             {tx.allocations.slice(0,2).map(a=><p key={a.id} className="break-words text-sm text-taxpay-muted">
-               {a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']} · {a.assessmentYear}
-             </p>)}
-             {tx.allocations.length>2&&<p className="text-sm text-taxpay-muted">+{tx.allocations.length-2} {txt('more in details','টি বিস্তারিত দেখুন')}</p>}
+             <details onClick={event=>event.stopPropagation()} className="rounded-lg border border-taxpay-border p-2">
+               <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
+               <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
+                 <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+                 <p className="text-taxpay-muted">{a.assessmentYear}</p>
+                 <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
+               </li>)}</ul>
+             </details>
              <p className="text-sm">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
              <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
            </div>},
@@ -368,6 +372,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            </p>
            <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
            <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           <details className="rounded-lg border border-taxpay-border p-2">
+             <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
+             <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
+               <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+               <p className="text-taxpay-muted">{a.assessmentYear}</p>
+               <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
+             </li>)}</ul>
+           </details>
            <div className="taxpay-mobile-table-card__actions">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
