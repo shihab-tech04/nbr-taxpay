@@ -39,3 +39,27 @@ test('offline evidence retains exact audit state and amounts without altering it
   assert.match(source,/item.status==='VERIFIED_SCROLLED'/);
   assert.match(source,/Verify & Sync with Ledger/);
 });
+
+
+test('Track payment is exclusively a lookup and never mounts the dashboard service register',()=>{
+  const source=read('User1DemoExperience');
+  assert.match(source,/\{overviewRoute&&<DemoServiceRecordsPanel/);
+  assert.doesNotMatch(source,/\{route==='history'&&<DemoServiceRecordsPanel/);
+  assert.match(source,/data-testid="track-payment-history-link"/);
+  assert.match(source,/actions=\{!trackingActivity &&/);
+});
+
+test('service records use the shared Board-inspired toolbar and interactive grid contract',()=>{
+  const screen=read('DemoServiceRecordsPanel');
+  const table=readFileSync('src/components/ui/TaxPayDataTable.tsx','utf8');
+  assert.match(screen,/toolbar=\{\{/);
+  assert.match(screen,/onViewRow=\{record=>setSelectedRecordId\(record\.recordId\)\}/);
+  assert.match(screen,/onSearchChange:setRecordSearch/);
+  assert.match(screen,/Filter record status/);
+  assert.match(screen,/Sort service records/);
+  assert.match(screen,/emptyLabel=/);
+  assert.match(table,/export function TaxPayRecordToolbar/);
+  assert.match(table,/onKeyDown=\{onViewRow/);
+  assert.match(table,/taxpay-mobile-table-cards/);
+  assert.match(table,/onRetry/);
+});
