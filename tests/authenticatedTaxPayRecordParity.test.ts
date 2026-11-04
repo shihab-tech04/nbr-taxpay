@@ -14,7 +14,7 @@ test('authenticated Notifications uses the real account route and unified owner-
   assert.match(account,/testId="authenticated-draft-notification-register"/);
   assert.match(account,/TaxPayDataGrid variant="tabular"/);
   assert.match(account,/TaxPayDataGrid variant="tabular"/);
-  assert.match(account,/value=\\{notificationSearch\\}/);
+  assert.match(account,/value=\{notificationSearch\}/);
   assert.match(account,/mobileTestId="authenticated-review-notification-cards"/);
   assert.match(account,/mobileTestId="authenticated-draft-notification-cards"/);
   assert.match(account,/getRowKey=\{item=>item.id\}/);
@@ -34,7 +34,7 @@ test('authenticated corrections use the real route and searchable register witho
   assert.match(corrections,/data-testid="authenticated-correction-register"/);
   assert.match(corrections,/testId="authenticated-correction-inquiry-table"/);
   assert.match(corrections,/TaxPayDataGrid variant="tabular"/);
-  assert.match(corrections,/value=\\{historySearch\\}/);
+  assert.match(corrections,/value=\{historySearch\}/);
   assert.match(corrections,/mobileTestId="authenticated-correction-inquiry-cards"/);
   assert.match(corrections,/getRowKey=\{r=>r.inquiry_id\}/);
   assert.match(corrections,/sameAuthenticatedOwner/);
