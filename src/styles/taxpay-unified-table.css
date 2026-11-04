@@ -248,6 +248,11 @@ table.taxpay-unified-table {
 .taxpay-unified-table tbody tr:hover {
   background: var(--taxpay-table-hover, #f1f6ff);
 }
+.taxpay-unified-table tbody tr[data-clickable-row="true"] {cursor:pointer;}
+.taxpay-unified-table tbody tr[data-clickable-row="true"]:focus-visible {
+  outline:2px solid var(--taxpay-table-primary,#2c5ead);
+  outline-offset:-2px;
+}
 .taxpay-unified-table tbody tr:focus-within {
   outline: 2px solid var(--taxpay-table-primary, #2c5ead);
   outline-offset: -2px;
