@@ -370,6 +370,58 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
 
 
+  // Medical referral is a passenger-level choice, not a transient editor field.
+  // Keep it visible after lookup and when viewing a confirmed passenger.
+  const changeMedicalReferral = (id: string, checked: boolean) => {
+    setPassengers(current => current.map(item =>
+      item.id === id ? {...item, medicalPortReferral: checked} : item));
+    setError('');
+    setAcknowledged(false);
+  };
+  const canConfirmPassenger = (item: TravelPassenger) =>
+    !invalidPassengerIds.has(item.id) &&
+    (item.nationality !== 'FOREIGN' ||
+      travelPassengerAge(item.birthDate, new Date().toISOString().slice(0, 10)) !== null);
+  const confirmPassenger = (item: TravelPassenger) => {
+    if (!canConfirmPassenger(item)) return;
+    setConfirmedPassengerIds(ids => ids.includes(item.id) ? ids : [...ids, item.id]);
+    setEditingPassengerId(null);
+    setEditingExistingPassengerId(null);
+    setPassengerIssue(null);
+    setPassportSuggestionsFor(null);
+    setError('');
+  };
+  const renderMedicalReferral = (item: TravelPassenger) => (
+          <div className="travel-flow__field travel-flow__medical">
+            <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
+            <div className="travel-flow__medical-option">
+              <label className="travel-flow__check" htmlFor={'travel-medical-' + item.id}>
+                <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
+                  onChange={event => changeMedicalReferral(item.id, event.target.checked)}/>
+                <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
+              </label>
+              <div className="travel-flow__medical-help" data-open={medicalHelpFor === item.id}>
+                <button type="button" aria-label={tr('What is manual assessment?', 'সরাসরি যাচাই কী?')}
+                  aria-expanded={medicalHelpFor === item.id}
+                  aria-describedby={'travel-medical-tooltip-' + item.id}
+                  onClick={() => setMedicalHelpFor(previous => previous === item.id ? null : item.id)}
+                  onKeyDown={event => { if (event.key === 'Escape') setMedicalHelpFor(null); }}>
+                  <Info size={18} aria-hidden="true"/>
+                </button>
+                <p className="travel-flow__medical-tooltip" role="tooltip"
+                  id={'travel-medical-tooltip-' + item.id}>
+                  {tr('A request to present medical documents for an in-person assessment at the departure port. This does not approve a tax exemption online; the sample payment cannot proceed with an unresolved request.',
+                    'যাত্রা শুরুর বন্দরে চিকিৎসার কাগজপত্র জমা দিয়ে সরাসরি যাচাইয়ের অনুরোধ। এটি অনলাইনে কর অব্যাহতির অনুমোদন নয়; অনিষ্পন্ন অনুরোধসহ নমুনা পেমেন্টে এগোনো যাবে না।')}
+                </p>
+              </div>
+            </div>
+          </div>
+        {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
+          {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
+              'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
+        </p>}
+  );
+
   /** Each passenger uses a type tab; fields from the other type never appear. */
   const renderPassengerEditor = (item: TravelPassenger, index: number) => {
     const panelId = 'travel-passenger-panel-' + item.id;
@@ -522,30 +574,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
-          <div className="travel-flow__field travel-flow__medical">
-            <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
-            <div className="travel-flow__medical-option">
-              <label className="travel-flow__check" htmlFor={'travel-medical-' + item.id}>
-                <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
-                  onChange={event => changePassenger(item.id, {medicalPortReferral: event.target.checked})}/>
-                <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
-              </label>
-              <div className="travel-flow__medical-help" data-open={medicalHelpFor === item.id}>
-                <button type="button" aria-label={tr('What is manual assessment?', 'সরাসরি যাচাই কী?')}
-                  aria-expanded={medicalHelpFor === item.id}
-                  aria-describedby={'travel-medical-tooltip-' + item.id}
-                  onClick={() => setMedicalHelpFor(previous => previous === item.id ? null : item.id)}
-                  onKeyDown={event => { if (event.key === 'Escape') setMedicalHelpFor(null); }}>
-                  <Info size={18} aria-hidden="true"/>
-                </button>
-                <p className="travel-flow__medical-tooltip" role="tooltip"
-                  id={'travel-medical-tooltip-' + item.id}>
-                  {tr('A request to present medical documents for an in-person assessment at the departure port. This does not approve a tax exemption online; the sample payment cannot proceed with an unresolved request.',
-                    'যাত্রা শুরুর বন্দরে চিকিৎসার কাগজপত্র জমা দিয়ে সরাসরি যাচাইয়ের অনুরোধ। এটি অনলাইনে কর অব্যাহতির অনুমোদন নয়; অনিষ্পন্ন অনুরোধসহ নমুনা পেমেন্টে এগোনো যাবে না।')}
-                </p>
-              </div>
-            </div>
-          </div>
+
         </div>
         {item.nationality === 'BD' && <p className="travel-flow__field-hint" role="status">
           {item.identitySource === 'PASSPORT_SAMPLE'
@@ -554,12 +583,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             : tr('Government passport verification is unavailable. Choose from ten fictional passports and press Check Passport.',
                  'সরকারি পাসপোর্ট যাচাই সংযুক্ত নয়। ১০টি কাল্পনিক পাসপোর্টের একটি বেছে পাসপোর্ট যাচাই করুন।')}
         </p>}
-        {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
-          {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
-              'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
-        </p>}
+
         {assessment && <p className="travel-flow__age-reason">{ageExplanation(assessment.age)}</p>}
       </div>
+      <button type="button" className="travel-flow__confirm-passenger"
+        disabled={!canConfirmPassenger(item)} onClick={() => confirmPassenger(item)}>
+        {editingExistingPassengerId === item.id
+          ? tr('Save passenger','যাত্রীর তথ্য সংরক্ষণ করুন')
+          : tr('Add passenger','যাত্রী যোগ করুন')}
+      </button>
     </>;
   };
 
@@ -622,12 +654,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
                       <div className="travel-flow__person-actions">
                         {!editing && <button type="button" className="travel-flow__edit" onClick={() => {
-                          setEditingPassengerId(item.id); setPassengerIssue(null);
+                          setEditingPassengerId(item.id); setEditingExistingPassengerId(item.id);
+                          setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id)); setPassengerIssue(null);
                         }}><Pencil size={15} aria-hidden="true"/>{tr('Edit', 'সম্পাদনা')}</button>}
                         {index > 0 && <button type="button" className="travel-flow__member-remove"
                           aria-label={tr('Remove passenger ', 'যাত্রী বাদ দিন ') + (index + 1)}
                           onClick={() => {
                             setPassengers(existing => existing.filter(person => person.id !== item.id));
+                            setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id));
                             if (editingPassengerId === item.id) setEditingPassengerId(null);
                             setPassengerIssue(null); setError(''); setAcknowledged(false);
                           }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
@@ -643,23 +677,24 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       <div><dt>{tr('Nationality', 'জাতীয়তা')}</dt><dd>{item.nationality === 'BD' ? tr('Bangladeshi', 'বাংলাদেশি') : item.country}</dd></div>
                       {assessment && <div><dt>{tr('Illustrative tax', 'নমুনা কর')}</dt><dd>{formatCurrency(assessment.amount, language)}</dd></div>}
                     </dl>}
+                    {renderMedicalReferral(item)}
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                   </section>;
                 })}
               </div>
-              <button type="button" className="travel-flow__add-member"
+              {confirmedPassengerIds.length > 0 && <button type="button" className="travel-flow__add-member"
                 disabled={!allPassengersComplete} onClick={() => {
                 const issue = firstIdentityIssue();
                 if (issue) { reportIdentityIssue(issue); return; }
                 const id = crypto.randomUUID();
                 setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
-                setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
+                setEditingPassengerId(id); setEditingExistingPassengerId(null); setPassengerIssue(null); setAcknowledged(false);
                 requestAnimationFrame(() => requestAnimationFrame(() =>
                   document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
                 ));
               }}>
-                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
-              </button>
+                <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
+              </button>}
               <div className="travel-flow__contact">
                 <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
                 <div className="travel-flow__field">
