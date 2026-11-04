@@ -29,11 +29,11 @@ export const AuthenticatedDashboardPosition: React.FC<{
   const coverage=sample?Math.min(100,Math.round(100*sample.applied/sample.liability)):0;
   const monthlyMax=sample?Math.max(1,...sample.months.map(m=>m.tds+m.ait+m.direct+m.travel)):1;
   const rows=[
-    {en:'Income tax liability',bn:'আয়কর দায়'},
-    {en:'TDS & advance tax',bn:'উৎসে কর ও অগ্রিম কর'},
-    {en:'Direct payments',bn:'সরাসরি পরিশোধ'},
+    {en:'Tax assessed for the year',bn:'করবর্ষের নির্ধারিত আয়কর'},
+    {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম দেওয়া কর'},
+    {en:'Income tax payments made',bn:'সরাসরি পরিশোধিত আয়কর'},
     {en:'Applied credits',bn:'সমন্বিত কর ক্রেডিট'},
-    {en:'Remaining balance',bn:'অবশিষ্ট দায়'},
+    {en:'Tax left after payments',bn:'পরিশোধের পর বাকি কর'},
     {en:'Travel tax (separate)',bn:'ভ্রমণ কর (পৃথক)'},
   ];
   const credits=[
@@ -147,7 +147,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
       <div className="taxpay-table-viewport mt-3" role="region" aria-label={tr('Assessment-year table scroll area','করবর্ষের তালিকা স্ক্রল')} tabIndex={0}>
         <TaxPayUnifiedTable className="taxpay-unified-table min-w-[660px] w-full text-left text-sm">
           <thead className="bg-slate-50 text-taxpay-muted"><tr>
-            {[tr('Assessment year','করবর্ষ'),tr('Liability','করদায়'),tr('TDS & AIT','উৎসে ও অগ্রিম কর'),tr('Direct paid','সরাসরি পরিশোধ'),tr('Remaining','অবশিষ্ট')].map((heading,index)=>
+            {[tr('Assessment year','করবর্ষ'),tr('Tax assessed','নির্ধারিত আয়কর'),tr('Deducted / paid early','উৎসে কাটা বা অগ্রিম কর'),tr('Direct tax paid','সরাসরি পরিশোধিত কর'),tr('Tax left','বাকি কর')].map((heading,index)=>
               <th key={heading} scope="col" className={'px-3 py-3 '+(index?'text-right':'')}>{heading}</th>)}
           </tr></thead>
           <tbody>{visibleYears.map(item=><tr key={item} className="border-b border-taxpay-border">

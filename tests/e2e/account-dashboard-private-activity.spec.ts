@@ -130,7 +130,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   // reference, but must never inherit user1's fabricated assessed balances.
   const financialCards=page.locator('.taxpayer-dashboard-kpi');
   await expect(financialCards).toHaveCount(4);
-  await expect(financialCards.nth(0)).toContainText('Income tax liability');
+  await expect(financialCards.nth(0)).toContainText('Tax assessed for the year');
+  await expect(financialCards.nth(1)).toContainText('Tax deducted or paid early');
+  await expect(financialCards.nth(2)).toContainText('Income tax payments made');
+  await expect(financialCards.nth(3)).toContainText('Tax left after payments');
   await expect(financialCards.nth(0)).toContainText('—');
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
   const phase=page.getByTestId('authenticated-dashboard-v11');
@@ -208,6 +211,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('কর সমন্বয়ের শতকরা হার পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
+  await expect(financialCards.nth(0)).toContainText('করবর্ষের নির্ধারিত আয়কর');
+  await expect(financialCards.nth(1)).toContainText('উৎসে কাটা বা অগ্রিম দেওয়া কর');
+  await expect(financialCards.nth(2)).toContainText('সরাসরি পরিশোধিত আয়কর');
+  await expect(financialCards.nth(3)).toContainText('পরিশোধের পর বাকি কর');
   await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
