@@ -65,7 +65,10 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   });
   for(const offset of alignment)expect(offset).toBeLessThanOrEqual(2);
   const viewport=table.locator('..');
-  expect(await viewport.evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(2);
+  // Board-style tables may scroll inside their own viewport when action
+  // columns need more width; they must not push the document horizontally.
+  await expect(viewport).toHaveCSS('overflow-x','auto');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.setViewportSize({width:375,height:812});
   await expect(page.getByTestId('beneficiary-directory-mobile')).toBeVisible();
   await expect(page.getByTestId('beneficiary-directory-mobile').locator('li')).toHaveCount(1);
