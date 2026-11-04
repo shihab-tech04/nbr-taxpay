@@ -93,6 +93,8 @@ test('Travel Tax: medical row and receipt contact are full width with a divider'
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await mobile.fill('01712345678');
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
   await mobile.fill('0171234');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
@@ -253,7 +255,6 @@ test('Travel Tax: medical referral is not an online tax exemption',async({page})
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
-  await modal.locator('[data-passenger-id="first"]').getByRole('button',{name:'Edit'}).click();
   await modal.locator('#travel-medical-first').check();
   await modal.locator('#travel-mobile').fill('01712345678');
   const help = modal.getByRole('button',{name:'What is manual assessment?'});
@@ -263,6 +264,7 @@ test('Travel Tax: medical referral is not an online tax exemption',async({page})
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await modal.locator('#travel-medical-first').uncheck();
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
 });
 
@@ -422,9 +424,7 @@ test('Travel Tax: receipt Back returns to recorded review with all passengers an
   const second=modal.locator('.travel-flow__person').nth(1);
   await second.locator('input[role="combobox"]').fill('TEST230001');
   await second.getByRole('button',{name:'Check Passport'}).click();
-  await second.getByRole('button',{name:'Add passenger',exact:true}).click().catch(async () => {
-    await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
-  });
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
