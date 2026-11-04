@@ -44,15 +44,16 @@ export const AuthenticatedDashboardPosition: React.FC<{
   const visibleYears=[...new Set([year,...years.slice(0,3)])];
   return <div className="space-y-4" data-testid="authenticated-dashboard-v11">
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-    <section aria-labelledby="account-needs-review-title" className={panel}>
+    <section aria-labelledby="account-quick-actions-title" className={panel}>
       <div className="flex items-center gap-2">
         <ClipboardList size={19} className="text-taxpay-primary" aria-hidden="true"/>
-        <h2 id="account-needs-review-title" className="text-base font-semibold text-taxpay-text">{tr('Needs review','পর্যালোচনার জন্য')}</h2>
+        <h2 id="account-quick-actions-title" className="text-base font-semibold text-taxpay-text">{tr('Quick actions','দ্রুত কাজ')}</h2>
       </div>
+      <p className="mt-2 text-sm text-taxpay-muted">{tr('Open your saved requests, correction inquiries or payment history. These links do not mean you have overdue payments.','সংরক্ষিত অনুরোধ, সংশোধনের অনুসন্ধান বা পেমেন্টের ইতিহাস দেখুন। এই লিংকগুলোর অর্থ আপনার বকেয়া পেমেন্ট আছে—এমন নয়।')}</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {([
-          {en:'Payment requests',bn:'পেমেন্ট অনুরোধ',route:'secure_workspace'},
-          {en:'Corrections',bn:'সংশোধন',route:'corrections'},
+          {en:'Requests & drafts',bn:'অনুরোধ ও খসড়া',route:'secure_workspace'},
+          {en:'Correction inquiries',bn:'সংশোধনের অনুসন্ধান',route:'corrections'},
           {en:'Payment history',bn:'পেমেন্টের ইতিহাস',route:'history'},
         ] as const).map(item=><button key={item.route} type="button" className={action+' justify-between'}
           onClick={()=>onNavigate(item.route)}>
