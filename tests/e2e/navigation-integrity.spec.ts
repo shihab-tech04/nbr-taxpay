@@ -106,10 +106,10 @@ test('Track payment stays in the sample taxpayer workspace and uses the existing
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
   await expect(page.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeVisible();
 
-  await page.locator('.receipt-lookup__sample').first().click();
-  const receiptDialog=page.getByRole('dialog',{name:/Receipt details/});
-  await expect(receiptDialog.locator('.receipt-view--embedded')).toBeVisible();
-  await receiptDialog.getByRole('button',{name:'Close modal'}).click();
+  // Account lookup must not advertise fictional receipt shortcuts as evidence.
+  await expect(page.locator('.receipt-lookup__examples')).toHaveCount(0);
+  await expect(page.locator('.receipt-lookup__sample')).toHaveCount(0);
+  await expect(page.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeEditable();
   await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
   await tabs.getByRole('button',{name:'Transactions'}).click();
   await expect.poll(() => {

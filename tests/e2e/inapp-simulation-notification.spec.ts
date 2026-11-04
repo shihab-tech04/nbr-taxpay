@@ -97,7 +97,7 @@ test('preview account also shows this browser session SQL payment notice', async
   });
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading', { name: 'This browser’s payment notifications' })).toBeVisible();
-  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByTestId('session-payment-cards').getByText('৳1,250.50')).toBeVisible();
 });
 
 

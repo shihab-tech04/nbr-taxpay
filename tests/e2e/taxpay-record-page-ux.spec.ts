@@ -65,6 +65,8 @@ for (const language of ['en','bn'] as const) {
     // Track payment must not inherit dashboard-only service metrics, records or
     // a year selector that misleadingly suggests lookup is limited by tax year.
     await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+    await expect(page.locator('.receipt-lookup__examples')).toHaveCount(0);
+    await expect(page.locator('.receipt-lookup__sample')).toHaveCount(0);
     await expect(page.getByRole('combobox',{name:tr('Assessment year','করবর্ষ')})).toHaveCount(0);
     await expect(page.getByTestId('track-payment-history-link')).toBeVisible();
     await page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')}).click();
