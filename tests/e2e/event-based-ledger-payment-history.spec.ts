@@ -154,3 +154,14 @@ test('mobile ledger preserves financial fields, source and unverified balance in
     await page.getByRole('dialog').getByRole('button',{name:/Close/i}).first().click();
   }
 });
+
+
+test('ledger filtered-empty state does not display a duplicate empty financial table or card list',async({page})=>{
+  await page.goto(ledger);
+  const panel=page.getByTestId('event-tax-ledger');
+  await panel.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2024-2025');
+  await panel.getByRole('button',{name:'Refunds',exact:true}).click();
+  await expect(panel.locator('.taxpay-table-state')).toContainText('No recorded events match the selected filters.');
+  await expect(panel.getByTestId('event-ledger-table')).toHaveCount(0);
+  await expect(panel.locator('.taxpay-mobile-table-card')).toHaveCount(0);
+});
