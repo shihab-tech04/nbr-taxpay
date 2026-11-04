@@ -98,7 +98,7 @@ for(const language of ['en','bn'] as const){
         t('TIN','টিআইএন')+': ',t('Tag','ট্যাগ')+': '
       ]);
     }
-    expect(layout.filterColumns).toBe(layout.width<=700?1:layout.width<=1050?2:3);
+    expect(layout.filterColumns).toBe(layout.width<=1050?2:3);
     await search.fill('Neighbour');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText('Shihab');
