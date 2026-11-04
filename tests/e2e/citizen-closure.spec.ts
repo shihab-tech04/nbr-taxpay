@@ -104,6 +104,13 @@ test('certificate previews stay non-official, match the selected type and locali
   await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
 
   await expect(page.getByRole('heading',{name:'Receipts & payment records'})).toBeVisible();
+  const register=page.getByTestId('account-certificate-record-register');
+  await expect(register).toBeVisible();
+  const recordSearch=register.getByRole('searchbox',{name:'Find a payment record'});
+  await recordSearch.fill('unmatched-record');
+  await expect(recordSearch).toHaveValue('unmatched-record');
+  await register.getByRole('button',{name:'Clear search'}).click();
+  await expect(recordSearch).toHaveValue('');
   await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();
   await expect(page.getByText('No official certificate is issued from this demonstration.')).toHaveCount(0);
   await expect(page.getByText('Statutory certificates generated directly from Government Treasury deposit scrolls.')).toHaveCount(0);
