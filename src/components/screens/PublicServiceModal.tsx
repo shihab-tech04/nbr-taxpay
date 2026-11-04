@@ -22,8 +22,18 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
   // The top-left control owns stage navigation, exactly as it does in the
   // approved Pay Tax wizard. Stage handlers remain inside the travel form.
   const back = () => {
-    if (travelStage === 1 || travelStage === 4) {
-      onClose();
+    if (travelStage === 1) return;
+    if (travelStage === 4) {
+      // Receipt Back returns to the paid journey review; the X owns dismissal.
+      document.querySelector<HTMLButtonElement>(
+        '.taxpay-modal[data-public-service="travel"] [data-testid="travel-receipt-back"]'
+      )?.click();
+      return;
+    }
+    if (document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
+      document.querySelector<HTMLButtonElement>(
+        '.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary'
+      )?.click();
       return;
     }
     const previous = document.querySelector<HTMLButtonElement>(

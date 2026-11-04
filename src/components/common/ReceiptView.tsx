@@ -320,12 +320,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
         {receipt.travelDetails && <section className="receipt-view__breakdown" data-testid="travel-family-challan">
           <h3 className="receipt-view__section-title">{bn ? 'যাত্রীভিত্তিক ভ্রমণ কর' : 'Passenger-wise Travel Tax'}</h3>
-          <dl className="receipt-view__detail receipt-view__travel-meta">
-            <div><dt>{bn ? 'যাত্রার মাধ্যম' : 'Travel mode'}</dt><dd>{receipt.travelDetails.mode === 'LAND' ? (bn ? 'স্থলপথে' : 'Land') : (bn ? 'নৌপথে' : 'Water')}</dd></div>
-            <div><dt>{bn ? 'যাত্রা বন্দর' : 'Departure port'}</dt><dd>{receipt.travelDetails.departurePort}</dd></div>
-            <div><dt>{bn ? 'গন্তব্য ও তারিখ' : 'Destination and date'}</dt><dd>{receipt.travelDetails.destination} · {receipt.travelDetails.travelDate}</dd></div>
-            <div><dt>{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}</dt><dd>{receipt.travelDetails.economicCode}</dd></div>
-          </dl>
           <div className="receipt-view__table">
             <table className="receipt-view__financial-table" aria-label={bn ? 'এক চালানে সব যাত্রীর কর' : 'All passengers in one challan'}>
               <thead><tr>
@@ -344,6 +338,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                 <td>{formatCurrency(receipt.totalAmount, language)}</td></tr></tfoot>
             </table>
           </div>
+          <dl className="receipt-view__detail receipt-view__travel-meta">
+            <div><dt>{bn ? 'যাত্রার মাধ্যম' : 'Travel mode'}</dt><dd>{receipt.travelDetails.mode === 'LAND' ? (bn ? 'স্থলপথে' : 'Land') : (bn ? 'নৌপথে' : 'Water')}</dd></div>
+            <div><dt>{bn ? 'যাত্রা বন্দর' : 'Departure port'}</dt><dd>{receipt.travelDetails.departurePort}</dd></div>
+            <div><dt>{bn ? 'গন্তব্য ও তারিখ' : 'Destination and date'}</dt><dd>{receipt.travelDetails.destination} · {receipt.travelDetails.travelDate}</dd></div>
+            <div><dt>{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}</dt><dd>{receipt.travelDetails.economicCode}</dd></div>
+          </dl>
           <p className="receipt-view__summary-subtitle">{bn
             ? 'এটি নমুনা রসিদ; সরকারি A-Challan বা ট্রেজারি নিষ্পত্তি নয়।'
             : 'Simulation only: not a government A-Challan or Treasury settlement.'}</p>

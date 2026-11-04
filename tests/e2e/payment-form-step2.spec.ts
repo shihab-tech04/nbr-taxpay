@@ -301,11 +301,13 @@ test('Travel tax calculates age-dependent estimates only after identity and trav
   await travel.getByRole('button', { name: /Edit passengers/ }).click();
   await travel.locator('[data-passenger-id="first"]').getByRole('button', { name: 'Edit' }).click();
   await travel.locator('#travel-birth-date-first').fill('2023-08-10');
+  await travel.getByRole('button', { name: 'Add passenger', exact: true }).click();
   await travel.getByRole('button', { name: 'Continue to travel details' }).click();
   await expect(summary).toContainText('0');
   await travel.getByRole('button', { name: /Edit passengers/ }).click();
   await travel.locator('[data-passenger-id="first"]').getByRole('button', { name: 'Edit' }).click();
   await travel.locator('#travel-birth-date-first').fill('1992-08-10');
+  await travel.getByRole('button', { name: 'Add passenger', exact: true }).click();
   await travel.getByRole('button', { name: 'Continue to travel details' }).click();
   await expect(summary).toContainText('1,000');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
