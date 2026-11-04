@@ -440,6 +440,11 @@ test('Travel Tax: receipt Back returns to recorded review with all passengers an
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Review & payment');
   await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
   await expect(modal.getByRole('button',{name:'Confirm preview payment'})).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Edit travel details'})).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Edit passengers and receipt contact'})).toHaveCount(0);
+  await modal.getByRole('button',{name:'Back',exact:true}).click();
+  await expect(modal.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
+  await modal.getByRole('button',{name:'Back',exact:true}).click();
   await modal.getByRole('button',{name:'View combined challan'}).click();
   await expect(modal.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
 });
