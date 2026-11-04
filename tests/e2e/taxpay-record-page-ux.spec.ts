@@ -62,8 +62,16 @@ for (const language of ['en','bn'] as const) {
     await expect(page.getByRole('heading',{name:tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')})).toBeVisible();
     await expect(page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')})).toBeVisible();
     await expect(page.locator('.taxpayer-transaction-panel')).toHaveCount(0);
+    // Track payment must not inherit dashboard-only service metrics, records or
+    // a year selector that misleadingly suggests lookup is limited by tax year.
+    await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+    await expect(page.getByRole('combobox',{name:tr('Assessment year','করবর্ষ')})).toHaveCount(0);
+    await expect(page.getByTestId('track-payment-history-link')).toBeVisible();
     await page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')}).click();
     await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+    await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
+    await page.goto('/?action=taxpayer_home&demoUser=user1&lang='+language);
+    await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   });
 }
 

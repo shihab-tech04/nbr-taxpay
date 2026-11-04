@@ -178,6 +178,9 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
 test('signed-in Track payment prioritizes reference lookup and preserves transaction search via Transactions',async({page})=>{
   await enterUser1(page);
   await page.goto('/?action=history');
+  // Year filtering belongs to Transactions; a reference lookup must not
+  // misleadingly imply that only the selected assessment year is searchable.
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await tabs.getByRole('button',{name:'Track payment'}).click();
   await expect(page).toHaveURL(/action=history/);
@@ -188,7 +191,8 @@ test('signed-in Track payment prioritizes reference lookup and preserves transac
   await expect(page.locator('.taxpayer-transaction-panel')).toHaveCount(0);
   await expect(page.locator('#public-home-title')).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
-  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
+  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'View all transactions'})).toBeVisible();
   await page.getByRole('button',{name:'View all transactions'}).click();
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');

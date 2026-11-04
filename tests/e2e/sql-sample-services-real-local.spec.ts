@@ -53,9 +53,32 @@ test('user1 retains existing scenario plus its separate stored travel-tax exampl
   requireDisposableBackend();
   await signIn(page, 'user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  // SQL-backed records remain in Transactions, not Dashboard or the
+  // reference-only Track payment route.
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   await page.getByRole('button',{name:'Open transaction history'}).click();
   const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user1');
-  await expect(panel.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
+  const register = panel.getByTestId('taxpay-service-record-register');
+  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
+
+  const search = register.getByRole('searchbox',{name:'Search service records'});
+  await search.fill('SAMPLE-SRV-003');
+  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
+  await search.fill('not-an-existing-reference');
+  await expect(register.getByText('No service records match your search and filters.')).toBeVisible();
+  await register.getByRole('button',{name:'Clear filters'}).click();
+  await register.getByRole('combobox',{name:'Sort service records'}).selectOption('oldest');
+  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
+  await register.getByRole('combobox',{name:'Filter record status'}).selectOption('SIMULATED');
+  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
+  await register.getByRole('button',{name:'Clear filters'}).click();
+
+  const tabs = page.getByRole('navigation',{name:'Activity sections'});
+  await tabs.getByRole('button',{name:'Track payment'}).click();
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  await tabs.getByRole('button',{name:'Transactions'}).click();
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
 });

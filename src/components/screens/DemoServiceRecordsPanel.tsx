@@ -79,7 +79,28 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
   const { navigate } = useTaxState();
   const nextActions = buildDemoNextActions(records);
   const [selectedRecordId, setSelectedRecordId] = React.useState<string | null>(null);
-  React.useEffect(() => { setSelectedRecordId(null); }, [userId]);
+  const [recordSearch, setRecordSearch] = React.useState('');
+  const [recordStatus, setRecordStatus] = React.useState<DemoServiceRecordState | 'all'>('all');
+  const [recordOrder, setRecordOrder] = React.useState<'newest' | 'oldest'>('newest');
+  React.useEffect(() => {
+    setSelectedRecordId(null);
+    setRecordSearch('');
+    setRecordStatus('all');
+    setRecordOrder('newest');
+  }, [userId]);
+  const filteredRecords = React.useMemo(() => records
+    .filter(record => {
+      if(recordStatus !== 'all' && record.state !== recordStatus)return false;
+      const term = recordSearch.trim().toLocaleLowerCase();
+      return !term || [
+        record.recordId,record.assessmentYear??'',record.relatedUserId??'',
+        record.participantRole,serviceLabels[record.serviceCode].en,serviceLabels[record.serviceCode].bn,
+      ].join(' ').toLocaleLowerCase().includes(term);
+    })
+    .slice()
+    .sort((a,b) => (recordOrder === 'newest' ? -1 : 1) *
+      (a.recordedAt.localeCompare(b.recordedAt) || a.recordId.localeCompare(b.recordId))),
+    [records,recordSearch,recordStatus,recordOrder]);
   const selectedRecord = records.find(record =>
     record.userId === userId && record.recordId === selectedRecordId) ?? null;
   const sumMinor = (rows: readonly DemoSqlServiceRecord[]) =>
@@ -240,10 +261,35 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
             </p>
           ) : (
             <>
-              <h3 className="text-base font-semibold text-taxpay-text">{tr('Service record details', 'সেবার রেকর্ডের বিস্তারিত')}</h3>
-              <div className="mt-3">
-                <TaxPayDataGrid variant="tabular" rows={records} getRowKey={record=>record.recordId}
+              <div className="mt-3" data-testid="taxpay-service-record-register">
+                <TaxPayDataGrid variant="tabular" rows={filteredRecords} getRowKey={record=>record.recordId}
                   ariaLabel={tr('Service records','সেবার রেকর্ড')}
+                  onViewRow={record=>setSelectedRecordId(record.recordId)}
+                  emptyLabel={tr('No service records match your search and filters.', 'অনুসন্ধান ও ফিল্টারে কোনো সেবার রেকর্ড পাওয়া যায়নি।')}
+                  toolbar={{
+                    title:tr('Service record details','সেবার রেকর্ডের বিস্তারিত'),
+                    count:filteredRecords.length,total:records.length,countLabel:tr('Records','রেকর্ড'),
+                    search:recordSearch,onSearchChange:setRecordSearch,
+                    searchLabel:tr('Search service records','সেবার রেকর্ড খুঁজুন'),
+                    searchPlaceholder:tr('Search service, reference or year','সেবা, রেফারেন্স বা করবর্ষ খুঁজুন'),
+                    filters:<>
+                      <select aria-label={tr('Filter record status','রেকর্ডের অবস্থা ফিল্টার করুন')} value={recordStatus}
+                        onChange={event=>setRecordStatus(event.target.value as DemoServiceRecordState|'all')}>
+                        <option value="all">{tr('All statuses','সব অবস্থা')}</option>
+                        {(Object.keys(stateLabels) as DemoServiceRecordState[]).map(state=>
+                          <option key={state} value={state}>{label(stateLabels[state])}</option>)}
+                      </select>
+                      <select aria-label={tr('Sort service records','সেবার রেকর্ড সাজান')} value={recordOrder}
+                        onChange={event=>setRecordOrder(event.target.value as 'newest'|'oldest')}>
+                        <option value="newest">{tr('Newest first','নতুন আগে')}</option>
+                        <option value="oldest">{tr('Oldest first','পুরোনো আগে')}</option>
+                      </select>
+                    </>,
+                    actions:(recordSearch||recordStatus!=='all'||recordOrder!=='newest')?
+                      <button type="button" onClick={()=>{setRecordSearch('');setRecordStatus('all');setRecordOrder('newest');}}>
+                        {tr('Clear filters','ফিল্টার মুছুন')}
+                      </button>:undefined,
+                  }}
                   columns={[
                     {key:'service',header:tr('Service','সেবা'),renderCell:record=><div>
                       <ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag>
@@ -256,8 +302,13 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
                       <p className="mt-1 text-sm text-taxpay-muted">{participant(record)}{record.relatedUserId ? ` · ${record.relatedUserId}` : ''}</p>
                     </div>},
                     {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:record=><p className="font-semibold">{amount(record.amountMinor,locale)}</p>},
-                    {key:'state',header:tr('State','অবস্থা'),renderCell:record=>renderState(record)},
-                    {key:'date',header:tr('Date','তারিখ'),renderCell:record=><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time>}
+                    {key:'state',header:tr('Status','অবস্থা'),renderCell:record=>renderState(record)},
+                    {key:'date',header:tr('Date','তারিখ'),renderCell:record=><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time>},
+                    {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:record=>
+                      <button type="button" className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light"
+                        onClick={()=>setSelectedRecordId(record.recordId)} aria-label={tr('Open details for record','রেকর্ডের বিস্তারিত খুলুন')+': '+record.recordId}>
+                        {tr('Details','বিস্তারিত')}
+                      </button>}
                   ]}
                   renderMobileCard={record=><>
                     <div className="taxpay-mobile-table-card__header">
