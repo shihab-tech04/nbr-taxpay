@@ -186,6 +186,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     }
     return null;
   };
+  // Recover a pending confirmation even when its editor switches to summary;
+  // identity lookup must never silently confirm a passenger.
+  const pendingConfirmationId = editingPassengerId ??
+    passengers.find(item => !confirmedPassengerIds.includes(item.id))?.id ?? null;
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
@@ -453,6 +457,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }
                   changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
+                  // Identity lookup previews details. Always retain manual confirmation.
+                  setEditingPassengerId(item.id);
                   // Keep the verified identity card, medical option and Add passenger
                   // confirmation visible; verification must not silently confirm a passenger.
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
@@ -655,12 +661,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   </section>;
                 })}
               </div>
-              {editingPassengerId !== null && <button type="button" className="travel-flow__add-member"
+              {pendingConfirmationId !== null && <button type="button" className="travel-flow__add-member"
                 disabled={firstIdentityIssue() !== null}
                 onClick={() => {
+                  if (pendingConfirmationId === null) return;
                   const issue = firstIdentityIssue();
                   if (issue) { reportIdentityIssue(issue); return; }
-                  setConfirmedPassengerIds(ids => [...new Set([...ids, editingPassengerId])]);
+                  setConfirmedPassengerIds(ids => [...new Set([...ids, pendingConfirmationId])]);
                   setEditingPassengerId(null);
                   setPassengerIssue(null);
                 }}>
