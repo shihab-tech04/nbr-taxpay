@@ -51,7 +51,8 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
     await page.getByRole('button',{name:'Selected list'}).click();
     await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Family',exact:true}).click();
-    const row=page.locator('ul[aria-label="Saved beneficiaries"] li').filter({hasText:'012345678901'});
+    const recordRows=()=>page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
+    const row=recordRows().filter({hasText:'012345678901'});
     await expect(row).toContainText('Immutable Beneficiary');
     await row.getByRole('button',{name:'Edit',exact:true}).click();
     let dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
@@ -71,7 +72,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
     await expect(page.getByRole('list',{name:'Saved beneficiaries'}).getByText('Immutable Beneficiary')).toBeVisible();
     // Edit the classification WITHOUT a list move; neither name nor TIN may change.
-    const movedRow=page.getByTestId('beneficiary-records').getByRole('listitem').filter({hasText:'012345678901'});
+    const movedRow=recordRows().filter({hasText:'012345678901'});
     await movedRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await expect(dialog.locator('#beneficiary-edit-tag')).toHaveValue('friends_family');
@@ -101,7 +102,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     });
     expect(collision.status).toBe(201);
     await page.setViewportSize({width:1440,height:900});
-    const desktopRow=page.getByTestId('beneficiary-records').getByRole('listitem').filter({hasText:'012345678901'});
+    const desktopRow=recordRows().filter({hasText:'012345678901'});
     await desktopRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await expect(dialog.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour representative');
