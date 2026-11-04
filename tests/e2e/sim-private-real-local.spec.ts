@@ -84,7 +84,7 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
    .locator(':scope > li').filter({hasText:tx!.id}).first();
  await expect(transactionCard.getByText(tx!.id)).toBeVisible({timeout:15000});
  await transactionCard.getByText('View allocations',{exact:false}).click();
- await expect(transactionCard.getByText('৳23.50')).toBeVisible();
+ await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
  await two.page.goto('/?action=notifications');
  await expect(two.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
  await expect(two.page.getByRole('button',{name:'Mark read'})).toBeVisible({timeout:15000});
