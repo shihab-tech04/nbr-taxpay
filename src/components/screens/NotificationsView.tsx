@@ -132,7 +132,7 @@ export const NotificationsView:React.FC=()=>{
   if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')} description={label('Review requests and recorded payment updates.','অনুমোদনের অনুরোধ ও সংরক্ষিত পেমেন্টের হালনাগাদ দেখুন।')}/>
     <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title">
-      <h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2>
+      <div className="taxpay-table-toolbar"><h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2><TaxPayTableCounter label={label('Requests','অনুরোধ')} shown={visibleAuthorizations.length} total={authorizationNotices.length}/></div>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Permission requests and their current recorded status.','অনুমতির আবেদন এবং সেগুলোর বর্তমান নথিভুক্ত অবস্থা।')}</p>
       <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
         <label className="taxpayer-transaction-filter">
@@ -175,7 +175,7 @@ export const NotificationsView:React.FC=()=>{
         ]}/>
     </section>
     <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
-      <h2 className="font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2>
+      <div className="taxpay-table-toolbar"><h2 className="text-base font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2><TaxPayTableCounter label={label('Records','রেকর্ড')} shown={visiblePayments.length} total={previewPaymentEvents.length}/></div>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
       <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
         <label className="taxpayer-transaction-filter">
