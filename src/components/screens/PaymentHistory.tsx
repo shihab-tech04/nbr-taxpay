@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
@@ -154,54 +154,34 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             <p className="mt-1 text-sm text-taxpay-muted">{label('Try another reference, year, or payment type.','অন্য রেফারেন্স, করবর্ষ বা পেমেন্টের ধরন নির্বাচন করুন।')}</p>
           </TaxPayTableState>
         ) : <>
-          <TaxPayMobileTableCards className="md:hidden">
-            {filtered.map(r=>(
-              <TaxPayMobileTableCard key={r.id}>
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="min-w-0 break-all font-mono-plex text-sm font-semibold text-taxpay-text">{r.challanNo}</h2>
-                  <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
-                </div>
-                <p className="mt-1 text-xs text-taxpay-muted"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag> · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
-                <p className="mt-2 text-xs text-taxpay-muted">{label('Treasury status','ট্রেজারির অবস্থা')}: {treasuryLabel(r)}</p>
-                <p className="text-xs text-taxpay-muted">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
-                <button type="button" onClick={()=>setLifecycleReceipt(r)}
-                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-white text-sm font-semibold text-taxpay-dark">
-                  {label('Payment lifecycle','পেমেন্টের ধাপসমূহ')} <ArrowRight aria-hidden="true" size={16}/>
-                </button>
-                <button type="button" onClick={()=>selectReceipt(r.id)}
-                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-taxpay-light text-sm font-semibold text-taxpay-dark">
-                  {label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/>
-                </button>
-              </TaxPayMobileTableCard>
-            ))}
-          </TaxPayMobileTableCards>
-          <TaxPayTableViewport className="hidden md:block">
-            <TaxPayUnifiedTable className="taxpay-unified-table min-w-full text-left text-sm">
-              <thead className="bg-taxpay-background text-xs text-taxpay-muted">
-                <tr>
-                  <th scope="col" className="px-3 py-3">{label('Reference','রেফারেন্স')}</th>
-                  <th scope="col" className="px-3 py-3">{label('Payment type','পেমেন্টের ধরন')}</th>
-                  <th scope="col" className="px-3 py-3">{label('Year','বর্ষ')}</th>
-                  <th scope="col" className="px-3 py-3 text-right">{label('Amount','টাকার পরিমাণ')}</th>
-                  <th scope="col" className="px-3 py-3">{label('Status','অবস্থা')}</th>
-                  <th scope="col" className="px-3 py-3">{label('Details','বিস্তারিত')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-taxpay-border">
-                {filtered.map(r=><tr key={r.id}>
-                  <td className="break-all px-3 py-3 font-mono-plex text-xs">{r.challanNo}</td>
-                  <td className="px-3 py-3"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag></td>
-                  <td className="whitespace-nowrap px-3 py-3">{r.assessmentYear}</td>
-                  <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">{formatCurrency(r.totalAmount,language)}</td>
-                  <td className="px-3 py-3">{treasuryLabel(r)}</td>
-                  <td className="px-3 py-3"><div className="flex flex-wrap gap-1">
-                    <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Lifecycle','পেমেন্ট ধাপ')}</button>
-                    <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-md px-2 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button>
-                  </div></td>
-                </tr>)}
-              </tbody>
-            </TaxPayUnifiedTable>
-          </TaxPayTableViewport>
+
+          <TaxPayDataGrid variant="tabular" rows={filtered} getRowKey={r=>r.id}
+            ariaLabel={label('Payment records','পেমেন্টের তথ্য')}
+            columns={[
+              {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:r=><p className="break-all font-mono-plex text-sm">{r.challanNo}</p>},
+              {key:'type',header:label('Payment type','পেমেন্টের ধরন'),renderCell:r=><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag>},
+              {key:'year',header:label('Year','বর্ষ'),renderCell:r=><p className="whitespace-nowrap">{r.assessmentYear}</p>},
+              {key:'amount',header:label('Amount','টাকার পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:r=><p className="whitespace-nowrap font-semibold">{formatCurrency(r.totalAmount,language)}</p>},
+              {key:'status',header:label('Status','অবস্থা'),renderCell:r=><p>{treasuryLabel(r)}</p>},
+              {key:'details',header:label('Details','বিস্তারিত'),renderCell:r=><div className="flex flex-wrap gap-1">
+                <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 rounded-lg px-3 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Lifecycle','পেমেন্ট ধাপ')}</button>
+                <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-lg px-3 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button>
+              </div>}
+            ]}
+            renderMobileCard={r=><>
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 break-all font-mono-plex text-sm font-semibold text-taxpay-text">{r.challanNo}</p>
+                <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(r.totalAmount,language)}</p>
+              </div>
+              <p className="taxpay-mobile-table-card__meta"><ServiceCategoryTag code={r.paymentCategory}>{categoryText(r.paymentCategory)}</ServiceCategoryTag> · {label('AY','করবর্ষ')} {r.assessmentYear}</p>
+              <p className="taxpay-mobile-table-card__meta">{label('Treasury status','ট্রেজারির অবস্থা')}: {treasuryLabel(r)}</p>
+              <p className="taxpay-mobile-table-card__meta">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
+              <div className="taxpay-mobile-table-card__actions">
+                <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark">{label('Payment lifecycle','পেমেন্টের ধাপসমূহ')} <ArrowRight aria-hidden="true" size={16}/></button>
+                <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm font-semibold text-taxpay-dark">{label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/></button>
+              </div>
+            </>}/>
+
         </>}
       </section>
       {lifecycleReceipt&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}

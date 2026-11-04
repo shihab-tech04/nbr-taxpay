@@ -262,7 +262,7 @@ table.taxpay-unified-table {
 @media (min-width:768px) {
   /* Root fix: the later shared stylesheet must not override Tailwind md:hidden.
    * This applies to ALL record modules that opt into mobile card fallback. */
-  .taxpay-citizen-shell .taxpay-mobile-table-cards[class~="md:hidden"] {display:none;}
+  .taxpay-mobile-table-cards[class~="md:hidden"] {display:none;}
 }
 .taxpay-mobile-table-card {
   min-width: 0;
@@ -281,14 +281,14 @@ table.taxpay-unified-table {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--taxpay-table-text, #172033);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.4;
   font-weight: 650;
 }
 .taxpay-mobile-table-card__meta {
   margin-top: 6px;
   color: var(--taxpay-table-muted, #5f6b7a);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }

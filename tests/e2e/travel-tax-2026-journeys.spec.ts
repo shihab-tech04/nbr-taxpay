@@ -308,6 +308,14 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button', {name: 'Add passenger'}).click();
   await modal.getByRole('button', {name: 'Add another passenger'}).click();
+  // Step 1 now animates its height and newly revealed passenger details.
+  // Compare sticky header/footer positions only after those animations finish;
+  // keep the strict 1px position assertion (do not weaken the layout gate).
+  await modal.evaluate(async element => {
+    await Promise.all(element.getAnimations({subtree:true})
+      .filter(animation=>animation.playState==='running')
+      .map(animation=>animation.finished.catch(()=>undefined)));
+  });
   const beforeHeader = await header.boundingBox();
   const beforeFooter = await footer.boundingBox();
   expect(beforeHeader).not.toBeNull();

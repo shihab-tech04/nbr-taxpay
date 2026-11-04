@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayTableViewport,TaxPayMobileTableCards,TaxPayMobileTableCard,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, FileText } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
@@ -60,60 +60,47 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
     {!loading&&!error&&filtered.length===0&&<TaxPayTableState className="mt-4 rounded-lg bg-slate-50 p-4">
       <p>{tr('No matching recorded payments.','মিল পাওয়া যায়নি।')}</p></TaxPayTableState>}
     {!loading&&!error&&filtered.length>0&&<>
-    <TaxPayTableViewport className="mt-4 hidden md:block">
-      <TaxPayUnifiedTable className="taxpay-unified-table w-full min-w-[680px] text-left text-sm">
-        <thead className="bg-taxpay-background text-taxpay-muted">
-          <tr>
-            <th scope="col" className="px-3 py-3">{tr('Beneficiary / TIN','উপকারভোগী / টিআইএন')}</th>
-            <th scope="col" className="px-3 py-3">{tr('Payment head / year','খাত / করবর্ষ')}</th>
-            <th scope="col" className="px-3 py-3">{tr('Reference','রেফারেন্স')}</th>
-            <th scope="col" className="px-3 py-3 text-right">{tr('Amount','পরিমাণ')}</th>
-            <th scope="col" className="px-3 py-3">{tr('Receipt','রসিদ')}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-taxpay-border">
-          {filtered.map(row=><tr key={row.key}>
-            <td className="px-3 py-3">
-              <p className="font-semibold text-taxpay-text">{row.beneficiaryName}</p>
-              <p className="break-all font-mono-plex text-xs text-taxpay-muted">{row.taxpayerTin||'—'}</p>
-            </td>
-            <td className="px-3 py-3">
-              <p className="text-taxpay-text">{row.paymentHead}</p>
-              {row.economicCode&&<p className="text-xs text-taxpay-muted">{row.economicCode}</p>}
-              <p className="text-taxpay-muted">{row.assessmentYear}</p>
-            </td>
-            <td className="px-3 py-3">
-              <p className="break-all font-mono-plex text-xs">{row.paymentId}</p>
-              {row.batchItemIndex&&row.batchItemCount&&<p className="text-xs text-taxpay-muted">
-                {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
-            </td>
-            <td className="px-3 py-3 text-right font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</td>
-            <td className="px-3 py-3">
-              <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-                onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View','দেখুন')}</button>
-            </td>
-          </tr>)}
-        </tbody>
-      </TaxPayUnifiedTable>
-    </TaxPayTableViewport>
-    <TaxPayMobileTableCards className="mt-3 md:hidden" data-testid="beneficiary-payment-mobile-cards">
-      {filtered.map(row=><TaxPayMobileTableCard key={row.key}>
-        <div className="taxpay-mobile-table-card__header">
-          <p className="taxpay-mobile-table-card__title">{row.beneficiaryName}</p>
-          <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</p>
-        </div>
-        <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
-        <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
-        {row.economicCode&&<p className="taxpay-mobile-table-card__meta">{row.economicCode}</p>}
-        <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {row.paymentId}</p>
-        {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">
-          {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
-        <div className="taxpay-mobile-table-card__actions">
-          <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button>
-        </div>
-      </TaxPayMobileTableCard>)}
-    </TaxPayMobileTableCards>
+
+    <div className="mt-4">
+      <TaxPayDataGrid variant="tabular" rows={filtered} getRowKey={row=>row.key}
+        ariaLabel={tr('Individual beneficiary payment records','প্রতিটি উপকারভোগীর পেমেন্ট রেকর্ড')}
+        mobileTestId="beneficiary-payment-mobile-cards"
+        columns={[
+          {key:'beneficiary',header:tr('Beneficiary / TIN','উপকারভোগী / টিআইএন'),renderCell:row=><div>
+            <p className="font-semibold text-taxpay-text">{row.beneficiaryName}</p>
+            <p className="break-all font-mono-plex text-sm text-taxpay-muted">{row.taxpayerTin||'—'}</p>
+          </div>},
+          {key:'head',header:tr('Payment head / year','খাত / করবর্ষ'),renderCell:row=><div>
+            <p className="text-taxpay-text">{row.paymentHead}</p>
+            {row.economicCode&&<p className="text-sm text-taxpay-muted">{row.economicCode}</p>}
+            <p className="text-sm text-taxpay-muted">{row.assessmentYear}</p>
+          </div>},
+          {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:row=><div>
+            <p className="break-all font-mono-plex text-sm">{row.paymentId}</p>
+            {row.batchItemIndex&&row.batchItemCount&&<p className="text-sm text-taxpay-muted">
+              {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
+          </div>},
+          {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:row=><p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
+          {key:'receipt',header:tr('Receipt','রসিদ'),renderCell:row=><button type="button"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View','দেখুন')}</button>}
+        ]}
+        renderMobileCard={row=><>
+          <div className="taxpay-mobile-table-card__header">
+            <p className="taxpay-mobile-table-card__title">{row.beneficiaryName}</p>
+            <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</p>
+          </div>
+          <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
+          <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
+          {row.economicCode&&<p className="taxpay-mobile-table-card__meta">{row.economicCode}</p>}
+          <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {row.paymentId}</p>
+          {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">{tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
+          <div className="taxpay-mobile-table-card__actions"><button type="button"
+            className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button></div>
+        </>}/>
+    </div>
+
     </>}
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
