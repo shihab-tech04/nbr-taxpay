@@ -57,7 +57,7 @@
 @media (max-width:700px) {
   .taxpay-taxpayer-reference .taxpay-record-page-filters {grid-template-columns:minmax(0,1fr);}
 }
-.taxpay-taxpayer-reference .taxpay-table-count {margin:0;font-size:13px;min-height:28px;}
+.taxpay-taxpayer-reference .taxpay-table-count {margin:0;font-size:14px;min-height:28px;}
 .taxpay-table-count__total {font-weight:500;opacity:.8;}
 
 .taxpay-table-toolbar__search {
@@ -222,12 +222,15 @@ table.taxpay-unified-table {
 }
 .taxpay-unified-table tbody td {
   height: var(--taxpay-table-row-height,76px);
+  font-size:16px;
   padding: 12px;
   border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
 .taxpay-unified-table tbody tr:last-child td { border-bottom: 0; }
+/* Ledger details remain 14px minimum while the primary financial cell uses 16px. */
+.taxpay-taxpayer-reference .taxpay-unified-table tbody td :is(.text-xs,.text-\[11px\]) {font-size:14px;line-height:1.5;}
 .taxpay-unified-table :is(th,td):is(.text-right,[data-align="right"]) {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -501,7 +504,7 @@ table.taxpay-unified-table {
   border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
   border-radius:0;
   background:var(--taxpay-table-surface,#fff);
-  font-size:14px;
+  font-size:16px;
   line-height:1.5;
 }
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row:last-child {border-bottom:0;}
@@ -513,6 +516,11 @@ table.taxpay-unified-table {
 /* Preserve usable action targets and readable reference metadata at every width. */
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row button {min-height:44px;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] :is(.taxpayer-transaction-row__meta,.taxpayer-transaction-row__ref) {font-size:14px;line-height:1.5;}
+/* The record's main value is 16px; metadata never falls below the approved 14px floor. */
+.taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row :is(.taxpayer-transaction-row__title,.beneficiary-directory__person .taxpayer-transaction-row__title) {font-size:16px;line-height:1.5;}
+.taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row :is(.text-xs,.text-\[11px\]) {font-size:14px;line-height:1.5;}
+.taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row :is(button,select,input) {font-size:14px;}
+.taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__row :is(.tabular-nums,.taxpayer-transaction-row__amount) {font-size:16px;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpayer-transaction-row__amount {justify-self:end;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__actions {justify-self:end;}
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.beneficiary-directory__tin,.beneficiary-directory__tag) {
