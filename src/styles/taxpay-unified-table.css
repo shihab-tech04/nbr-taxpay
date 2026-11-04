@@ -273,7 +273,21 @@ table.taxpay-unified-table {
 }
 @media(max-width:767px) {
   .beneficiary-directory__table .taxpay-mobile-table-cards {padding:8px;}
-  .beneficiary-directory__table .taxpay-mobile-table-card:has(input[type="checkbox"]:checked) {
+  .beneficiary-directory__table .taxpay-mobile-table-card__actions {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.beneficiary-directory__table .taxpay-mobile-table-card__actions > button:nth-child(2) {
+  grid-column:1/-1;
+  grid-row:2;
+  width:100%;
+}
+.beneficiary-directory__table .taxpay-mobile-table-card__actions > button:nth-child(3) {
+  grid-column:2;
+  grid-row:1;
+}
+.beneficiary-directory__table .taxpay-mobile-table-card:has(input[type="checkbox"]:checked) {
     border-color:var(--taxpay-table-primary,#2c5ead);
     background:var(--taxpay-table-selected,#eaf2ff);
   }
