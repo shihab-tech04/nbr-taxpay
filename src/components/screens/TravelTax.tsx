@@ -391,7 +391,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     setPassportSuggestionsFor(null);
     setError('');
   };
-  const renderMedicalReferral = (item: TravelPassenger) => (
+  const renderMedicalReferral = (item: TravelPassenger) => (<>
           <div className="travel-flow__field travel-flow__medical">
             <label htmlFor={'travel-medical-' + item.id}>{tr('Medical exemption','চিকিৎসাজনিত কর অব্যাহতি')}</label>
             <div className="travel-flow__medical-option">
@@ -420,7 +420,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
               'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
         </p>}
-  );
+  </>);
 
   /** Each passenger uses a type tab; fields from the other type never appear. */
   const renderPassengerEditor = (item: TravelPassenger, index: number) => {
@@ -586,12 +586,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
 
         {assessment && <p className="travel-flow__age-reason">{ageExplanation(assessment.age)}</p>}
       </div>
-      <button type="button" className="travel-flow__confirm-passenger"
-        disabled={!canConfirmPassenger(item)} onClick={() => confirmPassenger(item)}>
-        {editingExistingPassengerId === item.id
-          ? tr('Save passenger','যাত্রীর তথ্য সংরক্ষণ করুন')
-          : tr('Add passenger','যাত্রী যোগ করুন')}
-      </button>
+
     </>;
   };
 
@@ -678,6 +673,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                       {assessment && <div><dt>{tr('Illustrative tax', 'নমুনা কর')}</dt><dd>{formatCurrency(assessment.amount, language)}</dd></div>}
                     </dl>}
                     {renderMedicalReferral(item)}
+                    {editing && <button type="button" className="travel-flow__confirm-passenger"
+        disabled={!canConfirmPassenger(item)} onClick={() => confirmPassenger(item)}>
+        {editingExistingPassengerId === item.id
+          ? tr('Save passenger','যাত্রীর তথ্য সংরক্ষণ করুন')
+          : tr('Add passenger','যাত্রী যোগ করুন')}
+      </button>}
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                   </section>;
                 })}
