@@ -132,3 +132,25 @@ test('payment journey matches the history identities on desktop and mobile',asyn
   await expect(timeline.locator('li')).toHaveCount(21);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('mobile ledger preserves financial fields, source and unverified balance in English and Bengali',async({page})=>{
+  await page.setViewportSize({width:320,height:760});
+  for(const language of ['en','bn'] as const){
+    await page.goto(ledger+'&lang='+language);
+    const panel=page.getByTestId('event-tax-ledger');
+    const card=panel.locator('.taxpay-mobile-table-card').first();
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(language==='bn'?'নথিভুক্ত পরিমাণ':'Recorded amount');
+    await expect(card).toContainText(language==='bn'?'ব্যালেন্সের প্রভাব':'Effect on balance');
+    await expect(card).toContainText(language==='bn'?'পরবর্তী ব্যালেন্স':'balance after');
+    await expect(card).toContainText(language==='bn'?'নথিভুক্ত অবস্থা':'Recorded status');
+    await expect(card).toContainText(language==='bn'?'উৎস':'Source');
+    await expect(panel.getByTestId('event-ledger-table')).toBeHidden();
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'mobile financial fields must not widen the page').toBeLessThanOrEqual(2);
+    await card.getByRole('button').click();
+    await expect(page.getByTestId('tax-event-details')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button',{name:/Close/i}).first().click();
+  }
+});
