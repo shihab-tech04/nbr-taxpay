@@ -132,6 +132,7 @@ export function TaxPayDataGrid<Row>({
       className={merge(variant==='ledger'?'taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table':'taxpay-unified-table hidden min-w-full w-full text-left text-sm md:table',className)}>
       <thead><tr>{columns.map(column=><th scope="col" key={column.key} className={merge('p-3',column.headerClassName)}>{column.header}</th>)}</tr></thead>
       <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}
+        data-selected={isSelected?.(row)?'true':'false'}
         data-clickable-row={onViewRow?'true':undefined} tabIndex={onViewRow?0:undefined}
         onClick={onViewRow?(event)=>{
           if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]'))return;
