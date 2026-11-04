@@ -213,6 +213,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   };
   const continueStep = () => {
     if (step === 0) {
+      if (!allPassengersComplete) {
+        showError(tr('Confirm each checked passenger with Add passenger first.', 'প্রতিটি যাচাইকৃত যাত্রী যোগ করুন বোতামে নিশ্চিত করুন।'));
+        return;
+      }
       const issue = firstIdentityIssue();
       if (issue) { reportIdentityIssue(issue); return; }
       if (!/^01\d{9}$/.test(phone)) {
@@ -764,7 +768,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               </TaxPayUnifiedTable>
             </div>
             <header className="travel-flow__section-header">
-              <h3>{tr('Payment channel','পেমেন্ট চ্যানেল')}</h3>
+              <h3>{createdReceipt ? tr('Recorded payment', 'রেকর্ডকৃত পেমেন্ট') : tr('Payment channel','পেমেন্ট চ্যানেল')}</h3>
               <p>{tr('A-Challan is the required government integration; this environment only records a clearly marked simulation.',
                 'সরকারি A-Challan সংযোগ ডেভেলপার পর্যায়ে হবে; এখানে শুধু চিহ্নিত নমুনা লেনদেন রয়েছে।')}</p>
             </header>
@@ -849,7 +853,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
-            back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
+            back={(!createdReceipt || receiptReviewOpen) && step > 0 && <button type="button" className="tax-service-choice__cancel"
               onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>
               <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
             </button>}
