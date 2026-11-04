@@ -69,9 +69,9 @@ for (const language of ['en','bn'] as const) {
     await expect(page.getByTestId('track-payment-history-link')).toBeVisible();
     await page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')}).click();
     await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
-    await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
-    await page.goto('/?action=taxpayer_home&demoUser=user1&lang='+language);
     await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
+    await page.goto('/?action=taxpayer_home&demoUser=user1&lang='+language);
+    await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   });
 }
 
