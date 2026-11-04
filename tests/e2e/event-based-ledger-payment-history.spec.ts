@@ -132,3 +132,55 @@ test('payment journey matches the history identities on desktop and mobile',asyn
   await expect(timeline.locator('li')).toHaveCount(21);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('mobile ledger preserves financial fields, source and unverified balance in English and Bengali',async({page})=>{
+  await page.setViewportSize({width:320,height:760});
+  for(const language of ['en','bn'] as const){
+    await page.goto(ledger+'&lang='+language);
+    const panel=page.getByTestId('event-tax-ledger');
+    const card=panel.locator('.taxpay-mobile-table-card').first();
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(language==='bn'?'নথিভুক্ত পরিমাণ':'Recorded amount');
+    await expect(card).toContainText(language==='bn'?'ব্যালেন্সের প্রভাব':'Effect on balance');
+    await expect(card).toContainText(language==='bn'?'পরবর্তী ব্যালেন্স':'balance after');
+    await expect(card).toContainText(language==='bn'?'নথিভুক্ত অবস্থা':'Recorded status');
+    await expect(card).toContainText(language==='bn'?'উৎস':'Source');
+    await expect(panel.getByTestId('event-ledger-table')).toBeHidden();
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'mobile financial fields must not widen the page').toBeLessThanOrEqual(2);
+    await card.getByRole('button').click();
+    await expect(page.getByTestId('tax-event-details')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button',{name:/Close/i}).first().click();
+  }
+});
+
+
+test('ledger filtered-empty state does not display a duplicate empty financial table or card list',async({page})=>{
+  await page.goto(ledger);
+  const panel=page.getByTestId('event-tax-ledger');
+  await panel.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2024-2025');
+  await panel.getByRole('button',{name:'Refunds',exact:true}).click();
+  await expect(panel.locator('.taxpay-table-state')).toContainText('No recorded events match the selected filters.');
+  await expect(panel.getByTestId('event-ledger-table')).toHaveCount(0);
+  await expect(panel.locator('.taxpay-mobile-table-card')).toHaveCount(0);
+});
+
+
+test('all six ledger categories retain their own source events and selection state',async({page})=>{
+  await page.goto(ledger);
+  const panel=page.getByTestId('event-tax-ledger');
+  await expect(panel.getByRole('button',{name:'All',exact:true})).toHaveAttribute('aria-pressed','true');
+  for(const [category,record] of [
+    ['Liabilities','Opening liability'],
+    ['Credits','Salary withholding'],
+    ['Payment lifecycle','Pending bank reconciliation'],
+    ['Corrections','Credit reassignment inquiry'],
+    ['Refunds','Refund inquiry']
+  ] as const){
+    const tab=panel.getByRole('button',{name:category,exact:true});
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-pressed','true');
+    await expect(panel.getByRole('button',{name:new RegExp(record)}).first()).toBeVisible();
+  }
+});
