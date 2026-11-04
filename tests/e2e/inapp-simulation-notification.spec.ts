@@ -80,7 +80,7 @@ test('beneficiary in-app notification shows only allocated demo amount, not paye
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading',{name:'Payment updates'})).toBeVisible();
   await expect(page.getByText('৳32.50').filter({visible:true})).toBeVisible();
-  await expect(page.getByText('Allocated to you by user4')).toBeVisible();
+  await expect(page.getByText('Allocated to you by user4').filter({visible:true})).toBeVisible();
   await expect(page.getByText('৳1,250.00')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
 });
