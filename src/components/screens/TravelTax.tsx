@@ -615,10 +615,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                           }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
                       </div>
                     </div>
-                    {editing ? <>
+                    {editing ? <div key={item.id + '-editor'} className="travel-flow__person-body">
                       {renderPassengerEditor(item, index)}
                       {passengerIssue?.id === item.id && <p className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
-                    </> : <dl className="travel-flow__person-summary">
+                    </div> : <dl key={item.id + '-summary'} className="travel-flow__person-summary travel-flow__person-body">
                       <div><dt>{tr('Passenger name', 'যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
                       <div><dt>{tr('Passport number', 'পাসপোর্ট নম্বর')}</dt><dd>{maskPassport(item.passport)}</dd></div>
                       <div><dt>{tr('Date of birth', 'জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
@@ -676,7 +676,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 </fieldset>
               </div>
               <div className="travel-flow__fields travel-flow__field-group">
-                {mode === 'LAND' ? <div className="travel-flow__field">
+                {mode === 'LAND' ? <div key="land" className="travel-flow__field travel-flow__mode-field">
                   <label htmlFor="travel-port">{tr('Departure land port','স্থলবন্দর')} *</label>
                   <select id="travel-port" value={port} onChange={e => { setPort(e.target.value); setError(''); }}>
                     <option value="">{tr('Select departure port','বন্দর নির্বাচন করুন')}</option>
@@ -684,7 +684,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   </select>
                   <p className="travel-flow__field-hint">{tr('Historical reference ports; current operation must be confirmed.',
                     'ঐতিহাসিক বন্দরের তালিকা; বর্তমান কার্যক্রম যাচাই প্রয়োজন।')}</p>
-                </div> : <div className="travel-flow__field">
+                </div> : <div key="water" className="travel-flow__field travel-flow__mode-field">
                   <label htmlFor="travel-water-port">{tr('Departure water port','নৌবন্দর')} *</label>
                   <input id="travel-water-port" value={waterPort} onChange={e => { setWaterPort(e.target.value); setError(''); }}
                     placeholder={tr('Enter water port','নৌবন্দর লিখুন')} list="travel-water-port-options"/>

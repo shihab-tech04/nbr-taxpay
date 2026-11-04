@@ -2108,3 +2108,72 @@
     grid-column: 1 / -1;
   }
 }
+
+
+/* Travel Tax interaction motion: scoped to the approved modal, not other services.
+   interpolate-size lets supported browsers move between the compact auto-height
+   passenger stage and the fixed-height travel/review stages. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] {
+  interpolate-size: allow-keywords;
+  transition: width 300ms var(--taxpay-motion-ease),
+              height 300ms var(--taxpay-motion-ease),
+              max-height 300ms var(--taxpay-motion-ease);
+}
+/* Completed receipts have viewport-anchored Download/Print actions. Never
+   tween their dialog dimensions across checkout or responsive breakpoints. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) {
+  transition: none;
+  interpolate-size: numeric-only;
+}
+@keyframes travel-flow-reveal {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes travel-flow-expand {
+  from { height: 0; opacity: 0; transform: translateY(4px); }
+  to { height: auto; opacity: 1; transform: translateY(0); }
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] :is(
+  .travel-flow__panel, .travel-flow__passport-suggestions,
+  .travel-flow__identity-card, .travel-flow__inline-error,
+  .travel-flow__medical-note, .travel-flow__person-summary,
+  .travel-flow__age-row, .travel-flow__mode-field
+) {
+  animation: travel-flow-reveal 240ms var(--taxpay-motion-ease) both;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] :is(
+  .travel-flow__person, .travel-flow__person-body
+) {
+  interpolate-size: allow-keywords;
+  animation: travel-flow-expand 260ms var(--taxpay-motion-ease) both;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] :is(
+  .travel-flow__primary, .travel-flow__add-member, .travel-flow__edit,
+  .travel-flow__edit-travel, .travel-flow__member-remove,
+  .travel-flow__passport-action button, .travel-flow__passenger-tab,
+  .travel-flow__route, .travel-flow__channel-option,
+  .travel-flow__field :is(input, select)
+) {
+  transition: background-color 180ms ease, border-color 180ms ease,
+              box-shadow 180ms ease, color 180ms ease, opacity 180ms ease;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__mobile-summary::details-content {
+  interpolate-size: allow-keywords;
+  block-size: 0;
+  opacity: 0;
+  overflow: clip;
+  transition: block-size 240ms var(--taxpay-motion-ease),
+              opacity 180ms ease, content-visibility 240ms allow-discrete;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__mobile-summary[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"],
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] *,
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] ::details-content {
+    animation: none !important;
+    transition: none !important;
+  }
+}
