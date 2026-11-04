@@ -14,6 +14,8 @@ test('one shared table stylesheet and React layout primitives own the table visu
     'taxpay-mobile-table-card','taxpay-table-state','prefers-reduced-motion'])
     assert.ok(css.includes(key),key);
   assert.match(component,/variant==='tabular'\?<TaxPayTableViewport/, 'tabular grids must provide the shared desktop overflow viewport');
+  assert.match(css,/\.taxpay-mobile-table-cards\[class~="md:hidden"\] \{display:none;\}/,
+    "desktop hides mobile cards in citizen and officer shells");
   for(const name of ['TaxPayTablePanel','TaxPayTableToolbar','TaxPayTableViewport',
     'TaxPayMobileTableCards','TaxPayMobileTableCard','TaxPayTableState'])
     assert.ok(component.includes('function '+name),name);
