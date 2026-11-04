@@ -211,8 +211,8 @@ try {
     await expect(guest).toHaveURL(/action=payment_notifications/);
     await expect(guest.getByRole('heading', { name: 'Payment notifications', level: 1 })).toBeVisible();
     await expect(guest.getByRole('heading', { name: 'Payment record saved', level: 2 })).toBeVisible();
-    await expect(guest.getByText('Amount: ৳1,250.50')).toBeVisible();
-    await expect(guest.getByText(paymentId, { exact: false })).toBeVisible();
+    await expect(guest.getByText('Amount: ৳1,250.50').filter({ visible: true }).first()).toBeVisible();
+    await expect(guest.getByText(paymentId, { exact: false }).filter({ visible: true }).first()).toBeVisible();
     await expect(guest.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     await guest.screenshot({ path: `test-results/live-auth-guest-session-record-${name}.png`, fullPage: true });
     await guest.close();
