@@ -116,7 +116,15 @@ test('Travel Tax: ten fictional passports are scrollable, selectable and verifia
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
   await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
   await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
-  await expect(modal.getByRole('button',{name:'Add passenger'})).toBeVisible();
+  const confirm = modal.getByRole('button',{name:'Add passenger', exact:true});
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toBeEnabled();
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  await confirm.click();
+  await expect(confirm).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toBeEnabled();
+  await modal.locator('#travel-mobile').fill('01712345678');
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
 });
 
 test('Travel Tax: foreign passenger enters every mandatory identity field', async ({page}) => {
