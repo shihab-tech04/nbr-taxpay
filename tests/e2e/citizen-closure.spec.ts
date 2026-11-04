@@ -103,7 +103,7 @@ test('certificate previews stay non-official, match the selected type and locali
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
 
-  await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Receipts & payment records'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();
   await expect(page.getByText('No official certificate is issued from this demonstration.')).toHaveCount(0);
   await expect(page.getByText('Statutory certificates generated directly from Government Treasury deposit scrolls.')).toHaveCount(0);
