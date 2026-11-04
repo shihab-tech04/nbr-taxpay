@@ -697,7 +697,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     onChange={e => { setDestination(e.target.value); setError(''); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
                   <datalist id="travel-destinations"><option value="India"/><option value="Nepal"/><option value="Bhutan"/><option value="Myanmar"/></datalist>
                 </div>
-                <div className="travel-flow__field">
+                <div className="travel-flow__field travel-flow__field--full">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
                   <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
