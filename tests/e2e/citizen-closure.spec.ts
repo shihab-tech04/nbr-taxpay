@@ -3,16 +3,22 @@ import type { Page } from '@playwright/test';
 
 // Preserve bilingual assertions while using the navigation control visible at each width.
 async function switchTaxpayerToBangla(page: Page) {
-  const mobileMenu = page.locator('.citizen-mobile-menu-trigger');
-  if (await mobileMenu.isVisible()) {
-    await mobileMenu.click();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if(await rail.isVisible()){
+    await rail.getByRole('button',{name:'বাংলা'}).click();
+    return;
+  }
+  // Activity's compact mobile shell hides the standard header. Use its
+  // visible corner-menu trigger instead of waiting on an inert header.
+  const openMenu=page.getByRole('button',{name:'Open menu'}).filter({visible:true}).first();
+  if(await openMenu.isVisible()){
+    await openMenu.click();
     await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
     await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  } else if (await page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).isVisible()) {
-    await page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'বাংলা'}).click();
-  } else {
-    await page.locator('.citizen-header').getByRole('button',{name:'বাংলা'}).click();
+    return;
   }
+  await page.getByRole('button',{name:'বাংলা'}).filter({visible:true}).first().click();
+
 }
 
 test('root is a public information hub with a header Login and no payment action',async({page})=>{
