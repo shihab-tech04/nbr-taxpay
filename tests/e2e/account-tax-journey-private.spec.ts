@@ -135,14 +135,20 @@ test('unbound signed-in history retains review activity and SQL-owned beneficiar
   await page.goto('/?action=history');
   const history=page.getByTestId('beneficiary-payment-history');
   await expect(history).toBeVisible();
-  await expect(history.getByRole('row')).toHaveCount(3);
+  // The shared record grid displays a semantic desktop table and accessible
+  // mobile cards; assert the actually rendered variant, not hidden table rows.
+  const mobile=(page.viewportSize()?.width??1280)<768;
+  const records=mobile
+    ? history.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
+    : history.getByRole('row');
+  await expect(records).toHaveCount(mobile?2:3);
   await expect(history).toContainText('Beneficiary A');
   await expect(history).toContainText('Beneficiary B');
   await expect(history).toContainText(sharedPayment.id);
   await expect(history).toContainText('Tax head 68A');
   await expect(history).toContainText('Tax head 68B');
   await history.getByRole('searchbox',{name:'Search beneficiary, TIN or payment reference'}).fill('012345678902');
-  await expect(history.getByRole('row')).toHaveCount(2);
+  await expect(records).toHaveCount(mobile?1:2);
   await expect(history).not.toContainText('Beneficiary A');
   await expect(history).toContainText('Beneficiary B');
 });
