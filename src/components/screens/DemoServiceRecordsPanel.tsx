@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import React from 'react';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
 import { useTaxState } from '../../services/taxState';
@@ -241,57 +241,40 @@ export const DemoServiceRecordsPanel: React.FC<DemoServiceRecordsPanelProps> = (
           ) : (
             <>
               <h3 className="text-base font-semibold text-taxpay-text">{tr('Service record details', 'সেবার রেকর্ডের বিস্তারিত')}</h3>
-              <div className="taxpay-table-viewport hidden md:block">
-                <TaxPayUnifiedTable className="taxpay-unified-table min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs font-semibold text-taxpay-muted">
-                    <tr>
-                      <th scope="col" className="px-3 py-3">{tr('Service', 'সেবা')}</th>
-                      <th scope="col" className="px-3 py-3">{tr('Year / participant', 'করবর্ষ / অংশগ্রহণ')}</th>
-                      <th scope="col" className="px-3 py-3 text-right">{tr('Amount', 'পরিমাণ')}</th>
-                      <th scope="col" className="px-3 py-3">{tr('State', 'অবস্থা')}</th>
-                      <th scope="col" className="px-3 py-3 text-center">{tr('Date', 'তারিখ')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-taxpay-border">
-                    {records.map(record => (
-                      <tr key={record.recordId} className="align-top">
-                        <td className="px-3 py-3">
-                          <ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag>
-                          <button type="button" className="mt-1 min-h-9 break-all text-left text-xs font-medium text-taxpay-primary underline underline-offset-2"
-                            onClick={() => setSelectedRecordId(record.recordId)}
-                            aria-label={tr('View record', 'রেকর্ড দেখুন') + ': ' + record.recordId}>{record.recordId}</button>
-                        </td>
-                        <td className="px-3 py-3 text-taxpay-text">
-                          <p>{record.assessmentYear ?? tr('Not applicable', 'প্রযোজ্য নয়')}</p>
-                          <p className="mt-1 text-xs text-taxpay-muted">{participant(record)}{record.relatedUserId ? ` · ${record.relatedUserId}` : ''}</p>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums text-taxpay-text">{amount(record.amountMinor, locale)}</td>
-                        <td className="px-3 py-3">{renderState(record)}</td>
-                        <td className="whitespace-nowrap px-3 py-3 text-center text-taxpay-muted"><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </TaxPayUnifiedTable>
-              </div>
-              <ul className="taxpay-mobile-table-cards md:hidden" aria-label={tr('Service records', 'সেবার রেকর্ড')}>
-                {records.map(record => (
-                  <li key={record.recordId} className="taxpay-mobile-table-card">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <h4 className="min-w-0 text-sm"><ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag></h4>
+              <div className="mt-3">
+                <TaxPayDataGrid variant="tabular" rows={records} getRowKey={record=>record.recordId}
+                  ariaLabel={tr('Service records','সেবার রেকর্ড')}
+                  columns={[
+                    {key:'service',header:tr('Service','সেবা'),renderCell:record=><div>
+                      <ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag>
+                      <button type="button" className="mt-1 block min-h-11 break-all text-left text-sm font-medium text-taxpay-primary underline underline-offset-2"
+                        onClick={()=>setSelectedRecordId(record.recordId)}
+                        aria-label={tr('View record','রেকর্ড দেখুন')+': '+record.recordId}>{record.recordId}</button>
+                    </div>},
+                    {key:'participant',header:tr('Year / participant','করবর্ষ / অংশগ্রহণ'),renderCell:record=><div>
+                      <p>{record.assessmentYear??tr('Not applicable','প্রযোজ্য নয়')}</p>
+                      <p className="mt-1 text-sm text-taxpay-muted">{participant(record)}{record.relatedUserId ? ` · ${record.relatedUserId}` : ''}</p>
+                    </div>},
+                    {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:record=><p className="font-semibold">{amount(record.amountMinor,locale)}</p>},
+                    {key:'state',header:tr('State','অবস্থা'),renderCell:record=>renderState(record)},
+                    {key:'date',header:tr('Date','তারিখ'),renderCell:record=><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time>}
+                  ]}
+                  renderMobileCard={record=><>
+                    <div className="taxpay-mobile-table-card__header">
+                      <p className="taxpay-mobile-table-card__title"><ServiceCategoryTag code={record.serviceCode}>{label(serviceLabels[record.serviceCode])}</ServiceCategoryTag></p>
                       {renderState(record)}
                     </div>
-                    <button type="button" className="mt-1 min-h-9 break-all text-left text-xs font-medium text-taxpay-primary underline underline-offset-2"
-                            onClick={() => setSelectedRecordId(record.recordId)}
-                            aria-label={tr('View record', 'রেকর্ড দেখুন') + ': ' + record.recordId}>{record.recordId}</button>
-                    <p className="mt-3 text-lg font-semibold tabular-nums text-taxpay-text">{amount(record.amountMinor, locale)}</p>
-                    <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-taxpay-muted">
-                      <p>{record.assessmentYear ?? tr('No assessment year', 'করবর্ষ প্রযোজ্য নয়')}</p>
+                    <button type="button" className="mt-1 min-h-11 break-all text-left text-sm font-medium text-taxpay-primary underline underline-offset-2"
+                      onClick={()=>setSelectedRecordId(record.recordId)}
+                      aria-label={tr('View record','রেকর্ড দেখুন')+': '+record.recordId}>{record.recordId}</button>
+                    <p className="mt-3 text-lg font-semibold tabular-nums text-taxpay-text">{amount(record.amountMinor,locale)}</p>
+                    <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-sm text-taxpay-muted">
+                      <p>{record.assessmentYear??tr('No assessment year','করবর্ষ প্রযোজ্য নয়')}</p>
                       <p>{participant(record)}{record.relatedUserId ? ` · ${record.relatedUserId}` : ''}</p>
                       <p><time dateTime={record.recordedAt}>{renderDate(record.recordedAt)}</time></p>
                     </div>
-                  </li>
-                ))}
-              </ul>
+                  </>}/>
+              </div>
             </>
           )}
         </>
