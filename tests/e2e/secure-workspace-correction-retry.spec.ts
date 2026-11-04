@@ -137,11 +137,11 @@ test('owner can recover a failed private inquiry history load without duplicatin
   expect(insertCount).toBe(1);
   await expect(history.getByRole('button', { name: 'Retry loading inquiries' })).toHaveCount(0);
   await history.locator('summary:visible').click();
-  await expect(history.getByText('Reason provided: Synthetic request for review.')).toBeVisible();
-  await expect(history.getByText('Requested outcome: Please review this synthetic sample.')).toBeVisible();
-  await expect(history.getByText('Unverified attribution proposal: Assessment year')).toBeVisible();
-  await expect(history.getByText('Previous value (unverified): 2024-25')).toBeVisible();
-  await expect(history.getByText('Requested value (unverified): 2025-26')).toBeVisible();
+  await expect(history.getByText('Reason provided: Synthetic request for review.').filter({visible:true})).toBeVisible();
+  await expect(history.getByText('Requested outcome: Please review this synthetic sample.').filter({visible:true})).toBeVisible();
+  await expect(history.getByText('Unverified attribution proposal: Assessment year').filter({visible:true})).toBeVisible();
+  await expect(history.getByText('Previous value (unverified): 2024-25').filter({visible:true})).toBeVisible();
+  await expect(history.getByText('Requested value (unverified): 2025-26').filter({visible:true})).toBeVisible();
 
   // Restore the expanded navigation before exercising its language action at 320px.
   // Preserve the real adaptive scroll behavior; never force-click a hidden control.
@@ -150,9 +150,9 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await setWorkspaceLanguage(page, 'bn');
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
   await expect(historyBn.locator('summary:visible')).toHaveText('অনুরোধের বিবরণ');
-  await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.')).toBeVisible();
-  await expect(historyBn.getByText('অনুরোধের ফলাফল: Please review this synthetic sample.')).toBeVisible();
-  await expect(historyBn.getByText('যাচাই না হওয়া পরিচিতি প্রস্তাব: করবর্ষ')).toBeVisible();
+  await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.').filter({visible:true})).toBeVisible();
+  await expect(historyBn.getByText('অনুরোধের ফলাফল: Please review this synthetic sample.').filter({visible:true})).toBeVisible();
+  await expect(historyBn.getByText('যাচাই না হওয়া পরিচিতি প্রস্তাব: করবর্ষ').filter({visible:true})).toBeVisible();
 
   const dimensions = await page.evaluate(() => ({
     client: document.documentElement.clientWidth,
