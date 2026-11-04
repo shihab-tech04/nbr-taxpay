@@ -104,7 +104,7 @@ export function TaxPayDataGrid<Row>({
     headers={columns.map(column=>column.header)} data-testid={testId}>
     {rows.map(row=><li key={getRowKey(row)} data-selected={isSelected?.(row)?'true':'false'}
       className={merge('taxpay-record-list__row',getRowClassName?.(row))}>
-      {columns.map(column=><Fragment key={column.key}>{column.renderCell(row)}</Fragment>)}
+      {columns.map(column=><Fragment key={column.key}><p className="sr-only" data-record-column-label>{column.header}: </p>{column.renderCell(row)}</Fragment>)}
     </li>)}
   </TaxPayRecordList>;
 }
