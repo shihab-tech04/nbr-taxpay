@@ -30,6 +30,12 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
       )?.click();
       return;
     }
+    if (document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
+      document.querySelector<HTMLButtonElement>(
+        '.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary'
+      )?.click();
+      return;
+    }
     const previous = document.querySelector<HTMLButtonElement>(
       '.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .tax-service-choice__cancel'
     );
