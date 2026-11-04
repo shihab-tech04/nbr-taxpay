@@ -110,9 +110,13 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase).toBeVisible();
   await expect(phase.getByRole('heading',{name:'Payment deadlines & demands'})).toBeVisible();
   await expect(phase).toContainText('No verified due dates available');
+  await expect(phase.getByRole('button',{name:'Requests & drafts'})).toBeVisible();
+  await expect(phase.getByRole('button',{name:'Correction inquiries'})).toBeVisible();
+  await expect(phase).not.toContainText('Needs review');
+  await expect(page.getByText('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.')).toBeVisible();
   await expect(phase).toContainText('An unavailable balance does not mean nothing is owed.');
   await expect(phase.getByRole('button',{name:'Review tax ledger'})).toBeVisible();
-  for (const heading of ['Needs review','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
+  for (const heading of ['Quick actions','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
   // A signed-in account must use the approved Phase A/B visual sections, but
@@ -165,6 +169,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(dashboard).not.toContainText('৳ 65.50');
   await setWorkspaceLanguage(page,'bn');
   await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
+  await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
+  await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
+  await expect(page.getByText('এই অ্যাকাউন্টের যাচাইকৃত কর ব্যালেন্স পাওয়া যায়নি। নিচে আপনার সংরক্ষিত অ্যাকাউন্টের কার্যক্রম ও পেমেন্ট রেকর্ড দেখতে পারবেন।')).toBeVisible();
   await expect(phase).toContainText('যাচাইকৃত পরিশোধের শেষ তারিখ পাওয়া যায়নি');
   await expect(dashboard.getByRole('heading',{name:'আমার অ্যাকাউন্টের কার্যক্রম'})).toBeVisible();
   await expect(dashboard).toContainText('৳ ৩৪.৫০');
