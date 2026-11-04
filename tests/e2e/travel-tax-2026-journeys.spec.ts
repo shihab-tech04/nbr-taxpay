@@ -230,11 +230,13 @@ test('Travel Tax: an invalid sample cannot fabricate a government passport looku
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
-  await modal.locator('#travel-passport-first').fill('REALPASSPORT1');
+  const passport = modal.locator('#travel-passport-first');
+  await passport.fill('REALPASSPORT1');
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByRole('alert')).toContainText('not connected');
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveCount(0);
-  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await passport.fill('TEST123456');
+  await expect(passport).toHaveValue('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
 });
