@@ -137,8 +137,8 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
   r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
  return <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="inquiry-title">
   <header className="space-y-2">
-   <h2 id="inquiry-title" className="font-serif-fraunces text-xl font-bold text-emerald-950">{labels.title}</h2>
-   <p className="text-sm text-amber-900">{labels.intro}</p>
+   <h2 id="inquiry-title" className="text-xl font-semibold text-taxpay-text">{labels.title}</h2>
+   <p className="text-sm leading-6 text-taxpay-muted">{labels.intro}</p>
   </header>
   <form onSubmit={submit} className="space-y-4">
    <label className="block text-sm font-semibold text-slate-800">{labels.ref}
@@ -172,7 +172,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
   </form>
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
   <section aria-labelledby="inquiry-history-title" className="space-y-3">
-   <h3 id="inquiry-history-title" className="font-serif-fraunces text-lg font-bold">{labels.history}</h3>
+   <h3 id="inquiry-history-title" className="text-lg font-semibold text-taxpay-text">{labels.history}</h3>
    {loading?<p role="status">{labels.loading}</p>:
     loadError?<div className="space-y-2"><p className="text-sm text-amber-900">{labels.fail}</p>
       <UiButton type="button" onClick={retryLoad}>{labels.retry}</UiButton></div>:
