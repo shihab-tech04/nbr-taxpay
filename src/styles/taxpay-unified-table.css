@@ -248,6 +248,50 @@ table.taxpay-unified-table {
 .taxpay-unified-table tbody tr:hover {
   background: var(--taxpay-table-hover, #f1f6ff);
 }
+/* Beneficiary selections use the same selected row treatment as other registers.
+ * The mobile checkbox/card and desktop table have one selection state. */
+.taxpay-unified-table tbody tr[data-selected="true"] {
+  background: var(--taxpay-table-selected, #eaf2ff);
+}
+.taxpay-unified-table tbody tr[data-selected="true"]:hover {
+  background: var(--taxpay-table-selected, #eaf2ff);
+}
+.beneficiary-directory__table .taxpay-table-viewport {max-width:100%;overflow-x:auto;}
+.beneficiary-directory__table .taxpay-unified-table th,
+.beneficiary-directory__table .taxpay-unified-table td {vertical-align:middle;}
+.beneficiary-directory__table .taxpay-unified-table th:last-child,
+.beneficiary-directory__table .taxpay-unified-table td:last-child {min-width:240px;}
+.beneficiary-directory__table .taxpay-unified-table .beneficiary-directory__actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  align-items:center;
+}
+.beneficiary-directory__table .taxpay-unified-table tbody tr[data-selected="true"] td {
+  background:transparent;
+}
+@media(max-width:767px) {
+  .beneficiary-directory__table .taxpay-mobile-table-cards {padding:8px;}
+  .beneficiary-directory__table .taxpay-mobile-table-card__actions {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.beneficiary-directory__table .taxpay-mobile-table-card__actions > button:nth-child(2) {
+  grid-column:1/-1;
+  grid-row:2;
+  width:100%;
+}
+.beneficiary-directory__table .taxpay-mobile-table-card__actions > button:nth-child(3) {
+  grid-column:2;
+  grid-row:1;
+}
+.beneficiary-directory__table .taxpay-mobile-table-card:has(input[type="checkbox"]:checked) {
+    border-color:var(--taxpay-table-primary,#2c5ead);
+    background:var(--taxpay-table-selected,#eaf2ff);
+  }
+}
 .taxpay-unified-table tbody tr[data-clickable-row="true"] {cursor:pointer;}
 .taxpay-unified-table tbody tr[data-clickable-row="true"]:focus-visible {
   outline:2px solid var(--taxpay-table-primary,#2c5ead);
@@ -480,9 +524,33 @@ table.taxpay-unified-table {
   }
 }
 @media(max-width:700px) {
+  /* On narrow mobile: Selected list spans row 1, Tag and Search share row 2,
+     and the conditional Relationship filter follows on row 3. */
   .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters,
   .taxpay-taxpayer-reference .taxpayer-transaction-filters.beneficiary-directory__filters:has([aria-label="Filter by relationship"]) {
-    grid-template-columns: minmax(0,1fr);
+    grid-template-columns: minmax(104px,.85fr) minmax(0,1.15fr);
+    column-gap: 8px;
+    row-gap: 12px;
+    align-items: end;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__list-filter {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__tag-filter {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__search-filter {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters > .beneficiary-directory__relationship-filter {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .taxpay-taxpayer-reference .beneficiary-directory__filters .taxpayer-transaction-filter {
+    font-size: 14px;
   }
   .taxpay-taxpayer-reference .beneficiary-directory__table > .beneficiary-directory__columns {display:none;}
   .taxpay-taxpayer-reference .beneficiary-directory__table .beneficiary-directory__row {

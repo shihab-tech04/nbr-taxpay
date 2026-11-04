@@ -13,7 +13,8 @@ test('screenshots: ledger, transactions and beneficiaries use shared table compo
  assert.match(ledger,/<TaxPayDataGrid variant="ledger"/);
  assert.ok(ledger.includes('testId="event-ledger-table"'));
  assert.match(activity,/<TaxPayDataGrid variant="payments"/);
- assert.match(beneficiaries,/<TaxPayDataGrid variant="beneficiaries"/);
+ assert.match(beneficiaries,/<TaxPayDataGrid variant="tabular"/);
+ assert.match(beneficiaries,/mobileTestId="beneficiary-directory-mobile"/);
  assert.match(activity,/setSelected\(item\)/);
  assert.match(beneficiaries,/openPersonEditor\(person\)/);
  assert.match(beneficiaries,/payWith\(\[person\]\)/);

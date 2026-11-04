@@ -50,55 +50,57 @@ for(const language of ['en','bn'] as const){
     await expect(screen.locator('.beneficiary-directory__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
-    const rows=directory.getByRole('listitem');
+    const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
     await expect(rows.first()).toContainText('123456789012');
     await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
     await expect(screen.locator('.beneficiary-directory__table.taxpay-data-table')).toBeVisible();
     const theme=await screen.locator('.beneficiary-directory__table').evaluate(el=>{
-      const header=el.querySelector('.beneficiary-directory__columns');
-      const row=el.querySelector('.beneficiary-directory__row');
+      const header=el.querySelector('table.taxpay-unified-table thead th');
+      const row=el.querySelector('table.taxpay-unified-table tbody tr')||el.querySelector('ul.taxpay-mobile-table-cards li');
       return {borderRadius:getComputedStyle(el).borderRadius,
-        headerMinHeight:header?parseFloat(getComputedStyle(header).minHeight):0,
+        headerMinHeight:header?header.getBoundingClientRect().height:0,
         rowBackground:row?getComputedStyle(row).backgroundColor:'transparent'};
     });
     expect(theme.borderRadius).not.toBe('0px');
-    expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
+    // Hidden desktop <thead> has zero layout height at mobile widths.
+    // Assert the shared header on desktop, and the record-card touch targets on mobile.
+    if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
+    else await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toHaveCSS('min-height','44px');
     expect(theme.rowBackground).not.toBe('transparent');
     await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toBeVisible();
     const layout=await page.evaluate(()=>{
       const wrapper=document.querySelector('[data-testid="beneficiaries-page"]');
-      const panel=wrapper?.querySelector('.beneficiary-directory__row');
-      const heading=wrapper?.querySelector('.beneficiary-directory__columns');
+      const desktopTable=wrapper?.querySelector('table.taxpay-unified-table');
+      const header=wrapper?.querySelector('table.taxpay-unified-table thead');
+      const mobileCards=wrapper?.querySelector('ul.taxpay-mobile-table-cards');
       const filters=wrapper?.querySelector('.beneficiary-directory__filters');
-      if(!wrapper||!panel||!heading||!filters)throw new Error('Directory layout missing');
+      if(!wrapper||!desktopTable||!header||!mobileCards||!filters)throw new Error('Directory layout missing');
       return {width:window.innerWidth,
         pageOverflow:document.documentElement.scrollWidth>window.innerWidth+1,
-        rowColumns:getComputedStyle(panel).gridTemplateColumns.split(' ').filter(Boolean).length,
+        rowColumns:window.innerWidth>767?desktopTable.querySelectorAll('tbody tr:first-child td').length:1,
         filterColumns:getComputedStyle(filters).gridTemplateColumns.split(' ').filter(Boolean).length,
-        headingVisible:getComputedStyle(heading).display!=='none'};
+        headingVisible:getComputedStyle(desktopTable).display!=='none',
+        mobileVisible:getComputedStyle(mobileCards).display!=='none'};
     });
     expect(layout.pageOverflow).toBe(false);
-    expect(layout.rowColumns).toBe(layout.width<=800?1:4);
-    expect(layout.headingVisible).toBe(layout.width>800);
-    // A user-facing table must expose the actual four columns on desktop,
-    // and keep TIN/tag understandable after the header becomes a mobile card.
-    if(layout.width>800){
-      await expect(directory.locator('.taxpay-record-list__heading')).toHaveText([
+    expect(layout.rowColumns).toBe(layout.width>767?4:1);
+    expect(layout.headingVisible).toBe(layout.width>767);
+    if(layout.width>767){
+      await expect(directory.locator('table.taxpay-unified-table thead th')).toHaveText([
         t('Beneficiary','উপকারভোগী'),t('TIN','টিআইএন'),
         t('Tag / relationship','ট্যাগ / সম্পর্ক'),t('Actions','কার্যক্রম')
       ]);
-      await expect(rows.first().locator('.beneficiary-directory__mobile-label').first()).toBeHidden();
+      expect(layout.mobileVisible).toBe(false);
     }else{
-      await expect(directory.locator('.taxpay-record-list__columns')).toBeHidden();
-      await expect(rows.first().locator('.beneficiary-directory__mobile-label')).toHaveText([
-        t('TIN','টিআইএন')+': ',t('Tag','ট্যাগ')+': '
-      ]);
+      expect(layout.mobileVisible).toBe(true);
+      await expect(rows.first()).toContainText(t('TIN','টিআইএন')+': ');
+      await expect(rows.first()).toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
     }
-    expect(layout.filterColumns).toBe(layout.width<=700?1:layout.width<=1050?2:3);
+    expect(layout.filterColumns).toBe(layout.width<=1050?2:3);
     await search.fill('Neighbour');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText('Shihab');

@@ -76,7 +76,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(dialog.locator('#beneficiary-name')).not.toHaveAttribute('required','');
   await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
+  const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
@@ -87,7 +87,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.locator('#beneficiary-name').fill('Editable Contact');
   await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const secondRecord=visibleRecords.getByRole('listitem').filter({hasText:'987654321098'});
+  const secondRecord=visibleRecords.filter({hasText:'987654321098'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
@@ -116,7 +116,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
-  const intendedRecord=visibleRecords.getByRole('listitem').filter({hasText:'012345678901'});
+  const intendedRecord=visibleRecords.filter({hasText:'012345678901'});
   await intendedRecord.getByRole('checkbox',{name:'Select Name not provided',exact:true}).check();
   await intendedRecord.getByRole('button',{name:'Pay Tax for Others',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
@@ -141,7 +141,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await dialog.locator('#beneficiary-tag').selectOption('friends_family');
   await dialog.locator('#beneficiary-relationship').selectOption('mother');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
-  const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
+  const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
   await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='123450987654')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 });

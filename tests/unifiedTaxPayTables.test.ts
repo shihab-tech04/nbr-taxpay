@@ -52,7 +52,8 @@ test('mobile record cards keep the original actions and responsive contract',()=
     assert.match(source,/md:hidden|renderMobileCard=/,screen);
   }
   const beneficiary=read('src/components/screens/Beneficiaries.tsx');
-  assert.match(beneficiary,/beneficiary-directory__row/);
+  assert.match(beneficiary,/beneficiary-directory__tabular-row/);
+  assert.match(beneficiary,/renderMobileCard=\{person=>/);
   assert.match(beneficiary,/beneficiary-directory__actions/);
   const payment=read('src/components/screens/AccountBeneficiaryHistory.tsx');
   assert.match(payment,/getAccountStoryPayments/);
