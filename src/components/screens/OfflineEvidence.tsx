@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { 
   FileText, 
@@ -162,54 +162,31 @@ export const OfflineEvidence: React.FC = () => {
         </form>
 
         {/* Existing Offline Records */}
-        <div className="taxpay-table-viewport hidden md:block">
-          <TaxPayUnifiedTable className="taxpay-unified-table min-w-full divide-y divide-slate-200 text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
-              <tr>
-                <th className="px-3 py-2.5">Batch Ref</th>
-                <th className="px-3 py-2.5">Paper Challan No</th>
-                <th className="px-3 py-2.5">Taxpayer & TIN</th>
-                <th className="px-3 py-2.5">Depository Bank Branch</th>
-                <th className="px-3 py-2.5 text-right">Amount (৳)</th>
-                <th className="px-3 py-2.5 text-center">Audit Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {evidenceList.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2 font-mono text-slate-500">{item.batchNumber}</td>
-                  <td className="px-3 py-2 font-mono-plex font-bold text-emerald-950">{item.paperChallanNo}</td>
-                  <td className="px-3 py-2 text-slate-800">
-                    <div>{item.taxpayerName}</div>
-                    <div className="font-mono text-[10px] text-slate-500">{item.tin}</div>
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">{item.bankName}</td>
-                  <td className="px-3 py-2 text-right font-mono-plex font-bold text-slate-900">
-                    {formatCurrency(item.amount, language)}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      item.status === 'VERIFIED_SCROLLED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </TaxPayUnifiedTable>
-        </div>
-        <div className="taxpay-mobile-table-cards md:hidden" data-testid="offline-evidence-mobile-cards">
-          {evidenceList.map(item=><article key={item.id} className="taxpay-mobile-table-card">
+        <TaxPayDataGrid variant="tabular" rows={evidenceList} getRowKey={item=>String(item.id)}
+          ariaLabel="Offline challan evidence records" mobileTestId="offline-evidence-mobile-cards"
+          columns={[
+            {key:'batch',header:'Batch Ref',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.batchNumber}</p>},
+            {key:'challan',header:'Paper Challan No',renderCell:item=><p className="break-all font-mono-plex font-semibold">{item.paperChallanNo}</p>},
+            {key:'taxpayer',header:'Taxpayer & TIN',renderCell:item=><div>
+              <p className="font-semibold">{item.taxpayerName}</p>
+              <p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.tin}</p>
+            </div>},
+            {key:'bank',header:'Depository Bank Branch',renderCell:item=><p>{item.bankName}</p>},
+            {key:'amount',header:'Amount (৳)',headerClassName:'text-right',cellClassName:'text-right tabular-nums',
+              renderCell:item=><p className="font-semibold">{formatCurrency(item.amount,language)}</p>},
+            {key:'status',header:'Audit Status',renderCell:item=><p
+              className={item.status==='VERIFIED_SCROLLED'?'font-semibold text-emerald-800':'font-semibold text-amber-800'}>
+              {item.status.replaceAll('_',' ')}</p>}
+          ]}
+          renderMobileCard={item=><>
             <div className="taxpay-mobile-table-card__header">
               <p className="taxpay-mobile-table-card__title">{item.paperChallanNo}</p>
               <p className="font-semibold tabular-nums">{formatCurrency(item.amount,language)}</p>
             </div>
             <p className="taxpay-mobile-table-card__meta">{item.taxpayerName} · {item.tin}</p>
             <p className="taxpay-mobile-table-card__meta">{item.bankName}</p>
-            <p className="taxpay-mobile-table-card__meta">{item.batchNumber} · {item.status}</p>
-          </article>)}
-        </div>
+            <p className="taxpay-mobile-table-card__meta">{item.batchNumber} · {item.status.replaceAll('_',' ')}</p>
+          </>}/>
         {evidenceList.length===0&&<p className="taxpay-table-state" role="status">No offline records found.</p>}
       </div>
     </div>
