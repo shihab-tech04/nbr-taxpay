@@ -82,3 +82,28 @@ test('ledger, Activity and Beneficiaries share one column-driven data renderer w
   for(const action of ['payWith([person])','openPersonEditor(person)','setDeletePerson(person)'])assert.ok(beneficiaries.includes(action),action);
   assert.ok(read('src/components/screens/EventBasedTaxLedger.tsx').includes('renderMobileCard='));
 });
+
+test('actual signed-in payment paths use shared semantic desktop tables and complete mobile field cards',()=>{
+ const switcher=read('src/components/screens/AuthenticatedHistorySwitch.tsx');
+ const history=read('src/components/screens/AccountReviewHistory.tsx');
+ const activity=read('src/components/screens/DemoPaymentActivity.tsx');
+ const shared=read('src/components/ui/TaxPayDataTable.tsx');
+ const css=read('src/styles/taxpay-unified-table.css');
+ assert.match(switcher,/AccountReviewHistory/);
+ assert.match(switcher,/DemoPaymentActivity/);
+ for(const [name,source] of [['owner',history],['linked',activity]] as const){
+   assert.match(source,/<TaxPayDataGrid variant="tabular"/,name);
+   assert.match(source,/TaxPayTableControls/,name);
+   assert.match(source,/TaxPayTableCounter/,name);
+   assert.match(source,/mobileTestId=/,name);
+   assert.match(source,/getRowKey=/,name);
+   assert.match(source,/type="search"/,name);
+ }
+ assert.match(activity,/onClick=\{\(\)=>setSelectedPayment\(tx\)\}/);
+ assert.match(activity,/tx\.allocations\.map/);
+ assert.match(activity,/tx\.events\.map/);
+ assert.match(history,/\.eq\('owner_uid',ownerUid\)/);
+ assert.match(history,/formattedReviewAmount\(row\.amount_minor,language\)/);
+ assert.match(shared,/renderMobileCard \? renderMobileCard\(row\) : <dl/);
+ assert.match(css,/\.taxpay-mobile-table-card__field dd/);
+});
