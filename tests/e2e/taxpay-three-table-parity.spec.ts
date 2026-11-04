@@ -103,6 +103,11 @@ for(const language of ['en','bn'] as const){
         };
       },{view,desktop});
       expect(style.overflow,view+' horizontal overflow').toBeLessThanOrEqual(2);
+      const textSize=await row.evaluate(element=>{
+        const cell=element.matches('tr')?element.querySelector('td'):element;
+        return parseFloat(getComputedStyle(cell??element).fontSize);
+      });
+      expect(textSize,view+' primary record typography').toBeGreaterThanOrEqual(16);
       if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(76);
       else expect(style.borderRadius,view+' card corners').not.toBe('0px');
       observations.push({view,background:style.background,fontSize:style.fontSize,

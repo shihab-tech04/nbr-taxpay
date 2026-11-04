@@ -615,10 +615,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                           }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
                       </div>
                     </div>
-                    {editing ? <>
+                    {editing ? <div key={item.id + '-editor'} className="travel-flow__person-body">
                       {renderPassengerEditor(item, index)}
                       {passengerIssue?.id === item.id && <p className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
-                    </> : <dl className="travel-flow__person-summary">
+                    </div> : <dl key={item.id + '-summary'} className="travel-flow__person-summary travel-flow__person-body">
                       <div><dt>{tr('Passenger name', 'যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
                       <div><dt>{tr('Passport number', 'পাসপোর্ট নম্বর')}</dt><dd>{maskPassport(item.passport)}</dd></div>
                       <div><dt>{tr('Date of birth', 'জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
@@ -676,7 +676,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 </fieldset>
               </div>
               <div className="travel-flow__fields travel-flow__field-group">
-                {mode === 'LAND' ? <div className="travel-flow__field">
+                {mode === 'LAND' ? <div key="land" className="travel-flow__field travel-flow__mode-field">
                   <label htmlFor="travel-port">{tr('Departure land port','স্থলবন্দর')} *</label>
                   <select id="travel-port" value={port} onChange={e => { setPort(e.target.value); setError(''); }}>
                     <option value="">{tr('Select departure port','বন্দর নির্বাচন করুন')}</option>
@@ -684,7 +684,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   </select>
                   <p className="travel-flow__field-hint">{tr('Historical reference ports; current operation must be confirmed.',
                     'ঐতিহাসিক বন্দরের তালিকা; বর্তমান কার্যক্রম যাচাই প্রয়োজন।')}</p>
-                </div> : <div className="travel-flow__field">
+                </div> : <div key="water" className="travel-flow__field travel-flow__mode-field">
                   <label htmlFor="travel-water-port">{tr('Departure water port','নৌবন্দর')} *</label>
                   <input id="travel-water-port" value={waterPort} onChange={e => { setWaterPort(e.target.value); setError(''); }}
                     placeholder={tr('Enter water port','নৌবন্দর লিখুন')} list="travel-water-port-options"/>
@@ -697,7 +697,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     onChange={e => { setDestination(e.target.value); setError(''); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
                   <datalist id="travel-destinations"><option value="India"/><option value="Nepal"/><option value="Bhutan"/><option value="Myanmar"/></datalist>
                 </div>
-                <div className="travel-flow__field">
+                <div className="travel-flow__field travel-flow__field--full">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
                   <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
@@ -789,7 +789,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
           <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : invalidPassengerIds.size > 0 ? tr('Passenger details need correction','যাত্রীর তথ্য সংশোধন প্রয়োজন') : tr('Awaiting travel details','ভ্রমণের তথ্যের অপেক্ষায়')}</dd></div>
         </dl>
-        <div className="travel-flow__age-breakdown" role="status" aria-live="polite">
+        <div className="travel-flow__age-breakdown" role="status" aria-live="polite" tabIndex={embedded ? 0 : undefined}>
           {assessments.map(({passenger, assessment}, index) =>
             <div key={passenger.id} className="travel-flow__age-row">
               <p><strong>{passenger.name || tr('Passenger ', 'যাত্রী ') + (index + 1)}</strong>

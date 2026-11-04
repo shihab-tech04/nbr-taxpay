@@ -273,3 +273,124 @@ test('Travel Tax: mobile payment calculation stays contained in Step 2 and Step 
   await expect(footer.locator('summary')).toContainText('1,000');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed actions', async ({page}, info) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  const body = modal.locator('.taxpay-modal__body');
+  const main = modal.locator('.travel-flow__main');
+  const header = modal.locator('.taxpay-modal__header');
+  const footer = modal.locator('.taxpay-modal__footer');
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  await modal.getByRole('button', {name: 'Add passenger'}).click();
+  const beforeHeader = await header.boundingBox();
+  const beforeFooter = await footer.boundingBox();
+  expect(beforeHeader).not.toBeNull();
+  expect(beforeFooter).not.toBeNull();
+
+  const owner = info.project.name === 'desktop-1280' ? body : main;
+  const other = info.project.name === 'desktop-1280' ? main : body;
+  expect(await owner.evaluate(element => getComputedStyle(element).overflowY)).toBe('auto');
+  expect(await other.evaluate(element => getComputedStyle(element).overflowY))
+    .not.toBe('auto');
+  const scroll = await owner.evaluate(element => {
+    element.scrollTop = element.scrollHeight;
+    return {position: element.scrollTop, overflow: element.scrollHeight - element.clientHeight};
+  });
+  expect(scroll.overflow).toBeGreaterThan(0);
+  expect(scroll.position).toBeGreaterThan(0);
+  await expect(modal.getByRole('button', {name: 'Continue to travel details'})).toBeVisible();
+  const afterHeader = await header.boundingBox();
+  const afterFooter = await footer.boundingBox();
+  expect(Math.abs(afterHeader!.y - beforeHeader!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(afterFooter!.y - beforeFooter!.y)).toBeLessThanOrEqual(1);
+});
+
+test('Travel Tax: full-width travel date and contained calculation panel', async ({page}, info) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  await fillTravelDetails(modal);
+  const date = modal.locator('#travel-departure-date');
+  const dateField = modal.locator('.travel-flow__field--full');
+  const fields = modal.locator('.travel-flow__fields');
+  const fieldBox = await dateField.boundingBox();
+  const gridBox = await fields.boundingBox();
+  const inputBox = await date.boundingBox();
+  expect(fieldBox).not.toBeNull();
+  expect(gridBox).not.toBeNull();
+  expect(inputBox).not.toBeNull();
+  expect(fieldBox!.width).toBeGreaterThan(gridBox!.width * 0.95);
+  expect(inputBox!.width).toBeGreaterThan(fieldBox!.width * 0.95);
+  await expect(date).toHaveValue('2026-11-20');
+  await expect(modal.getByRole('button', {name: 'Continue to review'})).toBeEnabled();
+
+  if (info.project.name === 'desktop-1280') {
+    const rail = modal.locator('.travel-flow__summary');
+    await expect(rail).toBeVisible();
+    await expect(rail.getByRole('heading', {name: 'Payment calculation'})).toBeVisible();
+    await expect(rail.getByTestId('travel-payment-total')).not.toHaveText('—');
+    expect(await rail.evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden');
+    expect(await rail.locator('.travel-flow__age-breakdown').evaluate(element => getComputedStyle(element).overflowY)).toBe('auto');
+    const railBox = await rail.boundingBox();
+    const mainBox = await modal.locator('.travel-flow__main').boundingBox();
+    expect(railBox!.x).toBeGreaterThanOrEqual(mainBox!.x + mainBox!.width - 2);
+    expect(railBox!.width).toBeGreaterThanOrEqual(260);
+  } else {
+    await expect(modal.locator('.travel-flow__summary')).toBeHidden();
+    await expect(modal.getByTestId('mobile-payment-calculation')).toBeVisible();
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+
+test('Travel Tax: modal resizing, conditional passenger cards and passport suggestions use gentle motion', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  await expect(modal).toBeVisible();
+  const modalMotion = await modal.evaluate(element => getComputedStyle(element).transitionProperty);
+  expect(modalMotion).toContain('height');
+  expect(modalMotion).toContain('width');
+
+  const passport = modal.locator('#travel-passport-first');
+  await passport.focus();
+  const suggestions = modal.locator('#travel-passport-suggestions-first');
+  await expect(suggestions).toBeVisible();
+  expect(await suggestions.evaluate(element => getComputedStyle(element).animationName))
+    .toContain('travel-flow-reveal');
+  await passport.fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  await expect(modal.getByRole('button', {name: 'Add passenger'})).toBeEnabled();
+  await modal.getByRole('button', {name: 'Add passenger'}).click();
+  const newPassenger = modal.locator('.travel-flow__person').last();
+  await expect(newPassenger).toBeVisible();
+  expect(await newPassenger.evaluate(element => getComputedStyle(element).animationName))
+    .toContain('travel-flow-expand');
+  await expect(modal.locator('.travel-flow__person-body').last()).toBeVisible();
+  await expect(modal.getByRole('button', {name: 'Continue to travel details'})).toBeDisabled();
+});
+
+test('Travel Tax: mode changes animate without changing controls; reduced motion disables effects', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  await fillTravelDetails(modal);
+  await expect(modal.locator('#travel-port')).toBeVisible();
+  await modal.locator('#travel-tax-route-1').check();
+  const water = modal.locator('#travel-water-port');
+  await expect(water).toBeVisible();
+  await expect(modal.locator('#travel-port')).toHaveCount(0);
+  expect(await water.locator('..').evaluate(element => getComputedStyle(element).animationName))
+    .toContain('travel-flow-reveal');
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  expect(await water.locator('..').evaluate(element => getComputedStyle(element).animationName))
+    .toBe('none');
+  expect(await modal.evaluate(element => getComputedStyle(element).transitionDuration))
+    .toMatch(/^(0s(?:, 0s)*)$/);
+  await water.fill('Mongla');
+  await expect(water).toHaveValue('Mongla');
+});
