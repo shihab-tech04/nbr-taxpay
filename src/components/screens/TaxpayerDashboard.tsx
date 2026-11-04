@@ -149,8 +149,8 @@ export const TaxpayerDashboard: React.FC = () => {
         {exampleMode
           ? tr('Illustrative dashboard — the saved account activity below remains unchanged.',
             'উদাহরণভিত্তিক ড্যাশবোর্ড — নিচের সংরক্ষিত অ্যাকাউন্ট কার্যক্রম অপরিবর্তিত।')
-          : tr('Actual tax balances are unavailable. Use View examples to inspect the dashboard.',
-            'প্রকৃত কর ব্যালেন্স পাওয়া যায়নি। ড্যাশবোর্ড দেখতে উদাহরণ দেখুন বেছে নিন।')}
+          : tr('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.',
+            'এই অ্যাকাউন্টের যাচাইকৃত কর ব্যালেন্স পাওয়া যায়নি। নিচে আপনার সংরক্ষিত অ্যাকাউন্টের কার্যক্রম ও পেমেন্ট রেকর্ড দেখতে পারবেন।')}
       </p>
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
