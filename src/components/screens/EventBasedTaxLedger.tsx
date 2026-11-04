@@ -233,10 +233,21 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             {key:'actor',header:t('Actor · source','কার্যকারী · উৎস'),renderCell:e=><>{e.actor}<span className="block text-taxpay-muted">{e.source}</span></>},
             {key:'taxEvent',header:t('Tax event','কর ঘটনা'),cellClassName:'break-all font-mono',renderCell:e=>e.taxEventId||e.id}
           ]}
-          renderMobileCard={e=><button type="button" onClick={()=>setSelected(e)} className="flex min-h-11 w-full flex-col gap-1 rounded-lg p-0 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
-            <span className="flex w-full items-center justify-between gap-2"><strong>{e.title}</strong><ArrowRight size={15}/></span>
-            <span className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear}</span>
-            <span className="break-all text-xs">{e.reference||e.taxEventId||e.id}</span>
+          renderMobileCard={e=><button type="button" onClick={()=>setSelected(e)} className="flex min-h-11 w-full flex-col gap-2 rounded-lg p-0 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+            <span className="flex w-full items-center justify-between gap-2"><strong className="text-base">{e.title}</strong><ArrowRight aria-hidden="true" size={16}/></span>
+            <span className="text-sm text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear} · {e.component}</span>
+            <span className="break-all text-sm">{e.reference||e.taxEventId||e.id}</span>
+            <span className="grid w-full grid-cols-2 gap-x-4 gap-y-2 border-t border-taxpay-border pt-2">
+              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Recorded amount','নথিভুক্ত পরিমাণ')}</span>
+                <strong className="block break-words text-sm tabular-nums">{e.amountMinor===null?t('Not recorded','নথিভুক্ত নয়'):money(e.amountMinor,language)}</strong></span>
+              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Effect on balance','ব্যালেন্সের প্রভাব')}</span>
+                <strong className="block break-words text-sm tabular-nums">{e.effectMinor===null?t('Not verified','যাচাই হয়নি'):(e.effectMinor>0?'+':e.effectMinor<0?'−':'')+money(Math.abs(e.effectMinor),language)}</strong></span>
+              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{showRecordedScenarioBalance?t('Calculated balance after','হিসাবকৃত পরবর্তী ব্যালেন্স'):t('Balance after','পরবর্তী ব্যালেন্স')}</span>
+                <strong className="block break-words text-sm tabular-nums">{canShowBalance&&e.balanceAfterMinor!==null?money(e.balanceAfterMinor,language):t('Not verified','যাচাই হয়নি')}</strong></span>
+              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Recorded status','নথিভুক্ত অবস্থা')}</span>
+                <strong className="block break-words text-sm">{e.status||t('Not recorded','নথিভুক্ত নয়')}</strong></span>
+            </span>
+            <span className="w-full break-words text-sm text-taxpay-muted">{t('Source','উৎস')}: {e.source}</span>
           </button>}/>
 
     </TaxPayTableViewport>
