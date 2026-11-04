@@ -130,10 +130,29 @@ export const NotificationsView:React.FC=()=>{
     (r.payerId+" "+r.taxpayerId+" "+r.status).toLocaleLowerCase().includes(authorizationSearch.trim().toLocaleLowerCase()));
   const visiblePayments=previewPaymentEvents.filter(p=>(p.transactionId+" "+p.payer+" "+p.state).toLocaleLowerCase().includes(paymentSearch.trim().toLocaleLowerCase()));
   if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
-    <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')}/>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title" aria-live="polite">
+    <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')} description={label('Review requests and recorded payment updates.','অনুমোদনের অনুরোধ ও সংরক্ষিত পেমেন্টের হালনাগাদ দেখুন।')}/>
+    <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title">
       <h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Permission requests and their current recorded status.','অনুমতির আবেদন এবং সেগুলোর বর্তমান নথিভুক্ত অবস্থা।')}</p>
+      <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
+        <label className="taxpayer-transaction-filter">
+          <span>{label('Search authorizations','অনুমোদন খুঁজুন')}</span>
+          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+            value={authorizationSearch} onChange={e=>setAuthorizationSearch(e.target.value)}
+            placeholder={label('Search payer or taxpayer','পরিশোধকারী বা করদাতা খুঁজুন')}/>
+        </label>
+        <label className="taxpayer-transaction-filter">
+          <span>{label('Status','অবস্থা')}</span>
+          <select className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+            value={authorizationFilter} onChange={e=>setAuthorizationFilter(e.target.value)}>
+            <option value="all">{label('All statuses','সব অবস্থা')}</option>
+            {['ACTIVE','PENDING','CODE_ISSUED','APPROVED','REJECTED','EXPIRED','REVOKED'].map(state=>
+              <option key={state} value={state}>{authorizationStatus(state)}</option>)}
+          </select>
+        </label>
+        {(authorizationSearch||authorizationFilter!=='all')&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+          onClick={()=>{setAuthorizationSearch('');setAuthorizationFilter('all');}}>{label('Clear filters','ফিল্টার মুছুন')}</button>}
+      </TaxPayTableControls>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
       {!visibleAuthorizations.length?<p role="status" className="taxpay-table-state">{authorizationNotices.length?label('No authorization requests match your filters.','ফিল্টারে কোনো অনুমোদনের অনুরোধ মেলেনি।'):label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
       <TaxPayDataGrid variant="documents" rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
@@ -155,9 +174,19 @@ export const NotificationsView:React.FC=()=>{
             onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>}
         ]}/>
     </section>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
+    <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
       <h2 className="font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
+      <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
+        <label className="taxpayer-transaction-filter">
+          <span>{label('Search payment updates','পেমেন্টের হালনাগাদ খুঁজুন')}</span>
+          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+            value={paymentSearch} onChange={e=>setPaymentSearch(e.target.value)}
+            placeholder={label('Search payer or reference','পরিশোধকারী বা রেফারেন্স খুঁজুন')}/>
+        </label>
+        {paymentSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+          onClick={()=>setPaymentSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>}
+      </TaxPayTableControls>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
        !visiblePayments.length?<p role="status" className="taxpay-table-state">{previewPaymentEvents.length?label('No payment updates match this search.','এই অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।'):label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
        <TaxPayDataGrid variant="documents" rows={visiblePayments}
