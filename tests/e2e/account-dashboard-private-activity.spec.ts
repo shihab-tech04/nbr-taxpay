@@ -108,6 +108,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
   const phase=page.getByTestId('authenticated-dashboard-v11');
   await expect(phase).toBeVisible();
+  await expect(phase.getByRole('heading',{name:'Payment deadlines & demands'})).toBeVisible();
+  await expect(phase).toContainText('No verified due dates available');
+  await expect(phase).toContainText('An unavailable balance does not mean nothing is owed.');
+  await expect(phase.getByRole('button',{name:'Review tax ledger'})).toBeVisible();
   for (const heading of ['Needs review','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
@@ -160,6 +164,8 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(dashboard).toContainText('৳ 34.50');
   await expect(dashboard).not.toContainText('৳ 65.50');
   await setWorkspaceLanguage(page,'bn');
+  await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
+  await expect(phase).toContainText('যাচাইকৃত পরিশোধের শেষ তারিখ পাওয়া যায়নি');
   await expect(dashboard.getByRole('heading',{name:'আমার অ্যাকাউন্টের কার্যক্রম'})).toBeVisible();
   await expect(dashboard).toContainText('৳ ৩৪.৫০');
   const refreshedHistory=page.waitForRequest(request=>request.url().endsWith('/rest/v1/rpc/sim_my_payment_history')&&request.method()==='POST');
