@@ -241,7 +241,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         {yearTransactions.length>0&&<div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-taxpay-border bg-white p-3">
             <p className="text-xs text-taxpay-muted">{tr('Scenario payment records','সিনারিও পেমেন্ট রেকর্ড')}</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-taxpay-text">{visibleScenario.transactions.length.toLocaleString(bn?'bn-BD':'en-BD')}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-taxpay-text">{yearTransactions.length.toLocaleString(bn?'bn-BD':'en-BD')}</p>
           </div>
           <div className="rounded-xl border border-taxpay-border bg-white p-3">
             <p className="text-xs text-taxpay-muted">{tr('Recorded amount in scenario','সিনারিওতে নথিভুক্ত পরিমাণ')}</p>
