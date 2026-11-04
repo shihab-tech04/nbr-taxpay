@@ -217,11 +217,14 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <ul className="divide-y divide-taxpay-border">{guestNotices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>
-          <p className="font-semibold tabular-nums text-taxpay-text">{label('Amount','পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
-          <p className="break-all text-sm text-taxpay-muted">{n.paymentId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
-        </li>)}</ul>}
+        <TaxPayDataGrid variant="documents" rows={guestNotices} getRowKey={n=>String(n.id)}
+          ariaLabel={label('Payment notices','পেমেন্ট বিজ্ঞপ্তি')}
+          columns={[
+            {key:'update',header:label('Update','হালনাগাদ'),renderCell:()=><h2 className="text-sm font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>},
+            {key:'amount',header:label('Amount','পরিমাণ'),renderCell:n=><p className="font-semibold tabular-nums text-taxpay-text">{label('Amount','পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>},
+            {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:n=><p className="break-all text-sm text-taxpay-muted">{n.paymentId}</p>},
+            {key:'date',header:label('Recorded','সংরক্ষণের সময়'),renderCell:n=><time className="text-sm text-taxpay-muted" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>}
+          ]}/>}
     </section>
   </main>;
   // Authenticated general TaxPay users can receive review/draft notifications
@@ -237,19 +240,28 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !notices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <ul className="divide-y divide-taxpay-border">{notices.map(n=><li key={n.id} className="py-3">
-          <h2 className="text-base font-semibold text-taxpay-text">{({
-            SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
-            SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
-            SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
-          } as Record<string,string>)[n.messageCode] ??
-          label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে')}</h2>
-          {n.amountMinor!==null?<p className="font-semibold tabular-nums text-taxpay-text">{label(n.perspective==='beneficiary'?'Your allocation':'Amount',n.perspective==='beneficiary'?'আপনার বরাদ্দ':'পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>:
-            <p className="text-sm text-taxpay-muted">{label('Amount not verified','পরিমাণ যাচাই করা যায়নি')}</p>}
-          <p className="break-all text-sm text-taxpay-muted">{n.transactionId} · <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
-          <p className="text-xs text-taxpay-muted">{n.isRead?label('Read','পঠিত'):label('Unread','অপঠিত')}</p>
-          {privateMode&&<button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50" disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}
-        </li>)}</ul>}
+        <TaxPayDataGrid variant="documents" rows={notices} getRowKey={n=>String(n.id)}
+          ariaLabel={label('Account payment notifications','অ্যাকাউন্টের পেমেন্ট বিজ্ঞপ্তি')}
+          columns={[
+            {key:'update',header:label('Update','হালনাগাদ'),renderCell:n=><div>
+              <h2 className="text-sm font-semibold text-taxpay-text">{({
+                SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
+                SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
+                SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
+              } as Record<string,string>)[n.messageCode]??label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে')}</h2>
+              <p className="mt-1 text-sm text-taxpay-muted">{n.isRead?label('Read','পঠিত'):label('Unread','অপঠিত')}</p>
+            </div>},
+            {key:'amount',header:label('Amount','পরিমাণ'),renderCell:n=>n.amountMinor!==null
+              ?<p className="font-semibold tabular-nums text-taxpay-text">{label(n.perspective==='beneficiary'?'Your allocation':'Amount',n.perspective==='beneficiary'?'আপনার বরাদ্দ':'পরিমাণ')}: {formatSimulatedAmount(n.amountMinor)}</p>
+              :<p className="text-sm text-taxpay-muted">{label('Amount not verified','পরিমাণ যাচাই করা যায়নি')}</p>},
+            {key:'reference',header:label('Reference and date','রেফারেন্স ও তারিখ'),renderCell:n=><div>
+              <p className="break-all text-sm text-taxpay-muted">{n.transactionId}</p>
+              <time className="text-sm text-taxpay-muted" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
+            </div>},
+            {key:'action',header:label('Actions','কার্যক্রম'),renderCell:n=><button type="button"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50"
+              disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}
+          ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
   </main>;
