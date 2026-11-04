@@ -43,7 +43,7 @@ test('offline evidence retains exact audit state and amounts without altering it
 
 test('Track payment is exclusively a lookup and never mounts the dashboard service register',()=>{
   const source=read('User1DemoExperience');
-  assert.match(source,/\{overviewRoute&&<DemoServiceRecordsPanel/);
+  assert.match(source,/\{route==='history'&&!trackingActivity&&<DemoServiceRecordsPanel/);
   assert.doesNotMatch(source,/\{route==='history'&&<DemoServiceRecordsPanel/);
   assert.match(source,/data-testid="track-payment-history-link"/);
   assert.match(source,/actions=\{!trackingActivity &&/);
