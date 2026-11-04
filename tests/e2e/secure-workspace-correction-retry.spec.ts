@@ -132,7 +132,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   expect(inquiryReads).toBeGreaterThan(failedReadCount + 1);
   allowPostSaveHistoryRetry = true;
   await history.getByRole('button', { name: 'Retry loading inquiries' }).click();
-  await expect(history.getByText('SYN-REF-123456 — Pending evidence — not an approved correction').filter({visible:true})).toBeVisible();
+  await expect(history.getByText('SYN-REF-123456 — Pending evidence — not an approved correction').filter({visible:true}).filter({visible:true})).toBeVisible();
   expect(postSaveHistorySuccesses).toBeGreaterThan(0);
   expect(insertCount).toBe(1);
   await expect(history.getByRole('button', { name: 'Retry loading inquiries' })).toHaveCount(0);
