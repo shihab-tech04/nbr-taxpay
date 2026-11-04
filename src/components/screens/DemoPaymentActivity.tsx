@@ -361,7 +361,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
          renderMobileCard={tx=><div className="space-y-2">
            <div className="flex items-start justify-between gap-2">
              <p className="min-w-0 break-all font-mono-plex font-semibold">{tx.id}</p>
-             <p className="shrink-0 font-semibold tabular-nums">{formatSimulatedAmount(tx.totalMinor)}</p>
+             <p className="shrink-0 font-semibold tabular-nums">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>
            </div>
            <p className="text-sm text-taxpay-muted">
              <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time> · {txt('Payer','প্রদানকারী')}: {tx.payer}
