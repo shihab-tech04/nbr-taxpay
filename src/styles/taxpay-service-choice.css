@@ -2131,7 +2131,7 @@
   .travel-flow__panel, .travel-flow__passport-suggestions,
   .travel-flow__identity-card, .travel-flow__inline-error,
   .travel-flow__medical-note, .travel-flow__person-summary,
-  .travel-flow__age-row
+  .travel-flow__age-row, .travel-flow__mode-field
 ) {
   animation: travel-flow-reveal 240ms var(--taxpay-motion-ease) both;
 }
