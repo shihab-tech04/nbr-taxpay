@@ -691,7 +691,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
-    {overviewRoute&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
+    {route==='history'&&!trackingActivity&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}
