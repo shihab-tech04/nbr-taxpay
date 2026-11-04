@@ -84,16 +84,20 @@ export const AuthenticatedDashboardPosition: React.FC<{
     <div className="grid gap-4 lg:grid-cols-2">
       <section className={panel} aria-labelledby="account-tax-coverage-title">
         <h2 id="account-tax-coverage-title" className="text-base font-semibold text-taxpay-text">{tr('Tax coverage','কর সমন্বয়ের চিত্র')}</h2>
-        <div className="flex flex-col items-center gap-4 py-5 sm:flex-row sm:justify-center">
-          <div role="img" aria-label={tr('Tax coverage unavailable; verified liability and credits are not linked','যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত না থাকায় কর সমন্বয়ের তথ্য পাওয়া যায়নি')}
+        {sample ? <div className="flex flex-col items-center gap-4 py-5 sm:flex-row sm:justify-center">
+          <div role="img" aria-label={tr('Illustrative liability coverage','উদাহরণভিত্তিক করদায় সমন্বয়')}
             className="flex h-36 w-36 shrink-0 items-center justify-center rounded-full border-[18px] border-slate-100">
-            <span className="text-2xl font-semibold text-taxpay-muted">{sample?coverage+'%':'—'}</span>
+            <p className="text-2xl font-semibold text-taxpay-muted">{coverage}%</p>
           </div>
           <dl className="w-full max-w-52 space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3"><dt>{tr('Applied credits','সমন্বিত ক্রেডিট')}</dt><dd className="font-semibold tabular-nums">{money(sample?.applied)}</dd></div>
-            <div className="flex items-center justify-between gap-3"><dt>{tr('Remaining balance','অবশিষ্ট দায়')}</dt><dd className="font-semibold tabular-nums">{money(sample?.remaining)}</dd></div>
+            <div className="flex items-center justify-between gap-3"><dt>{tr('Applied credits','সমন্বিত ক্রেডিট')}</dt><dd className="font-semibold tabular-nums">{money(sample.applied)}</dd></div>
+            <div className="flex items-center justify-between gap-3"><dt>{tr('Remaining balance','অবশিষ্ট দায়')}</dt><dd className="font-semibold tabular-nums">{money(sample.remaining)}</dd></div>
           </dl>
-        </div>
+        </div> : <div role="status" className="mt-4 flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-taxpay-border bg-slate-50 px-4 py-5 text-center">
+          <CircleHelp size={22} className="text-taxpay-muted" aria-hidden="true"/>
+          <p className="mt-2 text-sm font-medium text-taxpay-text">{tr('Coverage percentage unavailable','কর সমন্বয়ের শতকরা হার পাওয়া যায়নি')}</p>
+          <p className="mt-1 max-w-sm text-sm text-taxpay-muted">{tr('Verified liabilities and posted credits are needed to calculate coverage.','কর সমন্বয়ের হার নির্ণয়ে যাচাইকৃত করদায় ও সমন্বিত ক্রেডিট প্রয়োজন।')}</p>
+        </div>}
         {sample&&<div className="mb-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar"
           aria-label={tr('Illustrative liability covered','উদাহরণে করদায়ের সমন্বয়')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={coverage}>
           <div className="h-full bg-taxpay-primary" style={{width:coverage+'%'}}/>
