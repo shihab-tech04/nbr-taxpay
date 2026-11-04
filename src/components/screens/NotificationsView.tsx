@@ -7,6 +7,7 @@ import {reconcileDemoSimulationActivity,type DemoSimulationActivity} from '../..
 import {reconcileStoryPaymentNotices,type VerifiedStoryPaymentNotice} from '../../services/storyNotificationReconciliation';
 import {reconcilePrivateSimulationNotices,type VerifiedPrivateSimulationNotice} from '../../services/privateSimulationNotices';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
