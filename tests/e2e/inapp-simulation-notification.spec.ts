@@ -25,8 +25,8 @@ test('in-app notice shows the exact SQL amount and says no funds moved',async({p
   test.skip(info.project.name!=='mobile-375','Session-notice regression on mobile layout');
   await mockSessionNotifications(page,125050);
   await page.goto('/?action=notifications');
-  await expect(page.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
-  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByTestId('session-payment-cards').getByText('Payment record saved')).toBeVisible();
+  await expect(page.getByTestId('session-payment-cards').getByText('৳1,250.50')).toBeVisible();
   await expect(page.getByText('Payment completed successfully')).toHaveCount(0);
 });
 
@@ -97,7 +97,7 @@ test('preview account also shows this browser session SQL payment notice', async
   });
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading', { name: 'This browser’s payment notifications' })).toBeVisible();
-  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByTestId('session-payment-cards').getByText('৳1,250.50')).toBeVisible();
 });
 
 
@@ -109,7 +109,7 @@ test('guest hides notification actions while session-only payment events retain 
   await page.goto('/?action=payment_notifications');
   await expect(page).toHaveURL(/action=payment_notifications/);
   await expect(page.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
-  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByTestId('session-payment-cards').getByText('৳1,250.50')).toBeVisible();
   await expect(page.getByText('No stored draft activity for this account.')).toHaveCount(0);
 });
 
