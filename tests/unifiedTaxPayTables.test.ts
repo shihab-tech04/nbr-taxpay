@@ -13,6 +13,7 @@ test('one shared table stylesheet and React layout primitives own the table visu
     '--taxpay-table-hover','--taxpay-table-row-height','taxpay-table-toolbar',
     'taxpay-mobile-table-card','taxpay-table-state','prefers-reduced-motion'])
     assert.ok(css.includes(key),key);
+  assert.match(component,/variant==='tabular'\?<TaxPayTableViewport/, 'tabular grids must provide the shared desktop overflow viewport');
   for(const name of ['TaxPayTablePanel','TaxPayTableToolbar','TaxPayTableViewport',
     'TaxPayMobileTableCards','TaxPayMobileTableCard','TaxPayTableState'])
     assert.ok(component.includes('function '+name),name);
@@ -27,7 +28,8 @@ test('every record table uses the same presentation contract without deleting it
   for(const screen of recordScreens){
     const source=read('src/components/screens/'+screen+'.tsx');
     assert.match(source,/taxpay-unified-table|TaxPayDataGrid/,screen);
-    assert.match(source,/taxpay-table-viewport|TaxPayTableViewport/,screen+' needs controlled horizontal scrolling');
+    // The column-driven tabular variant owns the viewport centrally.
+    assert.match(source,/taxpay-table-viewport|TaxPayTableViewport|<TaxPayDataGrid variant="tabular"/,screen+' needs controlled horizontal scrolling');
   }
   const beneficiary=read('src/components/screens/Beneficiaries.tsx');
   assert.match(beneficiary,/TaxPayTablePanel/);
