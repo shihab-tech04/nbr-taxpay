@@ -93,7 +93,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const selectedTitle = bn ? selectedOption.bn : selectedOption.en;
 
   return (
-    <div className={bn ? 'mx-auto max-w-4xl space-y-4 pb-12 font-bengali' : 'mx-auto max-w-4xl space-y-4 pb-12'}>
+    <div className={bn ? 'mx-auto max-w-6xl space-y-4 pb-12 font-bengali' : 'mx-auto max-w-6xl space-y-4 pb-12'}>
       <TaxpayerPageHeading id="certificate-preview-title"
         title={label('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড')}
         actions={
