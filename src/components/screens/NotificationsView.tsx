@@ -172,7 +172,7 @@ export const NotificationsView:React.FC=()=>{
           {key:'requested',header:label('Requested','অনুরোধের সময়'),renderCell:r=><time dateTime={new Date(r.requestedAt).toISOString()} className="text-sm text-taxpay-muted">{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
           {key:'actions',header:label('Actions','কার্যক্রম'),renderCell:()=><button type="button" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
             onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>}
-        ]}/>
+        ]}/>}
     </section>
     <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
       <div className="taxpay-table-toolbar"><h2 className="text-base font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2><TaxPayTableCounter label={label('Records','রেকর্ড')} shown={visiblePayments.length} total={previewPaymentEvents.length}/></div>
@@ -200,7 +200,7 @@ export const NotificationsView:React.FC=()=>{
            {key:'amount',header:label('Amount','পরিমাণ'),renderCell:p=><p className="text-sm font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(p.amountMinor)}</p>},
            {key:'status',header:label('Status','অবস্থা'),renderCell:p=><p className="text-sm text-taxpay-muted">{p.state==='SIMULATED'
              ?label('Recorded','সংরক্ষিত'):String(p.state).replaceAll('_',' ').toLowerCase()}</p>}
-         ]}/>
+         ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
   </main>;
