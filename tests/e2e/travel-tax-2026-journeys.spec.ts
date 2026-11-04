@@ -199,6 +199,15 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   const combined=modal.getByTestId('travel-family-challan');
   await expect(combined).toBeVisible({timeout:12000});
   await expect(combined.locator('tbody tr')).toHaveCount(2);
+  await expect(combined).toContainText('FRIEND SECOND');
+  await expect(combined).toContainText('1,500');
+  if ((page.viewportSize()?.width ?? 0) >= 651) {
+    await expect(combined.locator('.receipt-view__travel-table')).toBeVisible();
+  } else {
+    const cards = combined.getByTestId('travel-receipt-passenger-cards');
+    await expect(cards).toBeVisible();
+    await expect(cards.locator('article')).toHaveCount(2);
+  }
   await expect(combined).toContainText('not a government A-Challan');
   await expect(modal.locator('.receipt-view__actions')).not.toContainText('New payment');
   await expect(modal.getByRole('button',{name:'Download'})).toBeVisible();
