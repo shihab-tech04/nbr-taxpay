@@ -127,7 +127,7 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal).toHaveCount(0);
 
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'রসিদ ও পেমেন্ট রেকর্ড'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'উৎসে কর জমার সারসংক্ষেপ'})).toBeVisible();
   await page.getByRole('button',{name:'উৎসে কর জমার সারসংক্ষেপ',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'সনদের সারসংক্ষেপ'}).locator('[data-testid="certificate-summary-document"]')).toBeVisible();
