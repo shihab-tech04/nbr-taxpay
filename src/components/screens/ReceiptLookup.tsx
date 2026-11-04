@@ -28,7 +28,9 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     setLookupPending(false);
     setLookupError(false);
   };
-  const sampleReceipts = receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
+  // Never suggest sample/session receipts in the signed-in account tracking journey.
+  // Users must provide the actual reference; public lookup examples remain unchanged.
+  const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
 
   const searchReference = (reference: string, mobile: string) => {
     if (!reference) return;

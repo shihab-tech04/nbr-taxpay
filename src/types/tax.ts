@@ -112,6 +112,27 @@ export interface ChallanReceipt {
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;
+  /** Travel Tax UX contract; no actual government passport/A-Challan verification. */
+  travelDetails?: {
+    mode: 'LAND' | 'WATER';
+    departurePort: string;
+    /** Historical fields remain optional for existing receipts, never required in the new UI. */
+    portNumber?: string;
+    destination: string;
+    travelDate: string;
+    organizationalCode?: string;
+    economicCode: string;
+    passengers: Array<{
+      name: string;
+      passportMasked: string;
+      nationality: 'BD' | 'FOREIGN';
+      country?: string;
+      ageBand: 'ADULT' | 'CHILD' | 'UNDER5';
+      /** Age is computed on the travel date from passport DOB or foreign manual DOB. */
+      age?: number;
+      amount: number;
+    }>;
+  };
   noticeReference?: string;
   isRepresentativePayment: boolean;
   representativeTin?: string;

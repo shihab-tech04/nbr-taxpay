@@ -13,7 +13,7 @@ export function hasStoredGuestBeneficiaries(): boolean {
 }
 
 type GuestList = Pick<BeneficiaryList, 'id' | 'name' | 'created_at'>;
-type GuestPerson = Pick<Beneficiary, 'id' | 'list_id' | 'tin' | 'display_name' | 'created_at' | 'updated_at'>;
+type GuestPerson = Pick<Beneficiary, 'id' | 'list_id' | 'tin' | 'display_name' | 'tag' | 'relationship' | 'other_label' | 'created_at' | 'updated_at'>;
 
 function browserStorage(): Storage {
   try {
@@ -130,9 +130,20 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
 }
 
 export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
-  const lists = await readGuestPage<GuestList>('lists');
-  const people: GuestPerson[] = [];
-  for (let offset = 0; ; offset += pageSize) {
+  // Existing capability sessions can fetch independent lists and the first page
+  // concurrently, avoiding a full extra Edge Function round trip on every read.
+  // A first-time session must finish capability registration before concurrent reads.
+  const initialized = hasStoredGuestBeneficiaries();
+  const [lists, firstPage] = initialized
+    ? await Promise.all([
+        readGuestPage<GuestList>('lists'),
+        readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize }),
+      ])
+    : [await readGuestPage<GuestList>('lists'), null];
+  const people: GuestPerson[] = firstPage ? [...firstPage] : [];
+  for (let offset = firstPage ? pageSize : 0;
+       firstPage ? (firstPage.length === pageSize) : true;
+       offset += pageSize) {
     const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
     people.push(...page);
     if (page.length < pageSize) break;
@@ -150,6 +161,14 @@ export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]):
 
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {
   await post('update', { id, name });
+}
+
+/** One atomic capability-bound edit. Preserves TIN/name and supports tag-only changes. */
+export async function editGuestBeneficiaryClassification(
+  id:string,sourceListId:string,listId:string,
+  classification:Pick<Beneficiary,'tag'|'relationship'|'other_label'>
+):Promise<void>{
+  await post('edit-classification',{id,sourceListId,listId,...classification});
 }
 
 /** Guest preview compatibility: server performs one atomic, capability-bound list move. */

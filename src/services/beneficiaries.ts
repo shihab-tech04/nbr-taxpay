@@ -1,13 +1,15 @@
 import { supabase } from './supabaseClient';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
+import {normalizeOtherLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
 import {
   addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries, hasStoredGuestBeneficiaries,
-  removeGuestBeneficiary, updateGuestBeneficiary, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
+  removeGuestBeneficiary, updateGuestBeneficiary, editGuestBeneficiaryClassification, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
 export interface BeneficiaryList { id: string; owner_uid?: string; name: string; created_at: string; }
-export interface Beneficiary { id: string; owner_uid?: string; list_id: string; tin: string; display_name: string; created_at: string; updated_at: string; }
-export type BeneficiaryInput = Pick<Beneficiary,'tin' | 'display_name'>;
+export interface Beneficiary { id: string; owner_uid?: string; list_id: string; tin: string; display_name: string; tag:BeneficiaryTag|null; relationship:BeneficiaryRelation|null; other_label:string|null; created_at: string; updated_at: string; }
+/** Optional only for pre-tag legacy imports and existing saved records; the entry UI requires both choices. */
+export type BeneficiaryInput = Pick<Beneficiary,'tin' | 'display_name'> & Partial<Pick<Beneficiary,'tag'|'relationship'|'other_label'>>;
 
 /** A contact is never a taxpayer authorization or verified TIN/name binding. */
 function client() {
@@ -40,7 +42,7 @@ export async function loadBeneficiaries(ownerUid: string | null = null): Promise
       return (result.data??[]) as BeneficiaryList[];
     }),
     collectBeneficiaryPages<Beneficiary>(async(from,to)=>{
-      const result=await db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,created_at,updated_at')
+      const result=await db.from('taxpay_beneficiaries').select('id,owner_uid,list_id,tin,display_name,tag,relationship,other_label,created_at,updated_at')
         .eq('owner_uid',ownerUid).order('created_at',{ascending:false}).order('id',{ascending:false}).range(from,to);
       if(result.error)throw result.error;
       return (result.data??[]) as Beneficiary[];
@@ -90,7 +92,7 @@ export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promis
     }
     destinations.set(guestList.id,destination.id);
     const rows=source.people.filter(person=>person.list_id===guestList.id)
-      .map(person=>({tin:person.tin,display_name:person.display_name}));
+      .map(person=>({tin:person.tin,display_name:person.display_name,tag:person.tag??null,relationship:person.relationship??null,other_label:person.other_label??null}));
     for(let offset=0;offset<rows.length;offset+=500){
       await ensureOwner();
       personCount+=await addBeneficiaries(ownerUid,destination.id,rows.slice(offset,offset+500));
@@ -124,13 +126,16 @@ export async function createBeneficiaryList(ownerUid:string | null,name:string):
 export async function addBeneficiaries(ownerUid:string | null,listId:string,rows:BeneficiaryInput[]):Promise<number> {
   if(!rows.length)return 0;
   if(rows.length>1000)throw new Error('Import a maximum of 1,000 beneficiaries at a time.');
-  const normalized=rows.map(row=>({...row,display_name:beneficiaryNameForStorage(row.display_name)}));
-  const valid=normalized.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.length<=160);
+  const normalized=rows.map(row=>({...row,display_name:beneficiaryNameForStorage(row.display_name),
+    other_label:row.tag==='others'?normalizeOtherLabel(row.other_label):null}));
+  const valid=normalized.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.length<=160 &&
+    ((row.tag==null && row.relationship==null) || validBeneficiaryClassification(row.tag,row.relationship,row.other_label)));
+  // Legacy null tags remain readable; all new single/bulk entry forms enforce a choice.
   if(!valid)throw new Error('Check the beneficiary TIN and name length before saving.');
   if (!ownerUid) return addGuestBeneficiaries(listId,normalized);
   // Database unique constraint + ignoreDuplicates makes retry idempotent and leaves existing names unchanged.
   const {data,error}=await client().from('taxpay_beneficiaries')
-    .upsert(normalized.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name})),
+    .upsert(normalized.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name,tag:row.tag??null,relationship:row.relationship??null,other_label:row.other_label??null})),
       {onConflict:'list_id,tin',ignoreDuplicates:true})
     .select('id');
   if(error)throw error;
@@ -143,6 +148,46 @@ export async function updateBeneficiary(ownerUid:string | null,id:string,name:st
   const {error}=await client().from('taxpay_beneficiaries').update({display_name:normalized,updated_at:new Date().toISOString()}).eq('id',id).eq('owner_uid',ownerUid);
   if(error)throw error;
 }
+/** Atomically edit a saved contact's self-declared classification and optional list.
+ * No payment data or taxpayer authorization is changed.
+ * Legacy untagged rows must be explicitly classified when edited.
+ */
+export async function editBeneficiaryClassification(
+  ownerUid:string|null,
+  person:Pick<Beneficiary,'id'|'list_id'>,
+  targetListId:string,
+  classification:Pick<Beneficiary,'tag'|'relationship'|'other_label'>
+):Promise<void>{
+  const tag=classification.tag;
+  const relationship=tag==='friends_family'?classification.relationship:null;
+  const other_label=tag==='others'?normalizeOtherLabel(classification.other_label):null;
+  if(!validBeneficiaryClassification(tag,relationship,other_label)){
+    throw new Error('Choose a tag, and enter its required relationship or Others description (up to 80 characters).');
+  }
+  if(!targetListId)throw new Error('Choose a saved list.');
+  if(!ownerUid){
+    await editGuestBeneficiaryClassification(person.id,person.list_id,targetListId,{
+      tag:tag!,relationship,other_label,
+    });
+    return;
+  }
+  const db=client();
+  const {data:destination,error:destinationError}=await db.from('taxpay_beneficiary_lists')
+    .select('id').eq('id',targetListId).eq('owner_uid',ownerUid).maybeSingle();
+  if(destinationError)throw destinationError;
+  if(!destination)throw new Error('The destination list is unavailable. Refresh and try again.');
+  const {data,error}=await db.from('taxpay_beneficiaries')
+    .update({list_id:targetListId,tag,relationship,other_label,updated_at:new Date().toISOString()})
+    .eq('id',person.id).eq('owner_uid',ownerUid).eq('list_id',person.list_id)
+    .select('id,list_id,tag,relationship,other_label').maybeSingle();
+  if(error?.code==='23505')throw new Error('This beneficiary is already saved in the destination list.');
+  if(error)throw error;
+  if(!data || data.list_id!==targetListId || data.tag!==tag ||
+      data.relationship!==relationship || data.other_label!==other_label){
+    throw new Error('The beneficiary changed or was not saved. Refresh and try again.');
+  }
+}
+
 /** Move a saved contact without changing its TIN, name, identity or payment history. */
 export async function moveBeneficiary(ownerUid:string|null,id:string,sourceListId:string,targetListId:string):Promise<void>{
   if(!targetListId||!sourceListId||sourceListId===targetListId)throw new Error('Choose another saved list.');

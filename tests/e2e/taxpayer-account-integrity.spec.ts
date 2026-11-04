@@ -29,7 +29,7 @@ test('other URL-selected fictional accounts do not inherit shared financial bala
   await page.goto('/?action=history&demoUser=user2');
   await expect(page.getByRole('heading',{name:'Sign in to manage payments'})).toBeVisible();
   await page.goto('/?action=certificates&demoUser=user2');
-  await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Receipts & payment records'})).toBeVisible();
   // Certificate totals now belong inside the shared document modal, not the list page.
   await page.getByRole('button',{name:'Annual payment summary',exact:true}).click();
   const certificate = page.getByRole('dialog',{name:'Certificate summary'});

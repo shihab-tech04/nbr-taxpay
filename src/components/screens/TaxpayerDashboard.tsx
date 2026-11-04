@@ -1,3 +1,4 @@
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import React, { useMemo, useState } from 'react';
 import { Activity, ArrowRight, CalendarDays, Download, Receipt, Search, ShieldCheck, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
@@ -123,18 +124,18 @@ export const TaxpayerDashboard: React.FC = () => {
       <section aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {([
-          {en:'Income tax liability',bn:'আয়কর দায়',
-            helpEn:'No verified assessed liability is available for this account.',
-            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত নির্ধারিত করদায় পাওয়া যায়নি।'},
-          {en:'TDS & advance tax',bn:'উৎসে কর ও অগ্রিম কর',
-            helpEn:'Verified withholding and advance-tax credits are not available for this account.',
-            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত উৎসে কর ও অগ্রিম কর ক্রেডিট পাওয়া যায়নি।'},
-          {en:'Direct payments',bn:'সরাসরি পরিশোধ',
-            helpEn:'Verified posted direct-payment credits are not available for this account.',
-            helpBn:'এই অ্যাকাউন্টে যাচাইকৃত সরাসরি পরিশোধের ক্রেডিট পাওয়া যায়নি।'},
-          {en:'Remaining balance',bn:'অবশিষ্ট দায়',
-            helpEn:'A verified balance requires an assessed liability and eligible posted credits.',
-            helpBn:'যাচাইকৃত অবশিষ্ট দায়ের জন্য নির্ধারিত করদায় ও প্রযোজ্য পোস্টকৃত ক্রেডিট প্রয়োজন।'}
+          {en:'Tax assessed for the year',bn:'করবর্ষের নির্ধারিত আয়কর',
+            helpEn:'A verified tax assessment amount is not available for this account and year.',
+            helpBn:'এই অ্যাকাউন্ট ও করবর্ষের যাচাইকৃত নির্ধারিত আয়করের তথ্য পাওয়া যায়নি।'},
+          {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম দেওয়া কর',
+            helpEn:'We cannot verify how much tax was deducted from income or paid in advance for this year.',
+            helpBn:'এই করবর্ষে আয়ের উৎসে কাটা বা অগ্রিম দেওয়া কত কর সমন্বিত হয়েছে তা যাচাই করা যায়নি।'},
+          {en:'Income tax payments made',bn:'সরাসরি পরিশোধিত আয়কর',
+            helpEn:'Verified direct income-tax payments for this year are not available.',
+            helpBn:'এই করবর্ষের যাচাইকৃত সরাসরি আয়কর পরিশোধের তথ্য পাওয়া যায়নি।'},
+          {en:'Tax left after payments',bn:'পরিশোধের পর বাকি কর',
+            helpEn:'We need verified assessed tax and eligible posted payments to show what is left.',
+            helpBn:'কত কর বাকি আছে তা জানাতে যাচাইকৃত নির্ধারিত কর ও সমন্বিত পরিশোধের তথ্য প্রয়োজন।'}
         ] as const).map((item,index)=><TaxpayerFinancialKpi
           key={item.en} language={language} titleEn={item.en} titleBn={item.bn}
           value={exampleYear ? formatIllustrativeTaka(
@@ -148,8 +149,8 @@ export const TaxpayerDashboard: React.FC = () => {
         {exampleMode
           ? tr('Illustrative dashboard — the saved account activity below remains unchanged.',
             'উদাহরণভিত্তিক ড্যাশবোর্ড — নিচের সংরক্ষিত অ্যাকাউন্ট কার্যক্রম অপরিবর্তিত।')
-          : tr('Actual tax balances are unavailable. Use View examples to inspect the dashboard.',
-            'প্রকৃত কর ব্যালেন্স পাওয়া যায়নি। ড্যাশবোর্ড দেখতে উদাহরণ দেখুন বেছে নিন।')}
+          : tr('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.',
+            'এই অ্যাকাউন্টের যাচাইকৃত কর ব্যালেন্স পাওয়া যায়নি। নিচে আপনার সংরক্ষিত অ্যাকাউন্টের কার্যক্রম ও পেমেন্ট রেকর্ড দেখতে পারবেন।')}
       </p>
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
@@ -205,9 +206,34 @@ export const TaxpayerDashboard: React.FC = () => {
       </section>
     </div>
     <section className={card} aria-labelledby="transactions-heading">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 id="transactions-heading" className="text-base font-semibold">{tr('Payment & transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Select a record to view its status','অবস্থা দেখতে একটি রেকর্ড নির্বাচন করুন')}</p></div>
+      <div className="taxpay-table-toolbar"><div><h2 id="transactions-heading" className="text-base font-semibold">{tr('Payment & transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}</h2><p className="mt-1 text-xs text-slate-500">{tr('Select a record to view its status','অবস্থা দেখতে একটি রেকর্ড নির্বাচন করুন')}</p></div>
         <label className="relative flex items-center"><Search className="absolute left-3 text-slate-400" size={17}/><input type="search" className="min-h-11 w-full rounded-lg border border-slate-200 py-2 pl-10 pr-3 text-sm sm:w-64" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference or type','রেফারেন্স বা খাত খুঁজুন')} aria-label={tr('Search transactions','লেনদেন খুঁজুন')}/></label></div>
-      {records.length?<div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">{tr('Reference','রেফারেন্স')}</th><th className="p-3">{tr('Category','খাত')}</th><th className="p-3">{tr('Amount','পরিমাণ')}</th><th className="p-3">{tr('Status','অবস্থা')}</th><th className="p-3">{tr('Action','বিস্তারিত')}</th></tr></thead><tbody>{records.slice(0,10).map(r=><tr key={r.id} className="border-b border-slate-100"><td className="p-3 font-medium">{r.challanNo}</td><td className="p-3"><ServiceCategoryTag code={r.paymentCategory}>{serviceName(r.paymentCategory)}</ServiceCategoryTag></td><td className="p-3">৳ {fmt(r.totalAmount)}</td><td className="p-3 text-slate-600">{r.isSimulatedDemo && (r.treasuryStatus === 'TREASURY_SCROLLED' || r.treasuryStatus === 'GATEWAY_SUCCESS') ? tr('Treasury status not verified','ট্রেজারির অবস্থা যাচাই হয়নি') : r.treasuryStatus}</td><td className="p-3"><button type="button" className="min-h-10 text-blue-800 underline" onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button></td></tr>)}</tbody></table></div>:
+      {records.length?<div className="mt-4">
+        <TaxPayDataGrid variant="tabular" rows={records.slice(0,10)} getRowKey={r=>r.id}
+          ariaLabel={tr('Payment and transaction records','পেমেন্ট ও লেনদেন রেকর্ড')}
+          mobileTestId="taxpayer-dashboard-mobile-records"
+          columns={[
+            {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:r=><p className="break-all font-mono-plex font-semibold">{r.challanNo}</p>},
+            {key:'category',header:tr('Category','খাত'),renderCell:r=><ServiceCategoryTag code={r.paymentCategory}>{serviceName(r.paymentCategory)}</ServiceCategoryTag>},
+            {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:r=><p className="font-semibold">৳ {fmt(r.totalAmount)}</p>},
+            {key:'status',header:tr('Status','অবস্থা'),renderCell:r=><p className="text-taxpay-muted">{r.isSimulatedDemo && (r.treasuryStatus === 'TREASURY_SCROLLED' || r.treasuryStatus === 'GATEWAY_SUCCESS') ? tr('Treasury status not verified','ট্রেজারির অবস্থা যাচাই হয়নি') : r.treasuryStatus}</p>},
+            {key:'details',header:tr('Action','বিস্তারিত'),renderCell:r=><button type="button"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+              onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button>}
+          ]}
+          renderMobileCard={r=><>
+            <div className="taxpay-mobile-table-card__header">
+              <p className="taxpay-mobile-table-card__title">{r.challanNo}</p>
+              <p className="shrink-0 font-semibold tabular-nums">৳ {fmt(r.totalAmount)}</p>
+            </div>
+            <p className="taxpay-mobile-table-card__meta"><ServiceCategoryTag code={r.paymentCategory}>{serviceName(r.paymentCategory)}</ServiceCategoryTag></p>
+            <p className="taxpay-mobile-table-card__meta">{r.isSimulatedDemo && (r.treasuryStatus === 'TREASURY_SCROLLED' || r.treasuryStatus === 'GATEWAY_SUCCESS') ? tr('Treasury status not verified','ট্রেজারির অবস্থা যাচাই হয়নি') : r.treasuryStatus}</p>
+            <div className="taxpay-mobile-table-card__actions">
+              <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                onClick={()=>selectReceipt(r.id)}>{tr('Details','বিস্তারিত')}</button>
+            </div>
+          </>}/>
+      </div>:
       <div className="mt-4">{empty(tr('No matching transactions','মিল পাওয়া যায়নি'),tr('Try another assessment year or category.','অন্য করবর্ষ বা খাত নির্বাচন করুন।'))}</div>}
       <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" onClick={()=>navigate('history')}>{tr('Open transaction history','লেনদেনের ইতিহাস খুলুন')}<ArrowRight size={16}/></button>
     </section>

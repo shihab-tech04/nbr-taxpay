@@ -162,9 +162,9 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await expect(page.locator('.taxpayer-reference-rail .taxpayer-reference-rail-bottom').getByRole('button',{name:'Profile',includeHidden:true})).toHaveCount(1);
   await expect(page.getByText('PRIVATE-OWNER-A-DRAFT')).toBeVisible();
   const ownerAHistory = page.getByRole('region', { name: 'My review inquiries' });
-  await expect(ownerAHistory.getByText('SYN-A-REF-100001 — Pending evidence — not an approved correction')).toBeVisible();
-  await ownerAHistory.locator('summary').click();
-  await expect(ownerAHistory.getByText('Reason provided: PRIVATE-OWNER-A-INQUIRY')).toBeVisible();
+  await expect(ownerAHistory.getByText('SYN-A-REF-100001 — Pending evidence — not an approved correction').filter({visible:true})).toBeVisible();
+  await ownerAHistory.locator('summary:visible').click();
+  await expect(ownerAHistory.getByText('Reason provided: PRIVATE-OWNER-A-INQUIRY').filter({visible:true})).toBeVisible();
 
   await page.locator('#main-content').getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Signed out on this browser. The server could not confirm revoking the session:' })).toBeVisible();
@@ -192,7 +192,7 @@ test('local sign-out clears private UI and re-authentication loads only the new 
   await expect(page.getByText('synthetic-owner-b@example.invalid')).toBeVisible();
   await expect(page.getByText('PRIVATE-OWNER-B-DRAFT')).toBeVisible();
   await expect(page.getByText(/PRIVATE-OWNER-A-/)).toHaveCount(0);
-  await expect(page.getByText('SYN-B-REF-100002 — Pending evidence — not an approved correction')).toBeVisible();
+  await expect(page.getByText('SYN-B-REF-100002 — Pending evidence — not an approved correction').filter({visible:true})).toBeVisible();
   await expect(page.getByText('SYN-A-REF-100001')).toHaveCount(0);
 
   await setWorkspaceLanguage(page, 'bn');

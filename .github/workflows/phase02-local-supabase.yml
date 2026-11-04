@@ -11,9 +11,10 @@ permissions:
   contents: read
 
 concurrency:
-  # Each GitHub-hosted runner has isolated loopback ports; avoid cross-PR cancellation.
+  # Superseded PR checks may be replaced; never interrupt an in-progress
+  # production-branch security check when another commit lands on main.
   group: taxpay-phase02-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   disposable-backend:

@@ -16,6 +16,7 @@ type RpcName =
   | 'taxpay_guest_beneficiary_create_list'
   | 'taxpay_guest_beneficiary_add'
   | 'taxpay_guest_beneficiary_update'
+  | 'taxpay_guest_beneficiary_edit_classification'
   | 'taxpay_guest_beneficiary_move'
   | 'taxpay_guest_beneficiary_remove'
   | 'taxpay_guest_beneficiary_rename_list'
@@ -139,7 +140,18 @@ Deno.serve(async (request: Request) => {
         const tin = value.tin;
         const display_name = validateName(value.display_name, 160, 'INVALID_BENEFICIARY');
         if (typeof tin !== 'string' || !/^\d{12}$/.test(tin)) throw new Error('INVALID_BENEFICIARY');
-        return { tin, display_name };
+        const tag = value.tag ?? null;
+        const relationship = value.relationship ?? null;
+        const other_label = tag === 'others'
+          ? validateName(value.other_label, 80, 'INVALID_BENEFICIARY')
+          : null;
+        if (tag !== 'others' && value.other_label != null) throw new Error('INVALID_BENEFICIARY');
+        if (!((tag === null && relationship === null) ||
+          ((tag === 'clients' || tag === 'others') && relationship === null) ||
+          (tag === 'friends_family' && typeof relationship === 'string' &&
+            ['father','mother','siblings','son','daughter','spouse','friends'].includes(relationship))))
+          throw new Error('INVALID_BENEFICIARY');
+        return { tin, display_name, tag, relationship, other_label };
       });
       data = await rpc(client, 'taxpay_guest_beneficiary_add', {
         p_capability_hash, p_list_id: body.listId, p_rows: rows,
@@ -149,6 +161,25 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_update', {
         p_capability_hash, p_beneficiary_id: body.id,
         p_name: validateName(body.name, 160, 'INVALID_BENEFICIARY_NAME'),
+      });
+    } else if (action === 'edit-classification') {
+      if (!uuidPattern.test(String(body.id ?? '')) ||
+          !uuidPattern.test(String(body.sourceListId ?? '')) ||
+          !uuidPattern.test(String(body.listId ?? ''))) throw new Error('NOT_FOUND');
+      const tag = body.tag;
+      const relationship = body.relationship ?? null;
+      const other_label = tag === 'others'
+        ? validateName(body.other_label, 80, 'INVALID_BENEFICIARY') : null;
+      if (tag !== 'others' && body.other_label != null) throw new Error('INVALID_BENEFICIARY');
+      if (!(tag === 'clients' && relationship === null ||
+            tag === 'others' && relationship === null ||
+            tag === 'friends_family' && typeof relationship === 'string' &&
+              ['father','mother','siblings','son','daughter','spouse','friends'].includes(relationship)))
+        throw new Error('INVALID_BENEFICIARY');
+      data = await rpc(client, 'taxpay_guest_beneficiary_edit_classification', {
+        p_capability_hash, p_beneficiary_id: body.id, p_source_list_id: body.sourceListId,
+        p_target_list_id: body.listId, p_tag: tag, p_relationship: relationship,
+        p_other_label: other_label,
       });
     } else if (action === 'move') {
       if (!uuidPattern.test(String(body.id ?? '')) ||

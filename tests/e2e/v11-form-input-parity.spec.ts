@@ -1,3 +1,4 @@
+import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 
 test('payer relationship is required at entry and head choice is still validated in Step 2', async ({ page }) => {
@@ -57,15 +58,12 @@ test('sample v11 notices validate the TIN pair and prefill locked AY and amount'
 test('standalone travel form requires explicit payment method and acknowledgement', async ({ page }) => {
   await page.goto('/?action=travel');
   const travel = page.locator('.travel-flow');
-  await travel.locator('#travel-tax-route-1').check();
-  await travel.getByRole('button', { name: 'Continue to passenger details' }).click();
-  await travel.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await travel.getByLabel('Passport number').fill('EXAMPLE123');
-  await travel.getByLabel('Mobile number for receipt').fill('01712345678');
-  await travel.getByLabel('Travel date').fill('2026-10-25');
+  await expect(travel.locator('#travel-tax-route-results')).toHaveCount(0);
+  await fillTravelDetails(travel, { mode: 'WATER' });
+  await expect(travel.locator('#travel-tax-route-1')).toBeChecked();
   await travel.getByRole('button', { name: 'Continue to review' }).click();
 
-  const submit = travel.getByRole('button', { name: 'Continue payment' });
+  const submit = travel.getByRole('button', { name: 'Confirm preview payment' });
   await expect(submit).toBeDisabled();
   const online = travel.getByRole('button', { name: 'Pay online' });
   await expect(online).toHaveAttribute('aria-pressed', 'false');
@@ -74,10 +72,10 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.getByRole('button', { name: 'Mobile banking' }).click();
   await travel.getByRole('radio', { name: 'bKash' }).check();
   await expect(submit).toBeDisabled();
-  await travel.getByRole('checkbox', { name: 'The journey, passenger details and amount are correct.' }).check();
+  await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(travel.locator('.travel-flow__receipt')).toContainText('Payment reference', { timeout: 10000 });
+  await expect(travel.locator('.receipt-view__paper')).toContainText('SIM-', { timeout: 10000 });
 });
 
 for (const locale of ['en', 'bn'] as const) {

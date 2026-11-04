@@ -1,3 +1,4 @@
+import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
 
@@ -62,7 +63,7 @@ test('mobile event ledger preserves readable entries and explicitly labels scena
   const entry=ledger.getByRole('listitem').first();
   await expect(entry).toBeVisible();
   await expect(entry.getByRole('button')).toBeVisible();
-  await expect(ledger.getByText('Selected-year scenario balance')).toBeVisible();
+  await expect(ledger.getByText('Calculated balance for selected year')).toBeVisible();
   await entry.getByRole('button').click();
   const detail=page.getByTestId('tax-event-details');
   await expect(detail).toContainText('Ledger entry ID');
@@ -109,10 +110,11 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   // The approved mobile journey places a collapsible calculation in its fixed footer,
   // not the old desktop rail. Keep the total above the primary action without overflow.
   const summary=dialog.getByTestId('mobile-payment-calculation');
-  const next=footer.getByRole('button',{name:'Continue to passenger details'});
-  await expect(summary).toBeVisible();
+  const next=footer.getByRole('button',{name:'Continue to travel details'});
+  await expect(summary).toHaveCount(0);
   await expect(next).toBeVisible();
-  const [nextBox,summaryBox,footerBox]=await Promise.all([next.boundingBox(),summary.boundingBox(),footer.boundingBox()]);
+  await fillTravelDetails(dialog, { mode: 'WATER' });
+  const [nextBox,summaryBox,footerBox]=await Promise.all([footer.getByRole('button',{name:'Continue to review'}).boundingBox(),summary.boundingBox(),footer.boundingBox()]);
   expect(nextBox).not.toBeNull();expect(summaryBox).not.toBeNull();expect(footerBox).not.toBeNull();
   const width=page.viewportSize()!.width;
   expect(nextBox!.x).toBeGreaterThanOrEqual(0);
@@ -121,12 +123,11 @@ test('mobile Travel Tax keeps the total and Continue in separate contained regio
   expect(summaryBox!.x).toBeGreaterThanOrEqual(0);
   expect(summaryBox!.x+summaryBox!.width).toBeLessThanOrEqual(width+1);
   expect(footerBox!.y).toBeGreaterThanOrEqual(summaryBox!.y);
-  await dialog.locator('#travel-tax-route-1').check();
-  await expect(summary.locator('summary')).toContainText('2,000');
+  await expect(summary.locator('summary')).toContainText('1,000');
   await summary.locator('summary').click();
   await expect(summary.locator('dl')).toBeVisible();
-  await next.click();
-  await expect(dialog.getByLabel('Passenger name')).toBeVisible();
+  await footer.getByRole('button', { name: 'Continue to review' }).click();
+  await expect(dialog.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
@@ -136,21 +137,15 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   // Use the existing tested public Travel Tax entry without the removed subtype picker.
   await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
-  await dialog.locator('#travel-tax-route-0').check();
-  await dialog.getByRole('button',{name:'Continue to passenger details'}).click();
-  await dialog.getByLabel('Passenger name').fill('SAMPLE TRAVELLER');
-  await dialog.getByLabel('Passport number').fill('FAKE0001');
-  await dialog.getByLabel('Mobile number for receipt').fill('01712345678');
-  await dialog.getByLabel('Travel date').fill('2026-10-25');
+  await fillTravelDetails(dialog);
   await dialog.getByRole('button',{name:'Continue to review'}).click();
-  const row=dialog.locator('.travel-flow__summary-list > div').nth(2);
-  await expect(row.locator('dd')).not.toBeEmpty();
-  const values=await row.evaluate(element=>({display:getComputedStyle(element).display,
-    maxWidth:getComputedStyle(element.querySelector('dd')!).maxWidth,
-    rowWidth:element.getBoundingClientRect().width,
-    valueWidth:element.querySelector('dd')!.getBoundingClientRect().width}));
-  expect(values.display).toBe('grid');
-  expect(values.valueWidth).toBeGreaterThan(values.rowWidth*.8);
+  const age=dialog.locator('.travel-flow__age-breakdown');
+  await expect(age).toContainText('Age 34 on travel date');
+  const box=await age.boundingBox();
+  const side=await dialog.locator('.travel-flow__summary').boundingBox();
+  expect(box).not.toBeNull();
+  expect(side).not.toBeNull();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
 });
 
 test('mobile travel-tax explanation stays within the dashboard rather than clipping off-screen',async({page},info)=>{
@@ -180,25 +175,34 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
   expect(overlap).toBe(false);
 });
 
-test('signed-in Track payment stays in Activity with search, selected tab and return to Transactions',async({page})=>{
+test('signed-in Track payment prioritizes reference lookup and preserves transaction search via Transactions',async({page})=>{
   await enterUser1(page);
-  // Use the canonical Activity route: desktop rail is not present on small-screen layouts.
   await page.goto('/?action=history');
+  // Year filtering belongs to Transactions; a reference lookup must not
+  // misleadingly imply that only the selected assessment year is searchable.
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await tabs.getByRole('button',{name:'Track payment'}).click();
   await expect(page).toHaveURL(/action=history/);
   await expect(page).toHaveURL(/trackPayment=1/);
   await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
   await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
-  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment status & receipt'})).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-panel')).toHaveCount(0);
   await expect(page.locator('#public-home-title')).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
-  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
+  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'View all transactions'})).toBeVisible();
+  await page.getByRole('button',{name:'View all transactions'}).click();
+  await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-PAY-23-01');
   await expect(page.locator('.taxpayer-transaction-row')).toHaveCount(1);
   await page.locator('.taxpayer-transaction-row__action').first().click();
   await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
   await page.getByRole('button',{name:'Close transaction details'}).click();
+  await tabs.getByRole('button',{name:'Track payment'}).click();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
   await expect(page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');

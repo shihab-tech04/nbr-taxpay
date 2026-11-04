@@ -1,3 +1,4 @@
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { 
   ScrollText, 
@@ -62,38 +63,24 @@ export const AuditTrail: React.FC = () => {
         </div>
 
         {/* Audit Log Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
-              <tr>
-                <th className="px-3 py-2.5">Timestamp</th>
-                <th className="px-3 py-2.5">Officer / Actor</th>
-                <th className="px-3 py-2.5">Action Code</th>
-                <th className="px-3 py-2.5">Target ID</th>
-                <th className="px-3 py-2.5">Details</th>
-                <th className="px-3 py-2.5 font-mono">Record Token (not SHA-256)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {filteredLogs.map(log => (
-                <tr key={log.id} className="hover:bg-slate-50 font-mono-plex text-[11px]">
-                  <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{log.timestamp}</td>
-                  <td className="px-3 py-2 text-slate-900 font-semibold">{log.actor}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 text-[10px]">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 font-bold text-emerald-950 whitespace-nowrap">{log.targetId}</td>
-                  <td className="px-3 py-2 font-sans text-slate-700 min-w-[220px]">{log.details}</td>
-                  <td className="px-3 py-2 text-slate-400 text-[10px] truncate max-w-[120px]" title={log.immutableHash}>
-                    {log.immutableHash}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+        <TaxPayDataGrid variant="tabular" rows={filteredLogs} getRowKey={log=>log.id}
+          ariaLabel="Officer action log" mobileTestId="audit-trail-mobile-cards"
+          columns={[
+            {key:'timestamp',header:'Timestamp',renderCell:log=><p className="whitespace-nowrap text-taxpay-muted">{log.timestamp}</p>},
+            {key:'actor',header:'Officer / Actor',renderCell:log=><p className="font-semibold">{log.actor}</p>},
+            {key:'action',header:'Action code',renderCell:log=><p>{log.action}</p>},
+            {key:'target',header:'Target ID',renderCell:log=><p className="break-all font-semibold">{log.targetId}</p>},
+            {key:'details',header:'Details',renderCell:log=><p>{log.details}</p>},
+            {key:'token',header:'Record token (not SHA-256)',renderCell:log=><p className="max-w-40 break-all text-taxpay-muted" title={log.immutableHash}>{log.immutableHash}</p>}
+          ]}
+          renderMobileCard={log=><>
+            <div className="taxpay-mobile-table-card__header"><p className="taxpay-mobile-table-card__title">{log.actor}</p><p className="text-sm text-taxpay-muted">{log.timestamp}</p></div>
+            <p className="taxpay-mobile-table-card__meta">{log.action} · {log.targetId}</p>
+            <p className="taxpay-mobile-table-card__meta">{log.details}</p>
+            <p className="taxpay-mobile-table-card__meta break-all" title={log.immutableHash}>{log.immutableHash}</p>
+          </>}/>
+        {filteredLogs.length===0&&<p className="taxpay-table-state" role="status">No matching audit records.</p>}
       </div>
     </div>
   );

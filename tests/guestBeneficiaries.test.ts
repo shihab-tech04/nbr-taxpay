@@ -63,6 +63,17 @@ test('guest beneficiary client persists one opaque capability per browser and ke
       if (!person) return new Response(JSON.stringify({ success: false, code: 'NOT_FOUND' }), { status: 404 });
       person.display_name = body.name;
       data = person;
+    } else if (body.action === 'edit-classification') {
+      const person = session.people.find(value => value.id === body.id &&
+        value.list_id === body.sourceListId);
+      if (!person || !session.lists.some(value => value.id === body.listId))
+        return new Response(JSON.stringify({ success: false, code: 'NOT_FOUND' }), { status: 404 });
+      if (session.people.some(value => value.id !== person.id &&
+          value.list_id === body.listId && value.tin === person.tin))
+        return new Response(JSON.stringify({ success: false, code: 'BENEFICIARY_ALREADY_IN_LIST' }), { status: 409 });
+      Object.assign(person,{list_id:body.listId,tag:body.tag,
+        relationship:body.relationship,other_label:body.other_label});
+      data=person;
     } else if (body.action === 'remove') {
       session.people = session.people.filter(value => value.id !== body.id);
       data = { deleted: true };
@@ -105,6 +116,22 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     assert.ok(person);
     await guest.updateGuestBeneficiary(person.id, 'Renamed Guest A');
     assert.equal((await guest.loadGuestBeneficiaries()).people[0]?.display_name, 'Renamed Guest A');
+    await guest.editGuestBeneficiaryClassification(person.id,listA.id,listA.id,
+      {tag:'friends_family',relationship:'father',other_label:null});
+    let edited=(await guest.loadGuestBeneficiaries()).people[0];
+    assert.equal(edited?.list_id,listA.id);
+    assert.equal(edited?.tag,'friends_family');
+    assert.equal(edited?.relationship,'father');
+    await guest.editGuestBeneficiaryClassification(person.id,listA.id,listA.id,
+      {tag:'others',relationship:null,other_label:'Neighbour'});
+    edited=(await guest.loadGuestBeneficiaries()).people[0];
+    assert.equal(edited?.other_label,'Neighbour');
+    assert.equal(edited?.display_name,'Renamed Guest A');
+    assert.equal(edited?.tin,'012345678901');
+    (globalThis as any).window={localStorage:storageB};
+    await assert.rejects(guest.editGuestBeneficiaryClassification(person.id,listA.id,listA.id,
+      {tag:'clients',relationship:null,other_label:null}),/not found/i);
+    (globalThis as any).window={localStorage:storageA};
     await guest.removeGuestBeneficiary(person.id);
     assert.deepEqual((await guest.loadGuestBeneficiaries()).people, []);
     await guest.renameGuestBeneficiaryList(listA.id, 'Family & Friends');
@@ -114,6 +141,9 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     assert.deepEqual(await guest.loadGuestBeneficiaries(), { lists: [], people: [] });
     assert.ok(requests.some(request => request.body.action === 'rename-list' && request.body.id === listA.id));
     assert.ok(requests.some(request => request.body.action === 'delete-list' && request.body.id === listA.id));
+    assert.ok(requests.some(request => request.body.action === 'edit-classification' &&
+      request.body.tag === 'others' && request.body.other_label === 'Neighbour' &&
+      request.body.listId === listA.id));
 
     assert.ok(requests.every(request => request.url === 'https://guest-test.supabase.co/functions/v1/taxpay-guest-beneficiaries'));
     assert.ok(requests.every(request => !('authorization' in request.headers)));

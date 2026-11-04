@@ -29,8 +29,10 @@ permissions:
 
 
 concurrency:
-  group: taxpay-content-cms-release
-  cancel-in-progress: true
+  # Preserve running main-branch CMS verification during rapid pushes;
+  # manual runs on another ref must not collide with production checks.
+  group: taxpay-content-cms-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:

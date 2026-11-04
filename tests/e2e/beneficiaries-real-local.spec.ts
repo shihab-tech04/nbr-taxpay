@@ -45,6 +45,8 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
+  await addDialog.locator('#beneficiary-tag').selectOption('friends_family');
+  await addDialog.locator('#beneficiary-relationship').selectOption('father');
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('012345678901');
@@ -86,6 +88,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const importAlerts=await page.locator('[role="alert"]').allTextContents();
   const importDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await expect(importDialog.getByText(/Upload ready:/),'Excel parser / import errors: '+JSON.stringify(importAlerts)).toBeVisible();
+  await importDialog.locator('#beneficiary-tag').selectOption('clients');
   await importDialog.getByRole('button',{name:'Next',exact:true}).click();
   await expect(importDialog.getByText('Already saved in this list.')).toBeVisible();
   await expect(importDialog.getByText('1 valid, 1 needing attention')).toBeVisible();
@@ -97,7 +100,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(records).toContainText('Local Beneficiary Two');
 
   const read=async(token:string)=>{
-    const response=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=owner_uid,tin,display_name',api.origin),{
+    const response=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=owner_uid,tin,display_name,tag,relationship',api.origin),{
       headers:{apikey:key,Authorization:'Bearer '+token},
     });
     expect(response.status).toBe(200);
@@ -105,7 +108,10 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   };
   const own=await read(ownerA.session.access_token);
   expect(own).toHaveLength(2);
-  expect(own).toEqual(expect.arrayContaining([{owner_uid:ownerA.id,tin:'012345678901',display_name:'Local Beneficiary One'},{owner_uid:ownerA.id,tin:'987654321098',display_name:'Local Beneficiary Two'}]));
+  expect(own).toEqual(expect.arrayContaining([
+    {owner_uid:ownerA.id,tin:'012345678901',display_name:'Local Beneficiary One',tag:'friends_family',relationship:'father'},
+    {owner_uid:ownerA.id,tin:'987654321098',display_name:'Local Beneficiary Two',tag:'clients',relationship:null},
+  ]));
   expect(await read(ownerB.session.access_token)).toEqual([]);
 
   const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:320,height:720}});

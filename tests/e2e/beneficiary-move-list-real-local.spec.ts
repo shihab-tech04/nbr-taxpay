@@ -2,7 +2,7 @@ import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 
 /** Real disposable Auth/PostgREST: moving an owned contact must never edit its TIN or name. */
-test('beneficiary Edit moves only its list, persists, rejects collisions and cannot cross owners',async({browser})=>{
+test('beneficiary Edit supports tags, relationships, optional list moves, preserves identity and rejects collisions',async({browser})=>{
   test.setTimeout(120_000);
   const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL, key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
   if(!raw||!key)throw new Error('BLOCKED: disposable local Supabase credentials required');
@@ -60,18 +60,36 @@ test('beneficiary Edit moves only its list, persists, rejects collisions and can
     await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
     await expect(dialog.getByRole('textbox')).toHaveCount(0);
     await expect(dialog.locator('#beneficiary-edit-list option')).toHaveCount(2);
+    await expect(dialog.locator('#beneficiary-edit-list')).toHaveValue(family);
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
+    await dialog.locator('#beneficiary-edit-tag').selectOption('friends_family');
+    await dialog.locator('#beneficiary-edit-relationship').selectOption('father');
+    await expect(dialog.getByRole('button',{name:'Save changes'})).toBeEnabled();
     await dialog.locator('#beneficiary-edit-list').selectOption(clients);
     await dialog.getByRole('button',{name:'Save changes'}).click();
-    await expect(page.getByText('Beneficiary moved to the selected list.')).toBeVisible();
+    await expect(page.getByText('Beneficiary details updated.')).toBeVisible();
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
     await expect(page.getByRole('list',{name:'Saved beneficiaries'}).getByText('Immutable Beneficiary')).toBeVisible();
+    // Edit the classification WITHOUT a list move; neither name nor TIN may change.
+    const movedRow=page.getByTestId('beneficiary-records').getByRole('listitem').filter({hasText:'012345678901'});
+    await movedRow.getByRole('button',{name:'Edit',exact:true}).click();
+    dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
+    await expect(dialog.locator('#beneficiary-edit-tag')).toHaveValue('friends_family');
+    await expect(dialog.locator('#beneficiary-edit-relationship')).toHaveValue('father');
+    await expect(dialog.locator('#beneficiary-edit-list')).toHaveValue(clients);
+    await dialog.locator('#beneficiary-edit-tag').selectOption('others');
+    await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
+    await dialog.locator('#beneficiary-edit-other-label').fill('Neighbour representative');
+    await expect(dialog.getByRole('button',{name:'Save changes'})).toBeEnabled();
+    await dialog.getByRole('button',{name:'Save changes'}).click();
+    await expect(movedRow).toContainText('Others · Neighbour representative');
     await page.reload();
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
     await expect(page.getByRole('list',{name:'Saved beneficiaries'}).getByText('Immutable Beneficiary')).toBeVisible();
 
-    let read=await request(first.token,'taxpay_beneficiaries?id=eq.'+id+'&select=id,owner_uid,list_id,tin,display_name');
-    expect(read.body).toEqual([{id,owner_uid:first.id,list_id:clients,tin:'012345678901',display_name:'Immutable Beneficiary'}]);
+    let read=await request(first.token,'taxpay_beneficiaries?id=eq.'+id+'&select=id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
+    expect(read.body).toEqual([{id,owner_uid:first.id,list_id:clients,tin:'012345678901',
+      display_name:'Immutable Beneficiary',tag:'others',relationship:null,other_label:'Neighbour representative'}]);
     const denied=await request(second.token,'taxpay_beneficiaries?id=eq.'+id+'&select=id','PATCH',{list_id:foreign});
     expect(denied.status).toBe(200);
     expect(denied.body).toEqual([]);
@@ -86,6 +104,7 @@ test('beneficiary Edit moves only its list, persists, rejects collisions and can
     const desktopRow=page.getByTestId('beneficiary-records').getByRole('listitem').filter({hasText:'012345678901'});
     await desktopRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
+    await expect(dialog.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour representative');
     await dialog.locator('#beneficiary-edit-list').selectOption(family);
     await dialog.getByRole('button',{name:'Save changes'}).click();
     await expect(dialog.getByRole('alert')).toContainText('already saved in the destination list');

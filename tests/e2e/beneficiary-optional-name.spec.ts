@@ -74,6 +74,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await expect(dialog.locator('#beneficiary-name')).not.toHaveAttribute('required','');
+  await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(1);
@@ -84,6 +85,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('987654321098');
   await dialog.locator('#beneficiary-name').fill('Editable Contact');
+  await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   const secondRecord=visibleRecords.getByRole('listitem').filter({hasText:'987654321098'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
@@ -108,6 +110,8 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await expect(dialog.getByText('1 valid, 0 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
@@ -134,6 +138,8 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await page.getByRole('dialog',{name:'কীভাবে উপকারভোগী যোগ করবেন'}).getByRole('button',{name:'একজন উপকারভোগী যোগ'}).click();
   dialog=page.getByRole('dialog',{name:'উপকারভোগী যোগ'});
   await dialog.locator('#beneficiary-tin').fill('123450987654');
+  await dialog.locator('#beneficiary-tag').selectOption('friends_family');
+  await dialog.locator('#beneficiary-relationship').selectOption('mother');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('ul');
   await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
@@ -156,6 +162,8 @@ test('Excel import success notice updates immediately when the user changes lang
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-tag').selectOption('others');
+  await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
 
   const notice=page.locator('[data-testid="beneficiaries-page"] > p[role="status"]');
@@ -194,6 +202,7 @@ test('single beneficiary uses the shared TIN lookup card, clears lookup, and ret
   await lookup.getByRole('button',{name:'Search',exact:true}).click();
   await expect(lookup.locator('#beneficiary-name')).not.toHaveAttribute('readonly','');
   await lookup.locator('#beneficiary-name').fill('Local contact');
+  await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
   expect(transport.saved().find(record=>record.tin==='012345678901')?.display_name).toBe('Local contact');

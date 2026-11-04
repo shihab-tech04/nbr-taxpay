@@ -1,0 +1,72 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, normalizeOtherLabel, validBeneficiaryClassification} from '../src/services/beneficiaryTags';
+
+test('fixed beneficiary category choices and all required family relationships',()=>{
+  assert.deepEqual([...BENEFICIARY_TAGS],['clients','friends_family','others']);
+  assert.deepEqual([...BENEFICIARY_RELATIONS],['father','mother','siblings','son','daughter','spouse','friends']);
+  assert.equal(validBeneficiaryClassification('',null),false);
+  assert.equal(validBeneficiaryClassification('friends_family',null),false);
+  assert.equal(validBeneficiaryClassification('clients','father'),false);
+  assert.equal(validBeneficiaryClassification('others','friends'),false);
+  assert.equal(validBeneficiaryClassification('clients',null),true);
+  assert.equal(validBeneficiaryClassification('others',null),false);
+  assert.equal(validBeneficiaryClassification('others',null,'Neighbour'),true);
+  assert.equal(validBeneficiaryClassification('others',null,' মসজিদের পরিচিত '),true);
+  assert.equal(validBeneficiaryClassification('others',null,' '.repeat(80)),false);
+  assert.equal(validBeneficiaryClassification('others',null,'a'.repeat(81)),false);
+  assert.equal(validBeneficiaryClassification('others',null,'a'.repeat(80)),true);
+  assert.equal(normalizeOtherLabel('  Neighbour  '),'Neighbour');
+  assert.equal(normalizeOtherLabel('a'.repeat(81)),null);
+  assert.equal(validBeneficiaryClassification('clients',null,'Neighbour'),false);
+  for(const relation of BENEFICIARY_RELATIONS)assert.equal(validBeneficiaryClassification('friends_family',relation),true);
+  assert.equal(validBeneficiaryClassification('friends_family','cousin'),false);
+});
+test('classifications display without assigning any fabricated tag to historical contacts',()=>{
+  assert.equal(beneficiaryTagLabel('friends_family','father','en'),'Friends & family members · Father');
+  assert.equal(beneficiaryTagLabel('friends_family','father','bn'),'বন্ধু ও পরিবারের সদস্য · বাবা');
+  assert.equal(beneficiaryTagLabel('clients',null,'en'),'Clients');
+  assert.equal(beneficiaryTagLabel('others',null,'en','Neighbour'),'Others · Neighbour');
+  assert.equal(beneficiaryTagLabel('others',null,'bn','প্রতিবেশী'),'অন্যান্য · প্রতিবেশী');
+  assert.equal(beneficiaryTagLabel('others',null,'en',null),'Others');
+  assert.equal(beneficiaryTagLabel(null,null,'en'),'Uncategorized');
+  assert.equal(beneficiaryTagLabel(null,null,'bn'),'শ্রেণিবিহীন');
+});
+
+test('Other descriptions are required across UI, SQL, guest RPC and Edge validation',()=>{
+  const fs=(path:string)=>readFileSync(path,'utf8');
+  const screen=fs('src/components/screens/Beneficiaries.tsx');
+  const service=fs('src/services/beneficiaries.ts');
+  const guest=fs('supabase/functions/taxpay-guest-beneficiaries/index.ts');
+  const sql=fs('supabase/migrations/20261103101000_taxpay_beneficiary_others_label_80.sql');
+  assert.match(screen,/beneficiary-other-label/);
+  assert.match(screen,/maxLength=\{80\}/);
+  assert.match(screen,/validBeneficiaryClassification\(tag,relationship,otherLabel\)/);
+  assert.match(service,/other_label:row\.other_label/);
+  assert.match(guest,/validateName\(value\.other_label, 80/);
+  assert.match(sql,/taxpay_beneficiary_other_label_consistency/);
+  assert.match(sql,/taxpay_guest_beneficiary_other_label_consistency/);
+});
+test('Edit beneficiary covers fixed tags, family relations, Others and optional move end to end',()=>{
+  const screen=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  const service=readFileSync('src/services/beneficiaries.ts','utf8');
+  const guest=readFileSync('src/services/guestBeneficiaries.ts','utf8');
+  const edge=readFileSync('supabase/functions/taxpay-guest-beneficiaries/index.ts','utf8');
+  const sql=readFileSync('supabase/migrations/20261103170000_taxpay_guest_beneficiary_edit_classification.sql','utf8');
+  assert.match(screen,/id="beneficiary-edit-tag"/);
+  assert.match(screen,/id="beneficiary-edit-relationship"/);
+  assert.match(screen,/id="beneficiary-edit-other-label" required maxLength=\{80\}/);
+  assert.match(screen,/editBeneficiaryClassification\(owner,editPerson,editTargetList,classification\)/);
+  assert.match(screen,/Move to list \(optional\)/);
+  assert.match(screen,/setEditTargetList\(person\.list_id\)/);
+  assert.match(screen,/const editLegacyMove=/);
+  assert.match(screen,/await moveBeneficiary\(owner,editPerson\.id,editPerson\.list_id,editTargetList\)/);
+  assert.doesNotMatch(screen,/editTargetList===editPerson\.list_id\}\>/);
+  assert.match(service,/export async function editBeneficiaryClassification/);
+  assert.match(service,/\.eq\('owner_uid',ownerUid\)\.eq\('list_id',person\.list_id\)/);
+  assert.match(guest,/post\('edit-classification'/);
+  assert.match(edge,/taxpay_guest_beneficiary_edit_classification/);
+  assert.match(sql,/BENEFICIARY_ALREADY_IN_LIST/);
+  assert.match(sql,/revoke all on function public\.taxpay_guest_beneficiary_edit_classification/);
+});

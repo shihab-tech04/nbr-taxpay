@@ -4,6 +4,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {formattedReviewAmount,safeReviewStatus} from '../../services/accountReviewHistory';
 import {AccountBeneficiaryHistory} from './AccountBeneficiaryHistory';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
 type Row={
   id:string;owner_uid:string;category:string;assessment_year:string;
@@ -23,6 +24,8 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
   const {navigate}=useTaxState();
   const [snapshot,setSnapshot]=useState<Snapshot>({uid:null,status:'loading',rows:[]});
   const [retry,setRetry]=useState(0);
+  const [search,setSearch]=useState('');
+  const [selectedYear,setSelectedYear]=useState('all');
   const bn=language==='bn';
   const tr=(en:string,other:string)=>bn?other:en;
   useEffect(()=>{
@@ -49,6 +52,12 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
     return()=>{active=false;};
   },[ownerUid,retry]);
   const state=snapshot.uid===ownerUid?snapshot:{uid:ownerUid,status:'loading' as const,rows:[]};
+  const needle=search.trim().toLocaleLowerCase();
+  const years=[...new Set(state.rows.map(row=>row.assessment_year))].filter(Boolean).sort((a,b)=>b.localeCompare(a));
+  const visible=state.rows.filter(row=>(selectedYear==='all'||row.assessment_year===selectedYear)&&
+    (!needle||[row.id,row.category,row.assessment_year,row.request_status].some(value=>value.toLocaleLowerCase().includes(needle))));
+  const formatDate=(raw:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-BD',{dateStyle:'medium'}).format(new Date(raw));
+
   return <div className="mx-auto max-w-5xl space-y-4 pb-12">
     <TaxpayerPageHeading title={tr('My submitted requests','আমার জমা দেওয়া অনুরোধ')}
       description={tr('Account-owned, non-financial payment review activity. No TIN binding required.',
@@ -69,28 +78,50 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
       </div>}
       {state.status==='ready'&&state.rows.length===0&&<div role="status" className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-taxpay-muted">
         {tr('No review requests have been submitted from this account.', 'এই অ্যাকাউন্ট থেকে কোনো পর্যালোচনা অনুরোধ জমা দেওয়া হয়নি।')}</div>}
-      {state.status==='ready'&&state.rows.length>0&&<ul className="mt-4 space-y-3" data-testid="account-owner-review-history">
-        {state.rows.map(row=><li key={row.id} className="rounded-xl border border-taxpay-border p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h2 className="break-words text-base font-semibold text-taxpay-text">{row.category.replaceAll('_',' ')}</h2>
-              <p className="mt-1 break-all text-xs text-taxpay-muted">{row.id}</p>
-            </div>
-            <p className="rounded-lg border border-taxpay-border bg-slate-50 px-2 py-1 text-xs font-medium text-taxpay-primary">
-              {statuses[safeReviewStatus(row.request_status)][language]}</p>
-          </div>
-          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-            <div><dt className="text-taxpay-muted">{tr('Requested amount (not paid)','অনুরোধের পরিমাণ (পরিশোধ নয়)')}</dt>
-              <dd className="font-semibold tabular-nums text-taxpay-text">{formattedReviewAmount(row.amount_minor,language)}</dd></div>
-            <div><dt className="text-taxpay-muted">{tr('Assessment year','করবর্ষ')}</dt>
-              <dd className="text-taxpay-text">{row.assessment_year}</dd></div>
-            <div><dt className="text-taxpay-muted">{tr('Submitted','জমার তারিখ')}</dt>
-              <dd className="text-taxpay-text"><time dateTime={row.submitted_at}>{new Intl.DateTimeFormat(bn?'bn-BD':'en-BD',{dateStyle:'medium'}).format(new Date(row.submitted_at))}</time></dd></div>
-            <div><dt className="text-taxpay-muted">{tr('Financial verification','আর্থিক যাচাই')}</dt>
-              <dd className="font-medium text-taxpay-text">{tr('Not verified','যাচাই হয়নি')}</dd></div>
-          </dl>
-        </li>)}
-      </ul>}
+      {state.status==='ready'&&state.rows.length>0&&<div className="mt-4 space-y-3" data-testid="account-owner-review-history">
+        <TaxPayTableControls className="taxpay-record-page-filters">
+          <label className="taxpayer-transaction-filter">
+            <span>{tr('Search requests','অনুরোধ খুঁজুন')}</span>
+            <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+              aria-label={tr('Search requests','অনুরোধ খুঁজুন')}
+              placeholder={tr('Reference, service or status','রেফারেন্স, সেবা বা অবস্থা')}
+              className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white px-3 text-base"/>
+          </label>
+          <label className="taxpayer-transaction-filter">
+            <span>{tr('Assessment year','করবর্ষ')}</span>
+            <select value={selectedYear} onChange={event=>setSelectedYear(event.target.value)}
+              aria-label={tr('Filter requests by year','করবর্ষ অনুযায়ী অনুরোধ ফিল্টার করুন')}
+              className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white px-3 text-base">
+              <option value="all">{tr('All years','সব করবর্ষ')}</option>
+              {years.map(year=><option key={year} value={year}>{year}</option>)}
+            </select>
+          </label>
+          {(search||selectedYear!=='all')&&<button type="button"
+            className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+            onClick={()=>{setSearch('');setSelectedYear('all');}}>{tr('Clear filters','ফিল্টার মুছুন')}</button>}
+        </TaxPayTableControls>
+        <TaxPayTableCounter label={tr('Requests','অনুরোধ')} shown={visible.length} total={state.rows.length}/>
+        {visible.length===0?<TaxPayTableState>{tr('No submitted requests match those filters.','এই ফিল্টারে কোনো অনুরোধ মেলেনি।')}</TaxPayTableState>:
+          <TaxPayDataGrid variant="tabular" rows={visible} getRowKey={row=>row.id}
+            ariaLabel={tr('Submitted request register','জমা দেওয়া অনুরোধের তালিকা')}
+            testId="account-owner-review-table" mobileTestId="account-owner-review-mobile-cards"
+            columns={[
+              {key:'category',header:tr('Service / reference','সেবা / রেফারেন্স'),renderCell:row=><div>
+                <p className="font-semibold">{row.category.replaceAll('_',' ')}</p>
+                <p className="break-all font-mono-plex text-sm text-taxpay-muted">{row.id}</p>
+              </div>},
+              {key:'year',header:tr('Assessment year','করবর্ষ'),renderCell:row=><p>{row.assessment_year}</p>},
+              {key:'amount',header:tr('Requested amount (not paid)','অনুরোধের পরিমাণ (পরিশোধ নয়)'),
+                headerClassName:'text-right',cellClassName:'text-right tabular-nums',
+                renderCell:row=><p className="font-semibold">{formattedReviewAmount(row.amount_minor,language)}</p>},
+              {key:'status',header:tr('Review status','পর্যালোচনার অবস্থা'),
+                renderCell:row=><p className="font-semibold text-taxpay-text">{statuses[safeReviewStatus(row.request_status)][language]}</p>},
+              {key:'submitted',header:tr('Submitted / verification','জমা / যাচাই'),renderCell:row=><div>
+                <time dateTime={row.submitted_at} className="block">{formatDate(row.submitted_at)}</time>
+                <p className="text-sm text-taxpay-muted">{tr('Financial status: Not verified','আর্থিক অবস্থা: যাচাই হয়নি')}</p>
+              </div>}
+            ]}/>}
+      </div>}
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={()=>navigate('secure_workspace')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
           {tr('Saved drafts & review workspace','সংরক্ষিত খসড়া ও পর্যালোচনা')}</button>

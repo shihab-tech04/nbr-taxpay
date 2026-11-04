@@ -94,6 +94,33 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
   });
 }
 
+test('record count follows the selected assessment year, not the all-year total',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.route(`${supabaseUrl}/rest/v1/rpc/sim_my_payment_history`,async route=>{
+    const request=route.request();
+    const body=request.postDataJSON() as {p_view:'payer'|'beneficiary'};
+    if(body.p_view!=='beneficiary')return route.fallback();
+    const additional={
+      ...privateHistory[0],id:'SIM-PAY-OWNER-2025-SECOND',
+      transactionId:'00000000-0000-4000-8000-000000000902',
+      totalMinor:2000,createdAt:'2026-01-10T09:00:00Z',
+      allocations:[{id:'additional-2025',lineNo:1,beneficiary:'user2',category:'PENALTY',assessmentYear:'2025-26',amountMinor:2000}],
+    };
+    const first={...privateHistory[0],
+      allocations:privateHistory[0].allocations.filter(a=>a.beneficiary==='user2')};
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:JSON.stringify([first,additional])});
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const countCard=dashboard.getByText('Scenario payment records').locator('..');
+  await expect(countCard.locator('p').last()).toHaveText('1');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(countCard.locator('p').last()).toHaveText('2');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard.getByText('সিনারিও পেমেন্ট রেকর্ড').locator('..').locator('p').last()).toHaveText('২');
+});
+
 test('verified profile shows owner-scoped activity, linked scenario allocations and assessment-year filtering',async({page})=>{
   await mockPrivateAccount(page,'user2');
   await page.goto('/?action=taxpayer_home');
@@ -103,18 +130,34 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   // reference, but must never inherit user1's fabricated assessed balances.
   const financialCards=page.locator('.taxpayer-dashboard-kpi');
   await expect(financialCards).toHaveCount(4);
-  await expect(financialCards.nth(0)).toContainText('Income tax liability');
+  await expect(financialCards.nth(0)).toContainText('Tax assessed for the year');
+  await expect(financialCards.nth(1)).toContainText('Tax deducted or paid early');
+  await expect(financialCards.nth(2)).toContainText('Income tax payments made');
+  await expect(financialCards.nth(3)).toContainText('Tax left after payments');
   await expect(financialCards.nth(0)).toContainText('—');
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
   const phase=page.getByTestId('authenticated-dashboard-v11');
   await expect(phase).toBeVisible();
-  for (const heading of ['Needs review','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
+  await expect(phase.getByText('Coverage percentage unavailable')).toBeVisible();
+  await expect(phase.getByText('Verified liabilities and posted credits are needed to calculate coverage.')).toBeVisible();
+  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toHaveCount(0);
+  await expect(phase.getByRole('heading',{name:'Payment deadlines & demands'})).toBeVisible();
+  await expect(phase).toContainText('No verified due dates available');
+  await expect(phase.getByRole('button',{name:'Requests & drafts'})).toBeVisible();
+  await expect(phase.getByRole('button',{name:'Correction inquiries'})).toBeVisible();
+  await expect(phase).not.toContainText('Needs review');
+  await expect(page.getByText('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.')).toBeVisible();
+  await expect(phase).toContainText('An unavailable balance does not mean nothing is owed.');
+  await expect(phase.getByRole('button',{name:'Review tax ledger'})).toBeVisible();
+  for (const heading of ['Quick actions','Tax coverage','Monthly activity','By assessment year','Tax payments and adjustments','Current tax position']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
   // A signed-in account must use the approved Phase A/B visual sections, but
   // private scenario allocations never become government liability or credits.
   await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('—');
-  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
+  await expect(phase.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(phase.getByText('A payment request or receipt alone does not confirm a tax credit. Verified posted credits are needed to show a breakdown.')).toBeVisible();
   await expect(phase).not.toContainText('৳ 180,000');
   // Sample mode is explicit, reversible and never mutates SQL or changes the
   // meaning of owner-owned activity. It reuses the existing v11 example ledger.
@@ -131,6 +174,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(0)).toContainText('৳ 180,000');
   await expect(financialCards.nth(3)).toContainText('৳ 25,000');
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
+  await expect(phase.getByText('Verified credit breakdown unavailable')).toHaveCount(0);
+  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
+  await expect(phase.getByText('Coverage percentage unavailable')).toHaveCount(0);
   await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('৳ 6,500');
   await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toBeVisible();
   await phase.getByRole('button',{name:'2024-2025'}).click();
@@ -139,7 +185,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(examples.getByRole('button',{name:'View examples'})).toHaveAttribute('aria-pressed','false');
   await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
   await expect(financialCards.nth(0)).toContainText('—');
-  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
+  await expect(phase.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(phase.getByText('A payment request or receipt alone does not confirm a tax credit. Verified posted credits are needed to show a breakdown.')).toBeVisible();
   expect(writes).toEqual([]);
 
   await expect(dashboard).toContainText('৳ 65.50');
@@ -160,6 +208,18 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(dashboard).toContainText('৳ 34.50');
   await expect(dashboard).not.toContainText('৳ 65.50');
   await setWorkspaceLanguage(page,'bn');
+  await expect(phase.getByText('কর সমন্বয়ের শতকরা হার পাওয়া যায়নি')).toBeVisible();
+  await expect(phase.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
+  await expect(phase.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
+  await expect(financialCards.nth(0)).toContainText('করবর্ষের নির্ধারিত আয়কর');
+  await expect(financialCards.nth(1)).toContainText('উৎসে কাটা বা অগ্রিম দেওয়া কর');
+  await expect(financialCards.nth(2)).toContainText('সরাসরি পরিশোধিত আয়কর');
+  await expect(financialCards.nth(3)).toContainText('পরিশোধের পর বাকি কর');
+  await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
+  await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
+  await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
+  await expect(page.getByText('এই অ্যাকাউন্টের যাচাইকৃত কর ব্যালেন্স পাওয়া যায়নি। নিচে আপনার সংরক্ষিত অ্যাকাউন্টের কার্যক্রম ও পেমেন্ট রেকর্ড দেখতে পারবেন।')).toBeVisible();
+  await expect(phase).toContainText('যাচাইকৃত পরিশোধের শেষ তারিখ পাওয়া যায়নি');
   await expect(dashboard.getByRole('heading',{name:'আমার অ্যাকাউন্টের কার্যক্রম'})).toBeVisible();
   await expect(dashboard).toContainText('৳ ৩৪.৫০');
   const refreshedHistory=page.waitForRequest(request=>request.url().endsWith('/rest/v1/rpc/sim_my_payment_history')&&request.method()==='POST');
@@ -183,13 +243,17 @@ test('ordinary verified account without a taxpayer binding sees no financial sam
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('no taxpayer profile linked');
   await expect(dashboard).toContainText('No payment profile is linked to this application account.');
-  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax payments and adjustments'})).toBeVisible();
+  await expect(page.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(page.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
   await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('—');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-25');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
   await setWorkspaceLanguage(page,'bn');
   await expect(dashboard).toContainText('এই অ্যাপ অ্যাকাউন্টে কোনো পেমেন্ট প্রোফাইল সংযুক্ত নেই।');
+  await expect(page.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
+  await expect(page.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
 });
 

@@ -232,9 +232,9 @@ test('taxpayer ledger table and mobile labels follow the EN/BN selector',async({
   await openSampleTaxpayer(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await rail.getByRole('button',{name:'Tax ledger'}).click();
-  await expect(page.getByRole('columnheader',{name:'Particulars & Economic Code'})).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:'Description / tax head'})).toBeVisible();
   await rail.getByRole('button',{name:'বাংলা'}).click();
-  await expect(page.getByRole('columnheader',{name:'বিবরণ ও অর্থনৈতিক কোড'})).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:'বিবরণ / কর খাত'})).toBeVisible();
   await expect(page.getByRole('columnheader',{name:'ডেবিট (দায়)'})).toBeVisible();
 });
 
