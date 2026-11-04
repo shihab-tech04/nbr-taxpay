@@ -146,7 +146,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(page.getByText('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.')).toBeVisible();
   await expect(phase).toContainText('An unavailable balance does not mean nothing is owed.');
   await expect(phase.getByRole('button',{name:'Review tax ledger'})).toBeVisible();
-  for (const heading of ['Quick actions','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
+  for (const heading of ['Quick actions','Tax coverage','Monthly activity','By assessment year','Tax payments and adjustments','Current tax position']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
   // A signed-in account must use the approved Phase A/B visual sections, but
@@ -207,6 +207,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await setWorkspaceLanguage(page,'bn');
   await expect(phase.getByText('কর সমন্বয়ের শতকরা হার পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
+  await expect(phase.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
