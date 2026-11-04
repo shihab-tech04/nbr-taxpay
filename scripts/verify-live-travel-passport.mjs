@@ -63,7 +63,20 @@ try {
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
     await modal.getByRole('button', { name: 'Check Passport' }).click();
-    await expect(addPassenger).toBeEnabled();
+    try {
+      await expect(addPassenger).toBeEnabled();
+    } catch (error) {
+      // Keep this release gate strict while preserving actionable production
+      // evidence if the hosted DOM differs from the tested source.
+      console.error('TRAVEL_CONFIRMATION_DIAGNOSTIC', JSON.stringify({
+        url: page.url(),
+        visibleButtons: await modal.getByRole('button').allTextContents(),
+        firstCardComplete: await modal.locator('[data-passenger-id="first"]').getAttribute('data-complete'),
+        passengerName: await modal.getByTestId('travel-passenger-name-first').allTextContents(),
+      }));
+      await page.screenshot({ path: 'test-results/live-travel-passport-confirmation-failure-' + name + '.png', fullPage: false });
+      throw error;
+    }
     await expect(continueToTravel).toBeDisabled();
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
