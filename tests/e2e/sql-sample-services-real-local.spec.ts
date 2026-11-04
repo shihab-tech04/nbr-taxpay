@@ -53,8 +53,10 @@ test('user1 retains existing scenario plus its separate stored travel-tax exampl
   requireDisposableBackend();
   await signIn(page, 'user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  // SQL-backed service records remain accessible on Dashboard, not inserted
-  // into Transactions or the payment-reference lookup.
+  // SQL-backed records remain in Transactions, not Dashboard or the
+  // reference-only Track payment route.
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  await page.getByRole('button',{name:'Open transaction history'}).click();
   const panel = page.getByTestId('demo-sql-service-panel');
   await expect(panel).toHaveAttribute('data-scenario-user', 'user1');
   const register = panel.getByTestId('taxpay-service-record-register');
@@ -73,7 +75,10 @@ test('user1 retains existing scenario plus its separate stored travel-tax exampl
   await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
   await register.getByRole('button',{name:'Clear filters'}).click();
 
-  await page.getByRole('button',{name:'Open transaction history'}).click();
-  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  const tabs = page.getByRole('navigation',{name:'Activity sections'});
+  await tabs.getByRole('button',{name:'Track payment'}).click();
   await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  await tabs.getByRole('button',{name:'Transactions'}).click();
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
 });
