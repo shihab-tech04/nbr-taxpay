@@ -217,16 +217,21 @@ for(const language of ['en','bn'] as const){
     const desktop=info.project.name==='desktop-1280';
     const table=panel.getByTestId('signed-in-payment-activity-table');
     const cards=panel.getByTestId('signed-in-payment-activity-cards');
+    const expand=language==='bn'?'বরাদ্দ দেখুন':'View allocations';
     if(desktop){
       await expect(table).toBeVisible();
       await expect(table.locator('thead th')).toHaveCount(4);
       await expect(table.locator('tbody tr')).toHaveCount(1);
       await expect(cards).toBeHidden();
+      await table.getByText(expand).click();
+      await expect(table.getByText('৳35.00',{exact:true})).toBeVisible();
       await table.locator('tbody td').first().click();
     }else{
       await expect(table).toBeHidden();
       await expect(cards).toBeVisible();
       await expect(cards.locator('li')).toHaveCount(1);
+      await cards.getByText(expand).click();
+      await expect(cards.getByText('৳35.00',{exact:true})).toBeVisible();
       await cards.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details'}).click();
     }
     const modal=page.getByRole('dialog',{name:language==='bn'?'পেমেন্টের বিবরণ':'Payment details'});
