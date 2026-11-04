@@ -107,28 +107,12 @@ try {
     await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
     await modal.getByRole('button', { name: 'Continue to review' }).click();
     await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
-    await modal.getByRole('button', { name: 'Pay online' }).click();
-    await modal.getByRole('button', { name: 'Mobile banking' }).click();
-    await modal.getByRole('radio', { name: 'Nagad' }).check();
-    await modal.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
-    await modal.getByRole('button', { name: 'Confirm preview payment' }).click();
-    const combined = modal.getByTestId('travel-family-challan');
-    await expect(combined).toBeVisible({ timeout: 15000 });
-    await expect(combined.locator('tbody tr')).toHaveCount(2);
-    if (mobile) {
-      await expect(combined.getByTestId('travel-receipt-passenger-cards')).toBeVisible();
-      await expect(combined.getByTestId('travel-receipt-passenger-cards').locator('article')).toHaveCount(2);
-    } else {
-      await expect(combined.locator('.receipt-view__travel-table')).toBeVisible();
-    }
-    const reference = await modal.locator('.receipt-view__reference-number').textContent();
+    // Production smoke remains read-only with respect to SQL: do not create
+    // test payment records merely to verify a release. Receipt rendering,
+    // recorded Back behavior and total accounting have dedicated CI tests.
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toBeVisible();
     await modal.getByRole('button', { name: 'Back', exact: true }).click();
-    await expect(modal.getByTestId('travel-recorded-review')).toBeVisible();
-    await expect(modal).toBeVisible();
-    await expect(modal.getByRole('button', { name: 'Confirm preview payment' })).toHaveCount(0);
-    await modal.getByRole('button', { name: 'View combined challan' }).click();
-    await expect(combined).toBeVisible();
-    await expect(modal.locator('.receipt-view__reference-number')).toHaveText(reference?.trim() ?? '');
+    await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
     if (mobile) {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       if (overflow > 2) throw new Error('Live mobile Travel Tax has horizontal overflow: ' + overflow + 'px');
@@ -136,7 +120,7 @@ try {
     await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png', fullPage: false });
     await page.close();
   }
-  console.log('PASS: deployed Travel Tax confirmed two passengers, preserved medical option, generated combined challan, retained Back navigation and mobile/desktop containment');
+  console.log('PASS: deployed Travel Tax confirms two passengers, preserves medical option, validates stages and mobile/desktop containment without writing QA records to production SQL');
 } finally {
   await browser.close();
 }
