@@ -21,6 +21,7 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('#travel-medical-first')).toBeVisible();
   await modal.getByRole('button',{name:'Add passenger'}).click();
   await expect(modal.getByRole('button',{name:'Add another passenger'})).toBeEnabled();
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toBeFocused();
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await modal.locator('#travel-mobile').fill('01712345678');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
@@ -181,6 +182,7 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   const people=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person');
   await expect(people).toHaveCount(2);
   const second=people.nth(1);
+  await expect(second.getByRole('combobox')).toBeFocused();
   await second.getByRole('tab',{name:'Foreign passenger'}).click();
   await second.getByLabel('Passport number').fill('B7654321');
   await second.getByLabel('Passenger name as on passport').fill('FRIEND SECOND');
