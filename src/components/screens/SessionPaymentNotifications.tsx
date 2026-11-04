@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getStoryNotices, getStorySessionPayments } from '../../services/simulatedPaymentStory';
 import { reconcileStoryPaymentNotices, type VerifiedStoryPaymentNotice } from '../../services/storyNotificationReconciliation';
 import { formatSimulatedAmount } from '../../services/simulatedPaymentsApi';
+import {TaxPayDataGrid} from '../ui/TaxPayDataTable';
 
 /** The browser-session payment inbox is separate from authenticated tax identity.
  * It reads the existing SQL notification and matching SQL payment every time;
@@ -46,10 +47,16 @@ export const SessionPaymentNotifications: React.FC<{ language: 'en' | 'bn' }> = 
     <p className="mt-1 text-sm text-taxpay-muted">{label('Records from this browser session. Settlement and tax credit are not confirmed.', 'এই ব্রাউজার সেশনের রেকর্ড। নিষ্পত্তি ও কর ক্রেডিট নিশ্চিত হয়নি।')}</p>
     {error ? <p role="alert" className="mt-2 text-sm text-red-700">{error}</p> :
       notices.length === 0 ? <p className="mt-2 text-sm text-taxpay-muted">{label('No payment notifications in this session.', 'এই সেশনে কোনো পেমেন্ট বিজ্ঞপ্তি নেই।')}</p> :
-      <ul className="divide-y divide-taxpay-border">{notices.map(notice => <li key={notice.id} className="py-3">
-        <p className="font-semibold text-taxpay-text">{label('Payment record saved', 'পেমেন্ট রেকর্ড সংরক্ষিত')}</p>
-        <p className="font-semibold tabular-nums text-taxpay-text">{label('Amount', 'পরিমাণ')}: {formatSimulatedAmount(notice.amountMinor)}</p>
-        <p className="break-all text-sm text-taxpay-muted">{notice.paymentId} · <time dateTime={notice.createdAt}>{new Date(notice.createdAt).toLocaleString(bn ? 'bn-BD' : 'en-GB')}</time></p>
-      </li>)}</ul>}
+      <TaxPayDataGrid variant="tabular" rows={notices} getRowKey={notice=>notice.id}
+        ariaLabel={label('Session payment notices','সেশন পেমেন্ট বিজ্ঞপ্তি')}
+        testId="session-payment-notification-register" mobileTestId="session-payment-notification-cards"
+        columns={[
+          {key:'update',header:label('Update','হালনাগাদ'),renderCell:()=><p className="font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</p>},
+          {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:notice=><p className="break-all font-mono-plex text-sm">{notice.paymentId}</p>},
+          {key:'amount',header:label('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
+            renderCell:notice=><p className="font-semibold">{formatSimulatedAmount(notice.amountMinor)}</p>},
+          {key:'date',header:label('Recorded','সংরক্ষণের সময়'),renderCell:notice=><time dateTime={notice.createdAt}>
+            {new Date(notice.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>}
+        ]}/>
   </section>;
 };
