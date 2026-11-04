@@ -55,7 +55,7 @@ for (const language of ['en','bn'] as const) {
     await expect(page.getByRole('dialog')).toBeVisible();
   });
 
-  test('track payment focuses lookup instead of duplicating the transaction table in '+language,async({page})=>{
+  test('track payment focuses lookup instead of duplicating the transaction table in '+language,async({page},info)=>{
     await page.goto('/?action=history&demoUser=user1&lang='+language);
     const nav=page.getByRole('navigation',{name:tr('Activity sections','লেনদেনের বিভাগ')});
     await nav.getByRole('button',{name:tr('Track payment','পেমেন্ট অনুসন্ধান')}).click();
@@ -69,6 +69,8 @@ for (const language of ['en','bn'] as const) {
     await expect(page.locator('.receipt-lookup__sample')).toHaveCount(0);
     await expect(page.getByRole('combobox',{name:tr('Assessment year','করবর্ষ')})).toHaveCount(0);
     await expect(page.getByTestId('track-payment-history-link')).toBeVisible();
+    // Preserve actual rendered evidence of the exact screenshot-reported route.
+    await page.screenshot({path:'test-results/screenshots/taxpay-unified-track-'+language+'-'+info.project.name+'.png',fullPage:true});
     await page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')}).click();
     await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
     await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
