@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 const backend='https://nbr-taxpay-test.invalid';
 const owner={id:'00000000-0000-4000-8000-000000000202',email:'journey-owner@example.invalid',
@@ -29,6 +30,25 @@ async function mockAccount(page:Page,hasData:boolean){
     if(url.pathname==='/rest/v1/taxpay_payment_requests'){
       expect(url.searchParams.get('owner_uid')).toBe('eq.'+owner.id);
       return response(hasData?[request]:[]);
+    }
+    if(url.pathname==='/rest/v1/taxpay_payment_drafts'){
+      expect(url.searchParams.get('owner_uid')).toBe('eq.'+owner.id);
+      return response(hasData?[{id:'draft-a1',owner_uid:owner.id,category:'ADVANCE_TAX',
+        assessment_year:'2026-27',created_at:'2026-10-01T10:00:00Z'}]:[]);
+    }
+    if(url.pathname==='/rest/v1/taxpay_in_app_notifications'){
+      return response(hasData?[{id:'notice-a1',request_id:request.id,message_code:'REQUEST_SUBMITTED',
+        is_read:false,created_at:'2026-10-03T10:00:00Z'}]:[]);
+    }
+    if(url.pathname==='/rest/v1/taxpay_correction_inquiries'){
+      expect(url.searchParams.get('requester_uid')).toBe('eq.'+owner.id);
+      return response(hasData?[{
+        inquiry_id:'case-a1',original_reference:'SYN-OWNER-REF-001',evidence_state:'PENDING_EVIDENCE',
+        created_at:'2026-10-02T11:00:00Z',reason:'Evidence requires a correction review',
+        requested_outcome:'Review supplied evidence',change_kind:null,old_value:null,new_value:null,
+        office_review_state:'PENDING_OFFICER',office_review_revision:1,
+        office_review_updated_at:'2026-10-03T10:00:00Z'
+      }]:[]);
     }
     if(url.pathname==='/rest/v1/taxpay_request_events'){
       expect(url.searchParams.get('request_id')).toContain(request.id);
@@ -70,3 +90,48 @@ test('signed-in account with no records never invents financial events',async({p
   await expect(timeline.getByRole('status')).toContainText('কোনো নথিভুক্ত');
   await expect(page.getByRole('navigation',{name:'করসেবা'})).toBeVisible();
 });
+
+for(const language of ['en','bn'] as const){
+  test('authenticated Notifications and Corrections show shared searchable tables in '+language,async({page},info)=>{
+    await mockAccount(page,true);
+    await page.goto('/?action=account_notifications&lang='+language);
+    const inbox=page.getByTestId('authenticated-notification-registers');
+    await expect(inbox).toBeVisible();
+    const reviews=page.getByTestId('authenticated-review-notification-register');
+    const drafts=page.getByTestId('authenticated-draft-notification-register');
+    await expect(reviews.getByRole('listitem')).toHaveCount(1);
+    await expect(drafts.getByRole('listitem')).toHaveCount(1);
+    await expect(reviews).toContainText(request.id);
+    await expect(drafts).toContainText('ADVANCE_TAX');
+    const search=page.getByRole('searchbox',{name:language==='bn'?'বিজ্ঞপ্তি খুঁজুন':'Search account notifications'});
+    await search.fill('no-matching-reference');
+    await expect(reviews).toHaveCount(0);
+    await expect(drafts).toHaveCount(0);
+    await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
+    await expect(reviews.getByRole('listitem')).toHaveCount(1);
+    const desktop=info.project.name==='desktop-1280';
+    const count=await reviews.getByRole('listitem').first().evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length);
+    expect(count).toBe(desktop?4:1);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(2);
+    mkdirSync('test-results/screenshots',{recursive:true});
+    await page.screenshot({path:'test-results/screenshots/taxpay-auth-notifications-'+language+'-'+info.project.name+'.png',
+      animations:'disabled'});
+    await page.goto('/?action=corrections&lang='+language);
+    const corrections=page.getByTestId('authenticated-correction-register');
+    await expect(corrections).toBeVisible();
+    const table=page.getByTestId('authenticated-correction-inquiry-table');
+    await expect(table.getByRole('listitem')).toHaveCount(1);
+    await expect(table).toContainText('SYN-OWNER-REF-001');
+    await table.locator('summary').click();
+    await expect(table).toContainText('Review supplied evidence');
+    await page.getByRole('searchbox',{name:language==='bn'?'অনুসন্ধান খুঁজুন':'Search review inquiries'})
+      .fill('not-the-reference');
+    await expect(table).toHaveCount(0);
+    await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
+    await expect(table.getByRole('listitem')).toHaveCount(1);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    await page.screenshot({path:'test-results/screenshots/taxpay-auth-corrections-'+language+'-'+info.project.name+'.png',
+      animations:'disabled'});
+  });
+}

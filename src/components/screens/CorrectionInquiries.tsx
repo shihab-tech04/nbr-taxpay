@@ -3,6 +3,7 @@ import {supabase} from '../../services/supabaseClient';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField} from '../../services/correctionInquiryValidation';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
 type Row=Readonly<{
  inquiry_id:string; original_reference:string; evidence_state:string; created_at:string;
@@ -72,6 +73,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [rows,setRows]=useState<readonly Row[]>([]);
+ const [historySearch,setHistorySearch]=useState('');
  const load=async(isActive:()=>boolean)=>{
   if(!supabase) throw new Error(labels.fail);
   const {data:who,error:idError}=await supabase.auth.getUser();
@@ -130,6 +132,9 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
    setMessage(labels.saved);
   }catch{if(persisted){setLoadError(true);setMessage(labels.savedHistoryFail)}else setMessage(labels.fail)}finally{setBusy(false);}
  };
+ const needle=historySearch.trim().toLocaleLowerCase();
+ const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_state,
+  r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
  return <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="inquiry-title">
   <header className="space-y-2">
    <h2 id="inquiry-title" className="font-serif-fraunces text-xl font-bold text-emerald-950">{labels.title}</h2>
@@ -168,28 +173,51 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
   <section aria-labelledby="inquiry-history-title" className="space-y-3">
    <h3 id="inquiry-history-title" className="font-serif-fraunces text-lg font-bold">{labels.history}</h3>
-   {loading?<p role="status">{labels.loading}</p>:loadError?<div className="space-y-2"><p className="text-sm text-amber-900">{labels.fail}</p><UiButton type="button" onClick={retryLoad}>{labels.retry}</UiButton></div>:rows.length===0?<p className="text-sm text-slate-600">{labels.empty}</p>:
-    <ul className="divide-y divide-slate-200">{rows.map(r=><li key={r.inquiry_id} className="py-3">
-      <p className="text-sm font-semibold text-slate-900 break-words">{r.original_reference} — {r.evidence_state==='PENDING_EVIDENCE'?labels.state:labels.statusUnavailable}</p>
-      <div aria-live="polite" aria-atomic="true">
-       <p className="text-sm text-slate-600">{labels.officeReview}: {labels.officeReviewStates[r.office_review_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable}</p>
-       {r.office_review_revision!==null&&<p className="text-xs text-slate-600">{labels.officeReviewRevision}: {r.office_review_revision}</p>}
-       {r.office_review_updated_at&&<p className="text-xs text-slate-600">{labels.officeReviewUpdated}: {r.office_review_updated_at}</p>}
-      </div>
-     <p className="text-xs text-slate-600">{r.created_at}</p>
-     <details className="mt-2 rounded-lg border border-slate-200 p-3">
-      <summary className="cursor-pointer text-sm font-semibold text-emerald-900">{labels.details}</summary>
-      <div className="mt-3 space-y-2 break-words text-sm text-slate-700">
-       <p><span className="font-semibold">{labels.reasonLabel}: </span>{r.reason}</p>
-       <p><span className="font-semibold">{labels.outcomeLabel}: </span>{r.requested_outcome}</p>
-       {r.change_kind&&<div className="space-y-1 border-t border-slate-200 pt-2">
-        <p className="font-semibold">{labels.changeLabel}: {labels.changeKinds[r.change_kind]}</p>
-        <p><span className="font-semibold">{labels.oldValueLabel}: </span>{r.old_value}</p>
-        <p><span className="font-semibold">{labels.newValueLabel}: </span>{r.new_value}</p>
-       </div>}
-      </div>
-     </details>
-    </li>)}</ul>}
+   {loading?<p role="status">{labels.loading}</p>:
+    loadError?<div className="space-y-2"><p className="text-sm text-amber-900">{labels.fail}</p>
+      <UiButton type="button" onClick={retryLoad}>{labels.retry}</UiButton></div>:
+    rows.length===0?<p className="text-sm text-slate-600">{labels.empty}</p>:
+    <div className="space-y-3" data-testid="authenticated-correction-register">
+      <TaxPayTableControls className="taxpay-record-page-filters">
+        <label className="taxpayer-transaction-filter">
+          <span>{language==='bn'?'অনুসন্ধান খুঁজুন':'Search review inquiries'}</span>
+          <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-base"
+            aria-label={language==='bn'?'অনুসন্ধান খুঁজুন':'Search review inquiries'}
+            placeholder={language==='bn'?'রেফারেন্স বা কারণ খুঁজুন':'Find reference, reason or status'}
+            value={historySearch} onChange={event=>setHistorySearch(event.target.value)}/>
+        </label>
+        {historySearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+          onClick={()=>setHistorySearch('')}>{language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}</button>}
+      </TaxPayTableControls>
+      <TaxPayTableCounter label={language==='bn'?'অনুসন্ধান':'Inquiries'} shown={matchingRows.length} total={rows.length}/>
+      {matchingRows.length===0?<TaxPayTableState>{language==='bn'?'কোনো মিল পাওয়া যায়নি।':'No review inquiries match this search.'}</TaxPayTableState>:
+        <TaxPayDataGrid variant="exceptions" rows={matchingRows} getRowKey={r=>r.inquiry_id}
+          ariaLabel={labels.history} testId="authenticated-correction-inquiry-table"
+          columns={[
+            {key:'reference',header:language==='bn'?'রেফারেন্স':'Reference',renderCell:r=><div>
+              <p className="break-all font-semibold text-taxpay-text">{r.original_reference} — {r.evidence_state==='PENDING_EVIDENCE'?labels.state:labels.statusUnavailable}</p>
+              <time dateTime={r.created_at} className="text-sm text-taxpay-muted">{r.created_at}</time>
+            </div>},
+            {key:'reason',header:language==='bn'?'অনুরোধের কারণ':'Recorded reason',renderCell:r=><p className="line-clamp-2 break-words text-taxpay-text">{r.reason}</p>},
+            {key:'status',header:labels.officeReview,renderCell:r=><div aria-live="polite" aria-atomic="true">
+              <p className="font-semibold text-taxpay-text">{labels.officeReviewStates[r.office_review_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable}</p>
+              {r.office_review_revision!==null&&<p className="text-sm text-taxpay-muted">{labels.officeReviewRevision}: {r.office_review_revision}</p>}
+              {r.office_review_updated_at&&<p className="text-sm text-taxpay-muted">{labels.officeReviewUpdated}: {r.office_review_updated_at}</p>}
+            </div>},
+            {key:'action',header:language==='bn'?'বিস্তারিত':'Details',renderCell:r=><details className="min-w-0 rounded-lg border border-taxpay-border p-3">
+              <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{labels.details}</summary>
+              <div className="mt-2 space-y-2 break-words text-sm text-taxpay-text">
+                <p>{labels.reasonLabel}: {r.reason}</p>
+                <p>{labels.outcomeLabel}: {r.requested_outcome}</p>
+                {r.change_kind&&<div className="space-y-1 border-t border-taxpay-border pt-2">
+                  <p className="font-semibold">{labels.changeLabel}: {labels.changeKinds[r.change_kind]}</p>
+                  <p>{labels.oldValueLabel}: {r.old_value}</p>
+                  <p>{labels.newValueLabel}: {r.new_value}</p>
+                </div>}
+              </div>
+            </details>}
+          ]}/>}
+    </div>}
   </section>
  </section>;
 };

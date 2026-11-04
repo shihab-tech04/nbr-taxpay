@@ -3,16 +3,22 @@ import type { Page } from '@playwright/test';
 
 // Preserve bilingual assertions while using the navigation control visible at each width.
 async function switchTaxpayerToBangla(page: Page) {
-  const mobileMenu = page.locator('.citizen-mobile-menu-trigger');
-  if (await mobileMenu.isVisible()) {
-    await mobileMenu.click();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if(await rail.isVisible()){
+    await rail.getByRole('button',{name:'বাংলা'}).click();
+    return;
+  }
+  // Activity's compact mobile shell hides the standard header. Use its
+  // visible corner-menu trigger instead of waiting on an inert header.
+  const openMenu=page.getByRole('button',{name:'Open menu'}).filter({visible:true}).first();
+  if(await openMenu.isVisible()){
+    await openMenu.click();
     await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
     await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  } else if (await page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).isVisible()) {
-    await page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'বাংলা'}).click();
-  } else {
-    await page.locator('.citizen-header').getByRole('button',{name:'বাংলা'}).click();
+    return;
   }
+  await page.getByRole('button',{name:'বাংলা'}).filter({visible:true}).first().click();
+
 }
 
 test('root is a public information hub with a header Login and no payment action',async({page})=>{
@@ -103,7 +109,14 @@ test('certificate previews stay non-official, match the selected type and locali
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Receipts & certificates'}).click();
 
-  await expect(page.getByRole('heading',{name:'Certificate summaries'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Receipts & payment records'})).toBeVisible();
+  const register=page.getByTestId('account-certificate-record-register');
+  await expect(register).toBeVisible();
+  const recordSearch=register.getByRole('searchbox',{name:'Find a payment record'});
+  await recordSearch.fill('unmatched-record');
+  await expect(recordSearch).toHaveValue('unmatched-record');
+  await register.getByRole('button',{name:'Clear search'}).click();
+  await expect(recordSearch).toHaveValue('');
   await expect(page.getByRole('heading',{name:'Annual payment summary'})).toBeVisible();
   await expect(page.getByText('No official certificate is issued from this demonstration.')).toHaveCount(0);
   await expect(page.getByText('Statutory certificates generated directly from Government Treasury deposit scrolls.')).toHaveCount(0);
@@ -127,7 +140,7 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal).toHaveCount(0);
 
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'সনদের সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'রসিদ ও পেমেন্ট রেকর্ড'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'উৎসে কর জমার সারসংক্ষেপ'})).toBeVisible();
   await page.getByRole('button',{name:'উৎসে কর জমার সারসংক্ষেপ',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'সনদের সারসংক্ষেপ'}).locator('[data-testid="certificate-summary-document"]')).toBeVisible();

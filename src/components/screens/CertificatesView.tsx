@@ -9,6 +9,7 @@ import { getAccountStoryPayments, getDetailedStorySessionPayments, beneficiaryPa
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ReceiptView } from '../common/ReceiptView';
 import type { ChallanReceipt } from '../../types/tax';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
 type CertificatePreview = 'ANNUAL_PAYMENT' | 'WITHHOLDING_PROOF' | 'TRAVEL_CLEARANCE';
 
@@ -26,11 +27,18 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const [sqlPayments, setSqlPayments] = useState<BeneficiaryPaymentEntry[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<ChallanReceipt | null>(null);
   const [sqlError, setSqlError] = useState(false);
+  const [sqlLoading,setSqlLoading]=useState(true);
+  const [recordSearch,setRecordSearch]=useState('');
+  const [receiptReturnToSummary,setReceiptReturnToSummary]=useState(false);
   const bn = language === 'bn';
   const label = (en: string, bengali: string) => bn ? bengali : en;
 
   useEffect(() => {
     let active = true;
+    setSqlLoading(true);
+    setSqlPayments([]);
+    setSelectedReceipt(null);
+    setSummaryOpen(false);
     const refresh = async () => {
       try {
         const payments=authenticatedUser
@@ -39,9 +47,10 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
         if (active) {
           setSqlPayments(beneficiaryPaymentEntries(payments));
           setSqlError(false);
+          setSqlLoading(false);
         }
       } catch {
-        if (active) setSqlError(true);
+        if (active) {setSqlError(true);setSqlLoading(false);setSqlPayments([]);}
       }
     };
     void refresh();
@@ -52,6 +61,10 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const scopedPayments = sqlPayments.filter(row => selectedPreview === 'ANNUAL_PAYMENT' ||
     (selectedPreview === 'WITHHOLDING_PROOF' && row.receipt.paymentCategory === 'SOURCE_TAX_DEPOSIT') ||
     (selectedPreview === 'TRAVEL_CLEARANCE' && row.receipt.paymentCategory === 'TRAVEL_TAX'));
+  const recordNeedle=recordSearch.trim().toLocaleLowerCase();
+  const matchingPayments=scopedPayments.filter(row=>!recordNeedle || [
+    row.beneficiaryName,row.taxpayerTin,row.paymentHead,row.assessmentYear,row.paymentId,row.economicCode
+  ].some(value=>String(value??'').toLocaleLowerCase().includes(recordNeedle)));
   // Use integer minor units so the total equals the sum of beneficiary lines.
   const recordedMinor = scopedPayments.reduce((total,row) => total + row.amountMinor,0);
   const recordedTotal = recordedMinor / 100;
@@ -83,9 +96,9 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const selectedTitle = bn ? selectedOption.bn : selectedOption.en;
 
   return (
-    <div className={bn ? 'mx-auto max-w-4xl space-y-4 pb-12 font-bengali' : 'mx-auto max-w-4xl space-y-4 pb-12'}>
+    <div className={bn ? 'mx-auto max-w-6xl space-y-4 pb-12 font-bengali' : 'mx-auto max-w-6xl space-y-4 pb-12'}>
       <TaxpayerPageHeading id="certificate-preview-title"
-        title={label('Certificate summaries', 'সনদের সারসংক্ষেপ')}
+        title={label('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড')}
         actions={
           <button type="button" onClick={() => setSummaryOpen(true)}
             className="no-print inline-flex min-h-11 items-center gap-2 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:bg-taxpay-dark">
@@ -115,6 +128,65 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
               'রেকর্ডকৃত লেনদেন দেখতে, ডাউনলোড করতে বা প্রিন্ট করতে সারসংক্ষেপ খুলুন।')}
           </p>
         </div>
+      </section>
+
+      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6 space-y-3"
+        aria-label={label('Recorded payments','সংরক্ষিত পেমেন্ট')} data-testid="account-certificate-record-register">
+        <div className="taxpay-table-toolbar">
+          <div>
+            <h2 className="text-base font-semibold text-taxpay-text">{label('Payment records','পেমেন্ট রেকর্ড')}</h2>
+            <p className="mt-1 text-sm text-taxpay-muted">{label('Saved payment records are not government-issued certificates or verified tax credits.',
+              'সংরক্ষিত পেমেন্ট রেকর্ড সরকারি সনদ বা যাচাইকৃত কর ক্রেডিট নয়।')}</p>
+          </div>
+          <TaxPayTableCounter label={label('Records','রেকর্ড')} shown={matchingPayments.length} total={scopedPayments.length}/>
+        </div>
+        <TaxPayTableControls className="taxpay-record-page-filters">
+          <label className="taxpayer-transaction-filter">
+            <span>{label('Find a payment record','পেমেন্ট রেকর্ড খুঁজুন')}</span>
+            <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-base"
+              aria-label={label('Find a payment record','পেমেন্ট রেকর্ড খুঁজুন')}
+              placeholder={label('Search reference, name, TIN or tax head','রেফারেন্স, নাম, টিআইএন বা কর খাত')}
+              value={recordSearch} onChange={event=>setRecordSearch(event.target.value)}/>
+          </label>
+          {recordSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+            onClick={()=>setRecordSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>}
+        </TaxPayTableControls>
+        {sqlLoading?<TaxPayTableState>{label('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</TaxPayTableState>:
+         sqlError?<div role="alert" className="taxpay-table-state">{label('Payment records are temporarily unavailable.','পেমেন্ট রেকর্ড সাময়িকভাবে পাওয়া যাচ্ছে না।')}</div>:
+         matchingPayments.length===0?<TaxPayTableState>{scopedPayments.length
+           ?label('No payment records match the search.','এই অনুসন্ধানে কোনো পেমেন্ট রেকর্ড নেই।')
+           :label('No payment records in this summary.','এই সারসংক্ষেপে কোনো পেমেন্ট রেকর্ড নেই।')}</TaxPayTableState>:
+         <TaxPayDataGrid variant="tabular" rows={matchingPayments} getRowKey={row=>row.key}
+           ariaLabel={label('Recorded payment register','সংরক্ষিত পেমেন্ট তালিকা')}
+           testId="account-certificate-payment-table" mobileTestId="account-certificate-payment-cards"
+           columns={[
+             {key:'beneficiary',header:label('Beneficiary / TIN','উপকারভোগী / টিআইএন'),renderCell:row=><div>
+               <p className="font-semibold">{row.beneficiaryName}</p>
+               <p className="break-all font-mono-plex text-sm text-taxpay-muted">{row.taxpayerTin||'—'}</p>
+             </div>},
+             {key:'head',header:label('Tax head / year','কর খাত / করবর্ষ'),renderCell:row=><div>
+               <p>{row.paymentHead}</p><p className="text-sm text-taxpay-muted">{row.assessmentYear}</p>
+             </div>},
+             {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:row=><p className="break-all font-mono-plex text-sm">{row.paymentId}</p>},
+             {key:'amount',header:label('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
+               renderCell:row=><p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
+             {key:'receipt',header:label('Receipt','রসিদ'),renderCell:row=><button type="button"
+               className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+               onClick={()=>{setReceiptReturnToSummary(false);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>}
+           ]}
+           renderMobileCard={row=><>
+             <div className="taxpay-mobile-table-card__header">
+               <p className="taxpay-mobile-table-card__title">{row.beneficiaryName}</p>
+               <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</p>
+             </div>
+             <p className="taxpay-mobile-table-card__meta">{label('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
+             <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
+             <p className="taxpay-mobile-table-card__meta break-all">{label('Reference','রেফারেন্স')}: {row.paymentId}</p>
+             <div className="taxpay-mobile-table-card__actions">
+               <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                 onClick={()=>{setReceiptReturnToSummary(false);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>
+             </div>
+           </>}/>}
       </section>
 
       {summaryOpen && (
@@ -199,7 +271,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                           <p className="mt-1 break-all font-mono-plex text-xs">{row.paymentId}</p>
                           <p className="mt-2 text-sm font-bold">{formatCurrency(row.amountMinor / 100, language)}</p>
                           <button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-                            onClick={()=>{setSummaryOpen(false);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>
+                            onClick={()=>{setSummaryOpen(false);setReceiptReturnToSummary(true);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>
                         </article>
                       ))}
                     </div>
@@ -224,7 +296,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                               <td>{row.assessmentYear}</td>
                               <td className="text-right font-mono-plex">{formatCurrency(row.amountMinor / 100, language)}</td>
                               <td><button type="button" className="min-h-11 font-semibold text-taxpay-primary"
-                                onClick={()=>{setSummaryOpen(false);setSelectedReceipt(row.receipt);}}>{label('View','দেখুন')}</button></td>
+                                onClick={()=>{setSummaryOpen(false);setReceiptReturnToSummary(true);setSelectedReceipt(row.receipt);}}>{label('View','দেখুন')}</button></td>
                             </tr>
                           ))}
                         </tbody>
@@ -239,7 +311,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
       )}
       {selectedReceipt&&<TaxPayModal title={label('Payment receipt','পেমেন্ট রসিদ')} service="status"
         className="receipt-modal" footer={<></>}
-        onClose={()=>{setSelectedReceipt(null);setSummaryOpen(true);}}>
+        onClose={()=>{setSelectedReceipt(null);if(receiptReturnToSummary)setSummaryOpen(true);}}>
         <ReceiptView receipt={selectedReceipt} embedded/>
       </TaxPayModal>}
     </div>
