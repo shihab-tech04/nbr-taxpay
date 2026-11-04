@@ -64,7 +64,10 @@ for(const language of ['en','bn'] as const){
         rowBackground:row?getComputedStyle(row).backgroundColor:'transparent'};
     });
     expect(theme.borderRadius).not.toBe('0px');
-    expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
+    // Hidden desktop <thead> has zero layout height at mobile widths.
+    // Assert the shared header on desktop, and the record-card touch targets on mobile.
+    if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
+    else await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toHaveCSS('min-height','44px');
     expect(theme.rowBackground).not.toBe('transparent');
     await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toBeVisible();
