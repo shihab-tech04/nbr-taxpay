@@ -135,6 +135,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
   const phase=page.getByTestId('authenticated-dashboard-v11');
   await expect(phase).toBeVisible();
+  await expect(phase.getByText('Coverage percentage unavailable')).toBeVisible();
+  await expect(phase.getByText('Verified liabilities and posted credits are needed to calculate coverage.')).toBeVisible();
+  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toHaveCount(0);
   await expect(phase.getByRole('heading',{name:'Payment deadlines & demands'})).toBeVisible();
   await expect(phase).toContainText('No verified due dates available');
   await expect(phase.getByRole('button',{name:'Requests & drafts'})).toBeVisible();
@@ -166,6 +169,8 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(0)).toContainText('৳ 180,000');
   await expect(financialCards.nth(3)).toContainText('৳ 25,000');
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
+  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
+  await expect(phase.getByText('Coverage percentage unavailable')).toHaveCount(0);
   await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('৳ 6,500');
   await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toBeVisible();
   await phase.getByRole('button',{name:'2024-2025'}).click();
@@ -195,6 +200,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(dashboard).toContainText('৳ 34.50');
   await expect(dashboard).not.toContainText('৳ 65.50');
   await setWorkspaceLanguage(page,'bn');
+  await expect(phase.getByText('কর সমন্বয়ের শতকরা হার পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
