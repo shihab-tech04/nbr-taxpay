@@ -2119,6 +2119,12 @@
               height 300ms var(--taxpay-motion-ease),
               max-height 300ms var(--taxpay-motion-ease);
 }
+/* Completed receipts have viewport-anchored Download/Print actions. Never
+   tween their dialog dimensions across checkout or responsive breakpoints. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(> .taxpay-modal__body > .receipt-view--embedded) {
+  transition: none;
+  interpolate-size: numeric-only;
+}
 @keyframes travel-flow-reveal {
   from { opacity: 0; transform: translateY(7px); }
   to { opacity: 1; transform: translateY(0); }
