@@ -568,7 +568,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   }
 
   return (
-    <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}>
+    <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}
+      data-receipt-review={receiptReviewOpen && !!createdReceipt ? 'true' : undefined}>
       <div className="travel-flow__main">
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
         {!embedded && <nav className="travel-flow__steps" aria-label={tr('Travel tax steps', 'ভ্রমণ করের ধাপ')}>
@@ -854,7 +855,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
-            back={(!createdReceipt || receiptReviewOpen) && step > 0 && <button type="button" className="tax-service-choice__cancel"
+            back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
               onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>
               <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
             </button>}
