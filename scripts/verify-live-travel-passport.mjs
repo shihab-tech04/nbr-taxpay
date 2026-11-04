@@ -69,7 +69,13 @@ try {
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await addPassenger.click();
+    // The approved passport-first flow confirms the current passenger before
+    // allowing creation of another passenger identity form.
+    const addAnotherPassenger = modal.getByRole('button', { name: 'Add another passenger' });
+    await expect(addAnotherPassenger).toBeEnabled();
+    await addAnotherPassenger.click();
     const second = modal.locator('[data-passenger-id]').nth(1);
+    await expect(second).toBeVisible();
     await second.locator('input[role="combobox"]').click();
     const secondOptions = second.locator('.travel-flow__passport-suggestions [role="option"]');
     await expect(secondOptions).toHaveCount(9);
