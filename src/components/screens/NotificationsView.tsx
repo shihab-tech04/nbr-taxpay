@@ -154,14 +154,18 @@ export const NotificationsView:React.FC=()=>{
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
        !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
-       <ul className="mt-3 divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-4">
-         <p className="text-base font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.amountMinor)}</p>
-         <p className="text-sm text-taxpay-muted">{payment.perspective==='beneficiary'
-           ?label(`Allocated to you by ${payment.payer}`,`${payment.payer} আপনার জন্য বরাদ্দ করেছেন`)
-           :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>
-         <p className="mt-1 break-all text-sm text-taxpay-muted">{label('Reference','রেফারেন্স')}: {payment.transactionId}</p>
-         <p className="mt-1 text-sm text-taxpay-muted">{label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : String(payment.state).replaceAll('_',' ').toLowerCase()}</p>
-       </li>)}</ul>}
+       <TaxPayDataGrid variant="documents" rows={previewPaymentEvents}
+         getRowKey={p=>p.transactionId+':'+p.perspective}
+         ariaLabel={label('Recorded payment updates','সংরক্ষিত পেমেন্টের হালনাগাদ')}
+         columns={[
+           {key:'payment',header:label('Payment','পেমেন্ট'),renderCell:p=><p className="text-sm font-semibold text-taxpay-text">{p.perspective==='beneficiary'
+             ?label('Allocated to you by '+p.payer,p.payer+' আপনার জন্য বরাদ্দ করেছেন')
+             :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>},
+           {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:p=><p className="break-all text-sm text-taxpay-muted">{p.transactionId}</p>},
+           {key:'amount',header:label('Amount','পরিমাণ'),renderCell:p=><p className="text-sm font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(p.amountMinor)}</p>},
+           {key:'status',header:label('Status','অবস্থা'),renderCell:p=><p className="text-sm text-taxpay-muted">{p.state==='SIMULATED'
+             ?label('Recorded','সংরক্ষিত'):String(p.state).replaceAll('_',' ').toLowerCase()}</p>}
+         ]}/>
     </section>
     <SessionPaymentNotifications language={language}/>
   </main>;
