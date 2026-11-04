@@ -51,6 +51,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [error, setError] = useState('');
   const errorFocusRevision = useRef(0);
   const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
+  const [confirmedPassengerIds, setConfirmedPassengerIds] = useState<string[]>([]);
+  const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
   const [passengerIssue, setPassengerIssue] = useState<{ id: string; message: string } | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
@@ -126,6 +128,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const changePassenger = (id: string, patch: Partial<TravelPassenger>) => {
     errorFocusRevision.current += 1;
     setPassengerIssue(previous => previous?.id === id ? null : previous);
+    setConfirmedPassengerIds(existing => existing.filter(confirmedId => confirmedId !== id));
     setPassengers(existing => existing.map(item => item.id === id ? { ...item, ...patch } : item));
     setError('');
     setAcknowledged(false);
@@ -147,6 +150,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
 
   const stepTo = (next: 0 | 1 | 2 | 3) => {
     setError('');
+    if (createdReceipt) setReceiptReviewOpen(next === 2);
     setStep(next);
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
@@ -182,7 +186,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     }
     return null;
   };
-  const allPassengersComplete = firstIdentityIssue() === null;
+  const allPassengersComplete = firstIdentityIssue() === null &&
+    passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
   const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
   const reportIdentityIssue = (issue: {id: string; message: string}) => {
@@ -224,7 +229,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const reset = () => {
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
     setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
-    setPassengers([makeTravelPassenger('first', 'BD')]); setPhone(''); setError('');
+    setPassengers([makeTravelPassenger('first', 'BD')]); setConfirmedPassengerIds([]);
+    setReceiptReviewOpen(false); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
     setCreatedReceipt(null); setProcessing(false); setPaymentNonce(crypto.randomUUID());
@@ -443,7 +449,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }
                   changePassenger(item.id, {name: sample.name, birthDate: sample.birthDate,
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
-                  setEditingPassengerId(null);
+                  // Keep the verified identity card, medical option and Add passenger
+                  // confirmation visible; verification must not silently confirm a passenger.
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
               {passportSuggestionsFor === item.id && <div
@@ -550,6 +557,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       <Building2 size={17} aria-hidden="true" />
       {tr('Confirm sample bank settlement', 'নমুনা ব্যাংক নিষ্পত্তি নিশ্চিত করুন')}
     </button>
+  ) : createdReceipt && receiptReviewOpen ? (
+    <button type="button" className="travel-flow__primary" onClick={() => stepTo(3)}>
+      {tr('View combined challan', 'সম্মিলিত চালান দেখুন')}<ArrowRight size={17} aria-hidden="true"/>
+    </button>
   ) : createdReceipt ? null : step === 2 ? (
     <button type="button" className="travel-flow__primary" disabled={!canSubmit} onClick={() => {
       const form = document.getElementById('travel-tax-form');
@@ -568,8 +579,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   );
 
   // Preserve the shared receipt/modal action owner and full-width receipt.
-  if (embedded && createdReceipt && !bankSlipPending) {
-    return <ReceiptView receipt={createdReceipt} embedded/>;
+  if (embedded && createdReceipt && !bankSlipPending && !receiptReviewOpen) {
+    return <>
+      <button data-testid="travel-receipt-back" type="button" className="sr-only"
+        onClick={() => stepTo(2)}>{tr('Return to review', 'পর্যালোচনায় ফিরুন')}</button>
+      <ReceiptView receipt={createdReceipt} embedded/>
+    </>;
   }
 
   return (
@@ -599,17 +614,19 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   const valid = !invalidPassengerIds.has(item.id);
                   const assessment = assessments[index]?.assessment;
                   return <section key={item.id} className="travel-flow__person" data-passenger-id={item.id}
-                    data-complete={valid && !editing ? 'true' : 'false'}>
+                    data-complete={valid && confirmedPassengerIds.includes(item.id) ? 'true' : 'false'}>
                     <div className="travel-flow__person-header">
                       <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
                       <div className="travel-flow__person-actions">
                         {!editing && <button type="button" className="travel-flow__edit" onClick={() => {
+                          setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id));
                           setEditingPassengerId(item.id); setPassengerIssue(null);
                         }}><Pencil size={15} aria-hidden="true"/>{tr('Edit', 'সম্পাদনা')}</button>}
                         {index > 0 && <button type="button" className="travel-flow__member-remove"
                           aria-label={tr('Remove passenger ', 'যাত্রী বাদ দিন ') + (index + 1)}
                           onClick={() => {
                             setPassengers(existing => existing.filter(person => person.id !== item.id));
+                            setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id));
                             if (editingPassengerId === item.id) setEditingPassengerId(null);
                             setPassengerIssue(null); setError(''); setAcknowledged(false);
                           }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
@@ -629,18 +646,26 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   </section>;
                 })}
               </div>
+              {editingPassengerId !== null && <button type="button" className="travel-flow__add-member"
+                onClick={() => {
+                  const issue = firstIdentityIssue();
+                  if (issue) { reportIdentityIssue(issue); return; }
+                  setConfirmedPassengerIds(ids => [...new Set([...ids, editingPassengerId])]);
+                  setEditingPassengerId(null);
+                  setPassengerIssue(null);
+                }}>
+                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
+              </button>}
               <button type="button" className="travel-flow__add-member"
                 disabled={!allPassengersComplete} onClick={() => {
-                const issue = firstIdentityIssue();
-                if (issue) { reportIdentityIssue(issue); return; }
-                const id = crypto.randomUUID();
-                setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
-                setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
-                requestAnimationFrame(() => requestAnimationFrame(() =>
-                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
-                ));
-              }}>
-                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
+                  const id = crypto.randomUUID();
+                  setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
+                  setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
+                  requestAnimationFrame(() => requestAnimationFrame(() =>
+                    document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
+                  ));
+                }}>
+                <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
               </button>
               <div className="travel-flow__contact">
                 <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
@@ -708,7 +733,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             </PaymentFormSection>
           </section>}
 
-          {step === 2 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>
+          {step === 2 && (!createdReceipt || receiptReviewOpen) && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>
             <p className="travel-flow__field-hint">{tr('Review every passenger and travel details before recording a simulated payment.', 'নমুনা পেমেন্ট রেকর্ডের আগে সব যাত্রীর ও ভ্রমণের তথ্য যাচাই করুন।')}</p>
             <div className="travel-flow__review">
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
@@ -739,18 +764,18 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
               <p>{tr('A-Challan is the required government integration; this environment only records a clearly marked simulation.',
                 'সরকারি A-Challan সংযোগ ডেভেলপার পর্যায়ে হবে; এখানে শুধু চিহ্নিত নমুনা লেনদেন রয়েছে।')}</p>
             </header>
-            <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
+            {!createdReceipt && <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
               onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
               onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
               onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
-              simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
+              simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>}
             {paymentMethod && <p className="travel-flow__field-hint">{paymentMethodLabel(paymentMethod, language)}</p>}
-            {(!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
-            <label className="travel-flow__channel-option">
+            {!createdReceipt && (!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
+            {!createdReceipt && <label className="travel-flow__channel-option">
               <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
               <p>{tr('I confirm the travel information, all passengers and the combined amount.',
                 'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।')}</p>
-            </label>
+            </label>}
           </section>}
 
           {step === 3 && bankSlipPending && createdReceipt && <section className="travel-flow__panel" aria-label={tr('Bank slip','ব্যাংক স্লিপ')}>
