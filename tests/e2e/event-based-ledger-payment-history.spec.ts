@@ -165,3 +165,22 @@ test('ledger filtered-empty state does not display a duplicate empty financial t
   await expect(panel.getByTestId('event-ledger-table')).toHaveCount(0);
   await expect(panel.locator('.taxpay-mobile-table-card')).toHaveCount(0);
 });
+
+
+test('all six ledger categories retain their own source events and selection state',async({page})=>{
+  await page.goto(ledger);
+  const panel=page.getByTestId('event-tax-ledger');
+  await expect(panel.getByRole('button',{name:'All',exact:true})).toHaveAttribute('aria-pressed','true');
+  for(const [category,record] of [
+    ['Liabilities','Opening liability'],
+    ['Credits','Salary withholding'],
+    ['Payment lifecycle','Pending bank reconciliation'],
+    ['Corrections','Credit reassignment inquiry'],
+    ['Refunds','Refund inquiry']
+  ] as const){
+    const tab=panel.getByRole('button',{name:category,exact:true});
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-pressed','true');
+    await expect(panel.getByRole('button',{name:new RegExp(record)}).first()).toBeVisible();
+  }
+});
