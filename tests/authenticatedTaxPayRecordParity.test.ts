@@ -44,3 +44,19 @@ test('authenticated corrections use the real route and searchable register witho
   assert.match(corrections,/r\.office_review_revision/);
   assert.match(corrections,/r\.office_review_updated_at/);
 });
+
+test('real receipts page exposes searchable payment-record register outside government print layout',()=>{
+  const source=read('src/components/screens/CertificatesView.tsx');
+  assert.match(source,/data-testid="account-certificate-record-register"/);
+  assert.match(source,/TaxPayDataGrid variant="tabular"/);
+  assert.match(source,/testId="account-certificate-payment-table"/);
+  assert.match(source,/mobileTestId="account-certificate-payment-cards"/);
+  assert.match(source,/value=\{recordSearch\}/);
+  assert.match(source,/getRowKey=\{row=>row.key\}/);
+  assert.match(source,/getAccountStoryPayments\(authenticatedUser.id\)/);
+  assert.match(source,/getDetailedStorySessionPayments\(\)/);
+  assert.match(source,/setReceiptReturnToSummary\(false\)/);
+  assert.match(source,/if\(receiptReturnToSummary\)setSummaryOpen\(true\)/);
+  assert.match(source,/receipt-view__financial-table/);
+  assert.match(source,/Saved payment records are not government-issued certificates/);
+});
