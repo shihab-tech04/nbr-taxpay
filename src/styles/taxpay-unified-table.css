@@ -60,6 +60,38 @@
 .taxpay-taxpayer-reference .taxpay-table-count {margin:0;font-size:14px;min-height:28px;}
 .taxpay-table-count__total {font-weight:500;opacity:.8;}
 
+/* UnifiedDataTable toolbar: title/count on the left, search/filter/actions on the right.
+ * Shared by financial and service record registers; native controls remain keyboard-accessible. */
+.taxpay-record-toolbar {
+  padding: 12px 16px;
+  border: 1px solid var(--taxpay-table-border, #e1e6ee);
+  border-radius: var(--taxpay-table-radius, 12px) var(--taxpay-table-radius, 12px) 0 0;
+  background: var(--taxpay-table-surface, #fff);
+}
+.taxpay-record-toolbar + .taxpay-table-viewport {
+  border-top: 0;
+  border-radius: 0 0 var(--taxpay-table-radius, 12px) var(--taxpay-table-radius, 12px);
+}
+.taxpay-record-toolbar__heading {display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;}
+.taxpay-record-toolbar__heading h3 {margin:0;font-size:16px;line-height:1.5;font-weight:650;color:var(--taxpay-table-text,#172033);}
+.taxpay-record-toolbar__controls {display:flex;flex:1 1 400px;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
+.taxpay-record-toolbar__search {display:flex;align-items:center;gap:8px;flex:1 1 220px;max-width:360px;min-width:160px;min-height:44px;padding:0 12px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;color:var(--taxpay-table-muted,#5f6b7a);background:#fff;}
+.taxpay-record-toolbar__search input {flex:1;min-width:0;min-height:42px;background:transparent;border:0;outline:0;color:var(--taxpay-table-text,#172033);font-size:14px;}
+.taxpay-record-toolbar__search:focus-within {outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;}
+.taxpay-record-toolbar__controls select,
+.taxpay-record-toolbar__controls button {min-height:44px;padding:8px 12px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;background:var(--taxpay-table-surface,#fff);color:var(--taxpay-table-text,#172033);font-size:14px;}
+.taxpay-record-toolbar__controls button:hover {background:var(--taxpay-table-hover,#f1f6ff);}
+.taxpay-record-toolbar__controls :is(select,button):focus-visible {outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;}
+.taxpay-record-toolbar__retry {min-height:44px;padding:8px 14px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;}
+@media(max-width:700px) {
+  .taxpay-record-toolbar {padding:12px;border-radius:var(--taxpay-table-radius,12px);}
+  .taxpay-record-toolbar__heading,.taxpay-record-toolbar__controls,.taxpay-record-toolbar__search {width:100%;max-width:none;}
+  .taxpay-record-toolbar__controls {justify-content:flex-start;}
+  .taxpay-record-toolbar__controls select {flex:1 1 140px;min-width:0;}
+  .taxpay-record-toolbar + .taxpay-mobile-table-cards {padding-inline:0;}
+}
+
+
 .taxpay-table-toolbar__search {
   flex: 1 1 260px;
   max-width: 400px;
@@ -215,6 +247,11 @@ table.taxpay-unified-table {
 }
 .taxpay-unified-table tbody tr:hover {
   background: var(--taxpay-table-hover, #f1f6ff);
+}
+.taxpay-unified-table tbody tr[data-clickable-row="true"] {cursor:pointer;}
+.taxpay-unified-table tbody tr[data-clickable-row="true"]:focus-visible {
+  outline:2px solid var(--taxpay-table-primary,#2c5ead);
+  outline-offset:-2px;
 }
 .taxpay-unified-table tbody tr:focus-within {
   outline: 2px solid var(--taxpay-table-primary, #2c5ead);
