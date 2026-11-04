@@ -130,22 +130,24 @@ export const NotificationsView:React.FC=()=>{
       <p className="mt-1 text-sm text-taxpay-muted">{label('Permission requests and their current recorded status.','অনুমতির আবেদন এবং সেগুলোর বর্তমান নথিভুক্ত অবস্থা।')}</p>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
       {!authorizationNotices.length?<p className="text-taxpay-muted">{label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
-      <ul className="mt-3 divide-y divide-taxpay-border">{authorizationNotices.map(r=><li key={r.id} className="py-4">
-        <h2 className="font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
-          ? r.status==='CODE_ISSUED' && (r.codeResends??0)>0
-            ?label(`New authorization code requested by ${r.payerId}`,`${r.payerId} নতুন অনুমোদন কোড চেয়েছেন`)
-            :label(`${r.payerId} requested permission to pay for you`,`${r.payerId} আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন`)
-          :label(`Authorization for ${r.taxpayerId}`,`${r.taxpayerId}-এর অনুমোদন`)}</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>
-          <p className="text-sm text-taxpay-muted">{label('Requested','আবেদনের সময়')}: <time dateTime={new Date(r.requestedAt).toISOString()}>{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
-        </div>
-        {r.taxpayerId===previewAccount.id && r.status==='CODE_ISSUED' && r.consentCode &&
-          <p className="mt-2 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
-            {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
-        <button type="button" className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 py-2 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
-          onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
-      </li>)}</ul>}
+      <TaxPayDataGrid variant="documents" rows={authorizationNotices} getRowKey={r=>String(r.id)}
+        ariaLabel={label('Authorization requests','অনুমোদনের অনুরোধ')}
+        columns={[
+          {key:'request',header:label('Authorization','অনুমোদন'),renderCell:r=><div>
+            <p className="text-sm font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
+              ?r.status==='CODE_ISSUED'&&(r.codeResends??0)>0
+                ?label('New authorization code requested by '+r.payerId,r.payerId+' নতুন অনুমোদন কোড চেয়েছেন')
+                :label(r.payerId+' requested permission to pay for you',r.payerId+' আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন')
+              :label('Authorization for '+r.taxpayerId,r.taxpayerId+'-এর অনুমোদন')}</p>
+            {r.taxpayerId===previewAccount.id&&r.status==='CODE_ISSUED'&&r.consentCode&&
+              <p className="mt-1 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
+                {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
+          </div>},
+          {key:'status',header:label('Status','অবস্থা'),renderCell:r=><p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>},
+          {key:'requested',header:label('Requested','অনুরোধের সময়'),renderCell:r=><time dateTime={r.requestedAt} className="text-sm text-taxpay-muted">{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
+          {key:'actions',header:label('Actions','কার্যক্রম'),renderCell:()=><button type="button" className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+            onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>}
+        ]}/>
     </section>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite" aria-label={label('Payment updates','পেমেন্ট হালনাগাদ')}>
       <h2 className="font-semibold text-taxpay-text">{label('Payment updates','পেমেন্ট হালনাগাদ')}</h2>
