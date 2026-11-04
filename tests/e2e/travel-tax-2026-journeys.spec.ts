@@ -435,6 +435,7 @@ test('Travel Tax: receipt Back returns to recorded review with all passengers an
   const combined=modal.getByTestId('travel-family-challan');
   await expect(combined.locator('tbody tr')).toHaveCount(2);
   await expect(combined).toContainText('SAMPLE PASSENGER TWO');
+  await expect(combined.locator('tfoot')).toContainText('2,000');
   await modal.getByRole('button',{name:'Back',exact:true}).click();
   await expect(modal).toBeVisible();
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Review & payment');
