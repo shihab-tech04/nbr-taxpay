@@ -390,6 +390,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     setPassengerIssue(null);
     setPassportSuggestionsFor(null);
     setError('');
+    // The confirmation button unmounts; keep keyboard focus in the journey.
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__add-member')?.focus()));
   };
   const renderMedicalReferral = (item: TravelPassenger) => (<>
           <div className="travel-flow__field travel-flow__medical">
@@ -698,9 +701,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 const id = crypto.randomUUID();
                 setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
                 setEditingPassengerId(id); setEditingExistingPassengerId(null); setPassengerIssue(null); setAcknowledged(false);
-                requestAnimationFrame(() => requestAnimationFrame(() =>
-                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' })
-                ));
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                  document.querySelector<HTMLElement>('[data-passenger-id="' + id + '"]')?.scrollIntoView({ block: 'nearest' });
+                  document.getElementById('travel-passport-' + id)?.focus();
+                }));
               }}>
                 <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
               </button>}
