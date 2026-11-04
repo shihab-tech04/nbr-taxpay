@@ -146,13 +146,15 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(page.getByText('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.')).toBeVisible();
   await expect(phase).toContainText('An unavailable balance does not mean nothing is owed.');
   await expect(phase.getByRole('button',{name:'Review tax ledger'})).toBeVisible();
-  for (const heading of ['Quick actions','Tax coverage','Monthly activity','By assessment year','How your credits are made up','Current tax position']) {
+  for (const heading of ['Quick actions','Tax coverage','Monthly activity','By assessment year','Tax payments and adjustments','Current tax position']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
   // A signed-in account must use the approved Phase A/B visual sections, but
   // private scenario allocations never become government liability or credits.
   await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('—');
-  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
+  await expect(phase.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(phase.getByText('A payment request or receipt alone does not confirm a tax credit. Verified posted credits are needed to show a breakdown.')).toBeVisible();
   await expect(phase).not.toContainText('৳ 180,000');
   // Sample mode is explicit, reversible and never mutates SQL or changes the
   // meaning of owner-owned activity. It reuses the existing v11 example ledger.
@@ -169,6 +171,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(financialCards.nth(0)).toContainText('৳ 180,000');
   await expect(financialCards.nth(3)).toContainText('৳ 25,000');
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
+  await expect(phase.getByText('Verified credit breakdown unavailable')).toHaveCount(0);
   await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
   await expect(phase.getByText('Coverage percentage unavailable')).toHaveCount(0);
   await expect(phase.getByRole('region',{name:'Current tax position'})).toContainText('৳ 6,500');
@@ -179,7 +182,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(examples.getByRole('button',{name:'View examples'})).toHaveAttribute('aria-pressed','false');
   await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
   await expect(financialCards.nth(0)).toContainText('—');
-  await expect(phase.getByRole('table',{name:'Posted credit components'})).not.toContainText('৳');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
+  await expect(phase.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(phase.getByText('A payment request or receipt alone does not confirm a tax credit. Verified posted credits are needed to show a breakdown.')).toBeVisible();
   expect(writes).toEqual([]);
 
   await expect(dashboard).toContainText('৳ 65.50');
@@ -201,6 +206,8 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(dashboard).not.toContainText('৳ 65.50');
   await setWorkspaceLanguage(page,'bn');
   await expect(phase.getByText('কর সমন্বয়ের শতকরা হার পাওয়া যায়নি')).toBeVisible();
+  await expect(phase.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
+  await expect(phase.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'কর পরিশোধের সময়সীমা ও দাবি'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
@@ -229,13 +236,17 @@ test('ordinary verified account without a taxpayer binding sees no financial sam
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('no taxpayer profile linked');
   await expect(dashboard).toContainText('No payment profile is linked to this application account.');
-  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax payments and adjustments'})).toBeVisible();
+  await expect(page.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(page.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
   await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('—');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-25');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
   await setWorkspaceLanguage(page,'bn');
   await expect(dashboard).toContainText('এই অ্যাপ অ্যাকাউন্টে কোনো পেমেন্ট প্রোফাইল সংযুক্ত নেই।');
+  await expect(page.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
+  await expect(page.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
 });
 
