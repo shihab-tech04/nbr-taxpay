@@ -406,9 +406,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     }
                   }}
                   onChange={event => {
-                    changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, ''),
+                    const typedPassport = event.target.value.toUpperCase().replace(/\s+/g, '');
+                    const alreadyAdded = passengers.some(other =>
+                      other.id !== item.id && other.passport.trim().toUpperCase() === typedPassport);
+                    changePassenger(item.id, {passport: typedPassport,
                       name: '', birthDate: '', identitySource: 'PENDING'});
-                    setPassportSuggestionsFor(item.id);
+                    setPassportSuggestionsFor(alreadyAdded ? null : item.id);
                   }}
                   placeholder={tr('Select or enter a sample passport','একটি নমুনা পাসপোর্ট নির্বাচন বা লিখুন')}/>
                 {passportAlreadyAdded && <p className="travel-flow__inline-error" role="status"
