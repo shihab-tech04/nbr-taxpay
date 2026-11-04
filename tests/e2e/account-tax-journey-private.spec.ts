@@ -97,10 +97,12 @@ for(const language of ['en','bn'] as const){
     await page.goto('/?action=account_notifications&lang='+language);
     const inbox=page.getByTestId('authenticated-notification-registers');
     await expect(inbox).toBeVisible();
-    const reviews=page.getByTestId('authenticated-review-notification-register');
-    const drafts=page.getByTestId('authenticated-draft-notification-register');
-    await expect(reviews.getByRole('listitem')).toHaveCount(1);
-    await expect(drafts.getByRole('listitem')).toHaveCount(1);
+    const desktop=info.project.name==='desktop-1280';
+    const reviews=page.getByTestId(desktop?'authenticated-review-notification-register':'authenticated-review-notification-cards');
+    const drafts=page.getByTestId(desktop?'authenticated-draft-notification-register':'authenticated-draft-notification-cards');
+    const reviewRows=desktop?reviews.locator('tbody tr'):reviews.getByRole('listitem');
+    await expect(reviewRows).toHaveCount(1);
+    await expect(desktop?drafts.locator('tbody tr'):drafts.getByRole('listitem')).toHaveCount(1);
     await expect(reviews).toContainText(request.id);
     await expect(drafts).toContainText('ADVANCE_TAX');
     const search=page.getByRole('searchbox',{name:language==='bn'?'বিজ্ঞপ্তি খুঁজুন':'Search account notifications'});
@@ -108,10 +110,10 @@ for(const language of ['en','bn'] as const){
     await expect(reviews).toHaveCount(0);
     await expect(drafts).toHaveCount(0);
     await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
-    await expect(reviews.getByRole('listitem')).toHaveCount(1);
-    const desktop=info.project.name==='desktop-1280';
-    const count=await reviews.getByRole('listitem').first().evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length);
-    expect(count).toBe(desktop?4:1);
+    await expect(reviewRows).toHaveCount(1);
+    const count=desktop?await reviewRows.first().locator('td').count()
+      :await reviewRows.first().locator('dt').count();
+    expect(count).toBe(4);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(2);
     mkdirSync('test-results/screenshots',{recursive:true});
@@ -120,8 +122,9 @@ for(const language of ['en','bn'] as const){
     await page.goto('/?action=corrections&lang='+language);
     const corrections=page.getByTestId('authenticated-correction-register');
     await expect(corrections).toBeVisible();
-    const table=page.getByTestId('authenticated-correction-inquiry-table');
-    await expect(table.getByRole('listitem')).toHaveCount(1);
+    const table=page.getByTestId(desktop?'authenticated-correction-inquiry-table':'authenticated-correction-inquiry-cards');
+    const caseRows=desktop?table.locator('tbody tr'):table.getByRole('listitem');
+    await expect(caseRows).toHaveCount(1);
     await expect(table).toContainText('SYN-OWNER-REF-001');
     await table.locator('summary').click();
     await expect(table).toContainText('Review supplied evidence');
@@ -129,7 +132,7 @@ for(const language of ['en','bn'] as const){
       .fill('not-the-reference');
     await expect(table).toHaveCount(0);
     await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
-    await expect(table.getByRole('listitem')).toHaveCount(1);
+    await expect(caseRows).toHaveCount(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/screenshots/taxpay-auth-corrections-'+language+'-'+info.project.name+'.png',
       animations:'disabled'});

@@ -191,8 +191,8 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
       </TaxPayTableControls>
       <TaxPayTableCounter label={language==='bn'?'অনুসন্ধান':'Inquiries'} shown={matchingRows.length} total={rows.length}/>
       {matchingRows.length===0?<TaxPayTableState>{language==='bn'?'কোনো মিল পাওয়া যায়নি।':'No review inquiries match this search.'}</TaxPayTableState>:
-        <TaxPayDataGrid variant="exceptions" rows={matchingRows} getRowKey={r=>r.inquiry_id}
-          ariaLabel={labels.history} testId="authenticated-correction-inquiry-table"
+        <TaxPayDataGrid variant="tabular" rows={matchingRows} getRowKey={r=>r.inquiry_id}
+          ariaLabel={labels.history} testId="authenticated-correction-inquiry-table" mobileTestId="authenticated-correction-inquiry-cards"
           columns={[
             {key:'reference',header:language==='bn'?'রেফারেন্স':'Reference',renderCell:r=><div>
               <p className="break-all font-semibold text-taxpay-text">{r.original_reference} — {r.evidence_state==='PENDING_EVIDENCE'?labels.state:labels.statusUnavailable}</p>

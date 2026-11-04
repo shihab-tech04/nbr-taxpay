@@ -314,8 +314,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <h3>{t.reviewTitle}</h3>
                       {filteredReviewNotices.length===0?
                         <TaxPayTableState>{language==='bn'?'এই অনুসন্ধানে কোনো পর্যালোচনার বিজ্ঞপ্তি নেই।':'No review updates match your search.'}</TaxPayTableState>:
-                        <TaxPayDataGrid variant="exceptions" rows={filteredReviewNotices} getRowKey={item=>item.id}
-                          ariaLabel={t.reviewTitle} testId="authenticated-review-notification-register"
+                        <TaxPayDataGrid variant="tabular" rows={filteredReviewNotices} getRowKey={item=>item.id}
+                          ariaLabel={t.reviewTitle} testId="authenticated-review-notification-register" mobileTestId="authenticated-review-notification-cards"
                           columns={[
                             {key:'update',header:language==='bn'?'হালনাগাদ':'Update',renderCell:item=><p className="font-semibold">{({
                               REQUEST_SUBMITTED:t.reviewReceived,
@@ -333,9 +333,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <h3>{language==='bn'?'সংরক্ষিত খসড়া':'Saved drafts'}</h3>
                       {filteredDraftNotices.length===0?
                         <TaxPayTableState>{language==='bn'?'এই অনুসন্ধানে কোনো খসড়া নেই।':'No saved drafts match your search.'}</TaxPayTableState>:
-                        <TaxPayDataGrid variant="documents" rows={filteredDraftNotices} getRowKey={item=>item.id}
+                        <TaxPayDataGrid variant="tabular" rows={filteredDraftNotices} getRowKey={item=>item.id}
                           ariaLabel={language==='bn'?'সংরক্ষিত খসড়া':'Saved drafts'}
-                          testId="authenticated-draft-notification-register"
+                          testId="authenticated-draft-notification-register" mobileTestId="authenticated-draft-notification-cards"
                           columns={[
                             {key:'category',header:language==='bn'?'খসড়া':'Draft',renderCell:item=><div>
                               <p className="font-semibold">{t.draft}</p>
