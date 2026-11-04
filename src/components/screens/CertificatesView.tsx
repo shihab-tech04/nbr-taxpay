@@ -36,6 +36,9 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   useEffect(() => {
     let active = true;
     setSqlLoading(true);
+    setSqlPayments([]);
+    setSelectedReceipt(null);
+    setSummaryOpen(false);
     const refresh = async () => {
       try {
         const payments=authenticatedUser
@@ -47,7 +50,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           setSqlLoading(false);
         }
       } catch {
-        if (active) {setSqlError(true);setSqlLoading(false);}
+        if (active) {setSqlError(true);setSqlLoading(false);setSqlPayments([]);}
       }
     };
     void refresh();
