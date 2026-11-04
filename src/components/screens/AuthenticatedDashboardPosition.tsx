@@ -167,26 +167,28 @@ export const AuthenticatedDashboardPosition: React.FC<{
     <div className="grid gap-4 lg:grid-cols-2">
       <section className={panel} aria-labelledby="account-credit-composition-title">
         <h2 id="account-credit-composition-title" className="text-base font-semibold text-taxpay-text">{tr('How your credits are made up','আপনার ক্রেডিটের বিবরণ')}</h2>
-        <div role="img" aria-label={sample
-          ?tr('Illustrative TDS, AIT and direct-payment composition','উদাহরণের উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধের বিভাজন')
-          :tr('Credit composition unavailable','ক্রেডিটের বিভাজন পাওয়া যায়নি')}
-          className="mt-4 flex h-3 overflow-hidden rounded-full bg-slate-100">
-          {sample&&sample.applied>0&&<>
-            <div className="bg-taxpay-primary" style={{width:(100*sample.tds/sample.applied)+'%'}}/>
-            <div className="bg-taxpay-secondary" style={{width:(100*sample.ait/sample.applied)+'%'}}/>
-            <div className="bg-slate-400" style={{width:(100*sample.direct/sample.applied)+'%'}}/>
-          </>}
-        </div>
-        <TaxPayUnifiedTable className="taxpay-unified-table mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>
-          <tbody>{credits.map(item=><tr className="border-b border-taxpay-border" key={item.en}>
-            <th scope="row" className="py-3 text-left font-normal text-taxpay-muted">{tr(item.en,item.bn)}</th>
-            <td className="py-3 text-right font-semibold tabular-nums">{money(sample?[sample.tds,sample.ait,sample.direct][credits.indexOf(item)]:undefined)}</td>
-          </tr>)}</tbody>
-          <tfoot><tr><th scope="row" className="py-3 text-left font-semibold">{tr('Total applied credits','মোট সমন্বিত ক্রেডিট')}</th><td className="py-3 text-right font-semibold">{money(sample?.applied)}</td></tr></tfoot>
-        </TaxPayUnifiedTable>
-        <p className="text-xs text-taxpay-muted">{exampleMode
-          ?tr('Example only. No credit was applied to this account.','শুধু উদাহরণ। এই অ্যাকাউন্টে কোনো ক্রেডিট যোগ করা হয়নি।')
-          :tr('A payment request or receipt is not an automatic tax credit.','পেমেন্ট অনুরোধ বা রসিদ স্বয়ংক্রিয় কর ক্রেডিট নয়।')}</p>
+        {sample ? <>
+          <div role="img" aria-label={tr('Illustrative TDS, AIT and direct-payment composition','উদাহরণের উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধের বিভাজন')}
+            className="mt-4 flex h-3 overflow-hidden rounded-full bg-slate-100">
+            {sample.applied>0&&<>
+              <div className="bg-taxpay-primary" style={{width:(100*sample.tds/sample.applied)+'%'}}/>
+              <div className="bg-taxpay-secondary" style={{width:(100*sample.ait/sample.applied)+'%'}}/>
+              <div className="bg-slate-400" style={{width:(100*sample.direct/sample.applied)+'%'}}/>
+            </>}
+          </div>
+          <TaxPayUnifiedTable className="taxpay-unified-table mt-3 w-full text-sm" aria-label={tr('Posted credit components','সমন্বিত ক্রেডিটের অংশ')}>
+            <tbody>{credits.map(item=><tr className="border-b border-taxpay-border" key={item.en}>
+              <th scope="row" className="py-3 text-left font-normal text-taxpay-muted">{tr(item.en,item.bn)}</th>
+              <td className="py-3 text-right font-semibold tabular-nums">{money([sample.tds,sample.ait,sample.direct][credits.indexOf(item)])}</td>
+            </tr>)}</tbody>
+            <tfoot><tr><th scope="row" className="py-3 text-left font-semibold">{tr('Total applied credits','মোট সমন্বিত ক্রেডিট')}</th><td className="py-3 text-right font-semibold">{money(sample.applied)}</td></tr></tfoot>
+          </TaxPayUnifiedTable>
+          <p className="mt-3 text-sm text-taxpay-muted">{tr('Example only. No credit was applied to this account.','শুধু উদাহরণ। এই অ্যাকাউন্টে কোনো ক্রেডিট যোগ করা হয়নি।')}</p>
+        </> : <div role="status" className="mt-4 flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-taxpay-border bg-slate-50 px-4 py-5 text-center">
+          <CircleHelp size={22} className="text-taxpay-muted" aria-hidden="true"/>
+          <p className="mt-2 text-sm font-medium text-taxpay-text">{tr('Verified credit breakdown unavailable','যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')}</p>
+          <p className="mt-1 max-w-sm text-sm text-taxpay-muted">{tr('A payment request or receipt alone does not confirm a tax credit. Verified posted credits are needed to show a breakdown.','শুধু পেমেন্ট অনুরোধ বা রসিদ কর ক্রেডিট নিশ্চিত করে না। ক্রেডিটের বিবরণ দেখাতে যাচাইকৃত সমন্বিত কর প্রয়োজন।')}</p>
+        </div>}
       </section>
       <section className={panel} aria-label={tr('Current tax position','বর্তমান কর অবস্থান')}>
         <h2 className="text-base font-semibold text-taxpay-text">{tr('Current tax position','বর্তমান কর অবস্থান')}</h2>
