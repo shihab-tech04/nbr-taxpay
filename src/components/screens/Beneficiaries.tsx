@@ -449,7 +449,7 @@ export function Beneficiaries(){
                 <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
                 <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
                 <option value="others">{tr('Others','অন্যান্য')}</option>
-                <option value="legacy">{tr('Previously saved · No tag','পূর্বের তথ্য · ট্যাগ নেই')}</option>
+                <option value="legacy">{tr('Uncategorized','শ্রেণিবিহীন')}</option>
               </UiSelect>
             </label>
             {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter"><span>{tr('Relationship','সম্পর্ক')}</span>

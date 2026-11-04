@@ -29,7 +29,7 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   }else{
     await expect(events.getByTestId('event-ledger-table')).toBeHidden();
   }
-  await expect(events.getByText('Selected-year scenario balance')).toBeVisible();
+  await expect(events.getByText('Calculated balance for selected year')).toBeVisible();
   await expect(events.getByText('৳ 25,000').first()).toBeVisible();
 
   await events.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2025-2026');

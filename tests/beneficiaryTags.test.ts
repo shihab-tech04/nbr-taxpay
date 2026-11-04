@@ -30,8 +30,8 @@ test('classifications display without assigning any fabricated tag to historical
   assert.equal(beneficiaryTagLabel('others',null,'en','Neighbour'),'Others · Neighbour');
   assert.equal(beneficiaryTagLabel('others',null,'bn','প্রতিবেশী'),'অন্যান্য · প্রতিবেশী');
   assert.equal(beneficiaryTagLabel('others',null,'en',null),'Others');
-  assert.equal(beneficiaryTagLabel(null,null,'en'),'Previously saved · No tag');
-  assert.equal(beneficiaryTagLabel(null,null,'bn'),'পূর্বের তথ্য · ট্যাগ নেই');
+  assert.equal(beneficiaryTagLabel(null,null,'en'),'Uncategorized');
+  assert.equal(beneficiaryTagLabel(null,null,'bn'),'শ্রেণিবিহীন');
 });
 
 test('Other descriptions are required across UI, SQL, guest RPC and Edge validation',()=>{

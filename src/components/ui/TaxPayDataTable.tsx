@@ -45,12 +45,12 @@ export function TaxPayUnifiedTable({className,...rest}:ComponentPropsWithoutRef<
  * rows. It keeps list semantics where rows contain forms/buttons and wraps to
  * the same record card rhythm below the shared mobile breakpoint. */
 type RecordListProps=Omit<DivProps,'children'> & {
-  variant:'payments'|'beneficiaries';
+  variant:'payments'|'beneficiaries'|'documents'|'exceptions';
   headers:readonly string[];
   children:ReactNode;
 };
 export function TaxPayRecordList({variant,headers,children,className,'aria-label':ariaLabel,...rest}:RecordListProps){
-  const previousHeadingClass=variant==='payments'?'taxpayer-transaction-list__columns':'beneficiary-directory__columns';
+  const previousHeadingClass=variant==='payments'?'taxpayer-transaction-list__columns':variant==='beneficiaries'?'beneficiary-directory__columns':'';
   return <div {...rest} data-unified-table="true" data-record-layout={variant} className={merge('taxpay-record-list',className)}>
     <div className={merge('taxpay-record-list__columns',previousHeadingClass)} aria-hidden="true">
       {headers.map((label,index)=><p key={index} className="taxpay-record-list__heading">{label}</p>)}
@@ -76,7 +76,7 @@ type UnifiedDataProps<Row> = {
   rows: readonly Row[];
   columns: readonly TaxPayDataColumn<Row>[];
   getRowKey: (row:Row) => string;
-  variant: 'ledger' | 'payments' | 'beneficiaries';
+  variant: 'ledger' | 'payments' | 'beneficiaries' | 'documents' | 'exceptions';
   ariaLabel: string;
   className?: string;
   testId?: string;

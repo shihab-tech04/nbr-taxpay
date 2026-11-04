@@ -45,6 +45,18 @@
   min-width:0;
 }
 .taxpay-taxpayer-reference .taxpay-table-controls.taxpayer-transaction-filters {margin-block:12px;}
+/* Shared Board-style record filters for correction and receipt registers. */
+.taxpay-taxpayer-reference .taxpay-record-page-filters {
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) minmax(170px,240px) auto;
+  align-items:end;
+  gap:12px;
+  margin-block:12px;
+}
+.taxpay-taxpayer-reference .taxpay-record-page-filters > button {min-height:44px;}
+@media (max-width:700px) {
+  .taxpay-taxpayer-reference .taxpay-record-page-filters {grid-template-columns:minmax(0,1fr);}
+}
 .taxpay-taxpayer-reference .taxpay-table-count {margin:0;font-size:13px;min-height:28px;}
 .taxpay-table-count__total {font-weight:500;opacity:.8;}
 
@@ -186,7 +198,7 @@ table.taxpay-unified-table {
   border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
   color: var(--taxpay-table-muted, #5f6b7a);
   background: var(--taxpay-table-heading, #f7f9fc);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
   line-height: 1.4;
   letter-spacing: 0;
@@ -239,9 +251,15 @@ table.taxpay-unified-table {
   background: var(--taxpay-table-surface, #fff);
   font-size: 14px;
 }
+/* The mobile cards must NEVER appear underneath the desktop ledger table. */
 .taxpay-mobile-table-cards {
   display: grid;
   gap: 8px;
+}
+@media (min-width:768px) {
+  /* Root fix: the later shared stylesheet must not override Tailwind md:hidden.
+   * This applies to ALL record modules that opt into mobile card fallback. */
+  .taxpay-citizen-shell .taxpay-mobile-table-cards[class~="md:hidden"] {display:none;}
 }
 .taxpay-mobile-table-card {
   min-width: 0;
@@ -441,6 +459,17 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.taxpay-record-list__columns,.taxpay-record-list__row) {
   grid-template-columns:minmax(135px,1.05fr) minmax(118px,.7fr) minmax(130px,1fr) minmax(280px,auto);
 }
+/* Board-inspired common four-column pattern for other record workspaces. */
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="documents"] :is(.taxpay-record-list__columns,.taxpay-record-list__row),
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="exceptions"] :is(.taxpay-record-list__columns,.taxpay-record-list__row) {
+  grid-template-columns:minmax(190px,1.25fr) minmax(190px,1.3fr) minmax(115px,.55fr) minmax(112px,auto);
+}
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="documents"] :is(.taxpay-record-list__heading:nth-child(3),.taxpay-record-list__row > :nth-child(3)) {text-align:right;justify-self:end;font-variant-numeric:tabular-nums;}
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="documents"] :is(.taxpay-record-list__row > :last-child),
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="exceptions"] :is(.taxpay-record-list__row > :last-child) {justify-self:end;}
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="documents"] .taxpay-record-list__row,
+.taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="exceptions"] .taxpay-record-list__row {min-height:var(--taxpay-table-row-height,76px);}
+
 .taxpay-taxpayer-reference .taxpay-record-list .taxpay-record-list__columns {
   min-height:var(--taxpay-table-header-height,44px);
   padding-block:10px;
@@ -448,7 +477,7 @@ table.taxpay-unified-table {
   border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
   background:var(--taxpay-table-heading,#f7f9fc);
   color:var(--taxpay-table-muted,#5f6b7a);
-  font-size:13px;
+  font-size:14px;
   font-weight:650;
   line-height:1.4;
 }
@@ -505,6 +534,11 @@ table.taxpay-unified-table {
     background:var(--taxpay-table-surface,#fff);
   }
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__row {grid-template-columns:minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="documents"] .taxpay-record-list__row,
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="exceptions"] .taxpay-record-list__row {grid-template-columns:minmax(0,1fr);gap:7px;}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="documents"] :is(.taxpay-record-list__row > :nth-child(3),.taxpay-record-list__row > :last-child),
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="exceptions"] .taxpay-record-list__row > :last-child {justify-self:start;text-align:left;}
+
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__actions {justify-self:start;flex-wrap:wrap;max-width:100%;grid-column:1/-1;}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.beneficiary-directory__tin,.beneficiary-directory__tag) {grid-column:1/-1;}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .beneficiary-directory__mobile-label {display:inline;font-weight:600;color:var(--taxpay-table-text,#172033);}

@@ -33,6 +33,16 @@ export const NotificationsView:React.FC=()=>{
   const [previewPaymentError,setPreviewPaymentError]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
+  const authorizationStatus=(state:string)=>{
+    const names:Record<string,[string,string]>={
+      ACTIVE:['Active','সক্রিয়'],EXPIRED:['Expired','মেয়াদ শেষ'],
+      CODE_ISSUED:['Code issued','কোড দেওয়া হয়েছে'],PENDING:['Pending','অপেক্ষমাণ'],
+      REVOKED:['Revoked','বাতিল করা হয়েছে'],REJECTED:['Rejected','প্রত্যাখ্যাত'],
+      APPROVED:['Approved','অনুমোদিত']
+    };
+    const copy=names[state];
+    return copy?label(...copy):state.replaceAll('_',' ').toLowerCase();
+  };
   useEffect(()=>{
     if(!previewAccount){setAuthorizationNotices([]);return;}
     let active=true;
@@ -114,20 +124,25 @@ export const NotificationsView:React.FC=()=>{
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
   if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')}/>
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
+    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title" aria-live="polite">
+      <h2 id="authorization-notice-title" className="text-base font-semibold text-taxpay-text">{label('Authorization updates','অনুমোদনের হালনাগাদ')}</h2>
+      <p className="mt-1 text-sm text-taxpay-muted">{label('Permission requests and their current recorded status.','অনুমতির আবেদন এবং সেগুলোর বর্তমান নথিভুক্ত অবস্থা।')}</p>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
       {!authorizationNotices.length?<p className="text-taxpay-muted">{label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
-      <ul className="divide-y divide-taxpay-border">{authorizationNotices.map(r=><li key={r.id} className="py-4">
+      <ul className="mt-3 divide-y divide-taxpay-border">{authorizationNotices.map(r=><li key={r.id} className="py-4">
         <h2 className="font-semibold text-taxpay-text">{r.taxpayerId===previewAccount.id
           ? r.status==='CODE_ISSUED' && (r.codeResends??0)>0
             ?label(`New authorization code requested by ${r.payerId}`,`${r.payerId} নতুন অনুমোদন কোড চেয়েছেন`)
             :label(`${r.payerId} requested permission to pay for you`,`${r.payerId} আপনার হয়ে পরিশোধের অনুমতি চেয়েছেন`)
           :label(`Authorization for ${r.taxpayerId}`,`${r.taxpayerId}-এর অনুমোদন`)}</h2>
-        <p className="mt-1 text-sm text-taxpay-muted">{label('Status','অবস্থা')}: {r.status.replaceAll('_',' ')} · {new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className={'inline-flex rounded-full border px-3 py-1 text-sm font-semibold '+(r.status==='ACTIVE'?'border-emerald-200 bg-emerald-50 text-emerald-800':r.status==='EXPIRED'?'border-slate-200 bg-slate-100 text-slate-700':'border-amber-200 bg-amber-50 text-amber-900')}>{authorizationStatus(r.status)}</p>
+          <p className="text-sm text-taxpay-muted">{label('Requested','আবেদনের সময়')}: <time dateTime={new Date(r.requestedAt).toISOString()}>{new Date(r.requestedAt).toLocaleString(bn?'bn-BD':'en-GB')}</time></p>
+        </div>
         {r.taxpayerId===previewAccount.id && r.status==='CODE_ISSUED' && r.consentCode &&
           <p className="mt-2 text-sm text-taxpay-text">{label('Latest four-digit code','সর্বশেষ চার সংখ্যার কোড')}: <strong className="font-mono tracking-widest">{r.consentCode}</strong>
             {' · '}{label('Valid for 15 minutes from issue','পাঠানোর পর ১৫ মিনিট কার্যকর')}</p>}
-        <button type="button" className="mt-2 rounded-lg border border-blue-300 px-3 py-2 font-semibold text-blue-800"
+        <button type="button" className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 py-2 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
           onClick={()=>navigate('manage_authorization')}>{label('Review authorization','অনুমোদন দেখুন')}</button>
       </li>)}</ul>}
     </section>
@@ -136,12 +151,13 @@ export const NotificationsView:React.FC=()=>{
       <p className="mt-1 text-sm text-taxpay-muted">{label('Recorded amounts only. No funds transferred or tax credit issued.','শুধু সংরক্ষিত পরিমাণ। কোনো অর্থ স্থানান্তর বা কর ক্রেডিট হয়নি।')}</p>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
        !previewPaymentEvents.length?<p className="mt-2 text-taxpay-muted">{label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
-       <ul className="divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-3">
-         <p className="font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.amountMinor)}</p>
+       <ul className="mt-3 divide-y divide-taxpay-border">{previewPaymentEvents.map(payment=><li key={payment.transactionId} className="py-4">
+         <p className="text-base font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(payment.amountMinor)}</p>
          <p className="text-sm text-taxpay-muted">{payment.perspective==='beneficiary'
            ?label(`Allocated to you by ${payment.payer}`,`${payment.payer} আপনার জন্য বরাদ্দ করেছেন`)
            :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>
-         <p className="break-all text-sm text-taxpay-muted">{payment.transactionId} · {label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : payment.state}</p>
+         <p className="mt-1 break-all text-sm text-taxpay-muted">{label('Reference','রেফারেন্স')}: {payment.transactionId}</p>
+         <p className="mt-1 text-sm text-taxpay-muted">{label('Record status','রেকর্ডের অবস্থা')}: {payment.state === 'SIMULATED' ? label('Recorded','সংরক্ষিত') : String(payment.state).replaceAll('_',' ').toLowerCase()}</p>
        </li>)}</ul>}
     </section>
     <SessionPaymentNotifications language={language}/>

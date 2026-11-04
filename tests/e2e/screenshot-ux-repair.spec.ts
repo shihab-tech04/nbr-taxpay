@@ -63,7 +63,7 @@ test('mobile event ledger preserves readable entries and explicitly labels scena
   const entry=ledger.getByRole('listitem').first();
   await expect(entry).toBeVisible();
   await expect(entry.getByRole('button')).toBeVisible();
-  await expect(ledger.getByText('Selected-year scenario balance')).toBeVisible();
+  await expect(ledger.getByText('Calculated balance for selected year')).toBeVisible();
   await entry.getByRole('button').click();
   const detail=page.getByTestId('tax-event-details');
   await expect(detail).toContainText('Ledger entry ID');
@@ -175,9 +175,8 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
   expect(overlap).toBe(false);
 });
 
-test('signed-in Track payment stays in Activity with search, selected tab and return to Transactions',async({page})=>{
+test('signed-in Track payment prioritizes reference lookup and preserves transaction search via Transactions',async({page})=>{
   await enterUser1(page);
-  // Use the canonical Activity route: desktop rail is not present on small-screen layouts.
   await page.goto('/?action=history');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await tabs.getByRole('button',{name:'Track payment'}).click();
@@ -185,15 +184,21 @@ test('signed-in Track payment stays in Activity with search, selected tab and re
   await expect(page).toHaveURL(/trackPayment=1/);
   await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
   await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
-  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payment status & receipt'})).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-panel')).toHaveCount(0);
   await expect(page.locator('#public-home-title')).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
+  await expect(page.getByRole('button',{name:'View all transactions'})).toBeVisible();
+  await page.getByRole('button',{name:'View all transactions'}).click();
+  await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-PAY-23-01');
   await expect(page.locator('.taxpayer-transaction-row')).toHaveCount(1);
   await page.locator('.taxpayer-transaction-row__action').first().click();
   await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
   await page.getByRole('button',{name:'Close transaction details'}).click();
+  await tabs.getByRole('button',{name:'Track payment'}).click();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Track payment',exact:true})).toBeVisible();
   await expect(page.getByRole('navigation',{name:'Activity sections'}).getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
