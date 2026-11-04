@@ -497,8 +497,9 @@ export function Beneficiaries(){
             <div className="taxpayer-transaction-list beneficiary-directory" role="region"
               aria-label={tr('Saved beneficiaries table','সংরক্ষিত উপকারভোগীর তালিকা')} data-testid="beneficiary-records">
               <TaxPayTablePanel className="beneficiary-directory__table">
-              <TaxPayDataGrid variant="beneficiaries" rows={filteredPeople} getRowKey={person=>person.id}
-                isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"taxpayer-transaction-row beneficiary-directory__row"}
+              <TaxPayDataGrid variant="tabular" rows={filteredPeople} getRowKey={person=>person.id}
+                testId="beneficiary-directory-desktop" mobileTestId="beneficiary-directory-mobile"
+                isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"beneficiary-directory__tabular-row"}
                 columns={[
                   {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),renderCell:person=><div className="beneficiary-directory__identity">
                     <input id={'beneficiary-select-'+person.id} type="checkbox"
@@ -525,6 +526,33 @@ export function Beneficiaries(){
                       onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>}
                 ]}
+                renderMobileCard={person=><>
+                  <div className="taxpay-mobile-table-card__header">
+                    <div className="beneficiary-directory__identity">
+                      <input id={'beneficiary-mobile-select-'+person.id} type="checkbox"
+                        aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)}
+                        checked={selectedIds.includes(person.id)}
+                        onChange={event=>setSelectedIds(current=>event.target.checked
+                          ?Array.from(new Set([...current,person.id]))
+                          :current.filter(id=>id!==person.id))}/>
+                      <label htmlFor={'beneficiary-mobile-select-'+person.id} className="taxpay-mobile-table-card__title">
+                        {displayName(person)}
+                      </label>
+                    </div>
+                  </div>
+                  <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {person.tin}</p>
+                  <p className="taxpay-mobile-table-card__meta">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}: {beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
+                  <div className="taxpay-mobile-table-card__actions" role="group"
+                    aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
+                    <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" className="gap-2" onClick={()=>payWith([person])}>
+                      <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+                    </UiButton>
+                    <UiButton type="button" variant="quiet" className="text-taxpay-error"
+                      aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
+                      onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
+                  </div>
+                </>}
                 ariaLabel={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}/>
               </TaxPayTablePanel>
             </div>

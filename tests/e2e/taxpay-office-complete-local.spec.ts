@@ -125,8 +125,8 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  }
  const beneficiaryUI=await visit(beneficiary,'http://127.0.0.1:4173/?action=notifications',{width:320,height:730});
  await expect(beneficiaryUI.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:20000});
- await expect(beneficiaryUI.page.getByText('Officer Approver closed the review').first()).toBeVisible({timeout:17000});
- await expect(beneficiaryUI.page.getByText('Your allocation: ৳6.55').first()).toBeVisible({timeout:17000});
+ await expect(beneficiaryUI.page.getByText('Officer Approver closed the review').filter({visible:true}).first()).toBeVisible({timeout:17000});
+ await expect(beneficiaryUI.page.getByText('Your allocation: ৳6.55').filter({visible:true}).first()).toBeVisible({timeout:17000});
  await expect(beneficiaryUI.page.getByText('Amount: ৳130.00')).toHaveCount(0);
  const notices=await rpc('sim_my_payment_notices',{},beneficiary.access_token);
  expect(notices.status).toBe(200);

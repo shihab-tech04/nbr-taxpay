@@ -86,10 +86,13 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
   assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
   assert.doesNotMatch(page,/TaxpayerPageHeading|taxpayer-account-center|taxpayer-account-panel/);
-  // The approved Payments & activity row pattern is shared across all viewports.
-  // Do not regress to separate desktop table and mobile-card implementations.
+  // One column definition supplies semantic desktop columns and accessible
+  // mobile cards, without duplicating business logic or losing actions.
   assert.match(page,/taxpayer-transaction-list beneficiary-directory/);
-  assert.match(page,/taxpayer-transaction-row beneficiary-directory__row/);
+  assert.match(page,/<TaxPayDataGrid variant="tabular"/);
+  assert.match(page,/beneficiary-directory__tabular-row/);
+  assert.match(page,/mobileTestId="beneficiary-directory-mobile"/);
+  assert.match(page,/renderMobileCard=\{person=>/);
   assert.match(page,/taxpayer-transaction-filter__search/);
   assert.match(page,/Select all visible beneficiaries/);
   assert.doesNotMatch(page,/beneficiary-directory hidden md:block|beneficiary-directory__mobile md:hidden/);

@@ -26,7 +26,7 @@ test('in-app notice shows the exact SQL amount and says no funds moved',async({p
   await mockSessionNotifications(page,125050);
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
-  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByText('Amount: ৳1,250.50').filter({visible:true})).toBeVisible();
   await expect(page.getByText('Payment completed successfully')).toHaveCount(0);
 });
 
@@ -56,7 +56,7 @@ test('preview account notifications show only the payer’s recorded simulation 
   });
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading',{name:'Payment updates'})).toBeVisible();
-  await expect(page.getByText('৳2,345.67')).toBeVisible();
+  await expect(page.getByText('৳2,345.67').filter({visible:true})).toBeVisible();
   await expect(page.getByText('৳9,999.99')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
 });
@@ -79,8 +79,8 @@ test('beneficiary in-app notification shows only allocated demo amount, not paye
   });
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading',{name:'Payment updates'})).toBeVisible();
-  await expect(page.getByText('৳32.50')).toBeVisible();
-  await expect(page.getByText('Allocated to you by user4')).toBeVisible();
+  await expect(page.getByText('৳32.50').filter({visible:true})).toBeVisible();
+  await expect(page.getByText('Allocated to you by user4').filter({visible:true})).toBeVisible();
   await expect(page.getByText('৳1,250.00')).toHaveCount(0);
   await expect(page.getByText('No funds transferred or tax credit issued.',{exact:false})).toBeVisible();
 });
@@ -109,7 +109,7 @@ test('guest hides notification actions while session-only payment events retain 
   await page.goto('/?action=payment_notifications');
   await expect(page).toHaveURL(/action=payment_notifications/);
   await expect(page.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
-  await expect(page.getByText('Amount: ৳1,250.50')).toBeVisible();
+  await expect(page.getByText('Amount: ৳1,250.50').filter({visible:true})).toBeVisible();
   await expect(page.getByText('No stored draft activity for this account.')).toHaveCount(0);
 });
 
@@ -135,18 +135,20 @@ for(const language of ['en','bn'] as const){
   test('notification registers preserve actions, filters, amounts and mobile containment in '+language,async({page},info)=>{
     await mockNotificationRegisters(page);
     await page.goto('/?action=notifications&lang='+language);
-    const records=page.locator('[data-record-layout="documents"]');
+    const records=page.locator('table.taxpay-unified-table');
     await expect(records).toHaveCount(2);
-    await expect(records.first().getByRole('listitem')).toHaveCount(1);
-    await expect(records.last().getByRole('listitem')).toHaveCount(1);
-    await expect(records.first().locator('.taxpay-record-list__heading')).toHaveText(
+    await expect(records.first().locator('tbody tr')).toHaveCount(1);
+    await expect(records.last().locator('tbody tr')).toHaveCount(1);
+    await expect(records.first().locator('thead th')).toHaveText(
       language==='bn'?['অনুমোদন','অবস্থা','অনুরোধের সময়','কার্যক্রম']
         :['Authorization','Status','Requested','Actions']);
-    await expect(records.last().locator('.taxpay-record-list__heading')).toHaveText(
+    await expect(records.last().locator('thead th')).toHaveText(
       language==='bn'?['পেমেন্ট','রেফারেন্স','পরিমাণ','অবস্থা']
         :['Payment','Reference','Amount','Status']);
-    await expect(page.getByText('৳2,345.67')).toBeVisible();
-    await expect(records.first().getByRole('button',{name:language==='bn'?'অনুমোদন দেখুন':'Review authorization'})).toBeVisible();
+    await expect(page.getByText('৳2,345.67').filter({visible:true})).toBeVisible();
+    const visibleRegister=info.project.name==='desktop-1280'
+      ?records.first():page.locator('ul.taxpay-mobile-table-cards:visible').first();
+    await expect(visibleRegister.getByRole('button',{name:language==='bn'?'অনুমোদন দেখুন':'Review authorization'})).toBeVisible();
 
     const authSearch=page.getByRole('searchbox',{name:language==='bn'?'অনুমোদন খুঁজুন':'Search authorizations'});
     await authSearch.fill('no-match-999');
@@ -161,8 +163,14 @@ for(const language of ['en','bn'] as const){
     await expect(records).toHaveCount(2);
 
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
-    const grid=await records.first().getByRole('listitem').first().evaluate(el=>
-      getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length);
-    expect(grid).toBe(info.project.name==='desktop-1280'?4:1);
+    if(info.project.name==='desktop-1280'){
+      await expect(records.first()).toBeVisible();
+      await expect(records.first().locator('tbody tr td')).toHaveCount(4);
+    }else{
+      await expect(records.first()).toBeHidden();
+      const cards=page.locator('ul.taxpay-mobile-table-cards:visible');
+      await expect(cards).toHaveCount(2);
+      await expect(cards.first().locator('li')).toHaveCount(1);
+    }
   });
 }

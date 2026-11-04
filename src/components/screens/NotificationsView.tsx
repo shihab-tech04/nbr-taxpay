@@ -155,7 +155,7 @@ export const NotificationsView:React.FC=()=>{
       </TaxPayTableControls>
       {authorizationError&&<p role="alert" className="text-red-700">{authorizationError}</p>}
       {!visibleAuthorizations.length?<p role="status" className="taxpay-table-state">{authorizationNotices.length?label('No authorization requests match your filters.','ফিল্টারে কোনো অনুমোদনের অনুরোধ মেলেনি।'):label('No authorization notifications yet.','এখনো কোনো অনুমোদনের বিজ্ঞপ্তি নেই।')}</p>:
-      <TaxPayDataGrid variant="documents" rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
+      <TaxPayDataGrid variant="tabular" rows={visibleAuthorizations} getRowKey={r=>String(r.id)}
         ariaLabel={label('Authorization requests','অনুমোদনের অনুরোধ')}
         columns={[
           {key:'request',header:label('Authorization','অনুমোদন'),renderCell:r=><div>
@@ -189,7 +189,7 @@ export const NotificationsView:React.FC=()=>{
       </TaxPayTableControls>
       {previewPaymentError?<p role="alert">{previewPaymentError}</p>:
        !visiblePayments.length?<p role="status" className="taxpay-table-state">{previewPaymentEvents.length?label('No payment updates match this search.','এই অনুসন্ধানে কোনো পেমেন্ট হালনাগাদ পাওয়া যায়নি।'):label('No payment activity yet.','এখনো কোনো পেমেন্ট কার্যক্রম নেই।')}</p>:
-       <TaxPayDataGrid variant="documents" rows={visiblePayments}
+       <TaxPayDataGrid variant="tabular" rows={visiblePayments}
          getRowKey={p=>p.transactionId+':'+p.perspective}
          ariaLabel={label('Recorded payment updates','সংরক্ষিত পেমেন্টের হালনাগাদ')}
          columns={[
@@ -217,7 +217,7 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {guestError?<p role="alert">{guestError}</p>:
         !guestNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <TaxPayDataGrid variant="documents" rows={guestNotices} getRowKey={n=>String(n.id)}
+        <TaxPayDataGrid variant="tabular" rows={guestNotices} getRowKey={n=>String(n.id)}
           ariaLabel={label('Payment notices','পেমেন্ট বিজ্ঞপ্তি')}
           columns={[
             {key:'update',header:label('Update','হালনাগাদ'),renderCell:()=><h2 className="text-sm font-semibold text-taxpay-text">{label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>},
@@ -240,7 +240,7 @@ export const NotificationsView:React.FC=()=>{
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !notices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <TaxPayDataGrid variant="documents" rows={notices} getRowKey={n=>String(n.id)}
+        <TaxPayDataGrid variant="tabular" rows={notices} getRowKey={n=>String(n.id)}
           ariaLabel={label('Account payment notifications','অ্যাকাউন্টের পেমেন্ট বিজ্ঞপ্তি')}
           columns={[
             {key:'update',header:label('Update','হালনাগাদ'),renderCell:n=><div>

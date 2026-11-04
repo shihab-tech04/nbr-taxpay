@@ -25,7 +25,8 @@ for(const language of ['en','bn'] as const){
     await page.goto('/?action=beneficiaries&demoUser=user1&lang='+language);
     const screen=page.getByTestId('beneficiaries-page');
     const directory=screen.getByTestId('beneficiary-records');
-    await expect(directory.getByRole('listitem')).toHaveCount(2);
+    const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
+    await expect(rows).toHaveCount(2);
     const bn=language==='bn';
     await screen.getByRole('checkbox',{name:bn?'দেখানো সব উপকারভোগী নির্বাচন':'Select all visible beneficiaries'}).check();
     const bulk=screen.locator('.beneficiary-directory__bulk-actions').getByRole('button',{name:bn?'নির্বাচিতদের সরান':'Remove selected'});
@@ -35,7 +36,7 @@ for(const language of ['en','bn'] as const){
     await expect(confirm).toBeVisible();
     await expect(confirm).toContainText('2');
     await confirm.getByRole('button',{name:bn?'বাতিল':'Cancel'}).click();
-    await expect(directory.getByRole('listitem')).toHaveCount(2);
+    await expect(rows).toHaveCount(2);
     await bulk.click();
     await confirm.getByRole('button',{name:bn?'নির্বাচিতদের সরান':'Remove selected'}).click();
     await expect(confirm).toHaveCount(0);
