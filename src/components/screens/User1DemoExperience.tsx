@@ -218,7 +218,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
-    actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
+    actions={!trackingActivity && !['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
@@ -675,10 +675,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <ReceiptLookup hidePageHeading accountContext />
     </section>}
     {trackingActivity
-      ? <div className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-          <h2 className="text-base font-semibold">{tr('Looking for another transaction?','অন্য লেনদেন খুঁজছেন?')}</h2>
-          <p className="mt-1 text-sm text-taxpay-muted">{tr('Browse your payment history to find a reference or open its details.','রেফারেন্স খুঁজতে বা বিস্তারিত দেখতে লেনদেনের ইতিহাস খুলুন।')}</p>
-          <button type="button" className={action+' mt-3'} onClick={()=>navigate('history')}>
+      ? <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 py-2" data-testid="track-payment-history-link">
+          <p className="text-sm text-taxpay-muted">{tr('Need an earlier payment reference?','আগের পেমেন্টের রেফারেন্স প্রয়োজন?')}</p>
+          <button type="button" className={action} onClick={()=>navigate('history')}>
             {tr('View all transactions','সব লেনদেন দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
           </button>
         </div>
@@ -692,7 +691,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
-    {route==='history'&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
+    {overviewRoute&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}
