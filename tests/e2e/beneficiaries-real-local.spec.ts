@@ -50,29 +50,26 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('012345678901');
-  // Desktop table headers must touch their records and align with actual
-  // beneficiary names/actions, rather than floating in a separate blank strip.
+  // Four native table columns must align row-by-row, unlike the old
+  // two-column list with floating headings. Mobile retains actionable cards.
   await page.setViewportSize({width:1280,height:900});
-  const table=page.getByTestId('beneficiary-records').locator('.beneficiary-directory__table');
+  const table=page.getByTestId('beneficiary-directory-desktop');
   await expect(table).toBeVisible();
-  const layout=await table.evaluate(element=>{
-    const header=element.querySelector('.beneficiary-directory__columns')!;
-    const row=element.querySelector('.beneficiary-directory__row')!;
-    const name=element.querySelector('.beneficiary-directory__person')!;
-    const actions=row.querySelector('.beneficiary-directory__actions')!;
-    return {
-      rowGap: row.getBoundingClientRect().top-header.getBoundingClientRect().bottom,
-      nameOffset: name.getBoundingClientRect().left-header.firstElementChild!.getBoundingClientRect().left,
-      actionsOffset: actions.getBoundingClientRect().right-header.lastElementChild!.getBoundingClientRect().right,
-      widthOverflow:element.scrollWidth-element.clientWidth,
-    };
+  await expect(table.locator('thead th')).toHaveText(['Beneficiary','TIN','Tag / relationship','Actions']);
+  await expect(table.locator('tbody tr')).toHaveCount(1);
+  await expect(table.locator('tbody tr td')).toHaveCount(4);
+  const alignment=await table.evaluate(element=>{
+    const headers=Array.from(element.querySelectorAll('thead th'));
+    const cells=Array.from(element.querySelectorAll('tbody tr:first-child td'));
+    return headers.map((header,i)=>Math.abs(header.getBoundingClientRect().left-cells[i].getBoundingClientRect().left));
   });
-  expect(Math.abs(layout.rowGap)).toBeLessThanOrEqual(2);
-  expect(Math.abs(layout.nameOffset)).toBeLessThanOrEqual(2);
-  expect(Math.abs(layout.actionsOffset)).toBeLessThanOrEqual(2);
-  expect(layout.widthOverflow).toBeLessThanOrEqual(1);
+  for(const offset of alignment)expect(offset).toBeLessThanOrEqual(2);
+  const viewport=table.locator('..');
+  expect(await viewport.evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(2);
   await page.setViewportSize({width:375,height:812});
-  expect(await table.evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);
+  await expect(page.getByTestId('beneficiary-directory-mobile')).toBeVisible();
+  await expect(page.getByTestId('beneficiary-directory-mobile').locator('li')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
