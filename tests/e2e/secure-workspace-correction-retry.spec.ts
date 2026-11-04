@@ -96,6 +96,10 @@ test('owner can recover a failed private inquiry history load without duplicatin
   });
 
   await page.goto('/?action=secure_workspace');
+  const inquiryHeading=page.getByRole('heading',{name:'Request a review of an original reference'});
+  await expect(inquiryHeading).toHaveClass(/text-taxpay-text/);
+  await expect(inquiryHeading).not.toHaveClass(/font-serif-fraunces|text-emerald/);
+  await expect(page.getByRole('heading',{name:'My review inquiries'})).toHaveClass(/text-taxpay-text/);
   const history = page.getByRole('region', { name: 'My review inquiries' });
   await expect(page.getByRole('status').filter({ hasText: 'Unable to save or load inquiry' })).toBeVisible();
   const failedReadCount = inquiryReads;
@@ -148,6 +152,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator('.citizen-header')).not.toHaveClass(/citizen-header--hidden/);
   await setWorkspaceLanguage(page, 'bn');
+  await expect(page.getByRole('heading',{name:'মূল রেফারেন্স পর্যালোচনার অনুরোধ'})).toHaveClass(/text-taxpay-text/);
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
   await expect(historyBn.locator('summary:visible')).toHaveText('অনুরোধের বিবরণ');
   await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.').filter({visible:true})).toBeVisible();
