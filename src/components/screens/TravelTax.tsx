@@ -590,7 +590,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     </>;
   };
 
-  const primaryAction = createdReceipt && bankSlipPending ? (
+  const primaryAction = createdReceipt && reviewingRecordedPayment ? (
+    <button type="button" className="travel-flow__primary" onClick={() => {
+      setReviewingRecordedPayment(false);
+      stepTo(3);
+    }}>
+      <FileText size={17} aria-hidden="true" />
+      {tr('View combined challan', 'সম্মিলিত চালান দেখুন')}
+    </button>
+  ) : createdReceipt && bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip} disabled={processing}>
       <Building2 size={17} aria-hidden="true" />
       {tr('Confirm sample bank settlement', 'নমুনা ব্যাংক নিষ্পত্তি নিশ্চিত করুন')}
@@ -613,7 +621,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   );
 
   // Preserve the shared receipt/modal action owner and full-width receipt.
-  if (embedded && createdReceipt && !bankSlipPending) {
+  if (embedded && createdReceipt && !bankSlipPending && !reviewingRecordedPayment) {
     return <ReceiptView receipt={createdReceipt} embedded/>;
   }
 
@@ -760,6 +768,37 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 <Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')} ({passengers.length})
               </button>
             </PaymentFormSection>
+          </section>}
+
+          {step === 2 && createdReceipt && reviewingRecordedPayment && <section
+            className="travel-flow__panel" data-testid="travel-recorded-review"
+            aria-label={tr('Recorded payment review', 'রেকর্ডকৃত পেমেন্ট পর্যালোচনা')}>
+            <h3>{tr('Recorded payment review', 'রেকর্ডকৃত পেমেন্ট পর্যালোচনা')}</h3>
+            <p className="travel-flow__field-hint">{tr(
+              'This payment is already recorded. Review its passengers and amount, then return to the combined challan. No second payment will be created.',
+              'এই পেমেন্ট ইতিমধ্যে রেকর্ড হয়েছে। যাত্রী ও টাকার পরিমাণ দেখে সম্মিলিত চালানে ফিরুন। নতুন পেমেন্ট তৈরি হবে না।')}</p>
+            <dl className="travel-flow__review">
+              <div><dt>{tr('Reference', 'রেফারেন্স')}</dt><dd>{createdReceipt.challanNo}</dd></div>
+              <div><dt>{tr('Departure port', 'যাত্রা বন্দর')}</dt><dd>{createdReceipt.travelDetails?.departurePort}</dd></div>
+              <div><dt>{tr('Destination and date', 'গন্তব্য ও তারিখ')}</dt><dd>{createdReceipt.travelDetails?.destination} · {createdReceipt.travelDetails?.travelDate}</dd></div>
+              <div><dt>{tr('Combined payable', 'মোট প্রদেয়')}</dt><dd>{formatCurrency(createdReceipt.totalAmount, language)}</dd></div>
+            </dl>
+            <div className="travel-flow__table-wrap taxpay-table-viewport">
+              <TaxPayUnifiedTable aria-label={tr('Passengers in recorded payment','রেকর্ডকৃত পেমেন্টের যাত্রী')}
+                className="travel-flow__passenger-table taxpay-unified-table">
+                <thead><tr>
+                  <th scope="col">{tr('Passenger','যাত্রী')}</th>
+                  <th scope="col">{tr('Passport','পাসপোর্ট')}</th>
+                  <th scope="col">{tr('Age','বয়স')}</th>
+                  <th scope="col">{tr('Tax','কর')}</th>
+                </tr></thead>
+                <tbody>{(createdReceipt.travelDetails?.passengers ?? []).map((item,index) =>
+                  <tr key={index}>
+                    <td>{item.name}</td><td>{item.passportMasked}</td>
+                    <td>{item.age ?? item.ageBand}</td><td>{formatCurrency(item.amount,language)}</td>
+                  </tr>)}</tbody>
+              </TaxPayUnifiedTable>
+            </div>
           </section>}
 
           {step === 2 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>
