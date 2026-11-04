@@ -9,7 +9,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await passport.fill('TEST123456');
     await root.locator('#travel-lookup-first').click();
   }
-  const addPassenger = root.getByRole('button', {name: 'Add passenger', exact: true});
+  const addPassenger = root.getByRole('button', {name: /^(Add passenger|যাত্রী যোগ করুন)$/});
   if (await addPassenger.isVisible() && await addPassenger.isEnabled()) await addPassenger.click();
   const mobile = root.locator('#travel-mobile');
   if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
@@ -48,7 +48,7 @@ export async function fillForeignPassenger(root: Locator | Page, options?: {
   await root.locator('#travel-name-first').fill(options?.name ?? 'SAMPLE TRAVELLER');
   await root.locator('#travel-birth-date-first').fill(options?.birthDate ?? '1992-05-10');
   await root.locator('#travel-country-first').fill(options?.country ?? 'India');
-  const confirmPassenger = root.getByRole('button', {name: 'Add passenger', exact: true});
+  const confirmPassenger = root.getByRole('button', {name: /^(Add passenger|যাত্রী যোগ করুন)$/});
   if (await confirmPassenger.isVisible() && await confirmPassenger.isEnabled()) await confirmPassenger.click();
   const mobile = root.locator('#travel-mobile');
   if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
