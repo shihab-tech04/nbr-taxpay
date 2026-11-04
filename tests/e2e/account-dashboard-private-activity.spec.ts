@@ -236,13 +236,17 @@ test('ordinary verified account without a taxpayer binding sees no financial sam
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('no taxpayer profile linked');
   await expect(dashboard).toContainText('No payment profile is linked to this application account.');
-  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax payments and adjustments'})).toBeVisible();
+  await expect(page.getByText('Verified credit breakdown unavailable')).toBeVisible();
+  await expect(page.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
   await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('—');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-25');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
   await setWorkspaceLanguage(page,'bn');
   await expect(dashboard).toContainText('এই অ্যাপ অ্যাকাউন্টে কোনো পেমেন্ট প্রোফাইল সংযুক্ত নেই।');
+  await expect(page.getByRole('heading',{name:'কর পরিশোধ ও সমন্বয়'})).toBeVisible();
+  await expect(page.getByText('যাচাইকৃত কর ক্রেডিটের বিবরণ পাওয়া যায়নি')).toBeVisible();
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
 });
 
