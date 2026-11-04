@@ -37,7 +37,7 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
       title={title}
       ariaLabel={isTravel ? travelTitle : undefined}
       progress={isTravel ? { current: travelStage, total: 4, subtitle: travelTitle } : undefined}
-      onBack={isTravel ? back : undefined}
+      onBack={isTravel && travelStage > 1 ? back : undefined}
       backLabel={bn ? 'ফিরুন' : 'Back'}
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       className={service === 'status' ? 'receipt-modal' : ''}
