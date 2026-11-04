@@ -64,8 +64,8 @@ test('two genuine synthetic app accounts retain separated drafts across browser 
   const accountTab = await contextA.newPage();
   await accountTab.goto('/?action=account_notifications');
   await expect(accountTab.getByRole('heading', { name: 'Account notifications' })).toBeVisible();
-  await expect(accountTab.getByText('Draft saved')).toBeVisible();
-  await expect(accountTab.getByText('No payment made.')).toBeVisible();
+  await expect(accountTab.getByText('Draft saved').filter({visible:true})).toBeVisible();
+  await expect(accountTab.getByText('No payment made.').filter({visible:true})).toBeVisible();
   await expect(accountTab.getByText(/Demand Notice DN-|৳ 47,400/)).toHaveCount(0);
   await accountTab.getByRole('button', { name: 'Mark all as viewed' }).click();
   await expect(accountTab.getByRole('status').filter({ hasText: 'Notification viewing status saved' })).toBeVisible();
