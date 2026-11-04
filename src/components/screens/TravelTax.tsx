@@ -697,7 +697,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     onChange={e => { setDestination(e.target.value); setError(''); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
                   <datalist id="travel-destinations"><option value="India"/><option value="Nepal"/><option value="Bhutan"/><option value="Myanmar"/></datalist>
                 </div>
-                <div className="travel-flow__field">
+                <div className="travel-flow__field travel-flow__field--full">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
                   <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
@@ -789,7 +789,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           <div><dt>{tr('Passengers','যাত্রী')}</dt><dd>{passengers.length}</dd></div>
           <div><dt>{tr('Status','অবস্থা')}</dt><dd>{createdReceipt ? tr('Sample record','নমুনা রেকর্ড') : allCalculated ? tr('Calculated for review','পর্যালোচনার জন্য হিসাব করা') : invalidPassengerIds.size > 0 ? tr('Passenger details need correction','যাত্রীর তথ্য সংশোধন প্রয়োজন') : tr('Awaiting travel details','ভ্রমণের তথ্যের অপেক্ষায়')}</dd></div>
         </dl>
-        <div className="travel-flow__age-breakdown" role="status" aria-live="polite">
+        <div className="travel-flow__age-breakdown" role="status" aria-live="polite" tabIndex={embedded ? 0 : undefined}>
           {assessments.map(({passenger, assessment}, index) =>
             <div key={passenger.id} className="travel-flow__age-row">
               <p><strong>{passenger.name || tr('Passenger ', 'যাত্রী ') + (index + 1)}</strong>
