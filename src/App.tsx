@@ -65,7 +65,7 @@ const MainRouter: React.FC = () => {
   const signInReturnRoute = safePrivateAuthReturnRoute(currentRoute) ?? 'taxpayer_home';
   // Sample accounts have an explicit browser-local login and use the same approved
   // taxpayer layout for saved lists. Anonymous visitors never pass this gate.
-  const previewAccess = Boolean(previewAccount && previewReadOnlyRoutes.has(currentRoute));
+  const previewAccess = Boolean(previewAccount && (previewReadOnlyRoutes.has(currentRoute) || currentRoute === 'beneficiaries'))
   // A UUID linked to a mirrored simulated transaction is a public, read-only
   // receipt view. It grants no access to the taxpayer's private workspace.
   const publicConfirmedReceipt = currentRoute==='payment_details' &&
@@ -222,10 +222,10 @@ const MainRouter: React.FC = () => {
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
-            <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>
+            <p>{language === 'bn' ? 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Korbritto account to continue.'}</p>
             <a className="citizen-account-gate__preview"
-              href={`?action=secure_workspace&returnTo=${signInReturnRoute}${language === 'bn' ? '&lang=bn' : ''}`}>
-              {language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email'}
+              href={language === 'bn' ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
+              {language === 'bn' ? 'সাইন ইন' : 'Sign In'}
             </a>
             {/* Local-only synthetic workspace links retain existing UX regression coverage.
                 The production bundle removes this entire branch; private routes still require
@@ -264,8 +264,6 @@ const MainRouter: React.FC = () => {
       {loginOverlay && <TaxpayerLoginDialog />}
       {beneficiaryLoginRequired && <TaxpayerLoginDialog
         preservePaymentJourney
-        emailReturnTo={signInReturnRoute}
-        verifiedOnly
         onClose={() => navigate('landing')}
       />}
       <AuthorizationRequestPopup />

@@ -1,25 +1,34 @@
 import { expect, test } from '@playwright/test';
 
-// The only signed-out entry for a private Beneficiaries URL is the approved
-// TaxPay login modal. No second private-workspace gate may appear behind it.
-test('Beneficiaries direct link requires a verified email identity and keeps the private list hidden',async({page})=>{
+// The existing TaxPay modal is shared by header login and private-route entry.
+test('Beneficiaries direct link restores approved User ID/password and resumes the list',async({page})=>{
   await page.goto('/?action=beneficiaries');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await expect(dialog).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
-  const email=dialog.getByLabel('Email address',{exact:true});
-  await expect(email).toBeFocused();
-  await expect(dialog.getByLabel('User ID',{exact:true})).toHaveCount(0);
-  await email.fill('not-an-email');
-  await expect(dialog.getByRole('button',{name:'Sign In',exact:true})).toBeDisabled();
-  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  await expect(dialog.getByLabel('User ID',{exact:true})).toBeFocused();
+  await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
+  await expect(dialog.getByLabel('Email address')).toHaveCount(0);
+  await dialog.getByLabel('User ID',{exact:true}).fill('not-a-user');
+  await dialog.getByLabel('Password',{exact:true}).fill('bad-password');
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
+  await dialog.getByLabel('User ID',{exact:true}).fill('user2');
+  await dialog.getByLabel('Password',{exact:true}).fill('user2');
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/action=beneficiaries/);
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });
 
-test('Beneficiaries private sign-in retains Bengali and closes cleanly',async({page})=>{
+test('Beneficiaries sign-in retains Bengali and closes to the public home',async({page})=>{
   await page.goto('/?action=beneficiaries&lang=bn');
   const dialog=page.getByRole('dialog');
-  await expect(dialog.getByLabel('ইমেইল ঠিকানা',{exact:true})).toBeVisible();
+  await expect(dialog.getByLabel('ইউজার আইডি',{exact:true})).toBeVisible();
+  await expect(dialog.getByLabel('পাসওয়ার্ড',{exact:true})).toBeVisible();
   await expect(page).toHaveURL(/lang=bn/);
   await dialog.getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page).toHaveURL(/action=landing/);

@@ -87,14 +87,14 @@ test('signed-out Beneficiaries deep link requires taxpayer sign-in in Bengali an
   const bnLogin=page.locator('.taxpay-modal.taxpayer-login-modal');
   await expect(bnLogin).toBeVisible();
   await expect(page.getByRole('heading',{name:'করদাতার ব্যক্তিগত তথ্য'})).toHaveCount(0);
-  await expect(bnLogin.getByRole('textbox',{name:'ইমেইল ঠিকানা'})).toBeVisible();
+  await expect(bnLogin.getByRole('textbox',{name:'ইউজার আইডি'})).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
   await page.goto('/?action=beneficiaries');
   const enLogin=page.locator('.taxpay-modal.taxpayer-login-modal');
   await expect(enLogin).toBeVisible();
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
-  await expect(enLogin.getByRole('textbox',{name:'Email address'})).toBeVisible();
+  await expect(enLogin.getByRole('textbox',{name:'User ID'})).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
 });
 
