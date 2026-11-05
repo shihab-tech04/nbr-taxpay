@@ -64,6 +64,22 @@ test('Travel Tax: Add passenger is attached to the checked passenger card, not r
     .toHaveText('SAMPLE BANGLADESHI PASSENGER');
   await expect(add).toBeVisible();
   await expect(passenger.locator('.travel-flow__confirm-row')).toBeVisible();
+  const medicalBox = await passenger.locator('.travel-flow__medical-option').boundingBox();
+  const confirmBox = await add.boundingBox();
+  expect(medicalBox).not.toBeNull();
+  expect(confirmBox).not.toBeNull();
+  // Confirmation spans the same content column as medical review, not
+  // a small, distant button anchored to the right of a huge empty row.
+  expect(Math.abs(confirmBox!.x - medicalBox!.x)).toBeLessThanOrEqual(3);
+  expect(confirmBox!.width).toBeGreaterThanOrEqual(medicalBox!.width * 0.96);
+  const footer = await modal.locator('.taxpay-modal__footer').boundingBox();
+  expect(footer).not.toBeNull();
+  // The action must be completely above the fixed modal footer.
+  await expect.poll(async () => {
+    const action = await add.boundingBox();
+    const fixed = await modal.locator('.taxpay-modal__footer').boundingBox();
+    return !!action && !!fixed && action.y + action.height <= fixed.y - 2;
+  }, {timeout: 5000}).toBe(true);
   const groupedCorrectly = await add.evaluate(button => {
     const person = button.closest('[data-passenger-id]');
     const medical = person?.querySelector('.travel-flow__medical-option');
@@ -91,26 +107,45 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   const passport=modal.locator('#travel-passport-first');
   const check=modal.locator('#travel-lookup-first');
   await expect(check).toBeDisabled();
-  await passport.focus();
+  // Measure the resting layout, not the initial passenger-card entrance
+  // animation; focus should not add a second layout change.
+  await modal.evaluate(async element => {
+    await Promise.all(element.getAnimations({subtree:true})
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished.catch(() => undefined)));
+  });
   const row=modal.locator('.travel-flow__passport-row');
-  const baseline=await row.boundingBox();
   const suggestions=modal.locator('#travel-passport-suggestions-first');
+  await expect(suggestions).toHaveCount(0);
+  const baseline=await row.boundingBox();
+  const cardBaseline=await modal.locator('[data-passenger-id="first"]').boundingBox();
+  const contactBaseline=await modal.locator('.travel-flow__contact').boundingBox();
+  await passport.focus();
   await expect(suggestions.getByRole('option')).toHaveCount(10);
   await expect(suggestions.getByText('Sample passport numbers')).toBeVisible();
   const withPopup=await row.boundingBox();
-  // Focus opens the suggestions immediately, so baseline may already include them.
-  expect(withPopup?.height).toBeGreaterThan(200);
-  // Suggestions take up space inside the form instead of covering the
-  // medical assessment checkbox and receipt contact below them.
-  const suggestionBounds=await suggestions.boundingBox();
-  const medicalBounds=await modal.locator('.travel-flow__medical-option').boundingBox();
-  const contactBounds=await modal.locator('.travel-flow__contact').boundingBox();
-  expect(suggestionBounds).not.toBeNull();
-  expect(medicalBounds).not.toBeNull();
-  expect(contactBounds).not.toBeNull();
-  expect(suggestionBounds!.y + suggestionBounds!.height).toBeLessThanOrEqual(medicalBounds!.y);
-  expect(suggestionBounds!.y + suggestionBounds!.height).toBeLessThan(contactBounds!.y);
-  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).not.toBe('absolute');
+  const withCard=await modal.locator('[data-passenger-id="first"]').boundingBox();
+  const contactWithPopup=await modal.locator('.travel-flow__contact').boundingBox();
+  expect(baseline).not.toBeNull();
+  expect(withPopup).not.toBeNull();
+  expect(cardBaseline).not.toBeNull();
+  expect(withCard).not.toBeNull();
+  expect(contactBaseline).not.toBeNull();
+  expect(contactWithPopup).not.toBeNull();
+  // Combobox popup floats above later fields; it cannot expand the form,
+  // modal, or shift receipt contact when input focus opens it.
+  expect(Math.abs(withPopup!.height - baseline!.height)).toBeLessThanOrEqual(2);
+  expect(Math.abs(withCard!.height - cardBaseline!.height)).toBeLessThanOrEqual(2);
+  expect(Math.abs(contactWithPopup!.y - contactBaseline!.y)).toBeLessThanOrEqual(2);
+  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).toBe('absolute');
+  expect(await suggestions.evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  // Popup must receive hit testing ahead of the controls beneath it;
+  // otherwise medical labels can appear through the floating list.
+  expect(await suggestions.evaluate(el => {
+    const box=el.getBoundingClientRect();
+    const target=document.elementFromPoint(box.x+Math.min(16,box.width/2),box.y+Math.min(18,box.height/2));
+    return !!target && el.contains(target);
+  })).toBe(true);
   await passport.fill('TEST12');
   await expect(check).toBeEnabled();
   await passport.fill('');
