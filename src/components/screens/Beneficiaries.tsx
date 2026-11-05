@@ -2,6 +2,7 @@ import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,T
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
+import {recordAccountActivity} from '../../services/accountActivity';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -81,7 +82,9 @@ export function Beneficiaries(){
   const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id;
   const rememberList=(id:string)=>{
     if(!owner)return; // Preview/guest views do not own account SQL or cross-device settings.
-    void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id).catch(()=>{
+    void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
+      .then(()=>recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries'))
+      .catch(()=>{
       setNotice({en:'Could not remember your selected list for next login. Please retry.',
         bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
     });
