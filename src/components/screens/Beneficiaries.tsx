@@ -2,6 +2,7 @@ import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,T
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
+import {loadAccountUiState,saveAccountUiState,recordAccountInteraction,type AccountEvent} from '../../services/accountExperience';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -79,6 +80,26 @@ export function Beneficiaries(){
   },[listMenuOpen]);
   const owner=user?.id??null;
   const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id;
+  const rememberUi=(key:'beneficiary_tag_filter'|'beneficiary_relationship_filter',value:string)=>{
+    if(owner)void saveAccountUiState(owner,key,value).catch(()=>undefined);
+  };
+  const recordActivity=(action:AccountEvent)=>{
+    if(owner)void recordAccountInteraction(owner,action,'beneficiaries').catch(()=>undefined);
+  };
+  useEffect(()=>{
+    let active=true;
+    setTagFilter('all');setRelationshipFilter('all');
+    if(owner){
+      void loadAccountUiState(owner).then(saved=>{
+        if(!active)return;
+        const tag=saved.beneficiary_tag_filter??'all';
+        const relation=tag==='friends_family'?saved.beneficiary_relationship_filter??'all':'all';
+        setTagFilter(tag);setRelationshipFilter(relation);
+      }).catch(()=>undefined);
+    }
+    return()=>{active=false;};
+  },[owner]);
+
   const rememberList=(id:string)=>{
     if(!owner)return; // Preview/guest views do not own account SQL or cross-device settings.
     void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id).catch(()=>{
@@ -185,6 +206,8 @@ export function Beneficiaries(){
   function switchList(id:string){
     setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
     rememberList(id);
+    rememberUi('beneficiary_tag_filter','all');rememberUi('beneficiary_relationship_filter','all');
+    recordActivity('BENEFICIARY_LIST_SELECTED');
     listTriggerRef.current?.focus();
   }
   function openListEditor(list:BeneficiaryList){
@@ -199,7 +222,7 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       await renameBeneficiaryList(owner,editingList.id,normalized);
-      await reload(editingList.id);setEditingList(null);
+      await reload(editingList.id);setEditingList(null);recordActivity('BENEFICIARY_LIST_RENAMED');
       setNotice({en:'List name updated.',bn:'তালিকার নাম পরিবর্তন হয়েছে।'});
     }catch(e){
       const message=e instanceof Error?e.message:String(e);
@@ -213,7 +236,7 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       await deleteBeneficiaryList(owner,toDelete);
-      await reload();setEditingList(null);setConfirmListDelete(false);setSearch('');
+      await reload();setEditingList(null);setConfirmListDelete(false);setSearch('');recordActivity('BENEFICIARY_LIST_REMOVED');
       setNotice({en:'Beneficiary list deleted.',bn:'উপকারভোগীর তালিকা মুছে ফেলা হয়েছে।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -232,7 +255,7 @@ export function Beneficiaries(){
       const list=await createBeneficiaryList(owner,listName);
       const saved=await reload(list.id);
       if(!saved.lists.some(value=>value.id===list.id))throw new Error(tr('List was not saved. Please retry.','তালিকাটি সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
-      setCreateListOpen(false);setListName('');
+      setCreateListOpen(false);setListName('');recordActivity('BENEFICIARY_LIST_CREATED');
       setNotice({en:'List created.',bn:'তালিকা তৈরি হয়েছে।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -266,7 +289,7 @@ export function Beneficiaries(){
       if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
         throw new Error(tr('Beneficiary was not saved. Please retry.','উপকারভোগী সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       }
-      setFlow(null);
+      setFlow(null);if(count)recordActivity('BENEFICIARY_ADDED');
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -295,7 +318,7 @@ export function Beneficiaries(){
       if(chosen.some(row=>!savedTins.has(row.tin))){
         throw new Error(tr('Some beneficiaries were not saved. Retry the import.','কিছু উপকারভোগী সংরক্ষিত হয়নি। আবার আমদানি করুন।'));
       }
-      setFlow(null);
+      setFlow(null);if(count)recordActivity('BENEFICIARY_ADDED');
       setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -341,7 +364,7 @@ export function Beneficiaries(){
         classification.tag===(editPerson.tag??null) &&
         classification.relationship===(editPerson.relationship??null) &&
         classification.other_label===(editPerson.other_label??null);
-      setEditPerson(null);setEditTargetList('');
+      setEditPerson(null);setEditTargetList('');recordActivity('BENEFICIARY_EDITED');
       setNotice(onlyMoved
         ?{en:'Beneficiary moved to the selected list.',bn:'উপকারভোগী নির্বাচিত তালিকায় স্থানান্তরিত হয়েছেন।'}
         :{en:'Beneficiary details updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে।'});
@@ -359,7 +382,7 @@ export function Beneficiaries(){
       if(saved.people.some(person=>stillSelected.includes(person.id))){
         throw new Error(tr('Some selected beneficiaries could not be removed. Try again.','নির্বাচিত কয়েকজনকে সরানো যায়নি। আবার চেষ্টা করুন।'));
       }
-      setBulkRemoveIds(null);
+      setBulkRemoveIds(null);recordActivity('BENEFICIARY_REMOVED');
       setNotice({en:`${stillSelected.length} beneficiaries removed.`,bn:`${stillSelected.length} জন উপকারভোগী সরানো হয়েছে।`});
     }catch(e){
       setModalError(e instanceof Error?e.message:String(e));
@@ -371,7 +394,7 @@ export function Beneficiaries(){
     if(!deletePerson)return;
     setBusy(true);setError('');
     try{
-      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);
+      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);recordActivity('BENEFICIARY_REMOVED');
       setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
     }catch(e){setError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
@@ -395,7 +418,7 @@ export function Beneficiaries(){
     try {
       const result=await recoverGuestBeneficiariesToProfile(owner);
       await reload();
-      setGuestRecoveryDone(true);
+      setGuestRecoveryDone(true);if(result.people)recordActivity('BENEFICIARY_ADDED');
       setNotice({en:result.people?`Restored ${result.people} beneficiaries to your profile.`:'Your saved beneficiaries are already available in your profile.',bn:result.people?`আপনার প্রোফাইলে ${result.people} জন উপকারভোগী ফিরিয়ে আনা হয়েছে।`:'সংরক্ষিত উপকারভোগীরা ইতিমধ্যে আপনার প্রোফাইলে আছেন।'});
     }catch(e){setRecoveryError(e instanceof Error?e.message:String(e));}
     finally{setRestoring(false);}
@@ -469,7 +492,7 @@ export function Beneficiaries(){
               </div>
             </div>
             <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag','ট্যাগ')}</span>
-              <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);}}>
+              <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);rememberUi('beneficiary_tag_filter',event.target.value);rememberUi('beneficiary_relationship_filter','all');}}>
                 <option value="all">{tr('All tags','সব ট্যাগ')}</option>
                 <option value="clients">{tr('Clients','ক্লায়েন্ট')}</option>
                 <option value="friends_family">{tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')}</option>
@@ -478,7 +501,7 @@ export function Beneficiaries(){
               </UiSelect>
             </label>
             {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter beneficiary-directory__relationship-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
-              <UiSelect aria-label={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')} value={relationshipFilter} onChange={event=>{setRelationshipFilter(event.target.value);setSelectedIds([]);}}>
+              <UiSelect aria-label={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')} value={relationshipFilter} onChange={event=>{setRelationshipFilter(event.target.value);setSelectedIds([]);rememberUi('beneficiary_relationship_filter',event.target.value);}}>
                 <option value="all">{tr('All relationships','সব সম্পর্ক')}</option>
                 {BENEFICIARY_RELATIONS.map(value=><option key={value} value={value}>{beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)}</option>)}
               </UiSelect>
