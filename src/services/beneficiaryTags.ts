@@ -43,3 +43,14 @@ export function beneficiaryTagLabel(
   const sub=relation?relationLabels[relation]?.[language==='bn'?1:0]:null;
   return sub?`${label} · ${sub}`:label;
 }
+
+/** Compact picker-only label: the most specific user-declared tag, never its parent category. */
+export function beneficiaryFinalTagLabel(
+  tag:BeneficiaryTag|null|undefined,relation:BeneficiaryRelation|null|undefined,language:'en'|'bn',otherLabel?:string|null
+):string|null {
+  if(!tag)return null;
+  const index=language==='bn'?1:0;
+  if(tag==='friends_family')return relation?relationLabels[relation]?.[index]??null:null;
+  if(tag==='others')return otherLabel?.trim()||tagLabels.others[index];
+  return tagLabels[tag]?.[index]??null;
+}
