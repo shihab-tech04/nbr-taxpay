@@ -35,7 +35,9 @@ try {
     await expect(modal.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
     const addPassenger = modal.getByRole('button', { name: 'Add passenger' });
     const continueToTravel = modal.getByRole('button', { name: 'Continue to travel details' });
-    await expect(addPassenger).toBeDisabled();
+    // The approved passenger-first flow hides Add passenger until passport details are checked.
+    // A disabled action at this point would be an obsolete UI contract.
+    await expect(addPassenger).toHaveCount(0);
     await expect(continueToTravel).toBeDisabled();
     await expect(modal.locator('#travel-lookup-first')).toBeDisabled();
     const medicalRow = modal.locator('.travel-flow__medical-option');
