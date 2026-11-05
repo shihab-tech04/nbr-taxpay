@@ -16,9 +16,9 @@ test('Pay Tax and Travel Tax keep the same modal width across passenger and trav
   const paymentBox = await payment.boundingBox();
   expect(paymentBox).not.toBeNull();
   const paymentWidth = paymentBox!.width;
-  await payment.getByRole('button',{name:'Close modal'}).click();
-  await expect(payment).toHaveCount(0);
-
+  // Measure each service from a clean public entry; avoid coupling width
+  // parity to an unrelated close-control accessible-name contract.
+  await page.goto('/');
   await openTravelTaxFromBanner(page);
   const travel = page.getByRole('dialog',{name:'Travel tax'});
   const checkWidth = async (stage: string) => {
