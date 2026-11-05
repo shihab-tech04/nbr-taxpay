@@ -42,7 +42,7 @@ test('sign-out never invalidates Auth before pending preference persistence is c
   assert.match(prefs,/outstanding\.set\(key,value\)/);
   assert.match(prefs,/if\(outstanding\.get\(key\)===value\)/);
   assert.match(prefs,/await saveAccountViewPreference\(ownerUid,key,value\)/);
-  assert.match(identity,/if\(current\.user\)await flushAccountViewPreferences\(current\.user\.id\)/);
+  assert.match(identity,/if\(current\.user\)\s*\{\s*await flushAccountViewPreferences\(current\.user\.id\)/);
   assert.doesNotMatch(identity,/Promise\.race\(/);
   assert.ok(identity.indexOf('await flushAccountViewPreferences')<identity.indexOf("await supabase.auth.signOut"));
   assert.match(workspace,/await signOutApplicationAccount\(\)/);
