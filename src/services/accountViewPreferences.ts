@@ -34,15 +34,26 @@ export function saveBrowserLanguage(previewId:string|null,language:Language):voi
 /** Verify current Auth owner before writing an account-owned visual preference.
  * The Auth server merges user_metadata; no beneficiary/payment rows are altered.
  */
-export async function saveAccountViewPreference(
+// Serialize same-tab preference writes so a rapid list switch cannot finish
+// out of order and resurrect an older selection after login.
+const preferenceWrites=new Map<string,Promise<void>>();
+export function saveAccountViewPreference(
   ownerUid:string,key:AccountViewPreferenceKey,value:string
 ):Promise<void> {
-  const db=supabase;
-  if(!db)throw new Error('Sign in to save account preferences.');
-  const {data:identity,error:identityError}=await db.auth.getUser();
-  if(identityError||identity.user?.id!==ownerUid)throw new Error('Account changed. Sign in again.');
-  const {data:updated,error:saveError}=await db.auth.updateUser({data:{[key]:value}});
-  if(saveError)throw saveError;
-  if(updated.user?.id!==ownerUid||updated.user.user_metadata?.[key]!==value)
-    throw new Error('Account preference could not be confirmed.');
+  const prior=preferenceWrites.get(ownerUid)??Promise.resolve();
+  const next=prior.catch(()=>undefined).then(async()=>{
+    const db=supabase;
+    if(!db)throw new Error('Sign in to save account preferences.');
+    const {data:identity,error:identityError}=await db.auth.getUser();
+    if(identityError||identity.user?.id!==ownerUid)throw new Error('Account changed. Sign in again.');
+    const {data:updated,error:saveError}=await db.auth.updateUser({data:{[key]:value}});
+    if(saveError)throw saveError;
+    if(updated.user?.id!==ownerUid||updated.user.user_metadata?.[key]!==value)
+      throw new Error('Account preference could not be confirmed.');
+  });
+  preferenceWrites.set(ownerUid,next);
+  void next.finally(()=>{
+    if(preferenceWrites.get(ownerUid)===next)preferenceWrites.delete(ownerUid);
+  }).catch(()=>undefined);
+  return next;
 }
