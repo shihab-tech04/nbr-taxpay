@@ -107,6 +107,13 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   const passport=modal.locator('#travel-passport-first');
   const check=modal.locator('#travel-lookup-first');
   await expect(check).toBeDisabled();
+  // Measure the resting layout, not the initial passenger-card entrance
+  // animation; focus should not add a second layout change.
+  await modal.evaluate(async element => {
+    await Promise.all(element.getAnimations({subtree:true})
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished.catch(() => undefined)));
+  });
   const row=modal.locator('.travel-flow__passport-row');
   const suggestions=modal.locator('#travel-passport-suggestions-first');
   await expect(suggestions).toHaveCount(0);
