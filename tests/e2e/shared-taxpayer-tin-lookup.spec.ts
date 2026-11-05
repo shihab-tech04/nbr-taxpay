@@ -33,6 +33,7 @@ test('every additional Other Tax taxpayer uses the same stacked TIN/name and cle
   await primary.locator('#guest-tin').fill('111111111111');
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
+  await primary.getByRole('button',{name:'Add taxpayer',exact:true}).click();
 
   await list.getByRole('button', { name: 'Add another taxpayer' }).click();
   const additional = list.getByTestId('other-tax-taxpayer').last();
