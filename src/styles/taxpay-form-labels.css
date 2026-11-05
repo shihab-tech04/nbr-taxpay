@@ -59,18 +59,27 @@
   background: var(--citizen-primary-light);
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  /* The list belongs inside the passport row, not above the medical/contact
+     fields. Expand the form and let the modal scroll instead of obscuring it. */
+  position: relative;
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin-top: 8px;
   max-height: 240px;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--citizen-surface);
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgb(18 42 77 / 14%);
+  box-shadow: 0 6px 14px rgb(18 42 77 / 8%);
+  animation: travel-passport-suggestions-enter 180ms ease-out both;
+}
+@keyframes travel-passport-suggestions-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-citizen-shell .travel-flow__passport-suggestions { animation: none; }
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
 .taxpay-citizen-shell .travel-flow__passport-no-results {
