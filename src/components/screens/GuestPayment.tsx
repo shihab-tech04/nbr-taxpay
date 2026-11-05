@@ -216,6 +216,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
     (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
   );
+  // Explicitly confirmed taxpayer identity persists across payment steps.
+  const [confirmedOtherTaxPrimaryTin, setConfirmedOtherTaxPrimaryTin] = useState('');
+  const [otherTaxDraftPending, setOtherTaxDraftPending] = useState(false);
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
@@ -292,6 +295,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
     if (!tinValid) return false;
     if (otherBatch) {
+      if (forSelf === false && !signedInAccount &&
+        (confirmedOtherTaxPrimaryTin !== taxpayerTin || otherTaxDraftPending)) return false;
       const seenTins = new Set<string>();
       for (const person of batchTaxpayers) {
         const valid = person.id === 'primary' && ownAccountTax
@@ -563,9 +568,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const renderOtherTaxTaxpayerList = (singleSelf: boolean) => (
     <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={!singleSelf && forSelf === false}
+                primaryConfirmed={confirmedOtherTaxPrimaryTin === taxpayerTin && Boolean(taxpayerTin)}
+                onPrimaryConfirmed={() => { setConfirmedOtherTaxPrimaryTin(taxpayerTin); clearValidationError(); }}
+                onPendingDraftChange={setOtherTaxDraftPending}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
-                onPrimaryTin={value => { clearReferenceSelection(); setLastSearchedTin(null); setOtherTaxpayerName(''); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setTin(value); }}
+                onPrimaryTin={value => { clearReferenceSelection(); setConfirmedOtherTaxPrimaryTin(''); setLastSearchedTin(null); setOtherTaxpayerName(''); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setTin(value); }}
                 onPrimarySearch={searchTin} onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={people => {
                   setAdditionalTaxpayers(people);
                   setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>
@@ -591,6 +599,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch) {
+      if (forSelf === false && !signedInAccount &&
+        (confirmedOtherTaxPrimaryTin !== taxpayerTin || otherTaxDraftPending)) {
+        setValidationError(language === 'bn'
+          ? 'প্রথমে করদাতাকে খুঁজে তথ্য দেখে যোগ করুন। অসম্পূর্ণ করদাতাকে নিশ্চিত করুন বা বাতিল করুন।'
+          : 'Search, review and add each taxpayer before continuing. Confirm or cancel unfinished taxpayer details.', 'tin');
+        return false;
+      }
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
         const tinValid = person.id === 'primary' && ownAccountTax
@@ -1005,7 +1020,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     rememberBatch(null);
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
-    setOtherTaxLines([]); setAdditionalTaxpayers([]); setAuthorizedTaxpayerIds({});
+    setOtherTaxLines([]); setAdditionalTaxpayers([]); setConfirmedOtherTaxPrimaryTin(''); setOtherTaxDraftPending(false); setAuthorizedTaxpayerIds({});
     setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
     setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
   };
@@ -1168,7 +1183,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setConfirmedOtherTaxPrimaryTin(''); setOtherTaxDraftPending(false); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
