@@ -22,7 +22,7 @@ function valid(raw:unknown):PreviewSession|null {
     typeof value.paymentSessionId!=='string'||!uuidPattern.test(value.paymentSessionId)||
     (value.language!=='en'&&value.language!=='bn')||
     (value.selectedListId!==null&&typeof value.selectedListId!=='string'))return null;
-  return value as PreviewSession;
+  return raw as PreviewSession;
 }
 export function activePreviewSession():PreviewSession|null {
   try {
