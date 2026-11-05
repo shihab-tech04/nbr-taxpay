@@ -61,6 +61,10 @@
 /* Passport suggestions are a true combobox popup: they do not increase
    row/card/modal height. Lift the *whole row* above following form controls
    so no label or medical checkbox can paint through the opaque popup. */
+.taxpay-citizen-shell .travel-flow__person-body:has(.travel-flow__passport-suggestions) {
+  position: relative;
+  z-index: 30;
+}
 .taxpay-citizen-shell .travel-flow__passport-row:has(.travel-flow__passport-suggestions) {
   z-index: 30;
 }
