@@ -6,6 +6,7 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
 import {supabase} from '../../services/supabaseClient';
 import {authRedirectUrl} from '../../services/secureWorkspacePolicy';
+import {signInSyntheticTaxpayer} from '../../services/syntheticTaxpayerIdentity';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
 /** One footer action for both standalone and in-journey sign-in modals. */
@@ -33,41 +34,50 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   verifiedOnly?: boolean;
 } = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
-  // The published sign-in is a real, cross-device Supabase account. Keep
-  // sample User ID/password UX available only to local developer tests.
-  const requiresVerifiedLogin = verifiedOnly || !sampleJourneysEnabled;
+  // Keep the approved two-field User ID/password entry. In published builds
+  // those credentials resolve to a SQL-backed fictional account, never a
+  // browser-only preview session. Separate email access stays available in
+  // Secure Workspace for previously registered non-sample accounts.
+  const requiresVerifiedLogin = verifiedOnly;
   const [email,setEmail] = useState('');
   const [emailBusy,setEmailBusy] = useState(false);
   const [emailNotice,setEmailNotice] = useState<'sent'|'error'|null>(null);
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [signingIn,setSigningIn]=useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
-  const [error, setError] = useState<'invalid'|'already_signed_in'|null>(null);
+  const [error, setError] = useState<'invalid'|'already_signed_in'|'unavailable'|null>(null);
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
-  const credentialsReady = requiresVerifiedLogin ? Boolean(email.trim().includes('@') && !emailBusy) : Boolean(userId.trim() && password.trim());
+  const credentialsReady = requiresVerifiedLogin ? Boolean(email.trim().includes('@') && !emailBusy) : Boolean(userId.trim() && password.trim() && !signingIn);
   useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
   // The shared TaxPayModal owns Escape, focus containment, overlay and focus restoration.
   // Embedded login still focuses the first field when entered from the payment stepper.
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!credentialsReady) return;
-    if (verifiedApplicationUser) {
-      setError('already_signed_in');
+    if (!credentialsReady || signingIn) return;
+    if (verifiedApplicationUser) {setError('already_signed_in');return;}
+    if(sampleJourneysEnabled){
+      if(!loginPreviewAccount(userId,password,{preserveRoute:preservePaymentJourney})){
+        setError('invalid');inputRef.current?.focus();
+      }else onSuccess?.();
       return;
     }
-    if (!loginPreviewAccount(userId, password, { preserveRoute: preservePaymentJourney })) {
-      setError('invalid');
+    setSigningIn(true);setError(null);
+    try{
+      await signInSyntheticTaxpayer(userId,password);
+      if(onSuccess)onSuccess();
+      else if(!preservePaymentJourney)navigate('taxpayer_home');
+    }catch(e){
+      setError(e instanceof Error && e.message==='INVALID_CREDENTIALS'?'invalid':'unavailable');
       inputRef.current?.focus();
-    } else {
-      onSuccess?.();
-    }
+    }finally{setSigningIn(false);}
   };
 
   const sendVerifiedEmail = async (event:React.FormEvent) => {
@@ -142,14 +152,11 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         {showRecovery && <p id="taxpayer-login-recovery" className="taxpayer-login-recovery" role="status">
           {bn ? 'বর্তমান user1–user10 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user10 accounts, the password is the same as the User ID.'}
         </p>}
-        {emailReturnTo && !embedded && <p className="taxpayer-login-email-entry">
-          <button type="button" onClick={() => navigate('secure_workspace', { returnTo: emailReturnTo })}>
-            {bn ? 'ইমেইল দিয়ে সাইন ইন' : 'Sign in with email'}
-          </button>
-        </p>}
+
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'
             ? (bn ? 'আগে বর্তমান অ্যাকাউন্ট থেকে সাইন আউট করুন।' : 'Sign out of the current account before switching users.')
+            : error === 'unavailable' ? (bn ? 'এখন সাইন ইন করা যাচ্ছে না। আবার চেষ্টা করুন।' : 'Could not sign in. Please retry.')
             : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
         </p>}
       </form>

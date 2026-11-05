@@ -14,6 +14,7 @@ import {
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
+import {recordAccountInteraction,saveAccountUiState} from './accountExperience';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
@@ -105,6 +106,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPaymentBeneficiaryPrefill(null);
     setPaymentServiceInitialSelection(service ?? null);
     setPaymentServiceChoiceOpenState(true);
+    if(accountUser?.id){
+      void recordAccountInteraction(accountUser.id,'PAYMENT_ENTRY','service_choice').catch(()=>undefined);
+      if(service)void saveAccountUiState(accountUser.id,'payment_service',service).catch(()=>undefined);
+    }
   };
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     // Public payment discovery is the primary citizen entry. TaxPay account access remains available by explicit deep link.
@@ -118,7 +123,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
   const [previewAccount, setPreviewAccount] = useState<DemoUser | null>(storedPreviewAccount);
   const [legacyDemoUser, setLegacyDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
-  const demoUser = previewAccount ?? legacyDemoUser;
+  // Signed-in sample scenarios now use a real Auth UID for saved beneficiary
+  // ownership, while their fictional display profile remains unchanged.
+  const authenticatedScenario=getDemoUser(accountUser?.app_metadata?.taxpay_synthetic_id);
+  const demoUser = authenticatedScenario ?? previewAccount ?? legacyDemoUser;
   const demoUserRef = useRef(legacyDemoUser);
   const [userRole, setUserRoleState] = useState<UserRole>(() => {
     const search = new URLSearchParams(window.location.search);
@@ -128,6 +136,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ?? 'GUEST';
   });
   const userRoleRef = useRef(userRole);
+  useEffect(()=>{
+    if(authenticatedScenario){
+      setUserRoleState(authenticatedScenario.role);
+      userRoleRef.current=authenticatedScenario.role;
+    }
+  },[accountUser?.id]);
   const setUserRole = (role: UserRole) => {
     userRoleRef.current = role;
     setUserRoleState(role);
@@ -201,6 +215,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const route = validRoute(requestedRoute);
     setCurrentRoute(route);
     setRouteParams(params);
+    if(accountUser?.id && !['landing','office_login','taxpayer_login'].includes(route)){
+      void saveAccountUiState(accountUser.id,'last_route',route).catch(()=>undefined);
+      void recordAccountInteraction(accountUser.id,'NAVIGATE',route).catch(()=>undefined);
+    }
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
