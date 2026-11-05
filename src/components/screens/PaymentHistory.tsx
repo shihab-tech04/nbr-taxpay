@@ -70,7 +70,8 @@ const escapeCsv = (value: unknown) => {
 
 export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
   const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser, routeParams } = useTaxState();
-  const trackingActivity=Boolean(routeParams.trackPayment);
+  // Obsolete signed-in tracking links now open the same searchable history.
+  const trackingActivity=false;
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('ALL');
