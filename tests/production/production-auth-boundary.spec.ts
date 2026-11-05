@@ -15,17 +15,13 @@ test('a fresh visitor cannot enter taxpayer screens using an old sample URL', as
   await expect(page).toHaveURL(/returnTo=taxpayer_home/);
   await expect(page.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
   await page.goto(site + '?action=taxpayer_home');
-  await page.locator('.citizen-account-gate').getByRole('button', { name: 'Use User ID (sample account)' }).click();
+  await expect(page.locator('.citizen-account-gate').getByRole('button',{name:'Use User ID (sample account)'})).toHaveCount(0);
+  await page.goto(site + '?action=taxpayer_login');
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await expect(dialog.getByRole('textbox',{name:'Email address'})).toBeVisible();
+  await expect(dialog.getByRole('textbox',{name:'User ID'})).toHaveCount(0);
+  await expect(dialog.getByLabel('Password',{exact:true})).toHaveCount(0);
   await expect(page).toHaveURL(/action=taxpayer_login/);
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
-  await page.getByRole('textbox', { name: 'User ID' }).fill('not-a-user');
-  await page.getByLabel('Password', { exact: true }).fill('not-a-user');
-  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Incorrect User ID or password');
-  await expect(page).toHaveURL(/action=taxpayer_login/);
-  await page.goBack();
-  await expect(gate).toBeVisible();
 });
 
 test('all private deep links fail closed without an authenticated session', async ({ page }) => {
@@ -60,21 +56,15 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });
 
-test('sample-account cannot access private Beneficiaries without verified email identity',async({page})=>{
-  await page.setViewportSize({width:1600,height:900});
+test('published login requires a verified account and never restores a preview on reload',async({page})=>{
   await page.goto(site+'?action=taxpayer_login');
-  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
-  await page.getByLabel('Password',{exact:true}).fill('user1');
-  await page.getByRole('button',{name:'Sign In',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
-  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  await rail.getByRole('button',{name:'Beneficiaries',exact:true}).click();
-  await expect(page).toHaveURL(/action=beneficiaries/);
-  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await expect(dialog.getByRole('textbox',{name:'Email address'})).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toHaveCount(0);
+  await page.evaluate(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
+  await page.goto(site+'?action=beneficiaries');
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'}).getByRole('textbox',{name:'Email address'})).toBeVisible();
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
 });

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react';
 import { TaxPayModal } from '../ui/TaxPayModal';
-import { useTaxState } from '../../services/taxState';
+import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
 import {supabase} from '../../services/supabaseClient';
@@ -33,6 +33,9 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   verifiedOnly?: boolean;
 } = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
+  // The published sign-in is a real, cross-device Supabase account. Keep
+  // sample User ID/password UX available only to local developer tests.
+  const requiresVerifiedLogin = verifiedOnly || !sampleJourneysEnabled;
   const [email,setEmail] = useState('');
   const [emailBusy,setEmailBusy] = useState(false);
   const [emailNotice,setEmailNotice] = useState<'sent'|'error'|null>(null);
@@ -45,7 +48,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const inputRef = useRef<HTMLInputElement>(null);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
-  const credentialsReady = verifiedOnly ? Boolean(email.trim().includes('@') && !emailBusy) : Boolean(userId.trim() && password.trim());
+  const credentialsReady = requiresVerifiedLogin ? Boolean(email.trim().includes('@') && !emailBusy) : Boolean(userId.trim() && password.trim());
   useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
   // The shared TaxPayModal owns Escape, focus containment, overlay and focus restoration.
@@ -69,11 +72,11 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
 
   const sendVerifiedEmail = async (event:React.FormEvent) => {
     event.preventDefault();
-    if(!verifiedOnly || !credentialsReady || !supabase)return;
+    if(!requiresVerifiedLogin || !credentialsReady || !supabase)return;
     setEmailBusy(true);
     setEmailNotice(null);
     try {
-      const redirect=authRedirectUrl(window.location.origin,import.meta.env.BASE_URL,undefined,emailReturnTo??'beneficiaries',language);
+      const redirect=authRedirectUrl(window.location.origin,import.meta.env.BASE_URL,undefined,emailReturnTo??'taxpayer_home',language);
       const {error:sendError}=await supabase.auth.signInWithOtp({
         email:email.trim(),options:{emailRedirectTo:redirect,shouldCreateUser:true}
       });
@@ -83,7 +86,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   };
 
   const title = bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`;
-  const content = verifiedOnly ? <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
+  const content = requiresVerifiedLogin ? <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
       <form id={embedded?'taxpay-embedded-login-form':'taxpay-standalone-login-form'} onSubmit={sendVerifiedEmail}>
         <div className="taxpayer-login-field">
           <label htmlFor="taxpayer-login-email">{bn?'ইমেইল ঠিকানা':'Email address'}</label>
@@ -96,7 +99,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
           </div>
         </div>
         {emailNotice==='sent'&&<p role="status" className="taxpayer-login-recovery">
-          {bn?'সাইন ইন লিংক পাঠানো হয়েছে। ইমেইল খুলে লিংকটি নির্বাচন করুন।':'Sign-in link sent. Open your email and follow the link to your saved beneficiaries.'}
+          {bn?'সাইন ইন লিংক পাঠানো হয়েছে। ইমেইল খুলে লিংকটি নির্বাচন করুন।':'Sign-in link sent. Open your email and use it to access your saved account.'}
         </p>}
         {emailNotice==='error'&&<p role="alert" className="taxpayer-login-error">
           {bn?'সাইন ইন লিংক পাঠানো যায়নি। আবার চেষ্টা করুন।':'Could not send the sign-in link. Please try again.'}
@@ -160,7 +163,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
     className="taxpayer-login-modal"
     service="login"
-    initialFocusSelector={verifiedOnly?"#taxpayer-login-email":"#taxpayer-login-user-id"}
+    initialFocusSelector={requiresVerifiedLogin?"#taxpayer-login-email":"#taxpayer-login-user-id"}
     footer={<TaxpayerLoginFooter formId="taxpay-standalone-login-form" disabled={!credentialsReady} language={language} />}
   >
     {content}

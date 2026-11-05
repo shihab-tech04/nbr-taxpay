@@ -44,7 +44,7 @@ test('real account restores its own language and selected beneficiary list in a 
       headers:{apikey:key,Authorization:'Bearer '+token}
     });
     expect(response.status).toBe(200);
-    return response.json() as Promise<{user_metadata?:Record<string,unknown>}>;
+    return response.json() as Promise<{id:string;user_metadata?:Record<string,unknown>}>;
   };
 
   const a=await signUp();
@@ -127,6 +127,8 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(another.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(another.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
   await expect(another.locator('#beneficiary-list')).toHaveCount(0);
+  await expect(another.getByTestId('beneficiary-records')).toHaveCount(0);
+
   await expect(another.getByText('Sajid Khan')).toHaveCount(0);
 
   await third.close();
