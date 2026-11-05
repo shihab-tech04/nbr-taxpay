@@ -40,7 +40,7 @@ export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'benefic
    let beforeAt:string|null=null,beforeId:string|null=null;
    let finished=false;
    for(let page=0;page<10000;page++){
-     const next=await rpc<SimulationTransaction[]>('demo_story1_demo_history_page',{
+     const next:SimulationTransaction[]=await rpc<SimulationTransaction[]>('demo_story1_demo_history_page',{
        p_actor:user,p_view:view,p_before_created_at:beforeAt,
        p_before_id:beforeId,p_page_size:100
      });
@@ -50,7 +50,7 @@ export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'benefic
        seen.add(tx.transactionId);rows.push(tx);
      }
      if(next.length<100){finished=true;break;}
-     const last=next[next.length-1];
+     const last:SimulationTransaction=next[next.length-1];
      beforeAt=last.createdAt;beforeId=last.transactionId;
    }
    if(!finished)throw Error('Demo payment history exceeds safe retrieval limit');
