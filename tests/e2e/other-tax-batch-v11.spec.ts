@@ -576,7 +576,7 @@ test('Step 1 shows a pending calculation rather than a misleading zero', async (
 test('additional taxpayers can be confirmed repeatedly without a hard-coded headcount cap', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
-  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Search'}).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Search',exact:true}).click();
   await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
   const add=dialog.getByRole('button',{name:'Add another taxpayer'});
   for(const digit of ['2','3','4','5','6','7','8','9','0']){
