@@ -254,7 +254,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             {receipt.receiptEmail && <div className="receipt-view__detail">
               <span className="text-slate-700">{bn ? 'রসিদের ইমেইল' : 'Receipt email'}:</span>
               <span className="col-span-2 break-all text-slate-800">{receipt.receiptEmail}</span>
-            </div>
+            </div>}
             {receipt.paymentCategory !== 'TRAVEL_TAX' && <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.tin}:</span>
               <span className="col-span-2 font-mono-plex font-bold text-emerald-900">{taxpayerTinSummary}</span>
