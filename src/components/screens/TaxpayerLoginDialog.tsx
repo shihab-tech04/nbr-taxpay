@@ -67,6 +67,21 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     }
   };
 
+  const sendVerifiedEmail = async (event:React.FormEvent) => {
+    event.preventDefault();
+    if(!verifiedOnly || !credentialsReady || !supabase)return;
+    setEmailBusy(true);
+    setEmailNotice(null);
+    try {
+      const redirect=authRedirectUrl(window.location.origin,import.meta.env.BASE_URL,undefined,emailReturnTo??'beneficiaries',language);
+      const {error:sendError}=await supabase.auth.signInWithOtp({
+        email:email.trim(),options:{emailRedirectTo:redirect,shouldCreateUser:true}
+      });
+      setEmailNotice(sendError?'error':'sent');
+    } catch {setEmailNotice('error');}
+    finally {setEmailBusy(false);}
+  };
+
   const title = bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`;
   const content = <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
       <form id={embedded ? 'taxpay-embedded-login-form' : 'taxpay-standalone-login-form'} onSubmit={submit} noValidate>
