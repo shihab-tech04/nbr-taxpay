@@ -470,11 +470,28 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   // Checking only previews this passenger; the user must still
                   // confirm explicitly. Keep that confirmation above the fixed
                   // modal footer once the expanded identity review has rendered.
-                  requestAnimationFrame(() => requestAnimationFrame(() => {
-                    document.querySelector<HTMLElement>(
-                      '[data-passenger-id="' + item.id + '"] .travel-flow__confirm-passenger'
-                    )?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
-                  }));
+                  requestAnimationFrame(() => {
+                    const card = document.querySelector<HTMLElement>('[data-passenger-id="' + item.id + '"]');
+                    if (!card) return;
+                    // The card expands for the identity review. Scroll only
+                    // after that transition finishes, or the button can move
+                    // back underneath the fixed modal footer.
+                    const transitions = card.getAnimations({subtree: true})
+                      .filter(animation => animation.playState === 'running');
+                    void Promise.all(transitions.map(animation =>
+                      animation.finished.catch(() => undefined))).then(() => {
+                      const action = card.querySelector<HTMLElement>('.travel-flow__confirm-passenger');
+                      const main = action?.closest<HTMLElement>('.travel-flow__main');
+                      const body = action?.closest<HTMLElement>('.taxpay-modal__body');
+                      const scroller = main && getComputedStyle(main).overflowY === 'auto' ? main : body;
+                      if (!action || !scroller || !action.isConnected) return;
+                      const footer = action.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer');
+                      const visibleBottom = Math.min(scroller.getBoundingClientRect().bottom,
+                        footer?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY);
+                      const requiredScroll = action.getBoundingClientRect().bottom - visibleBottom + 16;
+                      if (requiredScroll > 0) scroller.scrollBy({top: requiredScroll, behavior: 'smooth'});
+                    });
+                  });
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
               {passportSuggestionsFor === item.id && <div
