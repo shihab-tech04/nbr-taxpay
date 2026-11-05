@@ -100,6 +100,11 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         {showRecovery && <p id="taxpayer-login-recovery" className="taxpayer-login-recovery" role="status">
           {bn ? 'বর্তমান user1–user10 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user10 accounts, the password is the same as the User ID.'}
         </p>}
+        {!embedded && <p className="taxpayer-login-email-entry">
+          <button type="button" onClick={()=>navigate('secure_workspace',{returnTo:'beneficiaries'})}>
+            {bn?'একই অ্যাকাউন্ট সব ডিভাইসে ব্যবহার করতে ইমেইল দিয়ে সাইন ইন করুন':'Use verified email sign-in to access the same saved account on every device'}
+          </button>
+        </p>}
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'
             ? (bn ? 'আগে বর্তমান অ্যাকাউন্ট থেকে সাইন আউট করুন।' : 'Sign out of the current account before switching users.')
