@@ -9,6 +9,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
+import {hasStoredGuestBeneficiaries,restoreLegacyGuestListsToSelectedPreview} from '../../services/guestBeneficiaries';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
 import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
@@ -53,6 +54,10 @@ export function Beneficiaries(){
   const [restoring,setRestoring]=useState(false);
   const [recoveryError,setRecoveryError]=useState('');
   const [guestRecoveryDone,setGuestRecoveryDone]=useState(false);
+  const [legacyRestoreBusy,setLegacyRestoreBusy]=useState(false);
+  const [legacyRestoreDone,setLegacyRestoreDone]=useState(false);
+  const [legacyRestoreError,setLegacyRestoreError]=useState(false);
+
   const [modalError,setModalError]=useState('');
   const [search,setSearch]=useState('');
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
@@ -424,6 +429,28 @@ export function Beneficiaries(){
         <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>setEntryChoiceOpen(true)}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
       </div>
     </header>
+    {!owner&&previewAccount&&hasStoredGuestBeneficiaries('legacy')&&!legacyRestoreDone&&
+      <div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="preview-legacy-beneficiary-recovery">
+        <p className="text-sm text-taxpay-text">{tr(
+          'Older browser lists were not linked to any specific sample login. Import them into this selected sample profile only if they belong here. The original lists will be kept.',
+          'ব্রাউজারে আগে রাখা তালিকাগুলো কোনো নির্দিষ্ট নমুনা অ্যাকাউন্টের সঙ্গে যুক্ত ছিল না। এই নমুনা প্রোফাইলে প্রযোজ্য হলে তবেই আমদানি করুন। পুরোনো তালিকা অক্ষত থাকবে।'
+        )}</p>
+        <UiButton type="button" variant="outline" disabled={legacyRestoreBusy||loading} onClick={()=>void(async()=>{
+          setLegacyRestoreBusy(true);setLegacyRestoreError(false);
+          try{
+            await restoreLegacyGuestListsToSelectedPreview();
+            await reload();
+            setLegacyRestoreDone(true);
+          }catch{setLegacyRestoreError(true);}
+          finally{setLegacyRestoreBusy(false);}
+        })()}>
+          {legacyRestoreBusy?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Import older browser lists','ব্রাউজারের পুরোনো তালিকা আমদানি করুন')}
+        </UiButton>
+      </div>}
+    {legacyRestoreError&&<p role="alert" className="text-sm text-red-800">{tr(
+      'Could not import older browser lists. No source records were deleted; retry.',
+      'পুরোনো তালিকা আমদানি করা যায়নি। আগের কোনো তথ্য মোছা হয়নি; আবার চেষ্টা করুন।'
+    )}</p>}
     {owner&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
