@@ -30,7 +30,7 @@ export async function signInSyntheticTaxpayer(userId:string,password:string):Pro
   const result=await response.json().catch(()=>null) as {ok?:boolean}|null;
   if(result?.ok!==true)throw new Error('ACCOUNT_UNAVAILABLE');
   const {data,error}=await db.auth.signInWithPassword({
-    email:syntheticAccountEmail(id),password,
+    email:syntheticAccountEmail(id),password:`korbritto-public-demo-${id}`,
   });
   if(error||!data.user||!data.session)throw new Error('INVALID_CREDENTIALS');
   if(data.user.app_metadata?.taxpay_synthetic_id!==id||
