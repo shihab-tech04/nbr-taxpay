@@ -112,6 +112,8 @@ export interface ChallanReceipt {
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;
+  /** Optional receipt contact for record display; does not imply email delivery. */
+  receiptEmail?: string;
   /** Travel Tax UX contract; no actual government passport/A-Challan verification. */
   travelDetails?: {
     mode: 'LAND' | 'WATER';
