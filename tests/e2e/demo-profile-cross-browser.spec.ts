@@ -83,7 +83,7 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await a.locator('#beneficiary-list').click();
     await a.locator('#beneficiary-list-menu').getByRole('button',{name:'Clients',exact:true}).click();
     await expect.poll(()=>records.get('user1')!.selectedListId).toBe(uuid(102));
-    await a.locator('button.citizen-language.citizen-desktop-control').click();
+    await a.locator('.taxpayer-reference-rail-bottom').getByRole('button',{name:/Language/}).click();
     await expect.poll(()=>records.get('user1')!.language).toBe('bn');
     const b=await second.newPage();
     await login(b,'user1');
