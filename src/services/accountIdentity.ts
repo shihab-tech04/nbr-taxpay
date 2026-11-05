@@ -2,6 +2,7 @@ import { createContext, createElement, useContext, useEffect, useState, type Rea
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import {flushAccountViewPreferences} from './accountViewPreferences';
+import {flushAccountRouteVisits} from './accountRouteActivity';
 
 /**
  * Application Auth identity ONLY. Never infer eTIN ownership, NBR taxpayer
@@ -65,9 +66,12 @@ export async function signOutApplicationAccount(): Promise<{ ok: boolean; error?
   try {
     const {data:current,error:identityError}=await supabase.auth.getUser();
     if(identityError)throw identityError;
-    if(current.user)await flushAccountViewPreferences(current.user.id);
+    if(current.user){
+      await flushAccountViewPreferences(current.user.id);
+      await flushAccountRouteVisits(current.user.id);
+    }
   } catch {
-    return { ok:false, error:'Your account settings could not be saved. Please retry signing out.' };
+    return { ok:false, error:'Your account settings or activity could not be saved. Please retry signing out.' };
   }
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   return error ? { ok: false, error: error.message } : { ok: true };
