@@ -118,7 +118,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
   const [previewAccount, setPreviewAccount] = useState<DemoUser | null>(storedPreviewAccount);
   const [legacyDemoUser, setLegacyDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
-  const demoUser = previewAccount ?? legacyDemoUser;
+  // Signed-in sample scenarios now use a real Auth UID for saved beneficiary
+  // ownership, while their fictional display profile remains unchanged.
+  const authenticatedScenario=getDemoUser(accountUser?.app_metadata?.taxpay_synthetic_id);
+  const demoUser = authenticatedScenario ?? previewAccount ?? legacyDemoUser;
   const demoUserRef = useRef(legacyDemoUser);
   const [userRole, setUserRoleState] = useState<UserRole>(() => {
     const search = new URLSearchParams(window.location.search);
@@ -128,6 +131,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ?? 'GUEST';
   });
   const userRoleRef = useRef(userRole);
+  useEffect(()=>{
+    if(authenticatedScenario){
+      setUserRoleState(authenticatedScenario.role);
+      userRoleRef.current=authenticatedScenario.role;
+    }
+  },[accountUser?.id]);
   const setUserRole = (role: UserRole) => {
     userRoleRef.current = role;
     setUserRoleState(role);
