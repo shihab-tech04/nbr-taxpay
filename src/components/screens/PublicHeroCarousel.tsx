@@ -102,6 +102,18 @@ const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }))
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
 function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
+  // The keyed picture already retries when CMS changes its image URL. Also
+  // retry an unchanged URL after a temporary network/storage outage recovers.
+  useEffect(() => {
+    if (!imageFailed) return;
+    const retry = () => setImageFailed(false);
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    return () => {
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+    };
+  }, [imageFailed]);
   const fallbackImage = fallbackSlides.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
