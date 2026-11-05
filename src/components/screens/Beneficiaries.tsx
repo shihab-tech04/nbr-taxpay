@@ -1,5 +1,6 @@
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -76,6 +77,7 @@ export function Beneficiaries(){
     return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
+  const initialRequestRef=useRef<symbol|null>(null);
   const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
@@ -87,14 +89,19 @@ export function Beneficiaries(){
 
   useEffect(()=>{
     let cancelled=false;
-    if(checkingIdentity)return()=>{cancelled=true;};
+    if(checkingIdentity){initialRequestRef.current=null;return()=>{cancelled=true;};}
+    const requestToken=Symbol('beneficiary-initial-load');
+    initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
     loadBeneficiaries(owner).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
       setActiveList(data.lists[0]?.id??'');
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
-      .finally(()=>{if(!cancelled)setLoading(false);});
+      .finally(()=>{
+        if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
+        if(!cancelled)setLoading(false);
+      });
     return()=>{cancelled=true;};
   },[owner,checkingIdentity]);
 
@@ -105,8 +112,11 @@ export function Beneficiaries(){
     if(checkingIdentity || busy)return;
     let cancelled=false;
     let revision=0;
+    const gate=createBeneficiaryAutoRefreshGate();
     const refresh=()=>{
-      if(document.visibilityState==='hidden')return;
+      // Browsers commonly fire visibilitychange and focus together. The
+      // mount load already has the fresh data; do not issue a second read.
+      if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
       const current=++revision;
       void loadBeneficiaries(owner).then(data=>{
         if(cancelled || current!==revision)return;
@@ -116,7 +126,7 @@ export function Beneficiaries(){
       }).catch(()=>{
         // The last verified snapshot is still visible. A manual reload gives
         // feedback if the transport or session remains unavailable.
-      });
+      }).finally(()=>gate.finish());
     };
     window.addEventListener('focus',refresh);
     document.addEventListener('visibilitychange',refresh);
