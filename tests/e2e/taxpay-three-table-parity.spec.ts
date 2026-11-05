@@ -36,7 +36,7 @@ for(const language of ['en','bn'] as const){
       await expect(row).toBeVisible();
       if(view==='history'&&desktop){
         await expect(row.locator('td')).toHaveCount(4);
-        await expect(header).toContainText(language==='bn'?'পেমেন্ট':'Payment');
+        await expect(header!).toContainText(language==='bn'?'পেমেন্ট':'Payment');
       }
       if(view==='beneficiaries'&&desktop)await expect(row.locator('td')).toHaveCount(4);
       if(view==='beneficiaries'&&!desktop)await expect(row).toContainText(language==='bn'?'টিআইএন':'TIN');
