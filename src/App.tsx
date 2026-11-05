@@ -240,9 +240,9 @@ const MainRouter: React.FC = () => {
                 {language === 'bn' ? 'করদাতা ওয়ার্কস্পেস দেখুন' : 'Explore taxpayer workspace'}
               </button>
             </>}
-            <button type="button" onClick={() => navigate('taxpayer_login')}>
+            {sampleJourneysEnabled && <button type="button" onClick={() => navigate('taxpayer_login')}>
               {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
-            </button>
+            </button>}
           </section>
         ) : <>
           <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেজ লোড হচ্ছে…' : 'Loading page…'}</p>}>
