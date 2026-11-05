@@ -2,15 +2,15 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-// Regression gate: Office may inspect canonical TaxPay SQL only through an
-// active verified Auth administrator; it never receives an edit policy.
-test('verified portal administrator read-only Beneficiaries RLS is scoped to canonical records',()=>{
-  const sql=readFileSync('supabase/migrations/20261102045900_taxpay_beneficiary_verified_admin_read.sql','utf8');
-  assert.match(sql,/on public\.taxpay_beneficiary_lists for select to authenticated/);
-  assert.match(sql,/on public\.taxpay_beneficiaries for select to authenticated/);
-  assert.match(sql,/administrator\.user_uid = \(select auth\.uid\(\)\)/);
-  assert.match(sql,/administrator\.active = true/);
-  assert.match(sql,/administrator\.verified_at <= now\(\)/);
-  assert.doesNotMatch(sql,/for (?:insert|update|delete) to authenticated/i);
-  assert.doesNotMatch(sql,/taxpay_guest_private\.|alter policy|disable row level security/i);
+// Historical migration granted admin access. The later forward-only migration
+// must cancel it while preserving all owner-scoped operations.
+test('beneficiary address-book access is taxpayer owner only, not a portal-admin privilege',()=>{
+  const oldSql=readFileSync('supabase/migrations/20261102045900_taxpay_beneficiary_verified_admin_read.sql','utf8');
+  const newSql=readFileSync('supabase/migrations/20261105150000_taxpay_beneficiary_owner_only.sql','utf8');
+  assert.match(oldSql,/create policy beneficiary_lists_select_verified_portal_admin/i);
+  assert.match(oldSql,/create policy beneficiaries_select_verified_portal_admin/i);
+  assert.match(newSql,/drop policy if exists beneficiary_lists_select_verified_portal_admin/i);
+  assert.match(newSql,/drop policy if exists beneficiaries_select_verified_portal_admin/i);
+  assert.doesNotMatch(newSql,/create policy [^;]*verified_portal_admin/i);
+  assert.doesNotMatch(newSql,/taxpay_guest_private\.|disable row level security/i);
 });
