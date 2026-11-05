@@ -2,6 +2,7 @@ import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,T
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
+import {activePreviewSession,savePreviewSetting} from '../../services/previewAccountSession';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -9,7 +10,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
-import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
@@ -21,7 +22,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -78,10 +79,14 @@ export function Beneficiaries(){
     return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
-  const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id;
+  const savedListId=owner
+    ?user?.user_metadata?.taxpay_last_beneficiary_list_id
+    :previewAccount?activePreviewSession()?.selectedListId:null;
   const rememberList=(id:string)=>{
-    if(!owner)return; // Preview/guest views do not own account SQL or cross-device settings.
-    void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id).catch(()=>{
+    const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
+      :previewAccount?savePreviewSetting('selected-list',id):null;
+    if(!save)return;
+    void save.catch(()=>{
       setNotice({en:'Could not remember your selected list for next login. Please retry.',
         bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
     });
@@ -116,7 +121,7 @@ export function Beneficiaries(){
         if(!cancelled)setLoading(false);
       });
     return()=>{cancelled=true;};
-  },[owner,checkingIdentity]);
+  },[owner,checkingIdentity,previewAccount?.id]);
 
   // Refresh across tabs and after returning from payments. Keep the current
   // list visible while reading; never replace a valid snapshot with an empty
@@ -390,10 +395,11 @@ export function Beneficiaries(){
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
   const restoreFromThisBrowser=async()=>{
-    if(!owner||restoring)return;
+    if((!owner&&!previewAccount)||restoring)return;
     setRestoring(true);setRecoveryError('');
     try {
-      const result=await recoverGuestBeneficiariesToProfile(owner);
+      const result=owner?await recoverGuestBeneficiariesToProfile(owner)
+        :await recoverLegacyGuestBeneficiariesToPreview();
       await reload();
       setGuestRecoveryDone(true);
       setNotice({en:result.people?`Restored ${result.people} beneficiaries to your profile.`:'Your saved beneficiaries are already available in your profile.',bn:result.people?`আপনার প্রোফাইলে ${result.people} জন উপকারভোগী ফিরিয়ে আনা হয়েছে।`:'সংরক্ষিত উপকারভোগীরা ইতিমধ্যে আপনার প্রোফাইলে আছেন।'});
@@ -417,7 +423,7 @@ export function Beneficiaries(){
         <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>setEntryChoiceOpen(true)}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
       </div>
     </header>
-    {owner&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
+    {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}

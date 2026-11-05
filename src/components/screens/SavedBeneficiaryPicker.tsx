@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
 import {useAccountIdentity} from '../../services/accountIdentity';
-import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {useTaxState} from '../../services/taxState';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
@@ -20,7 +20,7 @@ interface SavedBeneficiaryPickerProps {
 /** Signed-in Step 1 uses the existing private beneficiary lists, never free-form taxpayer entry. */
 export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins}:SavedBeneficiaryPickerProps){
   const {user,loading:checkingIdentity}=useAccountIdentity();
-  const {navigate,setPaymentServiceChoiceOpen}=useTaxState();
+  const {navigate,previewAccount,setPaymentServiceChoiceOpen}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
@@ -66,7 +66,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     return()=>{cancelled=true;};
     // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user?.id,checkingIdentity,refresh,onAvailableTins]);
+  },[user?.id,previewAccount?.id,checkingIdentity,refresh,onAvailableTins]);
 
   // A payment step can remain mounted while beneficiaries change in another
   // tab. Re-read the same identity-scoped source on return to the tab.
@@ -77,12 +77,13 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     return()=>{window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
   },[]);
 
-  const restoreAvailable=Boolean(user?.id&&hasStoredGuestBeneficiaries()&&!recoveryDone);
+  const restoreAvailable=Boolean((user?.id||previewAccount)&&hasStoredGuestBeneficiaries()&&!recoveryDone);
   async function restoreSavedLists(){
-    if(!user?.id||restoring)return;
+    if((!user?.id&&!previewAccount)||restoring)return;
     setRestoring(true);setRestoreInfo('');
     try {
-      const recovered=await recoverGuestBeneficiariesToProfile(user.id);
+      const recovered=user?.id?await recoverGuestBeneficiariesToProfile(user.id)
+        :await recoverLegacyGuestBeneficiariesToPreview();
       setRecoveryDone(true);
       setRestoreInfo(recovered.people
         ? tr('Saved beneficiaries restored to your profile.','সংরক্ষিত উপকারভোগীরা আপনার প্রোফাইলে যুক্ত হয়েছে।')

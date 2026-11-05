@@ -35,7 +35,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
-  const [error, setError] = useState<'invalid'|'already_signed_in'|null>(null);
+  const [error, setError] = useState<'invalid'|'already_signed_in'|'unavailable'|null>(null);
+  const [signingIn,setSigningIn]=useState(false);
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
   const bn = language === 'bn';
@@ -47,19 +48,21 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   // Embedded login still focuses the first field when entered from the payment stepper.
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!credentialsReady) return;
+    if (!credentialsReady||signingIn) return;
     if (verifiedApplicationUser) {
       setError('already_signed_in');
       return;
     }
-    if (!loginPreviewAccount(userId, password, { preserveRoute: preservePaymentJourney })) {
-      setError('invalid');
-      inputRef.current?.focus();
-    } else {
-      onSuccess?.();
-    }
+    setSigningIn(true);setError(null);
+    try{
+      const success=await loginPreviewAccount(userId,password,{preserveRoute:preservePaymentJourney});
+      if(!success){setError('invalid');inputRef.current?.focus();}
+      else onSuccess?.();
+    }catch{
+      setError('unavailable');
+    }finally{setSigningIn(false);}
   };
 
   const title = bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`;
@@ -103,7 +106,9 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'
             ? (bn ? 'আগে বর্তমান অ্যাকাউন্ট থেকে সাইন আউট করুন।' : 'Sign out of the current account before switching users.')
-            : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
+            : error === 'unavailable'
+              ? (bn ? 'আপনার প্রোফাইল লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Could not load your saved profile. Please retry.')
+              : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
         </p>}
       </form>
     </section>;
@@ -117,7 +122,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     className="taxpayer-login-modal"
     service="login"
     initialFocusSelector="#taxpayer-login-user-id"
-    footer={<TaxpayerLoginFooter formId="taxpay-standalone-login-form" disabled={!credentialsReady} language={language} />}
+    footer={<TaxpayerLoginFooter formId="taxpay-standalone-login-form" disabled={!credentialsReady||signingIn} language={language} />}
   >
     {content}
   </TaxPayModal>;

@@ -1,4 +1,5 @@
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
+import {activePreviewSession,PREVIEW_USER_KEY} from './previewAccountSession';
 import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficiaries';
 
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
@@ -33,7 +34,16 @@ function createCapability(): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-function getCapability(): { value: string; needsRegistration: boolean } {
+type GuestSource='active'|'legacy';
+function getCapability(source:GuestSource='active'): { value: string; needsRegistration: boolean } {
+  if(source==='active'){
+    const preview=activePreviewSession();
+    if(preview)return {value:preview.capability,needsRegistration:false};
+    // A stale browser-local preview must never silently load another
+    // browser's unrelated anonymous address book as the preview user's data.
+    if(import.meta.env?.VITE_SUPABASE_DISABLED!=='true'&&typeof window!=='undefined'&&window.sessionStorage?.getItem(PREVIEW_USER_KEY))
+      throw new Error('Your demo session needs sign-in again. No data was discarded.');
+  }
   const storage = browserStorage();
   let value: string | null;
   try {
@@ -61,10 +71,10 @@ function getCapability(): { value: string; needsRegistration: boolean } {
   return { value: created, needsRegistration: true };
 }
 
-async function post<T>(action: string, fields: Record<string, unknown> = {}): Promise<T> {
+async function post<T>(action: string, fields: Record<string, unknown> = {}, source:GuestSource='active'): Promise<T> {
   const { url, publishableKey } = TAXPAY_PUBLIC_ENDPOINT;
   if (!url || !publishableKey) throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
-  const capability = getCapability();
+  const capability = getCapability(source);
   const endpoint = `${url.replace(/\/$/, '')}/functions/v1/taxpay-guest-beneficiaries`;
   const send = async (nextAction: string, nextFields: Record<string, unknown> = {}) => {
     let response: Response;
@@ -115,10 +125,10 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}): Pr
 /** Only idempotent reads retry once on transport/service interruption. A failed
  * write is never replayed automatically; the original capability is preserved.
  */
-async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unknown>={}):Promise<T[]> {
+async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unknown>={},source:GuestSource='active'):Promise<T[]> {
   for(let attempt=0;attempt<2;attempt++){
     try {
-      const rows=await post<T[]>(action,fields);
+      const rows=await post<T[]>(action,fields,source);
       if(!Array.isArray(rows))throw new Error('Saved beneficiary data could not be read. Please retry.');
       return rows;
     } catch(error) {
@@ -129,26 +139,36 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
   throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
 }
 
-export async function loadGuestBeneficiaries(): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
+async function loadFromSource(source:GuestSource):Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
   // Existing capability sessions can fetch independent lists and the first page
   // concurrently, avoiding a full extra Edge Function round trip on every read.
   // A first-time session must finish capability registration before concurrent reads.
-  const initialized = hasStoredGuestBeneficiaries();
+  const initialized = source==='active'&&activePreviewSession()
+    ? true : hasStoredGuestBeneficiaries();
   const [lists, firstPage] = initialized
     ? await Promise.all([
-        readGuestPage<GuestList>('lists'),
-        readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize }),
+        readGuestPage<GuestList>('lists',{},source),
+        readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize },source),
       ])
-    : [await readGuestPage<GuestList>('lists'), null];
+    : [await readGuestPage<GuestList>('lists',{},source), null];
   const people: GuestPerson[] = firstPage ? [...firstPage] : [];
   for (let offset = firstPage ? pageSize : 0;
        firstPage ? (firstPage.length === pageSize) : true;
        offset += pageSize) {
-    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize });
+    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize },source);
     people.push(...page);
     if (page.length < pageSize) break;
   }
   return { lists, people };
+}
+
+/** Active preview reads are always server-issued, profile-specific. */
+export function loadGuestBeneficiaries(){
+  return loadFromSource('active');
+}
+/** Old anonymous browser books stay available only for explicit recovery. */
+export function loadLegacyGuestBeneficiaries(){
+  return loadFromSource('legacy');
 }
 
 export function createGuestBeneficiaryList(name: string): Promise<GuestList> {

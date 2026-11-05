@@ -3,6 +3,17 @@ import { expect, test } from '@playwright/test';
 test('a User ID popup session never creates a Supabase authenticated user',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Backend isolation is viewport-independent');
   const calls:string[]=[];
+  // Public user-ID previews use the demo Edge capability, never Auth. This
+  // disconnected test mocks that endpoint rather than calling production.
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    const body=route.request().postDataJSON() as {action?:string;userId?:string};
+    if(body.action!=='demo-login'||body.userId!=='user2')throw Error('Unexpected demo endpoint call');
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:{
+      profileId:'user2',capability:'E'.repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000002',
+      language:'en',selectedListId:null,
+    }})});
+  });
   page.on('request',req=>{
     if(new URL(req.url()).hostname.endsWith('.supabase.co') && /\/auth\/v1\/token/.test(req.url()))
       calls.push(req.url());

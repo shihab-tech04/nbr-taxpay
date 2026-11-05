@@ -14,6 +14,7 @@ import {
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
+import {activePreviewSession,signInPreviewProfile,clearPreviewSession,savePreviewSetting,flushPreviewSettings} from './previewAccountSession';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
@@ -38,9 +39,9 @@ export interface TaxStateContextType {
   setPaymentBeneficiaryPrefill: (value: PaymentBeneficiaryPrefill | null) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
-  loginPreviewAccount: (userId: string, password: string, options?: { preserveRoute?: boolean }) => boolean;
+  loginPreviewAccount: (userId: string, password: string, options?: { preserveRoute?: boolean }) => Promise<boolean>;
   clearPreviewAccount: () => void;
-  logoutPreviewAccount: () => void;
+  logoutPreviewAccount: () => Promise<void>;
   routeParams: Record<string, any>;
   navigate: (route: string, params?: Record<string, any>) => void;
   language: Language;
@@ -75,9 +76,9 @@ const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined
 export const sampleJourneysEnabled = import.meta.env.DEV;
 const permittedDemoUser = (value: unknown) => sampleJourneysEnabled ? getDemoUser(value) : null;
 const previewStorageKey = 'taxpay-taxpayer-preview-user';
-// Restore the previously approved User ID session after a page refresh.
-// This is a browser-local project profile, not a privileged API identity.
-const storedPreviewAccount = () => getDemoUser(window.sessionStorage.getItem(previewStorageKey));
+// Only a server-issued preview capability can restore a published user session.
+// Preserve browser-local compatibility in explicitly offline test builds.
+const storedPreviewAccount = () => getDemoUser(activePreviewSession()?.profileId ?? (import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? window.sessionStorage.getItem(previewStorageKey) : null));
 
 // Browser history can restore a *visual-only* taxpayer sample after refresh.
 // This is never an identity, permission or tax-credit entitlement, and a newly
@@ -177,7 +178,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if(checkingAccount)return;
     const saved=accountUser
       ?validSavedLanguage(accountUser.user_metadata?.taxpay_language)
-      :readBrowserLanguage(previewAccount?.id??null);
+      :previewAccount
+        ?activePreviewSession()?.language??readBrowserLanguage(previewAccount.id)
+        :null;
     const fallback=new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en';
     applyLanguage(saved??fallback);
     setLanguagePreferenceError(false);
@@ -191,8 +194,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if(accountUser?.id){
       void saveAccountViewPreference(accountUser.id,'taxpay_language',lang)
         .catch(()=>setLanguagePreferenceError(true));
-    } else {
-      saveBrowserLanguage(previewAccount?.id??null,lang);
+    } else if(previewAccount){
+      saveBrowserLanguage(previewAccount.id,lang);
+      void savePreviewSetting('language',lang).catch(()=>setLanguagePreferenceError(true));
     }
   };
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
@@ -213,7 +217,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (!previewAccount) setUserRole('GUEST');
       }
       if (route === 'secure_workspace' && previewAccount) {
-        window.sessionStorage.removeItem(previewStorageKey);
+        clearPreviewSession();
         setPreviewAccount(null);
         setUserRole('GUEST');
       }
@@ -251,13 +255,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => window.removeEventListener('popstate', onPopState);
   }, [previewAccount]);
 
-  // Temporary matching ID/password credentials only select a browser-local UI profile.
-  // This deliberately creates no Supabase Auth session or API entitlement.
-  const loginPreviewAccount = (userId: string, password: string, options?: { preserveRoute?: boolean }): boolean => {
+  // Public fictional accounts use a server-issued per-demo capability.
+  // No Supabase Auth identity, tax credit or real taxpayer permissions are granted.
+  const loginPreviewAccount = async (userId: string, password: string, options?: { preserveRoute?: boolean }): Promise<boolean> => {
     const selected = getDemoUser(userId.trim().toLowerCase());
     if (!selected || password !== selected.id) return false;
-    window.sessionStorage.setItem(previewStorageKey, selected.id);
+    // Isolated offline regression builds retain the original synthetic preview.
+    // Production never falls back to browser-only login on a service error.
+    const offline=import.meta.env?.VITE_SUPABASE_DISABLED==='true';
+    const profile=offline?null:await signInPreviewProfile(selected.id,password);
+    if(!offline&&!profile)return false;
+    if(offline)window.sessionStorage.setItem(previewStorageKey,selected.id);
     setPreviewAccount(selected);
+    if(profile)applyLanguage(profile.language);
     setLegacyDemoUser(null);
     demoUserRef.current = null;
     setUserRole(selected.role);
@@ -270,13 +280,16 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return true;
   };
   const clearPreviewAccount = (): void => {
-    window.sessionStorage.removeItem(previewStorageKey);
+    clearPreviewSession();
     setPreviewAccount(null);
     setLegacyDemoUser(null);
     demoUserRef.current = null;
     setUserRole('GUEST');
   };
-  const logoutPreviewAccount = (): void => {
+  const logoutPreviewAccount = async (): Promise<void> => {
+    // Never clear the preview capability while a Bangla/list preference is
+    // still being saved. A failed write keeps this session available to retry.
+    if(import.meta.env?.VITE_SUPABASE_DISABLED!=='true')await flushPreviewSettings();
     clearPreviewAccount();
     navigate('landing');
   };
