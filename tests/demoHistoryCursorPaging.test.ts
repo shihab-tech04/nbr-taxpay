@@ -24,14 +24,17 @@ test('full demo payment history reads records after legacy 200 and retains stabl
      firstCalls++;assert.equal(args.p_actor,'user1');return Response.json(first);
    }
    if(path.endsWith('/demo_story1_demo_history_page')){
-     pages++;assert.equal(args.p_before_id,first[199].transactionId);
+     pages++;
+     if(pages===1){assert.equal(args.p_before_id,null);return Response.json(first.slice(0,100));}
+     if(pages===2){assert.equal(args.p_before_id,first[99].transactionId);return Response.json(first.slice(100));}
+     assert.equal(args.p_before_id,first[199].transactionId);
      return Response.json([transaction(1)]);
    }
    throw Error('Unexpected RPC '+path);
  };
  try{
    const records=await getDemoStoryPaymentHistory('user1','payer');
-   assert.equal(firstCalls,1);assert.equal(pages,1);assert.equal(records.length,201);
+   assert.equal(firstCalls,1);assert.equal(pages,3);assert.equal(records.length,201);
    assert.equal(records[0].transactionId,transaction(201).transactionId);
    assert.equal(records[200].transactionId,transaction(1).transactionId);
    assert.equal(records[200].allocations[0].id,transaction(1).transactionId+'-1');
