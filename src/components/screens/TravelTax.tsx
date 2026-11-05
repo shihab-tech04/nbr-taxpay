@@ -702,6 +702,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     value={phone} placeholder="01XXXXXXXXX"
                     onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); }}/>
                 </div>
+                <div className="travel-flow__field">
+                  <label htmlFor="travel-receipt-email">{tr('Email address (optional)', 'ইমেইল ঠিকানা (ঐচ্ছিক)')}</label>
+                  <input id="travel-receipt-email" type="email" inputMode="email" autoComplete="email"
+                    maxLength={254} placeholder="name@example.com" value={receiptEmail}
+                    aria-invalid={!isOptionalReceiptEmailValid(receiptEmail) || undefined}
+                    aria-describedby={!isOptionalReceiptEmailValid(receiptEmail) ? 'travel-email-error' : undefined}
+                    onChange={event => { setReceiptEmail(event.target.value); setError(''); }}/>
+                  {!isOptionalReceiptEmailValid(receiptEmail) && <p id="travel-email-error" role="alert" className="text-sm text-taxpay-error">
+                    {tr('Enter a valid email address or leave it blank.', 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।')}
+                  </p>}
+                </div>
               </div>
             </PaymentFormSection>
           </section>}
