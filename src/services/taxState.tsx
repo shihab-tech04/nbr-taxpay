@@ -14,6 +14,7 @@ import {
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
+import {recordAccountInteraction,saveAccountUiState} from './accountExperience';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
@@ -105,6 +106,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPaymentBeneficiaryPrefill(null);
     setPaymentServiceInitialSelection(service ?? null);
     setPaymentServiceChoiceOpenState(true);
+    if(accountUser?.id){
+      void recordAccountInteraction(accountUser.id,'PAYMENT_ENTRY','service_choice').catch(()=>undefined);
+      if(service)void saveAccountUiState(accountUser.id,'payment_service',service).catch(()=>undefined);
+    }
   };
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     // Public payment discovery is the primary citizen entry. TaxPay account access remains available by explicit deep link.
@@ -210,6 +215,10 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const route = validRoute(requestedRoute);
     setCurrentRoute(route);
     setRouteParams(params);
+    if(accountUser?.id && !['landing','office_login','taxpayer_login'].includes(route)){
+      void saveAccountUiState(accountUser.id,'last_route',route).catch(()=>undefined);
+      void recordAccountInteraction(accountUser.id,'NAVIGATE',route).catch(()=>undefined);
+    }
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
