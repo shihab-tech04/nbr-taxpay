@@ -64,7 +64,8 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   await expect(suggestions.getByRole('option')).toHaveCount(10);
   await expect(suggestions.getByText('Sample passport numbers')).toBeVisible();
   const withPopup=await row.boundingBox();
-  expect(withPopup?.height).toBeGreaterThan((baseline?.height ?? 0) + 100);
+  // Focus opens the suggestions immediately, so baseline may already include them.
+  expect(withPopup?.height).toBeGreaterThan(200);
   // Suggestions take up space inside the form instead of covering the
   // medical assessment checkbox and receipt contact below them.
   const suggestionBounds=await suggestions.boundingBox();
