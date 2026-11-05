@@ -42,6 +42,8 @@ test('published payment picker never substitutes browser capability for signed-i
   assert.ok(picker.includes('onAvailableTins([])'));
   assert.ok(picker.includes('{!accountRequired&&!loading'));
   assert.ok(!app.includes("previewReadOnlyRoutes.has(currentRoute) || currentRoute === 'beneficiaries'"));
-  assert.ok(app.includes('verifiedOnly'));
+  assert.ok(app.includes('beneficiaryLoginRequired'));
+  assert.ok(login.includes('await signInSyntheticTaxpayer(userId,password)'));
+  assert.ok(app.includes('verifiedApplicationUser'));
   assert.ok(login.includes('supabase.auth.signInWithOtp'));
 });
