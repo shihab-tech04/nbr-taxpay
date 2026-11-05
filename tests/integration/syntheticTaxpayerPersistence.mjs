@@ -14,7 +14,7 @@ assert.equal(provision.status,200,await provision.text());
 const login=async()=> {
  const response=await request('/auth/v1/token?grant_type=password',{
   method:'POST',headers:json,
-  body:JSON.stringify({email:'taxpay-sample-user1@example.com',password:'user1'})});
+  body:JSON.stringify({email:'taxpay-sample-user1@example.com',password:'korbritto-public-demo-user1'})});
  assert.equal(response.status,200,await response.text());
  return response.json();
 };
@@ -61,7 +61,7 @@ const otherReady=await request('/functions/v1/taxpay-synthetic-account',{
 assert.equal(otherReady.status,200,await otherReady.text());
 const otherLogin=await request('/auth/v1/token?grant_type=password',{
   method:'POST',headers:json,
-  body:JSON.stringify({email:'taxpay-sample-user2@example.com',password:'user2'})});
+  body:JSON.stringify({email:'taxpay-sample-user2@example.com',password:'korbritto-public-demo-user2'})});
 assert.equal(otherLogin.status,200,await otherLogin.text());
 const other=await otherLogin.json();
 for(const table of ['taxpay_beneficiary_lists','taxpay_account_ui_state','taxpay_account_interactions']){
