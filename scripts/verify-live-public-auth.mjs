@@ -24,18 +24,8 @@ try {
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     if(overflow>2)throw new Error('Private entry overflow: '+overflow+'px');
 
-    if(process.env.GITHUB_EVENT_NAME==='pull_request'){
-      // Preflight reads the actual last-published User ID sign-in. Never assume
-      // an older email-only version is still deployed when Main has advanced.
-      const entry=page.getByRole('link',{name:'Sign In'});
-      await expect(entry).toHaveAttribute('href',/action=taxpayer_login/);
-      await entry.click();
-      const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
-      await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
-      await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
-      await page.screenshot({path:'test-results/live-auth-baseline-'+name+'.png',fullPage:true});
-    }else{
-      // The actual new release must show the approved login, not email-only entry.
+    {
+      // Current published baseline and candidate both use the approved User ID/password flow.
       const userIdEntry=page.getByRole('link',{name:'Sign In'});
       await expect(userIdEntry).toHaveAttribute('href',/action=taxpayer_login/);
       await userIdEntry.click();
@@ -142,7 +132,7 @@ try {
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toHaveCount(0);
     } else {
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByRole('link', { name: 'সাইন ইন' })).toHaveAttribute('href', /action=taxpayer_login/);
     }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

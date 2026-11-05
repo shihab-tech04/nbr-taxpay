@@ -14,7 +14,6 @@ import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceC
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { GuestPayment } from './components/screens/GuestPayment';
 import { TravelTax } from './components/screens/TravelTax';
-import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicReport } from './components/screens/PublicReport';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
@@ -120,11 +119,6 @@ const MainRouter: React.FC = () => {
     // Demo account notifications share the SQL authorization inbox used by the popup.
     if(previewAccount&&currentRoute==='account_notifications'&&!verifiedApplicationUser){
       return <NotificationsView />;
-    }
-    // Track payment uses the in-page lookup for verified accounts. Synthetic
-    // preview accounts keep their established transaction workspace below.
-    if (currentRoute === 'history' && Boolean(routeParams.trackPayment) && showActivitySections && verifiedApplicationUser) {
-      return <ReceiptLookup activityTabs accountContext />;
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.

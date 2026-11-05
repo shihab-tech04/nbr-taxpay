@@ -1,5 +1,5 @@
-import {Fragment,type ComponentPropsWithoutRef,type ReactNode} from 'react';
-import {Search} from 'lucide-react';
+import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
+import {ChevronLeft,ChevronRight,Search} from 'lucide-react';
 
 /** Shared Korbritto table primitives.
  * The Board Meeting reference guides presentation only; the caller retains
@@ -63,6 +63,48 @@ export function TaxPayRecordToolbar({title,count,total,countLabel,search,searchL
   </TaxPayTableToolbar>;
 }
 
+
+/** Controlled pagination, matching Convay's shared page/total/per-page contract.
+ * Data owners pass the current page of rows; this control never silently truncates records.
+ */
+export type TaxPayTablePaginationProps = {
+  page: number;
+  perPage: number;
+  total: number;
+  onPageChange: (page:number)=>void;
+  labels?: {previous:string;next:string;showing:string;of:string;records:string;page:string};
+};
+export function TaxPayTablePagination({page,perPage,total,onPageChange,labels}:TaxPayTablePaginationProps) {
+  if(!Number.isFinite(perPage)||perPage<=0||!Number.isFinite(total)||total<=perPage)return null;
+  const pages=Math.ceil(total/perPage);
+  const current=Math.max(1,Math.min(pages,Math.trunc(page)||1));
+  const from=(current-1)*perPage+1;
+  const to=Math.min(current*perPage,total);
+  const text={previous:'Previous',next:'Next',showing:'Showing',of:'of',records:'records',page:'Page',...labels};
+  const first=Math.max(1,Math.min(current-2,pages-4));
+  const last=Math.min(pages,first+4);
+  return <nav className="taxpay-table-pagination" aria-label={text.page+' navigation'}>
+    <span className="taxpay-table-pagination__info" role="status" aria-live="polite">
+      {text.showing} {from}–{to} {text.of} {total} {text.records}
+    </span>
+    <div className="taxpay-table-pagination__controls">
+      <button type="button" disabled={current===1} onClick={()=>onPageChange(current-1)}
+        aria-label={text.previous} className="taxpay-table-pagination__button">
+        <ChevronLeft size={16} aria-hidden="true"/>{text.previous}
+      </button>
+      {Array.from({length:last-first+1},(_,index)=>first+index).map(value=>
+        <button key={value} type="button" onClick={()=>onPageChange(value)}
+          aria-label={text.page+' '+value} aria-current={value===current?'page':undefined}
+          className="taxpay-table-pagination__page">{value}</button>
+      )}
+      <button type="button" disabled={current===pages} onClick={()=>onPageChange(current+1)}
+        aria-label={text.next} className="taxpay-table-pagination__button">
+        {text.next}<ChevronRight size={16} aria-hidden="true"/>
+      </button>
+    </div>
+  </nav>;
+}
+
 export function TaxPayTableState({className,...rest}:DivProps) {
   return <div {...rest} role="status" className={merge('taxpay-table-state',className)}/>;
 }
@@ -83,11 +125,11 @@ type RecordListProps=Omit<DivProps,'children'> & {
 };
 export function TaxPayRecordList({variant,headers,children,className,'aria-label':ariaLabel,...rest}:RecordListProps){
   const previousHeadingClass=variant==='payments'?'taxpayer-transaction-list__columns':variant==='beneficiaries'?'beneficiary-directory__columns':'';
-  return <div {...rest} data-unified-table="true" data-record-layout={variant} className={merge('taxpay-record-list',className)}>
-    <div className={merge('taxpay-record-list__columns',previousHeadingClass)} aria-hidden="true">
-      {headers.map((label,index)=><p key={index} className="taxpay-record-list__heading">{label}</p>)}
+  return <div {...rest} role="table" aria-label={ariaLabel} data-unified-table="true" data-record-layout={variant} className={merge('taxpay-record-list',className)}>
+    <div className={merge('taxpay-record-list__columns',previousHeadingClass)} role="row">
+      {headers.map((label,index)=><p key={index} role="columnheader" className="taxpay-record-list__heading">{label}</p>)}
     </div>
-    <ul aria-label={ariaLabel} className="taxpay-record-list__rows">{children}</ul>
+    <ul role="rowgroup" className="taxpay-record-list__rows">{children}</ul>
   </div>;
 }
 
@@ -122,10 +164,11 @@ type UnifiedDataProps<Row> = {
   loading?: boolean;
   error?: string;
   onRetry?: ()=>void;
+  pagination?: TaxPayTablePaginationProps;
 };
 export function TaxPayDataGrid<Row>({
   rows,columns,getRowKey,variant,ariaLabel,className,testId,mobileTestId,
-  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,loading=false,error,onRetry
+  getRowClassName,isSelected,renderMobileCard,onViewRow,toolbar,emptyLabel,loading=false,error,onRetry,pagination
 }:UnifiedDataProps<Row>){
   if(variant==='ledger'||variant==='tabular') {
     const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
@@ -163,13 +206,32 @@ export function TaxPayDataGrid<Row>({
       </li>)}
     </ul>
     </>}
+    {!loading&&!error&&pagination&&<TaxPayTablePagination {...pagination}/>}
   </>;
   }
-  return <TaxPayRecordList variant={variant} aria-label={ariaLabel} className={className}
-    headers={columns.map(column=>column.header)} data-testid={testId}>
-    {rows.map(row=><li key={getRowKey(row)} data-selected={isSelected?.(row)?'true':'false'}
-      className={merge('taxpay-record-list__row',getRowClassName?.(row))}>
-      {columns.map(column=><Fragment key={column.key}><p className="sr-only" data-record-column-label>{column.header}: </p>{column.renderCell(row)}</Fragment>)}
-    </li>)}
-  </TaxPayRecordList>;
+  return <>
+    {toolbar&&<TaxPayRecordToolbar {...toolbar}/>}
+    {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:
+     error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<button type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</button>}</TaxPayTableState>:
+     rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:
+    <TaxPayRecordList variant={variant} aria-label={ariaLabel} className={className}
+      headers={columns.map(column=>column.header)} data-testid={testId}>
+      {rows.map(row=><li key={getRowKey(row)} role="row" data-selected={isSelected?.(row)?'true':'false'}
+        tabIndex={onViewRow?0:undefined} className={merge('taxpay-record-list__row',getRowClassName?.(row))}
+        onClick={onViewRow?(event)=>{
+          if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]'))return;
+          onViewRow(row);
+        }:undefined}
+        onKeyDown={onViewRow?(event)=>{
+          if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){
+            event.preventDefault();onViewRow(row);
+          }
+        }:undefined}>
+        {columns.map(column=><div className="taxpay-record-list__cell" role="cell" key={column.key}>
+          <p className="sr-only" data-record-column-label>{column.header}: </p>{column.renderCell(row)}
+        </div>)}
+      </li>)}
+    </TaxPayRecordList>}
+    {!loading&&!error&&pagination&&<TaxPayTablePagination {...pagination}/>}
+  </>;
 }

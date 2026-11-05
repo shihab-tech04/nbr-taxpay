@@ -108,3 +108,21 @@ test('actual signed-in payment paths use shared semantic desktop tables and comp
  assert.match(shared,/renderMobileCard \? renderMobileCard\(row\) : <dl/);
  assert.match(css,/\.taxpay-mobile-table-card__field dd/);
 });
+
+
+test('Convay shared structure keeps semantic record rows, mobile views, controlled page navigation and all table states',()=>{
+  const source=read('src/components/ui/TaxPayDataTable.tsx');
+  const css=read('src/styles/taxpay-unified-table.css');
+  assert.match(source,/role="table"/);
+  assert.match(source,/role="columnheader"/);
+  assert.match(source,/role="row" data-selected=/);
+  assert.match(source,/role="cell"/);
+  assert.match(source,/export function TaxPayTablePagination/);
+  assert.match(source,/onPageChange\(current[+-]1\)/);
+  assert.match(source,/rows\.length===0&&emptyLabel/);
+  assert.match(source,/loading\?<TaxPayTableState/);
+  assert.match(source,/error\?<TaxPayTableState/);
+  assert.match(css,/\.taxpay-table-pagination__controls/);
+  assert.match(css,/\.taxpay-record-list__cell/);
+  assert.match(read('src/components/screens/User1DemoExperience.tsx'),/pagination=\{\{page:currentHistoryPage/);
+});

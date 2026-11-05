@@ -13,18 +13,18 @@ for (const language of ['en','bn'] as const) {
     await expect(cases.locator('.taxpay-record-list__heading')).toHaveText([
       tr('Case','বিষয়'),tr('Recorded reason','নথিভুক্ত কারণ'),tr('Status','অবস্থা'),tr('Actions','কার্যক্রম')
     ]);
-    await expect(cases.getByRole('listitem').first()).toBeVisible();
-    await expect(cases.getByRole('listitem').first().locator('[data-record-column-label]')).toHaveText([
+    await expect(cases.getByRole('row').nth(1)).toBeVisible();
+    await expect(cases.getByRole('row').nth(1).locator('[data-record-column-label]')).toHaveText([
       tr('Case','বিষয়')+':',tr('Recorded reason','নথিভুক্ত কারণ')+':',
       tr('Status','অবস্থা')+':',tr('Actions','কার্যক্রম')+':'
     ]);
-    const caseActionHeight=await cases.getByRole('listitem').first().getByRole('button').first().evaluate(
+    const caseActionHeight=await cases.getByRole('row').nth(1).getByRole('button').first().evaluate(
       button=>button.getBoundingClientRect().height);
     expect(caseActionHeight).toBeGreaterThanOrEqual(44);
     await page.getByRole('searchbox',{name:tr('Search case references','বিষয়ের রেফারেন্স খুঁজুন')}).fill('zz-no-matches');
     await expect(cases).toHaveCount(0);
     await page.getByRole('button',{name:tr('Clear filters','ফিল্টার মুছুন')}).click();
-    await expect(cases.getByRole('listitem').first()).toBeVisible();
+    await expect(cases.getByRole('row').nth(1)).toBeVisible();
     if(desktop){
       const columns=await cases.locator('.taxpay-record-list__row').first().evaluate(
         el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length
@@ -42,41 +42,33 @@ for (const language of ['en','bn'] as const) {
     await expect(records.locator('.taxpay-record-list__heading')).toHaveText([
       tr('Payment','পেমেন্ট'),tr('Reference','রেফারেন্স'),tr('Amount','পরিমাণ'),tr('Actions','কার্যক্রম')
     ]);
-    await expect(records.getByRole('listitem').first()).toBeVisible();
-    await expect(records.getByRole('listitem').first().locator('[data-record-column-label]')).toHaveText([
+    await expect(records.getByRole('row').nth(1)).toBeVisible();
+    await expect(records.getByRole('row').nth(1).locator('[data-record-column-label]')).toHaveText([
       tr('Payment','পেমেন্ট')+':',tr('Reference','রেফারেন্স')+':',
       tr('Amount','পরিমাণ')+':',tr('Actions','কার্যক্রম')+':'
     ]);
     await page.getByRole('searchbox',{name:tr('Search payment references','পেমেন্ট রেফারেন্স খুঁজুন')}).fill('zz-no-matches');
     await expect(records).toHaveCount(0);
     await page.getByRole('button',{name:tr('Clear search','অনুসন্ধান মুছুন')}).click();
-    await expect(records.getByRole('listitem').first()).toBeVisible();
+    await expect(records.getByRole('row').nth(1)).toBeVisible();
     await records.getByRole('button',{name:new RegExp(tr('View payment details for ','পেমেন্টের বিস্তারিত: '))}).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
   });
 
-  test('track payment focuses lookup instead of duplicating the transaction table in '+language,async({page},info)=>{
-    await page.goto('/?action=history&demoUser=user1&lang='+language);
+  test('Transactions is the single signed-in payment search in '+language,async({page},info)=>{
+    await page.goto('/?action=history&demoUser=user1&lang='+language+'&trackPayment=1');
     const nav=page.getByRole('navigation',{name:tr('Activity sections','লেনদেনের বিভাগ')});
-    await nav.getByRole('button',{name:tr('Track payment','পেমেন্ট অনুসন্ধান')}).click();
-    await expect(page.getByRole('heading',{name:tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')})).toBeVisible();
-    await expect(page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')})).toBeVisible();
-    await expect(page.locator('.taxpayer-transaction-panel')).toHaveCount(0);
-    // Track payment must not inherit dashboard-only service metrics, records or
-    // a year selector that misleadingly suggests lookup is limited by tax year.
-    await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
-    await expect(page.locator('.receipt-lookup__examples')).toHaveCount(0);
-    await expect(page.locator('.receipt-lookup__sample')).toHaveCount(0);
-    await expect(page.getByRole('combobox',{name:tr('Assessment year','করবর্ষ')})).toHaveCount(0);
-    await expect(page.getByTestId('track-payment-history-link')).toBeVisible();
-    // Preserve actual rendered evidence of the exact screenshot-reported route.
-    await page.screenshot({path:'test-results/screenshots/taxpay-unified-track-'+language+'-'+info.project.name+'.png',fullPage:true});
-    await page.getByRole('button',{name:tr('View all transactions','সব লেনদেন দেখুন')}).click();
+    await expect(nav.getByRole('button',{name:tr('Track payment','পেমেন্ট অনুসন্ধান')})).toHaveCount(0);
+    await expect(nav.getByRole('button',{name:tr('Transactions','লেনদেনসমূহ')})).toHaveAttribute('aria-current','page');
     await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
-    await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
+    await expect(page.locator('.receipt-lookup')).toHaveCount(0);
+    await expect(page.getByRole('combobox',{name:tr('Assessment year','করবর্ষ')})).toBeVisible();
+    await expect(page.getByRole('searchbox',{name:tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')})).toBeVisible();
+    await page.screenshot({path:'test-results/screenshots/taxpay-unified-transactions-'+language+'-'+info.project.name+'.png',fullPage:true});
     await page.goto('/?action=taxpayer_home&demoUser=user1&lang='+language);
     await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   });
+
 }
 
 test('desktop ledger never duplicates mobile cards under the table after changing filters',async({page})=>{
