@@ -4,6 +4,8 @@ import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
+import {supabase} from '../../services/supabaseClient';
+import {authRedirectUrl} from '../../services/secureWorkspacePolicy';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
 /** One footer action for both standalone and in-journey sign-in modals. */
@@ -19,7 +21,7 @@ export function TaxpayerLoginFooter({ formId, disabled, language }: {
   </div>;
 }
 
-export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange, emailReturnTo }: {
+export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange, emailReturnTo, verifiedOnly = false }: {
   onClose?: () => void;
   onSuccess?: () => void;
   preservePaymentJourney?: boolean;
@@ -28,8 +30,12 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   onValidityChange?: (valid: boolean) => void;
   /** Safe private destination after verified email-link authentication. */
   emailReturnTo?: string;
+  verifiedOnly?: boolean;
 } = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
+  const [email,setEmail] = useState('');
+  const [emailBusy,setEmailBusy] = useState(false);
+  const [emailNotice,setEmailNotice] = useState<'sent'|'error'|null>(null);
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +45,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const inputRef = useRef<HTMLInputElement>(null);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
-  const credentialsReady = Boolean(userId.trim() && password.trim());
+  const credentialsReady = verifiedOnly ? Boolean(email.trim().includes('@') && !emailBusy) : Boolean(userId.trim() && password.trim());
   useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
   // The shared TaxPayModal owns Escape, focus containment, overlay and focus restoration.
@@ -61,8 +67,42 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     }
   };
 
+  const sendVerifiedEmail = async (event:React.FormEvent) => {
+    event.preventDefault();
+    if(!verifiedOnly || !credentialsReady || !supabase)return;
+    setEmailBusy(true);
+    setEmailNotice(null);
+    try {
+      const redirect=authRedirectUrl(window.location.origin,import.meta.env.BASE_URL,undefined,emailReturnTo??'beneficiaries',language);
+      const {error:sendError}=await supabase.auth.signInWithOtp({
+        email:email.trim(),options:{emailRedirectTo:redirect,shouldCreateUser:true}
+      });
+      setEmailNotice(sendError?'error':'sent');
+    } catch {setEmailNotice('error');}
+    finally {setEmailBusy(false);}
+  };
+
   const title = bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`;
-  const content = <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
+  const content = verifiedOnly ? <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
+      <form id={embedded?'taxpay-embedded-login-form':'taxpay-standalone-login-form'} onSubmit={sendVerifiedEmail}>
+        <div className="taxpayer-login-field">
+          <label htmlFor="taxpayer-login-email">{bn?'ইমেইল ঠিকানা':'Email address'}</label>
+          <div className="taxpayer-login-input-wrap">
+            <UserRound size={18} aria-hidden="true"/>
+            <input ref={inputRef} id="taxpayer-login-email" type="email" autoComplete="email"
+              required disabled={emailBusy} value={email}
+              placeholder={bn?'আপনার ইমেইল লিখুন':'Enter your email'}
+              onChange={event=>{setEmail(event.target.value);setEmailNotice(null);}}/>
+          </div>
+        </div>
+        {emailNotice==='sent'&&<p role="status" className="taxpayer-login-recovery">
+          {bn?'সাইন ইন লিংক পাঠানো হয়েছে। ইমেইল খুলে লিংকটি নির্বাচন করুন।':'Sign-in link sent. Open your email and follow the link to your saved beneficiaries.'}
+        </p>}
+        {emailNotice==='error'&&<p role="alert" className="taxpayer-login-error">
+          {bn?'সাইন ইন লিংক পাঠানো যায়নি। আবার চেষ্টা করুন।':'Could not send the sign-in link. Please try again.'}
+        </p>}
+      </form>
+    </section> : <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
       <form id={embedded ? 'taxpay-embedded-login-form' : 'taxpay-standalone-login-form'} onSubmit={submit} noValidate>
         <div className="taxpayer-login-field">
           <label htmlFor="taxpayer-login-user-id">{bn ? 'ইউজার আইডি' : 'User ID'}</label>
@@ -120,7 +160,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
     className="taxpayer-login-modal"
     service="login"
-    initialFocusSelector="#taxpayer-login-user-id"
+    initialFocusSelector={verifiedOnly?"#taxpayer-login-email":"#taxpayer-login-user-id"}
     footer={<TaxpayerLoginFooter formId="taxpay-standalone-login-form" disabled={!credentialsReady} language={language} />}
   >
     {content}

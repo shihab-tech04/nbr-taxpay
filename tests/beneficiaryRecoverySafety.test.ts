@@ -31,3 +31,17 @@ test('sample beneficiaries stay browser-scoped without an unsolicited sign-in ba
   assert.doesNotMatch(page,/owner=previewAccount|owner=demoUser|owner="user1"/);
   assert.doesNotMatch(page,/beneficiaries-account-sync|For lists across devices|Sign in with email/);
 });
+
+test('published payment picker never substitutes browser capability for signed-in profile lists',()=>{
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  const app=readFileSync('src/App.tsx','utf8');
+  const login=readFileSync('src/components/screens/TaxpayerLoginDialog.tsx','utf8');
+  assert.ok(picker.includes('accountRequired=!import.meta.env.DEV && !user'));
+  assert.ok(picker.includes('if(accountRequired){'));
+  assert.ok(picker.includes('onChoose([])'));
+  assert.ok(picker.includes('onAvailableTins([])'));
+  assert.ok(picker.includes('{!accountRequired&&!loading'));
+  assert.ok(!app.includes("previewReadOnlyRoutes.has(currentRoute) || currentRoute === 'beneficiaries'"));
+  assert.ok(app.includes('verifiedOnly'));
+  assert.ok(login.includes('supabase.auth.signInWithOtp'));
+});

@@ -60,7 +60,7 @@ test('Bengali sign-in entry keeps the selected language without sample financial
   await expect(page.getByText('৳ 180,000')).toHaveCount(0);
 });
 
-test('sample-account Beneficiaries retains the approved left sidebar and content area',async({page})=>{
+test('sample-account cannot access private Beneficiaries without verified email identity',async({page})=>{
   await page.setViewportSize({width:1600,height:900});
   await page.goto(site+'?action=taxpayer_login');
   await page.getByRole('textbox',{name:'User ID'}).fill('user1');
@@ -68,16 +68,13 @@ test('sample-account Beneficiaries retains the approved left sidebar and content
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  await expect(rail).toBeVisible();
   await rail.getByRole('button',{name:'Beneficiaries',exact:true}).click();
   await expect(page).toHaveURL(/action=beneficiaries/);
-  await expect(rail.getByRole('button',{name:'Beneficiaries',exact:true})).toHaveAttribute('aria-current','page');
-  await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
-  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.locator('.citizen-header')).toBeHidden();
-  const left=await page.locator('main').evaluate(element=>Math.round(element.getBoundingClientRect().left));
-  expect(left).toBe(250);
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await expect(dialog.getByRole('textbox',{name:'Email address'})).toBeVisible();
+  await expect(dialog.getByRole('textbox',{name:'User ID'})).toHaveCount(0);
   await page.reload();
-  await expect(rail).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
 });
