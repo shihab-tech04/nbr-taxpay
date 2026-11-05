@@ -72,7 +72,12 @@
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
   box-shadow: 0 6px 14px rgb(18 42 77 / 8%);
-  animation: travel-flow-reveal 180ms ease-out both;
+  /* Fade without motion: the popup must not move across the medical row. */
+  animation: travel-passport-suggestions-fade 180ms ease-out both;
+}
+@keyframes travel-passport-suggestions-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .taxpay-citizen-shell .travel-flow__passport-suggestions { animation: none; }
