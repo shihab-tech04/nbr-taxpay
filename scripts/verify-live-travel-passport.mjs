@@ -84,6 +84,16 @@ try {
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+    // The first checked result remains a preview: searching again must remove
+    // the Add passenger action until the replacement passport is checked.
+    await modal.locator('#travel-passport-first').fill('TEST230001');
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toHaveCount(0);
+    await expect(modal.getByTestId('travel-passenger-name-first')).toHaveCount(0);
+    await modal.getByRole('button', { name: 'Check Passport' }).click();
+    await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER TWO');
+    await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('1988-11-10');
+    await expect(addPassenger).toBeEnabled();
     await addPassenger.click();
     // The approved passport-first flow confirms the current passenger before
     // allowing creation of another passenger identity form.
@@ -97,8 +107,8 @@ try {
     await second.locator('input[role="combobox"]').click();
     const secondOptions = second.locator('.travel-flow__passport-suggestions [role="option"]');
     await expect(secondOptions).toHaveCount(9);
-    await expect(secondOptions.filter({ hasText: 'TEST230005' })).toHaveCount(0);
-    await second.locator('input[role="combobox"]').fill('TEST230005');
+    await expect(secondOptions.filter({ hasText: 'TEST230001' })).toHaveCount(0);
+    await second.locator('input[role="combobox"]').fill('TEST230001');
     await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
     await expect(continueToTravel).toBeDisabled();
     await second.getByRole('button', { name: 'Remove passenger 2' }).click();
