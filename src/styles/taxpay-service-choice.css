@@ -1044,7 +1044,9 @@
 
 /* Four-stage payment modal — applied to both account and walk-in flows only. */
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] {
-  width: min(1160px, calc(100% - 32px));
+  /* One width token for the Pay Tax and Travel Tax payment workflows. */
+  --taxpay-payment-stage-width: 1160px;
+  width: min(var(--taxpay-payment-stage-width), calc(100% - 32px));
   height: min(90dvh, 900px);
   max-height: 90dvh;
   min-height: 0;
@@ -1791,10 +1793,10 @@
 }
 
 
-/* Stage-specific Travel Tax sizing: keep the shared modal chrome and actions. */
+/* Stage-specific Travel Tax heights; every step keeps the shared payment width. */
 @media (min-width: 651px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.travel-flow[data-step="1"]) {
-    width: min(100%, 980px);
+    width: min(var(--taxpay-payment-stage-width), calc(100% - 32px));
     height: min(83dvh, 730px);
   }
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.travel-flow[data-step="2"]) {
@@ -1808,7 +1810,7 @@
 /* First travel stage is passenger collection only: no empty 40% payment rail. */
 @media (min-width: 651px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.travel-flow[data-step="0"]) {
-    width: min(100%, 810px);
+    width: min(var(--taxpay-payment-stage-width), calc(100% - 32px));
     height: auto;
     max-height: min(92dvh, 900px);
   }
