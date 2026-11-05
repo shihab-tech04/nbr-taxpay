@@ -17,7 +17,7 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByRole('heading', {name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('searchbox', {name:'Search transaction reference'})).toBeVisible();
   await expect(page.getByRole('combobox', {name:'Transaction status'})).toBeVisible();
-  await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
+  await expect(page.getByText('DEMO-PAY-PEND-01').filter({visible:true}).first()).toBeVisible();
 });
 
 test('User1 charts use TaxPay blue tokens, and category filters work by keyboard', async ({page}) => {
