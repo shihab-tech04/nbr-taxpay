@@ -200,6 +200,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const visibleRows=rows.filter(tx=>(recordYear==='all'||tx.allocations.some(a=>a.assessmentYear===recordYear))&&
     (!needle||[tx.id,tx.transactionId,tx.payer,tx.state,tx.reviewStatus,...tx.allocations.flatMap(a=>
       [a.beneficiary,a.category,a.assessmentYear])].some(v=>String(v).toLocaleLowerCase().includes(needle))));
+  // Keep every SQL allocation and event in the existing detail modal after compacting table cells.
+  const lifecycleParts=(tx:SimulationTransaction)=>({
+    events:tx.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
+      occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
+    allocations:tx.allocations.map(a=>({id:a.id,
+      title:a.beneficiary+' · '+simulationCategoryLabels[a.category][bn?'bn':'en'],
+      assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
+  });
   if(!id)return null;
   return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <TaxpayerPageHeading title={txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}
@@ -324,33 +332,61 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
        visibleRows.length===0?<TaxPayTableState>{txt('No transactions match your filters.','ফিল্টারে কোনো লেনদেন নেই।')}</TaxPayTableState>:
        <TaxPayDataGrid variant="tabular" rows={visibleRows} getRowKey={tx=>tx.transactionId}
          ariaLabel={txt('Transactions','লেনদেন')} testId="signed-in-payment-activity-table"
-         mobileTestId="signed-in-payment-activity-cards" columns={[
+         mobileTestId="signed-in-payment-activity-cards" onViewRow={tx=>setSelectedPayment(tx)} columns={[
            {key:'reference',header:txt('Reference / date','রেফারেন্স / তারিখ'),renderCell:tx=><div>
              <p className="break-all font-mono-plex font-semibold">{tx.id}</p>
-             <time dateTime={tx.createdAt} className="text-sm text-taxpay-muted">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
+             <time dateTime={tx.createdAt} className="block text-sm text-taxpay-muted">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
+             <p className="text-sm text-taxpay-muted">{txt('Payer','প্রদানকারী')}: {tx.payer}</p>
            </div>},
-           {key:'payer',header:txt('Payer','প্রদানকারী'),renderCell:tx=><p>{tx.payer}</p>},
-           {key:'allocation',header:txt('Allocations','বরাদ্দ'),renderCell:tx=><details className="rounded-lg border border-taxpay-border p-2">
-             <summary className="min-h-11 cursor-pointer font-semibold">{txt('View allocations','বরাদ্দ দেখুন')} ({tx.allocations.length})</summary>
-             <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
-               <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
-               <p className="text-taxpay-muted">{a.assessmentYear} · {formatSimulatedAmount(a.amountMinor)}</p>
-             </li>)}</ul>
-           </details>},
+           {key:'allocation',header:txt('Allocations / status','বরাদ্দ / অবস্থা'),renderCell:tx=><div className="space-y-1">
+             <p className="font-medium">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')}</p>
+             <details onClick={event=>event.stopPropagation()} className="rounded-lg border border-taxpay-border p-2">
+               <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
+               <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
+                 <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+                 <p className="text-taxpay-muted">{a.assessmentYear}</p>
+                 <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
+               </li>)}</ul>
+             </details>
+             <p className="text-sm">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
+             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           </div>},
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
              renderCell:tx=><p className="font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
-           {key:'status',header:txt('Status / actions','অবস্থা / কার্যক্রম'),renderCell:tx=><div className="space-y-2">
-             <p className="font-semibold">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           {key:'actions',header:txt('Actions','কার্যক্রম'),renderCell:tx=><div className="flex flex-wrap gap-2">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
-               className="min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-3 font-semibold text-taxpay-primary">
-               {txt('View payment details','পেমেন্টের বিবরণ দেখুন')}</button>
-             <details><summary className="min-h-11 cursor-pointer font-semibold">{txt('Transaction timeline','লেনদেনের সময়রেখা')}</summary>
-               <ol>{tx.events.map(e=><li key={e.id} className="py-2 text-sm"><p>{e.action}</p>
-                 <p className="text-taxpay-muted"><time dateTime={e.occurredAt}>{new Date(e.occurredAt).toLocaleString()}</time> · {e.note}</p>
-               </li>)}</ol></details>
+               className="min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-3 text-sm font-medium text-taxpay-primary">
+               {txt('View details','বিস্তারিত দেখুন')}</button>
+             <button type="button" onClick={()=>setSelectedPayment(tx)}
+               className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
+               {txt('Timeline','সময়রেখা')}</button>
            </div>}
-         ]}/>}
+         ]}
+         renderMobileCard={tx=><div className="space-y-2">
+           <div className="flex items-start justify-between gap-2">
+             <p className="min-w-0 break-all font-mono-plex font-semibold">{tx.id}</p>
+             <p className="shrink-0 font-semibold tabular-nums">{txt('Total','মোট')}: {formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>
+           </div>
+           <p className="text-sm text-taxpay-muted">
+             <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time> · {txt('Payer','প্রদানকারী')}: {tx.payer}
+           </p>
+           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
+           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           <details className="rounded-lg border border-taxpay-border p-2">
+             <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
+             <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
+               <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+               <p className="text-taxpay-muted">{a.assessmentYear}</p>
+               <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
+             </li>)}</ul>
+           </details>
+           <div className="taxpay-mobile-table-card__actions">
+             <button type="button" onClick={()=>setSelectedPayment(tx)}
+               className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
+             <button type="button" onClick={()=>setSelectedPayment(tx)}
+               className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
+           </div>
+         </div>}/>}
     </section>
     {selectedPayment&&<TaxPayModal
       title={txt('Payment details','পেমেন্টের বিবরণ')}
@@ -365,10 +401,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         amountMinor:selectedPayment.totalMinor,createdAt:selectedPayment.createdAt,
         status:selectedPayment.state,financialReceiptStatus:txt('Not verified','যাচাই হয়নি'),
         taxCreditStatus:txt('Not verified','যাচাই হয়নি'),source:'TaxPay SQL',
-        events:selectedPayment.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
-          occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
-        allocations:selectedPayment.allocations.map(a=>({id:a.id,title:a.beneficiary+' · '+simulationCategoryLabels[a.category][bn?'bn':'en'],
-          assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
+        ...lifecycleParts(selectedPayment)
       }}/>
     </TaxPayModal>}
   </main>;
