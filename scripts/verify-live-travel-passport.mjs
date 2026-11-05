@@ -33,9 +33,11 @@ try {
     }
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
-    const addPassenger = modal.getByRole('button', { name: 'Add passenger' });
+    const addPassenger = modal.getByRole('button', { name: 'Add passenger', exact: true });
+    const addAnotherPassenger = modal.getByRole('button', { name: 'Add another passenger' });
     const continueToTravel = modal.getByRole('button', { name: 'Continue to travel details' });
-    await expect(addPassenger).toBeDisabled();
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toHaveCount(0);
     await expect(continueToTravel).toBeDisabled();
     await expect(modal.locator('#travel-lookup-first')).toBeDisabled();
     const medicalRow = modal.locator('.travel-flow__medical-option');
@@ -62,6 +64,7 @@ try {
     if (suggestionGeometry.scroll <= suggestionGeometry.visible) throw new Error('Passport suggestion list should be independently scrollable with ten entries');
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
+    await expect(addPassenger).toHaveCount(0);
     await modal.getByRole('button', { name: 'Check Passport' }).click();
     try {
       await expect(addPassenger).toBeEnabled();
@@ -81,19 +84,31 @@ try {
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
+    // The first checked result remains a preview: searching again must remove
+    // the Add passenger action until the replacement passport is checked.
+    await modal.locator('#travel-passport-first').fill('TEST230001');
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toHaveCount(0);
+    await expect(modal.getByTestId('travel-passenger-name-first')).toHaveCount(0);
+    await modal.getByRole('button', { name: 'Check Passport' }).click();
+    await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER TWO');
+    await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('1988-11-10');
+    await expect(addPassenger).toBeEnabled();
     await addPassenger.click();
     // The approved passport-first flow confirms the current passenger before
     // allowing creation of another passenger identity form.
-    const addAnotherPassenger = modal.getByRole('button', { name: 'Add another passenger' });
+    await expect(addPassenger).toHaveCount(0);
     await expect(addAnotherPassenger).toBeEnabled();
     await addAnotherPassenger.click();
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toHaveCount(0);
     const second = modal.locator('[data-passenger-id]').nth(1);
     await expect(second).toBeVisible();
     await second.locator('input[role="combobox"]').click();
     const secondOptions = second.locator('.travel-flow__passport-suggestions [role="option"]');
     await expect(secondOptions).toHaveCount(9);
-    await expect(secondOptions.filter({ hasText: 'TEST230005' })).toHaveCount(0);
-    await second.locator('input[role="combobox"]').fill('TEST230005');
+    await expect(secondOptions.filter({ hasText: 'TEST230001' })).toHaveCount(0);
+    await second.locator('input[role="combobox"]').fill('TEST230001');
     await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
     await expect(continueToTravel).toBeDisabled();
     await second.getByRole('button', { name: 'Remove passenger 2' }).click();
