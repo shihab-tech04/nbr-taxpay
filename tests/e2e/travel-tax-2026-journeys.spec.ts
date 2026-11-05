@@ -12,16 +12,20 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('#travel-mobile')).toBeVisible();
   await expect(modal.locator('.travel-flow__summary')).toBeHidden();
   await expect(modal.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
-  await expect(modal.getByRole('button',{name:'Add passenger'})).toBeDisabled();
+  await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
-  await expect(modal.getByRole('button',{name:'Add passenger'})).toBeEnabled();
+  await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toBeEnabled();
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await modal.locator('#travel-mobile').fill('01712345678');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await modal.getByRole('button', {name:'Add passenger', exact:true}).click();
+  await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toBeVisible();
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel details');
@@ -68,6 +72,39 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   await expect(check).toBeEnabled();
   await check.click();
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
+});
+
+test('Travel Tax: search result requires confirmation before adding another passenger', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name:'Travel tax'});
+  const passport = modal.locator('#travel-passport-first');
+  const add = modal.getByRole('button', {name:'Add passenger',exact:true});
+  const another = modal.getByRole('button', {name:'Add another passenger'});
+  await expect(add).toHaveCount(0);
+  await expect(another).toHaveCount(0);
+  await passport.fill('TEST123456');
+  await expect(add).toHaveCount(0);
+  await modal.locator('#travel-lookup-first').click();
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(add).toBeVisible();
+  await expect(another).toHaveCount(0);
+
+  // The user can change the search without accidentally adding the prior result.
+  await passport.fill('TEST230001');
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveCount(0);
+  await expect(add).toHaveCount(0);
+  await expect(another).toHaveCount(0);
+  await modal.locator('#travel-lookup-first').click();
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER TWO');
+  await expect(add).toBeVisible();
+  await add.click();
+  await expect(add).toHaveCount(0);
+  await expect(another).toBeVisible();
+  await another.click();
+  await expect(another).toHaveCount(0);
+  await expect(add).toHaveCount(0);
+  await expect(modal.getByTestId('travel-passenger-list').locator('.travel-flow__person')).toHaveCount(2);
 });
 
 test('Travel Tax: medical row and receipt contact are full width with a divider',async({page})=>{
@@ -230,7 +267,8 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await expect(second.getByText('Passport already added.',{exact:true})).toBeVisible();
   await second.getByRole('button',{name:'Check Passport'}).click();
   await expect(modal.getByRole('alert')).toContainText('Passport already added.');
-  await expect(modal.getByRole('button',{name:'Add passenger'})).toBeDisabled();
+  await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await second.getByLabel('Passport number').fill('TEST230001');
