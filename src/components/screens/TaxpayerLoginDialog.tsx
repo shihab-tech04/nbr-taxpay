@@ -102,7 +102,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         </p>}
         {!embedded && <p className="taxpayer-login-email-entry">
           <button type="button" onClick={()=>navigate('secure_workspace',{returnTo:'beneficiaries'})}>
-            {bn?'একই অ্যাকাউন্ট সব ডিভাইসে ব্যবহার করতে ইমেইল দিয়ে সাইন ইন করুন':'Use verified email sign-in to access the same saved account on every device'}
+            {bn?'সব ডিভাইসে একই তথ্য পেতে ইমেইলে যাচাইকৃত অ্যাকাউন্ট খুলুন':'Open your verified email account to access the same saved data on every device'}
           </button>
         </p>}
         {error && <p className="taxpayer-login-error" role="alert">
