@@ -26,7 +26,7 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await page.reload();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-06');
   await expect(page.getByText('Records: 1')).toBeVisible();
-  await expect(page.getByText('DEMO-PAY-01').first()).toBeVisible();
+  await expect(page.getByText('DEMO-PAY-01').filter({visible:true}).first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Transaction month'}).selectOption('all');
   await expect(page).not.toHaveURL(/monthFilter=/);
@@ -40,7 +40,7 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await expect(page).not.toHaveURL(/monthFilter=/);
   await page.reload();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('all');
-  await expect(page.getByText('DEMO-PAY-24-01').first()).toBeVisible();
+  await expect(page.getByText('DEMO-PAY-24-01').filter({visible:true}).first()).toBeVisible();
 });
 
 test('Tax Journey tab shows every historical payment grouped by calendar year and preserves event details',async({page})=>{
