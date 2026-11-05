@@ -124,16 +124,16 @@ export const TaxpayerDashboard: React.FC = () => {
       <section aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {([
-          {en:'Tax assessed for the year',bn:'করবর্ষের নির্ধারিত আয়কর',
+          {en:'Total tax for the year',bn:'এই করবর্ষের মোট কর',
             helpEn:'A verified tax assessment amount is not available for this account and year.',
             helpBn:'এই অ্যাকাউন্ট ও করবর্ষের যাচাইকৃত নির্ধারিত আয়করের তথ্য পাওয়া যায়নি।'},
-          {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম দেওয়া কর',
+          {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম পরিশোধিত কর',
             helpEn:'We cannot verify how much tax was deducted from income or paid in advance for this year.',
             helpBn:'এই করবর্ষে আয়ের উৎসে কাটা বা অগ্রিম দেওয়া কত কর সমন্বিত হয়েছে তা যাচাই করা যায়নি।'},
-          {en:'Income tax payments made',bn:'সরাসরি পরিশোধিত আয়কর',
+          {en:'Income tax paid directly',bn:'সরাসরি পরিশোধিত আয়কর',
             helpEn:'Verified direct income-tax payments for this year are not available.',
             helpBn:'এই করবর্ষের যাচাইকৃত সরাসরি আয়কর পরিশোধের তথ্য পাওয়া যায়নি।'},
-          {en:'Tax left after payments',bn:'পরিশোধের পর বাকি কর',
+          {en:'Still remaining',bn:'এখনও বাকি কর',
             helpEn:'We need verified assessed tax and eligible posted payments to show what is left.',
             helpBn:'কত কর বাকি আছে তা জানাতে যাচাইকৃত নির্ধারিত কর ও সমন্বিত পরিশোধের তথ্য প্রয়োজন।'}
         ] as const).map((item,index)=><TaxpayerFinancialKpi
