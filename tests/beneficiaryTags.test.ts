@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, normalizeOtherLabel, validBeneficiaryClassification} from '../src/services/beneficiaryTags';
+import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, normalizeOtherLabel, validBeneficiaryClassification} from '../src/services/beneficiaryTags';
 
 test('fixed beneficiary category choices and all required family relationships',()=>{
   assert.deepEqual([...BENEFICIARY_TAGS],['clients','friends_family','others']);
@@ -69,4 +69,19 @@ test('Edit beneficiary covers fixed tags, family relations, Others and optional 
   assert.match(edge,/taxpay_guest_beneficiary_edit_classification/);
   assert.match(sql,/BENEFICIARY_ALREADY_IN_LIST/);
   assert.match(sql,/revoke all on function public\.taxpay_guest_beneficiary_edit_classification/);
+});
+
+test('payment beneficiary picker shows only leaf tag beside name and bare TIN on next line',()=>{
+  assert.equal(beneficiaryFinalTagLabel('friends_family','friends','en'),'Friends');
+  assert.equal(beneficiaryFinalTagLabel('friends_family','mother','en'),'Mother');
+  assert.equal(beneficiaryFinalTagLabel('friends_family','daughter','bn'),'মেয়ে');
+  assert.equal(beneficiaryFinalTagLabel('clients',null,'en'),'Clients');
+  assert.equal(beneficiaryFinalTagLabel('others',null,'en','Neighbour'),'Neighbour');
+  assert.equal(beneficiaryFinalTagLabel(null,null,'en'),null);
+  assert.equal(beneficiaryFinalTagLabel('friends_family',null,'en'),null);
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  assert.match(picker,/names\\(person\\)\\}\\{finalTag&&/);
+  assert.match(picker,/\\{person\\.tin\\}<\\/span>/);
+  assert.doesNotMatch(picker,/\\{tr\\('TIN','টিআইএন'\\)\\}: \\{person\\.tin\\}/);
+  assert.doesNotMatch(picker,/\\{tr\\('Tag','ট্যাগ'\\)\\}:/);
 });
