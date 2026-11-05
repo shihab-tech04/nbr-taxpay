@@ -13,6 +13,6 @@ create policy "verified administrator removes superseded site logos"
   for delete to authenticated
   using (
     bucket_id = 'taxpay-branding'
-    and name ~ '^logos/[a-f0-9-]{36}\\.(png|jpg|jpeg)$'
+    and name ~ '^logos/[a-f0-9-]{36}\.(png|jpg|jpeg)$'
     and (select public.taxpay_is_verified_portal_admin())
   );
