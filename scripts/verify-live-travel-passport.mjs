@@ -26,9 +26,16 @@ try {
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
     await expect(modal.locator('.travel-flow__summary')).toBeHidden();
     if (!mobile) {
+      // Match the approved shared Pay Tax/Travel Tax width (PR #541).
+      // The previous 900px maximum was an obsolete gate, not a UI defect.
+      const expectedWidth = Math.min(1160, viewport.width - 32);
+      await expect.poll(async () => {
+        const bounds = await modal.boundingBox();
+        return Math.abs((bounds?.width ?? 0) - expectedWidth);
+      }, { timeout: 7_000 }).toBeLessThanOrEqual(2);
       const bounds = await modal.boundingBox();
-      if (!bounds || bounds.width > 900 || bounds.height > viewport.height * 0.95) {
-        throw new Error('Passport-first stage must use a compact, content-aware modal without an empty payment rail');
+      if (!bounds || bounds.height > viewport.height * 0.95) {
+        throw new Error('Passport-first stage extends outside the desktop viewport');
       }
     }
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
