@@ -33,3 +33,18 @@ test('account preference writes require current Auth owner, not a URL or preview
   assert.doesNotMatch(source,/\.from\('taxpay_beneficiar/);
   assert.doesNotMatch(source,/\.from\('taxpay_payment/);
 });
+
+test('sign-out never invalidates Auth before pending preference persistence is confirmed',()=>{
+  const identity=readFileSync('src/services/accountIdentity.ts','utf8');
+  const prefs=readFileSync('src/services/accountViewPreferences.ts','utf8');
+  const workspace=readFileSync('src/components/screens/SecureWorkspace.tsx','utf8');
+  assert.match(prefs,/unsavedPreferences=new Map/);
+  assert.match(prefs,/outstanding\.set\(key,value\)/);
+  assert.match(prefs,/if\(outstanding\.get\(key\)===value\)/);
+  assert.match(prefs,/await saveAccountViewPreference\(ownerUid,key,value\)/);
+  assert.match(identity,/if\(current\.user\)await flushAccountViewPreferences\(current\.user\.id\)/);
+  assert.doesNotMatch(identity,/Promise\.race\(/);
+  assert.ok(identity.indexOf('await flushAccountViewPreferences')<identity.indexOf("await supabase.auth.signOut"));
+  assert.match(workspace,/await signOutApplicationAccount\(\)/);
+  assert.doesNotMatch(workspace,/supabase\.auth\.signOut\(/);
+});
