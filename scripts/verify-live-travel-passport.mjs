@@ -33,9 +33,11 @@ try {
     }
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
-    const addPassenger = modal.getByRole('button', { name: 'Add passenger' });
+    const addPassenger = modal.getByRole('button', { name: 'Add passenger', exact: true });
+    const addAnotherPassenger = modal.getByRole('button', { name: 'Add another passenger' });
     const continueToTravel = modal.getByRole('button', { name: 'Continue to travel details' });
-    await expect(addPassenger).toBeDisabled();
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toHaveCount(0);
     await expect(continueToTravel).toBeDisabled();
     await expect(modal.locator('#travel-lookup-first')).toBeDisabled();
     const medicalRow = modal.locator('.travel-flow__medical-option');
@@ -62,6 +64,7 @@ try {
     if (suggestionGeometry.scroll <= suggestionGeometry.visible) throw new Error('Passport suggestion list should be independently scrollable with ten entries');
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
+    await expect(addPassenger).toHaveCount(0);
     await modal.getByRole('button', { name: 'Check Passport' }).click();
     try {
       await expect(addPassenger).toBeEnabled();
@@ -84,9 +87,11 @@ try {
     await addPassenger.click();
     // The approved passport-first flow confirms the current passenger before
     // allowing creation of another passenger identity form.
-    const addAnotherPassenger = modal.getByRole('button', { name: 'Add another passenger' });
+    await expect(addPassenger).toHaveCount(0);
     await expect(addAnotherPassenger).toBeEnabled();
     await addAnotherPassenger.click();
+    await expect(addPassenger).toHaveCount(0);
+    await expect(addAnotherPassenger).toHaveCount(0);
     const second = modal.locator('[data-passenger-id]').nth(1);
     await expect(second).toBeVisible();
     await second.locator('input[role="combobox"]').click();
