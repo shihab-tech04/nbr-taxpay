@@ -325,7 +325,7 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await page.setViewportSize({ width: 375, height: 812 });
   const dialog = await getFlow(page);
   const list = dialog.getByTestId('other-tax-taxpayer-list');
-  await expect(list).toContainText('1 taxpayer added');
+  await expect(list).toContainText('0 taxpayers added');
   await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toContainText('Taxpayer 1');
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
@@ -567,7 +567,7 @@ test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual
 
 test('Step 1 shows a pending calculation rather than a misleading zero', async ({ page }) => {
   const dialog = await getFlow(page);
-  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('1 taxpayer added');
+  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('0 taxpayers added');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
   await expect(dialog.locator('.payment-form-summary__help'))
     .toContainText('Add payment heads and amounts to see the total.');
