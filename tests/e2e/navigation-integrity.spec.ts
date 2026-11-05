@@ -89,66 +89,39 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(page).toHaveURL(/action=landing/);
 });
 
-test('Track payment stays in the sample taxpayer workspace and uses the existing lookup', async ({page}) => {
-  await page.goto('/?action=history&demoUser=user1');
+test('legacy tracking links retain the sample Transactions workspace without separate lookup', async ({page}) => {
+  await page.goto('/?action=history&demoUser=user1&trackPayment=1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
-  await tabs.getByRole('button',{name:'Track payment'}).click();
-
-  await expect.poll(() => {
-    const url=new URL(page.url());
-    return {action:url.searchParams.get('action'),trackPayment:url.searchParams.get('trackPayment')};
-  }).toEqual({action:'history',trackPayment:'1'});
-  await expect(page.getByRole('heading',{name:'Payment status & receipt'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Track payment'})).toBeVisible();
-  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveAttribute('aria-current','page');
-  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
-  await expect(page.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeVisible();
-
-  // Account lookup must not advertise fictional receipt shortcuts as evidence.
-  await expect(page.locator('.receipt-lookup__examples')).toHaveCount(0);
-  await expect(page.locator('.receipt-lookup__sample')).toHaveCount(0);
-  await expect(page.getByRole('textbox',{name:'Challan, token or transaction reference'})).toBeEditable();
-  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
-  await tabs.getByRole('button',{name:'Transactions'}).click();
-  await expect.poll(() => {
-    const url=new URL(page.url());
-    return {action:url.searchParams.get('action'),trackPayment:url.searchParams.get('trackPayment')};
-  }).toEqual({action:'history',trackPayment:null});
-  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveCount(0);
+  await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.locator('.receipt-lookup')).toHaveCount(0);
+  await tabs.getByRole('button',{name:'Issues & corrections'}).click();
+  await expect(page).toHaveURL(/action=corrections/);
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
 });
 
-test('Track payment lookup keeps Bengali sample workspace labels', async ({page}) => {
+test('Bengali sample Transactions remains searchable without tracking tab', async ({page}) => {
   await page.goto('/?action=history&demoUser=user1&lang=bn');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   const tabs=page.getByRole('navigation',{name:'লেনদেনের বিভাগ'});
-  await tabs.getByRole('button',{name:'পেমেন্ট অনুসন্ধান'}).click();
-
-  await expect.poll(() => {
-    const url=new URL(page.url());
-    return {action:url.searchParams.get('action'),trackPayment:url.searchParams.get('trackPayment'),lang:url.searchParams.get('lang')};
-  }).toEqual({action:'history',trackPayment:'1',lang:'bn'});
-  await expect(page.getByRole('heading',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'পেমেন্ট অনুসন্ধান'})).toBeVisible();
-  await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
-  await expect(page.getByRole('textbox',{name:'চালান, টোকেন বা লেনদেনের রেফারেন্স'})).toBeVisible();
+  await expect(tabs.getByRole('button',{name:'পেমেন্ট অনুসন্ধান'})).toHaveCount(0);
+  await expect(tabs.getByRole('button',{name:'লেনদেনসমূহ'})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('heading',{name:'পেমেন্ট ও লেনদেন'})).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'লেনদেন রেফারেন্স খুঁজুন'})).toBeVisible();
 });
 
-test('a missing Track payment record stays in the taxpayer correction workspace', async ({page}) => {
+test('missing transaction searches do not launch private or public lookup', async ({page}) => {
   await page.goto('/?action=history&demoUser=user1');
+  const search=page.getByRole('searchbox',{name:'Search transaction reference'});
+  await search.fill('NO-SUCH-ACCOUNT-REFERENCE');
+  await expect(page.locator('.taxpayer-transaction-row')).toHaveCount(0);
+  await expect(page.locator('.receipt-lookup')).toHaveCount(0);
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
-  await tabs.getByRole('button',{name:'Track payment'}).click();
-
-  const lookup=page.locator('.receipt-lookup');
-  await lookup.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('NO-SUCH-ACCOUNT-REFERENCE');
-  await lookup.getByRole('button',{name:'Search records'}).click();
-  await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
-  await lookup.getByRole('button',{name:'Report a payment issue'}).click();
-
-  await expect(page).toHaveURL(/action=corrections(?:&|$)/);
-  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await tabs.getByRole('button',{name:'Issues & corrections'}).click();
+  await expect(page).toHaveURL(/action=corrections/);
   await expect(page.getByRole('heading',{name:'Public Report'})).toHaveCount(0);
 });
 
