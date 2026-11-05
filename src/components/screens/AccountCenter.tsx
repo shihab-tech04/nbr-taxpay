@@ -3,6 +3,7 @@ import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, Shiel
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
+import {recordAccountInteraction} from '../../services/accountExperience';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
@@ -146,6 +147,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       if (error) throw error;
       setLanguage(preferredLanguage);
       setFeedback({error:false,content:I18N[preferredLanguage].settingsSaved});
+      void recordAccountInteraction(user.id,'SETTINGS_SAVED','account_settings').catch(()=>undefined);
     } catch { setFeedback({error:true,content:t.saveFailed}); }
     finally { setBusy(false); }
   };
@@ -168,6 +170,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         setReviewNotices(prev=>prev.map(n=>unread.includes(n.id)?{...n,is_read:true}:n));
       }
       setFeedback({error:false,content:t.readSaved});
+      void recordAccountInteraction(user.id,'NOTIFICATIONS_READ','account_notifications').catch(()=>undefined);
     } catch { setFeedback({error:true,content:t.saveFailed}); }
     finally { setBusy(false); }
   };
