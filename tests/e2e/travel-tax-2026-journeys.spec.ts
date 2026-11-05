@@ -2,6 +2,67 @@ import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { fillTravelDetails, fillForeignPassenger } from './travel-tax-test-helper';
 
+test('Pay Tax and Travel Tax keep the same modal width across passenger and travel stages', async ({page}, info) => {
+  await page.goto('/');
+  // Start an ordinary Tax with Return payment and measure its shared modal
+  // after selecting the payer, service and walk-in access.
+  await page.getByRole('button', {name:'Pay Tax',exact:true}).click();
+  const payment = page.getByRole('dialog',{name:'Pay Tax'});
+  await payment.locator('[data-payer-relationship="SELF"]').click();
+  await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
+  await payment.locator('[data-payment-access="GUEST"]').click();
+  await payment.getByRole('button',{name:'Continue',exact:true}).click();
+  await expect(payment.locator('#guest-tin')).toBeVisible();
+  // Pay Tax grows from the compact access-choice dialog to the 1160px
+  // workflow dialog. Measure only after that existing width transition ends.
+  await payment.evaluate(async dialog => {
+    await Promise.all(dialog.getAnimations({subtree:false})
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished.catch(() => undefined)));
+  });
+  const paymentBox = await payment.boundingBox();
+  expect(paymentBox).not.toBeNull();
+  const paymentWidth = paymentBox!.width;
+  // Measure each service from a clean public entry; avoid coupling width
+  // parity to an unrelated close-control accessible-name contract.
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const travel = page.getByRole('dialog',{name:'Travel tax'});
+  const checkWidth = async (stage: string) => {
+    await expect(travel.locator('.taxpay-modal__title')).toHaveText(stage);
+    await expect.poll(async () => {
+      const box = await travel.boundingBox();
+      return Math.abs((box?.width ?? 0) - paymentWidth);
+    }, {timeout:6000}).toBeLessThanOrEqual(2);
+    const box = await travel.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(-1);
+    expect(box!.x + box!.width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+    expect(await travel.locator('.taxpay-modal__body').evaluate(
+      el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
+  };
+
+  // Modal width is an invariant; only its content and allowable height change.
+  await checkWidth('Passengers and receipt details');
+  await travel.locator('#travel-passport-first').fill('TEST123456');
+  await travel.locator('#travel-lookup-first').click();
+  await travel.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await travel.locator('#travel-mobile').fill('01712345678');
+  await travel.getByRole('button',{name:'Continue to travel details'}).click();
+  await checkWidth('Travel details');
+  await travel.locator('#travel-port').selectOption('Benapole');
+  await travel.locator('#travel-destination').fill('India');
+  await travel.locator('#travel-departure-date').fill('2026-11-20');
+  await travel.getByRole('button',{name:'Continue to review'}).click();
+  await checkWidth('Review & payment');
+  if (info.project.name === 'desktop-1280' || info.project.name === 'mobile-375') {
+    await page.screenshot({
+      path: `test-results/screenshots/travel-width-parity-${info.project.name}.png`,
+      fullPage:false
+    });
+  }
+});
+
 test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with travel mode', async ({page}) => {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
