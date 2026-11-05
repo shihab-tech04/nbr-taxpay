@@ -63,14 +63,15 @@ test('real account restores its own language and selected beneficiary list in a 
   await addList('Family');
   await addList('Clients');
   await expect(page.locator('#beneficiary-list')).toContainText('Clients');
+  const clientsId=(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id;
   await page.locator('#beneficiary-list').click();
-  await page.locator('#beneficiary-list-menu').getByRole('button',{name:'Family'}).click();
+  await page.locator('#beneficiary-list-menu').getByRole('button',{name:'Family',exact:true}).click();
   await expect(page.locator('#beneficiary-list')).toContainText('Family');
   // Wait for real Auth metadata persistence rather than a UI-only state update.
   await expect.poll(async()=>{
     const user=await authUser(a.session.access_token);
     return typeof user.user_metadata?.taxpay_last_beneficiary_list_id==='string'&&
-      Boolean(user.user_metadata.taxpay_last_beneficiary_list_id);
+      user.user_metadata.taxpay_last_beneficiary_list_id!==clientsId;
   },{timeout:10000}).toBe(true);
   const familyId=(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id;
 
