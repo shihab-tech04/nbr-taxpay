@@ -25,12 +25,21 @@ try {
     await expect(modal).toBeVisible();
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
     await expect(modal.locator('.travel-flow__summary')).toBeHidden();
-    if (!mobile) {
+    // Travel Tax must match the approved 1160px Pay Tax workflow width
+    // throughout every stage. The earlier compact <=900px check conflicted
+    // with the explicitly approved cross-service width-parity requirement.
+    const assertSharedWorkflowWidth = async stage => {
+      const expected = mobile ? viewport.width : Math.min(1160, viewport.width - 32);
+      await expect.poll(async () => {
+        const bounds = await modal.boundingBox();
+        return bounds ? Math.abs(bounds.width - expected) : Infinity;
+      }, {timeout: 6_000, message: stage + ' must match Pay Tax modal width'}).toBeLessThanOrEqual(2);
       const bounds = await modal.boundingBox();
-      if (!bounds || bounds.width > 900 || bounds.height > viewport.height * 0.95) {
-        throw new Error('Passport-first stage must use a compact, content-aware modal without an empty payment rail');
+      if (!bounds || bounds.height > viewport.height * 0.95) {
+        throw new Error(stage + ' exceeds the modal viewport height');
       }
-    }
+    };
+    await assertSharedWorkflowWidth('Passenger details');
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
     const addPassenger = modal.getByRole('button', { name: 'Add passenger', exact: true });
@@ -134,6 +143,7 @@ try {
     await expect(continueToTravel).toBeEnabled();
     await continueToTravel.click();
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel details');
+    await assertSharedWorkflowWidth('Travel details');
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     const modes = modal.locator('#travel-tax-route-results');
     await expect(modes.locator('input[type=radio]')).toHaveCount(2);
@@ -145,6 +155,7 @@ try {
     await modal.locator('#travel-departure-date').fill('2026-11-20');
     await modal.getByRole('button', { name: 'Continue to review' }).click();
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
+    await assertSharedWorkflowWidth('Review & payment');
     await modal.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
     if (mobile) {
@@ -154,7 +165,7 @@ try {
     await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png', fullPage: false });
     await page.close();
   }
-  console.log('PASS: production Travel Tax conditional actions, unique passport suggestions, manual duplicate warning, full-width fields, stage navigation and mobile containment');
+  console.log('PASS: production Travel Tax matches Pay Tax modal width across passenger, travel and review stages; conditional actions, passport suggestions, duplicate warning, stage navigation and mobile containment');
 } finally {
   await browser.close();
 }
