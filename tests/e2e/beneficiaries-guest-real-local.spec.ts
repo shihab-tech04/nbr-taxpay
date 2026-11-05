@@ -11,7 +11,7 @@ test('signed-out Beneficiaries deep links open the approved taxpayer sign-in',as
     await expect(page.getByRole('heading',{name:language==='bn'?'করদাতার ব্যক্তিগত তথ্য':'Private taxpayer workspace'})).toHaveCount(0);
     const loginId=modal.getByRole('textbox',{name:language==='bn'?'ইউজার আইডি':'User ID'});
     await expect(loginId).toBeVisible();
-    await expect(modal.getByLabel(language==='bn'?'পাসওয়ার্ড':'Password')).toBeVisible();
+    await expect(modal.getByLabel(language==='bn'?'পাসওয়ার্ড':'Password',{exact:true})).toBeVisible();
     await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
     await expect(page.getByRole('navigation',{name:language==='bn'?'প্রধান নেভিগেশন':'Main navigation'}).getByRole('button',{name:language==='bn'?'উপকারভোগী':'Beneficiaries'})).toHaveCount(0);
