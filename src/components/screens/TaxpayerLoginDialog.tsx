@@ -83,7 +83,26 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   };
 
   const title = bn ? `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন` : `Sign In To Your ${taxpayerBrandName(language)} Account`;
-  const content = <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
+  const content = verifiedOnly ? <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
+      <form id={embedded?'taxpay-embedded-login-form':'taxpay-standalone-login-form'} onSubmit={sendVerifiedEmail}>
+        <div className="taxpayer-login-field">
+          <label htmlFor="taxpayer-login-email">{bn?'ইমেইল ঠিকানা':'Email address'}</label>
+          <div className="taxpayer-login-input-wrap">
+            <UserRound size={18} aria-hidden="true"/>
+            <input ref={inputRef} id="taxpayer-login-email" type="email" autoComplete="email"
+              required disabled={emailBusy} value={email}
+              placeholder={bn?'আপনার ইমেইল লিখুন':'Enter your email'}
+              onChange={event=>{setEmail(event.target.value);setEmailNotice(null);}}/>
+          </div>
+        </div>
+        {emailNotice==='sent'&&<p role="status" className="taxpayer-login-recovery">
+          {bn?'সাইন ইন লিংক পাঠানো হয়েছে। ইমেইল খুলে লিংকটি নির্বাচন করুন।':'Sign-in link sent. Open your email and follow the link to your saved beneficiaries.'}
+        </p>}
+        {emailNotice==='error'&&<p role="alert" className="taxpayer-login-error">
+          {bn?'সাইন ইন লিংক পাঠানো যায়নি। আবার চেষ্টা করুন।':'Could not send the sign-in link. Please try again.'}
+        </p>}
+      </form>
+    </section> : <section className="taxpayer-login-dialog taxpayer-login-dialog--embedded">
       <form id={embedded ? 'taxpay-embedded-login-form' : 'taxpay-standalone-login-form'} onSubmit={submit} noValidate>
         <div className="taxpayer-login-field">
           <label htmlFor="taxpayer-login-user-id">{bn ? 'ইউজার আইডি' : 'User ID'}</label>
@@ -141,7 +160,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
     className="taxpayer-login-modal"
     service="login"
-    initialFocusSelector="#taxpayer-login-user-id"
+    initialFocusSelector={verifiedOnly?"#taxpayer-login-email":"#taxpayer-login-user-id"}
     footer={<TaxpayerLoginFooter formId="taxpay-standalone-login-form" disabled={!credentialsReady} language={language} />}
   >
     {content}
