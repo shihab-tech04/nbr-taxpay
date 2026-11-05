@@ -13,6 +13,7 @@ type RpcName =
   | 'taxpay_guest_beneficiary_open'
   | 'taxpay_guest_beneficiary_lists'
   | 'taxpay_guest_beneficiary_rows'
+  | 'taxpay_guest_beneficiary_snapshot'
   | 'taxpay_guest_beneficiary_create_list'
   | 'taxpay_guest_beneficiary_add'
   | 'taxpay_guest_beneficiary_update'
@@ -20,7 +21,9 @@ type RpcName =
   | 'taxpay_guest_beneficiary_move'
   | 'taxpay_guest_beneficiary_remove'
   | 'taxpay_guest_beneficiary_rename_list'
-  | 'taxpay_guest_beneficiary_delete_list';
+  | 'taxpay_guest_beneficiary_delete_list'
+  | 'taxpay_demo_profile_login'
+  | 'taxpay_demo_profile_settings';
 
 function response(value: unknown, status: number, origin: string): Response {
   return new Response(status === 204 ? null : JSON.stringify(value), {
@@ -40,6 +43,9 @@ function response(value: unknown, status: number, origin: string): Response {
 function publicError(error: unknown): { status: number; code: string } {
   const message = error instanceof Error ? error.message : '';
   if (/INVALID_BODY|INVALID_CONTENT_TYPE|INVALID_CAPABILITY|INVALID_PAGE|INVALID_LIST_NAME|INVALID_ROWS|INVALID_BENEFICIARY/.test(message))
+    return { status: 400, code: message.split(':')[0] };
+  if (/INVALID_DEMO_LOGIN/.test(message)) return { status: 401, code: 'INVALID_DEMO_LOGIN' };
+  if (/INVALID_DEMO_PROFILE|INVALID_PREFERENCE|INVALID_LIST/.test(message))
     return { status: 400, code: message.split(':')[0] };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
   if (/BENEFICIARY_ALREADY_IN_LIST/.test(message)) return { status: 409, code: 'BENEFICIARY_ALREADY_IN_LIST' };
@@ -96,17 +102,42 @@ Deno.serve(async (request: Request) => {
     return response({ success: false, code: 'INVALID_CONTENT_TYPE' }, 415, origin);
 
   try {
-    const token = request.headers.get('x-taxpay-guest-capability') ?? '';
-    const p_capability_hash = await capabilityHash(token);
     const body = await parseBody(request);
     const client = adminClient();
     const action = body.action;
+    // user1-user10 are intentionally fictional/public demo accounts only.
+    // The login returns a stable opaque demo capability, not Supabase Auth,
+    // taxpayer ownership, SQL admin access or a payment entitlement.
+    if (action === 'demo-login') {
+      if (typeof body.userId !== 'string' || typeof body.password !== 'string' ||
+          !/^user(?:10|[1-9])$/.test(body.userId) || body.password.length > 80)
+        throw new Error('INVALID_DEMO_LOGIN');
+      const data = await rpc(client, 'taxpay_demo_profile_login', {
+        p_demo_id: body.userId, p_password: body.password,
+      });
+      return response({ success: true, data }, 200, origin);
+    }
+    const token = request.headers.get('x-taxpay-guest-capability') ?? '';
+    const p_capability_hash = await capabilityHash(token);
     let data: unknown;
 
     if (action === 'open') {
       data = await rpc(client, 'taxpay_guest_beneficiary_open', { p_capability_hash });
     } else if (action === 'lists') {
       data = await rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash });
+    } else if (action === 'demo-settings') {
+      const key = body.key ?? null;
+      const value = body.value ?? null;
+      if ((key !== null && key !== 'language' && key !== 'selected-list') ||
+          (value !== null && typeof value !== 'string'))
+        throw new Error('INVALID_PREFERENCE');
+      data = await rpc(client, 'taxpay_demo_profile_settings', {
+        p_capability_hash, p_key: key, p_value: value,
+      });
+    } else if (action === 'snapshot') {
+      // One SQL call verifies the capability, touches the session once and
+      // returns the bounded first page plus all named lists atomically.
+      data = await rpc(client, 'taxpay_guest_beneficiary_snapshot', { p_capability_hash });
     } else if (action === 'people') {
       const offset = body.offset ?? 0;
       const limit = body.limit ?? 500;
