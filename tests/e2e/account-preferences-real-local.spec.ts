@@ -71,17 +71,6 @@ test('real account restores its own language and selected beneficiary list in a 
   const clientsId=own.find(list=>list.name==='Clients')?.id;
   const familyId=own.find(list=>list.name==='Family')?.id;
   expect(clientsId).toBeTruthy();expect(familyId).toBeTruthy();
-  // The same verified person must see both lists, exact TIN leading zeros,
-  // and the final tag after a different device/browser signs in.
-  const owner=(await authUser(a.session.access_token)).id;
-  const savedContact=await fetch(new URL('/rest/v1/taxpay_beneficiaries',api.origin),{
-    method:'POST',
-    headers:{apikey:key,Authorization:'Bearer '+a.session.access_token,
-      'content-type':'application/json',Prefer:'return=representation'},
-    body:JSON.stringify({owner_uid:owner,list_id:familyId,tin:'000000000047',
-      display_name:'Sajid Khan',tag:'friends_family',relationship:'friends',other_label:null}),
-  });
-  expect(savedContact.status).toBe(201);
   await expect.poll(async()=>(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id,
     {timeout:10000}).toBe(clientsId);
   await page.locator('#beneficiary-list').click();
@@ -124,10 +113,6 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
   await expect(again.locator('#beneficiary-list')).toContainText('Family');
-  await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
-  await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
-  await expect(again.getByTestId('beneficiary-records')).toContainText('Friends');
-
   await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
   await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
   await expect(again.getByTestId('beneficiary-records')).toContainText('বন্ধু');
