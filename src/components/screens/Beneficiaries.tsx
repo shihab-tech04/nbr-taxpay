@@ -14,7 +14,6 @@ import {UiButton,UiInput,UiSelect} from '../ui/Controls';
 import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
-import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 type Flow='single'|'bulk';
