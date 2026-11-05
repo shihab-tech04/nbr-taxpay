@@ -30,8 +30,9 @@ create or replace function public.taxpay_demo_profile_login(
 language plpgsql security definer
 set search_path = pg_catalog, taxpay_guest_private, extensions
 as $$
-declare v_profile taxpay_guest_private.demo_profiles%rowtype;
-declare v_cap_hash text;
+declare
+  v_profile taxpay_guest_private.demo_profiles%rowtype;
+  v_cap_hash text;
 begin
   if p_demo_id is null or p_demo_id !~ '^user(10|[1-9])$'
      or p_password is distinct from p_demo_id then
@@ -58,9 +59,10 @@ create or replace function public.taxpay_demo_profile_settings(
 language plpgsql security definer
 set search_path = pg_catalog, taxpay_guest_private, extensions
 as $$
-declare v_profile taxpay_guest_private.demo_profiles%rowtype;
-declare v_session_id uuid;
-declare v_list_id uuid;
+declare
+  v_profile taxpay_guest_private.demo_profiles%rowtype;
+  v_session_id uuid;
+  v_list_id uuid;
 begin
   if p_capability_hash is null or p_capability_hash !~ '^[0-9a-f]{64}$' then
     raise exception 'INVALID_CAPABILITY';
