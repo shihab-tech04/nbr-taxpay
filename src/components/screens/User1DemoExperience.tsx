@@ -132,10 +132,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   },[route,routeParams]);
   const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
+  const [historyPage,setHistoryPage]=useState(1);
   const [selected,setSelected]=useState<RecordItem|null>(null);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,monthFilter,query]);
+  const historyPerPage=20;
+  const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
+  const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
   const availableHistoryMonths=[...new Set(scoped.map(x=>x.date.slice(0,7)))].sort();
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
@@ -199,7 +203,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       {reviewFilter&&<button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>}
     </div>
-    {filtered.length ? <TaxPayDataGrid variant="payments" rows={filtered} getRowKey={item=>item.id}
+    {filtered.length ? <TaxPayDataGrid variant="payments" rows={visibleHistoryRows} getRowKey={item=>item.id}
+      pagination={{page:currentHistoryPage,perPage:historyPerPage,total:filtered.length,onPageChange:setHistoryPage,
+        labels:bn?{previous:'আগের পৃষ্ঠা',next:'পরের পৃষ্ঠা',showing:'দেখানো হচ্ছে',of:'মোট',records:'রেকর্ড',page:'পৃষ্ঠা'}:undefined}}
       ariaLabel={tr('Payment transactions','পেমেন্ট লেনদেন')} className="taxpayer-transaction-list"
       getRowClassName={()=>"taxpayer-transaction-row"}
       columns={[
