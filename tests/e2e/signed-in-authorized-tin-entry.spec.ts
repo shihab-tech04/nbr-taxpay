@@ -29,6 +29,23 @@ async function mockSavedBeneficiaries(page:Page,empty=false,shortTin=false){
   });
 }
 async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT'){
+  // Route only synthetic profile-login/settings to the account fixture;
+  // keep each test's existing list-read, failure and authorization responses.
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    const body=route.request().postDataJSON() as {action?:string};
+    if(body.action==='demo-login'||body.action==='demo-settings'){
+      const settings={
+        language:'en',selectedListId:null,
+        paymentSessionId:'00000000-0000-4000-8000-000000000099'
+      };
+      const data=body.action==='demo-login'
+        ?{...settings,profileId:'user1',capability:'A'.repeat(43)}
+        :settings;
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({success:true,data})});
+    }
+    return route.fallback();
+  });
   await page.goto('/?action=taxpayer_login');
   const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
