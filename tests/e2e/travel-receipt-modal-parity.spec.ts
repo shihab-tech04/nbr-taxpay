@@ -1,6 +1,7 @@
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 test('Travel Tax settled record shares modal and has only Download/Print without overlapping buttons', async ({ page }) => {
   await page.goto('/');
@@ -109,4 +110,48 @@ test('Travel Tax desktop and mobile calculation retain one total and Taka amount
   await expect(summary.getByTestId('travel-mobile-total-in-words')).toContainText('One Thousand Taka only');
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
+});
+
+
+test('Tax with Return and Travel Tax stages keep identical dialog width at matched viewports', async ({page}) => {
+  test.setTimeout(180_000);
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  for (const viewport of [
+    {width: 1280, height: 800},
+    {width: 900, height: 800},
+    {width: 768, height: 800},
+    {width: 650, height: 800},
+    {width: 375, height: 812},
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await page.getByRole('button', {name: 'Pay Tax', exact: true}).click();
+    const payment = page.getByRole('dialog', {name: 'Pay Tax'});
+    await enterTaxPayService(payment, 'TAX_WITH_RETURN');
+    await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
+    const paymentBounds = await payment.boundingBox();
+    expect(paymentBounds).not.toBeNull();
+    // Reset the route instead of assuming the staged payment's close button
+    // retains the same accessible label as the entry modal.
+    await page.goto('/');
+    await openTravelTaxFromBanner(page);
+    const travel = page.getByRole('dialog', {name: 'Travel tax'});
+    await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+    const passengerBounds = await travel.boundingBox();
+    expect(passengerBounds).not.toBeNull();
+    expect(Math.abs(passengerBounds!.width - paymentBounds!.width)).toBeLessThanOrEqual(2);
+
+    await fillTravelDetails(travel);
+    await expect(travel.locator('.taxpay-modal__title')).toHaveText('Travel details');
+    const routeBounds = await travel.boundingBox();
+    expect(routeBounds).not.toBeNull();
+    expect(Math.abs(routeBounds!.width - paymentBounds!.width)).toBeLessThanOrEqual(2);
+    expect(routeBounds!.x).toBeGreaterThanOrEqual(-1);
+    expect(routeBounds!.x + routeBounds!.width).toBeLessThanOrEqual(viewport.width + 1);
+    // Width consistency must never hide the fixed footer or force page overflow.
+    await expect(travel.getByRole('button',{name:'Continue to review'})).toBeVisible();
+    expect(await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth
+    )).toBeLessThanOrEqual(2);
+  }
 });
