@@ -12,6 +12,8 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
+import {useAccountIdentity} from './accountIdentity';
+import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
@@ -84,6 +86,8 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
     ? state.taxpaySampleRole as UserRole : null;
 
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const {user:accountUser,loading:checkingAccount}=useAccountIdentity();
+  const [languagePreferenceError,setLanguagePreferenceError]=useState(false);
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
@@ -158,12 +162,36 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           representativeScope:{isAuthorized:false}}
       : baseTaxpayerProfile;
 
-  const updateLanguage = (lang: Language) => {
+  const applyLanguage = (lang:Language) => {
     setLanguage(lang);
-    const next = new URL(window.location.href);
-    if (lang === 'bn') next.searchParams.set('lang', 'bn');
+    const next=new URL(window.location.href);
+    if(lang==='bn')next.searchParams.set('lang','bn');
     else next.searchParams.delete('lang');
-    window.history.replaceState(window.history.state, '', next);
+    window.history.replaceState(window.history.state,'',next);
+  };
+  // Switching real accounts restores only the new authenticated owner's preference.
+  // Preview identities have no Auth session; their local preference is browser-only.
+  useEffect(()=>{
+    if(checkingAccount)return;
+    const saved=accountUser
+      ?validSavedLanguage(accountUser.user_metadata?.taxpay_language)
+      :readBrowserLanguage(previewAccount?.id??null);
+    const fallback=new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en';
+    applyLanguage(saved??fallback);
+    setLanguagePreferenceError(false);
+    // Only rehydrate on identity changes, never overwrite a language just changed
+    // during the same session because Auth emits a USER_UPDATED event.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[checkingAccount,accountUser?.id,previewAccount?.id]);
+  const updateLanguage = (lang:Language) => {
+    applyLanguage(lang);
+    setLanguagePreferenceError(false);
+    if(accountUser?.id){
+      void saveAccountViewPreference(accountUser.id,'taxpay_language',lang)
+        .catch(()=>setLanguagePreferenceError(true));
+    } else {
+      saveBrowserLanguage(previewAccount?.id??null,lang);
+    }
   };
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     setPaymentServiceChoiceOpen(false);
@@ -399,6 +427,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         lookupReceipt
       }}
     >
+      {languagePreferenceError&&<p role="alert" className="mx-auto w-full bg-red-50 px-4 py-2 text-sm text-red-700">
+        {language==='bn'?'আপনার ভাষা পরিবর্তনটি অ্যাকাউন্টে সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।':'Your language preference could not be saved to this account. Please retry.'}
+      </p>}
       {children}
     </TaxStateContext.Provider>
   );

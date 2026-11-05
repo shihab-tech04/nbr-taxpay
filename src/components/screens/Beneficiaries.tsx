@@ -1,6 +1,7 @@
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
+import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -77,12 +78,24 @@ export function Beneficiaries(){
     return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
+  const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id;
+  const rememberList=(id:string)=>{
+    if(!owner)return; // Preview/guest views do not own account SQL or cross-device settings.
+    void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id).catch(()=>{
+      setNotice({en:'Could not remember your selected list for next login. Please retry.',
+        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
+    });
+  };
   const initialRequestRef=useRef<symbol|null>(null);
   const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
-    setActiveList(current=>preferredList&&data.lists.some(list=>list.id===preferredList)
-      ?preferredList:data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??''));
+    const validPreferredList=preferredList&&data.lists.some(list=>list.id===preferredList)?preferredList:null;
+    setActiveList(current=>validPreferredList
+      ??(data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??'')));
+    // An edit or move may navigate to a new list without pressing the list picker.
+    // That change is also a user choice and must survive a future login.
+    if(validPreferredList)rememberList(validPreferredList);
     setSelectedIds([]);
     return data;
   };
@@ -96,7 +109,7 @@ export function Beneficiaries(){
     loadBeneficiaries(owner).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(data.lists[0]?.id??'');
+      setActiveList(rememberedBeneficiaryListId(data.lists,savedListId));
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{
         if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
@@ -171,6 +184,7 @@ export function Beneficiaries(){
 
   function switchList(id:string){
     setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
+    rememberList(id);
     listTriggerRef.current?.focus();
   }
   function openListEditor(list:BeneficiaryList){
@@ -234,6 +248,7 @@ export function Beneficiaries(){
     const list=await createBeneficiaryList(owner,listName);
     setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
     setActiveList(list.id);setSelectedIds([]);setTargetList(list.id);setListName('');
+    rememberList(list.id);
     return list.id;
   }
 
