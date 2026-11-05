@@ -35,8 +35,10 @@ try {
         return bounds ? Math.abs(bounds.width - expected) : Infinity;
       }, {timeout: 6_000, message: stage + ' must match Pay Tax modal width'}).toBeLessThanOrEqual(2);
       const bounds = await modal.boundingBox();
-      if (!bounds || bounds.height > viewport.height * 0.95) {
-        throw new Error(stage + ' exceeds the modal viewport height');
+      // The approved mobile shell intentionally occupies the full viewport.
+      // The 95% height limit applies only to desktop, not 100dvh mobile.
+      if (!bounds || (!mobile && bounds.height > viewport.height * 0.95)) {
+        throw new Error(stage + ' exceeds the desktop modal viewport height');
       }
     };
     await assertSharedWorkflowWidth('Passenger details');
