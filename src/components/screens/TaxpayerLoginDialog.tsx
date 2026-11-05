@@ -4,6 +4,8 @@ import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
+import {supabase} from '../../services/supabaseClient';
+import {authRedirectUrl} from '../../services/secureWorkspacePolicy';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
 /** One footer action for both standalone and in-journey sign-in modals. */
@@ -19,7 +21,7 @@ export function TaxpayerLoginFooter({ formId, disabled, language }: {
   </div>;
 }
 
-export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange, emailReturnTo }: {
+export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney = false, embedded = false, onValidityChange, emailReturnTo, verifiedOnly = false }: {
   onClose?: () => void;
   onSuccess?: () => void;
   preservePaymentJourney?: boolean;
@@ -28,8 +30,12 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   onValidityChange?: (valid: boolean) => void;
   /** Safe private destination after verified email-link authentication. */
   emailReturnTo?: string;
+  verifiedOnly?: boolean;
 } = {}) {
   const { language, loginPreviewAccount, navigate } = useTaxState();
+  const [email,setEmail] = useState('');
+  const [emailBusy,setEmailBusy] = useState(false);
+  const [emailNotice,setEmailNotice] = useState<'sent'|'error'|null>(null);
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +45,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const inputRef = useRef<HTMLInputElement>(null);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
-  const credentialsReady = Boolean(userId.trim() && password.trim());
+  const credentialsReady = verifiedOnly ? Boolean(email.trim().includes('@') && !emailBusy) : Boolean(userId.trim() && password.trim());
   useEffect(() => { onValidityChange?.(credentialsReady); }, [credentialsReady, onValidityChange]);
 
   // The shared TaxPayModal owns Escape, focus containment, overlay and focus restoration.
