@@ -39,6 +39,14 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
   await expect(rows).toHaveCount(4);
   await expect(panel.getByText('Showing 11–14 of 14 records')).toBeVisible();
+  await panel.getByRole('combobox',{name:'Transaction category'}).selectOption('refund');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first().getByText('Refund inquiry',{exact:true}).first()).toBeVisible();
+  await panel.getByRole('combobox',{name:'Transaction category'}).selectOption('all');
+  await expect(rows).toHaveCount(10);
+  await expect(rows.first().getByText('Pending bank reconciliation',{exact:true}).first()).toBeVisible();
+  await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
+  await expect(rows).toHaveCount(4);
   await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Previous'}).click();
   await expect(rows).toHaveCount(10);
   await panel.getByRole('combobox',{name:'Transaction category'}).selectOption('refund');
