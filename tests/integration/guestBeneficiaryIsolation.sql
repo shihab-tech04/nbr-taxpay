@@ -145,11 +145,11 @@ begin
   if has_table_privilege('anon', 'public.taxpay_beneficiary_lists', 'SELECT') or
      has_table_privilege('anon', 'public.taxpay_beneficiaries', 'SELECT') or
      (select count(*) from pg_policies where schemaname = 'public'
-       and tablename in ('taxpay_beneficiary_lists', 'taxpay_beneficiaries')) <> 10 or
+       and tablename in ('taxpay_beneficiary_lists', 'taxpay_beneficiaries')) <> 8 or
      (select count(*) from pg_policies where schemaname='public'
        and tablename in ('taxpay_beneficiary_lists', 'taxpay_beneficiaries')
-       and cmd='SELECT' and policyname like '%verified_portal_admin') <> 2 then
-    raise exception 'Existing account-owned beneficiary RLS contract changed';
+       and cmd='SELECT' and policyname like '%verified_portal_admin') <> 0 then
+    raise exception 'Taxpayer-only beneficiary RLS contract changed';
   end if;
   -- Fixed tags remain fixed; a free-text description is allowed only for Others.
   if public.taxpay_guest_beneficiary_add(v_a,v_list_a_target,
