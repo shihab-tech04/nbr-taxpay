@@ -216,7 +216,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
-        run: npx playwright test tests/e2e/beneficiaries-guest-real-local.spec.ts --project=mobile-375
+        run: npx playwright test tests/e2e/beneficiaries-guest-real-local.spec.ts tests/e2e/beneficiary-preview-user-isolation-real-local.spec.ts --project=mobile-375
 
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:
