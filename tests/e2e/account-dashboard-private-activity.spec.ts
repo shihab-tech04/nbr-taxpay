@@ -130,10 +130,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   // reference, but must never inherit user1's fabricated assessed balances.
   const financialCards=page.locator('.taxpayer-dashboard-kpi');
   await expect(financialCards).toHaveCount(4);
-  await expect(financialCards.nth(0)).toContainText('Tax assessed for the year');
+  await expect(financialCards.nth(0)).toContainText('Total tax for the year');
   await expect(financialCards.nth(1)).toContainText('Tax deducted or paid early');
-  await expect(financialCards.nth(2)).toContainText('Income tax payments made');
-  await expect(financialCards.nth(3)).toContainText('Tax left after payments');
+  await expect(financialCards.nth(2)).toContainText('Income tax paid directly');
+  await expect(financialCards.nth(3)).toContainText('Still remaining');
   await expect(financialCards.nth(0)).toContainText('—');
   await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
   const phase=page.getByTestId('authenticated-dashboard-v11');
