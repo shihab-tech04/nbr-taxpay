@@ -4,11 +4,26 @@ import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficia
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
+/** Preview user IDs are not credentials, but their browser-scoped saved lists
+ * must never silently bleed into a different sample login on the same device.
+ * Legacy unscoped capabilities remain untouched for explicit recovery.
+ */
+export function guestBeneficiaryStorageKeys(previewId:string|null):{capability:string;initialized:string}{
+  const scope=previewId && /^user(?:10|[1-9])$/.test(previewId)?':preview:'+previewId:'';
+  return {capability:capabilityKey+scope,initialized:initializedKey+scope};
+}
+function activeGuestStorageKeys(){
+  let previewId:string|null=null;
+  try {previewId=window.sessionStorage?.getItem('taxpay-taxpayer-preview-user')??null;}
+  catch { /* Real guest browsing has no preview identity. */ }
+  return guestBeneficiaryStorageKeys(previewId);
+}
+
 const pageSize = 500;
 
 /** A guest address book can be recovered only from a browser retaining its capability. */
 export function hasStoredGuestBeneficiaries(): boolean {
-  try { return capabilityPattern.test(window.localStorage.getItem(capabilityKey) ?? '') && window.localStorage.getItem(initializedKey) === '1'; }
+  try { const keys=activeGuestStorageKeys(); return capabilityPattern.test(window.localStorage.getItem(keys.capability) ?? '') && window.localStorage.getItem(keys.initialized) === '1'; }
   catch { return false; }
 }
 
@@ -33,11 +48,12 @@ function createCapability(): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-function getCapability(): { value: string; needsRegistration: boolean } {
+function getCapability(): { value: string; needsRegistration: boolean; initializedStorageKey:string } {
   const storage = browserStorage();
+  const keys=activeGuestStorageKeys();
   let value: string | null;
   try {
-    value = storage.getItem(capabilityKey);
+    value = storage.getItem(keys.capability);
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
@@ -46,19 +62,19 @@ function getCapability(): { value: string; needsRegistration: boolean } {
       throw new Error('This browser’s saved beneficiary access key is invalid. Do not clear site data if you need to recover an older list.');
     }
     try {
-      return { value, needsRegistration: storage.getItem(initializedKey) !== '1' };
+      return { value, needsRegistration: storage.getItem(keys.initialized) !== '1',initializedStorageKey:keys.initialized };
     } catch {
       throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
     }
   }
   const created = createCapability();
   try {
-    storage.setItem(capabilityKey, created);
-    storage.removeItem(initializedKey);
+    storage.setItem(keys.capability, created);
+    storage.removeItem(keys.initialized);
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
-  return { value: created, needsRegistration: true };
+  return { value: created, needsRegistration: true,initializedStorageKey:keys.initialized };
 }
 
 async function post<T>(action: string, fields: Record<string, unknown> = {}): Promise<T> {
@@ -104,7 +120,7 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}): Pr
   if (capability.needsRegistration) {
     await send('open');
     try {
-      browserStorage().setItem(initializedKey, '1');
+      browserStorage().setItem(capability.initializedStorageKey, '1');
     } catch {
       // The capability itself remains stored; a later request retries registration.
     }
