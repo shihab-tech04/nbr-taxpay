@@ -41,7 +41,7 @@ function getCapability(source:GuestSource='active'): { value: string; needsRegis
     if(preview)return {value:preview.capability,needsRegistration:false};
     // A stale browser-local preview must never silently load another
     // browser's unrelated anonymous address book as the preview user's data.
-    if(import.meta.env.VITE_SUPABASE_DISABLED!=='true'&&window.sessionStorage.getItem(PREVIEW_USER_KEY))
+    if(import.meta.env?.VITE_SUPABASE_DISABLED!=='true'&&window.sessionStorage.getItem(PREVIEW_USER_KEY))
       throw new Error('Your demo session needs sign-in again. No data was discarded.');
   }
   const storage = browserStorage();
