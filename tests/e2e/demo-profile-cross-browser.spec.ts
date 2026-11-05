@@ -81,7 +81,7 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await expect(a.locator('#beneficiary-list')).toContainText('Family');
     await expect(a.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
     await a.locator('#beneficiary-list').click();
-    await a.locator('#beneficiary-list-menu').getByRole('button',{name:'Clients'}).click();
+    await a.locator('#beneficiary-list-menu').getByRole('button',{name:'Clients',exact:true}).click();
     await expect.poll(()=>records.get('user1')!.selectedListId).toBe(uuid(102));
     await a.locator('button.citizen-language.citizen-desktop-control').click();
     await expect.poll(()=>records.get('user1')!.language).toBe('bn');
