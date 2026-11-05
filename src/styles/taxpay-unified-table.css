@@ -692,3 +692,38 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpayer-transaction-row__amount {justify-self:start;}
   .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpayer-transaction-row__action {grid-column:1/-1;justify-self:stretch;}
 }
+
+
+/* Board Meeting table architecture, with Korbritto's existing color and type tokens. */
+.taxpay-record-list__cell{min-width:0;max-width:100%}
+.taxpay-record-list__cell > :not(.sr-only){max-width:100%}
+.taxpay-table-pagination{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;min-width:0;padding:12px;
+  border-top:1px solid var(--taxpay-table-border,#e1e6ee);
+  color:var(--taxpay-table-muted,#5f6b7a);font-size:14px;
+}
+.taxpay-table-pagination__controls{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.taxpay-table-pagination :is(.taxpay-table-pagination__button,.taxpay-table-pagination__page){
+  min-height:44px;min-width:44px;padding:8px 10px;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;
+  background:var(--taxpay-table-surface,#fff);
+  color:var(--taxpay-table-text,#172033);font:inherit;cursor:pointer;
+}
+.taxpay-table-pagination :is(.taxpay-table-pagination__button,.taxpay-table-pagination__page):hover:not(:disabled){
+  background:var(--taxpay-table-hover,#f1f6ff);
+}
+.taxpay-table-pagination .taxpay-table-pagination__page[aria-current="page"]{
+  background:var(--taxpay-table-selected,#eaf2ff);
+  border-color:var(--taxpay-table-primary,#2c5ead);color:var(--taxpay-table-primary,#2c5ead);
+  font-weight:600;
+}
+.taxpay-table-pagination button:focus-visible{
+  outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;
+}
+.taxpay-table-pagination button:disabled{cursor:not-allowed;opacity:.45}
+@media(max-width:599px){
+  .taxpay-table-pagination{flex-direction:column;align-items:stretch}
+  .taxpay-table-pagination__controls{justify-content:center}
+}
