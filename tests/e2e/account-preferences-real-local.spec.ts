@@ -63,17 +63,22 @@ test('real account restores its own language and selected beneficiary list in a 
   await addList('Family');
   await addList('Clients');
   await expect(page.locator('#beneficiary-list')).toContainText('Clients');
-  const clientsId=(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id;
+  const ownedLists=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?select=id,name',api.origin),{
+    headers:{apikey:key,Authorization:'Bearer '+a.session.access_token}
+  });
+  expect(ownedLists.status).toBe(200);
+  const own=(await ownedLists.json()) as {id:string;name:string}[];
+  const clientsId=own.find(list=>list.name==='Clients')?.id;
+  const familyId=own.find(list=>list.name==='Family')?.id;
+  expect(clientsId).toBeTruthy();expect(familyId).toBeTruthy();
+  await expect.poll(async()=>(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id,
+    {timeout:10000}).toBe(clientsId);
   await page.locator('#beneficiary-list').click();
   await page.locator('#beneficiary-list-menu').getByRole('button',{name:'Family',exact:true}).click();
   await expect(page.locator('#beneficiary-list')).toContainText('Family');
-  // Wait for real Auth metadata persistence rather than a UI-only state update.
-  await expect.poll(async()=>{
-    const user=await authUser(a.session.access_token);
-    return typeof user.user_metadata?.taxpay_last_beneficiary_list_id==='string'&&
-      user.user_metadata.taxpay_last_beneficiary_list_id!==clientsId;
-  },{timeout:10000}).toBe(true);
-  const familyId=(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id;
+  // Verify latest selected list was saved to SQL-backed Auth, not just React state.
+  await expect.poll(async()=>(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id,
+    {timeout:10000}).toBe(familyId);
 
   await page.goto('/?action=account_settings');
   await expect(page.locator('#taxpay-profile-language')).toBeVisible();
