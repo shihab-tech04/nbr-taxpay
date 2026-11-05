@@ -117,3 +117,25 @@ test('broken published desktop and mobile images recover to approved category ar
   const healthy = await media.locator('img').evaluate(img => (img as HTMLImageElement).naturalWidth > 0);
   expect(healthy).toBe(true);
 });
+
+
+test('a newly published image replaces an earlier broken CMS image without a page reload', async ({ page }) => {
+  let currentImage = 'banners/intro/old-broken.jpg';
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(
+      banners.map(row => row.id === 'intro' ? { ...row, desktop_image_path: currentImage } : row),
+    ) }));
+  await page.route('**/storage/v1/object/public/taxpay-banners/**', route =>
+    route.request().url().includes('old-broken.jpg')
+      ? route.fulfill({ status: 404, body: 'missing' })
+      : route.fulfill({ status: 200, contentType: 'image/png', body: png }));
+  await page.goto('/?action=landing');
+  const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
+  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  currentImage = 'banners/intro/new-good.jpg';
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/new-good\.jpg/);
+  await expect.poll(() => image.evaluate(element =>
+    (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+});
