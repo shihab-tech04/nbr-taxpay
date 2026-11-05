@@ -10,6 +10,7 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
   await expect(modal.locator('#travel-mobile')).toBeVisible();
+  await expect(modal.locator('#travel-receipt-email')).toHaveCount(0);
   await expect(modal.locator('.travel-flow__summary')).toBeHidden();
   await expect(modal.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toHaveCount(0);
@@ -63,7 +64,18 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   await expect(suggestions.getByRole('option')).toHaveCount(10);
   await expect(suggestions.getByText('Sample passport numbers')).toBeVisible();
   const withPopup=await row.boundingBox();
-  expect(withPopup?.height).toBeCloseTo(baseline?.height??0,0);
+  expect(withPopup?.height).toBeGreaterThan((baseline?.height ?? 0) + 100);
+  // Suggestions take up space inside the form instead of covering the
+  // medical assessment checkbox and receipt contact below them.
+  const suggestionBounds=await suggestions.boundingBox();
+  const medicalBounds=await modal.locator('.travel-flow__medical-option').boundingBox();
+  const contactBounds=await modal.locator('.travel-flow__contact').boundingBox();
+  expect(suggestionBounds).not.toBeNull();
+  expect(medicalBounds).not.toBeNull();
+  expect(contactBounds).not.toBeNull();
+  expect(suggestionBounds!.y + suggestionBounds!.height).toBeLessThanOrEqual(medicalBounds!.y);
+  expect(suggestionBounds!.y + suggestionBounds!.height).toBeLessThan(contactBounds!.y);
+  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).not.toBe('absolute');
   await passport.fill('TEST12');
   await expect(check).toBeEnabled();
   await passport.fill('');
@@ -114,6 +126,8 @@ test('Travel Tax: medical row and receipt contact are full width with a divider'
   const medical=modal.locator('.travel-flow__medical-option');
   const contact=modal.locator('.travel-flow__contact');
   const mobile=modal.locator('#travel-mobile');
+  await expect(modal.locator('#travel-receipt-email')).toHaveCount(0);
+  await expect(contact.locator('input')).toHaveCount(1);
   const medicalBounds=await medical.boundingBox();
   const cardBounds=await modal.locator('[data-passenger-id="first"]').boundingBox();
   expect(medicalBounds).not.toBeNull();
