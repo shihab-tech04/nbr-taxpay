@@ -865,3 +865,75 @@ table.taxpay-unified-table {
     margin-top: 8px;
   }
 }
+
+
+/* Convay responsive register parity for bound-account and review histories.
+ * The user1 register above already uses the same treatment. Keep everything
+ * outside these two data grids, including print receipts, unchanged. */
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table thead th {
+  height: 46px;
+  padding: 10px 14px;
+  background: var(--taxpay-table-heading, #f7f9fc);
+  color: var(--taxpay-table-muted, #5f6b7a);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody td {
+  min-height: 64px;
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.5;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:nth-child(even) {
+  background: var(--taxpay-table-stripe, #fafbfd);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:hover,
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:focus-visible {
+  background: var(--taxpay-table-hover, #f1f6ff);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:focus-visible {
+  outline: 2px solid var(--taxpay-table-primary, #2c5ead);
+  outline-offset: -2px;
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table :is(th,td):first-child {
+  min-width: 175px;
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table :is(th,td):last-child {
+  white-space: nowrap;
+}
+.taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] table.taxpay-convay-signed-in-table :is(th,td):nth-child(5) {
+  min-width: 120px;
+  text-align: right;
+}
+.taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] table.taxpay-convay-signed-in-table :is(th,td):nth-child(4) {
+  min-width: 170px;
+}
+.taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] table.taxpay-convay-signed-in-table :is(th,td):nth-child(6) {
+  min-width: 155px;
+}
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] .taxpay-mobile-table-cards,
+  .taxpay-taxpayer-reference [data-testid="account-owner-review-history"] .taxpay-mobile-table-cards {
+    padding: 0;
+    gap: 10px;
+  }
+  .taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] .taxpay-mobile-table-card,
+  .taxpay-taxpayer-reference [data-testid="account-owner-review-history"] .taxpay-mobile-table-card {
+    padding: 16px;
+    border: 1px solid var(--taxpay-table-border, #e1e6ee);
+    border-radius: var(--taxpay-table-radius, 12px);
+    background: var(--taxpay-table-surface, #fff);
+    min-width: 0;
+  }
+}
