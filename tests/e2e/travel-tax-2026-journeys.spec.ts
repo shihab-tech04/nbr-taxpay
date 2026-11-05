@@ -49,17 +49,22 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
 });
 
-test('Travel Tax: passport Check button activates on entry and results overlay without moving the field',async({page})=>{
+test('Travel Tax: passport suggestions expand below the input without covering other controls',async({page})=>{
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const passport=modal.locator('#travel-passport-first');
   const check=modal.locator('#travel-lookup-first');
   await expect(check).toBeDisabled();
-  await passport.focus();
+  // Passport can be focused automatically on modal open: explicitly close its
+  // suggestions before measuring the collapsed row.
+  const suggestions=modal.locator('#travel-passport-suggestions-first');
+  await passport.press('Escape');
+  await expect(suggestions).toHaveCount(0);
   const row=modal.locator('.travel-flow__passport-row');
   const baseline=await row.boundingBox();
-  const suggestions=modal.locator('#travel-passport-suggestions-first');
+  await modal.locator('#travel-mobile').focus();
+  await passport.focus();
   await expect(suggestions.getByRole('option')).toHaveCount(10);
   await expect(suggestions.getByText('Sample passport numbers')).toBeVisible();
   const withPopup=await row.boundingBox();
@@ -377,6 +382,10 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button', {name: 'Add passenger'}).click();
+  // One confirmed passenger can fit in a desktop modal after removing email.
+  // Add an unfinished second passenger to test a genuinely scrollable Step 1.
+  await modal.getByRole('button', {name: 'Add another passenger'}).click();
+  await expect(modal.locator('.travel-flow__person')).toHaveCount(2);
   // Step 1 now animates its height and newly revealed passenger details.
   // Compare sticky header/footer positions only after those animations finish;
   // keep the strict 1px position assertion (do not weaken the layout gate).
