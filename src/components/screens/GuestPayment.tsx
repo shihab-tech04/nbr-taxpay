@@ -1108,6 +1108,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     );
   }
 
+  const receiptEmailControl = (
+    <div>
+      <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
+      <input id="guest-receipt-email" type="email" inputMode="email" autoComplete="email"
+        placeholder="name@example.com" maxLength={254} value={receiptEmail}
+        aria-invalid={isFieldInvalid('email') || !isOptionalReceiptEmailValid(receiptEmail) || undefined}
+        aria-describedby={errorDescription('email')}
+        onChange={event => { setReceiptEmail(event.target.value); if (isFieldInvalid('email')) clearValidationError(); }}
+        className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary" />
+      {fieldError('email')}
+    </div>
+  );
+
   return (
     <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
       {/* Title & Mode Banner */}
@@ -1256,16 +1269,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
 
 
-              <div>
-                <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
-                <input id="guest-receipt-email" type="email" inputMode="email" autoComplete="email"
-                  placeholder="name@example.com" maxLength={254} value={receiptEmail}
-                  aria-invalid={isFieldInvalid('email') || !isOptionalReceiptEmailValid(receiptEmail) || undefined}
-                  aria-describedby={errorDescription('email')}
-                  onChange={event => { setReceiptEmail(event.target.value); if (isFieldInvalid('email')) clearValidationError(); }}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary" />
-                {fieldError('email')}
-              </div>
+              {!ownAccountTax && !simpleOwnOtherTax && receiptEmailControl}
               {!isWithholdingMode && <div>
                 <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
                 <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
@@ -1273,8 +1277,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
                 {fieldError('noticeReference')}
                 </div>}
+              {simpleOwnOtherTax && receiptEmailControl}
               </div>}
             </div>
+            {ownAccountTax && !isWithholdingMode && receiptEmailControl}
             </PaymentFormSection>}
             {otherBatch && !ownAccountTax && !signedInAccount && !simpleOwnOtherTax && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'করদাতারা' : 'Taxpayers'}>
