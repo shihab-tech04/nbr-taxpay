@@ -7,7 +7,7 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   await page.goto(history);
   const workspace=page.getByTestId('user1-synthetic-workspace');
   const panel=workspace.locator('.taxpayer-transaction-panel');
-  const rows=panel.locator('.taxpayer-transaction-row');
+  const rows=panel.locator('table.taxpayer-transaction-table tbody tr');
 
   await expect(panel.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(workspace.getByText('Payment & activity count')).toHaveCount(0);
@@ -50,7 +50,8 @@ test('history rows, filters and detail modal fit narrow screens',async({page},in
     await page.goto(history);
     const panel=page.locator('.taxpayer-transaction-panel');
     await expect(panel.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
-    await expect(panel.locator('.taxpayer-transaction-row').first()).toBeVisible();
+    const row=width>=768?panel.locator('table.taxpayer-transaction-table tbody tr').first():panel.locator('[data-testid="taxpayer-transaction-mobile-cards"] > li').first();
+    await expect(row).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),`overflow at ${width}px`).toBeLessThanOrEqual(2);
     await panel.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();
     await expect(page.getByRole('dialog',{name:'Pending bank reconciliation'})).toBeVisible();
