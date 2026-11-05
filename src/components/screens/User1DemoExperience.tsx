@@ -87,7 +87,6 @@ export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','his
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=({route,activityTabs=false})=>{
   const {navigate,language,setLanguage,routeParams}=useTaxState();
   const bn=language==='bn';
-  const trackingActivity=route==='history' && Boolean(routeParams.trackPayment);
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [year,setYear]=useState<string>(()=>{
@@ -185,7 +184,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <button type="button" onClick={csv} className={action}><Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>
     </div>
     <TaxPayTableControls className="taxpayer-transaction-filters">
-      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={trackingActivity?tr('Enter challan or transaction reference','চালান বা লেনদেন রেফারেন্স লিখুন'):tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
+      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
       </select></label>
@@ -216,9 +215,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       ]}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?(trackingActivity?tr('Track payment','পেমেন্ট অনুসন্ধান'):tr('Payments & activity','পেমেন্ট ও লেনদেন')):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
-    actions={!trackingActivity && !['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
+    actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
@@ -669,20 +668,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
-  const content=route==='ledger'?ledger:route==='history'?<>
-    {trackingActivity && <section className="space-y-3" aria-labelledby="taxpayer-receipt-lookup-heading">
-      <h2 id="taxpayer-receipt-lookup-heading" className="text-base font-semibold">{tr('Payment status & receipt','পেমেন্টের অবস্থা ও রসিদ')}</h2>
-      <ReceiptLookup hidePageHeading accountContext />
-    </section>}
-    {trackingActivity
-      ? <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 py-2" data-testid="track-payment-history-link">
-          <p className="text-sm text-taxpay-muted">{tr('Need an earlier payment reference?','আগের পেমেন্টের রেফারেন্স প্রয়োজন?')}</p>
-          <button type="button" className={action} onClick={()=>navigate('history')}>
-            {tr('View all transactions','সব লেনদেন দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
-          </button>
-        </div>
-      : transactionList}
-  </>:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
@@ -691,7 +677,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
-    {route==='history'&&!trackingActivity&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
+    {route==='history'&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}
