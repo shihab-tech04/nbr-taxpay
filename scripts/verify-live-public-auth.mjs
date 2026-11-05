@@ -36,6 +36,9 @@ try {
     // email-auth route and the safe return target without using a mailbox.
     await page.screenshot({ path: 'test-results/live-auth-email-' + name + '.png', fullPage: true });
 
+    // PR checks run against the previously deployed site; keep its baseline
+    // acceptance until the candidate is actually published.
+    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
     // Keep the explicitly labeled synthetic sample journey separate from
     // verified email auth, and exercise it only through its visible control.
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -84,6 +87,31 @@ try {
       await page.reload();
       await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
       await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' }).getByRole('textbox', { name: 'Email address' })).toBeVisible();
+    }
+
+    } else {
+      // The new published contract has one account identity across browsers.
+      await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await expect(page.getByRole('button', {name:'Use User ID (sample account)'})).toHaveCount(0);
+      const loginUrl=new URL(base);
+      loginUrl.searchParams.set('action','taxpayer_login');
+      await page.goto(loginUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      const verifiedDialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      await expect(verifiedDialog).toBeVisible();
+      await expect(verifiedDialog.getByRole('textbox',{name:'Email address'})).toBeVisible();
+      await expect(verifiedDialog.getByRole('textbox',{name:'User ID'})).toHaveCount(0);
+      await expect(verifiedDialog.getByLabel('Password',{exact:true})).toHaveCount(0);
+      await expect(page).not.toHaveURL(/demoUser=/);
+      await page.screenshot({path:'test-results/live-auth-verified-'+name+'.png',fullPage:true});
+      const privateUrl=new URL(base);
+      privateUrl.searchParams.set('action','beneficiaries');
+      await page.goto(privateUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
+      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+      const privateDialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      await expect(privateDialog.getByRole('textbox',{name:'Email address'})).toBeVisible();
+      await page.reload();
+      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'}).getByRole('textbox',{name:'Email address'})).toBeVisible();
     }
     await page.close();
 
