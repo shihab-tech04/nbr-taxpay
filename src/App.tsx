@@ -65,7 +65,7 @@ const MainRouter: React.FC = () => {
   const signInReturnRoute = safePrivateAuthReturnRoute(currentRoute) ?? 'taxpayer_home';
   // Sample accounts have an explicit browser-local login and use the same approved
   // taxpayer layout for saved lists. Anonymous visitors never pass this gate.
-  const previewAccess = Boolean(previewAccount && previewReadOnlyRoutes.has(currentRoute));
+  const previewAccess = Boolean(previewAccount && (previewReadOnlyRoutes.has(currentRoute) || (sampleJourneysEnabled && currentRoute === 'beneficiaries')));
   // A UUID linked to a mirrored simulated transaction is a public, read-only
   // receipt view. It grants no access to the taxpayer's private workspace.
   const publicConfirmedReceipt = currentRoute==='payment_details' &&
