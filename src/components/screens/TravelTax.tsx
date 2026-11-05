@@ -467,8 +467,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     country: 'Bangladesh', identitySource: 'PASSPORT_SAMPLE'});
                   // Identity lookup previews details. Always retain manual confirmation.
                   setEditingPassengerId(item.id);
-                  // Keep the verified identity card, medical option and Add passenger
-                  // confirmation visible; verification must not silently confirm a passenger.
+                  // Checking only previews this passenger; the user must still
+                  // confirm explicitly. Keep that confirmation above the fixed
+                  // modal footer once the expanded identity review has rendered.
+                  requestAnimationFrame(() => requestAnimationFrame(() => {
+                    document.querySelector<HTMLElement>(
+                      '[data-passenger-id="' + item.id + '"] .travel-flow__confirm-passenger'
+                    )?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+                  }));
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
               {passportSuggestionsFor === item.id && <div
