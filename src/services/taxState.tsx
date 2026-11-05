@@ -14,6 +14,7 @@ import {
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
+import {recordAccountActivity} from './accountActivity';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
   DEMO_TAXPAYERS, 
@@ -190,6 +191,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLanguagePreferenceError(false);
     if(accountUser?.id){
       void saveAccountViewPreference(accountUser.id,'taxpay_language',lang)
+        .then(()=>recordAccountActivity(accountUser.id,'LANGUAGE_CHANGED',lang))
         .catch(()=>setLanguagePreferenceError(true));
     } else {
       saveBrowserLanguage(previewAccount?.id??null,lang);
@@ -200,6 +202,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const route = validRoute(requestedRoute);
     setCurrentRoute(route);
     setRouteParams(params);
+    if(accountUser?.id && !['landing','office_login','taxpayer_login'].includes(route))
+      void recordAccountActivity(accountUser.id,'PAGE_OPENED',route).catch(()=>undefined);
     // Keep the UI route in browser history without exposing payment form details in a URL.
     const next = new URL(window.location.href);
     next.searchParams.set('action', route);
