@@ -43,6 +43,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       // Browser-only capabilities are never a substitute for a verified
       // taxpayer account in the published payment flow.
       setLoading(false);
+      onChoose([]);
       onAvailableTins([]);
       return()=>{cancelled=true;};
     }
