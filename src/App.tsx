@@ -223,10 +223,9 @@ const MainRouter: React.FC = () => {
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
             <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>
-            <a className="citizen-account-gate__preview"
-              href={`?action=secure_workspace&returnTo=${signInReturnRoute}${language === 'bn' ? '&lang=bn' : ''}`}>
-              {language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email'}
-            </a>
+            <button className="citizen-account-gate__preview" type="button" onClick={() => navigate('taxpayer_login')}>
+              {language === 'bn' ? 'সাইন ইন' : 'Sign in'}
+            </button>
             {/* Local-only synthetic workspace links retain existing UX regression coverage.
                 The production bundle removes this entire branch; private routes still require
                 verified Supabase Auth. */}
@@ -265,7 +264,6 @@ const MainRouter: React.FC = () => {
       {beneficiaryLoginRequired && <TaxpayerLoginDialog
         preservePaymentJourney
         emailReturnTo={signInReturnRoute}
-        verifiedOnly
         onClose={() => navigate('landing')}
       />}
       <AuthorizationRequestPopup />
