@@ -80,8 +80,9 @@ test('payment beneficiary picker shows only leaf tag beside name and bare TIN on
   assert.equal(beneficiaryFinalTagLabel(null,null,'en'),null);
   assert.equal(beneficiaryFinalTagLabel('friends_family',null,'en'),null);
   const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
-  assert.match(picker,/names\\(person\\)\\}\\{finalTag&&/);
-  assert.match(picker,/\\{person\\.tin\\}<\\/span>/);
-  assert.doesNotMatch(picker,/\\{tr\\('TIN','টিআইএন'\\)\\}: \\{person\\.tin\\}/);
-  assert.doesNotMatch(picker,/\\{tr\\('Tag','ট্যাগ'\\)\\}:/);
+  assert.ok(picker.includes('{names(person)}{finalTag&&'));
+  assert.ok(picker.includes('{person.tin}</span>'));
+  assert.ok(!picker.includes("{tr('TIN','টিআইএন')}: {person.tin}"));
+  assert.ok(!picker.includes("{tr('Tag','ট্যাগ')}:"));
+
 });
