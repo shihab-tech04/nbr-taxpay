@@ -21,7 +21,6 @@ interface SavedBeneficiaryPickerProps {
 export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins}:SavedBeneficiaryPickerProps){
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const {navigate,setPaymentServiceChoiceOpen}=useTaxState();
-  const accountRequired=!import.meta.env.DEV && !user;
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
@@ -39,14 +38,6 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
     onAvailableTins(null);
     if(checkingIdentity)return()=>{cancelled=true;};
-    if(accountRequired){
-      // Browser-only capabilities are never a substitute for a verified
-      // taxpayer account in the published payment flow.
-      setLoading(false);
-      onChoose([]);
-      onAvailableTins([]);
-      return()=>{cancelled=true;};
-    }
     loadBeneficiaries(user?.id??null).then(result=>{
       if(cancelled)return;
       setLists(result.lists);setPeople(result.people);
@@ -75,7 +66,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     return()=>{cancelled=true;};
     // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user?.id,checkingIdentity,accountRequired,refresh,onAvailableTins]);
+  },[user?.id,checkingIdentity,refresh,onAvailableTins]);
 
   // A payment step can remain mounted while beneficiaries change in another
   // tab. Re-read the same identity-scoped source on return to the tab.
@@ -131,12 +122,6 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       'Select saved beneficiaries from a list below. To add or edit a taxpayer, use Beneficiaries.',
       'নিচের তালিকা থেকে সংরক্ষিত উপকারভোগী নির্বাচন করুন। কাউকে যোগ বা সম্পাদনা করতে উপকারভোগী পাতায় যান।'
     )}</p>
-    {accountRequired&&!checkingIdentity&&<div role="status" className="rounded-lg border border-taxpay-border p-4">
-      <p className="text-sm text-taxpay-text">{tr('Sign in with your email to use saved beneficiary lists across devices.','সব ডিভাইসে সংরক্ষিত উপকারভোগীর তালিকা ব্যবহার করতে ইমেইলে সাইন ইন করুন।')}</p>
-      <UiButton type="button" variant="primary" className="mt-3 min-h-11 text-sm font-semibold" onClick={manage}>
-        {tr('Sign in to select beneficiaries','উপকারভোগী নির্বাচন করতে সাইন ইন করুন')}
-      </UiButton>
-    </div>}
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
     {!checkingIdentity&&!loading&&!error&&restoreAvailable&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold"
       disabled={restoring} onClick={restoreSavedLists}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore saved lists','সংরক্ষিত তালিকা ফিরিয়ে আনুন')}</UiButton>}
@@ -145,14 +130,14 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       <p className="text-sm text-red-700">{error}</p>
       <UiButton type="button" variant="outline" className="text-sm font-semibold" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</UiButton>
     </div>}
-    {!accountRequired&&!loading&&!checkingIdentity&&!error&&lists.length===0&&<div className="rounded-lg border border-dashed border-taxpay-border p-4">
+    {!loading&&!checkingIdentity&&!error&&lists.length===0&&<div className="rounded-lg border border-dashed border-taxpay-border p-4">
       <p className="font-semibold text-taxpay-text">{tr('No beneficiary lists yet','এখনও কোনো উপকারভোগীর তালিকা নেই')}</p>
       <p className="mt-1 text-sm text-slate-600">{tr('Create a list and add beneficiaries before continuing with this payment.','পেমেন্টে এগোনোর আগে একটি তালিকা তৈরি করে উপকারভোগী যোগ করুন।')}</p>
       <UiButton type="button" variant="primary" className="mt-3 min-h-11 text-sm font-semibold" onClick={manage}>
         {tr('Create your first list','প্রথম তালিকা তৈরি করুন')}
       </UiButton>
     </div>}
-    {!accountRequired&&!loading&&!checkingIdentity&&!error&&lists.length>0&&<>
+    {!loading&&!checkingIdentity&&!error&&lists.length>0&&<>
       {people.length>0&&<div>
         <label htmlFor="payment-beneficiary-search" className="sr-only">{tr('Search beneficiaries','উপকারভোগী খুঁজুন')}</label>
         <input id="payment-beneficiary-search" type="search" value={search} onChange={e=>setSearch(e.target.value)}
