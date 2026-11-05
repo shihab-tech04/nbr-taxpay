@@ -102,6 +102,9 @@ const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }))
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
 function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
+  // A CMS update can replace a previously broken image under the same banner ID.
+  // Retry the new asset instead of leaving the old failure latched forever.
+  useEffect(() => { setImageFailed(false); }, [slide.image, slide.mobileImage]);
   const fallbackImage = fallbackSlides.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
