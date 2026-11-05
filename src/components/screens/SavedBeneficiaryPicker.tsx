@@ -6,7 +6,7 @@ import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,type Beneficiary,ty
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {useTaxState} from '../../services/taxState';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
-import {beneficiaryTagLabel} from '../../services/beneficiaryTags';
+import {beneficiaryTagLabel,beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
 
 interface SelectedBeneficiary {tin:string;name:string}
 interface SavedBeneficiaryPickerProps {
@@ -169,16 +169,19 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
             </button>
             {isExpanded&&<div id={'payment-beneficiary-list-'+list.id} className="divide-y divide-taxpay-border">
               {filtered.length===0?<p className="p-3 text-sm text-slate-600">{tr('This list is empty. Add beneficiaries from Manage beneficiaries.','এই তালিকা খালি। উপকারভোগী পরিচালনা থেকে সদস্য যোগ করুন।')}</p>:
-                filtered.map(person=><label key={person.id} className="flex min-h-14 cursor-pointer items-center gap-3 bg-white px-3 py-2 hover:bg-taxpay-light">
-                  <input type={allowMultiple?'checkbox':'radio'} name={allowMultiple?undefined:'payment-beneficiary'} className="h-4 w-4 shrink-0 accent-taxpay-primary"
-                    checked={selectedTins.includes(person.tin)} onChange={()=>change(person)}
-                    aria-label={tr('Select '+names(person),'নির্বাচন করুন '+names(person))}/>
-                  <span className="min-w-0 flex-1">
-                    <span className="block break-words text-sm font-semibold text-taxpay-text">{names(person)}</span>
-                    <span className="block break-all text-xs text-slate-600">{tr('TIN','টিআইএন')}: {person.tin}</span>
-                     <span className="block text-xs text-taxpay-muted">{tr('Tag','ট্যাগ')}: {beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</span>
-                  </span>
-                </label>)}
+                filtered.map(person=>{
+                  const finalTag=beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label);
+                  return <label key={person.id} className="flex min-h-14 cursor-pointer items-center gap-3 bg-white px-3 py-2 hover:bg-taxpay-light">
+                    <input type={allowMultiple?'checkbox':'radio'} name={allowMultiple?undefined:'payment-beneficiary'} className="h-4 w-4 shrink-0 accent-taxpay-primary"
+                      checked={selectedTins.includes(person.tin)} onChange={()=>change(person)}
+                      aria-label={tr('Select '+names(person),'নির্বাচন করুন '+names(person))}/>
+                    <span className="min-w-0 flex-1">
+                      <span className="block break-words text-sm font-semibold text-taxpay-text">
+                        {names(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}
+                      </span>
+                      <span className="block break-all text-xs text-slate-600">{person.tin}</span>
+                    </span>
+                  </label>})}
             </div>}
           </div>;
         })}
