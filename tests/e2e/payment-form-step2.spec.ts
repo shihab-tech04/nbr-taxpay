@@ -138,6 +138,9 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'OTHER');
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  if (await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).isVisible()) {
+    await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
+  }
   await dialog.locator('#guest-payer-name').fill('Test Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -157,6 +160,9 @@ test('single-head return service remains intact and Other Tax selected amounts r
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  if (await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).isVisible()) {
+    await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
+  }
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
@@ -178,6 +184,9 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await dialog.locator('#guest-tin').fill('444444444444');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  if (await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).isVisible()) {
+    await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
+  }
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
