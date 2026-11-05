@@ -22,11 +22,13 @@ function previewLanguageStorageKey(previewId:string|null):string {
 /** Preview users have no verified Supabase identity: this is device-only UX,
  * never cross-device storage or an account record. */
 export function readBrowserLanguage(previewId:string|null):Language|null {
+  if(!previewId)return null; // Public guest uses URL/current-page language only.
   try {return validSavedLanguage(window.localStorage.getItem(previewLanguageStorageKey(previewId)));}
   catch {return null;}
 }
 
 export function saveBrowserLanguage(previewId:string|null,language:Language):void {
+  if(!previewId)return; // Do not make anonymous browsing override later public URLs.
   try {window.localStorage.setItem(previewLanguageStorageKey(previewId),language);}
   catch { /* Browser storage may be disabled; never imply it was saved remotely. */ }
 }
