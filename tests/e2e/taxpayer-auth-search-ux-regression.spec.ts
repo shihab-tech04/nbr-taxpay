@@ -44,7 +44,7 @@ test('transaction search has one outer focus boundary at mobile and desktop widt
     await expect(search).toHaveCSS('box-shadow','none');
     await expect(wrapper).toHaveCSS('outline-style','solid');
     await search.fill('Advance');
-    await expect(page.getByText('Advance tax',{exact:true}).first()).toBeVisible();
+    await expect(page.getByText('Advance tax',{exact:true}).filter({visible:true}).first()).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'unexpected horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
