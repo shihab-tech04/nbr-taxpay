@@ -192,6 +192,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   // identity lookup must never silently confirm a passenger.
   const pendingConfirmationId = editingPassengerId ??
     passengers.find(item => !confirmedPassengerIds.includes(item.id))?.id ?? null;
+  // Present the confirmation action only once the current person's details
+  // can actually be reviewed. Passport lookup never adds a passenger itself.
+  const canShowAddPassenger = passengers.some(item =>
+    item.id === pendingConfirmationId && (item.nationality === 'BD'
+      ? item.identitySource === 'PASSPORT_SAMPLE'
+      : item.passport.trim().length >= 6 && item.name.trim().length >= 2 &&
+        !!item.country.trim() &&
+        travelPassengerAge(item.birthDate, new Date().toISOString().slice(0, 10)) !== null));
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
@@ -671,7 +679,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   </section>;
                 })}
               </div>
-              {pendingConfirmationId !== null && <button type="button" className="travel-flow__add-member"
+              {canShowAddPassenger && <button type="button" className="travel-flow__add-member"
                 disabled={firstIdentityIssue() !== null}
                 onClick={() => {
                   if (pendingConfirmationId === null) return;
@@ -683,8 +691,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 }}>
                 <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
               </button>}
-              <button type="button" className="travel-flow__add-member"
-                disabled={!allPassengersComplete} onClick={() => {
+              {confirmedPassengerIds.length > 0 && allPassengersComplete && <button
+                type="button" className="travel-flow__add-member" onClick={() => {
                   const id = crypto.randomUUID();
                   setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
                   setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
@@ -693,7 +701,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   ));
                 }}>
                 <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
-              </button>
+              </button>}
               <div className="travel-flow__contact">
                 <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
                 <div className="travel-flow__field">
