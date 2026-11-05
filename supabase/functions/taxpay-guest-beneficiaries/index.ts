@@ -4,6 +4,7 @@ const allowedOrigins = new Set([
   'https://shihab-tech04.github.io',
   'http://localhost:3000', 'http://127.0.0.1:3000',
   'http://localhost:4173', 'http://127.0.0.1:4173',
+  'http://localhost:4175', 'http://127.0.0.1:4175',
 ]);
 const encoder = new TextEncoder();
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
