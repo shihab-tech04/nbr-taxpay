@@ -33,6 +33,7 @@ import { paymentAmountRowColumns } from '../../services/paymentAmountLayout';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { clearOtherTaxBatch, confirmedBatchReceipts, createOtherTaxBatch, loadOtherTaxBatch,
@@ -127,7 +128,7 @@ const GUEST_COPY = {
   },
 } as const;
 
-type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'phone' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
+type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
@@ -220,6 +221,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
+  const [receiptEmail, setReceiptEmail] = useState('');
   const [assessmentYear, setAssessmentYear] = useState('2026-27');
   // The later approved UX supersedes v11's preselected self-tax default.
   const [forSelf, setForSelf] = useState<boolean | null>(initialForSelf ?? null);
@@ -301,6 +303,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (embedded && !signedInAccount && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) return false;
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
+    if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
@@ -404,7 +407,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (!errorField || !errorMessage) return;
     const id: Record<GuestErrorField, string> = {
-      payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', phone: 'guest-phone',
+      payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', phone: 'guest-phone', email: 'guest-receipt-email',
       noticeReference: 'guest-notice-ref', incomeTaxType: 'guest-income-type-NON_COMPANY',
       headId: 'guest-head-static', taxAmount: errorHeadId && selectedHeadIds.length > 0 && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
     };
@@ -616,6 +619,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (!forSelf && !signedInAccount && effectivePayerName.trim().length < 2) {
       setValidationError(copy.requiredPayer, 'payerName');
+      return false;
+    }
+    if (!isOptionalReceiptEmailValid(receiptEmail)) {
+      setValidationError(language === 'bn' ? 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।' : 'Enter a valid email address or leave it blank.', 'email');
       return false;
     }
     // Preserve the existing optional sample-reference behavior for the older
@@ -861,6 +868,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         payerTin: signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
         taxpayerTin,
         receiptMobile: receiptPhone,
+        receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,
         isRepresentativePayment: !forSelf,
         representativeTin: undefined,
@@ -897,6 +905,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             assessmentYear,
             taxZone, taxCircle,
             receiptMobile: receiptPhone,
+            receiptEmail: normaliseReceiptEmail(receiptEmail),
             noticeReference,
             incomeTaxType,
             isWithholding: isWithholdingMode,
