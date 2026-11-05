@@ -13,6 +13,7 @@ import {
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import {useAccountIdentity} from './accountIdentity';
+import {saveAccountRouteVisit} from './accountRouteActivity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
@@ -90,6 +91,7 @@ const historySampleRole = (route: string, state: any): UserRole | null =>
 export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {user:accountUser,loading:checkingAccount}=useAccountIdentity();
   const [languagePreferenceError,setLanguagePreferenceError]=useState(false);
+  const [activitySaveError,setActivitySaveError]=useState(false);
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
@@ -185,6 +187,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // during the same session because Auth emits a USER_UPDATED event.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[checkingAccount,accountUser?.id,previewAccount?.id]);
+  // Record navigation for the verified account only, including direct links and
+  // browser back/forward. Do not persist URL parameters or private form data.
+  useEffect(()=>{
+    if(checkingAccount||!accountUser?.id)return;
+    let active=true;
+    void saveAccountRouteVisit(accountUser.id,currentRoute).then(()=>{
+      if(active)setActivitySaveError(false);
+    }).catch(()=>{
+      if(active)setActivitySaveError(true);
+    });
+    return()=>{active=false;};
+  },[checkingAccount,accountUser?.id,currentRoute]);
+
   const updateLanguage = (lang:Language) => {
     applyLanguage(lang);
     setLanguagePreferenceError(false);
@@ -431,6 +446,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     >
       {languagePreferenceError&&<p role="alert" className="mx-auto w-full bg-red-50 px-4 py-2 text-sm text-red-700">
         {language==='bn'?'আপনার ভাষা পরিবর্তনটি অ্যাকাউন্টে সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।':'Your language preference could not be saved to this account. Please retry.'}
+      </p>}
+      {activitySaveError&&<p role="alert" className="mx-auto w-full bg-red-50 px-4 py-2 text-sm text-red-700">
+        {language==='bn'?'অ্যাকাউন্টের সাম্প্রতিক কার্যক্রম সংরক্ষণ করা যায়নি। পরে আবার চেষ্টা করুন।':'Recent account activity could not be saved. Please retry later.'}
       </p>}
       {children}
     </TaxStateContext.Provider>
