@@ -25,12 +25,14 @@ try {
     if(overflow>2)throw new Error('Private entry overflow: '+overflow+'px');
 
     if(process.env.GITHUB_EVENT_NAME==='pull_request'){
-      // PR preflight checks the currently deployed baseline (#554), not the branch artifact.
-      const emailEntry=page.getByRole('link',{name:'Sign in with email'});
-      await expect(emailEntry).toBeVisible();
-      await emailEntry.click();
-      await expect(page).toHaveURL(/action=secure_workspace.*returnTo=account_profile/);
-      await expect(page.getByRole('textbox',{name:'Email address'})).toBeVisible();
+      // Preflight reads the actual last-published User ID sign-in. Never assume
+      // an older email-only version is still deployed when Main has advanced.
+      const entry=page.getByRole('link',{name:'Sign In'});
+      await expect(entry).toHaveAttribute('href',/action=taxpayer_login/);
+      await entry.click();
+      const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
+      await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
       await page.screenshot({path:'test-results/live-auth-baseline-'+name+'.png',fullPage:true});
     }else{
       // The actual new release must show the approved login, not email-only entry.
@@ -121,13 +123,13 @@ try {
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal).toHaveCount(1);
-      await expect(beneficiaryModal.getByRole('textbox', { name: process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'Email address' : 'User ID' })).toBeVisible();
+      await expect(beneficiaryModal.getByRole('textbox', { name: 'User ID' })).toBeVisible();
       await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     } else {
       // PR preflight checks the previous live version; it may still show the
       // legacy gate. The deployed production check *requires* the modal.
       await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByRole('link', { name: 'Sign In' })).toHaveAttribute('href', /action=taxpayer_login/);
     }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
@@ -136,11 +138,11 @@ try {
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaryModal.getByRole('textbox', { name: process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'ইমেইল ঠিকানা' : 'ইউজার আইডি' })).toBeVisible();
+      await expect(beneficiaryModal.getByRole('textbox', { name: 'ইউজার আইডি' })).toBeVisible();
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toHaveCount(0);
     } else {
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByRole('link', { name: 'সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
     }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
