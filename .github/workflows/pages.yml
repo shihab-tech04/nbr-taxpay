@@ -262,6 +262,11 @@ jobs:
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/demo-profile-cross-browser.spec.ts --project=desktop-1280
+      - name: Verify two-browser same-profile SQL readback on hosted production (read-only)
+        env:
+          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+        run: node scripts/verify-hosted-profile-persistence.mjs
 
   public-support-e2e:
     name: Public receipts and workspace acceptance
