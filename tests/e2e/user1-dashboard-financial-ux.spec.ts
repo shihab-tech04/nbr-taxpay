@@ -51,7 +51,7 @@ test('monthly chart renders only recorded bars, supports Tab focus and routes to
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Transaction category'})).toHaveValue('income');
-  await expect(page.getByText('DEMO-PAY-01').first()).toBeVisible();
+  await expect(page.getByText('DEMO-PAY-01').filter({visible:true}).first()).toBeVisible();
 });
 
 test('desktop navigation consolidates duplicate Home/Tax summary and groups account routes',async({page},info)=>{
