@@ -75,10 +75,9 @@ const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined
 export const sampleJourneysEnabled = import.meta.env.DEV;
 const permittedDemoUser = (value: unknown) => sampleJourneysEnabled ? getDemoUser(value) : null;
 const previewStorageKey = 'taxpay-taxpayer-preview-user';
-// Production never restores browser-only sample identities as signed-in taxpayers.
-const storedPreviewAccount = () => sampleJourneysEnabled
-  ? getDemoUser(window.sessionStorage.getItem(previewStorageKey))
-  : null;
+// Restore the previously approved User ID session after a page refresh.
+// This is a browser-local project profile, not a privileged API identity.
+const storedPreviewAccount = () => getDemoUser(window.sessionStorage.getItem(previewStorageKey));
 
 // Browser history can restore a *visual-only* taxpayer sample after refresh.
 // This is never an identity, permission or tax-credit entitlement, and a newly
@@ -255,8 +254,6 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Temporary matching ID/password credentials only select a browser-local UI profile.
   // This deliberately creates no Supabase Auth session or API entitlement.
   const loginPreviewAccount = (userId: string, password: string, options?: { preserveRoute?: boolean }): boolean => {
-    // Public preview credentials can never be used as a persistent identity.
-    if(!sampleJourneysEnabled)return false;
     const selected = getDemoUser(userId.trim().toLowerCase());
     if (!selected || password !== selected.id) return false;
     window.sessionStorage.setItem(previewStorageKey, selected.id);
