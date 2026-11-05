@@ -10,6 +10,7 @@ import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
 import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { taxpayerBrandName } from '../../config/brand';
 
@@ -62,7 +63,11 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
-  const beginPayment = (withAccount: boolean) => { setUseAccount(withAccount); setStage(1); setView('payment'); };
+  const beginPayment = (withAccount: boolean) => {
+    if(withAccount&&verifiedUser?.id)
+      void recordAccountActivity(verifiedUser.id,'PAYMENT_STARTED','wizard').catch(()=>undefined);
+    setUseAccount(withAccount); setStage(1); setView('payment');
+  };
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
     if (payerForSelf === null || !selected || (accountLoading && !previewAccount)) return;
