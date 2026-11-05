@@ -41,13 +41,17 @@ test('offline evidence retains exact audit state and amounts without altering it
 });
 
 
-test('Track payment is exclusively a lookup and never mounts the dashboard service register',()=>{
-  const source=read('User1DemoExperience');
-  assert.match(source,/\{route==='history'&&!trackingActivity&&<DemoServiceRecordsPanel/);
-  assert.doesNotMatch(source,/\{route==='history'&&<DemoServiceRecordsPanel/);
-  assert.match(source,/data-testid="track-payment-history-link"/);
-  assert.match(source,/actions=\{!trackingActivity &&/);
+test('signed-in Activity uses Transactions only while keeping the service record list',()=>{
+  const screen=read('User1DemoExperience');
+  const tabs=readFileSync('src/components/layout/TaxpayerPageStructure.tsx','utf8');
+  const app=readFileSync('src/App.tsx','utf8');
+  assert.match(screen,/\{route==='history'&&<DemoServiceRecordsPanel/);
+  assert.doesNotMatch(screen,/trackingActivity|track-payment-history-link/);
+  assert.doesNotMatch(tabs,/Track payment|trackPayment|পেমেন্ট অনুসন্ধান/);
+  assert.doesNotMatch(app,/ReceiptLookup activityTabs accountContext/);
+  assert.match(tabs,/Transactions/);
 });
+
 
 test('service records use the shared Board-inspired toolbar and interactive grid contract',()=>{
   const screen=read('DemoServiceRecordsPanel');

@@ -44,7 +44,7 @@ test('real account restores its own language and selected beneficiary list in a 
       headers:{apikey:key,Authorization:'Bearer '+token}
     });
     expect(response.status).toBe(200);
-    return response.json() as Promise<{user_metadata?:Record<string,unknown>}>;
+    return response.json() as Promise<{id:string;user_metadata?:Record<string,unknown>}>;
   };
 
   const a=await signUp();
@@ -80,6 +80,19 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect.poll(async()=>(await authUser(a.session.access_token)).user_metadata?.taxpay_last_beneficiary_list_id,
     {timeout:10000}).toBe(familyId);
 
+  // Verify an actual tagged contact is owner-scoped SQL data, not a browser
+  // preview capability, before starting the second browser session.
+  const savedPerson=await fetch(new URL('/rest/v1/taxpay_beneficiaries',api.origin),{
+    method:'POST',
+    headers:{apikey:key,Authorization:'Bearer '+a.session.access_token,
+      'content-type':'application/json',Prefer:'return=representation'},
+    body:JSON.stringify({owner_uid:(await (await fetch(new URL('/auth/v1/user',api.origin),{
+      headers:{apikey:key,Authorization:'Bearer '+a.session.access_token}
+    })).json()).id,list_id:familyId,tin:'000000000047',
+      display_name:'Sajid Khan',tag:'friends_family',relationship:'friends'})
+  });
+  expect(savedPerson.status).toBe(201);
+
   await page.goto('/?action=account_settings');
   await expect(page.locator('#taxpay-profile-language')).toBeVisible();
   await page.locator('#taxpay-profile-language').selectOption('bn');
@@ -100,6 +113,10 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
   await expect(again.locator('#beneficiary-list')).toContainText('Family');
+  await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
+  await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
+  await expect(again.getByTestId('beneficiary-records')).toContainText('বন্ধু');
+
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_last_beneficiary_list_id).toBe(familyId);
   await second.close();
 
@@ -110,5 +127,9 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(another.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(another.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
   await expect(another.locator('#beneficiary-list')).toHaveCount(0);
+  await expect(another.getByTestId('beneficiary-records')).toHaveCount(0);
+
+  await expect(another.getByText('Sajid Khan')).toHaveCount(0);
+
   await third.close();
 });

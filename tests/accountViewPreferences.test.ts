@@ -48,3 +48,19 @@ test('sign-out never invalidates Auth before pending preference persistence is c
   assert.match(workspace,/await signOutApplicationAccount\(\)/);
   assert.doesNotMatch(workspace,/supabase\.auth\.signOut\(/);
 });
+
+test('approved published login retains User ID and password without added email sign-in',()=>{
+  const app=readFileSync('src/App.tsx','utf8');
+  const state=readFileSync('src/services/taxState.tsx','utf8');
+  const login=readFileSync('src/components/screens/TaxpayerLoginDialog.tsx','utf8');
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  assert.match(login,/id="taxpayer-login-user-id"/);
+  assert.match(login,/id="taxpayer-login-password"/);
+  assert.match(login,/initialFocusSelector="#taxpayer-login-user-id"/);
+  assert.doesNotMatch(login,/Sign in with email|signInWithOtp/);
+  assert.match(state,/const storedPreviewAccount = \(\) => getDemoUser/);
+  assert.doesNotMatch(state,/if\(!sampleJourneysEnabled\)return false/);
+  assert.match(app,/currentRoute === 'beneficiaries'/);
+  assert.doesNotMatch(app,/verifiedOnly/);
+  assert.doesNotMatch(picker,/accountRequired=!import.meta.env.DEV && !user/);
+});

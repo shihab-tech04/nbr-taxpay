@@ -76,7 +76,9 @@ const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined
 export const sampleJourneysEnabled = import.meta.env.DEV;
 const permittedDemoUser = (value: unknown) => sampleJourneysEnabled ? getDemoUser(value) : null;
 const previewStorageKey = 'taxpay-taxpayer-preview-user';
-const storedPreviewAccount = () => getDemoUser(activePreviewSession()?.profileId ?? (import.meta.env?.VITE_SUPABASE_DISABLED==='true' ?window.sessionStorage.getItem(previewStorageKey):null));
+// Only a server-issued preview capability can restore a published user session.
+// Preserve browser-local compatibility in explicitly offline test builds.
+const storedPreviewAccount = () => getDemoUser(activePreviewSession()?.profileId ?? (import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? window.sessionStorage.getItem(previewStorageKey) : null));
 
 // Browser history can restore a *visual-only* taxpayer sample after refresh.
 // This is never an identity, permission or tax-credit entitlement, and a newly

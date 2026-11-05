@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 // Synthetic HTTP transport: proves SQL rows own stationary copy and images without
 // accessing or changing the hosted TaxPay CMS.
@@ -53,6 +54,10 @@ test('uploaded SQL image paths override v9 defaults while mobile may use its own
   await page.route('**/rest/v1/taxpay_site_banners**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify(rows),
   }));
+  // Keep published Storage assets genuinely loadable during the contract check.
+  const onePixelPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
+  await page.route('**/storage/v1/object/public/taxpay-banners/**', route =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: onePixelPng }));
   await page.goto('/?action=landing');
   const media = page.locator('.public-hero-carousel__image-layer').first();
   await expect(media.locator('img')).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/desktop\.jpg/);
@@ -81,4 +86,78 @@ test('CMS outage never resurrects unpublished bundled artwork and payment action
   const expectedHeading = (page.viewportSize()?.width ?? 1280) <= 640
     ? 'SQL mobile heading' : 'Updated SQL-controlled headline';
   await expect(carousel.getByRole('heading', { name: expectedHeading })).toBeVisible();
+});
+
+test('custom CMS button labels appear visually in compact English and Bangla layouts', async ({ page }) => {
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(banners) }));
+  await page.goto('/?action=landing');
+  const hero = page.locator('.public-hero-carousel__fixed');
+  await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('Start travel tax');
+  await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('Start tax payment');
+  await setWorkspaceLanguage(page, 'bn');
+  await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('ভ্রমণ কর শুরু');
+  await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('কর পরিশোধ শুরু');
+});
+
+test('broken published desktop and mobile images recover to approved category artwork', async ({ page }) => {
+  const rows = banners.map(row => row.id === 'intro' ? {
+    ...row, desktop_image_path: 'banners/intro/broken.jpg',
+    mobile_image_path: 'banners/intro/broken-mobile.png',
+  } : row);
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) }));
+  await page.route('**/storage/v1/object/public/taxpay-banners/**', route =>
+    route.fulfill({ status: 404, body: 'missing' }));
+  await page.goto('/?action=landing');
+  const media = page.locator('.public-hero-carousel__image-layer').first();
+  await expect(media.locator('img')).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  await expect(media.locator('source')).toHaveCount(0);
+  await expect(media.locator('img')).toBeVisible();
+  const healthy = await media.locator('img').evaluate(img => (img as HTMLImageElement).naturalWidth > 0);
+  expect(healthy).toBe(true);
+});
+
+
+test('a newly published image replaces an earlier broken CMS image without a page reload', async ({ page }) => {
+  let currentImage = 'banners/intro/old-broken.jpg';
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(
+      banners.map(row => row.id === 'intro' ? { ...row, desktop_image_path: currentImage } : row),
+    ) }));
+  await page.route('**/storage/v1/object/public/taxpay-banners/**', route =>
+    route.request().url().includes('old-broken.jpg')
+      ? route.fulfill({ status: 404, body: 'missing' })
+      : route.fulfill({ status: 200, contentType: 'image/png', body: png }));
+  await page.goto('/?action=landing');
+  const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
+  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  currentImage = 'banners/intro/new-good.jpg';
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/new-good\.jpg/);
+  await expect.poll(() => image.evaluate(element =>
+    (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+});
+
+test('a temporary Storage outage retries the unchanged published image after connectivity returns', async ({ page }) => {
+  let storageAvailable = false;
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(
+      banners.map(row => row.id === 'intro'
+        ? { ...row, desktop_image_path: 'banners/intro/temporary-outage.png' } : row),
+    ) }));
+  await page.route('**/storage/v1/object/public/taxpay-banners/**', route =>
+    storageAvailable
+      ? route.fulfill({ status: 200, contentType: 'image/png', body: png })
+      : route.fulfill({ status: 503, body: 'temporarily unavailable' }));
+  await page.goto('/?action=landing');
+  const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
+  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  storageAvailable = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/temporary-outage\.png/);
+  await expect.poll(() => image.evaluate(element =>
+    (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 });

@@ -58,3 +58,18 @@ test('history rows, filters and detail modal fit narrow screens',async({page},in
     await page.keyboard.press('Escape');
   }
 });
+
+
+test('signed-in Activity has no separate Track payment tab and legacy tracking links resolve to Transactions',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Navigation and account history regression');
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=history&demoUser=user1&trackPayment=true&lang='+language);
+    await expect(page.getByRole('navigation',{name:language==='bn'?'লেনদেনের বিভাগ':'Activity sections'})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Track payment'})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'পেমেন্ট অনুসন্ধান'})).toHaveCount(0);
+    await expect(page.getByTestId('user1-synthetic-workspace').locator('.taxpayer-transaction-panel')).toBeVisible();
+    await expect(page.getByTestId('user1-synthetic-workspace').locator('.taxpayer-transaction-row')).toHaveCount(14);
+    await expect(page.locator('.receipt-lookup')).toHaveCount(0);
+    await expect(page.getByRole('button',{name:language==='bn'?'লেনদেনসমূহ':'Transactions'})).toHaveAttribute('aria-current','page');
+  }
+});

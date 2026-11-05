@@ -14,7 +14,6 @@ import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceC
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { GuestPayment } from './components/screens/GuestPayment';
 import { TravelTax } from './components/screens/TravelTax';
-import { ReceiptLookup } from './components/screens/ReceiptLookup';
 import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicReport } from './components/screens/PublicReport';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
@@ -65,7 +64,7 @@ const MainRouter: React.FC = () => {
   const signInReturnRoute = safePrivateAuthReturnRoute(currentRoute) ?? 'taxpayer_home';
   // Sample accounts have an explicit browser-local login and use the same approved
   // taxpayer layout for saved lists. Anonymous visitors never pass this gate.
-  const previewAccess = Boolean(previewAccount && (previewReadOnlyRoutes.has(currentRoute) || currentRoute === 'beneficiaries'));
+  const previewAccess = Boolean(previewAccount && (previewReadOnlyRoutes.has(currentRoute) || currentRoute === 'beneficiaries'))
   // A UUID linked to a mirrored simulated transaction is a public, read-only
   // receipt view. It grants no access to the taxpayer's private workspace.
   const publicConfirmedReceipt = currentRoute==='payment_details' &&
@@ -120,11 +119,6 @@ const MainRouter: React.FC = () => {
     // Demo account notifications share the SQL authorization inbox used by the popup.
     if(previewAccount&&currentRoute==='account_notifications'&&!verifiedApplicationUser){
       return <NotificationsView />;
-    }
-    // Track payment uses the in-page lookup for verified accounts. Synthetic
-    // preview accounts keep their established transaction workspace below.
-    if (currentRoute === 'history' && Boolean(routeParams.trackPayment) && showActivitySections && verifiedApplicationUser) {
-      return <ReceiptLookup activityTabs accountContext />;
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
@@ -222,10 +216,10 @@ const MainRouter: React.FC = () => {
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
-            <p>{language === 'bn' ? 'আপনার করদাতা অ্যাকাউন্টে প্রবেশ করতে ইমেইলে সাইন ইন করুন।' : 'Sign in with email to access your taxpayer account.'}</p>
+            <p>{language === 'bn' ? 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Korbritto account to continue.'}</p>
             <a className="citizen-account-gate__preview"
-              href={`?action=secure_workspace&returnTo=${signInReturnRoute}${language === 'bn' ? '&lang=bn' : ''}`}>
-              {language === 'bn' ? 'ইমেইলে সাইন ইন' : 'Sign in with email'}
+              href={language === 'bn' ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
+              {language === 'bn' ? 'সাইন ইন' : 'Sign In'}
             </a>
             {/* Local-only synthetic workspace links retain existing UX regression coverage.
                 The production bundle removes this entire branch; private routes still require
@@ -240,9 +234,9 @@ const MainRouter: React.FC = () => {
                 {language === 'bn' ? 'করদাতা ওয়ার্কস্পেস দেখুন' : 'Explore taxpayer workspace'}
               </button>
             </>}
-            <button type="button" onClick={() => navigate('taxpayer_login')}>
+            {sampleJourneysEnabled && <button type="button" onClick={() => navigate('taxpayer_login')}>
               {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
-            </button>
+            </button>}
           </section>
         ) : <>
           <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেজ লোড হচ্ছে…' : 'Loading page…'}</p>}>
@@ -264,7 +258,6 @@ const MainRouter: React.FC = () => {
       {loginOverlay && <TaxpayerLoginDialog />}
       {beneficiaryLoginRequired && <TaxpayerLoginDialog
         preservePaymentJourney
-        emailReturnTo={signInReturnRoute}
         onClose={() => navigate('landing')}
       />}
       <AuthorizationRequestPopup />

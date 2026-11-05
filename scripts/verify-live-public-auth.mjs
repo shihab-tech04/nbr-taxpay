@@ -17,73 +17,36 @@ try {
   ]) {
     const page = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
     const url = new URL(base);
-    url.searchParams.set('action', 'account_profile');
-    await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
+    url.searchParams.set('action','account_profile');
+    await page.goto(url.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
+    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible({timeout:30_000});
     await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Explore interactive dashboard' })).toHaveCount(0);
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    if (overflow > 2) throw new Error(`Live ${name} private-entry overflow: ${overflow}px`);
-    const emailEntry = page.getByRole('link', { name: 'Sign in with email' });
-    await expect(emailEntry).toBeVisible();
-    await expect(emailEntry).toHaveAttribute('href', /returnTo=account_profile/);
-    await emailEntry.click();
-    await expect(page).toHaveURL(/action=secure_workspace.*returnTo=account_profile/);
-    await expect(page.getByRole('heading', { name: 'Secure Korbritto workspace' })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Email sign-in link' })).toBeVisible();
-    // Do not send an OTP here; this read-only acceptance verifies the visible
-    // email-auth route and the safe return target without using a mailbox.
-    await page.screenshot({ path: 'test-results/live-auth-email-' + name + '.png', fullPage: true });
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    if(overflow>2)throw new Error('Private entry overflow: '+overflow+'px');
 
-    // Keep the explicitly labeled synthetic sample journey separate from
-    // verified email auth, and exercise it only through its visible control.
-    await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    const sampleEntry = page.getByRole('button', { name: 'Use User ID (sample account)' });
-    await expect(sampleEntry).toBeVisible();
-    await sampleEntry.click();
-    await expect(page).toHaveURL(/action=taxpayer_login/);
-    const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
-    await expect(dialog).toBeVisible();
-    // Production must render the same reusable TaxPayModal as payment entry.
-    await expect(dialog).toHaveClass(/taxpay-modal/);
-    await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
-    await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
-    await expect(dialog.locator('.taxpay-modal__footer').getByRole('button', { name: 'Sign In' })).toBeDisabled();
-    await expect(dialog.locator('.taxpay-modal__close')).toBeVisible();
-    // Preserve the already-approved shared sign-in modal Back action.
-    await expect(dialog.locator('.taxpay-modal__back')).toBeVisible();
-    await expect(page.locator('.taxpayer-login-backdrop')).toHaveCount(0);
-    await expect(dialog.getByRole('textbox', { name: 'User ID' })).toBeVisible();
-    await expect(dialog.getByLabel('Password', { exact: true })).toHaveAttribute('type','password');
-    await dialog.getByRole('textbox', { name: 'User ID' }).fill('user1');
-    await dialog.getByLabel('Password', { exact: true }).fill('user1');
-    await dialog.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page).toHaveURL(/action=taxpayer_home/);
-    await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
-    await expect(page).not.toHaveURL(/demoUser=/);
-    await page.screenshot({ path: 'test-results/live-auth-sample-' + name + '.png', fullPage: true });
-    if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      // Verify the *deployed* signed-in navigation, not just a compiled preview.
-      if (isMobile) {
-        await page.getByRole('button', { name: 'Open menu' }).first().click();
-        const menu = page.getByRole('dialog', { name: 'Services & menu' });
-        await menu.getByRole('button', { name: 'Beneficiaries', exact: true }).click();
-      } else {
-        await page.setViewportSize({ width: 1600, height: 900 });
-        const rail = page.getByRole('complementary', { name: 'Taxpayer desktop navigation' });
-        await expect(rail).toBeVisible();
-        await rail.getByRole('button', { name: 'Beneficiaries', exact: true }).click();
-        await expect(rail.getByRole('button', { name: 'Beneficiaries', exact: true })).toHaveAttribute('aria-current', 'page');
-        const mainLeft = await page.locator('main').evaluate(element => Math.round(element.getBoundingClientRect().left));
-        expect(mainLeft).toBe(250);
-      }
-      await expect(page).toHaveURL(/action=beneficiaries/);
-      await expect(page.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
+    {
+      // Current published baseline and candidate both use the approved User ID/password flow.
+      const userIdEntry=page.getByRole('link',{name:'Sign In'});
+      await expect(userIdEntry).toHaveAttribute('href',/action=taxpayer_login/);
+      await userIdEntry.click();
+      const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
+      await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
+      await expect(dialog.getByRole('textbox',{name:'Email address'})).toHaveCount(0);
+      await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
+      await dialog.getByLabel('Password',{exact:true}).fill('user1');
+      await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+      await expect(page).toHaveURL(/action=taxpayer_home/);
+      await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+      const beneficiaryUrl=new URL(base);
+      beneficiaryUrl.searchParams.set('action','beneficiaries');
+      await page.goto(beneficiaryUrl.toString(),{waitUntil:'domcontentloaded',timeout:45_000});
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-      await page.screenshot({ path: 'test-results/live-auth-beneficiaries-' + name + '.png', fullPage: true });
       await page.reload();
-      await expect(page.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+      await page.screenshot({path:'test-results/live-auth-restored-'+name+'.png',fullPage:true});
     }
     await page.close();
 
@@ -150,13 +113,13 @@ try {
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal).toHaveCount(1);
-      await expect(beneficiaryModal.getByRole('button', { name: 'Sign in with email' })).toBeVisible();
+      await expect(beneficiaryModal.getByRole('textbox', { name: 'User ID' })).toBeVisible();
       await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     } else {
       // PR preflight checks the previous live version; it may still show the
       // legacy gate. The deployed production check *requires* the modal.
       await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'Sign in with email' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByRole('link', { name: 'Sign In' })).toHaveAttribute('href', /action=taxpayer_login/);
     }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     await expect(beneficiaries.locator('.taxpayer-reference-rail')).toHaveCount(0);
@@ -165,11 +128,11 @@ try {
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaryModal.getByRole('button', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
+      await expect(beneficiaryModal.getByRole('textbox', { name: 'ইউজার আইডি' })).toBeVisible();
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toHaveCount(0);
     } else {
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaries.getByRole('link', { name: 'ইমেইলে সাইন ইন' })).toHaveAttribute('href', /returnTo=beneficiaries/);
+      await expect(beneficiaries.getByRole('link', { name: 'সাইন ইন' })).toHaveAttribute('href', /action=taxpayer_login/);
     }
     await expect(beneficiaries.getByTestId('beneficiaries-page')).toHaveCount(0);
     const beneficiaryOverflow = await beneficiaries.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

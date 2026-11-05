@@ -99,6 +99,36 @@ type BannerSlide = {
 
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
+/** Keep the approved v9 media and layout even if a published Storage object is missing. */
+function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  // The keyed picture already retries when CMS changes its image URL. Also
+  // retry an unchanged URL after a temporary network/storage outage recovers.
+  useEffect(() => {
+    if (!imageFailed) return;
+    const retry = () => setImageFailed(false);
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    return () => {
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+    };
+  }, [imageFailed]);
+  const fallbackImage = fallbackSlides.find(value =>
+    (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
+  return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
+    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+    <img className="public-information-hero__image public-hero-carousel__service-image"
+      src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
+      onError={() => setImageFailed(true)} />
+  </picture>;
+}
+
+/** Keep the already-approved small-screen shortcuts only for the original action labels. */
+function compactAction(actual: string, original: string, compact: string): string {
+  return actual === original ? compact : actual;
+}
+
 function publicBannerImage(path: string | null, fallback: string): string {
   if (!path || !supabase) return fallback;
   return supabase.storage.from('taxpay-banners').getPublicUrl(path).data.publicUrl;
@@ -340,21 +370,19 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
               <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? mainBanner.actionBn : mainBanner.actionEn}>
                 <WalletCards size={18} aria-hidden="true" />
                 <span className="public-hero-carousel__pay-full">{bn ? mainBanner.actionBn : mainBanner.actionEn}</span>
-                <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? 'কর দিন' : 'Pay Tax'}</span>
+                <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? compactAction(mainBanner.actionBn, fallbackSlides[0].actionBn, 'কর দিন') : compactAction(mainBanner.actionEn, fallbackSlides[0].actionEn, 'Pay Tax')}</span>
               </button>
               <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
                 <WalletCards size={18} aria-hidden="true" />
                 <span className="public-hero-carousel__travel-full">{bn ? travelBanner.actionBn : travelBanner.actionEn}</span>
-                <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
+                <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর') : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}</span>
               </button>
             </div>
           </div>
           <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
             {slides.map((slide, index) => (
-              <picture key={slide.id} className="public-hero-carousel__image-layer" data-visible={index === activeIndex}>
-                {slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
-                <img className="public-information-hero__image public-hero-carousel__service-image" src={slide.image} alt="" decoding="async" />
-              </picture>
+              <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
+                slide={slide} visible={index === activeIndex} />
             ))}
           </div>
         </article>
