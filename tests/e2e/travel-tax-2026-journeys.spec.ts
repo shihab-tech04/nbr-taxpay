@@ -13,6 +13,13 @@ test('Pay Tax and Travel Tax keep the same modal width across passenger and trav
   await payment.locator('[data-payment-access="GUEST"]').click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(payment.locator('#guest-tin')).toBeVisible();
+  // Pay Tax grows from the compact access-choice dialog to the 1160px
+  // workflow dialog. Measure only after that existing width transition ends.
+  await payment.evaluate(async dialog => {
+    await Promise.all(dialog.getAnimations({subtree:false})
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished.catch(() => undefined)));
+  });
   const paymentBox = await payment.boundingBox();
   expect(paymentBox).not.toBeNull();
   const paymentWidth = paymentBox!.width;
