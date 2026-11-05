@@ -21,7 +21,7 @@ test('Beneficiaries private sign-in retains Bengali and closes cleanly',async({p
   const dialog=page.getByRole('dialog');
   await expect(dialog.getByLabel('ইমেইল ঠিকানা',{exact:true})).toBeVisible();
   await expect(page).toHaveURL(/lang=bn/);
-  await dialog.getByRole('button',{name:'Close modal'}).click();
+  await dialog.getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
 });
