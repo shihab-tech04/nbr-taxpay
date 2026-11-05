@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          supabase functions serve taxpay-guest-beneficiaries --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
+          supabase functions serve --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
           for attempt in $(seq 1 30); do
             code=$(curl --silent --show-error --output "$RUNNER_TEMP/guest-beneficiaries-probe.json" --write-out '%{http_code}' --max-time 5 \
               --request POST \
@@ -181,6 +181,9 @@ jobs:
 
       - name: Run real local Auth + PostgREST + direct SQL ownership checks
         run: npm run test:integration:local
+
+      - name: Verify persistent user-id taxpayer accounts across independent Auth sessions
+        run: node tests/integration/syntheticTaxpayerPersistence.mjs
 
       - name: Verify non-financial taxpayer-to-officer SQL, RLS, notifications and idempotency
         run: node tests/integration/nonFinancialSync.mjs
