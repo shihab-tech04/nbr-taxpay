@@ -49,21 +49,36 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
 });
 
-test('Travel Tax: passport Check button activates on entry and results overlay without moving the field',async({page})=>{
+test('Travel Tax: passport suggestions expand below the input without covering other controls',async({page})=>{
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const passport=modal.locator('#travel-passport-first');
   const check=modal.locator('#travel-lookup-first');
   await expect(check).toBeDisabled();
-  await passport.focus();
+  // Passport can be focused automatically on modal open: explicitly close its
+  // suggestions before measuring the collapsed row.
+  const suggestions=modal.locator('#travel-passport-suggestions-first');
+  await passport.press('Escape');
+  await expect(modal).toBeVisible();
+  await expect(suggestions).toHaveCount(0);
   const row=modal.locator('.travel-flow__passport-row');
   const baseline=await row.boundingBox();
-  const suggestions=modal.locator('#travel-passport-suggestions-first');
+  await modal.locator('#travel-mobile').focus();
+  await passport.focus();
   await expect(suggestions.getByRole('option')).toHaveCount(10);
   await expect(suggestions.getByText('Sample passport numbers')).toBeVisible();
   const withPopup=await row.boundingBox();
-  expect(withPopup?.height).toBeCloseTo(baseline?.height??0,0);
+  expect(withPopup!.height).toBeGreaterThan(baseline!.height + 100);
+  // Results are inline, with the medical option and contact below the list.
+  const listBounds=await suggestions.boundingBox();
+  const medicalBounds=await modal.locator('.travel-flow__medical-option').boundingBox();
+  const contactBounds=await modal.locator('.travel-flow__contact').boundingBox();
+  expect(listBounds).not.toBeNull();
+  expect(medicalBounds).not.toBeNull();
+  expect(contactBounds).not.toBeNull();
+  expect(listBounds!.y + listBounds!.height).toBeLessThanOrEqual(medicalBounds!.y + 1);
+  expect(medicalBounds!.y + medicalBounds!.height).toBeLessThan(contactBounds!.y);
   await passport.fill('TEST12');
   await expect(check).toBeEnabled();
   await passport.fill('');
@@ -113,6 +128,9 @@ test('Travel Tax: medical row and receipt contact are full width with a divider'
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const medical=modal.locator('.travel-flow__medical-option');
   const contact=modal.locator('.travel-flow__contact');
+  await expect(modal.locator('#travel-receipt-email')).toHaveCount(0);
+  await expect(modal.getByText('Email address (optional)')).toHaveCount(0);
+  await expect(modal.getByRole('heading',{name:'Receipt contact'})).toHaveCount(0);
   const mobile=modal.locator('#travel-mobile');
   const medicalBounds=await medical.boundingBox();
   const cardBounds=await modal.locator('[data-passenger-id="first"]').boundingBox();
@@ -135,6 +153,31 @@ test('Travel Tax: medical row and receipt contact are full width with a divider'
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
   await mobile.fill('0171234');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+});
+
+test('Travel Tax: suggestions never cover medical or receipt mobile on a narrow screen', async ({page}) => {
+  await page.setViewportSize({width:375,height:812});
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  const passport=modal.locator('#travel-passport-first');
+  const list=modal.locator('#travel-passport-suggestions-first');
+  await passport.focus();
+  await expect(list).toBeVisible();
+  await expect(list.getByRole('option')).toHaveCount(10);
+  const listBox=await list.boundingBox();
+  const medicalBox=await modal.locator('.travel-flow__medical-option').boundingBox();
+  const mobileBox=await modal.locator('#travel-mobile').boundingBox();
+  expect(listBox).not.toBeNull();
+  expect(medicalBox).not.toBeNull();
+  expect(mobileBox).not.toBeNull();
+  expect(listBox!.y+listBox!.height).toBeLessThanOrEqual(medicalBox!.y+1);
+  expect(medicalBox!.y+medicalBox!.height).toBeLessThan(mobileBox!.y);
+  await expect(modal.locator('#travel-receipt-email')).toHaveCount(0);
+  await list.getByRole('option',{name:/TEST123456/}).click();
+  await modal.locator('#travel-lookup-first').click();
+  await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toBeVisible();
+  await expect(modal.getByRole('button',{name:'Add another passenger'})).toHaveCount(0);
 });
 
 test('Travel Tax: ten fictional passports are scrollable, selectable and verifiable', async ({page}) => {
@@ -340,6 +383,10 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button', {name: 'Add passenger'}).click();
+  // One confirmed passenger can fit in a desktop modal after removing email.
+  // Add an unfinished second passenger to test a genuinely scrollable Step 1.
+  await modal.getByRole('button', {name: 'Add another passenger'}).click();
+  await expect(modal.locator('.travel-flow__person')).toHaveCount(2);
   // Step 1 now animates its height and newly revealed passenger details.
   // Compare sticky header/footer positions only after those animations finish;
   // keep the strict 1px position assertion (do not weaken the layout gate).
@@ -423,7 +470,7 @@ test('Travel Tax: modal resizing, conditional passenger cards and passport sugge
   const suggestions = modal.locator('#travel-passport-suggestions-first');
   await expect(suggestions).toBeVisible();
   expect(await suggestions.evaluate(element => getComputedStyle(element).animationName))
-    .toContain('travel-flow-reveal');
+    .toContain('travel-passport-suggestions-fade');
   await passport.fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByRole('button', {name: 'Add passenger'})).toBeEnabled();

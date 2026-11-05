@@ -2134,7 +2134,7 @@
   to { height: auto; opacity: 1; transform: translateY(0); }
 }
 .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] :is(
-  .travel-flow__panel, .travel-flow__passport-suggestions,
+  .travel-flow__panel,
   .travel-flow__identity-card, .travel-flow__inline-error,
   .travel-flow__medical-note, .travel-flow__person-summary,
   .travel-flow__age-row, .travel-flow__mode-field
