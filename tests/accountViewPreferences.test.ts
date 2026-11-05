@@ -18,6 +18,8 @@ test('last selected list is used only if present in the current owner-scoped lis
 });
 test('account preference writes require current Auth owner, not a URL or preview id',()=>{
   const source=readFileSync('src/services/accountViewPreferences.ts','utf8');
+  assert.match(source,/readBrowserLanguage\(previewId:string\|null\):Language\|null \{\s*if\(!previewId\)return null/);
+  assert.match(source,/saveBrowserLanguage\(previewId:string\|null,language:Language\):void \{\s*if\(!previewId\)return/);
   const state=readFileSync('src/services/taxState.tsx','utf8');
   const people=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.match(source,/db\.auth\.getUser\(\)/);
