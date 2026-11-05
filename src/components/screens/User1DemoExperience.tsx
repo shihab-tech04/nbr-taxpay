@@ -137,7 +137,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,monthFilter,query]);
-  const historyPerPage=20;
+  const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
   const availableHistoryMonths=[...new Set(scoped.map(x=>x.date.slice(0,7)))].sort();
@@ -203,21 +203,46 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       {reviewFilter&&<button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>}
     </div>
-    {filtered.length ? <TaxPayDataGrid variant="payments" rows={visibleHistoryRows} getRowKey={item=>item.id}
+    {filtered.length ? <TaxPayDataGrid variant="tabular" rows={visibleHistoryRows} getRowKey={item=>item.id}
       pagination={{page:currentHistoryPage,perPage:historyPerPage,total:filtered.length,onPageChange:setHistoryPage,
         labels:bn?{previous:'আগের পৃষ্ঠা',next:'পরের পৃষ্ঠা',showing:'দেখানো হচ্ছে',of:'মোট',records:'রেকর্ড',page:'পৃষ্ঠা'}:undefined}}
-      ariaLabel={tr('Payment transactions','পেমেন্ট লেনদেন')} className="taxpayer-transaction-list"
-      getRowClassName={()=>"taxpayer-transaction-row"}
+      ariaLabel={tr('Payment transactions','পেমেন্ট লেনদেন')}
+      className="taxpayer-transaction-table" testId="taxpayer-transaction-table"
+      mobileTestId="taxpayer-transaction-mobile-cards"
+      onViewRow={item=>setSelected(item)}
       columns={[
-        {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=><div className="taxpayer-transaction-row__identity">
+        {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=>
+          <p className="taxpayer-transaction-row__title">{item.title}</p>},
+        {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
+          <span className="taxpayer-transaction-reference">{item.ref}</span>},
+        {key:'type',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:item=>
+          <span className="taxpayer-transaction-type">{tr(...labels[item.kind])}</span>},
+        {key:'date',header:tr('Date','তারিখ'),renderCell:item=>
+          <time dateTime={item.date} className="taxpayer-transaction-date">{formatDate(item.date)}</time>},
+        {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',
+          cellClassName:'text-right tabular-nums',renderCell:item=>
+          <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>},
+        {key:'status',header:tr('Status','অবস্থা'),renderCell:item=>
+          <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>},
+        {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:item=>
+          <button type="button" onClick={()=>setSelected(item)}
+            className={action+' taxpayer-transaction-row__action'}
+            aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>}
+      ]}
+      renderMobileCard={item=><div className="taxpayer-transaction-mobile-record">
+        <div className="taxpayer-transaction-mobile-record__top">
           <p className="taxpayer-transaction-row__title">{item.title}</p>
-          <p className="taxpayer-transaction-row__meta"><span>{tr(...labels[item.kind])}</span><span aria-hidden="true">·</span><time dateTime={item.date}>{formatDate(item.date)}</time></p>
-          <p className="taxpayer-transaction-row__ref">{item.ref}</p>
-        </div>},
-        {key:'amount',header:tr('Amount','পরিমাণ'),renderCell:item=><p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>},
-        {key:'status',header:tr('Status','অবস্থা'),renderCell:item=><div className="taxpayer-transaction-row__status">{tag(item.state)}</div>},
-        {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:item=><button type="button" onClick={()=>setSelected(item)} className={action+' taxpayer-transaction-row__action'} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>}
-      ]}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
+          <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>
+        </div>
+        <p className="taxpayer-transaction-reference">{item.ref}</p>
+        <p className="taxpayer-transaction-mobile-record__meta">{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
+        <div className="taxpayer-transaction-mobile-record__footer">
+          <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
+          <button type="button" onClick={()=>setSelected(item)}
+            className={action+' taxpayer-transaction-row__action'}
+            aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+        </div>
+      </div>}/>>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
