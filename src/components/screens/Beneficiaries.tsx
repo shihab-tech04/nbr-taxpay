@@ -1,7 +1,7 @@
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
-import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
+import {rememberedBeneficiaryListId,saveAccountViewPreference,readPreviewSelectedList,savePreviewSelectedList} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -22,7 +22,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -79,9 +79,13 @@ export function Beneficiaries(){
     return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
-  const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id;
+  const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id
+    ??readPreviewSelectedList(previewAccount?.id??null);
   const rememberList=(id:string)=>{
-    if(!owner)return; // Preview/guest views do not own account SQL or cross-device settings.
+    if(!owner){
+      savePreviewSelectedList(previewAccount?.id??null,id);
+      return; // Sample selections never imply real account ownership.
+    }
     void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
       .then(()=>recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries'))
       .catch(()=>{
@@ -119,7 +123,7 @@ export function Beneficiaries(){
         if(!cancelled)setLoading(false);
       });
     return()=>{cancelled=true;};
-  },[owner,checkingIdentity]);
+  },[owner,checkingIdentity,previewAccount?.id]);
 
   // Refresh across tabs and after returning from payments. Keep the current
   // list visible while reading; never replace a valid snapshot with an empty
