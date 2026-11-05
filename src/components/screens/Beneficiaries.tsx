@@ -90,8 +90,12 @@ export function Beneficiaries(){
   const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
-    setActiveList(current=>preferredList&&data.lists.some(list=>list.id===preferredList)
-      ?preferredList:data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??''));
+    const validPreferredList=preferredList&&data.lists.some(list=>list.id===preferredList)?preferredList:null;
+    setActiveList(current=>validPreferredList
+      ??(data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??'')));
+    // An edit or move may navigate to a new list without pressing the list picker.
+    // That change is also a user choice and must survive a future login.
+    if(validPreferredList)rememberList(validPreferredList);
     setSelectedIds([]);
     return data;
   };
