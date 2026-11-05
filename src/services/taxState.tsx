@@ -177,7 +177,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ?validSavedLanguage(accountUser.user_metadata?.taxpay_language)
       :readBrowserLanguage(previewAccount?.id??null);
     const fallback=new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en';
-    applyLanguage(saved??(accountUser?'en':fallback));
+    applyLanguage(saved??fallback);
     setLanguagePreferenceError(false);
     // Only rehydrate on identity changes, never overwrite a language just changed
     // during the same session because Auth emits a USER_UPDATED event.
