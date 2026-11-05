@@ -50,6 +50,40 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
 });
 
+test('Travel Tax: Add passenger is attached to the checked passenger card, not receipt contact', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name: 'Travel tax'});
+  const passenger = modal.locator('[data-passenger-id="first"]');
+  const add = passenger.getByRole('button', {name: 'Add passenger', exact: true});
+  await expect(add).toHaveCount(0);
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await expect(add).toHaveCount(0);
+  await modal.locator('#travel-lookup-first').click();
+  await expect(passenger.getByTestId('travel-passenger-name-first'))
+    .toHaveText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(add).toBeVisible();
+  await expect(passenger.locator('.travel-flow__confirm-row')).toBeVisible();
+  const groupedCorrectly = await add.evaluate(button => {
+    const person = button.closest('[data-passenger-id]');
+    const medical = person?.querySelector('.travel-flow__medical-option');
+    if (!person || !medical || !person.querySelector('.travel-flow__confirm-row')) return false;
+    const personRect = person.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const medicalRect = medical.getBoundingClientRect();
+    return person.getAttribute('data-passenger-id') === 'first'
+      && buttonRect.left >= personRect.left - 2
+      && buttonRect.right <= personRect.right + 2
+      && buttonRect.bottom <= personRect.bottom + 2
+      && buttonRect.top >= medicalRect.bottom - 2;
+  });
+  expect(groupedCorrectly).toBe(true);
+  await expect(modal.locator('.travel-flow__contact').getByRole('button', {name: 'Add passenger'})).toHaveCount(0);
+  await add.click();
+  await expect(add).toHaveCount(0);
+  await expect(modal.getByRole('button',{name: 'Add another passenger'})).toBeVisible();
+});
+
 test('Travel Tax: passport Check button activates on entry and results overlay without moving the field',async({page})=>{
   await page.goto('/');
   await openTravelTaxFromBanner(page);

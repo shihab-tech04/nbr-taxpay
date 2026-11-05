@@ -94,6 +94,17 @@ try {
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER TWO');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('1988-11-10');
     await expect(addPassenger).toBeEnabled();
+    // Verify the live DOM preserves the intended spatial ownership: this
+    // action must live within the searched passenger's card, after medical review.
+    const buttonContext = await addPassenger.evaluate(button => {
+      const card = button.closest('.travel-flow__person');
+      const actionRow = button.closest('.travel-flow__confirm-row');
+      const medical = card?.querySelector('.travel-flow__medical-option');
+      return !!card && card.getAttribute('data-passenger-id') === 'first'
+        && actionRow?.parentElement === card && !!medical
+        && !!(medical.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    if (!buttonContext) throw new Error('Live Add passenger confirmation is detached from the checked passenger card');
     await addPassenger.click();
     // The approved passport-first flow confirms the current passenger before
     // allowing creation of another passenger identity form.

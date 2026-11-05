@@ -666,21 +666,22 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           </div>
 
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
+                    {canShowAddPassenger && pendingConfirmationId === item.id && <div className="travel-flow__confirm-row">
+                      <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
+                        disabled={firstIdentityIssue() !== null}
+                        onClick={() => {
+                          const issue = firstIdentityIssue();
+                          if (issue) { reportIdentityIssue(issue); return; }
+                          setConfirmedPassengerIds(ids => [...new Set([...ids, item.id])]);
+                          setEditingPassengerId(null);
+                          setPassengerIssue(null);
+                        }}>
+                        <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
+                      </button>
+                    </div>}
                   </section>;
                 })}
               </div>
-              {canShowAddPassenger && <button type="button" className="travel-flow__add-member"
-                disabled={firstIdentityIssue() !== null}
-                onClick={() => {
-                  if (pendingConfirmationId === null) return;
-                  const issue = firstIdentityIssue();
-                  if (issue) { reportIdentityIssue(issue); return; }
-                  setConfirmedPassengerIds(ids => [...new Set([...ids, pendingConfirmationId])]);
-                  setEditingPassengerId(null);
-                  setPassengerIssue(null);
-                }}>
-                <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
-              </button>}
               {confirmedPassengerIds.length > 0 && allPassengersComplete && <button
                 type="button" className="travel-flow__add-member" onClick={() => {
                   const id = crypto.randomUUID();
