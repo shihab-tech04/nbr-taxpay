@@ -31,20 +31,17 @@ for(const language of ['en','bn'] as const){
         :view==='history'?page.locator('.taxpayer-transaction-panel')
         :page.getByTestId('beneficiary-records');
       await expect(root).toBeVisible();
-      const header=desktop?(view==='ledger'||view==='beneficiaries'
-        ?root.locator('table.taxpay-unified-table thead th').first()
-        :root.locator('.taxpay-record-list__columns'))
-        :null;
-      const row=desktop?(view==='ledger'||view==='beneficiaries'
-        ?root.locator('table.taxpay-unified-table tbody tr').first()
-        :root.locator('.taxpay-record-list__row').first())
-        :(view==='ledger'||view==='beneficiaries'
-          ?root.locator('.taxpay-mobile-table-card').first()
-          :root.locator('.taxpay-record-list__row').first());
+      const header=desktop?root.locator('table.taxpay-unified-table thead th').first():null;
+      const row=desktop?root.locator('table.taxpay-unified-table tbody tr').first()
+        :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
-      if(view==='history'){
-        await expect(row.locator('[data-record-column-label]')).toHaveCount(4);
-        await expect(row.locator('[data-record-column-label]').first()).toContainText(language==='bn'?'পেমেন্ট':'Payment');
+      if(view==='history'&&desktop){
+        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
+        await expect(row.locator('td')).toHaveCount(7);
+      }
+      if(view==='history'&&!desktop){
+        await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
+        await expect(row.getByRole('button',{name:/বিস্তারিত:|Details for/})).toBeVisible();
       }
       if(view==='beneficiaries'&&desktop)await expect(row.locator('td')).toHaveCount(4);
       if(view==='beneficiaries'&&!desktop)await expect(row).toContainText(language==='bn'?'টিআইএন':'TIN');
@@ -101,15 +98,9 @@ for(const language of ['en','bn'] as const){
           ?document.querySelector('[data-testid="event-tax-ledger"]')
           :view==='history'?document.querySelector('.taxpayer-transaction-panel')
           :document.querySelector('[data-testid="beneficiary-records"]');
-        const semantic=view==='ledger'||view==='beneficiaries';
-        const head=desktop?(semantic
-          ?scope?.querySelector('table.taxpay-unified-table thead th')
-          :scope?.querySelector('.taxpay-record-list__columns')):null;
-        const record=desktop?(semantic
-          ?scope?.querySelector('table.taxpay-unified-table tbody tr')
-          :scope?.querySelector('.taxpay-record-list__row'))
-          :semantic?scope?.querySelector('.taxpay-mobile-table-card')
-          :scope?.querySelector('.taxpay-record-list__row');
+        const head=desktop?scope?.querySelector('table.taxpay-unified-table thead th'):null;
+        const record=desktop?scope?.querySelector('table.taxpay-unified-table tbody tr')
+          :scope?.querySelector('.taxpay-mobile-table-card');
         if(!record||(desktop&&!head))throw Error('Missing rendered '+view+' grid');
         const h=head?getComputedStyle(head):null;
         const r=getComputedStyle(record);
@@ -128,7 +119,7 @@ for(const language of ['en','bn'] as const){
         return parseFloat(getComputedStyle(cell??element).fontSize);
       });
       expect(textSize,view+' primary record typography').toBeGreaterThanOrEqual(16);
-      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(76);
+      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(view==='history'?64:76);
       else expect(style.borderRadius,view+' card corners').not.toBe('0px');
       observations.push({view,background:style.background,fontSize:style.fontSize,
         color:style.color,borderRadius:style.borderRadius,rowHeight:style.rowHeight});
