@@ -11,6 +11,7 @@ import {
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
+import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { amountInTakaWords } from '../../services/amountInWords';
 import type { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
@@ -48,6 +49,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [travelDate, setTravelDate] = useState('');
   const [passengers, setPassengers] = useState<TravelPassenger[]>([makeTravelPassenger('first', 'BD')]);
   const [phone, setPhone] = useState('');
+  const [receiptEmail, setReceiptEmail] = useState('');
   const [error, setError] = useState('');
   const errorFocusRevision = useRef(0);
   const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
@@ -193,7 +195,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
-  const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
+  const canContinueToTravel = allPassengersComplete && receiptMobileComplete && isOptionalReceiptEmailValid(receiptEmail);
   const reportIdentityIssue = (issue: {id: string; message: string}) => {
     setEditingPassengerId(issue.id); setPassengerIssue(issue);
     showError(issue.message);
@@ -213,6 +215,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       return translated;
     }
     if (!/^01\d{9}$/.test(phone)) return tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
+    if (!isOptionalReceiptEmailValid(receiptEmail)) return tr('Enter a valid email address or leave it blank.', 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।');
     return null;
   };
   const continueStep = () => {
@@ -228,6 +231,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         requestAnimationFrame(() => document.getElementById('travel-mobile')?.focus());
         return;
       }
+      if (!isOptionalReceiptEmailValid(receiptEmail)) {
+        showError(tr('Enter a valid email address or leave it blank.', 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।'));
+        requestAnimationFrame(() => document.getElementById('travel-receipt-email')?.focus());
+        return;
+      }
       setEditingPassengerId(null); stepTo(1); return;
     }
     const problem = validateTravelDetails() ?? validatePassengers();
@@ -238,7 +246,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
     setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setConfirmedPassengerIds([]);
-    setReceiptReviewOpen(false); setPhone(''); setError('');
+    setReceiptReviewOpen(false); setPhone(''); setReceiptEmail(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
     setCreatedReceipt(null); setProcessing(false); setPaymentNonce(crypto.randomUUID());
@@ -258,6 +266,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       payerName: passengers[0].name,
       payerTin: 'NON-TIN-PASSENGER',
       receiptMobile: phone,
+      receiptEmail: normaliseReceiptEmail(receiptEmail),
       isRepresentativePayment: false,
       taxZone: '',
       taxCircle: '',
@@ -311,6 +320,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           assessmentYear: TRAVEL_TAX_YEAR,
           paymentMethod, paymentChannel,
           receiptReference: receipt.tokenNumber, receiptMobile: phone,
+          receiptEmail: normaliseReceiptEmail(receiptEmail),
           travelMode: mode, departurePort: selectedPort,
           destination: destination.trim(), travelDate,
           economicCode: TRAVEL_TAX_ECONOMIC_CODE,
@@ -691,6 +701,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
                     value={phone} placeholder="01XXXXXXXXX"
                     onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); }}/>
+                </div>
+                <div className="travel-flow__field">
+                  <label htmlFor="travel-receipt-email">{tr('Email address (optional)', 'ইমেইল ঠিকানা (ঐচ্ছিক)')}</label>
+                  <input id="travel-receipt-email" type="email" inputMode="email" autoComplete="email"
+                    maxLength={254} placeholder="name@example.com" value={receiptEmail}
+                    aria-invalid={!isOptionalReceiptEmailValid(receiptEmail) || undefined}
+                    aria-describedby={!isOptionalReceiptEmailValid(receiptEmail) ? 'travel-email-error' : undefined}
+                    onChange={event => { setReceiptEmail(event.target.value); setError(''); }}/>
+                  {!isOptionalReceiptEmailValid(receiptEmail) && <p id="travel-email-error" role="alert" className="text-sm text-taxpay-error">
+                    {tr('Enter a valid email address or leave it blank.', 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।')}
+                  </p>}
                 </div>
               </div>
             </PaymentFormSection>

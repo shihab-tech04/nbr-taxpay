@@ -45,6 +45,41 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
 });
 
+test('Travel Tax receipt email is optional, validated, and full-width on Step 1',async({page})=>{
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  const email=modal.locator('#travel-receipt-email');
+  const mobile=modal.locator('#travel-mobile');
+  const contact=modal.locator('.travel-flow__contact');
+  await expect(email).toBeVisible();
+  await expect(email).not.toHaveAttribute('required','');
+  const bounds=await Promise.all([contact.boundingBox(),mobile.boundingBox(),email.boundingBox()]);
+  expect(bounds.every(Boolean)).toBe(true);
+  expect(bounds[1]!.width).toBeGreaterThan(bounds[0]!.width*0.92);
+  expect(bounds[2]!.width).toBeGreaterThan(bounds[0]!.width*0.92);
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await mobile.fill('01712345678');
+  const next=modal.getByRole('button',{name:'Continue to travel details'});
+  await expect(next).toBeEnabled();
+  await email.fill('bad-email');
+  await expect(email).toHaveAttribute('aria-invalid','true');
+  await expect(modal.locator('#travel-email-error')).toBeVisible();
+  await expect(next).toBeDisabled();
+  await email.fill('payer+receipt@example.com');
+  await expect(modal.locator('#travel-email-error')).toHaveCount(0);
+  await expect(next).toBeEnabled();
+  await email.fill('');
+  await expect(next).toBeEnabled();
+  await email.fill('payer+receipt@example.com');
+  await next.click();
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel details');
+  await modal.getByRole('button',{name:'Back',exact:true}).click();
+  await expect(email).toHaveValue('payer+receipt@example.com');
+});
+
 test('Travel Tax: passport Check button activates on entry and results overlay without moving the field',async({page})=>{
   await page.goto('/');
   await openTravelTaxFromBanner(page);
@@ -194,6 +229,7 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   await second.getByLabel('Date of birth').fill('2017-08-10');
   await second.getByLabel('Country of nationality').fill('India');
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await modal.locator('#travel-receipt-email').fill('payer+receipt@example.com');
   await fillTravelDetails(modal);
   await expect(modal.getByTestId('travel-payment-total')).toContainText('1,500');
   await modal.getByRole('button',{name:'Continue to review'}).click();
@@ -208,6 +244,7 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   await expect(combined).toBeVisible({timeout:12000});
   await expect(combined.locator('tbody tr')).toHaveCount(2);
   await expect(combined).toContainText('not a government A-Challan');
+  await expect(modal).toContainText('payer+receipt@example.com');
   await expect(modal.locator('.receipt-view__actions')).not.toContainText('New payment');
   await expect(modal.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
