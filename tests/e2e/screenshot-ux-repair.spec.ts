@@ -17,7 +17,7 @@ test('mobile transaction details use a contained sheet with a visible close cont
   test.skip(info.project.name==='desktop-1280','Mobile detail reflow');
   await enterUser1(page);
   await page.goto('/?action=history');
-  await page.locator('.taxpayer-transaction-row__action').first().click();
+  await page.locator('.taxpayer-transaction-row__action:visible').first().click();
   const dialog=page.locator('.taxpayer-transaction-detail');
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.getByRole('button',{name:'Close transaction details'})).toBeVisible();
@@ -185,7 +185,7 @@ test('signed-in Transactions provides payment reference search without a separat
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-PAY-23-01');
   await expect(page.locator('[data-testid="taxpayer-transaction-table"] tbody tr')).toHaveCount(1);
-  await page.locator('.taxpayer-transaction-row__action').first().click();
+  await page.locator('.taxpayer-transaction-row__action:visible').first().click();
   await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
   await page.getByRole('button',{name:'Close transaction details'}).click();
   await page.reload();
