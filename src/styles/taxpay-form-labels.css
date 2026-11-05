@@ -208,6 +208,36 @@
 .taxpay-citizen-shell .travel-flow__person-summary dd {
   margin: 4px 0 0; overflow-wrap: anywhere; font-size: 14px; font-weight: 550;
 }
+/* The confirmation belongs to the passenger just reviewed, not to the
+   receipt form or the separate "add another" action. */
+.taxpay-citizen-shell .travel-flow__person .travel-flow__confirm-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .travel-flow__confirm-row .travel-flow__confirm-passenger {
+  width: auto;
+  min-width: 185px;
+  margin: 0;
+  padding: 10px 18px;
+  color: var(--citizen-surface);
+  background: var(--citizen-primary);
+  border-color: var(--citizen-primary);
+}
+.taxpay-citizen-shell .travel-flow__confirm-row .travel-flow__confirm-passenger:hover:not(:disabled) {
+  color: var(--citizen-surface);
+  background: var(--citizen-primary-dark);
+  border-color: var(--citizen-primary-dark);
+}
+@media (max-width: 560px) {
+  .taxpay-citizen-shell .travel-flow__confirm-row .travel-flow__confirm-passenger {
+    width: 100%;
+  }
+}
+
 .taxpay-citizen-shell .travel-flow__contact {
   margin-top: 22px;
   padding-top: 20px;
