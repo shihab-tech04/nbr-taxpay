@@ -266,7 +266,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
       payerName: passengers[0].name,
       payerTin: 'NON-TIN-PASSENGER',
       receiptMobile: phone,
-
       isRepresentativePayment: false,
       taxZone: '',
       taxCircle: '',
@@ -320,7 +319,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           assessmentYear: TRAVEL_TAX_YEAR,
           paymentMethod, paymentChannel,
           receiptReference: receipt.tokenNumber, receiptMobile: phone,
-
           travelMode: mode, departurePort: selectedPort,
           destination: destination.trim(), travelDate,
           economicCode: TRAVEL_TAX_ECONOMIC_CODE,
@@ -431,7 +429,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
                   onKeyDown={event => {
-                    if (event.key === 'Escape') setPassportSuggestionsFor(null);
+                    if (event.key === 'Escape' && passportSuggestionsFor === item.id) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setPassportSuggestionsFor(null);
+                    }
                     if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
                       event.preventDefault();
                       document.querySelector<HTMLElement>('#travel-passport-suggestions-' + item.id + ' [role="option"]')?.focus();
@@ -694,7 +696,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 }}>
                 <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
               </button>}
-              <div className="travel-flow__contact" aria-label={tr('Receipt mobile number', 'রসিদের মোবাইল নম্বর')}>
+              <div className="travel-flow__contact" role="group" aria-label={tr('Receipt mobile number', 'রসিদের মোবাইল নম্বর')}>
                 <div className="travel-flow__field">
                   <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
                   <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
