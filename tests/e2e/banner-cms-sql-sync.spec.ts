@@ -139,3 +139,25 @@ test('a newly published image replaces an earlier broken CMS image without a pag
   await expect.poll(() => image.evaluate(element =>
     (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 });
+
+test('a temporary Storage outage retries the unchanged published image after connectivity returns', async ({ page }) => {
+  let storageAvailable = false;
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(
+      banners.map(row => row.id === 'intro'
+        ? { ...row, desktop_image_path: 'banners/intro/temporary-outage.png' } : row),
+    ) }));
+  await page.route('**/storage/v1/object/public/taxpay-banners/**', route =>
+    storageAvailable
+      ? route.fulfill({ status: 200, contentType: 'image/png', body: png })
+      : route.fulfill({ status: 503, body: 'temporarily unavailable' }));
+  await page.goto('/?action=landing');
+  const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
+  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  storageAvailable = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/temporary-outage\.png/);
+  await expect.poll(() => image.evaluate(element =>
+    (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+});
