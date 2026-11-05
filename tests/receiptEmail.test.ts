@@ -10,6 +10,6 @@ test('optional receipt email remains optional and trims before persistence',()=>
   assert.equal(normaliseReceiptEmail(' person@example.com '),'person@example.com');
   for(const input of ['no-at-sign','a@b','a@@b.com','a b@example.com','a@example.com '.repeat(20)])
     assert.equal(isOptionalReceiptEmailValid(input),false);
-  assert.equal(isOptionalReceiptEmailValid('a'.repeat(245)+'@x.com'),true);
-  assert.equal(isOptionalReceiptEmailValid('a'.repeat(246)+'@x.com'),false);
+  assert.equal(isOptionalReceiptEmailValid('a'.repeat(248)+'@x.com'),true);
+  assert.equal(isOptionalReceiptEmailValid('a'.repeat(249)+'@x.com'),false);
 });
