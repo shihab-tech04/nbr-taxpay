@@ -12,9 +12,7 @@ test('Beneficiaries direct link requires a verified email identity and keeps the
   await expect(email).toBeFocused();
   await expect(dialog.getByLabel('User ID',{exact:true})).toHaveCount(0);
   await email.fill('not-an-email');
-  await expect(dialog.getByRole('button',{name:'Sign In',exact:true})).toBeEnabled();
-  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
-  await expect(dialog.getByRole('status')).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Sign In',exact:true})).toBeDisabled();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
 });
 
