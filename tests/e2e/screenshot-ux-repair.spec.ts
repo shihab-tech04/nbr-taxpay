@@ -184,7 +184,7 @@ test('signed-in Transactions provides payment reference search without a separat
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-PAY-23-01');
-  await expect(page.locator('.taxpayer-transaction-row')).toHaveCount(1);
+  await expect(page.locator('[data-testid="taxpayer-transaction-table"] tbody tr')).toHaveCount(1);
   await page.locator('.taxpayer-transaction-row__action').first().click();
   await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
   await page.getByRole('button',{name:'Close transaction details'}).click();
