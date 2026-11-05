@@ -59,18 +59,16 @@ export function useAccountIdentity():ApplicationIdentity {
 /** Logout is a local-session Auth operation, not a demo role-switch. */
 export async function signOutApplicationAccount(): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: 'Authentication is not configured.' };
-  // A user can switch to Bangla and immediately sign out. Finish that pending
-  // owner-scoped preference write before the Auth token is invalidated.
-  // Never block logout if a non-critical preference save itself failed.
-  await Promise.race([
-    (async()=>{
-      try {
-        const {data:current}=await supabase.auth.getUser();
-        if(current.user)await flushAccountViewPreferences(current.user.id);
-      } catch { /* A failed preference sync must never prevent secure sign-out. */ }
-    })(),
-    new Promise<void>(resolve=>setTimeout(resolve,2000)),
-  ]);
+  // Do not silently lose the last language/list update when a user signs out
+  // immediately. Keep the verified session until the owner-scoped preference
+  // flush has succeeded (including retries after a failed save).
+  try {
+    const {data:current,error:identityError}=await supabase.auth.getUser();
+    if(identityError)throw identityError;
+    if(current.user)await flushAccountViewPreferences(current.user.id);
+  } catch {
+    return { ok:false, error:'Your account settings could not be saved. Please retry signing out.' };
+  }
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
