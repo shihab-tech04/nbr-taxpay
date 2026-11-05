@@ -62,8 +62,15 @@ export async function signOutApplicationAccount(): Promise<{ ok: boolean; error?
   // A user can switch to Bangla and immediately sign out. Finish that pending
   // owner-scoped preference write before the Auth token is invalidated.
   // Never block logout if a non-critical preference save itself failed.
-  const {data:current}=await supabase.auth.getUser();
-  if(current.user)await flushAccountViewPreferences(current.user.id).catch(()=>undefined);
+  await Promise.race([
+    (async()=>{
+      try {
+        const {data:current}=await supabase.auth.getUser();
+        if(current.user)await flushAccountViewPreferences(current.user.id);
+      } catch { /* A failed preference sync must never prevent secure sign-out. */ }
+    })(),
+    new Promise<void>(resolve=>setTimeout(resolve,2000)),
+  ]);
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
