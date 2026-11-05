@@ -332,13 +332,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
        visibleRows.length===0?<TaxPayTableState>{txt('No transactions match your filters.','ফিল্টারে কোনো লেনদেন নেই।')}</TaxPayTableState>:
        <TaxPayDataGrid variant="tabular" rows={visibleRows} getRowKey={tx=>tx.transactionId}
          ariaLabel={txt('Transactions','লেনদেন')} testId="signed-in-payment-activity-table"
-         mobileTestId="signed-in-payment-activity-cards" onViewRow={tx=>setSelectedPayment(tx)} columns={[
-           {key:'reference',header:txt('Reference / date','রেফারেন্স / তারিখ'),renderCell:tx=><div>
-             <p className="break-all font-mono-plex font-semibold">{tx.id}</p>
-             <time dateTime={tx.createdAt} className="block text-sm text-taxpay-muted">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
-             <p className="text-sm text-taxpay-muted">{txt('Payer','প্রদানকারী')}: {tx.payer}</p>
-           </div>},
-           {key:'allocation',header:txt('Allocations / status','বরাদ্দ / অবস্থা'),renderCell:tx=><div className="space-y-1">
+         mobileTestId="signed-in-payment-activity-cards" className="taxpay-convay-signed-in-table" onViewRow={tx=>setSelectedPayment(tx)} columns={[
+           {key:'reference',header:txt('Reference','রেফারেন্স'),renderCell:tx=>
+             <p className="break-all font-mono-plex font-semibold">{tx.id}</p>},
+           {key:'date',header:txt('Date','তারিখ'),renderCell:tx=>
+             <time dateTime={tx.createdAt} className="block whitespace-nowrap text-sm">{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>},
+           {key:'payer',header:txt('Payer','প্রদানকারী'),renderCell:tx=>
+             <p className="break-words font-medium">{tx.payer}</p>},
+           {key:'allocation',header:txt('Allocations','বরাদ্দ'),renderCell:tx=><div className="space-y-1">
              <p className="font-medium">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')}</p>
              <details onClick={event=>event.stopPropagation()} className="rounded-lg border border-taxpay-border p-2">
                <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
@@ -348,11 +349,13 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                  <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
                </li>)}</ul>
              </details>
-             <p className="text-sm">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
            </div>},
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
-             renderCell:tx=><p className="font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
+             renderCell:tx=><p className="whitespace-nowrap font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
+           {key:'status',header:txt('Status','অবস্থা'),renderCell:tx=><div className="space-y-1">
+             <p className="font-semibold">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
+             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           </div>},
            {key:'actions',header:txt('Actions','কার্যক্রম'),renderCell:tx=><div className="flex flex-wrap gap-2">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg border border-taxpay-border bg-taxpay-light px-3 text-sm font-medium text-taxpay-primary">
