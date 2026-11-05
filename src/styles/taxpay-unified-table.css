@@ -727,3 +727,18 @@ table.taxpay-unified-table {
   .taxpay-table-pagination{flex-direction:column;align-items:stretch}
   .taxpay-table-pagination__controls{justify-content:center}
 }
+
+/* Keep existing record-cell positions now that each cell has an accessible wrapper. */
+@media(min-width:801px){
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__cell:nth-child(2){justify-self:end;text-align:right}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__cell:last-child{justify-self:end}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__cell:last-child{justify-self:end}
+}
+@media(max-width:800px){
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__cell:first-child{grid-column:1/-1}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__cell:nth-child(2){justify-self:start}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__cell:last-child{grid-column:1/-1;width:100%}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="payments"] .taxpay-record-list__cell:last-child .taxpayer-transaction-row__action{width:100%}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] :is(.taxpay-record-list__cell:nth-child(2),.taxpay-record-list__cell:nth-child(3),.taxpay-record-list__cell:last-child){grid-column:1/-1}
+  .taxpay-taxpayer-reference .taxpay-record-list[data-record-layout="beneficiaries"] .taxpay-record-list__cell:last-child{justify-self:start}
+}
