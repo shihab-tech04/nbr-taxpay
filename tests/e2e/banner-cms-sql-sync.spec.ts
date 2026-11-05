@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { setWorkspaceLanguage } from './workspace-language';
 
 // Synthetic HTTP transport: proves SQL rows own stationary copy and images without
 // accessing or changing the hosted TaxPay CMS.
@@ -94,7 +95,7 @@ test('custom CMS button labels appear visually in compact English and Bangla lay
   const hero = page.locator('.public-hero-carousel__fixed');
   await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('Start travel tax');
   await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('Start tax payment');
-  await page.getByRole('button', { name: 'বাংলা' }).first().click();
+  await setWorkspaceLanguage(page, 'bn');
   await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('ভ্রমণ কর শুরু');
   await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('কর পরিশোধ শুরু');
 });
