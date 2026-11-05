@@ -48,3 +48,14 @@ test('sign-out never invalidates Auth before pending preference persistence is c
   assert.match(workspace,/await signOutApplicationAccount\(\)/);
   assert.doesNotMatch(workspace,/supabase\.auth\.signOut\(/);
 });
+
+test('published sign-in cannot use common sample usernames or browser preview storage',()=>{
+  const app=readFileSync('src/App.tsx','utf8');
+  const state=readFileSync('src/services/taxState.tsx','utf8');
+  const login=readFileSync('src/components/screens/TaxpayerLoginDialog.tsx','utf8');
+  assert.match(state,/if\(!sampleJourneysEnabled\)return false/);
+  assert.match(state,/const storedPreviewAccount = \(\) => sampleJourneysEnabled/);
+  assert.match(login,/const requiresVerifiedLogin = verifiedOnly \|\| !sampleJourneysEnabled/);
+  assert.match(login,/supabase\.auth\.signInWithOtp/);
+  assert.match(app,/\{sampleJourneysEnabled && <button type="button" onClick=\{\(\) => navigate\('taxpayer_login'\)\}/);
+});
