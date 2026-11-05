@@ -57,3 +57,9 @@ export function saveAccountViewPreference(
   }).catch(()=>undefined);
   return next;
 }
+
+/** Sign-out waits for already accepted preference changes to finish first. */
+export async function flushAccountViewPreferences(ownerUid:string):Promise<void> {
+  const pending=preferenceWrites.get(ownerUid);
+  if(pending)await pending;
+}
