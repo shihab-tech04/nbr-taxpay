@@ -201,7 +201,7 @@ for(const language of ['en','bn'] as const){
 }
 
 for(const language of ['en','bn'] as const){
-  test('signed-in preview Transactions keeps four columns and complete details in '+language,async({page},info)=>{
+  test('signed-in preview Transactions shows Convay columns and complete details in '+language,async({page},info)=>{
     await installSyntheticPreviewFixture(page,'user2',language);
     await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
     await page.route('**/rest/v1/rpc/demo_story1_demo_history',route=>route.fulfill({
@@ -227,7 +227,9 @@ for(const language of ['en','bn'] as const){
     const expand=language==='bn'?'বরাদ্দ দেখুন':'View allocations';
     if(desktop){
       await expect(table).toBeVisible();
-      await expect(table.locator('thead th')).toHaveCount(4);
+      await expect(table.locator('thead th')).toHaveText(language==='bn'
+        ? ['রেফারেন্স','তারিখ','প্রদানকারী','বরাদ্দ','পরিমাণ','অবস্থা','কার্যক্রম']
+        : ['Reference','Date','Payer','Allocations','Amount','Status','Actions']);
       await expect(table.locator('tbody tr')).toHaveCount(1);
       await expect(cards).toBeHidden();
       await table.getByText(expand).click();

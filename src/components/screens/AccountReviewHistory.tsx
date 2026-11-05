@@ -104,7 +104,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
         {visible.length===0?<TaxPayTableState>{tr('No submitted requests match those filters.','এই ফিল্টারে কোনো অনুরোধ মেলেনি।')}</TaxPayTableState>:
           <TaxPayDataGrid variant="tabular" rows={visible} getRowKey={row=>row.id}
             ariaLabel={tr('Submitted request register','জমা দেওয়া অনুরোধের তালিকা')}
-            testId="account-owner-review-table" mobileTestId="account-owner-review-mobile-cards"
+            testId="account-owner-review-table" mobileTestId="account-owner-review-mobile-cards" className="taxpay-convay-signed-in-table"
             columns={[
               {key:'category',header:tr('Service / reference','সেবা / রেফারেন্স'),renderCell:row=><div>
                 <p className="font-semibold">{row.category.replaceAll('_',' ')}</p>
