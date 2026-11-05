@@ -127,7 +127,7 @@
   border-radius: 999px;
   background: var(--taxpay-table-heading, #f7f9fc);
   color: var(--taxpay-table-muted, #5f6b7a);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -428,7 +428,7 @@ table.taxpay-unified-table {
   background: var(--taxpay-table-heading, #f7f9fc);
   border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
   color: var(--taxpay-table-muted, #5f6b7a);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
 }
 .taxpay-taxpayer-reference .beneficiary-directory__table > ul {
@@ -473,7 +473,7 @@ table.taxpay-unified-table {
   background: var(--taxpay-table-heading, #f7f9fc);
   border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
   color: var(--taxpay-table-muted, #5f6b7a);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
 }
 .taxpay-taxpayer-reference .taxpayer-transaction-list > ul {
