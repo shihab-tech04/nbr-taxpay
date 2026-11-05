@@ -228,7 +228,7 @@ export function OtherTaxTaxpayerList({
             <Trash2 size={17} aria-hidden="true"/>
           </button>
         </div>
-        {renderLookup(currentlyEditing ? editDraft : person, currentlyEditing, assigned)}
+        {renderLookup(currentlyEditing && editDraft ? editDraft : person, currentlyEditing, assigned)}
         {removing && <div className="taxpay-taxpayer-row__confirmation" role="alert">
           <p>{bn ? 'এই করদাতার ' + assigned + 'টি পেমেন্ট খাতও মুছে যাবে। নিশ্চিত করবেন?' :
             'Removing this taxpayer will also remove ' + assigned + ' assigned payment ' +
@@ -238,7 +238,7 @@ export function OtherTaxTaxpayerList({
         </div>}
       </article>;
     })}
-    {draft && <article className="taxpay-taxpayer-row" data-testid="other-tax-taxpayer-draft">
+    {draft && <article className="taxpay-taxpayer-row" data-testid="other-tax-taxpayer" data-taxpayer-status="draft">
       <div className="taxpay-taxpayer-row__header">
         <h3>{bn ? 'করদাতা' : 'Taxpayer'} {additional.length + 2}</h3>
       </div>
