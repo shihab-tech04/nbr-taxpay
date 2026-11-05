@@ -59,18 +59,19 @@
   background: var(--citizen-primary-light);
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  max-height: 240px;
+  /* Suggestions occupy their own row. They must never cover medical
+     assessment, receipt contact, or the modal's sticky action footer. */
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  min-width: 0;
+  max-height: 220px;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--citizen-surface);
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgb(18 42 77 / 14%);
+  box-shadow: 0 6px 16px rgb(18 42 77 / 10%);
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
 .taxpay-citizen-shell .travel-flow__passport-no-results {
