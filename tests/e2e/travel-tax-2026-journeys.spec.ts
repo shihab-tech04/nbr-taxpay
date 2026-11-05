@@ -60,6 +60,7 @@ test('Travel Tax: passport suggestions expand below the input without covering o
   // suggestions before measuring the collapsed row.
   const suggestions=modal.locator('#travel-passport-suggestions-first');
   await passport.press('Escape');
+  await expect(modal).toBeVisible();
   await expect(suggestions).toHaveCount(0);
   const row=modal.locator('.travel-flow__passport-row');
   const baseline=await row.boundingBox();
@@ -469,7 +470,7 @@ test('Travel Tax: modal resizing, conditional passenger cards and passport sugge
   const suggestions = modal.locator('#travel-passport-suggestions-first');
   await expect(suggestions).toBeVisible();
   expect(await suggestions.evaluate(element => getComputedStyle(element).animationName))
-    .toContain('travel-flow-reveal');
+    .toContain('travel-passport-suggestions-fade');
   await passport.fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await expect(modal.getByRole('button', {name: 'Add passenger'})).toBeEnabled();
