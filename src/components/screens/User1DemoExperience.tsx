@@ -140,6 +140,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
+  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter]);
   const availableHistoryMonths=[...new Set(scoped.map(x=>x.date.slice(0,7)))].sort();
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
