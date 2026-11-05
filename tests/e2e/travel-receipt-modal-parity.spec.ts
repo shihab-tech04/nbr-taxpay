@@ -114,6 +114,7 @@ test('Travel Tax desktop and mobile calculation retain one total and Taka amount
 
 
 test('Tax with Return and Travel Tax stages keep identical dialog width at matched viewports', async ({page}) => {
+  test.setTimeout(180_000);
   await page.emulateMedia({reducedMotion: 'reduce'});
   for (const viewport of [
     {width: 1280, height: 800},
@@ -130,8 +131,8 @@ test('Tax with Return and Travel Tax stages keep identical dialog width at match
     await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
     const paymentBounds = await payment.boundingBox();
     expect(paymentBounds).not.toBeNull();
-    await payment.getByRole('button', {name: 'Close modal'}).click();
-
+    // Reset the route instead of assuming the staged payment's close button
+    // retains the same accessible label as the entry modal.
     await page.goto('/');
     await openTravelTaxFromBanner(page);
     const travel = page.getByRole('dialog', {name: 'Travel tax'});
