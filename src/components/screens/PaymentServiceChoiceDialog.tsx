@@ -12,6 +12,7 @@ import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog'
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { taxpayerBrandName } from '../../config/brand';
+import {loadAccountUiState,saveAccountUiState,recordAccountInteraction} from '../../services/accountExperience';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
 export const PAYMENT_SERVICE_CHOICES = [
@@ -62,7 +63,29 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
   const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
-  const beginPayment = (withAccount: boolean) => { setUseAccount(withAccount); setStage(1); setView('payment'); };
+  useEffect(()=>{
+    if(!verifiedUser?.id||initialService||paymentBeneficiaryPrefill)return;
+    let active=true;
+    void loadAccountUiState(verifiedUser.id).then(saved=>{
+      if(!active)return;
+      if(saved.payment_for_self==='self')setPayerForSelf(current=>current??true);
+      else if(saved.payment_for_self==='other')setPayerForSelf(current=>current??false);
+      if(saved.payment_service==='TAX_WITH_RETURN')setTopLevel(current=>current??'TAX_WITH_RETURN');
+      else if(saved.payment_service==='OTHER_TAX')setTopLevel(current=>current??'OTHER_TAX');
+    }).catch(()=>undefined);
+    return()=>{active=false;};
+  },[verifiedUser?.id,initialService,paymentBeneficiaryPrefill]);
+  const rememberPayment=(key:'payment_service'|'payment_for_self',value:string)=>{
+    if(verifiedUser?.id)void saveAccountUiState(verifiedUser.id,key,value).catch(()=>undefined);
+  };
+  const beginPayment = (withAccount: boolean) => {
+    setUseAccount(withAccount);setStage(1);setView('payment');
+    if(verifiedUser?.id && withAccount){
+      void recordAccountInteraction(verifiedUser.id,'PAYMENT_ENTRY','payment_start').catch(()=>undefined);
+      rememberPayment('payment_for_self',payerForSelf?'self':'other');
+      if(topLevel)rememberPayment('payment_service',topLevel);
+    }
+  };
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
     if (payerForSelf === null || !selected || (accountLoading && !previewAccount)) return;
@@ -75,7 +98,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     setStage(1);
     setView('payer');
   };
-  const reportStage = useCallback((next: 1 | 2 | 3 | 4) => setStage(next), []);
+  const reportStage = useCallback((next: 1 | 2 | 3 | 4) => {
+    setStage(next);
+    if(verifiedUser?.id)void recordAccountInteraction(verifiedUser.id,'PAYMENT_STAGE','payment_stage_'+next).catch(()=>undefined);
+  },[verifiedUser?.id]);
   useEffect(() => {
     // Each stage starts at its beginning, even when the previous form was scrolled.
     const scroller = flowRef.current?.closest<HTMLElement>('.taxpay-modal__body');
@@ -155,7 +181,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              ].map(({ own, Icon, en, bn: bangla, detailEn, detailBn }) => (
                <button type="button" key={String(own)} aria-pressed={payerForSelf === own}
                  data-payer-relationship={own ? 'SELF' : 'OTHER'} className="tax-service-choice__card"
-                 onClick={() => setPayerForSelf(own)}>
+                 onClick={() => {setPayerForSelf(own);rememberPayment('payment_for_self',own?'self':'other');}}>
                  <span className="tax-service-choice__icon"><Icon size={23} strokeWidth={1.9} aria-hidden="true" /></span>
                  <span className="tax-service-choice__copy"><strong>{tr(en, bangla)}</strong><span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span></span>
                  <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
@@ -168,7 +194,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
                {TAXPAY_ENTRY_CHOICES.map(({ id, Icon, en, bn: bangla, detailEn, detailBn }) => (
                  <button type="button" key={id} aria-pressed={topLevel === id} data-payment-entry={id} className="tax-service-choice__card"
                    disabled={multiBeneficiaryPrefill && id !== 'OTHER_TAX'}
-                   onClick={() => { if (!multiBeneficiaryPrefill) setTopLevel(id); }}>
+                   onClick={() => { if (!multiBeneficiaryPrefill){setTopLevel(id);rememberPayment('payment_service',id);} }}>
                    <span className="tax-service-choice__icon"><Icon size={23} strokeWidth={1.9} aria-hidden="true" /></span>
                    <span className="tax-service-choice__copy"><strong>{tr(en, bangla)}</strong><span className="tax-service-choice__description">{tr(detailEn, detailBn)}</span></span>
                    <span className="tax-service-choice__radio" aria-hidden="true"><span /></span>
