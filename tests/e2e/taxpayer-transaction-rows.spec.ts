@@ -59,3 +59,17 @@ test('history rows, filters and detail modal fit narrow screens',async({page},in
     await page.keyboard.press('Escape');
   }
 });
+
+test('signed-in Activity has four tabs and old tracking links show Transactions',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Representative Activity navigation');
+  await page.goto('/?action=history&demoUser=user1&trackPayment=true');
+  const workspace=page.getByTestId('user1-synthetic-workspace');
+  const tabs=page.getByRole('navigation',{name:'Activity sections'});
+  await expect(tabs.getByRole('button')).toHaveCount(4);
+  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveCount(0);
+  await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
+  await expect(workspace.getByRole('heading',{name:'Transaction history'})).toBeVisible();
+  await expect(workspace.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
+  await expect(workspace.getByTestId('taxpayer-transaction-table').locator('tbody tr')).toHaveCount(14);
+  await expect(workspace.getByRole('heading',{name:'Payment status & receipt'})).toHaveCount(0);
+});
