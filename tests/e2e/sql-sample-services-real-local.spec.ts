@@ -76,9 +76,8 @@ test('user1 retains existing scenario plus its separate stored travel-tax exampl
   await register.getByRole('button',{name:'Clear filters'}).click();
 
   const tabs = page.getByRole('navigation',{name:'Activity sections'});
-  await tabs.getByRole('button',{name:'Track payment'}).click();
-  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
-  await tabs.getByRole('button',{name:'Transactions'}).click();
+  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveCount(0);
+  await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
 });
