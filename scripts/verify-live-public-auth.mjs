@@ -64,7 +64,7 @@ try {
     await expect(page).not.toHaveURL(/demoUser=/);
     await page.screenshot({ path: 'test-results/live-auth-sample-' + name + '.png', fullPage: true });
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      // Verify the *deployed* signed-in navigation, not just a compiled preview.
+      // Browser-only demo login must not grant private beneficiary ownership.
       if (isMobile) {
         await page.getByRole('button', { name: 'Open menu' }).first().click();
         const menu = page.getByRole('dialog', { name: 'Services & menu' });
@@ -74,16 +74,16 @@ try {
         const rail = page.getByRole('complementary', { name: 'Taxpayer desktop navigation' });
         await expect(rail).toBeVisible();
         await rail.getByRole('button', { name: 'Beneficiaries', exact: true }).click();
-        await expect(rail.getByRole('button', { name: 'Beneficiaries', exact: true })).toHaveAttribute('aria-current', 'page');
-        const mainLeft = await page.locator('main').evaluate(element => Math.round(element.getBoundingClientRect().left));
-        expect(mainLeft).toBe(250);
       }
       await expect(page).toHaveURL(/action=beneficiaries/);
-      await expect(page.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
-      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const privateDialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+      await expect(privateDialog.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+      await expect(privateDialog.getByRole('textbox', { name: 'User ID' })).toHaveCount(0);
+      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
       await page.screenshot({ path: 'test-results/live-auth-beneficiaries-' + name + '.png', fullPage: true });
       await page.reload();
-      await expect(page.getByRole('heading', { name: 'Beneficiaries', exact: true })).toBeVisible();
+      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+      await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' }).getByRole('textbox', { name: 'Email address' })).toBeVisible();
     }
     await page.close();
 
@@ -150,7 +150,7 @@ try {
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal).toHaveCount(1);
-      await expect(beneficiaryModal.getByRole('button', { name: 'Sign in with email' })).toBeVisible();
+      await expect(beneficiaryModal.getByRole('textbox', { name: 'Email address' })).toBeVisible();
       await expect(beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' })).toHaveCount(0);
     } else {
       // PR preflight checks the previous live version; it may still show the
@@ -165,7 +165,7 @@ try {
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
-      await expect(beneficiaryModal.getByRole('button', { name: 'ইমেইল দিয়ে সাইন ইন' })).toBeVisible();
+      await expect(beneficiaryModal.getByRole('textbox', { name: 'ইমেইল ঠিকানা' })).toBeVisible();
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toHaveCount(0);
     } else {
       await expect(beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' })).toBeVisible({ timeout: 30_000 });
