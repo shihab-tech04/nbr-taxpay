@@ -25,7 +25,7 @@ test('User ID login uses server-confirmed Auth rather than browser-only preview 
 test('private interaction log and view-state are scoped to the Auth UID, never public TIN',()=>{
   const source=readFileSync('src/services/accountExperience.ts','utf8');
   const migration=readFileSync('supabase/migrations/20261105153000_taxpay_account_experience.sql','utf8');
-  assert.match(source,/db\.auth\.getUser\(\)/);
+  assert.match(source,/client\.auth\.getUser\(\)/);
   assert.match(source,/\.eq\('owner_uid',ownerUid\)/);
   assert.doesNotMatch(source,/taxpayerTin|payerTin|tax_credit|settlement/);
   assert.match(migration,/using\(owner_uid=\(select auth.uid\(\)\)\)/);
