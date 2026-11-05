@@ -85,13 +85,15 @@ test('real account restores its own language and selected beneficiary list in a 
   await page.locator('#taxpay-profile-language').selectOption('bn');
   await page.locator('form.taxpayer-account-fields button[type="submit"]').click();
   await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
-  await expect.poll(async()=>{
-    const user=await authUser(a.session.access_token);
-    return user.user_metadata?.taxpay_language;
-  },{timeout:10000}).toBe('bn');
+  // Sign out immediately after selecting Bangla. The owner preference must
+  // finish saving before the session is revoked: no waiting for SQL here.
+  await page.locator('.citizen-mobile-menu-trigger').click();
+  await page.locator('.citizen-dialog-signout').click();
+  await expect(page).toHaveURL(/^(?!.*action=account_settings)/,{timeout:15000});
   await first.close();
 
   const aSession=await signIn(a.email,a.password);
+  expect((await authUser(aSession.access_token)).user_metadata?.taxpay_language).toBe('bn');
   const second=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
   const again=await second.newPage();
   await again.goto(url(aSession));

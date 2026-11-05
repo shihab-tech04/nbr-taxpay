@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
+import { signOutApplicationAccount } from '../../services/accountIdentity';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { authRedirectUrl, verifiedDraftCategory, draftSeedForCategory, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
@@ -318,8 +319,8 @@ export const SecureWorkspace: React.FC = () => {
     setBusy(true);
     try {
       // Signing out of this browser must not revoke every device session.
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) { showMessage('signOutNotConfirmed', error.message); return; }
+      const result = await signOutApplicationAccount();
+      if (!result.ok) { showMessage('signOutNotConfirmed', result.error??'Please retry.'); return; }
       sessionEpoch.current++;
       setUser(null); setRows([]); setPendingDelete(null);
       setEditingDraftId(null); setDraft(initial);

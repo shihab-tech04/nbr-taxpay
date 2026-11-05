@@ -39,9 +39,17 @@ export function saveBrowserLanguage(previewId:string|null,language:Language):voi
 // Serialize same-tab preference writes so a rapid list switch cannot finish
 // out of order and resurrect an older selection after login.
 const preferenceWrites=new Map<string,Promise<void>>();
+/** Keep the latest requested value until the authenticated backend confirms it.
+ * A failed or interrupted write must remain retryable before sign-out.
+ */
+const unsavedPreferences=new Map<string,Map<AccountViewPreferenceKey,string>>();
+
 export function saveAccountViewPreference(
   ownerUid:string,key:AccountViewPreferenceKey,value:string
 ):Promise<void> {
+  const outstanding=unsavedPreferences.get(ownerUid)??new Map<AccountViewPreferenceKey,string>();
+  outstanding.set(key,value);
+  unsavedPreferences.set(ownerUid,outstanding);
   const prior=preferenceWrites.get(ownerUid)??Promise.resolve();
   const next=prior.catch(()=>undefined).then(async()=>{
     const db=supabase;
@@ -52,6 +60,12 @@ export function saveAccountViewPreference(
     if(saveError)throw saveError;
     if(updated.user?.id!==ownerUid||updated.user.user_metadata?.[key]!==value)
       throw new Error('Account preference could not be confirmed.');
+    // A newer choice might already be queued. Only clear the value actually
+    // acknowledged by the server; never discard the newer unsaved choice.
+    if(outstanding.get(key)===value){
+      outstanding.delete(key);
+      if(outstanding.size===0)unsavedPreferences.delete(ownerUid);
+    }
   });
   preferenceWrites.set(ownerUid,next);
   void next.finally(()=>{
@@ -60,8 +74,19 @@ export function saveAccountViewPreference(
   return next;
 }
 
-/** Sign-out waits for already accepted preference changes to finish first. */
+/** Sign-out must confirm the newest language and list selection before
+ * invalidating Auth. A failed write stays retryable instead of being discarded.
+ */
 export async function flushAccountViewPreferences(ownerUid:string):Promise<void> {
   const pending=preferenceWrites.get(ownerUid);
-  if(pending)await pending;
+  if(pending)await pending.catch(()=>undefined);
+  const unsaved=unsavedPreferences.get(ownerUid);
+  if(!unsaved?.size)return;
+  for(const [key,value] of [...unsaved]){
+    // The previous write may have failed or been superseded. Retry only the
+    // most recent value for this owner, using the same owner-checking path.
+    if(unsaved.get(key)===value)await saveAccountViewPreference(ownerUid,key,value);
+  }
+  if(unsavedPreferences.get(ownerUid)?.size)
+    throw new Error('Account preferences could not be confirmed.');
 }
