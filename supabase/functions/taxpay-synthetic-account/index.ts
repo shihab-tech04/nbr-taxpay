@@ -10,6 +10,7 @@ const allowedOrigins=new Set([
 ]);
 const idPattern=/^user(?:10|[1-9])$/;
 const alias=(id:string)=>`taxpay-sample-${id}@example.com`;
+const localAuthPassword=(id:string)=>`korbritto-public-demo-${id}`;
 function reply(status:number,code:string,origin:string){
   return new Response(JSON.stringify({ok:status===200,code}),{status,headers:{
     'content-type':'application/json','cache-control':'no-store',
@@ -47,13 +48,15 @@ Deno.serve(async(req:Request)=>{
     // arbitrary account names or grant a role supplied by the client.
     if(!idPattern.test(id)||body?.password!==id)return reply(401,'INVALID_CREDENTIALS',origin);
     const {error}=await adminClient().auth.admin.createUser({
-      email:alias(id),password:id,email_confirm:true,
+      email:alias(id),password:localAuthPassword(id),email_confirm:true,
       app_metadata:{taxpay_synthetic_id:id,taxpay_account_class:'public_synthetic'},
     });
-    if(error && !/already (?:been )?registered|already exists|email_exists|duplicate/i.test(error.message))
+    if(error && !/already (?:been )?registered|already exists|email_exists|duplicate/i.test(error.message)){
+      console.error('Synthetic Auth provisioning failed:',error.code??'unknown',error.message);
       return reply(503,'SERVICE_UNAVAILABLE',origin);
+    }
     // An existing account is never overwritten or given a new password.
     // Client Auth still verifies the password and immutable app_metadata.
     return reply(200,'READY',origin);
-  }catch{return reply(503,'SERVICE_UNAVAILABLE',origin);}
+  }catch(error){console.error('Synthetic Auth bootstrap failed:',error instanceof Error?error.message:'unknown');return reply(503,'SERVICE_UNAVAILABLE',origin);}
 });
