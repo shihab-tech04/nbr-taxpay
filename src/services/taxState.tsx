@@ -76,7 +76,7 @@ const TaxStateContext = createContext<TaxStateContextType | undefined>(undefined
 export const sampleJourneysEnabled = import.meta.env.DEV;
 const permittedDemoUser = (value: unknown) => sampleJourneysEnabled ? getDemoUser(value) : null;
 const previewStorageKey = 'taxpay-taxpayer-preview-user';
-const storedPreviewAccount = () => getDemoUser(activePreviewSession()?.profileId ?? (import.meta.env.VITE_SUPABASE_DISABLED==='true' ?window.sessionStorage.getItem(previewStorageKey):null));
+const storedPreviewAccount = () => getDemoUser(activePreviewSession()?.profileId ?? (import.meta.env?.VITE_SUPABASE_DISABLED==='true' ?window.sessionStorage.getItem(previewStorageKey):null));
 
 // Browser history can restore a *visual-only* taxpayer sample after refresh.
 // This is never an identity, permission or tax-credit entitlement, and a newly
@@ -260,7 +260,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!selected || password !== selected.id) return false;
     // Isolated offline regression builds retain the original synthetic preview.
     // Production never falls back to browser-only login on a service error.
-    const offline=import.meta.env.VITE_SUPABASE_DISABLED==='true';
+    const offline=import.meta.env?.VITE_SUPABASE_DISABLED==='true';
     const profile=offline?null:await signInPreviewProfile(selected.id,password);
     if(!offline&&!profile)return false;
     if(offline)window.sessionStorage.setItem(previewStorageKey,selected.id);
@@ -287,7 +287,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const logoutPreviewAccount = async (): Promise<void> => {
     // Never clear the preview capability while a Bangla/list preference is
     // still being saved. A failed write keeps this session available to retry.
-    if(import.meta.env.VITE_SUPABASE_DISABLED!=='true')await flushPreviewSettings();
+    if(import.meta.env?.VITE_SUPABASE_DISABLED!=='true')await flushPreviewSettings();
     clearPreviewAccount();
     navigate('landing');
   };
