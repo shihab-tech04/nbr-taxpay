@@ -90,9 +90,15 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
       return {status:response.status,body:await response.json()};
     },{apiUrl:api.origin,key,capability:firstProfile.capability,paymentSessionId:firstProfile.paymentSessionId,
       idempotencyKey:randomUUID(),payerName:personName});
-    expect(payment.status).toBe(200);
-    expect(typeof payment.body.id).toBe('string');
-    const paymentReference='SIM-'+payment.body.id.replaceAll('-','').slice(0,16).toUpperCase();
+    // The local SQL row is deliberately absent from hosted TaxPay. Office must
+    // reject that unverified source read, while the durable local payment and
+    // its owner-scoped TaxPay activity remain available for this real-browser
+    // persistence journey.
+    expect(payment.status).toBe(503);
+    expect(payment.body.error).toBe('OFFICE_SYNC_PENDING');
+    expect(payment.body.retryable).toBe(true);
+    expect(typeof payment.body.requestId).toBe('string');
+    const paymentReference='SIM-'+payment.body.requestId.replaceAll('-','').slice(0,16).toUpperCase();
     await first.goto('/?action=history');
     await expect(first.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);
 
