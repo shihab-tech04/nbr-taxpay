@@ -33,6 +33,10 @@ test('every additional Other Tax taxpayer uses the same stacked TIN/name and cle
   await primary.locator('#guest-tin').fill('111111111111');
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
+  await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await primary.getByRole('button', { name: 'Add taxpayer' }).click();
+  await expect(primary.getByTestId('confirmed-taxpayer-summary')).toContainText('User 1');
 
   await list.getByRole('button', { name: 'Add another taxpayer' }).click();
   const additional = list.getByTestId('other-tax-taxpayer').last();
@@ -51,4 +55,45 @@ test('every additional Other Tax taxpayer uses the same stacked TIN/name and cle
   });
   expect(geometry.stacked).toBe(true);
   expect(geometry.overflow).toBeLessThanOrEqual(2);
+});
+
+
+test('Other Tax follows search, review, add taxpayer, then add another; duplicates cannot be added', async ({ page }) => {
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const list = dialog.getByTestId('other-tax-taxpayer-list');
+  const primary = list.getByTestId('other-tax-primary-taxpayer');
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await primary.locator('#guest-tin').fill('111111111111');
+  await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await primary.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
+  await primary.getByRole('button', { name: 'Add taxpayer' }).click();
+  await expect(primary.getByTestId('confirmed-taxpayer-summary')).toContainText('111111111111');
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+  await list.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const additional = list.getByTestId('other-tax-taxpayer').last();
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await expect(additional.getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  const tin = additional.locator('input[id^="other-tax-tin-"]');
+  await tin.fill('111111111111');
+  await additional.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(additional.getByText('Taxpayer already added.')).toBeVisible();
+  await expect(additional.getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await tin.fill('222222222222');
+  await additional.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(additional.locator('input[id^="other-tax-name-"]')).toHaveValue('User 2');
+  await additional.getByRole('button', { name: 'Add taxpayer' }).click();
+  await expect(additional.getByTestId('confirmed-taxpayer-summary')).toContainText('User 2');
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+  await primary.getByRole('button', { name: 'Edit' }).click();
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await primary.getByRole('button', { name: 'Search', exact: true }).click();
+  await primary.getByRole('button', { name: 'Add taxpayer' }).click();
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+  expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
 });
