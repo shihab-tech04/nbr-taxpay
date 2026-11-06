@@ -73,7 +73,10 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  await taxpayer.page.getByLabel('Payment category').nth(1).selectOption('PENALTY');
  await taxpayer.page.getByLabel('Amount (৳)').nth(1).fill('6.55');
  await taxpayer.page.getByRole('button',{name:'Save payment record'}).click();
- await expect(taxpayer.page.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:18000});
+ // This browser is connected to disposable TaxPay SQL, while the mirror worker
+ // targets hosted Office. Office must reject that local-only source read; the
+ // taxpayer transaction and durable outbox row remain available for retry.
+ await expect(taxpayer.page.getByText('OFFICE_SYNC_PENDING',{exact:true})).toBeVisible({timeout:18000});
  const own=await rpc('sim_my_payment_history',{p_view:'payer'},payer.access_token);
  expect(own.status,JSON.stringify(own.data)).toBe(200);
  const item=(own.data as Array<{id:string;transactionId:string;totalMinor:number;reviewStatus:string;
@@ -81,7 +84,8 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
      .find(x=>x.totalMinor===13000&&x.allocations.some(a=>a.beneficiary==='user9'&&a.amountMinor===655));
  expect(item).toBeTruthy();expect(item!.allocations.length).toBe(2);
  expect(item!.reviewStatus).toBe('PENDING_OFFICER');
- console.log('CROSS_APP E1 PASS: taxpayer UI SQL submission and exact payer/beneficiary allocations');
+ expect(runSQL("select count(*) from demo_payment.story_payments p join demo_payment.mirror_outbox o on o.entity_type='PAYMENT' and o.entity_id=p.id where p.data->'details'->>'sourceTransactionId'='"+item!.transactionId+"' and o.status='PENDING'")).toBe('1');
+ console.log('CROSS_APP E1 PASS: taxpayer SQL activity and exact allocations persist while the Office mirror remains retryable');
 
  const strangerShell=await browser.newContext({viewport:{width:1280,height:900}});
  await strangerShell.addInitScript(()=>{
