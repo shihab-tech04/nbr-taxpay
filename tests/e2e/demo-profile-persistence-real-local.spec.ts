@@ -34,14 +34,33 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   };
+  const openMobileAccountMenu=async(page:Page)=>{
+    const dialog=page.locator('.citizen-dialog');
+    if(await dialog.isVisible())return dialog;
+    await page.locator('.citizen-mobile-menu-trigger').click();
+    await expect(dialog).toBeVisible();
+    return dialog;
+  };
   const selectedListButton=(page:Page)=>page.getByRole('button',{name:/^(Selected list|নির্বাচিত তালিকা)$/});
   const setLanguage=async(page:Page,target:'en'|'bn')=>{
     if(await page.locator('.taxpay-citizen-shell').getAttribute('lang')===target)return;
-    await page.locator('.taxpayer-reference-rail-bottom').getByRole('button').filter({hasText:/Language|ভাষা/}).click();
+    const rail=page.locator('.taxpayer-reference-rail-bottom');
+    if(await rail.isVisible()){
+      await rail.getByRole('button').filter({hasText:/Language|ভাষা/}).click();
+    }else{
+      const dialog=await openMobileAccountMenu(page);
+      await dialog.locator('.citizen-dialog-language').click();
+    }
     await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',target);
   };
   const signOut=async(page:Page)=>{
-    await page.locator('.taxpayer-reference-rail-bottom').getByRole('button',{name:/Sign out|সাইন আউট/}).click();
+    const rail=page.locator('.taxpayer-reference-rail-bottom');
+    if(await rail.isVisible()){
+      await rail.getByRole('button',{name:/Sign out|সাইন আউট/}).click();
+    }else{
+      const dialog=await openMobileAccountMenu(page);
+      await dialog.locator('.citizen-dialog-signout').click();
+    }
     await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   };
   try{
