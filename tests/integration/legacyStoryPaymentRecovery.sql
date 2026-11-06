@@ -66,16 +66,28 @@ begin
         'details',jsonb_build_object('test',true)),'SIMULATED_SUCCESS');
   insert into demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status)
     values(mixed_payment_a,gen_random_uuid(),mixed_session,'TAX_WITH_RETURN',10,
-      jsonb_build_object('details',jsonb_build_object('payerId','user1')),'SIMULATED_SUCCESS'),
+      jsonb_build_object('origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',10,
+        'details',jsonb_build_object('payerId','user1','lines',jsonb_build_array(
+          jsonb_build_object('beneficiary','user1','category','TAX_WITH_RETURN',
+            'assessmentYear','2026-27','amountMinor',10)))),'SIMULATED_SUCCESS'),
       (mixed_payment_b,gen_random_uuid(),mixed_session,'TAX_WITH_RETURN',20,
-      jsonb_build_object('details',jsonb_build_object('payerId','user2')),'SIMULATED_SUCCESS');
+      jsonb_build_object('origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',20,
+        'details',jsonb_build_object('payerId','user2','lines',jsonb_build_array(
+          jsonb_build_object('beneficiary','user2','category','TAX_WITH_RETURN',
+            'assessmentYear','2026-27','amountMinor',20)))),'SIMULATED_SUCCESS');
   insert into demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status)
     values(qa_payment,gen_random_uuid(),qa_session,'TAX_WITH_RETURN',15,
-      jsonb_build_object('origin','QA_BROWSER','details',jsonb_build_object('payerId','user1')),
+      jsonb_build_object('origin','QA_BROWSER','service','TAX_WITH_RETURN','amountMinor',15,
+        'details',jsonb_build_object('payerId','user1','lines',jsonb_build_array(
+          jsonb_build_object('beneficiary','user1','category','TAX_WITH_RETURN',
+            'assessmentYear','2026-27','amountMinor',15)))),
       'SIMULATED_SUCCESS');
   insert into demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status)
     values(prelinked_payment,gen_random_uuid(),prelinked_session,'TAX_WITH_RETURN',30,
-      jsonb_build_object('origin','TAXPAY_UI','details',jsonb_build_object('payerId','user2')),
+      jsonb_build_object('origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',30,
+        'details',jsonb_build_object('payerId','user2','lines',jsonb_build_array(
+          jsonb_build_object('beneficiary','user2','category','TAX_WITH_RETURN',
+            'assessmentYear','2026-27','amountMinor',30)))),
       'SIMULATED_SUCCESS');
   -- Simulate a link created by the prior weaker function. Every read path must
   -- re-check ownership and keep the unrelated source data hidden.
