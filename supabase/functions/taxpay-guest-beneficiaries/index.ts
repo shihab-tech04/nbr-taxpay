@@ -24,7 +24,8 @@ type RpcName =
   | 'taxpay_guest_beneficiary_rename_list'
   | 'taxpay_guest_beneficiary_delete_list'
   | 'taxpay_demo_profile_login'
-  | 'taxpay_demo_profile_settings';
+  | 'taxpay_demo_profile_settings'
+  | 'taxpay_demo_recover_story1_session';
 
 function response(value: unknown, status: number, origin: string): Response {
   return new Response(status === 204 ? null : JSON.stringify(value), {
@@ -46,8 +47,9 @@ function publicError(error: unknown): { status: number; code: string } {
   if (/INVALID_BODY|INVALID_CONTENT_TYPE|INVALID_CAPABILITY|INVALID_PAGE|INVALID_LIST_NAME|INVALID_ROWS|INVALID_BENEFICIARY/.test(message))
     return { status: 400, code: message.split(':')[0] };
   if (/INVALID_DEMO_LOGIN/.test(message)) return { status: 401, code: 'INVALID_DEMO_LOGIN' };
-  if (/INVALID_DEMO_PROFILE|INVALID_PREFERENCE|INVALID_LIST/.test(message))
+  if (/INVALID_DEMO_PROFILE|INVALID_PREFERENCE|INVALID_LIST|INVALID_LEGACY_SESSION|LEGACY_SESSION_EMPTY|LEGACY_SESSION_RESERVED/.test(message))
     return { status: 400, code: message.split(':')[0] };
+  if (/LEGACY_SESSION_ALREADY_LINKED/.test(message)) return { status: 409, code: 'LEGACY_SESSION_ALREADY_LINKED' };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
   if (/BENEFICIARY_ALREADY_IN_LIST/.test(message)) return { status: 409, code: 'BENEFICIARY_ALREADY_IN_LIST' };
   if (/23505|duplicate key value|already exists/.test(message)) return { status: 409, code: 'LIST_NAME_TAKEN' };
@@ -134,6 +136,12 @@ Deno.serve(async (request: Request) => {
         throw new Error('INVALID_PREFERENCE');
       data = await rpc(client, 'taxpay_demo_profile_settings', {
         p_capability_hash, p_key: key, p_value: value,
+      });
+    } else if (action === 'demo-recover-payments') {
+      if (typeof body.legacySessionId !== 'string' || !uuidPattern.test(body.legacySessionId))
+        throw new Error('INVALID_LEGACY_SESSION');
+      data = await rpc(client, 'taxpay_demo_recover_story1_session', {
+        p_capability_hash, p_legacy_session_id: body.legacySessionId,
       });
     } else if (action === 'snapshot') {
       // One SQL call verifies the capability, touches the session once and
