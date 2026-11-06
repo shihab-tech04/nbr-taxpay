@@ -76,6 +76,18 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   // restore them from the confirmed server-side session link.
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
   await expect.poll(()=>recovered).toBe(true);
+  // Probe the browser's actual JSON parse of the intercepted payment list to
+  // distinguish transport/CORS failures from the recovered-history renderer.
+  const listProbe=await page.evaluate(async()=>{
+    const raw=sessionStorage.getItem('korbritto.demo-profile-session.v1');
+    const sessionId=raw?JSON.parse(raw).paymentSessionId:null;
+    if(!sessionId)return {error:'no preview session'};
+    try {
+      const response=await fetch('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments?sessionId='+encodeURIComponent(sessionId)+'&page=1&perPage=100',{cache:'no-store'});
+      return {status:response.status,body:await response.json()};
+    }catch(e){return {error:String(e)};}
+  });
+  console.log('Direct browser payment list probe:',JSON.stringify(listProbe));
   await expect.poll(async()=>{
     const rows=await page.getByTestId('recovered-story-payments').allTextContents();
     if(rows.some(text=>text.includes(payment)))return true;
