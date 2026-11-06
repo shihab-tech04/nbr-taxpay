@@ -10,10 +10,16 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  if (await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).isVisible()) {
+    await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
+  }
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
+  const draft=dialog.locator('[data-taxpayer-status="draft"]');
+  await draft.getByRole('button',{name:'Search',exact:true}).click();
+  await draft.getByRole('button',{name:'Add taxpayer',exact:true}).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   const select = batch.getByTestId('other-tax-selection-menu');

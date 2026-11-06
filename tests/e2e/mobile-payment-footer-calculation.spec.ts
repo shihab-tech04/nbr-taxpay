@@ -23,7 +23,10 @@ test('mobile payment calculation belongs to sticky footer and expands for the fu
   await summary.getByTestId('mobile-payment-calculation-toggle').click();
   await expect(summary).not.toHaveAttribute('open', '');
 
-  await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-tin').fill('111111111111');
+  const primary=dialog.getByTestId('other-tax-primary-taxpayer');
+  await primary.getByRole('button',{name:'Search',exact:true}).click();
+  await primary.getByRole('button',{name:'Add taxpayer',exact:true}).click();
   await dialog.locator('#guest-payer-name').fill('Test payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await footer.getByRole('button', { name: 'Continue to purpose & amount' }).click();
