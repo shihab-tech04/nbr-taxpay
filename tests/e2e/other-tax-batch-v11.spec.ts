@@ -39,7 +39,7 @@ test('Step 1 primary action enables only after all required payment details are 
   await expect(continueButton).toBeDisabled();
   await secondTin.fill('222222222222');
   await expect(continueButton).toBeDisabled();
-  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', {name:'Search'}).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', {name:'Search', exact:true}).click();
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', {name:'Add taxpayer'}).click();
   await expect(continueButton).toBeEnabled();
   await dialog.locator('#guest-phone').fill('01712');
@@ -313,14 +313,15 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
-  await expect(list).toContainText('2 taxpayers added');
+  await expect(list).toContainText('1 taxpayer added');
   const added = dialog.getByTestId('other-tax-taxpayer');
   await expect(added).toHaveCount(1);
   await expect(added.locator('input[id^="other-tax-tin-"]')).toBeFocused();
   await added.locator('input[id^="other-tax-tin-"]').fill('222222222222');
   await expect(added.getByText('Taxpayer name')).toBeVisible();
-  await added.getByRole('button', {name:'Search'}).click();
+  await added.getByRole('button', {name:'Search', exact:true}).click();
   await added.getByRole('button', {name:'Add taxpayer'}).click();
+  await expect(list).toContainText('2 taxpayers added');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
   await expect(dialog.getByTestId('other-tax-batch').getByTestId('other-tax-taxpayer-tabs').getByRole('button')).toHaveCount(2);
@@ -345,7 +346,7 @@ test('Other Tax rejects duplicate TINs but does not require names', async ({ pag
   await tin2.fill('222222222222');
   await expect(continueButton).toBeDisabled();
   const nextTaxpayer = dialog.getByTestId('other-tax-taxpayer');
-  await nextTaxpayer.getByRole('button', {name:'Search'}).click();
+  await nextTaxpayer.getByRole('button', {name:'Search', exact:true}).click();
   await nextTaxpayer.getByRole('button', {name:'Add taxpayer'}).click();
   await expect(continueButton).toBeEnabled();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -387,7 +388,7 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
-  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search' }).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
@@ -415,7 +416,7 @@ test('every added taxpayer needs a selected head before review', async ({ page }
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
-  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search' }).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
@@ -670,7 +671,7 @@ test('Other Tax preview-add sequence only reveals Add another taxpayer after con
   await expect(first.getByRole('button', {name:'Add taxpayer'})).toHaveCount(0);
   await first.locator('#guest-tin').fill('111111111111');
   await expect(first.getByRole('button', {name:'Add taxpayer'})).toHaveCount(0);
-  await first.getByRole('button', {name:'Search'}).click();
+  await first.getByRole('button', {name:'Search', exact:true}).click();
   await expect(first.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await expect(first.getByRole('button', {name:'Add taxpayer'})).toBeVisible();
   await expect(continueButton).toBeDisabled();
@@ -682,7 +683,7 @@ test('Other Tax preview-add sequence only reveals Add another taxpayer after con
   await expect(second).toHaveCount(1);
   await expect(another).toHaveCount(0);
   await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
-  await second.getByRole('button', {name:'Search'}).click();
+  await second.getByRole('button', {name:'Search', exact:true}).click();
   await expect(second.locator('input[id^="other-tax-name-"]')).toHaveValue('User 2');
   await expect(second.getByRole('button', {name:'Add taxpayer'})).toBeVisible();
   await expect(continueButton).toBeDisabled();
@@ -691,7 +692,7 @@ test('Other Tax preview-add sequence only reveals Add another taxpayer after con
   await second.locator('input[id^="other-tax-tin-"]').fill('333333333333');
   await expect(another).toHaveCount(0);
   await expect(continueButton).toBeDisabled();
-  await second.getByRole('button', {name:'Search'}).click();
+  await second.getByRole('button', {name:'Search', exact:true}).click();
   await second.getByRole('button', {name:'Add taxpayer'}).click();
   await expect(another).toBeVisible();
 });
