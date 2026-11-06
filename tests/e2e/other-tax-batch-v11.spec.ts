@@ -554,14 +554,14 @@ test('additional taxpayers are not blocked by an unapproved 20-person limit', as
   test.setTimeout(120_000);
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
-  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', {name: 'Search'}).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', {name: 'Search', exact: true}).click();
   await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', {name: 'Add taxpayer'}).click();
   const add = dialog.getByRole('button', { name: 'Add another taxpayer' });
   for (let index = 0; index < 20; index++) {
     await add.click();
     const newRow = dialog.getByTestId('other-tax-taxpayer').last();
     await newRow.locator('input[id^="other-tax-tin-"]').fill(String(120000000000 + index));
-    await newRow.getByRole('button', {name: 'Search'}).click();
+    await newRow.getByRole('button', {name: 'Search', exact: true}).click();
     await newRow.getByRole('button', {name: 'Add taxpayer'}).click();
   }
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(20);
