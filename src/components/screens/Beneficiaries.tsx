@@ -540,11 +540,10 @@ export function Beneficiaries(){
                         ?Array.from(new Set([...current,person.id]))
                         :current.filter(id=>id!==person.id))}/>
                     <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
-                      <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
+                      <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
+                      <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
                     </label>
                   </div>},
-                  {key:'tin',header:tr('TIN','টিআইএন'),renderCell:person=><p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>},
-                  {key:'tag',header:tr('Tag / relationship','ট্যাগ / সম্পর্ক'),renderCell:person=><p className="beneficiary-directory__tag">{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)??beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
                     <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
