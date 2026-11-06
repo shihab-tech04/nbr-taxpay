@@ -5,10 +5,18 @@ on:
     branches: [main]
     paths:
       - 'src/components/screens/GuestPayment.tsx'
+      - 'src/components/screens/OtherTaxTaxpayerList.tsx'
+      - 'src/components/screens/TravelTax.tsx'
+      - 'src/components/ui/TaxpayerTinLookup.tsx'
+      - 'src/styles/taxpay-payment-form.css'
+      - 'src/styles/taxpayer-tin-lookup.css'
+      - 'src/styles/taxpay-form-labels.css'
       - 'src/components/screens/OtherTaxBatchComposer.tsx'
       - 'src/services/otherTaxBatchSubmission.ts'
       - 'tests/otherTaxBatchSubmission.test.ts'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - 'tests/e2e/other-tax-travel-interaction-parity.spec.ts'
+      - 'tests/e2e/shared-taxpayer-tin-lookup.spec.ts'
       - 'tests/e2e/payment-payer-email-layout.spec.ts'
       - 'tests/e2e/other-tax-bulk-summary-ux.spec.ts'
       - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
@@ -18,10 +26,18 @@ on:
     branches: [main]
     paths:
       - 'src/components/screens/GuestPayment.tsx'
+      - 'src/components/screens/OtherTaxTaxpayerList.tsx'
+      - 'src/components/screens/TravelTax.tsx'
+      - 'src/components/ui/TaxpayerTinLookup.tsx'
+      - 'src/styles/taxpay-payment-form.css'
+      - 'src/styles/taxpayer-tin-lookup.css'
+      - 'src/styles/taxpay-form-labels.css'
       - 'src/components/screens/OtherTaxBatchComposer.tsx'
       - 'src/services/otherTaxBatchSubmission.ts'
       - 'tests/otherTaxBatchSubmission.test.ts'
       - 'tests/e2e/other-tax-batch-v11.spec.ts'
+      - 'tests/e2e/other-tax-travel-interaction-parity.spec.ts'
+      - 'tests/e2e/shared-taxpayer-tin-lookup.spec.ts'
       - 'tests/e2e/payment-payer-email-layout.spec.ts'
       - 'tests/e2e/other-tax-batch-submit.spec.ts'
       - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
@@ -54,7 +70,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts tests/e2e/payment-payer-email-layout.spec.ts
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-travel-interaction-parity.spec.ts tests/e2e/shared-taxpayer-tin-lookup.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts tests/e2e/payment-payer-email-layout.spec.ts
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4

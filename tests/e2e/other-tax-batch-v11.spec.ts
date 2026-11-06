@@ -325,8 +325,9 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await expect(added).toHaveCount(1);
   await expect(added.locator('input[id^="other-tax-tin-"]')).toBeFocused();
   await added.locator('input[id^="other-tax-tin-"]').fill('222222222222');
-  await expect(added.getByText('Taxpayer name')).toBeVisible();
+  await expect(added.getByText('Taxpayer name')).toBeHidden();
   await added.getByRole('button', {name:'Search', exact:true}).click();
+  await expect(added.getByTestId('searched-taxpayer-card')).toContainText('User 2');
   await added.getByRole('button', {name:'Add taxpayer'}).click();
   await expect(list).toContainText('2 taxpayers added');
   await added.getByRole('button', {name:'Edit'}).click();
