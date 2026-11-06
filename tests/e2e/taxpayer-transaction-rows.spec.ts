@@ -42,7 +42,7 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   expect(bounds).not.toBeNull();
   expect(actionBounds).not.toBeNull();
   expect(actionBounds!.x+actionBounds!.width).toBeLessThanOrEqual(bounds!.x+bounds!.width+2);
-  await expect(first.getByText('DEMO-PAY-PEND-01')).toBeVisible();
+  await expect(first.locator('.taxpayer-transaction-compact-meta').getByText('DEMO-PAY-PEND-01')).toBeVisible();
   await expect(first.getByRole('button',{name:'Details for Pending bank reconciliation'})).toBeVisible();
 
   await first.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();
