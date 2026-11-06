@@ -343,6 +343,9 @@ test('Other Tax rejects duplicate TINs but does not require names', async ({ pag
   await tin2.fill('111111111111');
   await expect(continueButton).toBeDisabled();
   await tin2.fill('222222222222');
+  await expect(continueButton).toBeDisabled();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await expect(continueButton).toBeEnabled();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
@@ -383,6 +386,8 @@ test('Other Tax shows the affected taxpayer when another beneficiary has a missi
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
@@ -409,6 +414,8 @@ test('every added taxpayer needs a selected head before review', async ({ page }
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
