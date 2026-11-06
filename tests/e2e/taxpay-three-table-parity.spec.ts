@@ -1,7 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
-/** Same record model: four-column activity and beneficiaries; ten-column ledger.
+/** Same shared record model: four-column activity, two-column beneficiaries and ten-column ledger.
  * Verify computed visual tokens and capture real rendered EN/BN desktop/mobile
  * screenshots, not merely the presence of shared CSS class names.
  */
@@ -59,7 +59,13 @@ for(const language of ['en','bn'] as const){
         await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
         await expect(row.getByRole('button',{name:/বিস্তারিত:|Details for/})).toBeVisible();
       }
-      if(view==='beneficiaries'&&desktop)await expect(row.locator('td')).toHaveCount(4);
+      if(view==='beneficiaries'&&desktop){
+        await expect(row.locator('td')).toHaveCount(2);
+        await expect(row.locator('.beneficiary-directory__person .taxpayer-transaction-row__title'))
+          .toHaveText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
+        await expect(row.locator('.beneficiary-directory__person .beneficiary-directory__tin'))
+          .toHaveText('012345678901');
+      }
       if(view==='beneficiaries'&&!desktop){
         await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
         await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('012345678901');
