@@ -549,10 +549,18 @@ test('Step 1 shows a pending calculation rather than a misleading zero', async (
 });
 
 test('additional taxpayers are not blocked by an unapproved 20-person limit', async ({ page }) => {
+  test.setTimeout(90000);
   const dialog = await getFlow(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   const add = dialog.getByRole('button', { name: 'Add another taxpayer' });
   for (let index = 0; index < 20; index++) {
     await add.click();
+    const row = dialog.getByTestId('other-tax-taxpayer').last();
+    await row.locator('input[id^="other-tax-tin-"]').fill(String(index + 100).padStart(12, '0'));
+    await row.getByRole('button', { name: 'Search', exact: true }).click();
+    await row.getByRole('button', { name: 'Add taxpayer' }).click();
   }
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(20);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('21 taxpayers added');
