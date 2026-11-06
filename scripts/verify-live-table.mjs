@@ -37,7 +37,7 @@ try{
   ]);
   if(!viewportBox||!actionBox||actionBox.x+actionBox.width>viewportBox.x+viewportBox.width+2)
     throw new Error('Published desktop Transactions Details action is cut off');
-  await expect(rows.first().getByText('DEMO-PAY-PEND-01')).toBeVisible();
+  await expect(rows.first().locator('.taxpayer-transaction-compact-meta').getByText('DEMO-PAY-PEND-01')).toBeVisible();
   await page.screenshot({path:'test-results/live-table-desktop.png',fullPage:true});
   await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
   await expect(rows).toHaveCount(4);
