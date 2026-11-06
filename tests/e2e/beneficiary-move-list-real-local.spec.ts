@@ -83,7 +83,10 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await dialog.locator('#beneficiary-edit-other-label').fill('Neighbour representative');
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeEnabled();
     await dialog.getByRole('button',{name:'Save changes'}).click();
-    await expect(movedRow).toContainText('Others · Neighbour representative');
+    // Mobile shows only the leaf tag; the persisted SQL classification remains 'others'.
+    await expect(movedRow).toContainText('Immutable Beneficiary · Neighbour representative');
+    await expect(movedRow).toContainText('012345678901');
+    await expect(movedRow).not.toContainText('Others · Neighbour representative');
     await page.reload();
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
     await expect(page.getByRole('list',{name:'Saved beneficiaries'}).getByText('Immutable Beneficiary')).toBeVisible();
