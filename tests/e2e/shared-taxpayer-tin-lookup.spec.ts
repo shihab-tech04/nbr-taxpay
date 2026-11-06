@@ -57,6 +57,23 @@ test('every additional Other Tax taxpayer uses the same stacked TIN/name and cle
   expect(geometry.overflow).toBeLessThanOrEqual(2);
 });
 
+test('a valid Other Tax TIN remains addable when the optional name lookup has no match', async ({ page }) => {
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const list = dialog.getByTestId('other-tax-taxpayer-list');
+  const primary = list.getByTestId('other-tax-primary-taxpayer');
+  await primary.locator('#guest-tin').fill('123456789012');
+  await primary.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
+  await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
+  await primary.getByRole('button', { name: 'Add taxpayer' }).click();
+  const summary = primary.getByTestId('confirmed-taxpayer-summary');
+  await expect(summary).toContainText('123456789012');
+  await expect(summary).toContainText('Not provided');
+  await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+});
 
 test('Other Tax follows search, review, add taxpayer, then add another; duplicates cannot be added', async ({ page }) => {
   await page.goto('/?action=landing');
