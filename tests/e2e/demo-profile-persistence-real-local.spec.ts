@@ -28,6 +28,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   };
+  const selectedListButton=(page:Page)=>page.getByRole('button',{name:/^(Selected list|নির্বাচিত তালিকা)$/});
   const setLanguage=async(page:Page,target:'en'|'bn')=>{
     if(await page.locator('.taxpay-citizen-shell').getAttribute('lang')===target)return;
     await page.locator('.taxpayer-reference-rail-bottom').getByRole('button').filter({hasText:/Language|ভাষা/}).click();
@@ -64,7 +65,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     let dialog=first.getByRole('dialog',{name:'Create list'});
     await dialog.locator('#beneficiary-create-list-name').fill(listName);
     await dialog.getByRole('button',{name:'Create list',exact:true}).click();
-    await expect(first.getByRole('button',{name:'Selected list'})).toContainText(listName);
+    await expect(selectedListButton(first)).toContainText(listName);
 
     await first.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     await first.getByRole('dialog',{name:'Choose how to add beneficiaries'})
@@ -135,13 +136,13 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await login(second,'user10');
     await openBeneficiaries(second);
     await expect(second.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
-    await expect(second.getByRole('button',{name:'Selected list'})).toContainText(listName);
+    await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(tin);
     const secondProfile=await second.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(secondProfile?.paymentSessionId).toBe(firstProfile.paymentSessionId);
     await second.reload();
-    await expect(second.getByRole('button',{name:'Selected list'})).toContainText(listName);
+    await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
     await second.goto('/?action=history');
     await expect(second.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);

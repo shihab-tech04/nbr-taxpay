@@ -1,7 +1,10 @@
 import { supabase } from './supabaseClient';
 import { getStorySessionId, getStorySessionPayments, storyApiHeaders } from './simulatedPaymentStory';
+import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 import { makeConfirmedReceipt, validCertificateTransactionId } from './confirmedPaymentCertificate';
 import type { ChallanReceipt } from '../types/tax';
+
+const STORY_API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'') + '/functions/v1/demo-story1-taxpay';
 
 /**
  * Paid-record read model: one immutable transaction per selected payment head.
@@ -56,7 +59,7 @@ export async function getDetailedStorySessionPayments(): Promise<OwnedStoryPayme
     while (next < records.length) {
       const record = records[next++];
       if (!validCertificateTransactionId(record.id)) throw new Error('Invalid session payment identity');
-      const response = await fetch('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments/' +
+      const response = await fetch(STORY_API + '/payments/' +
         encodeURIComponent(record.id) + '?sessionId=' + session, { headers:storyApiHeaders(getStorySessionId()),cache: 'no-store' });
       if (!response.ok) throw new Error('Session payment history unavailable');
       const envelope = await response.json() as { success?: boolean; simulationOnly?: boolean;
