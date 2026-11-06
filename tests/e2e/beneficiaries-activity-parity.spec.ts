@@ -97,8 +97,11 @@ for(const language of ['en','bn'] as const){
       expect(layout.mobileVisible).toBe(false);
     }else{
       expect(layout.mobileVisible).toBe(true);
-      await expect(rows.first()).toContainText(t('TIN','টিআইএন')+': ');
-      await expect(rows.first()).toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
+      // Compact identity: Name · final tag; bare TIN on next line, without prefixes.
+      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('Shihab · Neighbour');
+      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('123456789012');
+      await expect(rows.first()).not.toContainText(t('TIN','টিআইএন')+': ');
+      await expect(rows.first()).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
     }
     expect(layout.filterColumns).toBe(layout.width<=1050?2:3);
     await search.fill('Neighbour');
