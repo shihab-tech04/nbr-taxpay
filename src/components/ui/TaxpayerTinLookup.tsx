@@ -52,6 +52,16 @@ export function TaxpayerTinLookup({
   const tinRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  // After choosing a suggestion or using the clear X, keep keyboard focus on
+  // the field without reopening the menu in the very same focus event.
+  const suppressNextFocusOpen = useRef(false);
+  const focusTinWithoutOpeningSuggestions = () => {
+    setShowSuggestions(false);
+    if (document.activeElement !== tinRef.current) {
+      suppressNextFocusOpen.current = true;
+      tinRef.current?.focus();
+    }
+  };
   const options = suggestedTins?.filter(suggestion => suggestion.includes(tin)) ?? [];
   useEffect(() => {
     if (!suggestedTins?.length || !showSuggestions) return;
@@ -64,7 +74,10 @@ export function TaxpayerTinLookup({
   const locked = disabled || readonlyTin;
   const change = (next: string) => onTinChange(next.replace(/\D/g, '').slice(0, maxTinLength));
   return <div ref={rootRef} className={['taxpayer-tin-lookup', card ? 'taxpayer-tin-lookup--card' : '', className].filter(Boolean).join(' ')}
-    data-testid="shared-taxpayer-tin-lookup">
+    data-testid="shared-taxpayer-tin-lookup"
+    onBlur={event => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setShowSuggestions(false);
+    }}>
     {heading && <h3 className="taxpayer-tin-lookup__heading">{heading}</h3>}
     <div className="taxpayer-tin-lookup__field">
       <label htmlFor={tinId}>{tinLabel ?? (bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN')}{requiredTin ? ' *' : ''}</label>
@@ -76,7 +89,13 @@ export function TaxpayerTinLookup({
             role={suggestedTins?.length ? 'combobox' : undefined} aria-autocomplete={suggestedTins?.length ? 'list' : undefined}
             aria-controls={suggestedTins?.length ? tinId + '-suggestions' : undefined}
             aria-expanded={suggestedTins?.length ? showSuggestions : undefined}
-            onFocus={() => { if (suggestedTins?.length && !locked) setShowSuggestions(true); }}
+            onFocus={() => {
+              if (suppressNextFocusOpen.current) {
+                suppressNextFocusOpen.current = false;
+                return;
+              }
+              if (suggestedTins?.length && !locked) setShowSuggestions(true);
+            }}
             onKeyDown={event => {
               if (event.key === 'Escape') setShowSuggestions(false);
               if (event.key === 'ArrowDown' && showSuggestions) {
@@ -91,7 +110,7 @@ export function TaxpayerTinLookup({
             className="taxpayer-tin-lookup__clear taxpay-taxpayer-row__tin-clear"
             aria-label={bn ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'}
             title={bn ? 'টিআইএন মুছুন' : 'Clear TIN'}
-            onClick={() => { setShowSuggestions(false); onClear(); tinRef.current?.focus(); }}>
+            onClick={() => { onClear(); focusTinWithoutOpeningSuggestions(); }}>
             <X size={17} aria-hidden="true" />
           </button>}
         </div>
@@ -107,7 +126,20 @@ export function TaxpayerTinLookup({
           </p>
           {options.map(option => <button key={option} type="button" role="option"
             aria-selected={tin === option} onMouseDown={event => event.preventDefault()}
-            onClick={() => { change(option); setShowSuggestions(false); tinRef.current?.focus(); }}>
+            onKeyDown={event => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                focusTinWithoutOpeningSuggestions();
+              } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                const items = [...(rootRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [])];
+                const index = items.indexOf(event.currentTarget);
+                const next = event.key === 'ArrowDown' ? index + 1 : index - 1;
+                if (items[next]) items[next].focus();
+                else tinRef.current?.focus();
+              }
+            }}
+            onClick={() => { change(option); focusTinWithoutOpeningSuggestions(); }}>
             <span>{option}</span>
           </button>)}
           {!options.length && <p className="taxpayer-tin-lookup__no-results" role="presentation">
