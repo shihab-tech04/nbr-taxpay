@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 
 /**
@@ -51,7 +51,11 @@ export function TaxpayerTinLookup({
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const searchRowRef = useRef<HTMLDivElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionLayout, setSuggestionLayout] = useState<{placement: 'above' | 'below'; maxHeight: number}>({
+    placement: 'below', maxHeight: 190,
+  });
   // After choosing a suggestion or using the clear X, keep keyboard focus on
   // the field without reopening the menu in the very same focus event.
   const suppressNextFocusOpen = useRef(false);
@@ -71,6 +75,41 @@ export function TaxpayerTinLookup({
     document.addEventListener('pointerdown', closeOnOutside);
     return () => document.removeEventListener('pointerdown', closeOnOutside);
   }, [showSuggestions, suggestedTins]);
+  // The modal body scrolls independently of its fixed footer. Keep the popup
+  // entirely inside the visible body: flip it above the TIN input whenever
+  // opening below would put its options underneath that footer.
+  useLayoutEffect(() => {
+    if (!showSuggestions || !suggestedTins?.length) return;
+    const row = searchRowRef.current;
+    const body = rootRef.current?.closest<HTMLElement>('.taxpay-modal__body');
+    if (!row) return;
+    const measure = () => {
+      const anchor = row.getBoundingClientRect();
+      const visibleTop = window.visualViewport?.offsetTop ?? 0;
+      const visibleBottom = visibleTop + (window.visualViewport?.height ?? window.innerHeight);
+      const area = body?.getBoundingClientRect();
+      const upperLimit = Math.max(visibleTop, area?.top ?? visibleTop) + 8;
+      const lowerLimit = Math.min(visibleBottom, area?.bottom ?? visibleBottom) - 8;
+      const roomAbove = Math.max(0, anchor.top - upperLimit - 4);
+      const roomBelow = Math.max(0, lowerLimit - anchor.bottom - 4);
+      const desiredHeight = Math.min(190, Math.round((visibleBottom - visibleTop) * 0.3));
+      const placement = roomBelow < desiredHeight && roomAbove > roomBelow ? 'above' : 'below';
+      const maxHeight = Math.max(0, Math.floor(Math.min(desiredHeight, placement === 'above' ? roomAbove : roomBelow)));
+      setSuggestionLayout(previous => previous.placement === placement && previous.maxHeight === maxHeight
+        ? previous : {placement, maxHeight});
+    };
+    measure();
+    body?.addEventListener('scroll', measure, {passive: true});
+    window.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('scroll', measure);
+    return () => {
+      body?.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('scroll', measure);
+    };
+  }, [showSuggestions, suggestedTins?.length]);
   const locked = disabled || readonlyTin;
   const change = (next: string) => onTinChange(next.replace(/\D/g, '').slice(0, maxTinLength));
   return <div ref={rootRef} className={['taxpayer-tin-lookup', card ? 'taxpayer-tin-lookup--card' : '', className].filter(Boolean).join(' ')}
@@ -81,7 +120,7 @@ export function TaxpayerTinLookup({
     {heading && <h3 className="taxpayer-tin-lookup__heading">{heading}</h3>}
     <div className="taxpayer-tin-lookup__field">
       <label htmlFor={tinId}>{tinLabel ?? (bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN')}{requiredTin ? ' *' : ''}</label>
-      <div className="taxpayer-tin-lookup__search-row taxpay-taxpayer-row__tin-search tin-lookup__row">
+      <div ref={searchRowRef} className="taxpayer-tin-lookup__search-row taxpay-taxpayer-row__tin-search tin-lookup__row">
         <div className="taxpayer-tin-lookup__tin-entry taxpay-taxpayer-row__tin-entry">
           <input ref={tinRef} id={tinId} type="text" inputMode="numeric" autoComplete="off"
             maxLength={maxTinLength} value={tin} required={requiredTin} autoFocus={autofocusTin}
@@ -124,6 +163,8 @@ export function TaxpayerTinLookup({
         </button>
         {Boolean(suggestedTins?.length) && showSuggestions && !locked && <div
           className="taxpayer-tin-lookup__suggestions" id={tinId + '-suggestions'} role="listbox"
+          data-placement={suggestionLayout.placement}
+          style={{maxHeight: suggestionLayout.maxHeight + 'px'}}
           aria-label={bn ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'}>
           <p className="taxpayer-tin-lookup__suggestions-heading" role="presentation">
             {bn ? 'প্রস্তাবিত টিআইএন নম্বর' : 'Suggested TIN numbers'}

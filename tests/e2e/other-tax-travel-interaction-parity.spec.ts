@@ -88,6 +88,45 @@ for (const locale of ['en', 'bn'] as const) {
   });
 }
 
+// Regression for the actual fixed-footer screenshot: the TIN input can sit at
+// the bottom of the independently scrolling modal, leaving no room underneath.
+test('Other Tax TIN suggestions remain fully reachable above the fixed footer', async ({page}) => {
+  await page.goto('/?action=landing');
+  await page.getByRole('button', {name: 'Pay Tax', exact: true}).first().click();
+  const modal = page.getByRole('dialog', {name: 'Pay Tax'});
+  await enterTaxPayService(modal, 'OTHER_TAX_PAYMENT', 'OTHER');
+  const first = modal.getByTestId('other-tax-primary-taxpayer');
+  const input = first.locator('#guest-tin');
+  await input.evaluate(element => element.scrollIntoView({block: 'end', inline: 'nearest', behavior: 'instant'}));
+  await input.focus();
+  const options = first.getByRole('listbox', {name: 'Suggested TIN numbers'});
+  await expect(options).toBeVisible();
+  await expect(options.getByRole('option')).toHaveCount(10);
+  const geometry = await options.evaluate(menu => {
+    const area = menu.closest('.taxpay-modal__body');
+    const anchor = menu.parentElement?.querySelector<HTMLInputElement>('#guest-tin');
+    if (!area || !anchor) throw new Error('Expected TIN popup inside its modal scroll container');
+    const menuRect = menu.getBoundingClientRect();
+    const bodyRect = area.getBoundingClientRect();
+    const anchorRect = anchor.getBoundingClientRect();
+    return {top: menuRect.top, bottom: menuRect.bottom, height: menuRect.height,
+      bodyTop: bodyRect.top, bodyBottom: bodyRect.bottom, inputBottom: anchorRect.bottom,
+      placement: menu.getAttribute('data-placement')};
+  });
+  expect(geometry.top).toBeGreaterThanOrEqual(geometry.bodyTop + 2);
+  expect(geometry.bottom).toBeLessThanOrEqual(geometry.bodyBottom - 2);
+  expect(geometry.height).toBeGreaterThan(80);
+  if (geometry.bodyBottom - geometry.inputBottom < 80) {
+    expect(geometry.placement).toBe('above');
+  }
+  // The last suggested entry must remain reachable without scrolling the modal
+  // or obscuring the fixed Continue action.
+  await options.getByRole('option', {name: '999999999999'}).click();
+  await expect(input).toHaveValue('999999999999');
+  await expect(options).toHaveCount(0);
+  await expect(modal.getByRole('button', {name: 'Continue to purpose & amount'})).toBeVisible();
+});
+
 test('Travel Tax Bangladeshi and foreign passport inputs have the same clear button without altering lookup', async ({page}) => {
   await page.goto('/?action=travel');
   const travel = page.locator('.travel-flow');
