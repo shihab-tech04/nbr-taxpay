@@ -71,10 +71,14 @@ begin
     if sqlerrm = 'Cross-account selected-list modification was accepted' then raise; end if;
     if sqlerrm not like '%INVALID_LIST%' then raise; end if;
   end;
-  if public.taxpay_guest_beneficiary_add(other_hash,new_list,
-    '[{"tin":"919191919192","display_name":"Forbidden","tag":"clients"}]'::jsonb) <> 0 then
+  begin
+    perform public.taxpay_guest_beneficiary_add(other_hash,new_list,
+      '[{"tin":"919191919192","display_name":"Forbidden","tag":"clients"}]'::jsonb);
     raise exception 'Different account was allowed to add to first account list';
-  end if;
+  exception when others then
+    if sqlerrm = 'Different account was allowed to add to first account list' then raise; end if;
+    if sqlerrm not like '%NOT_FOUND%' then raise; end if;
+  end;
 
   raise notice 'PASS: nonempty durable list, tagged beneficiary, language, selected list, second login and other-user isolation';
 end
