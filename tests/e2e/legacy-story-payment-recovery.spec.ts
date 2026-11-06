@@ -62,7 +62,10 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   expect(saved.profileKey).toBe('user1');
   expect(saved.preview?.profileId).toBe('user1');
   await expect(page.getByRole('heading',{name:/Payment|পেমেন্ট/}).first()).toBeVisible();
-  await expect(page.getByTestId('signed-in-payment-activity')).toBeVisible();
+  // user1 has its own approved Transactions view; recovery must be mounted there,
+  // not on the generic payment screen that this profile never visits.
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toBeVisible();
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
   await expect.poll(()=>recovered).toBe(true);
