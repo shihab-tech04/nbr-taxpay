@@ -373,6 +373,17 @@
 .taxpay-taxpayer-row__tin-search>.tin-lookup__search{flex:none;min-height:44px;padding-inline:14px;white-space:nowrap}
 .taxpay-taxpayer-row__fields input[readonly]{background:var(--color-taxpay-surface-subtle);cursor:default}
 .taxpay-taxpayer-row__lookup-status{margin:0;font-size:14px;color:var(--color-taxpay-error)}
+/* Keep Add taxpayer attached to the searched taxpayer card, as for Travel Tax passengers. */
+.taxpay-taxpayer-row__confirm-add{display:grid;min-width:0;padding-top:12px;border-top:1px solid #e6ebf2}
+.taxpay-taxpayer-row__add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;padding:10px 14px;border:1px solid var(--color-taxpay-primary,#085587);border-radius:9px;background:var(--color-taxpay-primary,#085587);color:#fff;font:inherit;font-size:14px;font-weight:650;cursor:pointer}
+.taxpay-taxpayer-row__add:hover{filter:brightness(.94)}
+.taxpay-taxpayer-row__add:focus-visible,.taxpay-taxpayer-row__edit:focus-visible{outline:3px solid var(--color-taxpay-primary,#085587);outline-offset:2px}
+.taxpay-taxpayer-row__edit{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 9px;border:1px solid #c7d4e7;border-radius:8px;background:#fff;color:#085587;font:inherit;font-size:14px;cursor:pointer}
+.taxpay-taxpayer-row__summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}
+.taxpay-taxpayer-row__summary>div{display:grid;gap:4px;min-width:0}
+.taxpay-taxpayer-row__summary dt{font-size:14px;color:#526681}
+.taxpay-taxpayer-row__summary dd{margin:0;font-size:14px;font-weight:650;color:#172b4d;overflow-wrap:anywhere}
+@media(max-width:575px){.taxpay-taxpayer-row__summary{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:360px){.taxpay-taxpayer-row__tin-search{gap:6px}.taxpay-taxpayer-row__tin-search>.tin-lookup__search{padding-inline:10px}}
 
 /* Clickable calculation rows use a shrinkable amount column on narrow screens. */
