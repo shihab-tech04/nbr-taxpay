@@ -38,7 +38,7 @@ try {
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
       await expect(page).toHaveURL(/action=taxpayer_home/);
-      await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+      await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
       const beneficiaryUrl=new URL(base);
       beneficiaryUrl.searchParams.set('action','beneficiaries');
       await page.goto(beneficiaryUrl.toString(),{waitUntil:'domcontentloaded',timeout:45_000});
