@@ -9,7 +9,7 @@ import type {DemoUserId} from '../../data/demoUsers';
 
 /** Preserve the approved Transactions register; show only old session records
  * not already in its payer table. Never rewrite their payer/beneficiary fields. */
-export function RecoveredStoryHistory({profileId,language}:{profileId:DemoUserId;language:'en'|'bn'}) {
+export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean}) {
   const [state,setState]=useState<{id:string;status:'loading'|'ready'|'error';rows:OwnedStoryPayment[]}>({
     id:profileId,status:'loading',rows:[]});
   const [selected,setSelected]=useState<OwnedStoryPayment|null>(null);
@@ -21,7 +21,9 @@ export function RecoveredStoryHistory({profileId,language}:{profileId:DemoUserId
     setState({id:profileId,status:'loading',rows:[]});setSelected(null);
     void Promise.all([
       getDetailedStorySessionPayments(),
-      getDemoStoryPaymentHistory(profileId,'payer')
+      // user1's approved Transactions are immutable non-SQL fixtures, so no
+      // SQL register identity can duplicate a recovered UUID payment.
+      skipDemoRegister ? Promise.resolve([] as Awaited<ReturnType<typeof getDemoStoryPaymentHistory>>) : getDemoStoryPaymentHistory(profileId,'payer')
     ]).then(([all,existing])=>{
       if(!active)return;
       const visible=new Set(existing.map(record=>record.transactionId));
@@ -29,7 +31,7 @@ export function RecoveredStoryHistory({profileId,language}:{profileId:DemoUserId
         rows:all.filter(payment=>!visible.has(payment.id))});
     }).catch(()=>{if(active)setState({id:profileId,status:'error',rows:[]});});
     return()=>{active=false;};
-  },[profileId,revision]);
+  },[profileId,revision,skipDemoRegister]);
   const current=state.id===profileId?state:{id:profileId,status:'loading' as const,rows:[]};
   const rows=useMemo(()=>current.rows,[current.rows]);
   const money=(value:number)=>'৳ '+(value/100).toLocaleString(bn?'bn-BD':'en-BD',
