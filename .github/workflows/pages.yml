@@ -250,12 +250,26 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium
+      # Check newly changed recovery first for fast failure feedback; retain
+      # all existing signed-in payment/beneficiary acceptance unchanged.
+      - name: Verify stable fictional login data across fresh browsers
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/demo-profile-cross-browser.spec.ts tests/e2e/legacy-story-payment-recovery.spec.ts tests/e2e/preview-profile-pending-save.spec.ts --project=desktop-1280
       - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify hosted persistence from live Pages with synthetic smoke data and cleanup
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+        run: node scripts/verify-hosted-profile-persistence.mjs
 
   public-support-e2e:
     name: Public receipts and workspace acceptance
@@ -409,6 +423,11 @@ jobs:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-travel-passport.mjs
 
+      - name: Verify live Convay-style Transactions table with the existing User ID journey
+        env:
+          TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/verify-live-table.mjs
+
       - name: Upload live signed-out browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -418,4 +437,5 @@ jobs:
             test-results/live-auth-*.png
             test-results/live-search-*.png
             test-results/live-travel-passport-*.png
+            test-results/live-table-*.png
           if-no-files-found: ignore

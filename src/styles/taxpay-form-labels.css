@@ -343,3 +343,12 @@
   .taxpay-citizen-shell .travel-flow__person-summary { grid-template-columns: minmax(0,1fr); }
   .taxpay-citizen-shell .travel-flow__person-actions { justify-content: flex-end; }
 }
+
+/* Match the existing Other Tax input clear affordance; no travel-flow behavior/size changes. */
+.taxpay-citizen-shell .travel-flow__passport-entry{position:relative;min-width:0;width:100%}
+.taxpay-citizen-shell .travel-flow__passport-entry>input{width:100%;padding-right:48px}
+.taxpay-citizen-shell .travel-flow__passport-clear{position:absolute;top:50%;right:2px;transform:translateY(-50%);
+  display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:8px;background:transparent;
+  color:var(--citizen-muted,#526681);cursor:pointer}
+.taxpay-citizen-shell .travel-flow__passport-clear:hover{background:var(--citizen-primary-light,#edf4ff);color:var(--citizen-primary-dark,#085587)}
+.taxpay-citizen-shell .travel-flow__passport-clear:focus-visible{outline:2px solid var(--citizen-primary,#085587);outline-offset:-2px}

@@ -1,4 +1,5 @@
 import { DEMO_USERS, type DemoUserId } from '../data/demoUsers';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 
 /** Shared SQL demo consent. Fictional account names are NOT authenticated taxpayer identities. */
 export type HostedAuthorizationStatus = 'PENDING' | 'CODE_ISSUED' | 'ACTIVE' | 'DENIED' | 'REVOKED' | 'EXPIRED' | 'CANCELLED';
@@ -11,7 +12,8 @@ export type HostedAuthorization = {
   codeSentAt?: number | null; codeResends?: number;
 };
 
-const API = 'https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay';
+const API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
+const headers={apikey:TAXPAY_PUBLIC_ENDPOINT.publishableKey};
 type ResponseEnvelope<T>={success?:boolean;data?:T;error?:string;requestId?:string;mirrored?:boolean};
 export class AuthorizationSyncError extends Error {
   constructor(public readonly requestId: string) {
@@ -27,7 +29,7 @@ async function unwrap<T>(response:Response):Promise<T>{
   throw Error((payload.error??'AUTHORIZATION_UNAVAILABLE').replaceAll('_',' '));
 }
 export const getHostedAuthorizations=async(actor:DemoUserId):Promise<HostedAuthorization[]>=>{
-  const response=await fetch(`${API}/authorizations?actor=${encodeURIComponent(actor)}`,{cache:'no-store'});
+  const response=await fetch(`${API}/authorizations?actor=${encodeURIComponent(actor)}`,{cache:'no-store',headers});
   const data=await unwrap<HostedAuthorization[]>(response);
   if(!Array.isArray(data))throw Error('Invalid authorization response');
   return data;
@@ -36,14 +38,14 @@ export type AuthorizationAction='request'|'accept'|'confirm'|'decline'|'revoke'|
 export async function performHostedAuthorization(actor:DemoUserId,action:AuthorizationAction,
   options:{id?:string;tin?:string;code?:string}={}):Promise<{id:string;status:HostedAuthorizationStatus;consentCode?:string|null;attempts:number}> {
   const response=await fetch(API+'/authorizations',{
-    method:'POST',headers:{'Content-Type':'application/json'},
+    method:'POST',headers:{...headers,'Content-Type':'application/json'},
     body:JSON.stringify({actor,action,...options}),
   });
   return unwrap(response);
 }
 export async function retryHostedAuthorizationSync(requestId:string):Promise<void>{
   const response=await fetch(API+'/authorizations/sync',{
-    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:requestId}),
+    method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({id:requestId}),
   });
   await unwrap(response);
 }

@@ -48,6 +48,7 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
 
 test('historical payment record exposes the complete lifecycle template without invented settlement',async({page})=>{
   await page.goto(history);
+  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-ETDS-SAL-01');
   await page.getByRole('button',{name:'Details for Salary withholding'}).click();
   const details=page.getByTestId('payment-lifecycle-details');
   await expect(details).toBeVisible();
@@ -97,6 +98,7 @@ test('activity filters share one desktop row and details use the shared wide mod
   await expect(controls).toHaveCount(4);
   const positions=await controls.evaluateAll(nodes=>nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
   expect(new Set(positions).size).toBe(1);
+  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-ETDS-SAL-01');
   await page.getByRole('button',{name:'Details for Salary withholding'}).click();
   const dialog=page.getByRole('dialog');
   await expect(dialog.getByTestId('payment-lifecycle-details')).toBeVisible();
@@ -110,6 +112,7 @@ test('activity filters share one desktop row and details use the shared wide mod
 test('small-screen transaction details stay within a scrollable bottom sheet',async({page})=>{
   await page.setViewportSize({width:320,height:760});
   await page.goto(history);
+  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-ETDS-SAL-01');
   await page.getByRole('button',{name:'Details for Salary withholding'}).click();
   const dialog=page.getByRole('dialog');
   await expect(dialog.getByTestId('payment-lifecycle-details')).toBeVisible();

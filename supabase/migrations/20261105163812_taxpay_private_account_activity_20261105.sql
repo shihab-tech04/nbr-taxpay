@@ -1,5 +1,5 @@
--- Account-owned, nonfinancial UI activity. Never use these client-generated
--- entries as proof of payment, authorization, Treasury status or tax liability.
+-- Canonical source for the already-applied owner-scoped activity table.
+-- Entries are nonfinancial UI activity, never payment proof or an audit ledger.
 begin;
 create table if not exists public.taxpay_account_activity (
   id uuid primary key default gen_random_uuid(),

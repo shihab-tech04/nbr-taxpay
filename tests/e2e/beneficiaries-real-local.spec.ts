@@ -50,14 +50,17 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('012345678901');
-  // Four native table columns must align row-by-row, unlike the old
-  // two-column list with floating headings. Mobile retains actionable cards.
+  // Compact owner-approved identity column combines name · final tag and bare TIN
+  // while preserving native Actions cells and the mobile payment/list controls.
   await page.setViewportSize({width:1280,height:900});
   const table=page.getByTestId('beneficiary-directory-desktop');
   await expect(table).toBeVisible();
-  await expect(table.locator('thead th')).toHaveText(['Beneficiary','TIN','Tag / relationship','Actions']);
+  await expect(table.locator('thead th')).toHaveText(['Beneficiary','Actions']);
   await expect(table.locator('tbody tr')).toHaveCount(1);
-  await expect(table.locator('tbody tr td')).toHaveCount(4);
+  await expect(table.locator('tbody tr td')).toHaveCount(2);
+  const identity=table.locator('tbody tr:first-child .beneficiary-directory__person');
+  await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Local Beneficiary One · Father');
+  await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('012345678901');
   const alignment=await table.evaluate(element=>{
     const headers=Array.from(element.querySelectorAll('thead th'));
     const cells=Array.from(element.querySelectorAll('tbody tr:first-child td'));

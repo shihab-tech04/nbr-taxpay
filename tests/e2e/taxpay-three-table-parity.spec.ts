@@ -1,10 +1,26 @@
 import {expect,test,type Page} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
-/** Same record model: four-column activity and beneficiaries; ten-column ledger.
+/** Same shared record model: four-column activity, two-column beneficiaries and ten-column ledger.
  * Verify computed visual tokens and capture real rendered EN/BN desktop/mobile
  * screenshots, not merely the presence of shared CSS class names.
  */
+/** Visual-only test fixture. Production requires a backend-issued capability;
+ * a synthetic local value here never grants SQL or payment permissions.
+ */
+async function installSyntheticPreviewFixture(page:Page,userId:'user1'|'user2',language:'en'|'bn'){
+  await page.addInitScript(({id,lang})=>{
+    sessionStorage.setItem('taxpay-taxpayer-preview-user',id);
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:id,
+      capability:'A'.repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000099',
+      selectedListId:null,
+      language:lang
+    }));
+  },{id:userId,lang:language});
+}
+
 async function beneficiaryFixture(page:Page){
   const timestamp='2026-11-01T00:00:00Z';
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
@@ -31,23 +47,30 @@ for(const language of ['en','bn'] as const){
         :view==='history'?page.locator('.taxpayer-transaction-panel')
         :page.getByTestId('beneficiary-records');
       await expect(root).toBeVisible();
-      const header=desktop?(view==='ledger'||view==='beneficiaries'
-        ?root.locator('table.taxpay-unified-table thead th').first()
-        :root.locator('.taxpay-record-list__columns'))
-        :null;
-      const row=desktop?(view==='ledger'||view==='beneficiaries'
-        ?root.locator('table.taxpay-unified-table tbody tr').first()
-        :root.locator('.taxpay-record-list__row').first())
-        :(view==='ledger'||view==='beneficiaries'
-          ?root.locator('.taxpay-mobile-table-card').first()
-          :root.locator('.taxpay-record-list__row').first());
+      const header=desktop?root.locator('table.taxpay-unified-table thead th').first():null;
+      const row=desktop?root.locator('table.taxpay-unified-table tbody tr').first()
+        :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
-      if(view==='history'){
-        await expect(row.locator('[data-record-column-label]')).toHaveCount(4);
-        await expect(row.locator('[data-record-column-label]').first()).toContainText(language==='bn'?'পেমেন্ট':'Payment');
+      if(view==='history'&&desktop){
+        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
+        await expect(row.locator('td')).toHaveCount(7);
       }
-      if(view==='beneficiaries'&&desktop)await expect(row.locator('td')).toHaveCount(4);
-      if(view==='beneficiaries'&&!desktop)await expect(row).toContainText(language==='bn'?'টিআইএন':'TIN');
+      if(view==='history'&&!desktop){
+        await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
+        await expect(row.getByRole('button',{name:/বিস্তারিত:|Details for/})).toBeVisible();
+      }
+      if(view==='beneficiaries'&&desktop){
+        await expect(row.locator('td')).toHaveCount(2);
+        await expect(row.locator('.beneficiary-directory__person .taxpayer-transaction-row__title'))
+          .toHaveText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
+        await expect(row.locator('.beneficiary-directory__person .beneficiary-directory__tin'))
+          .toHaveText('012345678901');
+      }
+      if(view==='beneficiaries'&&!desktop){
+        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
+        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('012345678901');
+        await expect(row).not.toContainText(language==='bn'?'টিআইএন:':'TIN:');
+      }
       if(!desktop&&view==='ledger'){
         const nested=await row.locator('button').first().evaluate(element=>({
           borderTopWidth:getComputedStyle(element).borderTopWidth,
@@ -101,15 +124,9 @@ for(const language of ['en','bn'] as const){
           ?document.querySelector('[data-testid="event-tax-ledger"]')
           :view==='history'?document.querySelector('.taxpayer-transaction-panel')
           :document.querySelector('[data-testid="beneficiary-records"]');
-        const semantic=view==='ledger'||view==='beneficiaries';
-        const head=desktop?(semantic
-          ?scope?.querySelector('table.taxpay-unified-table thead th')
-          :scope?.querySelector('.taxpay-record-list__columns')):null;
-        const record=desktop?(semantic
-          ?scope?.querySelector('table.taxpay-unified-table tbody tr')
-          :scope?.querySelector('.taxpay-record-list__row'))
-          :semantic?scope?.querySelector('.taxpay-mobile-table-card')
-          :scope?.querySelector('.taxpay-record-list__row');
+        const head=desktop?scope?.querySelector('table.taxpay-unified-table thead th'):null;
+        const record=desktop?scope?.querySelector('table.taxpay-unified-table tbody tr')
+          :scope?.querySelector('.taxpay-mobile-table-card');
         if(!record||(desktop&&!head))throw Error('Missing rendered '+view+' grid');
         const h=head?getComputedStyle(head):null;
         const r=getComputedStyle(record);
@@ -128,7 +145,7 @@ for(const language of ['en','bn'] as const){
         return parseFloat(getComputedStyle(cell??element).fontSize);
       });
       expect(textSize,view+' primary record typography').toBeGreaterThanOrEqual(16);
-      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(76);
+      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(view==='history'?64:76);
       else expect(style.borderRadius,view+' card corners').not.toBe('0px');
       observations.push({view,background:style.background,fontSize:style.fontSize,
         color:style.color,borderRadius:style.borderRadius,rowHeight:style.rowHeight});
@@ -153,13 +170,17 @@ for(const language of ['en','bn'] as const){
 /** Screenshots of real notification rows complete the same three-table visual evidence. */
 for(const language of ['en','bn'] as const){
   test('notification record rows share the same four-column header and mobile card contract in '+language,async({page},info)=>{
-    await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
-    await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
-      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([
+    await installSyntheticPreviewFixture(page,'user1',language);
+    await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
+      const view=new URL(route.request().url()).searchParams.get('view');
+      const rows=[
         {id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
          createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:234567,
          reviewStatus:'PENDING_OFFICER',allocations:[],events:[]}
-      ])});
+      ];
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        success:true,simulationOnly:true,data:view==='payer'?rows:[]
+      })});
     });
     await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[
@@ -194,11 +215,11 @@ for(const language of ['en','bn'] as const){
 }
 
 for(const language of ['en','bn'] as const){
-  test('signed-in preview Transactions keeps four columns and complete details in '+language,async({page},info)=>{
-    await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user2'));
+  test('signed-in preview Transactions shows Convay columns and complete details in '+language,async({page},info)=>{
+    await installSyntheticPreviewFixture(page,'user2',language);
     await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
-    await page.route('**/rest/v1/rpc/demo_story1_demo_history',route=>route.fulfill({
-      status:200,contentType:'application/json',body:JSON.stringify([{
+    await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',route=>route.fulfill({
+      status:200,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:[{
         id:'EXAMPLE-USER2-1',transactionId:'00000000-0000-4000-8000-000000000121',
         payer:'user2',state:'SIMULATED',createdAt:'2026-10-24T10:00:00Z',
         simulationOnly:true,totalMinor:5000,reviewStatus:'PENDING_OFFICER',
@@ -206,7 +227,7 @@ for(const language of ['en','bn'] as const){
           {id:'a1',lineNo:1,beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:1500},
           {id:'a2',lineNo:2,beneficiary:'user3',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:3500}
         ],events:[{id:1,action:'CREATED',note:'Payment record saved',occurredAt:'2026-10-24T10:00:00Z'}]
-      }])
+      }]})
     }));
     await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',route=>route.fulfill({
       status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[]})
@@ -220,7 +241,9 @@ for(const language of ['en','bn'] as const){
     const expand=language==='bn'?'বরাদ্দ দেখুন':'View allocations';
     if(desktop){
       await expect(table).toBeVisible();
-      await expect(table.locator('thead th')).toHaveCount(4);
+      await expect(table.locator('thead th')).toHaveText(language==='bn'
+        ? ['রেফারেন্স','তারিখ','প্রদানকারী','বরাদ্দ','পরিমাণ','অবস্থা','কার্যক্রম']
+        : ['Reference','Date','Payer','Allocations','Amount','Status','Actions']);
       await expect(table.locator('tbody tr')).toHaveCount(1);
       await expect(cards).toBeHidden();
       await table.getByText(expand).click();

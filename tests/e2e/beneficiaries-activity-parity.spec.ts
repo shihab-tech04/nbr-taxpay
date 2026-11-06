@@ -54,7 +54,7 @@ for(const language of ['en','bn'] as const){
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
     await expect(rows.first()).toContainText('123456789012');
-    await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
+    await expect(rows.first()).toContainText('Neighbour');
     await expect(screen.locator('.beneficiary-directory__table.taxpay-data-table')).toBeVisible();
     const theme=await screen.locator('.beneficiary-directory__table').evaluate(el=>{
       const header=el.querySelector('table.taxpay-unified-table thead th');
@@ -87,18 +87,36 @@ for(const language of ['en','bn'] as const){
         mobileVisible:getComputedStyle(mobileCards).display!=='none'};
     });
     expect(layout.pageOverflow).toBe(false);
-    expect(layout.rowColumns).toBe(layout.width>767?4:1);
+    expect(layout.rowColumns).toBe(layout.width>767?2:1);
     expect(layout.headingVisible).toBe(layout.width>767);
     if(layout.width>767){
       await expect(directory.locator('table.taxpay-unified-table thead th')).toHaveText([
-        t('Beneficiary','উপকারভোগী'),t('TIN','টিআইএন'),
-        t('Tag / relationship','ট্যাগ / সম্পর্ক'),t('Actions','কার্যক্রম')
+        t('Beneficiary','উপকারভোগী'),t('Actions','কার্যক্রম')
       ]);
       expect(layout.mobileVisible).toBe(false);
+      // The approved identity is name · final tag on one line, bare TIN underneath.
+      const identity=rows.first().locator('.beneficiary-directory__person');
+      await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Shihab · Neighbour');
+      await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123456789012');
+      await expect(identity).not.toContainText(t('TIN','টিআইএন')+': ');
+      await expect(identity).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
+      // At 1280px the complete Actions column, including Remove, must fit
+      // without a hidden horizontal-scroll remainder.
+      if(layout.width>=1180){
+        const overflow=await directory.locator('.taxpay-table-viewport').evaluate(el=>el.scrollWidth-el.clientWidth);
+        expect(overflow,'desktop Beneficiaries actions must not be clipped').toBeLessThanOrEqual(2);
+        const bounds=await rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')}).boundingBox();
+        const viewportBounds=await directory.locator('.taxpay-table-viewport').boundingBox();
+        expect(bounds&&viewportBounds&&bounds.x+bounds.width<=viewportBounds.x+viewportBounds.width+1,
+          'Remove must remain within the visible desktop table viewport').toBe(true);
+      }
     }else{
       expect(layout.mobileVisible).toBe(true);
-      await expect(rows.first()).toContainText(t('TIN','টিআইএন')+': ');
-      await expect(rows.first()).toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
+      // Compact identity: Name · final tag; bare TIN on next line, without prefixes.
+      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('Shihab · Neighbour');
+      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('123456789012');
+      await expect(rows.first()).not.toContainText(t('TIN','টিআইএন')+': ');
+      await expect(rows.first()).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
     }
     expect(layout.filterColumns).toBe(layout.width<=1050?2:3);
     await search.fill('Neighbour');
@@ -134,7 +152,7 @@ for(const language of ['en','bn'] as const){
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeEnabled();
     await expect(edit.locator('#beneficiary-edit-list')).toHaveValue('00000000-0000-4000-8000-000000000101');
     await edit.getByRole('button',{name:t('Cancel','বাতিল')}).click();
-    await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
+    await expect(rows.first()).toContainText('Neighbour');
     await rows.first().getByRole('checkbox',{name:t('Select Shihab','Shihab নির্বাচন')}).check();
     await expect(screen.locator('.beneficiary-directory__selected-count')).toContainText('1');
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();

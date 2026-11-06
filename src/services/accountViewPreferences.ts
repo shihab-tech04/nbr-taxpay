@@ -27,21 +27,6 @@ export function readBrowserLanguage(previewId:string|null):Language|null {
   catch {return null;}
 }
 
-/** A sample login can retain its last selected list in this browser,
- * separately for each sample ID. This does not grant cross-device identity.
- */
-const previewListKey=(id:string)=>'taxpay:preview-beneficiary-list:'+id;
-export function readPreviewSelectedList(previewId:string|null):string|null {
-  if(!previewId || !/^user(?:10|[1-9])$/.test(previewId))return null;
-  try {return window.localStorage.getItem(previewListKey(previewId));}
-  catch{return null;}
-}
-export function savePreviewSelectedList(previewId:string|null,listId:string):void {
-  if(!previewId || !/^user(?:10|[1-9])$/.test(previewId))return;
-  try {window.localStorage.setItem(previewListKey(previewId),listId);}
-  catch {/* Browser persistence unavailable. */ }
-}
-
 export function saveBrowserLanguage(previewId:string|null,language:Language):void {
   if(!previewId)return; // Do not make anonymous browsing override later public URLs.
   try {window.localStorage.setItem(previewLanguageStorageKey(previewId),language);}

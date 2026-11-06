@@ -7,7 +7,7 @@ import { enterTaxPayService } from './pay-tax-entry-helper';
 async function mockPayment(page: import('@playwright/test').Page, expectedMinor: number | number[]) {
   const expected = Array.isArray(expectedMinor) ? expectedMinor : [expectedMinor];
   const received: number[] = [];
-  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const input = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number };
     expect(input.origin).toBe('QA_BROWSER');

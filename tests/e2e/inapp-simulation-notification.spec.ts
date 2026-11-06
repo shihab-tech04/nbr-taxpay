@@ -3,6 +3,17 @@ import {expect,test,type Page} from '@playwright/test';
 const session = '22222222-2222-4222-8222-222222222222';
 const paymentId = '33333333-3333-4333-8333-333333333333';
 
+async function installPreviewProfile(page:Page,userId='user1',language:'en'|'bn'='en'){
+  await page.addInitScript(({id,language})=>{
+    sessionStorage.setItem('taxpay-taxpayer-preview-user',id);
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:id,capability:'A'.repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000099',
+      selectedListId:null,language
+    }));
+  },{id:userId,language});
+}
+
 async function mockSessionNotifications(page:Page, amountMinor:number|null) {
   await page.addInitScript(({session}) => {
     sessionStorage.setItem('taxpay-guest-simulation-session',session);
@@ -40,16 +51,17 @@ test('in-app notice fails closed if stored payment amount cannot be verified',as
 
 test('preview account notifications show only the payer’s recorded simulation amounts',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Synthetic account notification regression on mobile');
-  await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
-  await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
+  await installPreviewProfile(page);
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
+    const view=new URL(route.request().url()).searchParams.get('view');
     const payment=(payer:string,amountMinor:number)=>({
       id:'id-'+payer,transactionId:'txn-'+payer,payer,state:'SIMULATED',
       createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:amountMinor,
       reviewStatus:'PENDING_OFFICER',allocations:[],events:[]
     });
-    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([
-      payment('user1',234567),payment('user2',999999)
-    ])});
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,simulationOnly:true,data:view==='payer'?[payment('user1',234567)]:[]
+    })});
   });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[]})});
@@ -63,10 +75,9 @@ test('preview account notifications show only the payer’s recorded simulation 
 
 test('beneficiary in-app notification shows only allocated demo amount, not payer total',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Account-scoped allocation notification regression');
-  await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
-  await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
-    const body=route.request().postDataJSON() as {p_actor:string;p_view:string};
-    expect(body.p_actor).toBe('user1');
+  await installPreviewProfile(page);
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
+    const view=new URL(route.request().url()).searchParams.get('view');
     const beneficiary={
       id:'SIM-bene-1',transactionId:'60000000-0000-4000-8000-000000000001',
       payer:'user4',state:'SIMULATED',createdAt:'2026-10-24T13:00:00Z',
@@ -75,7 +86,7 @@ test('beneficiary in-app notification shows only allocated demo amount, not paye
         assessmentYear:'2026-27',amountMinor:3250}],events:[],
     };
     await route.fulfill({status:200,contentType:'application/json',
-      body:JSON.stringify(body.p_view==='beneficiary'?[beneficiary]:[])});
+      body:JSON.stringify({success:true,simulationOnly:true,data:view==='beneficiary'?[beneficiary]:[]})});
   });
   await page.goto('/?action=notifications');
   await expect(page.getByRole('heading',{name:'Payment updates'})).toBeVisible();
@@ -88,9 +99,10 @@ test('beneficiary in-app notification shows only allocated demo amount, not paye
 test('preview account also shows this browser session SQL payment notice', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Session notification regression');
   await mockSessionNotifications(page, 125050);
-  await page.addInitScript(() => sessionStorage.setItem('taxpay-taxpayer-preview-user', 'user1'));
-  await page.route('**/rest/v1/rpc/demo_story1_demo_history', async route => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  await installPreviewProfile(page);
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({success:true,simulationOnly:true,data:[]}) });
   });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [] }) });
@@ -115,13 +127,16 @@ test('guest hides notification actions while session-only payment events retain 
 
 
 /** All rows are synthetic, scope-limited test fixtures. No real taxpayer data. */
-async function mockNotificationRegisters(page:Page){
-  await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
-  await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
+async function mockNotificationRegisters(page:Page,language:'en'|'bn'){
+  await installPreviewProfile(page,'user1',language);
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
     const rows=[{id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
       createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:234567,
       reviewStatus:'PENDING_OFFICER',allocations:[],events:[]}];
-    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(rows)});
+    const view=new URL(route.request().url()).searchParams.get('view');
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,simulationOnly:true,data:view==='payer'?rows:[]
+    })});
   });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
@@ -133,7 +148,7 @@ async function mockNotificationRegisters(page:Page){
 
 for(const language of ['en','bn'] as const){
   test('notification registers preserve actions, filters, amounts and mobile containment in '+language,async({page},info)=>{
-    await mockNotificationRegisters(page);
+    await mockNotificationRegisters(page,language);
     await page.goto('/?action=notifications&lang='+language);
     const records=page.locator('table.taxpay-unified-table');
     await expect(records).toHaveCount(2);

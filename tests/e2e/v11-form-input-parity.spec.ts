@@ -19,7 +19,14 @@ test('payer relationship is required at entry and head choice is still validated
   await expect(dialog.locator('#other-tax-primary-name')).toHaveValue('');
   await expect(dialog.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const continueToPurpose = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(continueToPurpose).toBeDisabled();
+  const primary = dialog.getByTestId('other-tax-primary-taxpayer');
+  await primary.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
+  await primary.getByRole('button', { name: 'Add taxpayer' }).click();
+  await expect(continueToPurpose).toBeEnabled();
+  await continueToPurpose.click();
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
   await expect(batch).toContainText('42 available Other Tax heads');
@@ -105,6 +112,10 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(taxpayers.locator('#guest-tin')).toBeVisible();
     await expect(taxpayers.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
     await expect(modal.getByTestId('other-tax-taxpayer-list').locator('p.sr-only')).toHaveCount(1);
+    await expect(taxpayers.getByRole('button', { name: locale === 'bn' ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer' })).toHaveCount(0);
+    await taxpayers.locator('#guest-tin').fill('111111111111');
+    await taxpayers.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true }).click();
+    await taxpayers.getByRole('button', { name: locale === 'bn' ? 'করদাতা যোগ করুন' : 'Add taxpayer', exact: true }).click();
     await taxpayers.getByRole('button', { name: locale === 'bn' ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer' }).click();
     await expect(taxpayers.getByTestId('other-tax-taxpayer')).toHaveCount(1);
     const horizontalOverflow = await modal.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth);

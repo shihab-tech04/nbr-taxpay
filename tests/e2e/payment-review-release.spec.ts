@@ -137,7 +137,7 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   // This is a disconnected public-UI browser test. The hosted payment-sync
   // contract is verified separately; never depend on external latency here.
   let paymentPosts = 0;
-  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const payload = route.request().postDataJSON() as {
       origin?: string; service?: string; amountMinor?: number; sessionId?: string;
@@ -255,7 +255,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   // Keep this UI regression independent of the hosted database and verify the
   // exact simulated request rather than creating a hosted QA payment.
   let paymentPosts = 0;
-  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const payload = route.request().postDataJSON() as { origin?: string; service?: string; amountMinor?: number; sessionId?: string };
     expect(payload.origin).toBe('QA_BROWSER');

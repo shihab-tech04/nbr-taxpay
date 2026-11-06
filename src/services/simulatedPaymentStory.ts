@@ -1,4 +1,6 @@
 import type { ChallanReceipt } from '../types/tax';
+import {activePreviewSession} from './previewAccountSession';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -14,9 +16,20 @@ export type StoryPaymentAcknowledgement = {
   mirrored: true;
   simulationOnly: true;
 };
-const API = 'https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay';
+const API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
+const headers={apikey:TAXPAY_PUBLIC_ENDPOINT.publishableKey};
 let fallbackSession: string | undefined;
+export function storyApiHeaders(sessionId?:string):Record<string,string>{
+  const profile=activePreviewSession();
+  if(!profile)return headers;
+  if(sessionId&&sessionId!==profile.paymentSessionId)throw new Error('Demo account changed.');
+  return {...headers,'x-taxpay-guest-capability':profile.capability};
+}
 export function getStorySessionId(): string {
+  // The same fictional userN reuses one opaque synthetic-only SQL session on
+  // every device. Real authenticated payments never derive ownership from it.
+  const preview=activePreviewSession();
+  if(preview)return preview.paymentSessionId;
   const key = 'taxpay-guest-simulation-session';
   try {
     const stored = sessionStorage.getItem(key);
@@ -30,9 +43,11 @@ export function getStorySessionId(): string {
   }
 }
 export async function persistSimulatedPayment(input: StoryPaymentInput): Promise<StoryPaymentAcknowledgement> {
+  const preview=activePreviewSession();
+  if(preview&&input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
   const response = await fetch(API + '/payments', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...storyApiHeaders(input.sessionId),'Content-Type': 'application/json' },
     body: JSON.stringify({ ...input, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
   const body = await response.json() as Partial<StoryPaymentAcknowledgement> & { error?: string };
@@ -64,7 +79,8 @@ export type StoryPaymentNotice = {
   createdAt: string;
 };
 export async function getStoryNotices(): Promise<StoryPaymentNotice[]> {
-  const result = await fetch(API + '/notifications?sessionId=' + encodeURIComponent(getStorySessionId()));
+  const sessionId=getStorySessionId();
+  const result = await fetch(API + '/notifications?sessionId=' + encodeURIComponent(sessionId),{headers:storyApiHeaders(sessionId),cache:'no-store'});
   if (!result.ok) throw new Error('Notification service unavailable');
   const payload = await result.json() as {success:boolean;data:StoryPaymentNotice[]};
   if (!payload.success || !Array.isArray(payload.data)) throw new Error('Notification service unavailable');
@@ -77,9 +93,10 @@ export type StorySessionPayment={
 };
 export async function getStorySessionPayments():Promise<StorySessionPayment[]>{
   const results:StorySessionPayment[]=[];
-  const session=encodeURIComponent(getStorySessionId());
+  const sessionId=getStorySessionId();
+  const session=encodeURIComponent(sessionId);
   for(let page=1;page<=10000;page++){
-    const response=await fetch(API+'/payments?sessionId='+session+'&page='+page+'&perPage=100',{cache:'no-store'});
+    const response=await fetch(API+'/payments?sessionId='+session+'&page='+page+'&perPage=100',{headers:storyApiHeaders(sessionId),cache:'no-store'});
     if(!response.ok)throw new Error('Payment history unavailable');
     const payload=await response.json() as {success:boolean;data:{items:StorySessionPayment[];total:number}};
     const batch=payload.data;
@@ -115,7 +132,7 @@ export async function findSessionReceiptByReference(reference: string, mobile: s
   for (const record of records) {
     if (!/^[0-9a-f-]{36}$/i.test(record.id) || record.status !== 'SIMULATED_SUCCESS') continue;
     const response = await fetch(API + '/payments/' + encodeURIComponent(record.id) +
-      '?sessionId=' + encodeURIComponent(sessionId), { cache: 'no-store' });
+      '?sessionId=' + encodeURIComponent(sessionId), { headers:storyApiHeaders(sessionId),cache: 'no-store' });
     if (!response.ok) throw new Error('SESSION_LOOKUP_UNAVAILABLE');
 
     const payload = await response.json() as {

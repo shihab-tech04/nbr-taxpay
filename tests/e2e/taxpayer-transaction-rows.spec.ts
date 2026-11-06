@@ -7,26 +7,43 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   await page.goto(history);
   const workspace=page.getByTestId('user1-synthetic-workspace');
   const panel=workspace.locator('.taxpayer-transaction-panel');
-  const rows=panel.locator('.taxpayer-transaction-row');
+  const rows=panel.getByTestId('taxpayer-transaction-table').locator('tbody tr');
 
   await expect(panel.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(workspace.getByText('Payment & activity count')).toHaveCount(0);
   await expect(panel.getByText('Records: 14')).toBeVisible();
-  await expect(rows).toHaveCount(14);
+  const toolbar=panel.getByTestId('convay-table-toolbar');
+  const filters=panel.getByTestId('convay-table-filters');
+  await expect(toolbar).toBeVisible();
+  await expect(filters).toBeVisible();
+  await expect(toolbar.getByRole('button',{name:'Export CSV'})).toBeVisible();
+  const visuals=await Promise.all([toolbar,filters].map(element=>element.evaluate(node=>{
+    const box=node.getBoundingClientRect();
+    const style=getComputedStyle(node);
+    return {y:box.y,bottom:box.bottom,background:style.backgroundColor,borderBottom:style.borderBottomWidth};
+  })));
+  expect(visuals[0].bottom).toBeLessThanOrEqual(visuals[1].y+2);
+  expect(visuals[0].background).not.toBe(visuals[1].background);
+  expect(visuals[0].borderBottom).toBe('1px');
+  await expect(rows).toHaveCount(10);
+  await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveText(['Payment','Reference','Payment type','Date','Amount','Status','Actions']);
+  await expect(panel.getByRole('navigation',{name:'Page navigation'})).toBeVisible();
 
   const first=rows.first();
-  const positions=await first.evaluate(row=>{
-    const bounds=(selector:string)=>row.querySelector(selector)!.getBoundingClientRect();
-    const identity=bounds('.taxpayer-transaction-row__identity');
-    const amount=bounds('.taxpayer-transaction-row__amount');
-    const status=bounds('.taxpayer-transaction-row__status');
-    const action=bounds('.taxpayer-transaction-row__action');
-    return {identityRight:identity.right,amountLeft:amount.left,amountRight:amount.right,
-      statusLeft:status.left,statusRight:status.right,actionLeft:action.left};
-  });
-  expect(positions.amountLeft).toBeGreaterThan(positions.identityRight);
-  expect(positions.statusLeft).toBeGreaterThan(positions.amountRight);
-  expect(positions.actionLeft).toBeGreaterThan(positions.statusRight);
+  const positions=await first.evaluate(row=>Array.from(row.querySelectorAll('td'))
+    .filter(cell=>getComputedStyle(cell).display!=='none')
+    .map(cell=>({left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right})));
+  expect(positions).toHaveLength(4);
+  for(let i=1;i<positions.length;i++)expect(positions[i].left).toBeGreaterThanOrEqual(positions[i-1].right-1);
+  const viewport=panel.locator('.taxpay-table-viewport');
+  const [bounds,actionBounds]=await Promise.all([
+    viewport.boundingBox(),first.getByRole('button',{name:'Details for Pending bank reconciliation'}).boundingBox()
+  ]);
+  expect(bounds).not.toBeNull();
+  expect(actionBounds).not.toBeNull();
+  expect(actionBounds!.x+actionBounds!.width).toBeLessThanOrEqual(bounds!.x+bounds!.width+2);
+  await expect(first.locator('.taxpayer-transaction-compact-meta').getByText('DEMO-PAY-PEND-01')).toBeVisible();
+  await expect(first.getByRole('button',{name:'Details for Pending bank reconciliation'})).toBeVisible();
 
   await first.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();
   const dialog=page.getByRole('dialog',{name:'Pending bank reconciliation'});
@@ -38,6 +55,19 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   await expect(dialog).toHaveCount(0);
   await expect(first.getByRole('button',{name:'Details for Pending bank reconciliation'})).toBeFocused();
 
+  await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
+  await expect(rows).toHaveCount(4);
+  await expect(panel.getByText('Showing 11–14 of 14 records')).toBeVisible();
+  await panel.getByRole('combobox',{name:'Transaction category'}).selectOption('refund');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first().getByText('Refund inquiry',{exact:true}).first()).toBeVisible();
+  await panel.getByRole('combobox',{name:'Transaction category'}).selectOption('all');
+  await expect(rows).toHaveCount(10);
+  await expect(rows.first().getByText('Pending bank reconciliation',{exact:true}).first()).toBeVisible();
+  await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
+  await expect(rows).toHaveCount(4);
+  await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Previous'}).click();
+  await expect(rows).toHaveCount(10);
   await panel.getByRole('combobox',{name:'Transaction category'}).selectOption('refund');
   await expect(rows).toHaveCount(1);
   await expect(rows.first().getByText('Refund inquiry',{exact:true}).first()).toBeVisible();
@@ -50,7 +80,8 @@ test('history rows, filters and detail modal fit narrow screens',async({page},in
     await page.goto(history);
     const panel=page.locator('.taxpayer-transaction-panel');
     await expect(panel.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
-    await expect(panel.locator('.taxpayer-transaction-row').first()).toBeVisible();
+    const visibleRows=width>=768 ? panel.getByTestId('taxpayer-transaction-table').locator('tbody tr') : panel.getByTestId('taxpayer-transaction-mobile-cards').locator(':scope > li');
+    await expect(visibleRows.first()).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),`overflow at ${width}px`).toBeLessThanOrEqual(2);
     await panel.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();
     await expect(page.getByRole('dialog',{name:'Pending bank reconciliation'})).toBeVisible();
@@ -68,7 +99,8 @@ test('signed-in Activity has no separate Track payment tab and legacy tracking l
     await expect(page.getByRole('button',{name:'Track payment'})).toHaveCount(0);
     await expect(page.getByRole('button',{name:'পেমেন্ট অনুসন্ধান'})).toHaveCount(0);
     await expect(page.getByTestId('user1-synthetic-workspace').locator('.taxpayer-transaction-panel')).toBeVisible();
-    await expect(page.getByTestId('user1-synthetic-workspace').locator('.taxpayer-transaction-row')).toHaveCount(14);
+    await expect(page.getByTestId('user1-synthetic-workspace').getByTestId('taxpayer-transaction-table').locator('tbody tr')).toHaveCount(10);
+    await expect(page.getByTestId('user1-synthetic-workspace').locator('.taxpay-table-pagination')).toBeVisible();
     await expect(page.locator('.receipt-lookup')).toHaveCount(0);
     await expect(page.getByRole('button',{name:language==='bn'?'লেনদেনসমূহ':'Transactions'})).toHaveAttribute('aria-current','page');
   }

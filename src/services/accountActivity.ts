@@ -1,13 +1,20 @@
 import {supabase} from './supabaseClient';
 
-/** Nonfinancial account actions only. Never record TIN, amounts, names, form
- * answers, credentials, payment success or unconfirmed Treasury status here. */
+/** Nonfinancial account actions only. Never record taxpayer IDs, amounts,
+ * names, credentials, payment results, Treasury status, or tax liability. */
 export type AccountActivityType =
-  | 'PAGE_OPENED' | 'LANGUAGE_CHANGED' | 'BENEFICIARY_LIST_SELECTED'
-  | 'PAYMENT_STARTED' | 'PROFILE_SAVED';
+  | 'PAGE_OPENED'
+  | 'LANGUAGE_CHANGED'
+  | 'BENEFICIARY_LIST_SELECTED'
+  | 'PAYMENT_STARTED'
+  | 'PROFILE_SAVED';
+
 export type AccountActivityItem = {
-  id:string;owner_uid:string;event_type:AccountActivityType;
-  route:string|null;occurred_at:string;
+  id:string;
+  owner_uid:string;
+  event_type:AccountActivityType;
+  route:string|null;
+  occurred_at:string;
 };
 
 const allowedTypes:ReadonlySet<string>=new Set([
@@ -15,71 +22,57 @@ const allowedTypes:ReadonlySet<string>=new Set([
   'PAYMENT_STARTED','PROFILE_SAVED'
 ]);
 const safeRoute=/^[a-z_]{1,64}$/;
-const outstanding=new Map<string,Promise<void>>();
-const unsaved=new Map<string,Array<{eventType:AccountActivityType;route:string|null}>>();
-const recent=new Map<string,{event:string;at:number}>();
+const recentEvents=new Map<string,number>();
 
 export function accountActivityIsSafe(type:string,route:string|null):boolean {
   return allowedTypes.has(type) && (route===null || safeRoute.test(route));
 }
-async function persistActivity(uid:string,eventType:AccountActivityType,route:string|null):Promise<void>{
+
+async function currentOwner(ownerUid:string):Promise<void>{
   const db=supabase;
   if(!db)throw new Error('Account activity storage unavailable.');
-  const {data:identity,error:authError}=await db.auth.getUser();
-  if(authError||identity.user?.id!==uid)throw new Error('Account session changed.');
-  const {error}=await db.from('taxpay_account_activity')
-    .insert({owner_uid:uid,event_type:eventType,route});
-  if(error)throw error;
+  const {data,error}=await db.auth.getUser();
+  if(error||data.user?.id!==ownerUid)throw new Error('Account session changed.');
 }
-/** Owner-serialized writes. Failed events remain retryable during the session.
- * Never claim a financial event from a click or a public sample login. */
-export function recordAccountActivity(
-  uid:string|null|undefined,eventType:AccountActivityType,route:string|null=null
-):Promise<void> {
-  if(!uid||!accountActivityIsSafe(eventType,route))return Promise.resolve();
-  const key=eventType+':'+(route??'');
-  const previous=recent.get(uid);
-  if(previous?.event===key&&Date.now()-previous.at<900)return outstanding.get(uid)??Promise.resolve();
-  recent.set(uid,{event:key,at:Date.now()});
-  const queue=unsaved.get(uid)??[];
-  queue.push({eventType,route});
-  unsaved.set(uid,queue);
-  const prior=outstanding.get(uid)??Promise.resolve();
-  const next=prior.catch(()=>undefined).then(async()=>{
-    for(const entry of [...(unsaved.get(uid)??[])]){
-      await persistActivity(uid,entry.eventType,entry.route);
-      const pending=unsaved.get(uid);
-      if(pending?.[0]===entry){
-        pending.shift();
-        if(pending.length===0)unsaved.delete(uid);
-      }
-    }
-  });
-  outstanding.set(uid,next);
-  void next.finally(()=>{if(outstanding.get(uid)===next)outstanding.delete(uid);}).catch(()=>undefined);
-  return next;
-}
-export async function flushAccountActivities(uid:string):Promise<void>{
-  await outstanding.get(uid)?.catch(()=>undefined);
-  const queue=unsaved.get(uid);
-  if(!queue?.length)return;
-  for(const entry of [...queue]){
-    await persistActivity(uid,entry.eventType,entry.route);
-    if(queue[0]===entry)queue.shift();
-  }
-  if(queue.length===0)unsaved.delete(uid);
-}
-export async function loadAccountActivities(uid:string):Promise<AccountActivityItem[]>{
+
+/** Save a small, nonfinancial activity entry for the currently signed-in owner.
+ * RLS independently enforces the same owner when the row is written. */
+export async function recordAccountActivity(
+  ownerUid:string|null|undefined,
+  eventType:AccountActivityType,
+  route:string|null=null
+):Promise<void>{
+  if(!ownerUid||!accountActivityIsSafe(eventType,route))return;
+  const key=`${ownerUid}:${eventType}:${route??''}`;
+  const now=Date.now();
+  const last=recentEvents.get(key);
+  if(last!==undefined&&now-last<900)return;
   const db=supabase;
   if(!db)throw new Error('Account activity storage unavailable.');
-  const {data:identity,error:authError}=await db.auth.getUser();
-  if(authError||identity.user?.id!==uid)throw new Error('Account session changed.');
+  await currentOwner(ownerUid);
+  const {data:inserted,error:insertError}=await db.from('taxpay_account_activity')
+    .insert({owner_uid:ownerUid,event_type:eventType,route})
+    .select('id,owner_uid,event_type,route,occurred_at').single();
+  if(insertError)throw insertError;
+  await currentOwner(ownerUid);
+  if(inserted?.owner_uid!==ownerUid||inserted.event_type!==eventType||
+     inserted.route!==route||!Number.isFinite(Date.parse(inserted.occurred_at)))
+    throw new Error('Account activity write could not be confirmed.');
+  recentEvents.set(key,Date.now());
+}
+
+export async function loadAccountActivities(ownerUid:string):Promise<AccountActivityItem[]>{
+  const db=supabase;
+  if(!db)throw new Error('Account activity storage unavailable.');
+  await currentOwner(ownerUid);
   const {data,error}=await db.from('taxpay_account_activity')
     .select('id,owner_uid,event_type,route,occurred_at')
-    .eq('owner_uid',uid).order('occurred_at',{ascending:false}).limit(60);
+    .eq('owner_uid',ownerUid).order('occurred_at',{ascending:false}).limit(60);
   if(error)throw error;
+  await currentOwner(ownerUid);
   const rows=(data??[]) as AccountActivityItem[];
-  if(rows.some(row=>row.owner_uid!==uid || !accountActivityIsSafe(row.event_type,row.route) ||
-       !Number.isFinite(Date.parse(row.occurred_at))))throw new Error('Unexpected activity record.');
+  if(rows.some(row=>row.owner_uid!==ownerUid||!accountActivityIsSafe(row.event_type,row.route)||
+      !Number.isFinite(Date.parse(row.occurred_at))))
+    throw new Error('Unexpected account activity record.');
   return rows;
 }

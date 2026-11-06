@@ -1,8 +1,9 @@
 import { supabase } from './supabaseClient';
+import {activePreviewSession} from './previewAccountSession';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
 import {normalizeOtherLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
 import {
-  addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries, hasStoredGuestBeneficiaries,
+  addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,loadLegacyGuestBeneficiaries, hasStoredGuestBeneficiaries,
   removeGuestBeneficiary, updateGuestBeneficiary, editGuestBeneficiaryClassification, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
@@ -66,7 +67,7 @@ export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promis
   // A supplied owner UID is never enough to authorize a private account write.
   await ensureOwner();
   if(!hasStoredGuestBeneficiaries())return {lists:0,people:0};
-  const source=await loadGuestBeneficiaries();
+  const source=await loadLegacyGuestBeneficiaries();
   if(!source.lists.length)return {lists:0,people:0};
   await ensureOwner();
   const existing=await loadBeneficiaries(ownerUid);
@@ -113,6 +114,58 @@ export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promis
     }
   }
   return {lists:listCount,people:personCount};
+}
+
+/** Explicit migration from one old browser-only guest book to the selected
+ * fictional demo profile. Never infer ownership from a shared TIN or copy
+ * automatically between user1-user10. Originals are preserved on all errors.
+ */
+export async function recoverLegacyGuestBeneficiariesToPreview():Promise<{lists:number;people:number}>{
+  const current=activePreviewSession();
+  if(!current)throw new Error('Sign into a demo profile before restoring saved beneficiaries.');
+  if(!hasStoredGuestBeneficiaries())return {lists:0,people:0};
+  const source=await loadLegacyGuestBeneficiaries();
+  if(!source.lists.length)return {lists:0,people:0};
+  const assertSame=()=>{
+    if(activePreviewSession()?.profileId!==current.profileId ||
+       activePreviewSession()?.capability!==current.capability)
+      throw new Error('Demo profile changed during recovery. Sign in again.');
+  };
+  assertSame();
+  const destination=await loadGuestBeneficiaries();
+  const known=[...destination.lists];
+  const byList=new Map<string,string>();
+  let lists=0,people=0;
+  for(const sourceList of source.lists){
+    assertSame();
+    const normalized=sourceList.name.trim().toLocaleLowerCase();
+    let target=known.find(list=>list.name.trim().toLocaleLowerCase()===normalized);
+    if(!target){
+      target=await createGuestBeneficiaryList(sourceList.name);
+      known.push(target);
+      lists++;
+    }
+    byList.set(sourceList.id,target.id);
+    const rows=source.people.filter(person=>person.list_id===sourceList.id)
+      .map(person=>({tin:person.tin,display_name:person.display_name,
+        tag:person.tag??null,relationship:person.relationship??null,
+        other_label:person.other_label??null}));
+    for(let start=0;start<rows.length;start+=500){
+      assertSame();
+      people+=await addGuestBeneficiaries(target.id,rows.slice(start,start+500));
+    }
+  }
+  assertSame();
+  const saved=await loadGuestBeneficiaries();
+  for(const sourceList of source.lists){
+    const id=byList.get(sourceList.id);
+    if(!id||!saved.lists.some(list=>list.id===id))
+      throw new Error('Could not verify restored list. Original records were kept.');
+    const tins=new Set(saved.people.filter(person=>person.list_id===id).map(person=>person.tin));
+    if(source.people.some(person=>person.list_id===sourceList.id&&!tins.has(person.tin)))
+      throw new Error('Could not verify all restored taxpayers. Safe to retry.');
+  }
+  return {lists,people};
 }
 
 export async function createBeneficiaryList(ownerUid:string | null,name:string):Promise<BeneficiaryList> {

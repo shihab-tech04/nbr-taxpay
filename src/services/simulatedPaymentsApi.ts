@@ -1,15 +1,17 @@
-/** Shared public synthetic-only API. The embedded key is PUBLIC anon, never a service key.
- * RLS keeps financial tables isolated; only the purpose-built simulator RPCs are exposed.
+/** Shared public synthetic-only API. Only the configured publishable key is used;
+ * RLS and purpose-built simulator RPCs scope all reads and writes.
  */
-const ROOT='https://eyqhoavnitkrajvyqvxn.supabase.co';
-const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWhvYXZuaXRrcmFqdnlxdnhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MDYxMTMsImV4cCI6MjEwNzE4MjExM30.cNoto22zmRNIykEM5oItwLL2ykw1LSwI4qqaycw0jI4';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import {activePreviewSession} from './previewAccountSession';
+const ROOT=TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'');
+const PUBLIC_KEY=TAXPAY_PUBLIC_ENDPOINT.publishableKey;
 export {simulationUsers,simulationCategories,TAXPAY_SIMULATION_CONTRACT_VERSION,simulationCategoryLabels,paymentJourneyStages,paymentStageLabels} from '../contracts/paymentSimulationContract';
 export type {SimulationUser,SimulationCategory,SimulationLine,SimulationAllocation,SimulationEvent,SimulationTransaction,SimulationNotice,SimSubmission} from '../contracts/paymentSimulationContract';
 import type {SimulationUser,SimulationLine,SimulationTransaction,SimulationNotice,SimSubmission} from '../contracts/paymentSimulationContract';
 async function rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
  const response=await fetch(ROOT+'/rest/v1/rpc/'+name,{
    method:'POST',cache:'no-store',
-   headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},
+   headers:{apikey:PUBLIC_KEY,'Content-Type':'application/json'},
    body:JSON.stringify(args)
  });
  if(!response.ok){let message='Simulation API returned HTTP '+response.status;
@@ -26,7 +28,37 @@ export const submitSimulatedPayment=(payer:SimulationUser,lines:SimulationLine[]
  rpc<SimSubmission>('sim_submit_payment',{p_payer_id:payer,p_lines:lines,p_idempotency_key:key});
 /** Story1 rows are shared with Office SQL, unlike the authenticated simulator ledger. */
 export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'beneficiary'|'payer')=>{
- const rows=await rpc<SimulationTransaction[]>('demo_story1_demo_history',{p_actor:user,p_view:view});
+ const profile=activePreviewSession();
+ if(!profile||profile.profileId!==user)throw Error('Sign in to the matching demo profile to view its payment activity.');
+ // Bind payment history to the server-issued profile capability. The old
+ // public RPC accepted any User ID from its caller and is no longer exposed.
+ const rows:SimulationTransaction[]=[];
+ const seen=new Set<string>();
+ let beforeAt:string|null=null,beforeId:string|null=null;
+ let finished=false;
+ for(let page=0;page<10000;page++){
+   const query=new URLSearchParams({view,pageSize:'100'});
+   if(beforeAt&&beforeId){query.set('beforeCreatedAt',beforeAt);query.set('beforeId',beforeId);}
+   const response=await fetch(`${ROOT}/functions/v1/demo-story1-taxpay/profile-history?${query}`,{
+     cache:'no-store',headers:{apikey:PUBLIC_KEY,'x-taxpay-guest-capability':profile.capability}
+   });
+   if(!response.ok)throw Error('Demo payment history unavailable');
+   const payload=await response.json() as {success?:boolean;data?:SimulationTransaction[];simulationOnly?:boolean};
+   if(payload.success!==true||payload.simulationOnly!==true||!Array.isArray(payload.data))
+     throw Error('Invalid demo history cursor response');
+   const next=payload.data;
+   if(!Array.isArray(next)||next.length>100)throw Error('Invalid demo history cursor response');
+   for(const tx of next){
+     if(!tx.transactionId||seen.has(tx.transactionId))throw Error('Duplicate demo payment record');
+     seen.add(tx.transactionId);rows.push(tx);
+   }
+   if(next.length<100){finished=true;break;}
+   const last:SimulationTransaction=next[next.length-1];
+   if(typeof last.createdAt!=='string'||!Number.isFinite(Date.parse(last.createdAt)))
+     throw Error('Invalid demo history cursor timestamp');
+   beforeAt=last.createdAt;beforeId=last.transactionId;
+ }
+ if(!finished)throw Error('Demo payment history exceeds safe retrieval limit');
  return rows.map(tx=>({...tx,allocations:tx.allocations.map((a,index)=>({
    ...a,id:a.id??`${tx.transactionId}-${index+1}`,lineNo:a.lineNo??index+1
  }))}));

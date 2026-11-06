@@ -117,7 +117,7 @@ test('missing transaction searches do not launch private or public lookup', asyn
   await page.goto('/?action=history&demoUser=user1');
   const search=page.getByRole('searchbox',{name:'Search transaction reference'});
   await search.fill('NO-SUCH-ACCOUNT-REFERENCE');
-  await expect(page.locator('.taxpayer-transaction-row')).toHaveCount(0);
+  await expect(page.locator('[data-testid="taxpayer-transaction-table"] tbody tr')).toHaveCount(0);
   await expect(page.locator('.receipt-lookup')).toHaveCount(0);
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await tabs.getByRole('button',{name:'Issues & corrections'}).click();

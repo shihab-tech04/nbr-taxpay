@@ -1,29 +1,15 @@
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
+import {activePreviewSession,PREVIEW_USER_KEY} from './previewAccountSession';
 import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficiaries';
 
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
-/** Preview user IDs are not credentials, but their browser-scoped saved lists
- * must never silently bleed into a different sample login on the same device.
- * Legacy unscoped capabilities remain untouched for explicit recovery.
- */
-export function guestBeneficiaryStorageKeys(previewId:string|null):{capability:string;initialized:string}{
-  const scope=previewId && /^user(?:10|[1-9])$/.test(previewId)?':preview:'+previewId:'';
-  return {capability:capabilityKey+scope,initialized:initializedKey+scope};
-}
-function activeGuestStorageKeys(){
-  let previewId:string|null=null;
-  try {previewId=window.sessionStorage?.getItem('taxpay-taxpayer-preview-user')??null;}
-  catch { /* Real guest browsing has no preview identity. */ }
-  return guestBeneficiaryStorageKeys(previewId);
-}
-
 const pageSize = 500;
 
 /** A guest address book can be recovered only from a browser retaining its capability. */
-export function hasStoredGuestBeneficiaries(scope:'current'|'legacy'='current'): boolean {
-  try { const keys=scope==='legacy'?guestBeneficiaryStorageKeys(null):activeGuestStorageKeys(); return capabilityPattern.test(window.localStorage.getItem(keys.capability) ?? '') && window.localStorage.getItem(keys.initialized) === '1'; }
+export function hasStoredGuestBeneficiaries(): boolean {
+  try { return capabilityPattern.test(window.localStorage.getItem(capabilityKey) ?? '') && window.localStorage.getItem(initializedKey) === '1'; }
   catch { return false; }
 }
 
@@ -48,12 +34,20 @@ function createCapability(): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-function getCapability(scope:'current'|'legacy'='current'): { value: string; needsRegistration: boolean; initializedStorageKey:string } {
+type GuestSource='active'|'legacy';
+function getCapability(source:GuestSource='active'): { value: string; needsRegistration: boolean } {
+  if(source==='active'){
+    const preview=activePreviewSession();
+    if(preview)return {value:preview.capability,needsRegistration:false};
+    // A stale browser-local preview must never silently load another
+    // browser's unrelated anonymous address book as the preview user's data.
+    if(import.meta.env?.VITE_SUPABASE_DISABLED!=='true'&&typeof window!=='undefined'&&window.sessionStorage?.getItem(PREVIEW_USER_KEY))
+      throw new Error('Your demo session needs sign-in again. No data was discarded.');
+  }
   const storage = browserStorage();
-  const keys=scope==='legacy'?guestBeneficiaryStorageKeys(null):activeGuestStorageKeys();
   let value: string | null;
   try {
-    value = storage.getItem(keys.capability);
+    value = storage.getItem(capabilityKey);
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
@@ -62,25 +56,25 @@ function getCapability(scope:'current'|'legacy'='current'): { value: string; nee
       throw new Error('This browser’s saved beneficiary access key is invalid. Do not clear site data if you need to recover an older list.');
     }
     try {
-      return { value, needsRegistration: storage.getItem(keys.initialized) !== '1',initializedStorageKey:keys.initialized };
+      return { value, needsRegistration: storage.getItem(initializedKey) !== '1' };
     } catch {
       throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
     }
   }
   const created = createCapability();
   try {
-    storage.setItem(keys.capability, created);
-    storage.removeItem(keys.initialized);
+    storage.setItem(capabilityKey, created);
+    storage.removeItem(initializedKey);
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
-  return { value: created, needsRegistration: true,initializedStorageKey:keys.initialized };
+  return { value: created, needsRegistration: true };
 }
 
-async function post<T>(action: string, fields: Record<string, unknown> = {},scope:'current'|'legacy'='current'): Promise<T> {
+async function post<T>(action: string, fields: Record<string, unknown> = {}, source:GuestSource='active'): Promise<T> {
   const { url, publishableKey } = TAXPAY_PUBLIC_ENDPOINT;
   if (!url || !publishableKey) throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
-  const capability = getCapability(scope);
+  const capability = getCapability(source);
   const endpoint = `${url.replace(/\/$/, '')}/functions/v1/taxpay-guest-beneficiaries`;
   const send = async (nextAction: string, nextFields: Record<string, unknown> = {}) => {
     let response: Response;
@@ -120,7 +114,7 @@ async function post<T>(action: string, fields: Record<string, unknown> = {},scop
   if (capability.needsRegistration) {
     await send('open');
     try {
-      browserStorage().setItem(capability.initializedStorageKey, '1');
+      browserStorage().setItem(initializedKey, '1');
     } catch {
       // The capability itself remains stored; a later request retries registration.
     }
@@ -131,10 +125,10 @@ async function post<T>(action: string, fields: Record<string, unknown> = {},scop
 /** Only idempotent reads retry once on transport/service interruption. A failed
  * write is never replayed automatically; the original capability is preserved.
  */
-async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unknown>={},scope:'current'|'legacy'='current'):Promise<T[]> {
+async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unknown>={},source:GuestSource='active'):Promise<T[]> {
   for(let attempt=0;attempt<2;attempt++){
     try {
-      const rows=await post<T[]>(action,fields,scope);
+      const rows=await post<T[]>(action,fields,source);
       if(!Array.isArray(rows))throw new Error('Saved beneficiary data could not be read. Please retry.');
       return rows;
     } catch(error) {
@@ -145,34 +139,44 @@ async function readGuestPage<T>(action:'lists'|'people',fields:Record<string,unk
   throw new Error('Guest beneficiaries are temporarily unavailable. Please try again later.');
 }
 
-export async function loadGuestBeneficiaries(scope:'current'|'legacy'='current'): Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
+async function loadFromSource(source:GuestSource):Promise<{ lists: GuestList[]; people: GuestPerson[] }> {
   // Existing capability sessions can fetch independent lists and the first page
   // concurrently, avoiding a full extra Edge Function round trip on every read.
   // A first-time session must finish capability registration before concurrent reads.
-  const initialized = hasStoredGuestBeneficiaries(scope);
+  const initialized = source==='active'&&activePreviewSession()
+    ? true : hasStoredGuestBeneficiaries();
   const [lists, firstPage] = initialized
     ? await Promise.all([
-        readGuestPage<GuestList>('lists',{},scope),
-        readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize },scope),
+        readGuestPage<GuestList>('lists',{},source),
+        readGuestPage<GuestPerson>('people', { offset: 0, limit: pageSize },source),
       ])
-    : [await readGuestPage<GuestList>('lists',{},scope), null];
+    : [await readGuestPage<GuestList>('lists',{},source), null];
   const people: GuestPerson[] = firstPage ? [...firstPage] : [];
   for (let offset = firstPage ? pageSize : 0;
        firstPage ? (firstPage.length === pageSize) : true;
        offset += pageSize) {
-    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize },scope);
+    const page = await readGuestPage<GuestPerson>('people', { offset, limit: pageSize },source);
     people.push(...page);
     if (page.length < pageSize) break;
   }
   return { lists, people };
 }
 
-export function createGuestBeneficiaryList(name: string,scope:'current'|'legacy'='current'): Promise<GuestList> {
-  return post('create-list', { name },scope);
+/** Active preview reads are always server-issued, profile-specific. */
+export function loadGuestBeneficiaries(){
+  return loadFromSource('active');
+}
+/** Old anonymous browser books stay available only for explicit recovery. */
+export function loadLegacyGuestBeneficiaries(){
+  return loadFromSource('legacy');
 }
 
-export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[],scope:'current'|'legacy'='current'): Promise<number> {
-  return post('add', { listId, rows },scope);
+export function createGuestBeneficiaryList(name: string): Promise<GuestList> {
+  return post('create-list', { name });
+}
+
+export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]): Promise<number> {
+  return post('add', { listId, rows });
 }
 
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {
@@ -201,41 +205,4 @@ export async function renameGuestBeneficiaryList(id: string, name: string): Prom
 }
 export async function deleteGuestBeneficiaryList(id: string): Promise<void> {
   await post('delete-list', { id });
-}
-
-/** One explicit, retryable transfer. Unscoped legacy data may have been used
- * by several sample IDs; never assign it automatically to any preview login.
- * The source capability and records are kept intact on success or failure.
- */
-export async function restoreLegacyGuestListsToSelectedPreview():Promise<{lists:number;people:number}> {
-  const preview=(()=>{try{return window.sessionStorage?.getItem('taxpay-taxpayer-preview-user')??null;}catch{return null;}})();
-  if(!preview || !/^user(?:10|[1-9])$/.test(preview))
-    throw new Error('Select a sample user before restoring old browser lists.');
-  if(!hasStoredGuestBeneficiaries('legacy'))return {lists:0,people:0};
-  const legacy=await loadGuestBeneficiaries('legacy');
-  const current=await loadGuestBeneficiaries('current');
-  let created=0,added=0;
-  const lists=[...current.lists];
-  const people=[...current.people];
-  for(const oldList of legacy.lists){
-    let destination=lists.find(item=>item.name.trim().toLocaleLowerCase()===oldList.name.trim().toLocaleLowerCase());
-    if(!destination){
-      destination=await createGuestBeneficiaryList(oldList.name,'current');
-      lists.push(destination);
-      created++;
-    }
-    const oldPeople=legacy.people.filter(person=>person.list_id===oldList.id);
-    for(let i=0;i<oldPeople.length;i+=50){
-      const pending=oldPeople.slice(i,i+50).filter(person=>!people.some(existing=>
-        existing.list_id===destination!.id&&existing.tin===person.tin));
-      if(!pending.length)continue;
-      const count=await addGuestBeneficiaries(destination.id,pending.map(person=>({
-        tin:person.tin,display_name:person.display_name,
-        tag:person.tag,relationship:person.relationship,other_label:person.other_label
-      })),'current');
-      added+=count;
-      for(const person of pending)people.push({...person,list_id:destination.id});
-    }
-  }
-  return {lists:created,people:added};
 }

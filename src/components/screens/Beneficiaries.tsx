@@ -1,20 +1,21 @@
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
-import {rememberedBeneficiaryListId,saveAccountViewPreference,readPreviewSelectedList,savePreviewSelectedList} from '../../services/accountViewPreferences';
+import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
+import {activePreviewSession,savePreviewSetting} from '../../services/previewAccountSession';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
-import {hasStoredGuestBeneficiaries,restoreLegacyGuestListsToSelectedPreview} from '../../services/guestBeneficiaries';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
-import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
-import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
+import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
+import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
@@ -53,10 +54,6 @@ export function Beneficiaries(){
   const [restoring,setRestoring]=useState(false);
   const [recoveryError,setRecoveryError]=useState('');
   const [guestRecoveryDone,setGuestRecoveryDone]=useState(false);
-  const [legacyRestoreBusy,setLegacyRestoreBusy]=useState(false);
-  const [legacyRestoreDone,setLegacyRestoreDone]=useState(false);
-  const [legacyRestoreError,setLegacyRestoreError]=useState(false);
-
   const [modalError,setModalError]=useState('');
   const [search,setSearch]=useState('');
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
@@ -83,16 +80,16 @@ export function Beneficiaries(){
     return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
-  const savedListId=user?.user_metadata?.taxpay_last_beneficiary_list_id
-    ??readPreviewSelectedList(previewAccount?.id??null);
+  const savedListId=owner
+    ?user?.user_metadata?.taxpay_last_beneficiary_list_id
+    :previewAccount?activePreviewSession()?.selectedListId:null;
   const rememberList=(id:string)=>{
-    if(!owner){
-      savePreviewSelectedList(previewAccount?.id??null,id);
-      return; // Sample selections never imply real account ownership.
-    }
-    void saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
-      .then(()=>recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries'))
-      .catch(()=>{
+    const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
+      :previewAccount?savePreviewSetting('selected-list',id):null;
+    if(!save)return;
+    void save.then(()=>owner
+      ?recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries').catch(()=>undefined)
+      :undefined).catch(()=>{
       setNotice({en:'Could not remember your selected list for next login. Please retry.',
         bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
     });
@@ -401,10 +398,11 @@ export function Beneficiaries(){
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
   const restoreFromThisBrowser=async()=>{
-    if(!owner||restoring)return;
+    if((!owner&&!previewAccount)||restoring)return;
     setRestoring(true);setRecoveryError('');
     try {
-      const result=await recoverGuestBeneficiariesToProfile(owner);
+      const result=owner?await recoverGuestBeneficiariesToProfile(owner)
+        :await recoverLegacyGuestBeneficiariesToPreview();
       await reload();
       setGuestRecoveryDone(true);
       setNotice({en:result.people?`Restored ${result.people} beneficiaries to your profile.`:'Your saved beneficiaries are already available in your profile.',bn:result.people?`আপনার প্রোফাইলে ${result.people} জন উপকারভোগী ফিরিয়ে আনা হয়েছে।`:'সংরক্ষিত উপকারভোগীরা ইতিমধ্যে আপনার প্রোফাইলে আছেন।'});
@@ -428,29 +426,7 @@ export function Beneficiaries(){
         <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>setEntryChoiceOpen(true)}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
       </div>
     </header>
-    {!owner&&previewAccount&&hasStoredGuestBeneficiaries('legacy')&&!legacyRestoreDone&&
-      <div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="preview-legacy-beneficiary-recovery">
-        <p className="text-sm text-taxpay-text">{tr(
-          'Older browser lists were not linked to any specific sample login. Import them into this selected sample profile only if they belong here. The original lists will be kept.',
-          'ব্রাউজারে আগে রাখা তালিকাগুলো কোনো নির্দিষ্ট নমুনা অ্যাকাউন্টের সঙ্গে যুক্ত ছিল না। এই নমুনা প্রোফাইলে প্রযোজ্য হলে তবেই আমদানি করুন। পুরোনো তালিকা অক্ষত থাকবে।'
-        )}</p>
-        <UiButton type="button" variant="outline" disabled={legacyRestoreBusy||loading} onClick={()=>void(async()=>{
-          setLegacyRestoreBusy(true);setLegacyRestoreError(false);
-          try{
-            await restoreLegacyGuestListsToSelectedPreview();
-            await reload();
-            setLegacyRestoreDone(true);
-          }catch{setLegacyRestoreError(true);}
-          finally{setLegacyRestoreBusy(false);}
-        })()}>
-          {legacyRestoreBusy?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Import older browser lists','ব্রাউজারের পুরোনো তালিকা আমদানি করুন')}
-        </UiButton>
-      </div>}
-    {legacyRestoreError&&<p role="alert" className="text-sm text-red-800">{tr(
-      'Could not import older browser lists. No source records were deleted; retry.',
-      'পুরোনো তালিকা আমদানি করা যায়নি। আগের কোনো তথ্য মোছা হয়নি; আবার চেষ্টা করুন।'
-    )}</p>}
-    {owner&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
+    {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}
@@ -567,11 +543,10 @@ export function Beneficiaries(){
                         ?Array.from(new Set([...current,person.id]))
                         :current.filter(id=>id!==person.id))}/>
                     <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
-                      <p className="taxpayer-transaction-row__title">{displayName(person)}</p>
+                      <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
+                      <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
                     </label>
                   </div>},
-                  {key:'tin',header:tr('TIN','টিআইএন'),renderCell:person=><p className="beneficiary-directory__tin tabular-nums"><span className="beneficiary-directory__mobile-label">{tr('TIN','টিআইএন')}: </span>{person.tin}</p>},
-                  {key:'tag',header:tr('Tag / relationship','ট্যাগ / সম্পর্ক'),renderCell:person=><p className="beneficiary-directory__tag"><span className="beneficiary-directory__mobile-label">{tr('Tag','ট্যাগ')}: </span>{beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
                     <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
@@ -584,7 +559,7 @@ export function Beneficiaries(){
                       onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>}
                 ]}
-                renderMobileCard={person=><>
+                renderMobileCard={person=>{ const finalTag=beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label); return <>
                   <div className="taxpay-mobile-table-card__header">
                     <div className="beneficiary-directory__identity">
                       <input id={'beneficiary-mobile-select-'+person.id} type="checkbox"
@@ -594,12 +569,11 @@ export function Beneficiaries(){
                           ?Array.from(new Set([...current,person.id]))
                           :current.filter(id=>id!==person.id))}/>
                       <label htmlFor={'beneficiary-mobile-select-'+person.id} className="taxpay-mobile-table-card__title">
-                        {displayName(person)}
+                        <span className="block break-words">{displayName(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}</span>
+                        <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{person.tin}</span>
                       </label>
                     </div>
                   </div>
-                  <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {person.tin}</p>
-                  <p className="taxpay-mobile-table-card__meta">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}: {beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)}</p>
                   <div className="taxpay-mobile-table-card__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
                     <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
@@ -610,7 +584,7 @@ export function Beneficiaries(){
                       aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
                       onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>
-                </>}
+                </>; }}
                 ariaLabel={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}/>
               </TaxPayTablePanel>
             </div>

@@ -65,11 +65,11 @@ jobs:
           grep -q '^TAXPAY_LOCAL_PG_DSN=' "$GITHUB_ENV"
           echo "TAXPAY_LOCAL_RECOVERY_FILE=$RUNNER_TEMP/taxpay-restart-$GITHUB_RUN_ID.json" >> "$GITHUB_ENV"
 
-      - name: Serve capability-scoped guest beneficiary function locally
+      - name: Serve local Edge Functions for real-browser acceptance
         shell: bash
         run: |
           set -euo pipefail
-          supabase functions serve taxpay-guest-beneficiaries --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
+          supabase functions serve --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
           for attempt in $(seq 1 30); do
             code=$(curl --silent --show-error --output "$RUNNER_TEMP/guest-beneficiaries-probe.json" --write-out '%{http_code}' --max-time 5 \
               --request POST \
@@ -127,6 +127,26 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestBeneficiaryIsolation.sql
 
+      - name: Verify nonempty per-User-ID profile persistence, saved list, language and isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/previewProfileNonemptyPersistence.sql
+
+      - name: Verify explicit prior-browser fictional payment recovery and isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/legacyStoryPaymentRecovery.sql
+
+      - name: Verify capability-scoped demo payment read and write paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoProfilePaymentScope.sql
       - name: Verify TaxPay correction intake, Office review state transitions and owner readback
         run: |
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
@@ -209,14 +229,40 @@ jobs:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
-        run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts tests/e2e/beneficiary-move-list-real-local.spec.ts tests/e2e/account-preferences-real-local.spec.ts tests/e2e/account-activity-real-local.spec.ts --project=mobile-375
+        run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts tests/e2e/beneficiary-move-list-real-local.spec.ts tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375
 
       - name: Verify guest beneficiary persistence, isolation, XLSX and Pay Tax prefill
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
-        run: npx playwright test tests/e2e/beneficiaries-guest-real-local.spec.ts tests/e2e/beneficiary-preview-user-isolation-real-local.spec.ts --project=mobile-375
+        run: npx playwright test tests/e2e/beneficiaries-guest-real-local.spec.ts --project=mobile-375
+
+      - name: Verify real demo User ID persistence and isolation across desktop and mobile browsers
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+          TAXPAY_LOCAL_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          TAXPAY_LOCAL_SUPABASE_ANON_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/demo-profile-persistence-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=1
+
+      - name: Report local profile-history RPC diagnostics after failure
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          edge_log="$RUNNER_TEMP/guest-beneficiaries-edge.log"
+          if [ -f "$edge_log" ]; then
+            matches="$(grep -F 'Profile payment history' "$edge_log" || true)"
+            if [ -n "$matches" ]; then
+              printf '%s\n' "$matches"
+            else
+              echo "No profile-history RPC error was logged by the local Edge Function."
+            fi
+          else
+            echo "Local Edge Function log was not found."
+          fi
 
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:

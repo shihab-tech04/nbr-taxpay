@@ -1,7 +1,22 @@
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
-const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,authorization,apikey","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
+const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,authorization,apikey,x-taxpay-guest-capability","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const uuid=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const capabilityPattern=/^[A-Za-z0-9_-]{43}$/;
+const encoder=new TextEncoder();
+async function capabilityHash(request:Request):Promise<string|null>{
+ const token=request.headers.get("x-taxpay-guest-capability");
+ if(token===null)return null;
+ if(!capabilityPattern.test(token))throw Error("INVALID_PROFILE_CAPABILITY");
+ const digest=await crypto.subtle.digest("SHA-256",encoder.encode(token));
+ return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
+function serviceClient(url:string){
+ const configured=Deno.env.get("SUPABASE_SECRET_KEYS");
+ const serviceKey=(configured&&(JSON.parse(configured) as Record<string,string>).default)||Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ if(!serviceKey)throw Error("PROFILE_SERVICE_UNAVAILABLE");
+ return createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+}
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
 async function mirrorAuthorization(id:string){
@@ -50,6 +65,24 @@ Deno.serve(async(req)=>{
  if(!key||!url)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
+  if(req.method==="GET"&&path==="/profile-history"){
+   const p_capability_hash=await capabilityHash(req);
+   if(!p_capability_hash)return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
+   const view=u.searchParams.get("view");
+   const pageSize=Number(u.searchParams.get("pageSize")??"100");
+   const beforeCreatedAt=u.searchParams.get("beforeCreatedAt");
+   const beforeId=u.searchParams.get("beforeId");
+   if((view!=="payer"&&view!=="beneficiary")||!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>100||
+      Boolean(beforeCreatedAt)!==Boolean(beforeId)||
+      beforeCreatedAt!==null&&!Number.isFinite(Date.parse(beforeCreatedAt))||
+      beforeId!==null&&!uuid.test(beforeId))return respond({success:false,error:"INVALID_HISTORY_CURSOR"},400);
+   const {data,error}=await serviceClient(url).rpc("taxpay_demo_story1_history_page",{
+    p_capability_hash,p_view:view,p_before_created_at:beforeCreatedAt,
+    p_before_id:beforeId,p_page_size:pageSize
+   });
+   if(error){console.error("Profile payment history",error.message);return respond({success:false,error:"PAYMENT_HISTORY_UNAVAILABLE"},503);}
+   return respond({success:true,data,simulationOnly:true});
+  }
   if(req.method==="POST"&&path==="/sync/reconcile"){
    const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
    if(!serviceKey)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
@@ -112,8 +145,19 @@ Deno.serve(async(req)=>{
   if(req.method==="POST"&&path==="/payments"){
     const raw=await req.text();if(raw.length>12000)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const body=JSON.parse(raw);
-    const {data,error}=await db.rpc("demo_story1_submit",{p_input:body});
-    if(error){console.error("TaxPay simulation submit",error.message);return respond({success:false,error:"SUBMISSION_FAILED"},400);}
+    const p_capability_hash=await capabilityHash(req);
+    const client=p_capability_hash?serviceClient(url):db;
+    const {data,error}=p_capability_hash
+      ?await client.rpc("taxpay_demo_story1_submit",{p_capability_hash,p_input:body})
+      :await client.rpc("demo_story1_submit",{p_input:body});
+    if(error){
+      console.error("TaxPay simulation submit",error.message);
+      if(error.message?.includes("LEGACY_SESSION_READ_ONLY"))
+        return respond({success:false,error:"LEGACY_SESSION_READ_ONLY"},409);
+      if(error.message?.includes("PROFILE_CAPABILITY_REQUIRED")||error.message?.includes("PROFILE_PAYMENT_SCOPE_MISMATCH"))
+        return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},403);
+      return respond({success:false,error:"SUBMISSION_FAILED"},400);
+    }
     const out={id:data.id,sessionId:body.sessionId,service:body.service,amountMinor:body.amountMinor,data:body,status:data.status,createdAt:data.createdAt};
     try{
       const res=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(out),signal:AbortSignal.timeout(10000)});
@@ -142,6 +186,32 @@ Deno.serve(async(req)=>{
     const m=path.match(/^\/payments\/([0-9a-fA-F-]{36})$/),session=u.searchParams.get("sessionId");
     if(req.method!=="GET"||!m||!uuid.test(m[1])||!session||!uuid.test(session))return respond({success:false,error:"NOT_FOUND"},404);
     rpc="demo_story1_get";args={p_id:m[1],p_session:session};
+  }
+  const p_capability_hash=await capabilityHash(req);
+  if(p_capability_hash){
+   const admin=serviceClient(url);
+   if(req.method==="GET"&&path==="/payments"){
+    const page=Number(u.searchParams.get("page")??"1");
+    const size=Number(u.searchParams.get("perPage")??"100");
+    const {data,error}=await admin.rpc("taxpay_demo_story1_session_payments",{
+     p_capability_hash,p_page:page,p_per_page:size
+    });
+    if(error)return respond({success:false,error:"PAYMENT_HISTORY_UNAVAILABLE"},503);
+    return respond({success:true,data:u.searchParams.has("page")||u.searchParams.has("perPage")?data:data.items,simulationOnly:true});
+   }
+   if(req.method==="GET"&&path==="/notifications"){
+    const {data,error}=await admin.rpc("taxpay_demo_story1_session_notices",{p_capability_hash});
+    if(error)return respond({success:false,error:"NOTIFICATION_HISTORY_UNAVAILABLE"},503);
+    return respond({success:true,data,simulationOnly:true});
+   }
+   if(req.method==="GET"&&/^\/payments\/[0-9a-fA-F-]{36}$/.test(path)){
+    const paymentId=path.split("/").pop();
+    const {data,error}=await admin.rpc("taxpay_demo_story1_session_payment",{
+     p_capability_hash,p_payment_id:paymentId
+    });
+    if(error)return respond({success:false,error:"NOT_FOUND"},404);
+    return respond({success:true,data,simulationOnly:true});
+   }
   }
   const {data,error}=await db.rpc(rpc,args);
   if(error)return respond({success:false,error:"NOT_FOUND"},404);

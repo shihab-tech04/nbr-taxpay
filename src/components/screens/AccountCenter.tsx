@@ -3,10 +3,10 @@ import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, Shiel
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
-import {AccountRecentActivity} from './AccountRecentActivity';
 import { useTaxState } from '../../services/taxState';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import {AccountRecentActivity} from './AccountRecentActivity';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -81,6 +81,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [notificationSearch,setNotificationSearch]=useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; content: string } | null>(null);
+  const [previewSigningOut,setPreviewSigningOut]=useState(false);
   const title = page === 'profile' ? t.profile : page === 'settings' ? t.settings : t.notifications;
   const allowed = user?.user_metadata?.taxpay_in_app_notifications !== false;
   const readAt = typeof user?.user_metadata?.taxpay_notifications_read_at === 'string'
@@ -139,14 +140,17 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     try {
       const { data: current, error: identityError } = await supabase.auth.getUser();
       if (identityError || current.user?.id !== user.id) throw new Error('Session changed');
-      const { error } = await supabase.auth.updateUser({ data: {
+      const { data: updated, error } = await supabase.auth.updateUser({ data: {
         taxpay_display_name: name.trim(),
         taxpay_in_app_notifications: showNotifications,
         taxpay_language: preferredLanguage
       }});
       if (error) throw error;
-      // Owner-scoped nonfinancial activity; failure never mislabels a save
-      // or changes the existing preference read/write contract.
+      if (updated.user?.id !== user.id ||
+          updated.user.user_metadata?.taxpay_display_name !== name.trim() ||
+          updated.user.user_metadata?.taxpay_in_app_notifications !== showNotifications ||
+          updated.user.user_metadata?.taxpay_language !== preferredLanguage)
+        throw new Error('Account settings were not confirmed.');
       void recordAccountActivity(user.id,'PROFILE_SAVED','account_settings').catch(()=>undefined);
       setLanguage(preferredLanguage);
       setFeedback({error:false,content:I18N[preferredLanguage].settingsSaved});
@@ -247,9 +251,15 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
             <div className="taxpayer-account-actions">
               {!previewAccount && <button type="button" onClick={() => navigate('taxpayer_login')}>{t.accountAccess}</button>}
-              {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
-                if (previewAccount) logoutPreviewAccount();
-                else { setUserRole('GUEST'); navigate('landing'); }
+              {sampleOnly && <button type="button" className="taxpayer-account-secondary" disabled={previewSigningOut} onClick={async () => {
+                if (!previewAccount) { setUserRole('GUEST'); navigate('landing'); return; }
+                setPreviewSigningOut(true);
+                setFeedback(null);
+                try { await logoutPreviewAccount(); }
+                catch { setFeedback({error:true,content:language==='bn'
+                  ?'আপনার ভাষা বা তালিকার পরিবর্তন সংরক্ষিত হয়নি। আবার সাইন আউট করুন।'
+                  :'Your language or list changes could not be saved. Retry signing out.'}); }
+                finally { setPreviewSigningOut(false); }
               }}>{previewAccount ? t.logout : t.exitDemo}</button>}
             </div>
           </section>
@@ -269,7 +279,6 @@ export function AccountCenter({ page }: { page: AccountPage }) {
               </section>
             )}
             {page === 'profile' && <AccountRecentActivity ownerUid={user.id} language={language}/>}
-
             {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>

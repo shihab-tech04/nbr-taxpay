@@ -126,3 +126,23 @@ test('Convay shared structure keeps semantic record rows, mobile views, controll
   assert.match(css,/\.taxpay-record-list__cell/);
   assert.match(read('src/components/screens/User1DemoExperience.tsx'),/pagination=\{\{page:currentHistoryPage/);
 });
+
+
+test('every signed-in payment history uses visible Convay column hierarchy, not only user1',()=>{
+ const story=read('src/components/screens/User1DemoExperience.tsx');
+ const bound=read('src/components/screens/DemoPaymentActivity.tsx');
+ const review=read('src/components/screens/AccountReviewHistory.tsx');
+ const css=read('src/styles/taxpay-unified-table.css');
+ assert.match(story,/className="taxpayer-transaction-table(?: [^"]+)?"/);
+ assert.match(bound,/className="taxpay-convay-signed-in-table"/);
+ assert.match(review,/className="taxpay-convay-signed-in-table"/);
+ for(const key of ['reference','date','payer','allocation','amount','status','actions']){
+   assert.ok(bound.includes("{key:'"+key+"'"),'Missing bound transaction column '+key);
+ }
+ assert.match(bound,/renderMobileCard=\{tx=>/);
+ assert.match(bound,/tx\.allocations\.map/);
+ assert.match(bound,/setSelectedPayment\(tx\)/);
+ assert.match(css,/table\.taxpay-convay-signed-in-table thead th/);
+ assert.match(css,/table\.taxpay-convay-signed-in-table tbody td/);
+ assert.match(css,/table\.taxpay-convay-signed-in-table tbody tr:nth-child\(even\)/);
+});
