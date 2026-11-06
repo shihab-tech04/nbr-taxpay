@@ -10,6 +10,9 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
   let recovered=false;
+  const paymentRequests:string[]=[];
+  const failedRequests:string[]=[];
+  page.on('requestfailed',request=>failedRequests.push(request.url()+':'+request.failure()?.errorText));
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
     const body=route.request().postDataJSON() as Record<string,unknown>;
@@ -32,6 +35,7 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
     route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[],"simulationOnly":true}'}));
   await page.route('**/functions/v1/demo-story1-taxpay/payments*',async route=>{
     const url=new URL(route.request().url());
+    paymentRequests.push(url.pathname+url.search);
     const detail=url.pathname.includes('/payments/'+payment);
     const record={id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date};
     if(detail){
@@ -78,7 +82,7 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
     const alerts=await page.locator('[role="alert"]').allTextContents();
     const recoverySections=await page.getByRole('heading',{name:/Earlier saved payment|আগের সংরক্ষিত/}).allTextContents();
     console.log('Recovery readback probe:',JSON.stringify({
-      url:page.url(),alerts,recoverySections,
+      url:page.url(),alerts,recoverySections,paymentRequests,failedRequests,
       profile:await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user')),
       visible:visible.map(text=>text.slice(0,100))
     }));
