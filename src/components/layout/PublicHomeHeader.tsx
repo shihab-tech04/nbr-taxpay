@@ -59,7 +59,14 @@ export function PublicHomeHeader() {
   const go=(route:string)=>{setMenuOpen(false);setProfileOpen(false);navigate(route);};
   const signOut=async()=>{
     setSignOutError('');
-    if(previewAccount && !user) {setProfileOpen(false);logoutPreviewAccount();return;}
+    if(previewAccount && !user) {
+      setSigningOut(true);
+      try { await logoutPreviewAccount(); setProfileOpen(false); }
+      catch { setSignOutError(bn?'আপনার ভাষা বা তালিকা সংরক্ষিত হয়নি। আবার সাইন আউট করুন।'
+        :'Your language or list changes could not be saved. Retry signing out.'); }
+      finally { setSigningOut(false); }
+      return;
+    }
     if(!user) return;
     setSigningOut(true);
     try {

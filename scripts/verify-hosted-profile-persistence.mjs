@@ -95,7 +95,12 @@ try {
     paymentsFor(pages[2],b1.paymentSessionId)
   ]);
   assert.deepEqual(history1,history2,'Cross-browser payment IDs and counts must match');
-  console.log('PASS: hosted browser readback, two independent same-profile sessions, other-profile isolation, language, selected list, saved beneficiaries and session payment records. Fictional profile count:',3);
+  const nonempty={lists:first.lists.length,people:first.people.length,payments:history1.total};
+  if(nonempty.lists===0||nonempty.people===0||nonempty.payments===0){
+    console.warn('UNVERIFIED NONEMPTY DATA: hosted readback is consistent but at least one of lists, beneficiaries or payment history has zero records.');
+    console.warn('Nonempty write/read/isolation is independently tested in disposable PostgreSQL; never report empty hosted snapshots as restored account data.');
+  }
+  console.log('PASS: hosted same-User-ID transport and cross-browser equality; different User IDs remain distinct. Counts:',JSON.stringify(nonempty));
 } finally {
   await browser.close();
 }
