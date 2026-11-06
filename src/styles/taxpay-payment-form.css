@@ -226,6 +226,15 @@
 .taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:#2c5ead}
 .taxpay-taxpayer-list__add:disabled{opacity:.5;cursor:not-allowed}
 .taxpay-taxpayer-list__limit{font-size:14px;color:#526681;margin:0}
+/* Explicit preview -> add confirmation stays attached to its taxpayer card,
+   matching the approved Travel Tax interaction without a detached right CTA. */
+.taxpay-taxpayer-row__confirm{display:grid;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--citizen-border)}
+.taxpay-taxpayer-row__confirm-button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;padding:10px 15px;border:1px solid var(--citizen-primary);border-radius:9px;background:var(--citizen-primary);color:#fff;font:700 14px/1.45 Poppins,system-ui,sans-serif;cursor:pointer}
+.taxpay-taxpayer-row__confirm-button:hover:not(:disabled){background:var(--citizen-primary-dark)}
+.taxpay-taxpayer-row__confirm-button:disabled{opacity:.5;cursor:not-allowed}
+.taxpay-taxpayer-row__confirm-button:focus-visible{outline:3px solid var(--citizen-primary);outline-offset:2px}
+.taxpay-taxpayer-row__confirm p{margin:0;font-size:13px;color:var(--citizen-muted)}
+.taxpay-taxpayer-row__added{margin:10px 0 0;color:var(--citizen-primary-dark);font:600 13px/1.5 Poppins,system-ui,sans-serif}
 .taxpay-taxpayer-row__confirmation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #e6ebf2;padding-top:12px}
 .taxpay-taxpayer-row__confirmation p{flex-basis:100%;margin:0;font-size:14px;color:#813040}
 .taxpay-taxpayer-row__confirmation button{border-radius:8px;min-height:44px;padding:0 13px;font-size:14px;font-weight:650;border:1px solid #dce5f0}

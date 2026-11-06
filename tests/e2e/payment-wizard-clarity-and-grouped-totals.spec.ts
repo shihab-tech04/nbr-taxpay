@@ -25,10 +25,15 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', {name:'Search', exact:true}).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', {name:'Add taxpayer'}).click();
   await dialog.locator('#guest-payer-name').fill('Example Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
-  await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]').fill('234567890123');
+  const second = dialog.getByTestId('other-tax-taxpayer');
+  await second.locator('input[id^="other-tax-tin-"]').fill('234567890123');
+  await second.getByRole('button', {name:'Search', exact:true}).click();
+  await second.getByRole('button', {name:'Add taxpayer'}).click();
   const grouped = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(grouped.locator('details')).toHaveCount(2);
   await expect(grouped).toContainText('123456789012');
