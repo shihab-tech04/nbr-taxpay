@@ -311,6 +311,12 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await expect(list).toContainText('1 taxpayer added');
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Edit' }).click();
+  await expect(list).toContainText('0 taxpayers added');
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
+  await expect(list).toContainText('1 taxpayer added');
   await dialog.locator('#guest-payer-name').fill('Sample Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -320,6 +326,12 @@ test('Other Tax starts with one TIN and an optional name, and added rows remain 
   await expect(added.locator('input[id^="other-tax-tin-"]')).toBeFocused();
   await added.locator('input[id^="other-tax-tin-"]').fill('222222222222');
   await expect(added.getByText('Taxpayer name')).toBeVisible();
+  await added.getByRole('button', {name:'Search', exact:true}).click();
+  await added.getByRole('button', {name:'Add taxpayer'}).click();
+  await expect(list).toContainText('2 taxpayers added');
+  await added.getByRole('button', {name:'Edit'}).click();
+  await expect(list).toContainText('1 taxpayer added');
+  await expect(added.getByRole('button', {name:'Add taxpayer'})).toHaveCount(0);
   await added.getByRole('button', {name:'Search', exact:true}).click();
   await added.getByRole('button', {name:'Add taxpayer'}).click();
   await expect(list).toContainText('2 taxpayers added');
@@ -542,7 +554,7 @@ test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual
 
 test('Step 1 shows a pending calculation rather than a misleading zero', async ({ page }) => {
   const dialog = await getFlow(page);
-  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('1 taxpayer added');
+  await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('0 taxpayers added');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
   await expect(dialog.locator('.payment-form-summary__help'))
     .toContainText('Add payment heads and amounts to see the total.');
