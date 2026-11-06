@@ -99,6 +99,26 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     expect(payment.body.retryable).toBe(true);
     expect(typeof payment.body.requestId).toBe('string');
     const paymentReference='SIM-'+payment.body.requestId.replaceAll('-','').slice(0,16).toUpperCase();
+    const profileReads=await first.evaluate(async({apiUrl,key,capability,paymentSessionId,paymentId})=>{
+      const root=apiUrl+'/functions/v1/demo-story1-taxpay';
+      const headers={apikey:key,'x-taxpay-guest-capability':capability};
+      const requests=[
+        fetch(`${root}/profile-history?view=payer&pageSize=100`,{headers,cache:'no-store'}),
+        fetch(`${root}/payments?sessionId=${encodeURIComponent(paymentSessionId)}&page=1&perPage=100`,{headers,cache:'no-store'}),
+        fetch(`${root}/notifications?sessionId=${encodeURIComponent(paymentSessionId)}`,{headers,cache:'no-store'}),
+        fetch(`${root}/payments/${encodeURIComponent(paymentId)}?sessionId=${encodeURIComponent(paymentSessionId)}`,{headers,cache:'no-store'}),
+      ];
+      return Promise.all(requests.map(async response=>({status:response.status,body:await response.json()})));
+    },{apiUrl:api.origin,key,capability:firstProfile.capability,
+      paymentSessionId:firstProfile.paymentSessionId,paymentId:payment.body.requestId});
+    expect(profileReads[0].status,JSON.stringify(profileReads[0].body)).toBe(200);
+    expect(profileReads[0].body.data.some((row:{id:string})=>row.id===paymentReference)).toBe(true);
+    expect(profileReads[1].status,JSON.stringify(profileReads[1].body)).toBe(200);
+    expect(profileReads[1].body.data.items.some((row:{id:string})=>row.id===payment.body.requestId)).toBe(true);
+    expect(profileReads[2].status,JSON.stringify(profileReads[2].body)).toBe(200);
+    expect(profileReads[2].body.data.some((notice:{paymentId:string})=>notice.paymentId===payment.body.requestId)).toBe(true);
+    expect(profileReads[3].status,JSON.stringify(profileReads[3].body)).toBe(200);
+    expect(profileReads[3].body.data.id).toBe(payment.body.requestId);
     await first.goto('/?action=history');
     await expect(first.getByTestId('signed-in-payment-activity')).toContainText(paymentReference);
 

@@ -121,6 +121,19 @@ begin
      or has_function_privilege('authenticated','public.demo_story1_demo_history_page(text,text,timestamptz,uuid,integer)','EXECUTE') then
     raise exception 'Capability-only functions still permit public actor or payment access';
   end if;
+  -- PostgREST runs STABLE RPCs in a read-only transaction. These four GET
+  -- paths refresh/expire the opaque session through touch_session, so they
+  -- must be VOLATILE or HTTP reads fail with DELETE-in-read-only-transaction
+  -- even though direct SQL calls appear to work.
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+       where n.nspname='public'
+         and p.proname in ('taxpay_demo_story1_history_page',
+                           'taxpay_demo_story1_session_payments',
+                           'taxpay_demo_story1_session_payment',
+                           'taxpay_demo_story1_session_notices')
+         and p.provolatile='v')<>4 then
+    raise exception 'Capability-backed GET RPCs must be VOLATILE for PostgREST session cleanup';
+  end if;
   raise notice 'PASS: nonempty payment activity, capability-scoped reads/writes, cross-account isolation, rejected public session paths, idempotent retry and preserved Office/notice rows';
 end
 $profile_scope$;

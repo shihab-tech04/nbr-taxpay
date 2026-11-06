@@ -95,7 +95,7 @@ create or replace function public.taxpay_demo_story1_history_page(
   p_before_created_at timestamptz default null,p_before_id uuid default null,
   p_page_size integer default 100
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' as $function$
+language plpgsql volatile security definer set search_path = '' as $function$
 declare v_demo text;v_session uuid;
 begin
   if p_capability_hash is null or p_capability_hash !~ '^[0-9a-f]{64}$'
@@ -185,7 +185,7 @@ grant execute on function public.taxpay_demo_story1_history_page(text,text,times
 create or replace function public.taxpay_demo_story1_session_payments(
   p_capability_hash text,p_page integer default 1,p_per_page integer default 100
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' as $function$
+language plpgsql volatile security definer set search_path = '' as $function$
 declare v_demo text;v_session uuid;v_total bigint;v_items jsonb;
 begin
   if p_capability_hash is null or p_capability_hash !~ '^[0-9a-f]{64}$'
@@ -231,7 +231,7 @@ grant execute on function public.taxpay_demo_story1_session_payments(text,intege
 create or replace function public.taxpay_demo_story1_session_payment(
   p_capability_hash text,p_payment_id uuid
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' as $function$
+language plpgsql volatile security definer set search_path = '' as $function$
 declare v_demo text;v_session uuid;v demo_payment.story_payments%rowtype;
 begin
   if p_capability_hash is null or p_capability_hash !~ '^[0-9a-f]{64}$' or p_payment_id is null
@@ -261,7 +261,7 @@ grant execute on function public.taxpay_demo_story1_session_payment(text,uuid)
   to service_role;
 
 create or replace function public.taxpay_demo_story1_session_notices(p_capability_hash text)
-returns jsonb language plpgsql stable security definer set search_path = '' as $function$
+returns jsonb language plpgsql volatile security definer set search_path = '' as $function$
 declare v_demo text;v_session uuid;
 begin
   if p_capability_hash is null or p_capability_hash !~ '^[0-9a-f]{64}$' then raise exception 'INVALID_CAPABILITY'; end if;
