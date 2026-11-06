@@ -28,7 +28,7 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   else await page.locator('.citizen-header').getByRole('button',{name:'Open menu'}).click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
   await expect(page.getByText('প্রকৃত কর নির্ধারণ, ট্রেজারি জমা, ই-টিডিএস')).toHaveCount(0);
 });
 

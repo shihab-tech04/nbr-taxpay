@@ -48,7 +48,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
   await expect(page.getByText(/স্বীকৃত টিডিএস \/ এআইটি/)).toBeVisible();
   await expect(page.getByText(/যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়/)).toHaveCount(0);
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
@@ -100,7 +100,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await expect(page.getByText('৳ 47,400')).toHaveCount(0);
   await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
 });
 
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{

@@ -34,5 +34,5 @@ test('Bengali demo entry preserves language when moving to the interactive view'
   await example.click();
   await expect(page).toHaveURL(/action=taxpayer_home&demoUser=user1&lang=bn/);
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'ড্যাশবোর্ড সারসংক্ষেপ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'সংক্ষিপ্ত বিবরণ' })).toBeVisible();
 });

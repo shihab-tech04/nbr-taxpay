@@ -124,7 +124,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   if (viewport === 'mobile-320' || viewport === 'desktop-1280') await audit();
 
   await switchToBangla();
-  await expect(page.getByRole('heading', { name: 'ড্যাশবোর্ড সারসংক্ষেপ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'সংক্ষিপ্ত বিবরণ' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'পেমেন্ট রেকর্ডের সারসংক্ষেপ' })).toContainText('নথিভুক্ত আয়কর');
   await expect(page.getByText(/যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়/)).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'পেমেন্টের বিভাজন' })).toBeVisible();
