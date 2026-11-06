@@ -59,4 +59,34 @@ test('failed preference write keeps profile signed in, retries, and restores sav
   await page.getByLabel('Password',{exact:true}).fill('user9');
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
+
+  // The approved desktop rail must also await SQL preference confirmation.
+  rejectSettingWrites=true;
+  await page.locator('.taxpayer-reference-rail-bottom').getByRole('button',{name:/ভাষা/}).click();
+  await page.locator('.taxpayer-reference-rail-bottom').getByRole('button',{name:'Sign out',exact:true}).click();
+  await expect(page.locator('.taxpayer-reference-rail-bottom').getByRole('alert'))
+    .toContainText('Retry signing out');
+  expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user9');
+  rejectSettingWrites=false;
+  await page.locator('.taxpayer-reference-rail-bottom').getByRole('button',{name:'Sign out',exact:true}).click();
+  await expect(page).toHaveURL(/action=landing/);
+  expect(persistedLanguage).toBe('en');
+
+  // The public header's profile menu is a third sign-out entry point.
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox',{name:'User ID'}).fill('user9');
+  await page.getByLabel('Password',{exact:true}).fill('user9');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await page.goto('/?action=landing');
+  await page.locator('.public-home-language').click();
+  rejectSettingWrites=true;
+  await page.locator('.public-home-avatar-trigger').click();
+  await page.locator('.public-home-profile-menu').getByRole('button',{name:'সাইন আউট',exact:true}).click();
+  await expect(page.locator('.public-home-profile-menu').getByRole('alert'))
+    .toContainText('আবার সাইন আউট করুন');
+  expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user9');
+  rejectSettingWrites=false;
+  await page.locator('.public-home-profile-menu').getByRole('button',{name:'সাইন আউট',exact:true}).click();
+  await expect(page).toHaveURL(/action=landing/);
+  expect(persistedLanguage).toBe('bn');
 });
