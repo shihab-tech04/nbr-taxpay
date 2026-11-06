@@ -72,12 +72,12 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toBeVisible();
-  // The action reloads the same URL after server acknowledgement; wait for
-  // that exact reload before examining the saved rows or session storage.
-  const reloaded=page.waitForEvent('load');
+  // The recovered SQL rows update in place; a deliberate reload must also
+  // restore them from the confirmed server-side session link.
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
-  await reloaded;
-  expect(recovered).toBe(true);
+  await expect.poll(()=>recovered).toBe(true);
+  await expect(page.getByTestId('recovered-story-payments')).toContainText(payment);
+  await page.reload({waitUntil:'domcontentloaded'});
   await expect(page).toHaveURL(/action=history/);
   // Include the actual post-refresh content in CI failures so a missing
   // persisted read can be distinguished from a route or session reset.
