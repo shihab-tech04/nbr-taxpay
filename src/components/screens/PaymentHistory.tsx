@@ -35,7 +35,7 @@ export function LegacyPaymentRecovery({language}:{language:Language}) {
       <button type="button" disabled={busy}
         className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-medium text-taxpay-primary disabled:opacity-60"
         onClick={()=>{setBusy(true);setError('');
-          void recoverLegacyStoryPayments().then(n=>{setRestored(n);window.location.reload();})
+          void recoverLegacyStoryPayments().then(n=>{setRestored(n);window.dispatchEvent(new Event('taxpay:story-payments-recovered'));})
             .catch(e=>setError(e instanceof Error?e.message:'Recovery was not confirmed.'))
             .finally(()=>setBusy(false));
         }}>
