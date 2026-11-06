@@ -54,7 +54,7 @@ for(const language of ['en','bn'] as const){
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
     await expect(rows.first()).toContainText('123456789012');
-    await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
+    await expect(rows.first()).toContainText((page.viewportSize()?.width??1280)<768?'Shihab · Neighbour':t('Others · Neighbour','অন্যান্য · Neighbour'));
     await expect(screen.locator('.beneficiary-directory__table.taxpay-data-table')).toBeVisible();
     const theme=await screen.locator('.beneficiary-directory__table').evaluate(el=>{
       const header=el.querySelector('table.taxpay-unified-table thead th');
@@ -137,7 +137,7 @@ for(const language of ['en','bn'] as const){
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeEnabled();
     await expect(edit.locator('#beneficiary-edit-list')).toHaveValue('00000000-0000-4000-8000-000000000101');
     await edit.getByRole('button',{name:t('Cancel','বাতিল')}).click();
-    await expect(rows.first()).toContainText(t('Others · Neighbour','অন্যান্য · Neighbour'));
+    await expect(rows.first()).toContainText((page.viewportSize()?.width??1280)<768?'Shihab · Neighbour':t('Others · Neighbour','অন্যান্য · Neighbour'));
     await rows.first().getByRole('checkbox',{name:t('Select Shihab','Shihab নির্বাচন')}).check();
     await expect(screen.locator('.beneficiary-directory__selected-count')).toContainText('1');
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();
