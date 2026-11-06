@@ -34,6 +34,10 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await expect(primary.getByTestId('searched-taxpayer-card')).toContainText('User 1');
+  // Match the Travel Tax sequence: preview details first, separate full-width
+  // Add action below the preview, and no Add another before confirmation.
+  await expect(primary.getByTestId('searched-taxpayer-card').getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await expect(primary.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
   await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
   await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await primary.getByRole('button', { name: 'Add taxpayer' }).click();

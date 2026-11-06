@@ -30,15 +30,18 @@ for (const locale of ['en', 'bn'] as const) {
     expect(Math.abs(before - after)).toBeLessThan(3); // overlay never expands the card
     await suggestions.getByRole('option', {name: '111111111111'}).click();
     await expect(tin).toHaveValue('111111111111');
+    await expect(suggestions).toHaveCount(0); // Selecting must not reopen the dropdown.
     await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await primary.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
     const detail = primary.getByTestId('searched-taxpayer-card');
     await expect(detail).toBeVisible();
     await expect(detail).toContainText(locale === 'bn' ? 'ইউজার 1' : 'User 1');
     await expect(detail).toContainText('111111111111');
-    await expect(detail.getByRole('button', {name: addName})).toBeVisible();
+    await expect(detail.getByRole('button', {name: addName})).toHaveCount(0);
+    await expect(primary.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
+    await expect(primary.getByRole('button', {name: addName})).toBeVisible();
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
-    await detail.getByRole('button', {name: addName}).click();
+    await primary.getByRole('button', {name: addName}).click();
     await expect(primary.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
     await expect(modal.getByRole('button', {name: nextName})).toBeVisible();
     await modal.getByRole('button', {name: nextName}).click();
@@ -47,15 +50,40 @@ for (const locale of ['en', 'bn'] as const) {
     await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
     await second.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
     await expect(second.getByTestId('searched-taxpayer-card')).toContainText(locale === 'bn' ? 'ইউজার 2' : 'User 2');
-    await second.getByTestId('searched-taxpayer-card').getByRole('button', {name: addName}).click();
+    await expect(second.getByTestId('searched-taxpayer-card').getByRole('button', {name: addName})).toHaveCount(0);
+    await expect(second.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
+    await second.getByRole('button', {name: addName}).click();
     await expect(second.getByTestId('confirmed-taxpayer-card')).toContainText('222222222222');
     await second.getByRole('button', {name: locale === 'bn' ? 'সম্পাদনা' : 'Edit'}).click();
     await expect(second.getByTestId('confirmed-taxpayer-card')).toHaveCount(0);
     const clear = second.getByRole('button', {name: locale === 'bn' ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'});
     await expect(clear).toBeVisible();
     await clear.click();
-    await expect(second.locator('input[id^="other-tax-tin-"]')).toHaveValue('');
+    const secondTin = second.locator('input[id^="other-tax-tin-"]');
+    const secondSuggestions = second.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    await expect(secondTin).toHaveValue('');
+    await expect(secondTin).toBeFocused();
+    await expect(secondSuggestions).toHaveCount(0); // Clear X restores focus without opening.
     await expect(second.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+    await secondTin.press('0');
+    await expect(secondSuggestions).toBeVisible();
+    await secondTin.press('ArrowDown');
+    await expect(secondSuggestions.getByRole('option', {name: '000000000000'})).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(secondTin).toHaveValue('000000000000');
+    await expect(secondTin).toBeFocused();
+    await expect(secondSuggestions).toHaveCount(0); // Keyboard selection must not reopen.
+    await secondTin.press('Backspace');
+    await expect(secondSuggestions).toBeVisible();
+    await secondTin.press('Escape');
+    await expect(secondSuggestions).toHaveCount(0);
+    await expect(modal).toBeVisible(); // Escape closes suggestions, never the payment modal.
+    await secondTin.press('0');
+    await secondTin.press('ArrowDown');
+    await page.keyboard.press('Escape');
+    await expect(secondSuggestions).toHaveCount(0);
+    await expect(secondTin).toBeFocused();
+    await expect(modal).toBeVisible();
     expect(await modal.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
   });
 }
