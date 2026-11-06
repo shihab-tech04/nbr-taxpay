@@ -7,11 +7,11 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 /** A pre-existing browser-only payment session can be linked only by explicit
  * user action. Never infer that old payments belong to a demo profile by TIN. */
 export function recoverableLegacyStorySession():string|null {
-  const profile=activePreviewSession();
-  if(!profile||typeof window==='undefined')return null;
+  if(typeof window==='undefined')return null;
   try {
     const previous=window.sessionStorage.getItem(LEGACY_SESSION_KEY);
-    return previous&&uuid.test(previous)&&previous!==profile.paymentSessionId?previous:null;
+    const current=activePreviewSession();
+    return previous&&uuid.test(previous)&&previous!==current?.paymentSessionId?previous:null;
   }catch{return null;}
 }
 
