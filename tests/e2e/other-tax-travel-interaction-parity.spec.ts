@@ -64,7 +64,7 @@ test('Travel Tax Bangladeshi and foreign passport inputs have the same clear but
   await page.goto('/?action=travel');
   const travel = page.locator('.travel-flow');
   const passport = travel.locator('#travel-passport-first');
-  const clear = travel.getByRole('button', {name: 'Clear passport number'});
+  const clear = travel.getByRole('button', {name: 'Clear passport'});
   await expect(clear).toHaveCount(0);
   await passport.fill('TEST123456');
   await expect(clear).toBeVisible();
