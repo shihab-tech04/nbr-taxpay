@@ -1,4 +1,5 @@
 import type { ChallanReceipt } from '../types/tax';
+import {activePreviewSession} from './previewAccountSession';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -17,6 +18,10 @@ export type StoryPaymentAcknowledgement = {
 const API = 'https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay';
 let fallbackSession: string | undefined;
 export function getStorySessionId(): string {
+  // The same fictional userN reuses one opaque synthetic-only SQL session on
+  // every device. Real authenticated payments never derive ownership from it.
+  const preview=activePreviewSession();
+  if(preview)return preview.paymentSessionId;
   const key = 'taxpay-guest-simulation-session';
   try {
     const stored = sessionStorage.getItem(key);

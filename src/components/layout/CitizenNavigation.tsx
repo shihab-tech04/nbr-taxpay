@@ -45,8 +45,15 @@ export function CitizenNavigation() {
   const [signingOut, setSigningOut] = useState(false);
   const logOut = async () => {
     if (previewAccount && !applicationUser) {
-      setMenuOpen(false);
-      logoutPreviewAccount();
+      setSignOutError('');setSigningOut(true);
+      try{
+        await logoutPreviewAccount();
+        setMenuOpen(false);
+      }catch{
+        setSignOutError(language==='bn'
+          ?'আপনার ভাষা বা তালিকার পরিবর্তন সংরক্ষিত হয়নি। আবার সাইন আউট করুন।'
+          :'Your language or list changes could not be saved. Retry signing out.');
+      }finally{setSigningOut(false);}
       return;
     }
     if (!applicationUser && !demoUser && taxpayerRoles.includes(userRole)) {

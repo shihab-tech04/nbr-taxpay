@@ -5,6 +5,22 @@ import {mkdirSync} from 'node:fs';
  * Verify computed visual tokens and capture real rendered EN/BN desktop/mobile
  * screenshots, not merely the presence of shared CSS class names.
  */
+/** Visual-only test fixture. Production requires a backend-issued capability;
+ * a synthetic local value here never grants SQL or payment permissions.
+ */
+async function installSyntheticPreviewFixture(page:Page,userId:'user1'|'user2',language:'en'|'bn'){
+  await page.addInitScript(({id,lang})=>{
+    sessionStorage.setItem('taxpay-taxpayer-preview-user',id);
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:id,
+      capability:'A'.repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000099',
+      selectedListId:null,
+      language:lang
+    }));
+  },{id:userId,lang:language});
+}
+
 async function beneficiaryFixture(page:Page){
   const timestamp='2026-11-01T00:00:00Z';
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
@@ -144,7 +160,7 @@ for(const language of ['en','bn'] as const){
 /** Screenshots of real notification rows complete the same three-table visual evidence. */
 for(const language of ['en','bn'] as const){
   test('notification record rows share the same four-column header and mobile card contract in '+language,async({page},info)=>{
-    await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
+    await installSyntheticPreviewFixture(page,'user1',language);
     await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([
         {id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
@@ -185,8 +201,8 @@ for(const language of ['en','bn'] as const){
 }
 
 for(const language of ['en','bn'] as const){
-  test('signed-in preview Transactions keeps four columns and complete details in '+language,async({page},info)=>{
-    await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user2'));
+  test('signed-in preview Transactions shows Convay columns and complete details in '+language,async({page},info)=>{
+    await installSyntheticPreviewFixture(page,'user2',language);
     await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
     await page.route('**/rest/v1/rpc/demo_story1_demo_history',route=>route.fulfill({
       status:200,contentType:'application/json',body:JSON.stringify([{
@@ -211,7 +227,9 @@ for(const language of ['en','bn'] as const){
     const expand=language==='bn'?'বরাদ্দ দেখুন':'View allocations';
     if(desktop){
       await expect(table).toBeVisible();
-      await expect(table.locator('thead th')).toHaveCount(4);
+      await expect(table.locator('thead th')).toHaveText(language==='bn'
+        ? ['রেফারেন্স','তারিখ','প্রদানকারী','বরাদ্দ','পরিমাণ','অবস্থা','কার্যক্রম']
+        : ['Reference','Date','Payer','Allocations','Amount','Status','Actions']);
       await expect(table.locator('tbody tr')).toHaveCount(1);
       await expect(cards).toBeHidden();
       await table.getByText(expand).click();

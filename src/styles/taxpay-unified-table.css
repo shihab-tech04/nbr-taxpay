@@ -865,3 +865,230 @@ table.taxpay-unified-table {
     margin-top: 8px;
   }
 }
+
+
+/* Convay responsive register parity for bound-account and review histories.
+ * The user1 register above already uses the same treatment. Keep everything
+ * outside these two data grids, including print receipts, unchanged. */
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table thead th {
+  height: 46px;
+  padding: 10px 14px;
+  background: var(--taxpay-table-heading, #f7f9fc);
+  color: var(--taxpay-table-muted, #5f6b7a);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody td {
+  min-height: 64px;
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.5;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:nth-child(even) {
+  background: var(--taxpay-table-stripe, #fafbfd);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:hover,
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:focus-visible {
+  background: var(--taxpay-table-hover, #f1f6ff);
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table tbody tr:focus-visible {
+  outline: 2px solid var(--taxpay-table-primary, #2c5ead);
+  outline-offset: -2px;
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table :is(th,td):first-child {
+  min-width: 175px;
+}
+.taxpay-taxpayer-reference table.taxpay-convay-signed-in-table :is(th,td):last-child {
+  white-space: nowrap;
+}
+.taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] table.taxpay-convay-signed-in-table :is(th,td):nth-child(5) {
+  min-width: 120px;
+  text-align: right;
+}
+.taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] table.taxpay-convay-signed-in-table :is(th,td):nth-child(4) {
+  min-width: 170px;
+}
+.taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] table.taxpay-convay-signed-in-table :is(th,td):nth-child(6) {
+  min-width: 155px;
+}
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] .taxpay-mobile-table-cards,
+  .taxpay-taxpayer-reference [data-testid="account-owner-review-history"] .taxpay-mobile-table-cards {
+    padding: 0;
+    gap: 10px;
+  }
+  .taxpay-taxpayer-reference [data-testid="signed-in-payment-activity"] .taxpay-mobile-table-card,
+  .taxpay-taxpayer-reference [data-testid="account-owner-review-history"] .taxpay-mobile-table-card {
+    padding: 16px;
+    border: 1px solid var(--taxpay-table-border, #e1e6ee);
+    border-radius: var(--taxpay-table-radius, 12px);
+    background: var(--taxpay-table-surface, #fff);
+    min-width: 0;
+  }
+}
+
+/* Visible Convay register pattern — one integrated Transactions workspace.
+ * Scope only the taxpayer history panel, not receipts, Beneficiaries or ledger. */
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel {
+  overflow: hidden;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -20px -20px 0;
+  padding: 13px 20px;
+  min-height: 64px;
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+  background: var(--taxpay-table-surface, #fff);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__identity h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__export {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) repeat(3,minmax(125px,1fr));
+  align-items: end;
+  gap: 12px;
+  margin: 0 -20px;
+  padding: 16px 20px;
+  background: var(--taxpay-table-heading, #f7f9fc);
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-filters .taxpayer-transaction-filter {
+  font-size: 14px;
+  color: var(--taxpay-table-text, #172033);
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpay-table-viewport {
+  margin: 0 -20px;
+  width: calc(100% + 40px);
+  border: 0;
+  border-radius: 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table thead th {
+  padding: 12px 16px;
+  height: 48px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody td {
+  padding: 14px 16px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody tr:nth-child(even) {
+  background: var(--taxpay-table-stripe, #fafbfd);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody tr:hover {
+  background: var(--taxpay-table-hover, #f1f6ff);
+}
+@media (max-width: 850px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters .taxpayer-transaction-filter--search {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar {
+    margin: -16px -16px 0;
+    padding: 12px 16px;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+    margin: 0 -16px;
+    padding: 14px 16px;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpay-table-viewport {
+    margin: 0;
+    width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar {
+    flex-wrap: wrap;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__export {
+    min-height: 44px;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters .taxpayer-transaction-filter--search {
+    grid-column: auto;
+  }
+}
+
+/* Keep every action accessible when the taxpayer sidebar reduces desktop width.
+ * The source-of-truth grid still has seven semantic columns; reference, type
+ * and date consolidate visually into Payment at ordinary laptop widths. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta { display: none; }
+@media (min-width:768px) and (max-width:1440px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2),
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3),
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {
+    display: none;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(1) {
+    min-width: 0;
+    width: 48%;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(5) {
+    min-width: 0;
+    width: 17%;
+    text-align: right;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(6) {
+    min-width: 0;
+    width: 21%;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(7) {
+    min-width: 0;
+    width: 14%;
+    text-align: right;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta {
+    display: block;
+    margin-top: 3px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--taxpay-table-muted, #5f6b7a);
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta p {
+    margin: 2px 0 0;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table .taxpayer-transaction-row__status > span {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

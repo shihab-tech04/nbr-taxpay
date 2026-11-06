@@ -25,8 +25,15 @@ test('verified account writes verify current Supabase owner and confirm inserted
 test('navigation is recorded only for verified identity and pending activity flushes before logout',()=>{
   const state=readFileSync('src/services/taxState.tsx','utf8');
   const identity=readFileSync('src/services/accountIdentity.ts','utf8');
-  assert.match(state,/if\(checkingAccount\|\|!accountUser\?\.id\)return/);
+  assert.match(state,/if\(checkingAccount\|\|!accountUser\?\.id\|\|currentRoute==='secure_workspace'\)return/);
   assert.match(state,/saveAccountRouteVisit\(accountUser\.id,currentRoute\)/);
   assert.match(identity,/await flushAccountRouteVisits\(current\.user\.id\)/);
   assert.ok(identity.indexOf('await flushAccountRouteVisits') < identity.indexOf("await supabase.auth.signOut"));
+});
+
+test('profile logout waits for saved preview settings and keeps the account on failure',()=>{
+  const screen=readFileSync('src/components/screens/AccountCenter.tsx','utf8');
+  assert.match(screen,/try\s*\{\s*await logoutPreviewAccount\(\)/);
+  assert.match(screen,/catch\s*\{\s*setFeedback\(\{error:true/);
+  assert.match(screen,/disabled=\{previewSigningOut\}/);
 });

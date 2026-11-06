@@ -26,7 +26,37 @@ export const submitSimulatedPayment=(payer:SimulationUser,lines:SimulationLine[]
  rpc<SimSubmission>('sim_submit_payment',{p_payer_id:payer,p_lines:lines,p_idempotency_key:key});
 /** Story1 rows are shared with Office SQL, unlike the authenticated simulator ledger. */
 export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'beneficiary'|'payer')=>{
- const rows=await rpc<SimulationTransaction[]>('demo_story1_demo_history',{p_actor:user,p_view:view});
+ // Preserve the existing compact first-page API and all approved UI consumers.
+ // A legacy 200-row reply was previously mistaken for COMPLETE history.
+ const first=await rpc<SimulationTransaction[]>('demo_story1_demo_history',{p_actor:user,p_view:view});
+ if(!Array.isArray(first)||first.length>200)throw Error('Invalid demo history page');
+ let rows=[...first];
+ if(first.length===200){
+   // The legacy first page is not guaranteed to select same-timestamp ties
+   // consistently at its cutoff. Restart from the beginning using the stable
+   // (created_at, id) cursor rather than potentially skipping older payments.
+   rows=[];
+   const seen=new Set<string>();
+   let beforeAt:string|null=null,beforeId:string|null=null;
+   let finished=false;
+   for(let page=0;page<10000;page++){
+     const next:SimulationTransaction[]=await rpc<SimulationTransaction[]>('demo_story1_demo_history_page',{
+       p_actor:user,p_view:view,p_before_created_at:beforeAt,
+       p_before_id:beforeId,p_page_size:100
+     });
+     if(!Array.isArray(next)||next.length>100)throw Error('Invalid demo history cursor response');
+     for(const tx of next){
+       if(!tx.transactionId||seen.has(tx.transactionId))throw Error('Duplicate demo payment record');
+       seen.add(tx.transactionId);rows.push(tx);
+     }
+     if(next.length<100){finished=true;break;}
+     const last:SimulationTransaction=next[next.length-1];
+     beforeAt=last.createdAt;beforeId=last.transactionId;
+   }
+   if(!finished)throw Error('Demo payment history exceeds safe retrieval limit');
+ } else if(new Set(rows.map(tx=>tx.transactionId)).size!==rows.length){
+   throw Error('Duplicate demo payment record');
+ }
  return rows.map(tx=>({...tx,allocations:tx.allocations.map((a,index)=>({
    ...a,id:a.id??`${tx.transactionId}-${index+1}`,lineNo:a.lineNo??index+1
  }))}));

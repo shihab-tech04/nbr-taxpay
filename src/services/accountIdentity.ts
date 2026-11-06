@@ -71,7 +71,7 @@ export async function signOutApplicationAccount(): Promise<{ ok: boolean; error?
       await flushAccountRouteVisits(current.user.id);
     }
   } catch {
-    return { ok:false, error:'Your account settings or activity could not be saved. Please retry signing out.' };
+    return { ok:false, error:'Your account settings could not be saved. Please retry signing out.' };
   }
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   return error ? { ok: false, error: error.message } : { ok: true };
