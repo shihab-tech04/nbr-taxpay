@@ -31,7 +31,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
   const rows=[
     {en:'Total tax',bn:'মোট আয়কর'},
     {en:'Tax already deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম পরিশোধিত কর'},
-    {en:'Direct income tax payments',bn:'সরাসরি আয়কর পরিশোধ'},
+    {en:'Income tax paid directly',bn:'সরাসরি পরিশোধিত আয়কর'},
     {en:'Already covered',bn:'ইতোমধ্যে সমন্বিত কর'},
     {en:'Still remaining',bn:'এখনও বাকি কর'},
     {en:'Travel tax (separate)',bn:'ভ্রমণ কর (পৃথক)'},

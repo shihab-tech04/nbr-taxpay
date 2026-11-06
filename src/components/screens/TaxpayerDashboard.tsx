@@ -127,7 +127,7 @@ export const TaxpayerDashboard: React.FC = () => {
           {en:'Total tax',bn:'মোট আয়কর',
             helpEn:'A verified tax assessment amount is not available for this account and year.',
             helpBn:'এই অ্যাকাউন্ট ও করবর্ষের যাচাইকৃত নির্ধারিত আয়করের তথ্য পাওয়া যায়নি।'},
-          {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম পরিশোধিত কর',
+          {en:'Tax already deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম পরিশোধিত কর',
             helpEn:'We cannot verify how much tax was deducted from income or paid in advance for this year.',
             helpBn:'এই করবর্ষে আয়ের উৎসে কাটা বা অগ্রিম দেওয়া কত কর সমন্বিত হয়েছে তা যাচাই করা যায়নি।'},
           {en:'Income tax paid directly',bn:'সরাসরি পরিশোধিত আয়কর',

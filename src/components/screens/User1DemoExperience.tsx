@@ -298,9 +298,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}>
       {summaryCard('Total tax','মোট আয়কর',money(totals.liability),
         'Starting liability used for this tax year.','এই করবর্ষের প্রাথমিক করদায়।')}
-      {summaryCard('TDS & advance tax','উৎসে কর ও অগ্রিম কর',money(totals.tds+totals.ait),
-        'Posted TDS and advance-tax amounts only; unmatched entries are excluded.','শুধু পোস্টকৃত উৎসে কর ও অগ্রিম কর; অমিল লেনদেন বাদ।')}
-      {summaryCard('Direct payments','সরাসরি পরিশোধ',money(totals.direct),
+      {summaryCard('Tax already deducted or paid early','উৎসে কাটা বা অগ্রিম পরিশোধিত কর',money(totals.tds+totals.ait),
+        'Only posted amounts for tax taken from income or paid in advance are counted; unmatched entries are excluded.','শুধু নথিভুক্ত উৎসে কাটা বা অগ্রিম পরিশোধিত কর গণনা করা হয়; অমিল লেনদেন বাদ।')}
+      {summaryCard('Income tax paid directly','সরাসরি পরিশোধিত আয়কর',money(totals.direct),
         'Posted payments only. Pending, failed and reversed attempts are excluded.','শুধু পোস্টকৃত পরিশোধ; অপেক্ষমাণ, ব্যর্থ ও বাতিল লেনদেন বাদ।')}
       {summaryCard('Still remaining','এখনও বাকি কর',money(totals.outstanding),
         'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।',true)}

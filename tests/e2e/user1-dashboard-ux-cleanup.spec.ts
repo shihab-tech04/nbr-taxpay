@@ -15,7 +15,12 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
     await expect(workspace.getByRole('heading',{name:oldHeading,exact:true})).toHaveCount(0);
   }
   await expect(workspace.locator('.taxpayer-dashboard-header').getByRole('button',{name:'Overview'})).toHaveCount(0);
-  await expect(workspace.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
+  const financialCards=workspace.locator('.taxpayer-dashboard-kpi');
+  await expect(financialCards).toHaveCount(4);
+  await expect(financialCards.nth(0)).toContainText('Total tax');
+  await expect(financialCards.nth(1)).toContainText('Tax already deducted or paid early');
+  await expect(financialCards.nth(2)).toContainText('Income tax paid directly');
+  await expect(financialCards.nth(3)).toContainText('Still remaining');
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'What needs your attention'})).toBeVisible();
