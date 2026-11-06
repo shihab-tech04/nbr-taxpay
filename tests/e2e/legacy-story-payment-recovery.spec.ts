@@ -72,17 +72,12 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toBeVisible();
+  // The action reloads the same URL after server acknowledgement; wait for
+  // that exact reload before examining the saved rows or session storage.
+  const reloaded=page.waitForEvent('load');
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
-  await expect.poll(()=>recovered).toBe(true);
-  // Independent readback of the same intercepted list distinguishes a
-  // backend response mismatch from History rendering or restoration state.
-  const listProbe=await page.evaluate(async()=>{
-    const state=JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null');
-    if(!state?.paymentSessionId)return {error:'missing active profile payment session'};
-    const response=await fetch('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments?sessionId='+encodeURIComponent(state.paymentSessionId)+'&page=1&perPage=100');
-    return {status:response.status,body:await response.json()};
-  });
-  console.log('Post-recovery intercepted list response:',JSON.stringify(listProbe));
+  await reloaded;
+  expect(recovered).toBe(true);
   await expect(page).toHaveURL(/action=history/);
   // Include the actual post-refresh content in CI failures so a missing
   // persisted read can be distinguished from a route or session reset.
