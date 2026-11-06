@@ -42,7 +42,7 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   const bounds=await Promise.all([viewport.boundingBox(),rows.first().locator('td').last().boundingBox()]);
   expect(bounds[0]).not.toBeNull();
   expect(bounds[1]).not.toBeNull();
-  expect(bounds[1]!.right).toBeLessThanOrEqual(bounds[0]!.right+2);
+  expect(bounds[1]!.x+bounds[1]!.width).toBeLessThanOrEqual(bounds[0]!.x+bounds[0]!.width+2);
   await expect(first.getByRole('button',{name:'Details for Pending bank reconciliation'})).toBeVisible();
 
   await first.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();
