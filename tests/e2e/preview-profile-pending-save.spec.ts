@@ -43,14 +43,14 @@ test('failed preference write keeps profile signed in, retries, and restores sav
 
   await page.goto('/?action=account_settings');
   await page.locator('#taxpay-demo-language').selectOption('bn');
-  await page.getByRole('button',{name:'সাইন আউট',exact:true}).click();
+  await page.locator('#main-content').getByRole('button',{name:'সাইন আউট',exact:true}).click();
   await expect.poll(()=>failureCount).toBeGreaterThanOrEqual(2);
   await expect(page.getByText('আপনার ভাষা বা তালিকার পরিবর্তন সংরক্ষিত হয়নি। আবার সাইন আউট করুন।')).toBeVisible();
   await expect(page).toHaveURL(/action=account_settings/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user9');
 
   rejectSettingWrites=false;
-  await page.getByRole('button',{name:'সাইন আউট',exact:true}).click();
+  await page.locator('#main-content').getByRole('button',{name:'সাইন আউট',exact:true}).click();
   await expect(page).toHaveURL(/action=landing/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   expect(persistedLanguage).toBe('bn');
