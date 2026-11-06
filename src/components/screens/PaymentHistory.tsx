@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
 import {RecoveredStoryHistory} from './RecoveredStoryHistory';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import {recoverableLegacyStorySession,recoverLegacyStoryPayments} from '../../services/legacyStoryPaymentRecovery';
 import { AuthenticatedHistorySwitch } from './AuthenticatedHistorySwitch';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -133,7 +134,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
 
   if (authenticatedUser) return <AuthenticatedHistorySwitch ownerUid={authenticatedUser.id}
     language={language} activityTabs={activityTabs} />;
-  if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/>{previewAccount&&<RecoveredStoryHistory profileId={previewAccount.id} language={language}/>}</>;
+  if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/>{previewAccount&&activePreviewSession()?.profileId===previewAccount.id&&<RecoveredStoryHistory profileId={previewAccount.id} language={language}/>}</>;
 
   return (
     <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
