@@ -14,6 +14,11 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
     id:profileId,status:'loading',rows:[]});
   const [selected,setSelected]=useState<OwnedStoryPayment|null>(null);
   const [revision,setRevision]=useState(0);
+  useEffect(()=>{
+    const refresh=()=>setRevision(value=>value+1);
+    window.addEventListener('taxpay:story-payments-recovered',refresh);
+    return()=>window.removeEventListener('taxpay:story-payments-recovered',refresh);
+  },[]);
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   useEffect(()=>{
