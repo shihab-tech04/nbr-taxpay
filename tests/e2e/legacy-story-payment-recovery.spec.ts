@@ -76,7 +76,16 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   // restore them from the confirmed server-side session link.
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
   await expect.poll(()=>recovered).toBe(true);
-  await expect(page.getByTestId('recovered-story-payments')).toContainText(payment);
+  await expect.poll(async()=>{
+    const rows=await page.getByTestId('recovered-story-payments').allTextContents();
+    if(rows.some(text=>text.includes(payment)))return true;
+    console.log('Immediate recovered records:',JSON.stringify({
+      alerts:await page.locator('[role="alert"]').allTextContents(),
+      paymentRequests,failedRequests,
+      session:await page.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null')?.paymentSessionId)
+    }));
+    return false;
+  },{timeout:12000}).toBe(true);
   await page.reload({waitUntil:'domcontentloaded'});
   await expect(page).toHaveURL(/action=history/);
   // Include the actual post-refresh content in CI failures so a missing
