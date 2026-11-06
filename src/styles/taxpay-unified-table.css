@@ -268,6 +268,26 @@ table.taxpay-unified-table {
   justify-content:flex-start;
   align-items:center;
 }
+/* Keep all four approved desktop columns visible at full desktop widths.
+ * The shared max-content table minimum otherwise pushes Remove out of view. */
+@media (min-width: 1180px) {
+  .beneficiary-directory__table .taxpay-table-viewport > table.taxpay-unified-table {
+    width: 100%;
+    min-width: 100%;
+    table-layout: fixed;
+  }
+  .beneficiary-directory__table .taxpay-unified-table th:nth-child(1) { width: 25%; }
+  .beneficiary-directory__table .taxpay-unified-table th:nth-child(2) { width: 16%; }
+  .beneficiary-directory__table .taxpay-unified-table th:nth-child(3) { width: 24%; }
+  .beneficiary-directory__table .taxpay-unified-table th:nth-child(4) { width: 35%; }
+  .beneficiary-directory__table .taxpay-unified-table th:last-child,
+  .beneficiary-directory__table .taxpay-unified-table td:last-child { min-width: 0; }
+  .beneficiary-directory__table .taxpay-unified-table td { overflow-wrap: anywhere; }
+  .beneficiary-directory__table .beneficiary-directory__actions button {
+    min-width: 0;
+    white-space: normal;
+  }
+}
 .beneficiary-directory__table .taxpay-unified-table tbody tr[data-selected="true"] td {
   background:transparent;
 }

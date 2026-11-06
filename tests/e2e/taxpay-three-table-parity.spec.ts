@@ -60,7 +60,11 @@ for(const language of ['en','bn'] as const){
         await expect(row.getByRole('button',{name:/বিস্তারিত:|Details for/})).toBeVisible();
       }
       if(view==='beneficiaries'&&desktop)await expect(row.locator('td')).toHaveCount(4);
-      if(view==='beneficiaries'&&!desktop)await expect(row).toContainText(language==='bn'?'টিআইএন':'TIN');
+      if(view==='beneficiaries'&&!desktop){
+        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
+        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('012345678901');
+        await expect(row).not.toContainText(language==='bn'?'টিআইএন:':'TIN:');
+      }
       if(!desktop&&view==='ledger'){
         const nested=await row.locator('button').first().evaluate(element=>({
           borderTopWidth:getComputedStyle(element).borderTopWidth,
