@@ -72,7 +72,7 @@ test('a signed-in account returning to public home sees notification and profile
   await page.getByLabel('User ID').fill('user1');
   await page.getByLabel('Password',{exact:true}).fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.locator('.taxpayer-reference-brand').click();
   await expect(page).toHaveURL(/action=landing/);
   const header=page.locator('.public-home-header');

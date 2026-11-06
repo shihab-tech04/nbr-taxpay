@@ -35,7 +35,7 @@ test('root is a public information hub with a header Login and no payment action
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByText('Recognized TDS / AIT')).toBeVisible();
   await expect(page.getByText(/verified liability and tax credit not connected/i)).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
@@ -48,7 +48,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
   await expect(page.getByText(/স্বীকৃত টিডিএস \/ এআইটি/)).toBeVisible();
   await expect(page.getByText(/যাচাইকৃত করদায় ও ক্রেডিট সংযুক্ত নয়/)).toHaveCount(0);
   const width=await page.evaluate(()=>document.documentElement.scrollWidth);
@@ -92,15 +92,15 @@ test('public mobile navigation reuses the taxpayer dock with public-only routes 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
   await expect(page.getByText('৳ 47,400')).toHaveCount(0);
   await expect(page.getByText('PAID & SCROLLED')).toHaveCount(0);
   await switchTaxpayerToBangla(page);
-  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
 });
 
 test('certificate previews stay non-official, match the selected type and localize in Bengali',async({page},testInfo)=>{

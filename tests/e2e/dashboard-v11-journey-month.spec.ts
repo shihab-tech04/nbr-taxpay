@@ -6,8 +6,8 @@ test('dashboard month bar opens exact calendar month and preserved category',asy
   await page.goto(preview);
   const summary=page.getByRole('region',{name:'Financial summary'});
   await expect(summary.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
-  const review=page.getByRole('heading',{name:'Needs review'});
-  const charts=page.getByRole('heading',{name:'Tax coverage'});
+  const review=page.getByRole('heading',{name:'What needs your attention'});
+  const charts=page.getByRole('heading',{name:'How your tax is covered'});
   const order=await page.evaluate(()=>({
     review:document.querySelector('#taxpayer-attention-title')?.getBoundingClientRect().top,
     chart:document.querySelector('#taxpayer-coverage-title')?.getBoundingClientRect().top,

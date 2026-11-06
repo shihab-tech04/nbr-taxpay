@@ -54,13 +54,13 @@ test('monthly chart renders only recorded bars, supports Tab focus and routes to
   await expect(page.getByText('DEMO-PAY-01').filter({visible:true}).first()).toBeVisible();
 });
 
-test('desktop navigation consolidates duplicate Home/Tax summary and groups account routes',async({page},info)=>{
+test('desktop navigation consolidates duplicate Overview/Tax summary and groups account routes',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop-only rail');
   await page.setViewportSize({width:1600,height:900});
   await page.goto(dashboard);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   await expect(rail).toBeVisible();
-  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCount(1);
+  await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCount(1);
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
   const account=rail.locator('.taxpayer-reference-rail-bottom');

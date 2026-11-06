@@ -21,5 +21,5 @@ test('login popup preserves Bengali interface and returns to taxpayer dashboard'
   await dialog.getByRole('button',{name:'সাইন ইন'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
 });

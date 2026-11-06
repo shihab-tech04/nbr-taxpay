@@ -39,7 +39,7 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);

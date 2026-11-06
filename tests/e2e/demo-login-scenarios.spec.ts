@@ -21,7 +21,7 @@ test('all ten matching User ID and password pairs open their own account views',
    await page.getByRole('button',{name:'Sign In',exact:true}).click();
    await expect(page).toHaveURL(/action=taxpayer_home/);
    await expect(page).not.toHaveURL(/demoUser=/);
-   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
    expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user'+n);
  }
  expect([...authorizationActors].sort()).toEqual(Array.from({length:10},(_,i)=>`user${i+1}`).sort());
@@ -34,7 +34,7 @@ test('legacy scenario URLs never reveal fictitious accounts or trigger hosted se
  page.on('request',request=>{if(new URL(request.url()).hostname.endsWith('.supabase.co')) backendCalls.push(request.url());});
  for(let n=1;n<=10;n++){
    await page.goto('/?action=taxpayer_home&demoUser=user'+n);
-   await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
    await expect(page.getByText('Demo scenario',{exact:false})).toHaveCount(0);
    await expect(page.getByText('Example records; no taxpayer account is connected.')).toHaveCount(0);
    await expect(page.getByText('DEMO-TIN-00'+n,{exact:false})).toHaveCount(0);
@@ -64,15 +64,15 @@ test('User 1 login reveals both dashboard phases and retains them after refresh'
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page).not.toHaveURL(/demoUser=/);
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Needs review'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'By assessment year'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Current tax position'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'What needs your attention'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By tax year'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Already covered'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax summary for this year'})).toBeVisible();
   await expect(page.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
-  await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('৳ 25,000');
+  await expect(page.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 25,000');
   await page.reload();
-  await expect(page.getByRole('heading',{name:'How your credits are made up'})).toBeVisible();
-  await expect(page.getByRole('region',{name:'Current tax position'})).toContainText('৳ 25,000');
+  await expect(page.getByRole('heading',{name:'Already covered'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 25,000');
 });
 

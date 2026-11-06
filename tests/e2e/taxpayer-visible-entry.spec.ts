@@ -7,14 +7,14 @@ test('default taxpayer entry exposes the fully designed interactive dashboard', 
   await example.click();
   await expect(page).toHaveURL(/action=taxpayer_home&demoUser=user1/);
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Tax coverage' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'How your tax is covered' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Monthly activity' })).toBeVisible();
 });
 
 test('ordinary taxpayer dashboard leads with recorded category totals, not invented credits', async ({ page }) => {
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   const metrics = page.getByRole('region', { name: 'Payment records summary' });
   await expect(metrics).toContainText('Recorded income tax');
   await expect(metrics).toContainText('৳ 25,000');
@@ -34,5 +34,5 @@ test('Bengali demo entry preserves language when moving to the interactive view'
   await example.click();
   await expect(page).toHaveURL(/action=taxpayer_home&demoUser=user1&lang=bn/);
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'ড্যাশবোর্ড সারসংক্ষেপ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'সংক্ষিপ্ত বিবরণ' })).toBeVisible();
 });

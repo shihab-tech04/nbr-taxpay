@@ -256,14 +256,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       </div>}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ');
+  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
   const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
     {label:tr('Advance tax','অগ্রিম কর'),value:totals.ait,color:'var(--color-taxpay-secondary)'},
     {label:tr('Direct payment','সরাসরি পেমেন্ট'),value:totals.direct,color:'var(--color-taxpay-dark)'},
-    {label:tr('Remaining','অবশিষ্ট'),value:totals.outstanding,color:'var(--color-taxpay-accent)'}
+    {label:tr('Still remaining','এখনও বাকি কর'),value:totals.outstanding,color:'var(--color-taxpay-accent)'}
   ];
   const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const cats:Kind[]=['income','tds','ait','travel'];
@@ -296,20 +296,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const monthTotal=monthValues.reduce((total,entry)=>total+entry,0);
   const overview=<>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}>
-      {summaryCard('Income tax liability','আয়কর দায়',money(totals.liability),
+      {summaryCard('Total tax','মোট আয়কর',money(totals.liability),
         'Starting liability used for this tax year.','এই করবর্ষের প্রাথমিক করদায়।')}
-      {summaryCard('TDS & advance tax','উৎসে কর ও অগ্রিম কর',money(totals.tds+totals.ait),
-        'Posted TDS and advance-tax amounts only; unmatched entries are excluded.','শুধু পোস্টকৃত উৎসে কর ও অগ্রিম কর; অমিল লেনদেন বাদ।')}
-      {summaryCard('Direct payments','সরাসরি পরিশোধ',money(totals.direct),
+      {summaryCard('Tax already deducted or paid early','উৎসে কাটা বা অগ্রিম পরিশোধিত কর',money(totals.tds+totals.ait),
+        'Only posted amounts for tax taken from income or paid in advance are counted; unmatched entries are excluded.','শুধু নথিভুক্ত উৎসে কাটা বা অগ্রিম পরিশোধিত কর গণনা করা হয়; অমিল লেনদেন বাদ।')}
+      {summaryCard('Income tax paid directly','সরাসরি পরিশোধিত আয়কর',money(totals.direct),
         'Posted payments only. Pending, failed and reversed attempts are excluded.','শুধু পোস্টকৃত পরিশোধ; অপেক্ষমাণ, ব্যর্থ ও বাতিল লেনদেন বাদ।')}
-      {summaryCard('Remaining balance','অবশিষ্ট দায়',money(totals.outstanding),
+      {summaryCard('Still remaining','এখনও বাকি কর',money(totals.outstanding),
         'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।',true)}
     </section>
     <section className={panel+' taxpayer-dashboard-attention'} aria-labelledby="taxpayer-attention-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h2 id="taxpayer-attention-title" className="text-base font-semibold">{tr('Needs review','পর্যালোচনা প্রয়োজন')}</h2>
-          {info(tr('Needs review','পর্যালোচনা প্রয়োজন'),
+          <h2 id="taxpayer-attention-title" className="text-base font-semibold">{tr('What needs your attention','যে বিষয়ে খেয়াল রাখা দরকার')}</h2>
+          {info(tr('What needs your attention','যে বিষয়ে খেয়াল রাখা দরকার'),
             'Pending payments, failed or reversed attempts, unmatched withholding and unresolved requests do not count as credited payments.','অপেক্ষমাণ, ব্যর্থ, বাতিল, অমিল বা অনিষ্পন্ন আবেদন ক্রেডিট হিসেবে গণনা করা হয় না।')}
         </div>
         {view('corrections','Review exceptions','ব্যতিক্রম দেখুন')}
@@ -332,15 +332,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(290px,1fr)_minmax(0,1.65fr)]">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
-          <h2 id="taxpayer-coverage-title" className="text-base font-semibold">{tr('Tax coverage','করদায়ের বিভাজন')}</h2>
-          {info(tr('Tax coverage','করদায়ের বিভাজন'),
+          <h2 id="taxpayer-coverage-title" className="text-base font-semibold">{tr('How your tax is covered','আপনার কর কীভাবে সমন্বিত হয়')}</h2>
+          {info(tr('How your tax is covered','আপনার কর কীভাবে সমন্বিত হয়'),
             'Distribution between TDS, advance tax, direct payments and remaining balance.','উৎসে কর, অগ্রিম কর, সরাসরি পরিশোধ ও অবশিষ্ট দায়ের বিভাজন।')}
         </div>
         <div className="relative mx-auto my-5 h-48 w-48 rounded-full sm:h-52 sm:w-52" role="img"
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
           <div className="absolute inset-[43px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
-            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Applied','সমন্বিত'):coveredBreakdown[selectedCoverage].label}</p>
+            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Already covered','ইতোমধ্যে সমন্বিত কর'):coveredBreakdown[selectedCoverage].label}</p>
             <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-2xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
           </div>
         </div>
@@ -408,12 +408,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     <section className={panel} aria-labelledby="taxpayer-year-comparison-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="taxpayer-year-comparison-title" className="text-base font-semibold">{tr('By assessment year','করবর্ষ অনুযায়ী')}</h2>
+          <h2 id="taxpayer-year-comparison-title" className="text-base font-semibold">{tr('By tax year','করবর্ষ অনুযায়ী')}</h2>
           <p className="mt-1 text-sm text-taxpay-muted">{tr('Compare recorded credits and remaining balances across years.','করবর্ষ অনুযায়ী নথিভুক্ত ক্রেডিট ও অবশিষ্ট দায় তুলনা করুন।')}</p>
         </div>
-        {view('ledger','Review tax ledger','কর লেজার দেখুন')}
+        {view('ledger','Check tax ledger','কর লেজার দেখুন')}
       </div>
-      <div className="taxpay-table-viewport mt-4" role="region" aria-label={tr('Assessment-year tax position','করবর্ষভিত্তিক কর অবস্থান')} tabIndex={0}>
+      <div className="taxpay-table-viewport mt-4" role="region" aria-label={tr('Tax summary by year','করবর্ষ অনুযায়ী করের সারসংক্ষেপ')} tabIndex={0}>
         <TaxPayUnifiedTable className="taxpay-unified-table w-full min-w-[660px] text-left text-sm">
           <thead className="bg-taxpay-background text-taxpay-muted"><tr>
             <th scope="col" className="px-3 py-3 font-medium">{tr('Year','করবর্ষ')}</th>
@@ -442,7 +442,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <p className="mt-3 text-xs text-taxpay-muted">{tr('Only posted income tax, TDS and advance tax reduce the displayed balance. Pending, reversed and travel tax are excluded.','শুধু নথিভুক্ত আয়কর, উৎসে কর ও অগ্রিম কর অবশিষ্ট দায় থেকে বাদ যায়। অপেক্ষমাণ, প্রত্যাবর্তিত ও ভ্রমণ কর বাদ।')}</p>
       <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-2">
         <section className="min-w-0 rounded-xl border border-taxpay-border bg-taxpay-background p-4" aria-labelledby="taxpayer-credit-composition-title">
-          <h3 id="taxpayer-credit-composition-title" className="text-base font-semibold text-taxpay-text">{tr('How your credits are made up','আপনার ক্রেডিট কীভাবে গঠিত')}</h3>
+          <h3 id="taxpayer-credit-composition-title" className="text-base font-semibold text-taxpay-text">{tr('Already covered','ইতোমধ্যে সমন্বিত কর')}</h3>
           <p className="mt-1 text-xs text-taxpay-muted">{tr('Posted credits for the selected assessment year','নির্বাচিত করবর্ষের নথিভুক্ত ক্রেডিট')} · {year}</p>
           <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-taxpay-border" role="img"
             aria-label={tr('Posted credit composition','নথিভুক্ত ক্রেডিটের বিভাজন')+': '+tr('TDS','উৎসে কর')+' '+money(totals.tds)+', '+tr('Advance tax','অগ্রিম কর')+' '+money(totals.ait)+', '+tr('Direct payments','সরাসরি পরিশোধ')+' '+money(totals.direct)}>
@@ -463,17 +463,17 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
                 <th scope="row" className="py-2 text-left font-normal text-taxpay-text"><span aria-hidden="true" className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{backgroundColor:component.color}}/>{component.label}</th>
                 <td className="py-2 text-right font-semibold tabular-nums">{money(component.value)}</td>
               </tr>)}
-              <tr><th scope="row" className="pt-3 text-left font-semibold">{tr('Total applied credits','মোট সমন্বিত ক্রেডিট')}</th><td className="pt-3 text-right font-semibold tabular-nums">{money(totals.applied)}</td></tr>
+              <tr><th scope="row" className="pt-3 text-left font-semibold">{tr('Total already covered','মোট ইতোমধ্যে সমন্বিত কর')}</th><td className="pt-3 text-right font-semibold tabular-nums">{money(totals.applied)}</td></tr>
             </tbody>
           </TaxPayUnifiedTable>
         </section>
         <section className="min-w-0 rounded-xl border border-taxpay-border bg-taxpay-surface p-4" aria-labelledby="taxpayer-current-position-title">
-          <h3 id="taxpayer-current-position-title" className="text-base font-semibold text-taxpay-text">{tr('Current tax position','বর্তমান কর অবস্থান')}</h3>
+          <h3 id="taxpayer-current-position-title" className="text-base font-semibold text-taxpay-text">{tr('Tax summary for this year','এই করবর্ষের সারসংক্ষেপ')}</h3>
           <p className="mt-1 text-xs text-taxpay-muted">{tr('Selected assessment year','নির্বাচিত করবর্ষ')} · {year}</p>
           <dl className="mt-3 divide-y divide-taxpay-border text-sm">
-            <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Income tax liability','আয়কর দায়')}</dt><dd className="font-semibold tabular-nums">{money(totals.liability)}</dd></div>
-            <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Posted credits','নথিভুক্ত ক্রেডিট')}</dt><dd className="font-semibold tabular-nums">{money(totals.applied)}</dd></div>
-            <div className="flex items-center justify-between gap-3 py-2"><dt className="font-semibold text-taxpay-text">{tr('Remaining balance','অবশিষ্ট দায়')}</dt><dd className="text-lg font-semibold tabular-nums text-taxpay-primary">{money(totals.outstanding)}</dd></div>
+            <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Total tax','মোট আয়কর')}</dt><dd className="font-semibold tabular-nums">{money(totals.liability)}</dd></div>
+            <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Already covered','ইতোমধ্যে সমন্বিত কর')}</dt><dd className="font-semibold tabular-nums">{money(totals.applied)}</dd></div>
+            <div className="flex items-center justify-between gap-3 py-2"><dt className="font-semibold text-taxpay-text">{tr('Still remaining','এখনও বাকি কর')}</dt><dd className="text-lg font-semibold tabular-nums text-taxpay-primary">{money(totals.outstanding)}</dd></div>
             <div className="flex items-center justify-between gap-3 py-2"><dt className="text-taxpay-muted">{tr('Travel tax recorded separately','ভ্রমণ কর পৃথকভাবে নথিভুক্ত')}</dt><dd className="font-semibold tabular-nums">{money(totals.travel)}</dd></div>
           </dl>
           <p className="mt-3 text-xs leading-5 text-taxpay-muted">{tr('Pending payments, failed attempts and unmatched withholding do not reduce the remaining balance. Refund inquiries are not approved refunds.','অপেক্ষমাণ পেমেন্ট, ব্যর্থ চেষ্টা ও অমিল উৎসে কর অবশিষ্ট দায় কমায় না। ফেরতের আবেদন অনুমোদিত ফেরত নয়।')}</p>

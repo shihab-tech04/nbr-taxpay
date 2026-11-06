@@ -163,9 +163,9 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await expect(pay).toBeVisible();
   await expect(pay).toContainText('Pay Tax');
   await expect(page.locator('.citizen-pay')).toBeHidden();
-  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('font-size','16px');
-  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('min-height','44px');
-  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
+  await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('font-size','16px');
+  await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('min-height','44px');
+  await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('box-shadow','none');
   await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   const bottom=rail.locator('.taxpayer-reference-rail-bottom');
@@ -254,7 +254,7 @@ test('taxpayer mobile menu matches the compact desktop destinations and keeps ex
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const destinations=[
-    ['Home','taxpayer_home'],['Activity','history'],['Tax Ledger','ledger'],
+    ['Overview','taxpayer_home'],['Activity','history'],['Tax Ledger','ledger'],
     ['Notifications','account_notifications'],['Profile','account_profile']
   ] as const;
   for(const [label,route] of destinations){
@@ -286,9 +286,9 @@ test('a sample taxpayer preview restores only its own browser-history entry',asy
   await page.goto('/?action=taxpayer_home');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   // The preview is not account authentication or a transferable URL credential.
   await page.goto('/?action=ledger');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();

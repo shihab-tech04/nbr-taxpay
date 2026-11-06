@@ -8,7 +8,7 @@ test('Anonymous fictional payment entry requires authenticated profile before an
    await route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({message:'Protected endpoint'})});
  });
  await page.goto('/?action=taxpayer_home&demoUser=user1');
- await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
  await page.getByRole('button',{name:'Open transaction history'}).click();
  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);

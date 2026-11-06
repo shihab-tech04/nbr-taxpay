@@ -7,7 +7,7 @@ const privateRoutes={
   dashboard: {kind:'home',button:''},
   wizard: {kind:'pay',button:'Pay — select payment type'},
   history: {kind:'button',button:'Open transaction history'},
-  ledger: {kind:'button',button:'Review tax ledger'},
+  ledger: {kind:'button',button:'Check tax ledger'},
   journey: {kind:'button',button:'Full payment journey'},
   certificates: {kind:'activity-tab',button:'Receipts & certificates'},
   corrections: {kind:'activity-tab',button:'Issues & corrections'},

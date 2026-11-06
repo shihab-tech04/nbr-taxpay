@@ -13,7 +13,7 @@ const exactReference = {
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
   const enter = page.getByRole('button', { name: 'Explore taxpayer workspace' });
-  const dashboard = page.getByRole('heading', { name: 'Dashboard summary' });
+  const dashboard = page.getByRole('heading', { name: 'Overview' });
   await expect(enter.or(dashboard).first()).toBeVisible();
   if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
@@ -60,12 +60,12 @@ test('reference desktop rail preserves contextual demo routes and selected state
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
-  await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveAttribute('aria-current','page');
   await rail.getByRole('button',{name:'Beneficiaries',exact:true}).click();
   await expect(rail.getByRole('button',{name:'Beneficiaries',exact:true})).toHaveAttribute('aria-current','page');
   await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Manage taxpayer authorizations'})).toHaveCount(0);
-  await rail.getByRole('button',{name:'Home',exact:true}).click();
+  await rail.getByRole('button',{name:'Overview',exact:true}).click();
   const main = page.locator('main');
   expect(await main.evaluate(el => Math.round(el.getBoundingClientRect().left))).toBe(250);
   await page.screenshot({path:'test-results/screenshots/taxpayer-reference-desktop-1600.png',fullPage:false});
@@ -98,10 +98,10 @@ test('approved desktop rail adapts between 901px and 1439px without changing 144
       'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
     await expect(page.locator('.citizen-header')).toBeHidden();
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
-    await expect(rail.getByRole('button',{name:'Home',exact:true}))
+    await expect(rail.getByRole('button',{name:'Overview',exact:true}))
       .toHaveCSS('font-size', width < 1200 ? '14px' : '16px');
     if (width < 1200) await expect(rail).toHaveCSS('padding-left','10px');
-    await expect(rail.getByRole('button',{name:'Home',exact:true})).toHaveCSS('box-shadow','none');
+    await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('box-shadow','none');
     await expect(page.locator('.citizen-pay')).toBeHidden();
     const overflow=await rail.evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(overflow,`sidebar overflow at ${width}px`).toBeLessThanOrEqual(1);
@@ -132,7 +132,7 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
     } else await page.getByRole('button',{name:'বাংলা'}).first().click();
-    await expect(page.getByRole('heading',{name:'ড্যাশবোর্ড সারসংক্ষেপ'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-reference-home-bn-'+width+'.png',fullPage:false});
     if(width<=900) {
       await page.getByRole('button',{name:'মেনু খুলুন'}).click();
@@ -184,7 +184,7 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
       expect(item.color).not.toBe('rgb(255, 255, 255)');
       expect(item.height).toBeGreaterThanOrEqual(44);
     }
-    await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(nav.getByRole('button',{name:'Overview',exact:true})).toHaveAttribute('aria-current','page');
     await expect(nav.getByRole('button',{name:'Notifications'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Profile',exact:true})).toBeVisible();

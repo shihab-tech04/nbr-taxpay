@@ -7,7 +7,7 @@ import { SiteLogo } from './SiteLogo';
 type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentType<{size?: number; 'aria-hidden'?: boolean}> };
 
 const links: RailLink[] = [
-  { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা', Icon: Home },
+  { route: 'taxpayer_home', en: 'Overview', bn: 'সংক্ষিপ্ত বিবরণ', Icon: Home },
   { route: 'beneficiaries', en: 'Beneficiaries', bn: 'উপকারভোগী', Icon: UsersRound },
   { route: 'history', en: 'Activity', bn: 'লেনদেন', Icon: Activity },
   { route: 'ledger', en: 'Tax ledger', bn: 'কর লেজার', Icon: BookOpen },
