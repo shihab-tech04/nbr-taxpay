@@ -1043,3 +1043,57 @@ table.taxpay-unified-table {
     grid-column: auto;
   }
 }
+
+/* Four-column desktop density: keep status and Details permanently visible at
+ * the common 1280px taxpayer workspace; retain reference/type/date in Payment. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table.taxpayer-convay-four-column {
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table.taxpayer-convay-four-column :is(th,td) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table.taxpayer-convay-four-column :is(th,td):nth-child(1) {
+  width: 48%;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table.taxpayer-convay-four-column :is(th,td):nth-child(2) {
+  width: 17%;
+  text-align: right;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table.taxpayer-convay-four-column :is(th,td):nth-child(3) {
+  width: 21%;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table.taxpayer-convay-four-column :is(th,td):nth-child(4) {
+  width: 14%;
+  white-space: normal;
+  text-align: right;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-payment-cell {
+  min-width: 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-payment-cell__meta {
+  margin-top: 4px;
+  color: var(--taxpay-table-muted, #5f6b7a);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-four-column .taxpayer-transaction-reference {
+  margin-top: 3px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-four-column .taxpayer-transaction-row__status > span {
+  display: inline-flex;
+  max-width: 100%;
+  white-space: normal;
+}
+@media (min-width: 768px) and (max-width: 1050px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-convay-four-column {
+    display: none;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel ul[data-testid="taxpayer-transaction-mobile-cards"] {
+    display: grid;
+    gap: 10px;
+  }
+}
