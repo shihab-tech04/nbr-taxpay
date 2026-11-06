@@ -217,6 +217,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
   );
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
+  // Explicit TIN preview confirmation is specific to walk-in Other Tax.
+  const [confirmedWalkInTins, setConfirmedWalkInTins] = useState<Record<string, string>>({});
   const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
@@ -271,6 +273,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
   const simpleOwnOtherTax = otherBatch && forSelf === true && !signedInAccount;
   const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
+  const requireWalkInConfirmation = otherBatch && forSelf === false && !signedInAccount;
+  const walkInTaxpayersConfirmed = !requireWalkInConfirmation ||
+    batchTaxpayers.every(person => Boolean(person.tin) && confirmedWalkInTins[person.id] === person.tin);
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
@@ -292,6 +297,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
     if (!tinValid) return false;
     if (otherBatch) {
+      if (!walkInTaxpayersConfirmed) return false;
       const seenTins = new Set<string>();
       for (const person of batchTaxpayers) {
         const valid = person.id === 'primary' && ownAccountTax
@@ -565,9 +571,22 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={!singleSelf && forSelf === false}
                 additional={additionalTaxpayers} allocations={otherTaxLines}
                 invalidId={invalidBatchTaxpayerId} tinError={isFieldInvalid('tin') ? errorMessage : undefined}
+                requireConfirmation={requireWalkInConfirmation}
+                confirmedTins={confirmedWalkInTins}
+                onConfirmTin={(id, value) => setConfirmedWalkInTins(current => {
+                  if (!value) {
+                    const next = { ...current };
+                    delete next[id];
+                    return next;
+                  }
+                  return { ...current, [id]: value };
+                })}
                 onPrimaryTin={value => { clearReferenceSelection(); setLastSearchedTin(null); setOtherTaxpayerName(''); setAuthorizedTaxpayerId(null); setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>additionalTaxpayers.some(person=>person.tin===knownTin)))); setTin(value); }}
                 onPrimarySearch={searchTin} onPrimaryName={setOtherTaxpayerName} allowSyntheticDemoTin={allowSyntheticDemoTin} onAdditional={people => {
                   setAdditionalTaxpayers(people);
+                  setConfirmedWalkInTins(current => Object.fromEntries(
+                    Object.entries(current).filter(([id, tin]) =>
+                      id === 'primary' ? taxpayerTin === tin : people.some(person => person.id === id && person.tin === tin))));
                   setAuthorizedTaxpayerIds(current=>Object.fromEntries(Object.entries(current).filter(([knownTin])=>
                     knownTin===taxpayerTin||people.some(person=>person.tin===knownTin))));
                 }}
@@ -591,6 +610,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch) {
+      if (!walkInTaxpayersConfirmed) {
+        setValidationError(language === 'bn'
+          ? 'প্রতিটি করদাতার টিআইএন খুঁজে করদাতা যোগ করুন।'
+          : 'Search and add each taxpayer before continuing.', 'tin');
+        return false;
+      }
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
         const tinValid = person.id === 'primary' && ownAccountTax
