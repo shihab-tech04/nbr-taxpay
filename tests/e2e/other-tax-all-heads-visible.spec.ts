@@ -15,7 +15,7 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin"]').fill('222222222222');
-  await dialog.getByTestId('other-tax-taxpayer').getByRole('button',{name:'Search'}).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button',{name: 'Search', exact: true}).click();
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
