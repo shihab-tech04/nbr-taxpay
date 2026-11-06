@@ -12,6 +12,19 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   await expect(panel.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(workspace.getByText('Payment & activity count')).toHaveCount(0);
   await expect(panel.getByText('Records: 14')).toBeVisible();
+  const toolbar=panel.getByTestId('convay-table-toolbar');
+  const filters=panel.getByTestId('convay-table-filters');
+  await expect(toolbar).toBeVisible();
+  await expect(filters).toBeVisible();
+  await expect(toolbar.getByRole('button',{name:'Export CSV'})).toBeVisible();
+  const visuals=await Promise.all([toolbar,filters].map(element=>element.evaluate(node=>{
+    const box=node.getBoundingClientRect();
+    const style=getComputedStyle(node);
+    return {y:box.y,bottom:box.bottom,background:style.backgroundColor,borderBottom:style.borderBottomWidth};
+  })));
+  expect(visuals[0].bottom).toBeLessThanOrEqual(visuals[1].y+2);
+  expect(visuals[0].background).not.toBe(visuals[1].background);
+  expect(visuals[0].borderBottom).toBe('1px');
   await expect(rows).toHaveCount(10);
   await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveText(['Payment','Reference','Payment type','Date','Amount','Status','Actions']);
   await expect(panel.getByRole('navigation',{name:'Page navigation'})).toBeVisible();
