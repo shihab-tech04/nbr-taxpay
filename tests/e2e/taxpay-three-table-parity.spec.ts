@@ -52,8 +52,8 @@ for(const language of ['en','bn'] as const){
         :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
       if(view==='history'&&desktop){
-        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
-        await expect(row.locator('td')).toHaveCount(7);
+        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(4);
+        await expect(row.locator('td')).toHaveCount(4);
       }
       if(view==='history'&&!desktop){
         await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
