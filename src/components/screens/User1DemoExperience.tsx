@@ -712,7 +712,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {route==='history'&&activePreviewSession()?.profileId==='user1'&&<LegacyPaymentRecovery language={language}/>}
-    {route==='history'&&activePreviewSession()?.profileId==='user1'&&<RecoveredStoryHistory profileId="user1" language={language}/>}
+    {route==='history'&&activePreviewSession()?.profileId==='user1'&&<RecoveredStoryHistory profileId="user1" language={language} skipDemoRegister/>}
     {route==='history'&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}
