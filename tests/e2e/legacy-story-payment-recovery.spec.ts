@@ -69,7 +69,21 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toBeVisible();
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
   await expect.poll(()=>recovered).toBe(true);
-  await expect(page.getByTestId('recovered-story-payments')).toContainText(payment);
+  await expect(page).toHaveURL(/action=history/);
+  // Include the actual post-refresh content in CI failures so a missing
+  // persisted read can be distinguished from a route or session reset.
+  await expect.poll(async()=>{
+    const visible=await page.getByTestId('recovered-story-payments').allTextContents();
+    if(visible.some(text=>text.includes(payment)))return true;
+    const alerts=await page.locator('[role="alert"]').allTextContents();
+    const recoverySections=await page.getByRole('heading',{name:/Earlier saved payment|আগের সংরক্ষিত/}).allTextContents();
+    console.log('Recovery readback probe:',JSON.stringify({
+      url:page.url(),alerts,recoverySections,
+      profile:await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user')),
+      visible:visible.map(text=>text.slice(0,100))
+    }));
+    return false;
+  },{timeout:12000}).toBe(true);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBeNull();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toHaveCount(0);
 });
