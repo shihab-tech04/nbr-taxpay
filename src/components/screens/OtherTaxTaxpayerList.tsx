@@ -51,8 +51,10 @@ export function OtherTaxTaxpayerList({
   const duplicateTin = (tin: string, id: string) =>
     Boolean(tin) && (id !== 'primary' && primaryTin === tin ||
       additional.some(person => person.id !== id && person.tin === tin));
+  // Name is optional in the existing Other Tax contract. A valid TIN can
+  // be explicitly reviewed even when the sample directory has no name.
   const canConfirm = (id: string, tin: string) =>
-    canSearch(tin) && !duplicateTin(tin, id) && Boolean(lookupSampleTaxpayer(tin));
+    canSearch(tin) && !duplicateTin(tin, id);
   const confirm = (id: string, tin: string) => {
     if (!canConfirm(id, tin)) return;
     onConfirmTin?.(id, tin);
@@ -102,8 +104,9 @@ export function OtherTaxTaxpayerList({
           status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
             ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
       </div>
-      {requireConfirmation && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin) && !primaryConfirmed &&
+      {requireConfirmation && Boolean(primaryTin) && searchedTins.primary === primaryTin && !primaryConfirmed &&
         <div className="taxpay-taxpayer-row__confirm">
+          <p>{bn ? 'খুঁজে পাওয়া টিআইএন যাচাই করে এই করদাতাকে যোগ করুন।' : 'Review the searched TIN and add this taxpayer.'}</p>
           <button type="button" className="taxpay-taxpayer-row__confirm-button"
             disabled={!canConfirm('primary', primaryTin)} onClick={() => confirm('primary', primaryTin)}>
             <Plus size={18} aria-hidden="true" />{confirmLabel}
@@ -147,9 +150,10 @@ export function OtherTaxTaxpayerList({
             status={Boolean(person.tin) && searchedTins[person.id] === person.tin && !lookupSampleTaxpayer(person.tin)
               ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined} />
         </div>
-        {requireConfirmation && searchedTins[person.id] === person.tin && lookupSampleTaxpayer(person.tin) &&
+        {requireConfirmation && Boolean(person.tin) && searchedTins[person.id] === person.tin &&
           confirmedTins[person.id] !== person.tin &&
           <div className="taxpay-taxpayer-row__confirm">
+            <p>{bn ? 'খুঁজে পাওয়া টিআইএন যাচাই করে এই করদাতাকে যোগ করুন।' : 'Review the searched TIN and add this taxpayer.'}</p>
             <button type="button" className="taxpay-taxpayer-row__confirm-button"
               disabled={!canConfirm(person.id, person.tin)} onClick={() => confirm(person.id, person.tin)}>
               <Plus size={18} aria-hidden="true" />{confirmLabel}
