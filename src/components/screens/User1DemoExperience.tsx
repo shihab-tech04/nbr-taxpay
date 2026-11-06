@@ -210,18 +210,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       pagination={{page:currentHistoryPage,perPage:historyPerPage,total:filtered.length,onPageChange:setHistoryPage,
         labels:bn?{previous:'আগের পৃষ্ঠা',next:'পরের পৃষ্ঠা',showing:'দেখানো হচ্ছে',of:'মোট',records:'রেকর্ড',page:'পৃষ্ঠা'}:undefined}}
       ariaLabel={tr('Payment transactions','পেমেন্ট লেনদেন')}
-      className="taxpayer-transaction-table" testId="taxpayer-transaction-table"
+      className="taxpayer-transaction-table taxpayer-convay-four-column" testId="taxpayer-transaction-table"
       mobileTestId="taxpayer-transaction-mobile-cards"
       onViewRow={item=>setSelected(item)}
       columns={[
-        {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=>
-          <p className="taxpayer-transaction-row__title">{item.title}</p>},
-        {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
-          <span className="taxpayer-transaction-reference">{item.ref}</span>},
-        {key:'type',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:item=>
-          <span className="taxpayer-transaction-type">{tr(...labels[item.kind])}</span>},
-        {key:'date',header:tr('Date','তারিখ'),renderCell:item=>
-          <time dateTime={item.date} className="taxpayer-transaction-date">{formatDate(item.date)}</time>},
+        {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=><div className="taxpayer-convay-payment-cell">
+          <p className="taxpayer-transaction-row__title">{item.title}</p>
+          <p className="taxpayer-transaction-reference">{item.ref}</p>
+          <p className="taxpayer-convay-payment-cell__meta">{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
+        </div>},
         {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',
           cellClassName:'text-right tabular-nums',renderCell:item=>
           <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>},
