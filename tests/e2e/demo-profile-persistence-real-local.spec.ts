@@ -108,7 +108,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
         fetch(`${root}/notifications?sessionId=${encodeURIComponent(paymentSessionId)}`,{headers,cache:'no-store'}),
         fetch(`${root}/payments/${encodeURIComponent(paymentId)}?sessionId=${encodeURIComponent(paymentSessionId)}`,{headers,cache:'no-store'}),
       ];
-      return Promise.all(requests.map(async response=>({status:response.status,body:await response.json()})));
+      const responses=await Promise.all(requests);
+      return Promise.all(responses.map(async response=>({status:response.status,body:await response.json()})));
     },{apiUrl:api.origin,key,capability:firstProfile.capability,
       paymentSessionId:firstProfile.paymentSessionId,paymentId:payment.body.requestId});
     expect(profileReads[0].status,JSON.stringify(profileReads[0].body)).toBe(200);
