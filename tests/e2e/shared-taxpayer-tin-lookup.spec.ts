@@ -21,7 +21,7 @@ test('shared TIN/name card is used by normal guest payment, with lookup and clea
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
 });
 
-test('every additional Other Tax taxpayer uses the same stacked TIN/name and clear pattern', async ({ page }) => {
+test('every additional Other Tax taxpayer reveals a details review and keeps clear-input behavior', async ({ page }) => {
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -29,10 +29,11 @@ test('every additional Other Tax taxpayer uses the same stacked TIN/name and cle
   const list = dialog.getByTestId('other-tax-taxpayer-list');
   const primary = list.getByTestId('other-tax-primary-taxpayer');
   await expect(primary.getByTestId('shared-taxpayer-tin-lookup')).toHaveCount(1);
-  await expect(primary.locator('label[for="other-tax-primary-name"]')).toHaveText('Taxpayer name');
+  await expect(primary.locator('.tin-lookup__name')).toBeHidden();
   await primary.locator('#guest-tin').fill('111111111111');
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
+  await expect(primary.getByTestId('searched-taxpayer-card')).toContainText('User 1');
   await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
   await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await primary.getByRole('button', { name: 'Add taxpayer' }).click();
@@ -48,13 +49,9 @@ test('every additional Other Tax taxpayer uses the same stacked TIN/name and cle
   await additional.getByRole('button', { name: 'Clear TIN search' }).click();
   await expect(tin).toHaveValue('');
   await expect(additional.locator('input[id^="other-tax-name-"]')).toHaveValue('');
-  const geometry = await additional.evaluate(card => {
-    const tin = card.querySelector('input[id^="other-tax-tin-"]')!.getBoundingClientRect();
-    const name = card.querySelector('input[id^="other-tax-name-"]')!.getBoundingClientRect();
-    return { stacked: name.top > tin.bottom, overflow: card.scrollWidth - card.clientWidth };
-  });
-  expect(geometry.stacked).toBe(true);
-  expect(geometry.overflow).toBeLessThanOrEqual(2);
+  await expect(additional.locator('.tin-lookup__name')).toBeHidden();
+  const overflow = await additional.evaluate(card => card.scrollWidth - card.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(2);
 });
 
 test('a valid Other Tax TIN remains addable when the optional name lookup has no match', async ({ page }) => {

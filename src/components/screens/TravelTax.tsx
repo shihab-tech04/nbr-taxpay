@@ -1,7 +1,7 @@
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -418,6 +418,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             <div className="travel-flow__passport-row">
               <div className="travel-flow__field travel-flow__passport-input">
                 <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+                <div className="travel-flow__passport-entry">
                 <input id={'travel-passport-' + item.id} role="combobox" aria-autocomplete="list"
                   aria-controls={'travel-passport-suggestions-' + item.id}
                   aria-expanded={passportSuggestionsFor === item.id}
@@ -444,6 +445,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                     setPassportSuggestionsFor(alreadyAdded ? null : item.id);
                   }}
                   placeholder={tr('Select or enter a sample passport','একটি নমুনা পাসপোর্ট নির্বাচন বা লিখুন')}/>
+                {item.passport && <button type="button" className="travel-flow__passport-clear"
+                  aria-label={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
+                  title={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
+                  onClick={() => {
+                    changePassenger(item.id, {passport: '', name: '', birthDate: '', identitySource: 'PENDING'});
+                    setPassportSuggestionsFor(null);
+                    requestAnimationFrame(() => document.getElementById('travel-passport-' + item.id)?.focus());
+                  }}><X size={17} aria-hidden="true"/></button>}
+                </div>
                 {passportAlreadyAdded && <p className="travel-flow__inline-error" role="status"
                   id={'travel-passport-duplicate-' + item.id}>
                   {tr('Passport already added.', 'পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।')}
@@ -529,9 +539,19 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
           </> : <>
             <div className="travel-flow__field">
               <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
+              <div className="travel-flow__passport-entry">
               <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
                 onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
                 placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
+              {item.passport && <button type="button" className="travel-flow__passport-clear"
+                aria-label={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
+                title={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
+                onClick={() => {
+                  changePassenger(item.id, {passport: ''});
+                  setPassportSuggestionsFor(null);
+                  requestAnimationFrame(() => document.getElementById('travel-passport-' + item.id)?.focus());
+                }}><X size={17} aria-hidden="true"/></button>}
+              </div>
             </div>
           
             <div className="travel-flow__field">

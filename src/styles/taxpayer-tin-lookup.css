@@ -1,5 +1,6 @@
 /* Reusable approved TaxPay taxpayer-information card. No global navigation or officer styles. */
 .taxpayer-tin-lookup{display:grid;gap:14px;min-width:0;width:100%;font-family:inherit}
+.taxpayer-tin-lookup__field[hidden]{display:none}
 .taxpayer-tin-lookup--card{background:var(--color-taxpay-surface,#fff);border:1px solid #dce5f0;border-radius:10px;padding:14px}
 .taxpayer-tin-lookup__heading{margin:0;color:#172b4d;font-size:14px;font-weight:750;line-height:1.5}
 .taxpayer-tin-lookup__field{display:grid;align-content:start;gap:6px;min-width:0}
@@ -20,4 +21,21 @@
 .taxpayer-tin-lookup__field p[role="status"]{font-size:14px;margin:0}
 .taxpay-taxpayer-row__fields--shared{grid-template-columns:minmax(0,1fr)}
 .taxpay-taxpayer-row__fields--shared>.taxpayer-tin-lookup{min-width:0}
-@media(max-width:360px){.taxpayer-tin-lookup--card{padding:12px}.taxpayer-tin-lookup__search{min-width:88px;padding-inline:9px}.taxpayer-tin-lookup__search-row{gap:6px}}
+@media(max-width:360px){.taxpayer-tin-lookup__field[hidden]{display:none}
+.taxpayer-tin-lookup--card{padding:12px}.taxpayer-tin-lookup__search{min-width:88px;padding-inline:9px}.taxpayer-tin-lookup__search-row{gap:6px}}
+
+/* The Other Tax multi-taxpayer lookup adopts the Travel Tax compact combobox:
+   the suggestions overlay the content without changing modal/card height. */
+.taxpayer-tin-lookup__search-row:has(.taxpayer-tin-lookup__suggestions){position:relative;z-index:22}
+.taxpayer-tin-lookup__suggestions{position:absolute;z-index:23;top:calc(100% + 4px);left:0;right:0;
+  max-height:min(190px,30vh);overflow-y:auto;overscroll-behavior:contain;background:#fff;
+  border:1px solid #c7d4e7;border-radius:9px;box-shadow:0 12px 24px rgb(18 42 77 / 20%)}
+.taxpayer-tin-lookup__suggestions-heading,.taxpayer-tin-lookup__no-results{margin:0;padding:10px 12px;
+  font-size:13px;color:#526681}
+.taxpayer-tin-lookup__suggestions-heading{border-bottom:1px solid #e0e6ef}
+.taxpayer-tin-lookup__suggestions [role="option"]{display:flex;align-items:center;justify-content:space-between;
+  width:100%;min-height:40px;padding:9px 12px;text-align:left;border:0;border-bottom:1px solid #e0e6ef;
+  background:#fff;color:#172b4d;font:inherit;font-size:14px;cursor:pointer}
+.taxpayer-tin-lookup__suggestions [role="option"]:hover,
+.taxpayer-tin-lookup__suggestions [role="option"]:focus-visible{background:#edf4ff;outline-offset:-2px}
+.taxpayer-tin-lookup__no-results{color:#813040}

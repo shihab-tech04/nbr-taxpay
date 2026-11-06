@@ -438,3 +438,16 @@
 @media (max-width: 900px) {
   .payment-flow-embedded .payment-form-summary { max-height: min(45dvh, 440px); }
 }
+
+/* Travel Tax pattern, isolated to the Other Tax multi-taxpayer editor. */
+.taxpay-taxpayer-row:has(.taxpayer-tin-lookup__suggestions){position:relative;z-index:25}
+.taxpay-taxpayer-row__fields:has(.taxpay-taxpayer-row__identity-card){grid-template-columns:minmax(0,1fr);gap:14px}
+.taxpay-taxpayer-row__identity-card{min-width:0;display:grid;gap:14px;padding:16px;border:1px solid #d7e2f0;
+  border-radius:11px;background:#fff}
+.taxpay-taxpayer-row__identity-card h4{margin:0;color:#172b4d;font-size:15px;font-weight:650;line-height:1.5}
+.taxpay-taxpayer-row__identity-card .taxpay-taxpayer-row__summary{gap:12px 18px}
+.taxpay-taxpayer-row__identity-card .taxpay-taxpayer-row__confirm-add{margin-top:2px;padding-top:12px}
+.taxpay-taxpayer-row__identity-card .taxpay-taxpayer-row__add{margin:0;min-height:46px}
+.taxpay-taxpayer-list__add{background:#fff;border:1px solid var(--color-taxpay-primary,#085587);
+  color:var(--color-taxpay-primary,#085587);font-weight:650}
+.taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:var(--color-taxpay-primary,#085587)}
