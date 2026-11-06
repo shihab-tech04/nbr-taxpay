@@ -15,6 +15,7 @@ declare
   prelinked_session uuid:=gen_random_uuid();
   payment uuid:=gen_random_uuid();
   payment_key uuid:=gen_random_uuid();
+  active_authorization uuid:=gen_random_uuid();
   unowned_payment uuid:=gen_random_uuid();
   mixed_payment_a uuid:=gen_random_uuid();
   mixed_payment_b uuid:=gen_random_uuid();
@@ -37,6 +38,10 @@ begin
   h_a:=encode(extensions.digest(convert_to(a->>'capability','UTF8'),'sha256'),'hex');
   h_b:=encode(extensions.digest(convert_to(b->>'capability','UTF8'),'sha256'),'hex');
   h_c:=encode(extensions.digest(convert_to(c->>'capability','UTF8'),'sha256'),'hex');
+
+  insert into public.demo_authorization_requests(id,payer_id,taxpayer_id,status,confirmed_at)
+    values(active_authorization,'user1','user2','ACTIVE',now());
+  line_b:=jsonb_set(line_b,'{authorizationId}',to_jsonb(active_authorization::text));
 
   input_data:=jsonb_build_object(
     'origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',300,'sessionId',old_session,
