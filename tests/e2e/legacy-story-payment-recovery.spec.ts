@@ -33,7 +33,7 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
     route.fulfill({status:200,contentType:'application/json',body:'[]'}));
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?*',route=>
     route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[],"simulationOnly":true}'}));
-  await page.route('**/functions/v1/demo-story1-taxpay/payments*',async route=>{
+  await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
     const url=new URL(route.request().url());
     paymentRequests.push(url.pathname+url.search);
     const detail=url.pathname.includes('/payments/'+payment);
