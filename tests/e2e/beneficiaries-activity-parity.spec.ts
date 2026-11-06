@@ -87,17 +87,19 @@ for(const language of ['en','bn'] as const){
         mobileVisible:getComputedStyle(mobileCards).display!=='none'};
     });
     expect(layout.pageOverflow).toBe(false);
-    expect(layout.rowColumns).toBe(layout.width>767?4:1);
+    expect(layout.rowColumns).toBe(layout.width>767?2:1);
     expect(layout.headingVisible).toBe(layout.width>767);
     if(layout.width>767){
       await expect(directory.locator('table.taxpay-unified-table thead th')).toHaveText([
-        t('Beneficiary','উপকারভোগী'),t('TIN','টিআইএন'),
-        t('Tag / relationship','ট্যাগ / সম্পর্ক'),t('Actions','কার্যক্রম')
+        t('Beneficiary','উপকারভোগী'),t('Actions','কার্যক্রম')
       ]);
       expect(layout.mobileVisible).toBe(false);
-      // Each desktop column has its own heading; repeat neither "TIN:" nor "Tag:" in cells.
-      await expect(rows.first().locator('td').nth(1)).toHaveText('123456789012');
-      await expect(rows.first().locator('td').nth(2)).toHaveText('Neighbour');
+      // The approved identity is name · final tag on one line, bare TIN underneath.
+      const identity=rows.first().locator('.beneficiary-directory__person');
+      await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Shihab · Neighbour');
+      await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123456789012');
+      await expect(identity).not.toContainText(t('TIN','টিআইএন')+': ');
+      await expect(identity).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
       // At 1280px the complete Actions column, including Remove, must fit
       // without a hidden horizontal-scroll remainder.
       if(layout.width>=1180){
