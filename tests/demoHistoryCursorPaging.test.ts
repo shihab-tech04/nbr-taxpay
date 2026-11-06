@@ -47,10 +47,11 @@ test('full demo payment history always reads cursor SQL and retains stable detai
 test('cursor and compatibility endpoints scope payer and beneficiary data',()=>{
  const sql=readFileSync('supabase/migrations/20261106160000_taxpay_verified_recovery_and_history_scope.sql','utf8');
  const profileSql=readFileSync('supabase/migrations/20261106180000_taxpay_demo_profile_scoped_payment_access.sql','utf8');
+ const hardeningSql=readFileSync('supabase/migrations/20261106190000_taxpay_harden_demo_profile_session_access.sql','utf8');
  assert.match(sql,/p_page_size not between 1 and 100/);
  assert.match(sql,/\(x.created_at,x.id\)<\(p_before_created_at,p_before_id\)/);
  assert.match(sql,/order by x.created_at desc,x.id desc/);
- assert.match(profileSql,/revoke all on function public\.demo_story1_demo_history_page\(text,text,timestamptz,uuid,integer\)[\s\S]+?from public,anon,authenticated/);
+ assert.match(hardeningSql,/revoke all on function public\.demo_story1_demo_history_page\(text,text,timestamptz,uuid,integer\)[\s\S]+?from public,anon,authenticated/);
  assert.match(profileSql,/taxpay_demo_story1_history_page\(text,text,timestamptz,uuid,integer\)/);
  assert.match(profileSql,/grant execute on function public\.taxpay_demo_story1_history_page[\s\S]+?to service_role/);
  assert.match(sql,/line\.value->>'beneficiary'=p_actor/);
