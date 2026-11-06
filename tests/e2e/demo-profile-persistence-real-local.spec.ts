@@ -1,5 +1,6 @@
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
+import type {DemoUserId} from '../../src/data/demoUsers';
 
 /** Real browser + local Edge Function/Postgres only. Never use hosted credentials. */
 test('demo User ID retains nonempty lists, tagged beneficiary and language across sign-out, refresh and browsers',async({browser},info)=>{
@@ -11,13 +12,18 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing a hosted demo-profile persistence test.');
   const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
+  // Desktop and mobile projects run concurrently. Give each project a distinct
+  // pair of synthetic accounts so selected-list assertions cannot race, while
+  // the two browser contexts within each project still verify same-account sync.
+  const firstUser:DemoUserId=info.project.name.startsWith('mobile')?'user8':'user10';
+  const otherUser:DemoUserId=info.project.name.startsWith('mobile')?'user7':'user9';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
     const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
     contexts.push(context);
     return context;
   };
-  const login=async(page:Page,id:'user9'|'user10')=>{
+  const login=async(page:Page,id:DemoUserId)=>{
     await page.goto('/?action=taxpayer_login');
     await page.getByRole('textbox',{name:'User ID'}).fill(id);
     await page.getByLabel('Password',{exact:true}).fill(id);
@@ -46,7 +52,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
 
     const firstContext=await makeContext();
     const first=await firstContext.newPage();
-    await login(first,'user10');
+    await login(first,firstUser);
     const emptyLegacySession=randomUUID();
     await first.evaluate(id=>sessionStorage.setItem('taxpay-guest-simulation-session',id),emptyLegacySession);
     await first.goto('/?action=history');
@@ -79,10 +85,10 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(first.getByTestId('beneficiary-records')).toContainText(tin);
 
     const firstProfile=await first.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
-    expect(firstProfile?.profileId).toBe('user10');
-    const payment=await first.evaluate(async({apiUrl,key,capability,paymentSessionId,idempotencyKey,payerName})=>{
+    expect(firstProfile?.profileId).toBe(firstUser);
+    const payment=await first.evaluate(async({apiUrl,key,capability,paymentSessionId,idempotencyKey,payerName,profileId})=>{
       const data={origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,sessionId:paymentSessionId,idempotencyKey,
-        details:{payerId:'user10',payerName,lines:[{beneficiary:'user10',category:'TAX_WITH_RETURN',
+        details:{payerId:profileId,payerName,lines:[{beneficiary:profileId,category:'TAX_WITH_RETURN',
           assessmentYear:'2026-27',amountMinor:12345}]}};
       const response=await fetch(apiUrl+'/functions/v1/demo-story1-taxpay/payments',{
         method:'POST',headers:{apikey:key,'x-taxpay-guest-capability':capability,'content-type':'application/json'},
@@ -90,7 +96,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
       });
       return {status:response.status,body:await response.json()};
     },{apiUrl:api.origin,key,capability:firstProfile.capability,paymentSessionId:firstProfile.paymentSessionId,
-      idempotencyKey:randomUUID(),payerName:personName});
+      idempotencyKey:randomUUID(),payerName:personName,profileId:firstUser});
     // The local SQL row is deliberately absent from hosted TaxPay. Office must
     // reject that unverified source read, while the durable local payment and
     // its owner-scoped TaxPay activity remain available for this real-browser
@@ -133,7 +139,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
 
     const secondContext=await makeContext();
     const second=await secondContext.newPage();
-    await login(second,'user10');
+    await login(second,firstUser);
     await openBeneficiaries(second);
     await expect(second.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
     await expect(selectedListButton(second)).toContainText(listName);
@@ -152,7 +158,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
 
     const otherContext=await makeContext();
     const other=await otherContext.newPage();
-    await login(other,'user9');
+    await login(other,otherUser);
     await setLanguage(other,'en');
     await openBeneficiaries(other);
     await expect(other.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
@@ -174,7 +180,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     },{raw:api.origin,key,capability});
     expect(snapshot.status).toBe(200);
     expect(snapshot.body.success).toBe(true);
-    expect(snapshot.body.data.profileId).toBe('user10');
+    expect(snapshot.body.data.profileId).toBe(firstUser);
     expect(snapshot.body.data.settings.language).toBe('bn');
     expect(snapshot.body.data.settings.selectedListId).toBe(firstProfile.selectedListId);
     expect(snapshot.body.data.lists.some((list:{name:string})=>list.name===listName)).toBe(true);
@@ -189,7 +195,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
       return {status:response.status,body:await response.json()};
     },{raw:api.origin,key,capability:otherCapability});
     expect(otherSnapshot.status).toBe(200);
-    expect(otherSnapshot.body.data.profileId).toBe('user9');
+    expect(otherSnapshot.body.data.profileId).toBe(otherUser);
     expect(otherSnapshot.body.data.people.some((person:{tin:string})=>person.tin===tin)).toBe(false);
     expect(otherSnapshot.body.data.lists.some((list:{name:string})=>list.name===listName)).toBe(false);
   }finally{
