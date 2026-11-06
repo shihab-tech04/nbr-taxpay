@@ -446,8 +446,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                   }}
                   placeholder={tr('Select or enter a sample passport','একটি নমুনা পাসপোর্ট নির্বাচন বা লিখুন')}/>
                 {item.passport && <button type="button" className="travel-flow__passport-clear"
-                  aria-label={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
-                  title={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
+                  aria-label={tr('Clear passport', 'পাসপোর্ট মুছুন')}
+                  title={tr('Clear passport', 'পাসপোর্ট মুছুন')}
                   onClick={() => {
                     changePassenger(item.id, {passport: '', name: '', birthDate: '', identitySource: 'PENDING'});
                     setPassportSuggestionsFor(null);
@@ -544,8 +544,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
                 onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
                 placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
               {item.passport && <button type="button" className="travel-flow__passport-clear"
-                aria-label={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
-                title={tr('Clear passport number', 'পাসপোর্ট নম্বর মুছুন')}
+                aria-label={tr('Clear passport', 'পাসপোর্ট মুছুন')}
+                title={tr('Clear passport', 'পাসপোর্ট মুছুন')}
                 onClick={() => {
                   changePassenger(item.id, {passport: ''});
                   setPassportSuggestionsFor(null);
