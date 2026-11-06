@@ -2610,7 +2610,7 @@
   margin:0;font-size:15px;font-weight:650;line-height:1.5;
   color:var(--color-taxpay-text);overflow-wrap:anywhere;
 }
-.beneficiary-directory__person .taxpayer-transaction-row__ref {
+.beneficiary-directory__person :is(.taxpayer-transaction-row__ref,.beneficiary-directory__tin) {
   margin:4px 0 0;color:var(--color-taxpay-muted);
   font-size:14px;line-height:1.5;overflow-wrap:anywhere;
 }
