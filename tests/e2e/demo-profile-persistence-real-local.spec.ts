@@ -75,9 +75,9 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const emptyLegacySession=randomUUID();
     await first.evaluate(id=>sessionStorage.setItem('taxpay-guest-simulation-session',id),emptyLegacySession);
     await first.goto('/?action=history');
-    const recovery=first.locator('section[aria-label="Recover earlier saved payments"]');
+    const recovery=first.getByRole('region',{name:/^(Recover earlier saved payments|আগের পেমেন্ট ফিরিয়ে আনুন)$/});
     await expect(recovery).toBeVisible();
-    const restore=first.getByRole('button',{name:'Restore earlier payments',exact:true});
+    const restore=first.getByRole('button',{name:/^(Restore earlier payments|আগের পেমেন্ট ফিরিয়ে আনুন)$/});
     await restore.click();
     await expect(recovery.getByRole('alert')).toContainText('No earlier payment records were found');
     expect(await first.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBe(emptyLegacySession);
