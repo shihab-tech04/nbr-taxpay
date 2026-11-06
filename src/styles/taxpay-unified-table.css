@@ -937,3 +937,109 @@ table.taxpay-unified-table {
     min-width: 0;
   }
 }
+
+/* Visible Convay register pattern — one integrated Transactions workspace.
+ * Scope only the taxpayer history panel, not receipts, Beneficiaries or ledger. */
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel {
+  overflow: hidden;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -20px -20px 0;
+  padding: 13px 20px;
+  min-height: 64px;
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+  background: var(--taxpay-table-surface, #fff);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__identity h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__export {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) repeat(3,minmax(125px,1fr));
+  align-items: end;
+  gap: 12px;
+  margin: 0 -20px;
+  padding: 16px 20px;
+  background: var(--taxpay-table-heading, #f7f9fc);
+  border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-convay-table-filters .taxpayer-transaction-filter {
+  font-size: 14px;
+  color: var(--taxpay-table-text, #172033);
+}
+.taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpay-table-viewport {
+  margin: 0 -20px;
+  width: calc(100% + 40px);
+  border: 0;
+  border-radius: 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table thead th {
+  padding: 12px 16px;
+  height: 48px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody td {
+  padding: 14px 16px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody tr:nth-child(even) {
+  background: var(--taxpay-table-stripe, #fafbfd);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody tr:hover {
+  background: var(--taxpay-table-hover, #f1f6ff);
+}
+@media (max-width: 850px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters .taxpayer-transaction-filter--search {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar {
+    margin: -16px -16px 0;
+    padding: 12px 16px;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+    margin: 0 -16px;
+    padding: 14px 16px;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpay-table-viewport {
+    margin: 0;
+    width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar {
+    flex-wrap: wrap;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-toolbar__export {
+    min-height: 44px;
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters .taxpayer-transaction-filter--search {
+    grid-column: auto;
+  }
+}
