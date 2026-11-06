@@ -3,7 +3,7 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 
 /** Real disposable Supabase Auth + PostgREST + React/Playwright journey, no mocked transport. */
-test('two bound simulated taxpayers and officer reconcile a new multi-beneficiary payment',async({browser})=>{
+test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment while its Office mirror is pending',async({browser})=>{
  const root=process.env.TAXPAY_LOCAL_SUPABASE_URL;
  const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
@@ -68,13 +68,17 @@ test('two bound simulated taxpayers and officer reconcile a new multi-beneficiar
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2025-26');
  await one.page.getByLabel('Amount (৳)').nth(1).fill('23.50');
  await one.page.getByRole('button',{name:'Save payment record'}).click();
- await expect(one.page.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:15000});
+ // The disposable TaxPay database cannot be treated as source data by hosted
+ // Office. The browser must report the unacknowledged mirror and retain the
+ // original SQL records/outbox; a separate local Office journey verifies ACK.
+ await expect(one.page.getByRole('status').filter({hasText:'OFFICE_SYNC_PENDING'})).toBeVisible({timeout:15000});
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
   .find(t=>t.totalMinor===17375 && t.allocations.some(a=>a.beneficiary==='user7'));
  expect(tx).toBeTruthy();
  expect(tx!.allocations.reduce((sum,a)=>sum+a.amountMinor,0)).toBe(17375);
+ expect(psql("select count(*) from demo_payment.mirror_outbox o join demo_payment.story_payments p on p.id=o.entity_id where o.entity_type='PAYMENT' and p.data->'details'->>'sourceTransactionId'='"+tx!.transactionId+"' and o.status='PENDING'")).toBe('1');
  const admin=await request('/rest/v1/rpc/sim_payment_history',{p_user_id:null,p_view:'all'},approver.session.access_token);
  expect(admin.status).toBe(200);
  expect((admin.data as Array<{transactionId:string}>).some(t=>t.transactionId===tx!.transactionId)).toBe(true);
