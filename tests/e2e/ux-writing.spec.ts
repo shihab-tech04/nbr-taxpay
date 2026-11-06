@@ -5,7 +5,7 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   test.skip(info.project.name!=='mobile-375','Run full copy journey on one mobile viewport');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByText('Demo',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByRole('region',{name:'Payment records summary'})).toContainText('Recorded income tax');
@@ -20,7 +20,7 @@ test('taxpayer dashboard uses compact labels, no backend essays and no invented 
   await expect(page.getByText('Why are balances unavailable?')).toHaveCount(0);
   await page.getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByText('Live assessments, Treasury settlements, eTDS records')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   const compactMenu=page.locator('.citizen-corners').getByRole('button',{name:'Open menu'});

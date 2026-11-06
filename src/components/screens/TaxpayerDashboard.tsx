@@ -103,7 +103,7 @@ export const TaxpayerDashboard: React.FC = () => {
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
       <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
     </section>
-    <TaxpayerPageHeading className="taxpayer-dashboard-header" title={tr('Dashboard summary','ড্যাশবোর্ড সারসংক্ষেপ')}
+    <TaxpayerPageHeading className="taxpayer-dashboard-header" title={tr('Overview','সংক্ষিপ্ত বিবরণ')}
       description={previewAccount ? `${tr('User ID','ইউজার আইডি')}: ${previewAccount.id}` : undefined}
       actions={<div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
@@ -124,7 +124,7 @@ export const TaxpayerDashboard: React.FC = () => {
       <section aria-label={tr('Financial summary','আর্থিক সারসংক্ষেপ')}
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {([
-          {en:'Total tax for the year',bn:'এই করবর্ষের মোট কর',
+          {en:'Total tax',bn:'মোট আয়কর',
             helpEn:'A verified tax assessment amount is not available for this account and year.',
             helpBn:'এই অ্যাকাউন্ট ও করবর্ষের যাচাইকৃত নির্ধারিত আয়করের তথ্য পাওয়া যায়নি।'},
           {en:'Tax deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম পরিশোধিত কর',
@@ -149,8 +149,8 @@ export const TaxpayerDashboard: React.FC = () => {
         {exampleMode
           ? tr('Illustrative dashboard — the saved account activity below remains unchanged.',
             'উদাহরণভিত্তিক ড্যাশবোর্ড — নিচের সংরক্ষিত অ্যাকাউন্ট কার্যক্রম অপরিবর্তিত।')
-          : tr('Verified tax balances are not available for this account. You can still review your saved account activity and payment records below.',
-            'এই অ্যাকাউন্টের যাচাইকৃত কর ব্যালেন্স পাওয়া যায়নি। নিচে আপনার সংরক্ষিত অ্যাকাউন্টের কার্যক্রম ও পেমেন্ট রেকর্ড দেখতে পারবেন।')}
+          : tr('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.',
+            'এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')}
       </p>
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
@@ -194,7 +194,7 @@ export const TaxpayerDashboard: React.FC = () => {
     <div className="grid gap-4 lg:grid-cols-3">
       <section className={card}><h2 className="text-base font-semibold">{tr('TDS & advance tax','টিডিএস ও অগ্রিম কর')}</h2>
         <p className="mt-3 text-sm font-medium text-slate-700">{tr('Recognized TDS / AIT','স্বীকৃত টিডিএস / এআইটি')}: {tr('Not available','পাওয়া যাচ্ছে না')}</p>
-        <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('ledger')}>{tr('Review tax ledger','কর লেজার দেখুন')}<ArrowRight size={16}/></button>
+        <button className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-800" type="button" onClick={()=>navigate('ledger')}>{tr('Check tax ledger','কর লেজার দেখুন')}<ArrowRight size={16}/></button>
       </section>
       <section className={card}><h2 className="text-base font-semibold">{tr('Challan & reconciliation','চালান ও সমন্বয়')}</h2>
         <p className="mt-3 text-sm font-medium text-slate-700">{tr('Government challan','সরকারি চালান')}: {tr('Not available','পাওয়া যাচ্ছে না')}</p>

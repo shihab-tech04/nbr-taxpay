@@ -7,12 +7,15 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   const main=page.getByTestId('user1-synthetic-workspace');
-  await expect(main.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Overview'})).toBeVisible();
   await expect(main.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   expect(await main.innerText()).not.toMatch(banned);
-  await expect(main.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'Needs review'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'What needs your attention'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'Already covered'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'Tax summary for this year'})).toBeVisible();
   for (const number of ['৳ 180,000','৳ 80,000','৳ 75,000','৳ 25,000']) {
     await expect(main.getByText(number).first()).toBeVisible();
   }

@@ -286,9 +286,9 @@ test('a sample taxpayer preview restores only its own browser-history entry',asy
   await page.goto('/?action=taxpayer_home');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   // The preview is not account authentication or a transferable URL credential.
   await page.goto('/?action=ledger');
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();

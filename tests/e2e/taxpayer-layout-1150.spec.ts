@@ -4,7 +4,7 @@ const url = (route: string) => '/?action=' + route + '&demoUser=user1';
 
 test('User1 dashboard omits the redundant register and lengthy data notice but preserves Activity records', async ({page}) => {
   await page.goto(url('taxpayer_home'));
-  await expect(page.getByRole('heading', {name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading', {name:'Overview'})).toBeVisible();
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
   await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
@@ -29,7 +29,7 @@ test('User1 charts use TaxPay blue tokens, and category filters work by keyboard
   await page.keyboard.press('Space');
   await expect(travel).toHaveAttribute('aria-pressed','true');
   await expect(travel).toHaveCSS('background-color','rgb(234, 242, 255)');
-  await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
 });
 
 test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {
@@ -39,7 +39,7 @@ test('User1 overview preserves narrow screens and expands fluidly at 1400px and 
     await page.setViewportSize({width,height:850});
     await page.goto(url('taxpayer_home'));
     await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-    await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
     const dims = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement;
       return {overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -95,7 +95,7 @@ test('both signed-in taxpayer profiles use available main width without horizont
     await page.getByRole('textbox',{name:'User ID'}).fill(account);
     await page.getByLabel('Password',{exact:true}).fill(account);
     await page.getByRole('button',{name:'Sign In',exact:true}).click();
-    await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
     for (const viewport of [1280,1399,1400,1600,1920,2560]) {
       await page.setViewportSize({width:viewport,height:900});
       const size = await page.evaluate(() => {

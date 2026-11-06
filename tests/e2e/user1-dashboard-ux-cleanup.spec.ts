@@ -6,7 +6,7 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   await page.goto(demo);
   const workspace=page.getByTestId('user1-synthetic-workspace');
   await expect(workspace).toHaveAttribute('data-dashboard-view','true');
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(1);
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
   await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
@@ -16,10 +16,10 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
   }
   await expect(workspace.locator('.taxpayer-dashboard-header').getByRole('button',{name:'Overview'})).toHaveCount(0);
   await expect(workspace.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
-  await expect(page.getByRole('heading',{name:'Tax coverage'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Needs review'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'By assessment year'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'What needs your attention'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By tax year'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Recent activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Review a suggested payment'})).toHaveCount(0);
@@ -39,7 +39,7 @@ test('dashboard presents unique content, no repeated shortcuts or duplicate evid
 
 test('KPI explanations are available by Enter, Space, Escape and touch-friendly disclosure',async({page})=>{
   await page.goto(demo);
-  const liability=page.locator('summary[aria-label="About Income tax liability"]');
+  const liability=page.locator('summary[aria-label="About Total tax"]');
   await liability.focus();
   await page.keyboard.press('Enter');
   await expect(liability.locator('..')).toHaveAttribute('open','');
@@ -88,7 +88,7 @@ test('mobile and desktop dashboard have no duplicate panel or horizontal clippin
       await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
     }
     if(width<=390){
-      const liability=page.locator('summary[aria-label="About Income tax liability"]');
+      const liability=page.locator('summary[aria-label="About Total tax"]');
       await liability.click();
       const bounds=await liability.locator('..').locator('.taxpayer-inline-help__content').boundingBox();
       expect(bounds).not.toBeNull();
@@ -141,7 +141,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
 
   await page.setViewportSize({width:360,height:820});
   await expect(workspace).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   const mobile=await page.evaluate(()=>{
     const shell=document.querySelector('.taxpay-citizen-shell.taxpay-taxpayer-reference');
     const heading=document.querySelector('.taxpayer-dashboard-header h1');

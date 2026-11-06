@@ -12,7 +12,7 @@ const guestLinks: CitizenAction[] = [
   { route: 'user_guide', category:'security', en: 'Help', bn: 'সহায়তা' }
 ];
 const taxpayerLinks: CitizenAction[] = [
-  { route: 'taxpayer_home', en: 'Home', bn: 'মূল পাতা' },
+  { route: 'taxpayer_home', en: 'Overview', bn: 'সংক্ষিপ্ত বিবরণ' },
   { route: 'history', en: 'Activity', bn: 'লেনদেন' },
   { route: 'ledger', en: 'Tax Ledger', bn: 'কর লেজার' }
 ];

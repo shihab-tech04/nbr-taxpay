@@ -54,7 +54,7 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await dialog.getByLabel('Password',{exact:true}).fill('user'+id);
     await dialog.getByRole('button',{name:'Sign In'}).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
-    await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Profile',exact:true}).click();
     await expect(page).toHaveURL(/action=account_profile/);
     if (id!==1) await expect(page.getByText('user'+id,{exact:true}).first()).toBeVisible();
@@ -74,7 +74,7 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.getByLabel('Password',{exact:true}).fill('user8');
   await page.getByRole('button',{name:'Sign In'}).click();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);
   await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
   await page.goto('/?action=account_profile');

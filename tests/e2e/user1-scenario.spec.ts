@@ -12,7 +12,7 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   page.on('request',r=>{if(r.url().includes('.supabase.co/rest/v1/rpc/'))protectedRpc.push(r.url());});
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByText('৳ 180,000').first()).toBeVisible();
   await expect(page.getByText('৳ 80,000').first()).toBeVisible();
   await expect(page.getByText('৳ 75,000').first()).toBeVisible();
@@ -74,7 +74,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
 test('user1 mobile design is bilingual and has no horizontal overflow',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Mobile storybook view');
   await page.goto('/?action=taxpayer_home&demoUser=user1');
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.locator('.citizen-mobile-menu-trigger').click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();

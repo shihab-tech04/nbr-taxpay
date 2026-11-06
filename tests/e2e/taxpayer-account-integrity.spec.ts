@@ -3,7 +3,7 @@ import {expect,test} from '@playwright/test';
 test('generic taxpayer preview shows the same payer receipts in dashboard and activity but no invented ledger credits',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading',{name:'Dashboard summary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'No activity to summarize'})).toHaveCount(0);
   await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();

@@ -31,7 +31,7 @@ test('guest cannot directly open taxpayer ledger or account activity', async ({p
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
 });
 
@@ -58,6 +58,9 @@ test('logged-out and signed-in mobile headers share the approved white shell wit
  await expect(taxpayerHeader.getByRole('button',{name:'Open menu'})).toBeVisible();
  await expect(taxpayerHeader.getByRole('button',{name:'Notifications'})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
+ await taxpayerHeader.getByRole('button',{name:'Open menu'}).click();
+ const accountMenu=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(accountMenu.getByRole('button',{name:'Overview',exact:true})).toBeVisible();
 });
 
 test('public mobile menu uses the shared signed-in sheet without account-only items',async({page})=>{
@@ -183,7 +186,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     // A new entry remains gated; both paths must reach the same dashboard.
     const enterSample = page.getByRole('button',{name:'Explore taxpayer workspace'});
     if (await enterSample.isVisible()) await enterSample.click();
-    await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width+2);

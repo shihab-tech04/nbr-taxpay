@@ -96,13 +96,13 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
 
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Dashboard summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Payment composition' })).toBeVisible();
   await expect(page.getByRole('region',{name:'Payment records summary'})).toContainText('Recorded income tax');
   await expect(page.getByText(/verified liability and tax credit not connected/i)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open transaction history' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Review tax ledger', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Check tax ledger', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'View documents' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Full payment journey' })).toBeVisible();
   if (await page.locator('.citizen-mobile-menu-trigger').isVisible()) {
