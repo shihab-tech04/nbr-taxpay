@@ -30,21 +30,21 @@ begin
   if written <> 1 then raise exception 'Nonempty saved-beneficiary write failed: %',written; end if;
 
   data := public.taxpay_guest_beneficiary_rows(first_hash,0,500);
-  if not exists(select 1 from jsonb_array_elements(data) item
-    where item->>'tin'=new_tin and item->>'list_id'=new_list::text
-      and item->>'tag'='clients') then
+  if not exists(select 1 from jsonb_array_elements(data) as item(value)
+    where item.value->>'tin'=new_tin and item.value->>'list_id'=new_list::text
+      and item.value->>'tag'='clients') then
     raise exception 'The first account cannot read its saved beneficiary';
   end if;
-  if not exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_lists(first_hash)) item
-    where item->>'id'=new_list::text) then
+  if not exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_lists(first_hash)) as item(value)
+    where item.value->>'id'=new_list::text) then
     raise exception 'The first account cannot read its new saved list';
   end if;
-  if exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_rows(other_hash,0,500)) item
-    where item->>'tin'=new_tin) then
+  if exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_rows(other_hash,0,500)) as item(value)
+    where item.value->>'tin'=new_tin) then
     raise exception 'Different account read the first account beneficiary';
   end if;
-  if exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_lists(other_hash)) item
-    where item->>'id'=new_list::text) then
+  if exists(select 1 from jsonb_array_elements(public.taxpay_guest_beneficiary_lists(other_hash)) as item(value)
+    where item.value->>'id'=new_list::text) then
     raise exception 'Different account read the first account list';
   end if;
 
