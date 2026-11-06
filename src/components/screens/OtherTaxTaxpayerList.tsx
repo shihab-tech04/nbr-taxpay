@@ -37,7 +37,6 @@ export function OtherTaxTaxpayerList({
   const canSearch = (tin: string) => (allowSyntheticDemoTin || lockedPrimary ? /^\d{12,13}$/ : /^\d{12}$/).test(tin);
   const searchLabel = bn ? 'খুঁজুন' : 'Search';
   const notFoundLabel = bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.';
-  const count = additional.length + 1;
   const primaryAssigned = allocations.some(line => line.taxpayerId === 'primary');
   const simpleSelf = singleTaxpayerLayout && !additional.length;
   const lockedTinHelp = bn ? 'টিআইএন বদলাতে আগে এই করদাতার নির্বাচিত পেমেন্ট খাত সরান।' : 'To change this TIN, first remove this taxpayer’s selected payment heads.';
@@ -45,6 +44,9 @@ export function OtherTaxTaxpayerList({
   const duplicate = (id: string, tin: string) => Boolean(tin) &&
     (id !== 'primary' && primaryTin === tin || additional.some(person => person.id !== id && person.tin === tin));
   const primaryConfirmed = confirmed('primary', primaryTin);
+  const count = allowAdditional
+    ? (primaryConfirmed ? 1 : 0) + additional.filter(person => confirmed(person.id, person.tin)).length
+    : additional.length + 1;
   const summary = (tin: string, fallbackName: string) => {
     const match = lookupSampleTaxpayer(tin);
     const displayName = match ? (bn ? match.nameBn : match.nameEn)
