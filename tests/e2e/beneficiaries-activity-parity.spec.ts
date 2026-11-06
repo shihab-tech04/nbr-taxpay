@@ -95,6 +95,16 @@ for(const language of ['en','bn'] as const){
         t('Tag / relationship','ট্যাগ / সম্পর্ক'),t('Actions','কার্যক্রম')
       ]);
       expect(layout.mobileVisible).toBe(false);
+      // At 1280px the complete Actions column, including Remove, must fit
+      // without a hidden horizontal-scroll remainder.
+      if(layout.width>=1180){
+        const overflow=await directory.locator('.taxpay-table-viewport').evaluate(el=>el.scrollWidth-el.clientWidth);
+        expect(overflow,'desktop Beneficiaries actions must not be clipped').toBeLessThanOrEqual(2);
+        const bounds=await rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')}).boundingBox();
+        const viewportBounds=await directory.locator('.taxpay-table-viewport').boundingBox();
+        expect(bounds&&viewportBounds&&bounds.x+bounds.width<=viewportBounds.x+viewportBounds.width+1,
+          'Remove must remain within the visible desktop table viewport').toBe(true);
+      }
     }else{
       expect(layout.mobileVisible).toBe(true);
       // Compact identity: Name · final tag; bare TIN on next line, without prefixes.
