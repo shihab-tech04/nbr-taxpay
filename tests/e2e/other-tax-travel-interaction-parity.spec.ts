@@ -77,6 +77,13 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(secondSuggestions).toBeVisible();
     await secondTin.press('Escape');
     await expect(secondSuggestions).toHaveCount(0);
+    await expect(modal).toBeVisible(); // Escape closes suggestions, never the payment modal.
+    await secondTin.press('0');
+    await secondTin.press('ArrowDown');
+    await page.keyboard.press('Escape');
+    await expect(secondSuggestions).toHaveCount(0);
+    await expect(secondTin).toBeFocused();
+    await expect(modal).toBeVisible();
     expect(await modal.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
   });
 }
