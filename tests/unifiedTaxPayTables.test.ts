@@ -133,7 +133,7 @@ test('every signed-in payment history uses visible Convay column hierarchy, not 
  const bound=read('src/components/screens/DemoPaymentActivity.tsx');
  const review=read('src/components/screens/AccountReviewHistory.tsx');
  const css=read('src/styles/taxpay-unified-table.css');
- assert.match(story,/className="taxpayer-transaction-table"/);
+ assert.match(story,/className="taxpayer-transaction-table(?: [^"]+)?"/);
  assert.match(bound,/className="taxpay-convay-signed-in-table"/);
  assert.match(review,/className="taxpay-convay-signed-in-table"/);
  for(const key of ['reference','date','payer','allocation','amount','status','actions']){
