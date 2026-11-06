@@ -97,7 +97,11 @@ export function TaxpayerTinLookup({
               if (suggestedTins?.length && !locked) setShowSuggestions(true);
             }}
             onKeyDown={event => {
-              if (event.key === 'Escape') setShowSuggestions(false);
+              if (event.key === 'Escape' && showSuggestions) {
+                event.preventDefault();
+                event.stopPropagation(); // Dismiss the dropdown, not its parent payment modal.
+                setShowSuggestions(false);
+              }
               if (event.key === 'ArrowDown' && showSuggestions) {
                 event.preventDefault();
                 rootRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
@@ -129,6 +133,7 @@ export function TaxpayerTinLookup({
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 event.preventDefault();
+                event.stopPropagation();
                 focusTinWithoutOpeningSuggestions();
               } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                 event.preventDefault();
