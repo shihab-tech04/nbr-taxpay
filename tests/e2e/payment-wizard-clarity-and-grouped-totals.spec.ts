@@ -27,8 +27,12 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-payer-name').fill('Example Payer');
   await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]').fill('234567890123');
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
+  await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   const grouped = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(grouped.locator('details')).toHaveCount(2);
   await expect(grouped).toContainText('123456789012');

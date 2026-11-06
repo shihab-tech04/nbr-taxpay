@@ -33,6 +33,7 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   let dialog = await openOtherTax(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.locator('#guest-payer-name').fill('Payer Name');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
@@ -40,6 +41,7 @@ test('two taxpayer records survive a lost response and reload without duplicatio
   await other.locator('input[id^="other-tax-tin"]').fill('222222222222');
   await other.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(other.locator('input[id^="other-tax-name"]')).toHaveValue('User 2');
+  await other.getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
@@ -98,6 +100,7 @@ test('a bank-branch request remains pending across reload until continued', asyn
   let dialog = await openOtherTax(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
   await dialog.locator('#guest-payer-name').fill('Payer Name');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
