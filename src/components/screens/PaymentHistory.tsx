@@ -98,7 +98,7 @@ const escapeCsv = (value: unknown) => {
 };
 
 export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
-  const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser } = useTaxState();
+  const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser, previewAccount } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('ALL');
