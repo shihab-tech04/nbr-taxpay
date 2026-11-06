@@ -32,9 +32,11 @@ export async function recoverLegacyStoryPayments():Promise<number>{
     throw new Error('No earlier payment records were found in this browser session.');
   if(response.status===409&&body?.code==='LEGACY_SESSION_ALREADY_LINKED')
     throw new Error('These earlier records are already assigned to another profile.');
-  if(!response.ok||body?.success!==true||!Number.isSafeInteger(body.data?.recovered)||body.data!.recovered!<0)
+  if(!response.ok||body?.success!==true||typeof body.data?.recovered!=='number'||!Number.isSafeInteger(body.data.recovered)||body.data.recovered<0)
     throw new Error('Unable to confirm restored payment records. Your original history was not changed.');
   if(activePreviewSession()?.capability!==profile.capability)
     throw new Error('Account changed during recovery. Please sign in again.');
-  return body.data!.recovered!;
+  try { window.sessionStorage.removeItem(LEGACY_SESSION_KEY); }
+  catch { /* server-side alias remains authoritative */ }
+  return body.data.recovered;
 }
