@@ -18,7 +18,7 @@ import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageS
 import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
 
-function LegacyPaymentRecovery({language}:{language:Language}) {
+export function LegacyPaymentRecovery({language}:{language:Language}) {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [restored,setRestored]=useState<number|null>(null);
