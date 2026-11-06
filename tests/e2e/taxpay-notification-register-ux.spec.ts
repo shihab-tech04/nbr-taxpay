@@ -2,12 +2,21 @@ import {expect,test,type Page} from '@playwright/test';
 
 /** All rows are synthetic, scope-limited test fixtures. No real taxpayer data. */
 async function mockNotificationRegisters(page:Page){
-  await page.addInitScript(()=>sessionStorage.setItem('taxpay-taxpayer-preview-user','user1'));
-  await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
+  await page.addInitScript(()=>{
+    sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'00000000-0000-4000-8000-000000000099',
+      selectedListId:null,language:'en'
+    }));
+  });
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
+    const view=new URL(route.request().url()).searchParams.get('view');
     const rows=[{id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
       createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:234567,
       reviewStatus:'PENDING_OFFICER',allocations:[],events:[]}];
-    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(rows)});
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,simulationOnly:true,data:view==='payer'?rows:[]
+    })});
   });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({

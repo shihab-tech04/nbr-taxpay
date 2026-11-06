@@ -30,6 +30,8 @@ export async function recoverLegacyStoryPayments():Promise<number>{
   const body=await response.json().catch(()=>null) as {success?:boolean;code?:string;data?:{recovered?:number}}|null;
   if(response.status===400&&body?.code==='LEGACY_SESSION_EMPTY')
     throw new Error('No earlier payment records were found in this browser session.');
+  if(response.status===403&&body?.code==='LEGACY_SESSION_OWNER_UNVERIFIED')
+    throw new Error('We could not verify that every earlier payment belongs to this User ID. Your original history was not changed.');
   if(response.status===409&&body?.code==='LEGACY_SESSION_ALREADY_LINKED')
     throw new Error('These earlier records are already assigned to another profile.');
   if(!response.ok||body?.success!==true||typeof body.data?.recovered!=='number'||!Number.isSafeInteger(body.data.recovered)||body.data.recovered<0)

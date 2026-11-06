@@ -4,7 +4,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   // This is the disconnected browser/UI suite. Verify the request payload while
   // avoiding hosted synthetic writes; separate disposable-SQL E2E tests cover
   // actual TaxPay → Office persistence, acknowledgments and notification delivery.
-  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments', async route => {
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     const request = route.request().postDataJSON() as {
       amountMinor?: number; sessionId?: string; origin?: string; service?: string;
