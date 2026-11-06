@@ -14,6 +14,7 @@ import {
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
+import {recordAccountActivity} from './accountActivity';
 import {activePreviewSession,signInPreviewProfile,clearPreviewSession,savePreviewSetting,flushPreviewSettings} from './previewAccountSession';
 import { publicDemoReceiptId, receiptReturnRoute, routeContextFromUrl, validRoute, writeRouteContext } from './routeContract';
 import { 
@@ -189,10 +190,14 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[checkingAccount,accountUser?.id,previewAccount?.id]);
   const updateLanguage = (lang:Language) => {
+    const changed=language!==lang;
     applyLanguage(lang);
     setLanguagePreferenceError(false);
     if(accountUser?.id){
       void saveAccountViewPreference(accountUser.id,'taxpay_language',lang)
+        .then(()=>{
+          if(changed)void recordAccountActivity(accountUser.id,'LANGUAGE_CHANGED',lang).catch(()=>undefined);
+        })
         .catch(()=>setLanguagePreferenceError(true));
     } else if(previewAccount){
       saveBrowserLanguage(previewAccount.id,lang);
@@ -202,6 +207,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     setPaymentServiceChoiceOpen(false);
     const route = validRoute(requestedRoute);
+    if(accountUser?.id&&route!==currentRoute&&
+       !['landing','office_login','taxpayer_login'].includes(route))
+      void recordAccountActivity(accountUser.id,'PAGE_OPENED',route).catch(()=>undefined);
     setCurrentRoute(route);
     setRouteParams(params);
     // Keep the UI route in browser history without exposing payment form details in a URL.

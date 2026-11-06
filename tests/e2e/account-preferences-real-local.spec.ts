@@ -94,10 +94,34 @@ test('real account restores its own language and selected beneficiary list in a 
   expect(savedPerson.status).toBe(201);
 
   await page.goto('/?action=account_settings');
+  const accountPages=page.getByRole('navigation',{name:'Account pages'});
+  await accountPages.getByRole('button',{name:'Profile',exact:true}).click();
+  await expect(accountPages.getByRole('button',{name:'Profile',exact:true})).toHaveAttribute('aria-current','page');
+  await accountPages.getByRole('button',{name:'Profile settings'}).click();
   await expect(page.locator('#taxpay-profile-language')).toBeVisible();
+  await page.locator('#taxpay-profile-display-name').fill('Account A profile');
+  await page.getByRole('checkbox',{name:'Show my in-app draft notifications'}).uncheck();
   await page.locator('#taxpay-profile-language').selectOption('bn');
   await page.locator('form.taxpayer-account-fields button[type="submit"]').click();
   await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
+  await expect.poll(async()=>{
+    const metadata=(await authUser(a.session.access_token)).user_metadata??{};
+    return [metadata.taxpay_display_name,metadata.taxpay_in_app_notifications,metadata.taxpay_language];
+  },{timeout:10000}).toEqual(['Account A profile',false,'bn']);
+  await expect.poll(async()=>{
+    const activity=await fetch(new URL('/rest/v1/taxpay_account_activity?select=event_type,route&owner_uid=eq.'+
+      (await authUser(a.session.access_token)).id+'&order=occurred_at.asc',api.origin),{
+        headers:{apikey:key,Authorization:'Bearer '+a.session.access_token}
+      });
+    expect(activity.status).toBe(200);
+    return await activity.json() as {event_type:string;route:string|null}[];
+  },{timeout:10000}).toEqual(expect.arrayContaining([
+    expect.objectContaining({event_type:'PAGE_OPENED',route:'account_profile'}),
+    expect.objectContaining({event_type:'PAGE_OPENED',route:'account_settings'}),
+    expect.objectContaining({event_type:'BENEFICIARY_LIST_SELECTED',route:'beneficiaries'}),
+    expect.objectContaining({event_type:'LANGUAGE_CHANGED',route:'bn'}),
+    expect.objectContaining({event_type:'PROFILE_SAVED',route:'account_settings'})
+  ]));
   // Sign out immediately after selecting Bangla. The owner preference must
   // finish saving before the session is revoked: no waiting for SQL here.
   await page.locator('.citizen-mobile-menu-trigger').click();
@@ -116,6 +140,15 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
   await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
   await expect(again.getByTestId('beneficiary-records')).toContainText('বন্ধু');
+  await expect((await authUser(aSession.access_token)).user_metadata?.taxpay_display_name).toBe('Account A profile');
+  await expect((await authUser(aSession.access_token)).user_metadata?.taxpay_in_app_notifications).toBe(false);
+  await again.goto('/?action=account_profile');
+  await expect(again.getByRole('heading',{name:'আমার সাম্প্রতিক কার্যক্রম'})).toBeVisible();
+  await expect(again.getByText('প্রোফাইল সেটিংস সংরক্ষণ করেছেন · প্রোফাইল সেটিংস')).toBeVisible();
+  await expect(again.getByText('ভাষা পরিবর্তন করেছেন · বাংলা')).toBeVisible();
+  await again.reload();
+  await expect(again.getByRole('heading',{name:'আমার সাম্প্রতিক কার্যক্রম'})).toBeVisible();
+  await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী')).toBeVisible();
 
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_last_beneficiary_list_id).toBe(familyId);
   await second.close();
@@ -130,6 +163,29 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(another.getByTestId('beneficiary-records')).toHaveCount(0);
 
   await expect(another.getByText('Sajid Khan')).toHaveCount(0);
+  await another.goto('/?action=account_profile');
+  await expect(another.getByRole('heading',{name:'My recent activity'})).toBeVisible();
+  await expect(another.getByText('No saved activity yet.')).toBeVisible();
+  await expect(another.getByText('Account A profile')).toHaveCount(0);
+  const isolatedActivity=await fetch(new URL('/rest/v1/taxpay_account_activity?select=id',api.origin),{
+    headers:{apikey:key,Authorization:'Bearer '+b.session.access_token}
+  });
+  expect(isolatedActivity.status).toBe(200);
+  expect(await isolatedActivity.json()).toEqual([]);
+  const foreignActivity=await fetch(new URL('/rest/v1/taxpay_account_activity',api.origin),{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+b.session.access_token,
+      'content-type':'application/json'},
+    body:JSON.stringify({owner_uid:(await authUser(aSession.access_token)).id,
+      event_type:'PAGE_OPENED',route:'account_profile'})
+  });
+  expect(foreignActivity.status).toBeGreaterThanOrEqual(400);
+  const forgedActivity=await fetch(new URL('/rest/v1/taxpay_account_activity',api.origin),{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+b.session.access_token,
+      'content-type':'application/json'},
+    body:JSON.stringify({owner_uid:(await authUser(b.session.access_token)).id,
+      event_type:'PAYMENT_CONFIRMED',route:'account_profile'})
+  });
+  expect(forgedActivity.status).toBeGreaterThanOrEqual(400);
 
   await third.close();
 });

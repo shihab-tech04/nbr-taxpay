@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, ShieldAlert } from 'lucide-react';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
+import {recordAccountActivity} from '../../services/accountActivity';
 import { useTaxState } from '../../services/taxState';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
+import {AccountRecentActivity} from './AccountRecentActivity';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -138,13 +140,18 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     try {
       const { data: current, error: identityError } = await supabase.auth.getUser();
       if (identityError || current.user?.id !== user.id) throw new Error('Session changed');
-      const { error } = await supabase.auth.updateUser({ data: {
-        ...current.user.user_metadata,
+      const { data: updated, error } = await supabase.auth.updateUser({ data: {
         taxpay_display_name: name.trim(),
         taxpay_in_app_notifications: showNotifications,
         taxpay_language: preferredLanguage
       }});
       if (error) throw error;
+      if (updated.user?.id !== user.id ||
+          updated.user.user_metadata?.taxpay_display_name !== name.trim() ||
+          updated.user.user_metadata?.taxpay_in_app_notifications !== showNotifications ||
+          updated.user.user_metadata?.taxpay_language !== preferredLanguage)
+        throw new Error('Account settings were not confirmed.');
+      void recordAccountActivity(user.id,'PROFILE_SAVED','account_settings').catch(()=>undefined);
       setLanguage(preferredLanguage);
       setFeedback({error:false,content:I18N[preferredLanguage].settingsSaved});
     } catch { setFeedback({error:true,content:t.saveFailed}); }
@@ -158,7 +165,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const { data: current, error: identityError } = await supabase.auth.getUser();
       if (identityError || current.user?.id !== user.id) throw new Error('Session changed');
       const { error } = await supabase.auth.updateUser({ data: {
-        ...current.user.user_metadata, taxpay_notifications_read_at: new Date().toISOString()
+        taxpay_notifications_read_at: new Date().toISOString()
       }});
       if (error) throw error;
       const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
@@ -271,6 +278,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 <p className="taxpayer-account-notice"><ShieldAlert size={17} aria-hidden />{t.consent}</p>
               </section>
             )}
+            {page === 'profile' && <AccountRecentActivity ownerUid={user.id} language={language}/>}
             {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>
