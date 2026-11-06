@@ -47,6 +47,8 @@ function publicError(error: unknown): { status: number; code: string } {
   if (/INVALID_BODY|INVALID_CONTENT_TYPE|INVALID_CAPABILITY|INVALID_PAGE|INVALID_LIST_NAME|INVALID_ROWS|INVALID_BENEFICIARY/.test(message))
     return { status: 400, code: message.split(':')[0] };
   if (/INVALID_DEMO_LOGIN/.test(message)) return { status: 401, code: 'INVALID_DEMO_LOGIN' };
+  if (/LEGACY_SESSION_OWNER_UNVERIFIED/.test(message))
+    return { status: 403, code: 'LEGACY_SESSION_OWNER_UNVERIFIED' };
   if (/INVALID_DEMO_PROFILE|INVALID_PREFERENCE|INVALID_LIST|INVALID_LEGACY_SESSION|LEGACY_SESSION_EMPTY|LEGACY_SESSION_RESERVED/.test(message))
     return { status: 400, code: message.split(':')[0] };
   if (/LEGACY_SESSION_ALREADY_LINKED/.test(message)) return { status: 409, code: 'LEGACY_SESSION_ALREADY_LINKED' };

@@ -171,12 +171,16 @@ for(const language of ['en','bn'] as const){
 for(const language of ['en','bn'] as const){
   test('notification record rows share the same four-column header and mobile card contract in '+language,async({page},info)=>{
     await installSyntheticPreviewFixture(page,'user1',language);
-    await page.route('**/rest/v1/rpc/demo_story1_demo_history',async route=>{
-      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([
+    await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
+      const view=new URL(route.request().url()).searchParams.get('view');
+      const rows=[
         {id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
          createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:234567,
          reviewStatus:'PENDING_OFFICER',allocations:[],events:[]}
-      ])});
+      ];
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        success:true,simulationOnly:true,data:view==='payer'?rows:[]
+      })});
     });
     await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',async route=>{
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[
@@ -214,8 +218,8 @@ for(const language of ['en','bn'] as const){
   test('signed-in preview Transactions shows Convay columns and complete details in '+language,async({page},info)=>{
     await installSyntheticPreviewFixture(page,'user2',language);
     await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
-    await page.route('**/rest/v1/rpc/demo_story1_demo_history',route=>route.fulfill({
-      status:200,contentType:'application/json',body:JSON.stringify([{
+    await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',route=>route.fulfill({
+      status:200,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:[{
         id:'EXAMPLE-USER2-1',transactionId:'00000000-0000-4000-8000-000000000121',
         payer:'user2',state:'SIMULATED',createdAt:'2026-10-24T10:00:00Z',
         simulationOnly:true,totalMinor:5000,reviewStatus:'PENDING_OFFICER',
@@ -223,7 +227,7 @@ for(const language of ['en','bn'] as const){
           {id:'a1',lineNo:1,beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:1500},
           {id:'a2',lineNo:2,beneficiary:'user3',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:3500}
         ],events:[{id:1,action:'CREATED',note:'Payment record saved',occurredAt:'2026-10-24T10:00:00Z'}]
-      }])
+      }]})
     }));
     await page.route('**/functions/v1/demo-story1-taxpay/authorizations?**',route=>route.fulfill({
       status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[]})

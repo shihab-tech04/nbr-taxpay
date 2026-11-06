@@ -75,7 +75,7 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[previewAccount?.id]);
   useEffect(()=>{
-    if(authenticatedUser){setGuestNotices([]);setGuestError('');return;}
+    if(authenticatedUser||previewAccount){setGuestNotices([]);setGuestError('');return;}
     let active=true;
     const refresh=async()=>{
       try{
@@ -88,7 +88,7 @@ export const NotificationsView:React.FC=()=>{
     void refresh();
     const timer=window.setInterval(()=>void refresh(),7000);
     return()=>{active=false;window.clearInterval(timer);};
-  },[authenticatedUser?.id,language]);
+  },[authenticatedUser?.id,previewAccount?.id,language]);
   useEffect(()=>{
     if(!authenticatedUser){setBoundId(null);setBindingError('');setBindingReady(false);return;}
     let active=true;setBoundId(null);setBindingError('');setBindingReady(false);

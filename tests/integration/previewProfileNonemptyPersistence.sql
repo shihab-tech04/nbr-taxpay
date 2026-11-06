@@ -54,6 +54,30 @@ begin
   end if;
   data := public.taxpay_demo_profile_settings(first_hash,'language','bn');
   if data->>'language' is distinct from 'bn' then raise exception 'Language write failed'; end if;
+  data := public.taxpay_guest_beneficiary_snapshot(first_hash);
+  if data->>'profileId' is distinct from 'user9'
+     or data->'settings'->>'language' is distinct from 'bn'
+     or data->'settings'->>'selectedListId' is distinct from new_list::text
+     or not exists(select 1 from jsonb_array_elements(data->'lists') item(value)
+       where item.value->>'id'=new_list::text)
+     or not exists(select 1 from jsonb_array_elements(data->'people') item(value)
+       where item.value->>'tin'=new_tin and item.value->>'list_id'=new_list::text
+         and item.value->>'tag'='clients') then
+    raise exception 'Atomic SQL profile snapshot omitted nonempty account-owned data or settings';
+  end if;
+  if data ? 'capability' or data->'settings' ? 'capability'
+     or has_function_privilege('anon','public.taxpay_guest_beneficiary_snapshot(text)','EXECUTE')
+     or has_function_privilege('authenticated','public.taxpay_guest_beneficiary_snapshot(text)','EXECUTE')
+     or not has_function_privilege('service_role','public.taxpay_guest_beneficiary_snapshot(text)','EXECUTE') then
+    raise exception 'Snapshot leaked a capability or granted the service RPC to an untrusted role';
+  end if;
+  data := public.taxpay_guest_beneficiary_snapshot(other_hash);
+  if exists(select 1 from jsonb_array_elements(data->'people') item(value)
+    where item.value->>'tin'=new_tin)
+     or exists(select 1 from jsonb_array_elements(data->'lists') item(value)
+       where item.value->>'id'=new_list::text) then
+    raise exception 'Another profile snapshot includes this account data';
+  end if;
 
   -- A fresh login must rehydrate SQL state, not merely a browser variable.
   second_login := public.taxpay_demo_profile_login('user9','user9');

@@ -10,6 +10,7 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
   let recovered=false;
+  let recoveryAttempts=0;
   const paymentRequests:string[]=[];
   const failedRequests:string[]=[];
   page.on('requestfailed',request=>failedRequests.push(request.url()+':'+request.failure()?.errorText));
@@ -23,14 +24,29 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
     else if(action==='demo-recover-payments'){
       expect(route.request().headers()['x-taxpay-guest-capability']).toBe(cap);
       expect(body.legacySessionId).toBe(legacy);
+      recoveryAttempts++;
+      if(recoveryAttempts===1){
+        await route.fulfill({status:503,contentType:'application/json',body:'{"success":false,"code":"SERVICE_UNAVAILABLE"}'});
+        return;
+      }
       recovered=true;data={recovered:1};
     }else if(action==='lists'||action==='people')data=[];
     else if(action==='open')data={active:true};
     else throw new Error('Unexpected action '+action);
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
-  await page.route('**/rest/v1/rpc/demo_story1_demo_history*',route=>
-    route.fulfill({status:200,contentType:'application/json',body:'[]'}));
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',route=>{
+    const view=new URL(route.request().url()).searchParams.get('view');
+    const rows=recovered&&view==='payer'?[{
+      id:'SIM-'+payment.replaceAll('-','').slice(0,16).toUpperCase(),transactionId:payment,
+      payer:'user1',state:'SIMULATED',reviewStatus:'MIRRORED_TO_OFFICE',
+      createdAt:date,totalMinor:10000,simulationOnly:true,
+      allocations:[{beneficiary:'user1',category:'OTHER_TAX_PAYMENT',assessmentYear:'2026-27',amountMinor:10000}],events:[]
+    }]:[];
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,simulationOnly:true,data:rows
+    })});
+  });
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?*',route=>
     route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[],"simulationOnly":true}'}));
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
@@ -72,10 +88,16 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toBeVisible();
-  // The recovered SQL rows update in place; a deliberate reload must also
-  // restore them from the confirmed server-side session link.
+  const recovery=page.locator('section[aria-label="Recover earlier saved payments"]');
+  await page.getByRole('button',{name:'Restore earlier payments'}).click();
+  await expect(recovery.getByRole('alert')).toContainText('Unable to confirm restored payment records');
+  expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBe(legacy);
+  // A transient transport failure leaves the source session available for retry.
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
   await expect.poll(()=>recovered).toBe(true);
+  expect(recoveryAttempts).toBe(2);
+  // The recovered SQL rows update in place; a deliberate reload must also
+  // restore them from the confirmed server-side session link.
   // Probe the browser's actual JSON parse of the intercepted payment list to
   // distinguish transport/CORS failures from the recovered-history renderer.
   const listProbe=await page.evaluate(async()=>{
