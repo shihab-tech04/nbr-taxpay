@@ -79,6 +79,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [notificationSearch,setNotificationSearch]=useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; content: string } | null>(null);
+  const [previewSigningOut,setPreviewSigningOut]=useState(false);
   const title = page === 'profile' ? t.profile : page === 'settings' ? t.settings : t.notifications;
   const allowed = user?.user_metadata?.taxpay_in_app_notifications !== false;
   const readAt = typeof user?.user_metadata?.taxpay_notifications_read_at === 'string'
@@ -243,9 +244,15 @@ export function AccountCenter({ page }: { page: AccountPage }) {
             {page === 'notifications' && <p role="status">{t.noDemoNotices}</p>}
             <div className="taxpayer-account-actions">
               {!previewAccount && <button type="button" onClick={() => navigate('taxpayer_login')}>{t.accountAccess}</button>}
-              {sampleOnly && <button type="button" className="taxpayer-account-secondary" onClick={() => {
-                if (previewAccount) logoutPreviewAccount();
-                else { setUserRole('GUEST'); navigate('landing'); }
+              {sampleOnly && <button type="button" className="taxpayer-account-secondary" disabled={previewSigningOut} onClick={async () => {
+                if (!previewAccount) { setUserRole('GUEST'); navigate('landing'); return; }
+                setPreviewSigningOut(true);
+                setFeedback(null);
+                try { await logoutPreviewAccount(); }
+                catch { setFeedback({error:true,content:language==='bn'
+                  ?'আপনার ভাষা বা তালিকার পরিবর্তন সংরক্ষিত হয়নি। আবার সাইন আউট করুন।'
+                  :'Your language or list changes could not be saved. Retry signing out.'}); }
+                finally { setPreviewSigningOut(false); }
               }}>{previewAccount ? t.logout : t.exitDemo}</button>}
             </div>
           </section>
