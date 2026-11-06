@@ -12,11 +12,11 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing a hosted demo-profile persistence test.');
   const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
-  // Desktop and mobile projects run concurrently. Give each project a distinct
-  // pair of synthetic accounts so selected-list assertions cannot race, while
-  // the two browser contexts within each project still verify same-account sync.
-  const firstUser:DemoUserId=info.project.name.startsWith('mobile')?'user8':'user10';
-  const otherUser:DemoUserId=info.project.name.startsWith('mobile')?'user7':'user9';
+  // Keep the same fictional account pair for both viewport projects. The CI
+  // command runs projects sequentially so the persisted selected-list setting
+  // cannot race between desktop and mobile journeys.
+  const firstUser:DemoUserId='user10';
+  const otherUser:DemoUserId='user9';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
     const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
@@ -162,9 +162,10 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await setLanguage(other,'en');
     await openBeneficiaries(other);
     await expect(other.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
-    await expect(other.getByTestId('beneficiary-records')).not.toContainText(personName);
-    await expect(other.getByTestId('beneficiary-records')).not.toContainText(tin);
-    await expect(other.getByText(listName,{exact:true})).toHaveCount(0);
+    const otherBeneficiaries=other.getByTestId('beneficiaries-page');
+    await expect(otherBeneficiaries).not.toContainText(personName);
+    await expect(otherBeneficiaries).not.toContainText(tin);
+    await expect(otherBeneficiaries).not.toContainText(listName);
     await other.goto('/?action=history');
     await expect(other.getByTestId('signed-in-payment-activity')).not.toContainText(paymentReference);
 
