@@ -47,9 +47,10 @@ export function OtherTaxTaxpayerList({
   const primaryConfirmed = confirmed('primary', primaryTin);
   const summary = (tin: string, fallbackName: string) => {
     const match = lookupSampleTaxpayer(tin);
+    const displayName = match ? (bn ? match.nameBn : match.nameEn)
+      : fallbackName || (bn ? 'দেওয়া হয়নি' : 'Not provided');
     return <dl className="taxpay-taxpayer-row__summary" data-testid="confirmed-taxpayer-summary">
-      <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt>
-        <dd>{match ? (bn ? match.nameBn : match.nameEn) : fallbackName}</dd></div>
+      <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd>{displayName}</dd></div>
       <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd>{tin}</dd></div>
     </dl>;
   };
@@ -97,7 +98,7 @@ export function OtherTaxTaxpayerList({
             ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
       </div>}
       {allowAdditional && !primaryConfirmed && searchedTins.primary === primaryTin &&
-        lookupSampleTaxpayer(primaryTin) && !duplicate('primary', primaryTin) &&
+        canSearch(primaryTin) && !duplicate('primary', primaryTin) &&
         <div className="taxpay-taxpayer-row__confirm-add"><button type="button" className="taxpay-taxpayer-row__add"
           onClick={() => { onConfirmTaxpayer('primary', primaryTin); onClearError(); }}>
           <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
@@ -144,7 +145,7 @@ export function OtherTaxTaxpayerList({
               ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined} />
         </div>}
         {!personConfirmed && searchedTins[person.id] === person.tin &&
-          lookupSampleTaxpayer(person.tin) && !duplicate(person.id, person.tin) &&
+          canSearch(person.tin) && !duplicate(person.id, person.tin) &&
           <div className="taxpay-taxpayer-row__confirm-add"><button type="button" className="taxpay-taxpayer-row__add"
             onClick={() => { onConfirmTaxpayer(person.id, person.tin); onClearError(); }}>
             <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
