@@ -107,7 +107,7 @@ export function OtherTaxTaxpayerList({
           onClick={() => { onConfirmTaxpayer('primary', primaryTin); onClearError(); }}>
           <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
         </button></div>}
-      {allowAdditional && !primaryConfirmed && searchedTins.primary === primaryTin && duplicate('primary', primaryTin) &&
+      {requireConfirmation && allowAdditional && !primaryConfirmed && searchedTins.primary === primaryTin && duplicate('primary', primaryTin) &&
         <p className="taxpay-taxpayer-row__lookup-status" role="status">{bn ? 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।' : 'Taxpayer already added.'}</p>}
       {tinError && (!invalidId || invalidId === 'primary') &&
         <p id="guest-payment-error-tin" className="payment-form-field-error" role="alert">{tinError}</p>}
@@ -154,7 +154,7 @@ export function OtherTaxTaxpayerList({
             onClick={() => { onConfirmTaxpayer(person.id, person.tin); onClearError(); }}>
             <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
           </button></div>}
-        {!personConfirmed && searchedTins[person.id] === person.tin && duplicate(person.id, person.tin) &&
+        {requireConfirmation && !personConfirmed && searchedTins[person.id] === person.tin && duplicate(person.id, person.tin) &&
           <p className="taxpay-taxpayer-row__lookup-status" role="status">{bn ? 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।' : 'Taxpayer already added.'}</p>}
         {tinError && invalidId === person.id &&
           <p id="guest-payment-error-tin" className="payment-form-field-error" role="alert">{tinError}</p>}
