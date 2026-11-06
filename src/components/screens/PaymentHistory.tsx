@@ -2,6 +2,7 @@ import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
+import {recoverableLegacyStorySession,recoverLegacyStoryPayments} from '../../services/legacyStoryPaymentRecovery';
 import { AuthenticatedHistorySwitch } from './AuthenticatedHistorySwitch';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
@@ -14,6 +15,34 @@ import type { ChallanReceipt, PaymentCategory, Language } from '../../types/tax'
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
+
+function LegacyPaymentRecovery({language}:{language:Language}) {
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState('');
+  const [restored,setRestored]=useState<number|null>(null);
+  // No unrequested automatic merge from guest data to a public User ID.
+  if(!recoverableLegacyStorySession() || restored!==null)return null;
+  const bn=language==='bn';
+  return <section className="mx-auto mb-4 max-w-7xl rounded-lg border border-taxpay-border bg-white p-3"
+    aria-label={bn?'আগের পেমেন্ট ফিরিয়ে আনুন':'Recover earlier saved payments'}>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-taxpay-text">
+        {bn?'এই ব্রাউজারের আগের সংরক্ষিত পেমেন্টগুলো আপনার বর্তমান প্রোফাইলে যোগ করতে পারবেন।':
+          'Earlier saved payments in this browser can be added to your current profile. Existing records will be preserved.'}
+      </p>
+      <button type="button" disabled={busy}
+        className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-medium text-taxpay-primary disabled:opacity-60"
+        onClick={()=>{setBusy(true);setError('');
+          void recoverLegacyStoryPayments().then(n=>{setRestored(n);window.dispatchEvent(new Event('taxpay:story-payments-recovered'));})
+            .catch(e=>setError(e instanceof Error?e.message:'Recovery was not confirmed.'))
+            .finally(()=>setBusy(false));
+        }}>
+        {busy?(bn?'ফিরিয়ে আনা হচ্ছে…':'Restoring…'):(bn?'আগের পেমেন্ট ফিরিয়ে আনুন':'Restore earlier payments')}
+      </button>
+    </div>
+    {error&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{error}</p>}
+  </section>;
+}
 
 const statusText: Record<string, {en:string; bn:string}> = {
   INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
@@ -103,7 +132,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
 
   if (authenticatedUser) return <AuthenticatedHistorySwitch ownerUid={authenticatedUser.id}
     language={language} activityTabs={activityTabs} />;
-  if (demoUser) return <DemoPaymentActivity activityTabs={activityTabs} />;
+  if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/></>;
 
   return (
     <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
