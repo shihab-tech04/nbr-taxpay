@@ -52,6 +52,13 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await page.goto('http://127.0.0.1:4173/?action=history');
+  const saved=await page.evaluate(()=>({
+    legacy:sessionStorage.getItem('taxpay-guest-simulation-session'),
+    preview:JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null')
+  }));
+  expect(saved.legacy).toBe(legacy);
+  expect(saved.preview?.profileId).toBe('user1');
+  await expect(page.getByRole('heading',{name:/Payment|পেমেন্ট/}).first()).toBeVisible();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toBeVisible();
   await page.getByRole('button',{name:'Restore earlier payments'}).click();
   await expect.poll(()=>recovered).toBe(true);
