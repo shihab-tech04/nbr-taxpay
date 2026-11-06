@@ -78,8 +78,8 @@ test('failed preference write keeps profile signed in, retries, and restores sav
   await page.getByLabel('Password',{exact:true}).fill('user9');
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
   await page.goto('/?action=landing');
-  await page.locator('.public-home-language').click();
   rejectSettingWrites=true;
+  await page.locator('.public-home-language').click();
   await page.locator('.public-home-avatar-trigger').click();
   await page.locator('.public-home-profile-menu').getByRole('button',{name:'সাইন আউট',exact:true}).click();
   await expect(page.locator('.public-home-profile-menu').getByRole('alert'))
