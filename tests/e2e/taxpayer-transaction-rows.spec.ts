@@ -30,14 +30,19 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   await expect(panel.getByRole('navigation',{name:'Page navigation'})).toBeVisible();
 
   const first=rows.first();
-  const positions=await first.evaluate(row=>{
-    const bounds=(selector:string)=>row.querySelector(selector)!.getBoundingClientRect();
-    const cells=Array.from(row.querySelectorAll('td'));
-    return cells.map(cell=>({left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right}));
-  });
-  expect(positions).toHaveLength(7);
+  const positions=await first.evaluate(row=>Array.from(row.querySelectorAll('td'))
+    .filter(cell=>getComputedStyle(cell).display!=='none')
+    .map(cell=>({left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right})));
+  expect(positions).toHaveLength(4);
   for(let i=1;i<positions.length;i++)expect(positions[i].left).toBeGreaterThanOrEqual(positions[i-1].right-1);
-  expect(positions[4].left).toBeGreaterThan(positions[3].left);
+  const viewport=panel.locator('.taxpay-table-viewport');
+  const [bounds,actionBounds]=await Promise.all([
+    viewport.boundingBox(),first.getByRole('button',{name:'Details for Pending bank reconciliation'}).boundingBox()
+  ]);
+  expect(bounds).not.toBeNull();
+  expect(actionBounds).not.toBeNull();
+  expect(actionBounds!.x+actionBounds!.width).toBeLessThanOrEqual(bounds!.x+bounds!.width+2);
+  await expect(first.getByText('DEMO-PAY-PEND-01')).toBeVisible();
   await expect(first.getByRole('button',{name:'Details for Pending bank reconciliation'})).toBeVisible();
 
   await first.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();

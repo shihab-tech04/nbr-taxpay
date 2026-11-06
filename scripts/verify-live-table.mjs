@@ -31,6 +31,13 @@ try{
   await expect(rows).toHaveCount(10);
   await expect(panel.getByRole('navigation',{name:'Page navigation'})).toBeVisible();
   await expect(panel.getByRole('button',{name:'Export CSV'})).toBeVisible();
+  const action=rows.first().getByRole('button',{name:'Details for Pending bank reconciliation'});
+  const [viewportBox,actionBox]=await Promise.all([
+    panel.locator('.taxpay-table-viewport').boundingBox(),action.boundingBox()
+  ]);
+  if(!viewportBox||!actionBox||actionBox.x+actionBox.width>viewportBox.x+viewportBox.width+2)
+    throw new Error('Published desktop Transactions Details action is cut off');
+  await expect(rows.first().getByText('DEMO-PAY-PEND-01')).toBeVisible();
   await page.screenshot({path:'test-results/live-table-desktop.png',fullPage:true});
   await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
   await expect(rows).toHaveCount(4);

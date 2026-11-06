@@ -1043,3 +1043,52 @@ table.taxpay-unified-table {
     grid-column: auto;
   }
 }
+
+/* Keep every action accessible when the taxpayer sidebar reduces desktop width.
+ * The source-of-truth grid still has seven semantic columns; reference, type
+ * and date consolidate visually into Payment at ordinary laptop widths. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta { display: none; }
+@media (min-width:768px) and (max-width:1440px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2),
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3),
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {
+    display: none;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(1) {
+    min-width: 0;
+    width: 48%;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(5) {
+    min-width: 0;
+    width: 17%;
+    text-align: right;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(6) {
+    min-width: 0;
+    width: 21%;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(7) {
+    min-width: 0;
+    width: 14%;
+    text-align: right;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta {
+    display: block;
+    margin-top: 3px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--taxpay-table-muted, #5f6b7a);
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta p {
+    margin: 2px 0 0;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table .taxpayer-transaction-row__status > span {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

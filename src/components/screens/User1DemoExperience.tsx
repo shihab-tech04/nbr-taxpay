@@ -214,8 +214,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       mobileTestId="taxpayer-transaction-mobile-cards"
       onViewRow={item=>setSelected(item)}
       columns={[
-        {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=>
-          <p className="taxpayer-transaction-row__title">{item.title}</p>},
+        {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=><div className="taxpayer-transaction-payment-cell">
+          <p className="taxpayer-transaction-row__title">{item.title}</p>
+          <div className="taxpayer-transaction-compact-meta">
+            <p className="taxpayer-transaction-reference">{item.ref}</p>
+            <p>{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
+          </div>
+        </div>},
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
           <span className="taxpayer-transaction-reference">{item.ref}</span>},
         {key:'type',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:item=>
