@@ -95,8 +95,8 @@ test('real account restores its own language and selected beneficiary list in a 
 
   await page.goto('/?action=account_settings');
   const accountPages=page.getByRole('navigation',{name:'Account pages'});
-  await accountPages.getByRole('button',{name:'Profile'}).click();
-  await expect(accountPages.getByRole('button',{name:'Profile'})).toHaveAttribute('aria-current','page');
+  await accountPages.getByRole('button',{name:'Profile',exact:true}).click();
+  await expect(accountPages.getByRole('button',{name:'Profile',exact:true})).toHaveAttribute('aria-current','page');
   await accountPages.getByRole('button',{name:'Profile settings'}).click();
   await expect(page.locator('#taxpay-profile-language')).toBeVisible();
   await page.locator('#taxpay-profile-display-name').fill('Account A profile');
