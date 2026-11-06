@@ -45,7 +45,7 @@ test('failed preference write keeps profile signed in, retries, and restores sav
   await page.locator('#taxpay-demo-language').selectOption('bn');
   await page.getByRole('button',{name:'সাইন আউট',exact:true}).click();
   await expect.poll(()=>failureCount).toBeGreaterThanOrEqual(2);
-  await expect(page.getByRole('alert')).toContainText('আবার সাইন আউট করুন');
+  await expect(page.getByText('আপনার ভাষা বা তালিকার পরিবর্তন সংরক্ষিত হয়নি। আবার সাইন আউট করুন।')).toBeVisible();
   await expect(page).toHaveURL(/action=account_settings/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user9');
 
