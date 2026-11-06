@@ -25,8 +25,14 @@ export function TaxpayerReferenceRail() {
   const logout = async () => {
     setSignOutError('');
     if (!user) {
-      if (previewAccount) logoutPreviewAccount();
-      else { setUserRole('GUEST'); navigate('landing'); }
+      if (previewAccount) {
+        setSigningOut(true);
+        try { await logoutPreviewAccount(); }
+        catch { setSignOutError(language === 'bn'
+          ? 'আপনার ভাষা বা তালিকা সংরক্ষিত হয়নি। আবার সাইন আউট করুন।'
+          : 'Your language or list changes could not be saved. Retry signing out.'); }
+        finally { setSigningOut(false); }
+      } else { setUserRole('GUEST'); navigate('landing'); }
       return;
     }
     setSigningOut(true);
