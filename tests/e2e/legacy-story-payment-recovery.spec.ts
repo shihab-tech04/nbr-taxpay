@@ -51,7 +51,8 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
   await page.getByLabel('Password',{exact:true}).fill('user1');
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await page.goto('http://127.0.0.1:4173/?action=history');
+  await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
   const saved=await page.evaluate(()=>({
     legacy:sessionStorage.getItem('taxpay-guest-simulation-session'),
     profileKey:sessionStorage.getItem('taxpay-taxpayer-preview-user'),
