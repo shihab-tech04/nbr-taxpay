@@ -3,15 +3,15 @@ import {expect,test,type Page} from '@playwright/test';
 const session = '22222222-2222-4222-8222-222222222222';
 const paymentId = '33333333-3333-4333-8333-333333333333';
 
-async function installPreviewProfile(page:Page,userId='user1'){
-  await page.addInitScript(id=>{
+async function installPreviewProfile(page:Page,userId='user1',language:'en'|'bn'='en'){
+  await page.addInitScript(({id,language})=>{
     sessionStorage.setItem('taxpay-taxpayer-preview-user',id);
     sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
       profileId:id,capability:'A'.repeat(43),
       paymentSessionId:'00000000-0000-4000-8000-000000000099',
-      selectedListId:null,language:'en'
+      selectedListId:null,language
     }));
-  },userId);
+  },{id:userId,language});
 }
 
 async function mockSessionNotifications(page:Page, amountMinor:number|null) {
@@ -127,8 +127,8 @@ test('guest hides notification actions while session-only payment events retain 
 
 
 /** All rows are synthetic, scope-limited test fixtures. No real taxpayer data. */
-async function mockNotificationRegisters(page:Page){
-  await installPreviewProfile(page);
+async function mockNotificationRegisters(page:Page,language:'en'|'bn'){
+  await installPreviewProfile(page,'user1',language);
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',async route=>{
     const rows=[{id:'p1',transactionId:'txn-user1-001',payer:'user1',state:'SIMULATED',
       createdAt:'2026-10-24T10:00:00Z',simulationOnly:true,totalMinor:234567,
@@ -148,7 +148,7 @@ async function mockNotificationRegisters(page:Page){
 
 for(const language of ['en','bn'] as const){
   test('notification registers preserve actions, filters, amounts and mobile containment in '+language,async({page},info)=>{
-    await mockNotificationRegisters(page);
+    await mockNotificationRegisters(page,language);
     await page.goto('/?action=notifications&lang='+language);
     const records=page.locator('table.taxpay-unified-table');
     await expect(records).toHaveCount(2);
