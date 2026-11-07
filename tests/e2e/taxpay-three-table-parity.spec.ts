@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type Page} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
@@ -110,14 +111,12 @@ for(const language of ['en','bn'] as const){
         expect(Math.abs(tagBox.y-searchBox.y),'Tag and Search share a row').toBeLessThanOrEqual(3);
         expect(listBox.y+listBox.height,'Selected list precedes Tag and Search').toBeLessThanOrEqual(tagBox.y);
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
-        await tag.locator('select').selectOption('friends_family');
-        const relationship=filters.locator('.beneficiary-directory__relationship-filter');
-        await expect(relationship).toBeVisible();
-        const relationBox=await relationship.boundingBox();
-        if(!relationBox)throw Error('Relationship filter is missing');
-        expect(relationBox.y,'Relationship follows Tag/Search row').toBeGreaterThan(tagBox.y+tagBox.height-2);
-        await tag.locator('select').selectOption('all');
-        await expect(relationship).toHaveCount(0);
+        // Tag and relationship are now one grouped searchable selector.
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','friends_family:father');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','friends_family:father');
+        await expect(filters.locator('.beneficiary-directory__relationship-filter')).toHaveCount(0);
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','all');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','all');
       }
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'
