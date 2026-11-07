@@ -24,7 +24,9 @@ test('review and recent activity preserve navigation and avoid duplicate service
   await expect(page.getByRole('heading',{name:'Recent activity'})).toBeVisible();
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Tax service activity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
 });
 
 test('320px dashboard keeps year table contained in a scrolling region',async({page})=>{
