@@ -1,6 +1,7 @@
 -- Idempotent, non-financial 30-persona payment coverage; user1 is primary.
 -- 4 examples for each of 8 service groups (32 user1), plus one self-payment per user2..30.
 -- Uses approved catalogue heads (skips BLOCKED), existing ACTIVE delegation only.
+-- Admin fixture import: no private profile tokens are read or exported.
 do $seed$
 declare uid int;si int;combo int;li int;lim int;h int;amt bigint;total bigint;
  actor text;sess uuid;chash text;pname text;tin text;svc text;yr text;receiver text;
@@ -13,10 +14,10 @@ begin
  if auth is null then raise exception 'No approved user1-to-user4 authorization';end if;
  for uid in 1..30 loop
   actor:='user'||uid;
-  select payment_session_id,encode(extensions.digest(convert_to(capability_token,'UTF8'),'sha256'),'hex')
-    into sess,chash from taxpay_guest_private.demo_profiles where demo_id=actor;
+  select payment_session_id
+    into sess from taxpay_guest_private.demo_profiles where demo_id=actor;
   select name_en into pname from public.sim_payment_users where id=actor;
-  if sess is null or chash is null or pname is null then raise exception 'Missing %',actor;end if;
+  if sess is null or pname is null then raise exception 'Missing %',actor;end if;
   tin:=case when uid<=9 then repeat(uid::text,13) when uid=10 then '1010101010101' else '90000000'||lpad(uid::text,5,'0') end;
   for si in 1..8 loop
    if uid>1 and si<>mod(uid-2,8)+1 then continue;end if;
@@ -57,13 +58,18 @@ begin
       'departurePort',case combo when 0 then 'Benapole' when 1 then 'Chattogram Seaport' else 'Dhaka Airport' end,
       'passengers',passengers,'passengerName','SAMPLE TRAVELLER 1','passportNumberMasked','••••0001');
     end if;
-    inp:=jsonb_build_object('origin','TAXPAY_UI','idempotencyKey',(md5(batch||actor||svc||combo::text)::uuid)::text,
+    inp:=jsonb_build_object('origin','TAXPAY_SQL_FIXTURE','idempotencyKey',(md5(batch||':'||actor||':'||svc||':'||combo::text)::uuid)::text,
       'sessionId',sess::text,'service',svc,'amountMinor',total,'details',detail);
-    ack:=public.taxpay_demo_story1_submit(chash,inp);
-    if ack->>'status'<>'SIMULATED_SUCCESS' then raise exception 'Unconfirmed scenario % % %',actor,svc,combo;end if;
+    insert into demo_payment.story_payments(idempotency_key,session_id,service_code,amount_minor,data,status)
+      values(md5(batch||':'||actor||':'||svc||':'||combo::text)::uuid,sess,svc,total,inp,'SIMULATED_SUCCESS')
+      on conflict(idempotency_key) do nothing;
    end loop;
   end loop;
  end loop;
+ insert into demo_payment.story_notifications(payment_id,session_id,event_type)
+  select p.id,p.session_id,'SIMULATED_PAYMENT_SUCCESS' from demo_payment.story_payments p
+  where p.data->'details'->>'fixtureBatch'=batch
+    and not exists(select 1 from demo_payment.story_notifications n where n.payment_id=p.id);
  if (select count(*) from demo_payment.story_payments where data->'details'->>'fixtureBatch'=batch)<>61
  then raise exception 'Expected 61 saved scenarios';end if;
 end;
