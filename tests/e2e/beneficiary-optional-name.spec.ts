@@ -139,8 +139,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await page.getByRole('dialog',{name:'কীভাবে উপকারভোগী যোগ করবেন'}).getByRole('button',{name:'একজন উপকারভোগী যোগ'}).click();
   dialog=page.getByRole('dialog',{name:'উপকারভোগী যোগ'});
   await dialog.locator('#beneficiary-tin').fill('123450987654');
-  await chooseBeneficiaryOption(dialog,'beneficiary-tag','friends_family');
-  await chooseBeneficiaryOption(dialog,'beneficiary-relationship','mother');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','friends_family:mother');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
   await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
