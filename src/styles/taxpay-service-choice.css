@@ -2191,3 +2191,117 @@
     transition: none !important;
   }
 }
+
+/* Account payment drafts share the existing modal footer with the stage action.
+   This is scoped to the signed-in draft flow; other modals remain unchanged. */
+.payment-form-draft-controls--footer:empty { display:none; }
+.taxpay-citizen-shell .taxpay-modal:has(.payment-form-draft-controls--footer) .taxpay-modal__footer-actions {
+  display:grid;
+  grid-template-columns:max-content minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-items:center;
+  column-gap:.7rem;
+  row-gap:.4rem;
+  width:100%;
+  min-width:0;
+  container-type:inline-size;
+}
+.taxpay-citizen-shell .taxpay-modal .payment-form-draft-controls__actions--footer {
+  display:flex;
+  flex:0 1 auto;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:.5rem;
+  min-width:0;
+  grid-column:1;
+  grid-row:2;
+}
+.taxpay-citizen-shell .taxpay-modal .payment-form-draft-controls__actions--footer button {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:auto;
+  min-width:0;
+  min-height:44px;
+  white-space:nowrap;
+}
+.payment-form-draft-controls__label-short { display:none; }
+.taxpay-citizen-shell .taxpay-modal:has(.payment-form-draft-controls--footer) .taxpay-modal__footer-actions > .payment-flow-embedded__mobile-summary {
+  grid-column:1 / -1;
+  grid-row:1;
+  box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+}
+.taxpay-citizen-shell .taxpay-modal .payment-flow-embedded__footer-actions--with-drafts {
+  display:flex;
+  flex:0 1 auto;
+  grid-column:2;
+  grid-row:2;
+  align-items:center;
+  justify-content:flex-end;
+  justify-self:end;
+  gap:.4rem;
+  margin:0;
+  width:auto;
+  min-width:0;
+}
+.taxpay-citizen-shell .taxpay-modal .payment-flow-embedded__footer-actions--with-drafts > button {
+  width:auto;
+  min-width:0;
+  max-width:100%;
+  flex:0 1 auto;
+  white-space:normal;
+}
+@media (max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal:has(.payment-form-draft-controls--footer) .taxpay-modal__footer-actions { gap:.35rem; }
+  .taxpay-citizen-shell .taxpay-modal .payment-form-draft-controls__actions--footer { gap:.25rem; }
+  .taxpay-citizen-shell .taxpay-modal .payment-form-draft-controls__actions--footer button {
+    padding:.55rem .4rem;
+    font-size:.75rem;
+    font-weight:600;
+  }
+  .payment-form-draft-controls__actions--footer .payment-form-draft-controls__label-long { display:none; }
+  .payment-form-draft-controls__actions--footer .payment-form-draft-controls__label-short { display:inline; }
+  .taxpay-citizen-shell .taxpay-modal:has(.payment-form-draft-controls--footer) .taxpay-modal__footer-actions { column-gap:.25rem; }
+  .taxpay-citizen-shell .taxpay-modal .payment-flow-embedded__footer-actions--with-drafts { display:flex; gap:.25rem; }
+  .taxpay-citizen-shell .taxpay-modal .payment-flow-embedded__footer-actions--with-drafts > button {
+    min-width:0;
+    width:auto;
+    flex:0 1 auto;
+    min-height:44px;
+    padding:.5rem .4rem;
+    font-size:.75rem;
+    white-space:nowrap;
+  }
+  .payment-flow-embedded__footer-actions--with-drafts .payment-flow-embedded__action-long { display:none; }
+  .payment-flow-embedded__footer-actions--with-drafts .payment-flow-embedded__action-short { display:inline; }
+  .payment-flow-embedded__footer-actions--with-drafts .payment-flow-embedded__back-text { display:none; }
+}
+
+/* Some payment modals are narrower than the viewport.  Query the actual
+   footer width so the primary action never becomes a full-width mobile bar. */
+@container (max-width: 650px) {
+  .payment-form-draft-controls__actions--footer { gap:.25rem; }
+  .payment-form-draft-controls__actions--footer button {
+    padding:.5rem .4rem;
+    font-size:14px;
+  }
+  .payment-form-draft-controls__actions--footer .payment-form-draft-controls__label-long { display:none; }
+  .payment-form-draft-controls__actions--footer .payment-form-draft-controls__label-short { display:inline; }
+  .payment-flow-embedded__footer-actions--with-drafts { gap:.25rem; }
+  .payment-flow-embedded__footer-actions--with-drafts > button {
+    flex:0 1 auto;
+    min-width:0;
+    width:auto;
+    padding:.5rem .4rem;
+    font-size:14px;
+    white-space:nowrap;
+  }
+  .payment-flow-embedded__footer-actions--with-drafts .payment-flow-embedded__action-long { display:none; }
+  .payment-flow-embedded__footer-actions--with-drafts .payment-flow-embedded__action-short { display:inline; }
+  .payment-flow-embedded__footer-actions--with-drafts .payment-flow-embedded__back-text { display:none; }
+}

@@ -1188,6 +1188,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     );
   }
 
+  const draftActionsInFooter = embedded && Boolean(signedInAccount) && isPaymentDraftService(category) && step <= 2;
+
   const receiptEmailControl = (
     <div>
       <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
@@ -1200,6 +1202,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       {fieldError('email')}
     </div>
   );
+
+  const mobileCalculationSummary = mobilePaymentFooter && step <= 3 ? (
+    <details key={step} className="payment-flow-embedded__mobile-summary" data-testid="mobile-payment-calculation">
+      <summary className="payment-flow-embedded__mobile-summary-toggle" data-testid="mobile-payment-calculation-toggle">
+        <span className="payment-flow-embedded__mobile-summary-heading"><ReceiptText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</span>
+        <strong className="payment-flow-embedded__mobile-summary-total">{mobileSummaryTotal === null ? '—' : formatCurrency(mobileSummaryTotal, language)}</strong>
+        <ChevronDown size={18} className="payment-flow-embedded__mobile-summary-chevron" aria-hidden="true" />
+      </summary>
+      <div className="payment-flow-embedded__mobile-summary-details" data-testid="mobile-payment-calculation-details">{paymentCalculation}</div>
+    </details>
+  ) : null;
 
   return (
     <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
@@ -1241,7 +1254,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {signedInAccount && isPaymentDraftService(category) && step <= 2 &&
           <AccountPaymentDraftControls service={category} language={language}
             snapshot={snapshotAccountDraft} restore={restoreAccountDraft}
-            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
+            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
+            placeActionsInFooter={draftActionsInFooter} footerTarget={modalFooterTarget} />}
 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
@@ -1636,29 +1650,22 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         )}
       </div>
       {embedded && modalFooterTarget && createPortal(
-        <div className="payment-flow-embedded__footer-actions">
-          {mobilePaymentFooter && step <= 3 && (
-            <details key={step} className="payment-flow-embedded__mobile-summary" data-testid="mobile-payment-calculation">
-              <summary className="payment-flow-embedded__mobile-summary-toggle" data-testid="mobile-payment-calculation-toggle">
-                <span className="payment-flow-embedded__mobile-summary-heading"><ReceiptText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</span>
-                <strong className="payment-flow-embedded__mobile-summary-total">{mobileSummaryTotal === null ? '—' : formatCurrency(mobileSummaryTotal, language)}</strong>
-                <ChevronDown size={18} className="payment-flow-embedded__mobile-summary-chevron" aria-hidden="true" />
-              </summary>
-              <div className="payment-flow-embedded__mobile-summary-details" data-testid="mobile-payment-calculation-details">{paymentCalculation}</div>
-            </details>
-          )}
+        <>
+          {draftActionsInFooter && mobileCalculationSummary}
+          <div className={`payment-flow-embedded__footer-actions${draftActionsInFooter ? ' payment-flow-embedded__footer-actions--with-drafts' : ''}`}>
+          {!draftActionsInFooter && mobileCalculationSummary}
           {step === 1 ? (
             <>
-              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
+              {!draftActionsInFooter && <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
                 <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
-              </button>
+              </button>}
               <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next} disabled={!canContinueStep1}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
             </>
           ) : step === 2 ? (<>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
-              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            <button type="button" className="tax-service-choice__cancel" aria-label={commonCopy.btnBack} onClick={() => { clearValidationError(); setStep(1); }}>
+              <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__back-text">{commonCopy.btnBack}</span>
             </button>
             <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={otherBatch && (!batchValid || !storyAmountSupported)}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
@@ -1671,7 +1678,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}
-        </div>, modalFooterTarget
+          </div>
+        </>, modalFooterTarget
       )}
     </div>
   );
