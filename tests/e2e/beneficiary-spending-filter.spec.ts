@@ -41,10 +41,10 @@ test('profile-scoped tags reconcile dashboard family/friends/clients and filter 
   const filter=page.getByRole('combobox',{name:'Filter transactions by beneficiary tag'});
   await expect(filter).toBeVisible();
   await filter.selectOption('friends');
-  await expect(page.getByText('Records: 1')).toBeVisible();
+  await expect(page.locator('.taxpay-office-register__count')).toContainText('1 / 14');
   await expect(page.getByText('DEMO-TRAVEL-01').filter({visible:true}).first()).toBeVisible();
   await filter.selectOption('clients');
-  await expect(page.getByText('Records: 1')).toBeVisible();
+  await expect(page.locator('.taxpay-office-register__count')).toContainText('1 / 14');
   await expect(page.getByText('DEMO-PAY-02').filter({visible:true}).first()).toBeVisible();
   await filter.selectOption('all');
   await expect(page.locator('.taxpay-office-register__count')).toContainText('14');
