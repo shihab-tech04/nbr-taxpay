@@ -151,9 +151,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('Already covered').first()).toBeVisible();
   await expect(phase.getByText('Still remaining').first()).toBeVisible();
   await expect(phase.getByRole('button',{name:'Check tax ledger'})).toBeVisible();
-  for (const heading of ['Quick actions','How your tax is covered','Monthly activity','By tax year','Already covered','Tax summary for this year']) {
+  for (const heading of ['Quick actions','How your tax is covered','By tax year','Already covered','Tax summary for this year']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
+  await expect(phase.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   // A signed-in account must use the approved Phase A/B visual sections, but
   // private scenario allocations never become government liability or credits.
   await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('—');
@@ -180,7 +181,8 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
   await expect(phase.getByText('Coverage details are not available yet')).toHaveCount(0);
   await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 6,500');
-  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toBeVisible();
+  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toHaveCount(0);
+  await expect(phase.getByRole('heading',{name:'By tax year'})).toBeVisible();
   await phase.getByRole('button',{name:'2024-2025'}).click();
   await expect(financialCards.nth(3)).toContainText('৳ 10,000');
   await examples.getByRole('button',{name:'Hide examples'}).click();
@@ -265,6 +267,7 @@ test('bound SQL ledger keeps historical and new mixed-year allocations independe
   await page.goto('/?action=ledger');
   const ledger=page.getByTestId('event-tax-ledger');
   await expect(ledger).toBeVisible();
+  await ledger.getByRole('button',{name:'Filter',exact:true}).click();
   const years=ledger.getByRole('combobox',{name:'Filter ledger by year'});
   await years.selectOption('2026-27');
   await expect(ledger.locator('tbody tr')).toHaveCount(1);
