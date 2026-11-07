@@ -8,7 +8,8 @@ test('default taxpayer entry exposes the fully designed interactive dashboard', 
   await expect(page).toHaveURL(/action=taxpayer_home&demoUser=user1/);
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'How your tax is covered' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Monthly activity' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tax trend by year' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Monthly activity' })).toHaveCount(0);
 });
 
 test('ordinary taxpayer dashboard leads with recorded category totals, not invented credits', async ({ page }) => {
