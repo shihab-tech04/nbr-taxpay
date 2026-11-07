@@ -60,15 +60,15 @@ export function TaxPayActiveFilterChips({filters,clearLabel,onClear}:{
  */
 export function TaxPayOfficeRegisterToolbar({
   title,description,count,total,countLabel,searchValue,searchLabel,searchPlaceholder,
-  onSearchChange,filtersOpen,onToggleFilters,filterLabel,actions,id
+  onSearchChange,filtersOpen,onToggleFilters,filterLabel,actions,id,testId
 }:{
   title:string;description?:string;count:number;total?:number;countLabel:string;
   searchValue?:string;searchLabel?:string;searchPlaceholder?:string;
   onSearchChange?:(value:string)=>void;
   filtersOpen?:boolean;onToggleFilters?:()=>void;filterLabel?:string;
-  actions?:ReactNode;id?:string;
+  actions?:ReactNode;id?:string;testId?:string;
 }){
-  return <header className="taxpay-office-register__toolbar" data-testid="taxpay-office-register-toolbar">
+  return <header className="taxpay-office-register__toolbar" data-testid={testId??"taxpay-office-register-toolbar"}>
     <div className="taxpay-office-register__identity">
       <div>
         <h2 id={id} className="taxpay-office-register__title">{title}</h2>
@@ -90,11 +90,11 @@ export function TaxPayOfficeRegisterToolbar({
     </div>
   </header>;
 }
-export function TaxPayOfficeRegisterFilters({open,children,className,id}:{
-  open:boolean;children:ReactNode;className?:string;id?:string;
+export function TaxPayOfficeRegisterFilters({open,children,className,id,testId}:{
+  open:boolean;children:ReactNode;className?:string;id?:string;testId?:string;
 }){
   if(!open)return null;
-  return <TaxPayTableControls id={id} className={merge('taxpay-office-register__filters',className)}>{children}</TaxPayTableControls>;
+  return <TaxPayTableControls id={id} data-testid={testId} className={merge('taxpay-office-register__filters',className)}>{children}</TaxPayTableControls>;
 }
 export function TaxPayOfficeRegisterFooter({shown,total,labels}:{
   shown:number;total:number;labels?:{showing:string;of:string;records:string};
