@@ -54,9 +54,15 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(null);
-  // Once a payer starts a journey, Back returns to its original chooser, not the draft gate.
+  // Back from taxpayer details returns to payer choices without losing
+  // the route back to the signed-in user's original saved-draft decision.
   const [draftEntryCompleted, setDraftEntryCompleted] = useState(false);
+  const [enteredFromDraftChoice, setEnteredFromDraftChoice] = useState(false);
   const [draftEntryMode, setDraftEntryMode] = useState<'choice' | 'list' | 'new'>('choice');
+  const changeDraftEntryMode = useCallback((next: 'choice' | 'list' | 'new') => {
+    if (next === 'new') setEnteredFromDraftChoice(true);
+    setDraftEntryMode(next);
+  }, []);
   const [draftEntryBlocking, setDraftEntryBlocking] = useState(Boolean(verifiedUser || previewAccount));
   const draftActor: PaymentDraftActor | null = verifiedUser
     ? { kind: 'authenticated', userId: verifiedUser.id }
@@ -120,9 +126,13 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       // Re-measure the approved modal height on every such transition so the
       // full original payer cards and footer cannot inherit the compact draft height.
       motionKey={`${view}:${view === 'payer' ? `${draftEntryMode}:${draftEntryBlocking ? 'draft' : 'original'}` : stage}`}
-      onBack={view === 'payer' && !draftEntryCompleted && draftActor &&
-        !initialService && !paymentBeneficiaryPrefill && draftEntryMode === 'new'
-        ? () => setDraftEntryMode('choice')
+      onBack={view === 'payer' && enteredFromDraftChoice && draftActor &&
+        !initialService && !paymentBeneficiaryPrefill
+        ? () => {
+          setEnteredFromDraftChoice(false);
+          setDraftEntryCompleted(false);
+          setDraftEntryMode('choice');
+        }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
         : view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
@@ -176,7 +186,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </>}
         {view === 'payer' ? <PaymentDraftEntryGate
            actor={draftActor} ownerKey={draftOwnerKey}
-           mode={draftEntryMode} onModeChange={setDraftEntryMode}
+           mode={draftEntryMode} onModeChange={changeDraftEntryMode}
            enabled={Boolean(!draftEntryCompleted && draftActor && !initialService && !paymentBeneficiaryPrefill)}
            language={language}
            serviceLabel={id => {
@@ -188,6 +198,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              setTopLevel(draft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX');
              setPayerForSelf(draft.service === 'TRAVEL_TAX' ? true : draft.form_payload.forSelf as boolean);
              setDraftToResume(draft);
+             setEnteredFromDraftChoice(true);
              setDraftEntryCompleted(true);
              setUseAccount(true);
              setStage(1);
