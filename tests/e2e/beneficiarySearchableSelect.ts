@@ -10,7 +10,7 @@ export async function chooseBeneficiaryOption(
   const options=root.locator('#'+id+'-options [role="option"]');
   if(typeof selection==='string'){
     // Stored values (including UUID list IDs) are the stable selection contract.
-    await options.locator('[data-option-value="'+selection+'"]').click();
+    await root.locator('#'+id+'-options [role="option"][data-option-value="'+selection+'"]').click();
   }else{
     await options.filter({hasText:selection.label}).first().click();
   }
