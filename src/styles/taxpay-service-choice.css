@@ -2191,3 +2191,76 @@
     transition: none !important;
   }
 }
+
+
+/* Payment stage footer: draft actions stay on the left; the primary next-step
+   action stays right-aligned. None of these buttons should expand full width. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+  justify-content: space-between;
+  gap: 12px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline-start: auto;
+  padding-inline: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__draft-actions {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.payment-form-draft-controls__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.payment-form-draft-controls__actions button {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.payment-form-draft-controls__save {
+  border: 1px solid var(--citizen-primary);
+  background: var(--citizen-primary);
+  color: white;
+}
+.payment-form-draft-controls__open {
+  border: 1px solid var(--citizen-primary);
+  background: white;
+  color: var(--citizen-primary);
+}
+.payment-form-draft-controls__open-short { display: none; }
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+    column-gap: 8px;
+    row-gap: 10px;
+  }
+  .payment-form-draft-controls__actions { gap: 5px; }
+  .payment-form-draft-controls__actions button { padding-inline: 9px; font-size: 13px; }
+  .payment-form-draft-controls__open-long { display: none; }
+  .payment-form-draft-controls__open-short { display: inline; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+    flex: 0 1 auto;
+    width: auto;
+    padding-inline: 12px;
+    margin-inline-start: auto;
+    font-size: 13px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue .payment-flow-embedded__action-long {
+    display: none;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue .payment-flow-embedded__action-short {
+    display: inline;
+  }
+}
