@@ -25,7 +25,7 @@ for (const locale of ['en', 'bn'] as const) {
     await tin.focus();
     const suggestions = primary.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
     await expect(suggestions).toBeVisible();
-    await expect(suggestions.getByRole('option')).toHaveCount(10);
+    await expect(suggestions.getByRole('option')).toHaveCount(30);
     const after = await primary.evaluate(el => el.getBoundingClientRect().height);
     expect(Math.abs(before - after)).toBeLessThan(3); // overlay never expands the card
     await suggestions.getByRole('option', {name: '111111111111'}).click();
@@ -101,7 +101,7 @@ test('Other Tax TIN suggestions remain fully reachable above the fixed footer', 
   await input.focus();
   const options = first.getByRole('listbox', {name: 'Suggested TIN numbers'});
   await expect(options).toBeVisible();
-  await expect(options.getByRole('option')).toHaveCount(10);
+  await expect(options.getByRole('option')).toHaveCount(30);
   const geometry = await options.evaluate(menu => {
     const area = menu.closest('.taxpay-modal__body');
     const anchor = menu.parentElement?.querySelector<HTMLInputElement>('#guest-tin');
