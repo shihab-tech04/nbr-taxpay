@@ -1144,7 +1144,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   // Saving work never saves payment attempts, verified authorizations or consent.
   const capturePreviewDraft = ():GuestPaymentDraftState => ({
-    schema:'1',journey:'guest_payment',step:step===4?3:step,
+    schema:'1',journey:'guest_payment',step,
     forSelf,tin,payerName,otherTaxpayerName,additionalTaxpayers,otherTaxLines,
     phone,receiptEmail,assessmentYear,noticeReference,incomeTaxType,category,
     selectedHeadIds,amountInputs:Object.fromEntries(Object.entries(amountInputs)),
