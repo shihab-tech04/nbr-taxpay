@@ -24,6 +24,8 @@ import { TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 
 interface TravelTaxProps {
   embedded?: boolean;
+  /** Previously verified account-owned draft selected at Pay Tax entry. */
+  initialDraft?: PaymentFormDraft;
   fourStepJourney?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
@@ -38,7 +40,7 @@ function maskPassport(passport: string) {
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
@@ -106,6 +108,18 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     setBankSlipPending(false); setReceiptReviewOpen(false); setProcessing(false);
     setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
   };
+  useEffect(() => {
+    if (!initialDraft) return;
+    try {
+      if (initialDraft.service !== 'TRAVEL_TAX') throw new Error('Saved travel payment service does not match.');
+      restoreTravelDraft(initialDraft.form_payload);
+      setSelectedAccountDraft(initialDraft);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Saved travel form could not be restored.');
+    }
+    // Reconfirm passenger identities; never restore prior approvals or gateway choices.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDraft?.id]);
   useEffect(() => {
     if (!selectedAccountDraft || !createdReceipt || bankSlipPending) return;
     const actor: PaymentDraftActor | null = authenticatedUser
