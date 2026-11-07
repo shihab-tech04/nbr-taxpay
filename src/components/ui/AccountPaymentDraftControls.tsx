@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import {
@@ -13,12 +14,16 @@ type Props = {
   restore: (value: Record<string, unknown>) => void;
   selectedDraft: PaymentFormDraft | null;
   onSelectedDraft: (draft: PaymentFormDraft | null) => void;
+  /** Reuse the payment modal footer, not the scrolling form body. */
+  footerTarget?: HTMLDivElement | null;
+  placeActionsInFooter?: boolean;
 };
 
 /** Keep owner-scoped drafts inside the existing payment form; no extra login,
  * duplicate payment flow, URL state or browser-local draft storage. */
 export const AccountPaymentDraftControls: React.FC<Props> = ({
   service, language, snapshot, restore, selectedDraft, onSelectedDraft,
+  footerTarget, placeActionsInFooter = false,
 }) => {
   const { previewAccount } = useTaxState();
   const { user: realUser, loading: authLoading } = useAccountIdentity();
@@ -111,17 +116,24 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     } finally { setBusy(false); }
   };
 
-  return <section className="payment-form-draft-controls" aria-label={bn ? 'আমার পেমেন্ট খসড়া' : 'My payment drafts'}>
-    <div className="flex flex-wrap items-center gap-2">
+  const actions = <div className={`payment-form-draft-controls__actions${placeActionsInFooter ? ' payment-form-draft-controls__actions--footer' : ''}`}>
+
       <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         onClick={() => void save()} disabled={busy || loading}>
-        {busy ? (bn ? 'সংরক্ষণ হচ্ছে…' : 'Working…') : (bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft')}
+        <span className="payment-form-draft-controls__label-long">{busy ? (bn ? 'সংরক্ষণ হচ্ছে…' : 'Working…') : (bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft')}</span>
+        <span className="payment-form-draft-controls__label-short" aria-hidden="true">{busy ? '…' : (bn ? 'খসড়া' : 'Save Draft')}</span>
       </button>
       <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm font-medium text-taxpay-primary disabled:opacity-50"
-        onClick={() => setExpanded(open => !open)} disabled={busy} aria-expanded={expanded}>
-        {bn ? 'সংরক্ষিত খসড়া' : 'Continue Draft'}{!loading ? ' (' + rows.length + ')' : ''}
+        onClick={() => setExpanded(open => !open)} disabled={busy} aria-expanded={expanded}
+        aria-label={bn ? 'সংরক্ষিত খসড়া' : 'Continue Draft'}>
+        <span className="payment-form-draft-controls__label-long">{bn ? 'সংরক্ষিত খসড়া' : 'Continue Draft'}{!loading ? ' (' + rows.length + ')' : ''}</span>
+        <span className="payment-form-draft-controls__label-short" aria-hidden="true">{bn ? 'খসড়াসমূহ' : 'Drafts'}{!loading ? ' (' + rows.length + ')' : ''}</span>
       </button>
-    </div>
+    </div>;
+
+  return <>
+    <section className={`payment-form-draft-controls${placeActionsInFooter ? ' payment-form-draft-controls--footer' : ''}`} aria-label={bn ? 'আমার পেমেন্ট খসড়া' : 'My payment drafts'}>
+    {!placeActionsInFooter && actions}
     {feedback && <p className="mt-2 text-sm text-taxpay-dark" role="status">{feedback}</p>}
     {error && <p className="mt-2 text-sm text-taxpay-error" role="alert">{error}</p>}
     {expanded && <div className="mt-3 rounded-lg border border-taxpay-border bg-white p-3">
@@ -158,5 +170,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
         {bn ? 'আবার লোড করুন' : 'Refresh drafts'}
       </button>
     </div>}
-  </section>;
+    </section>
+    {placeActionsInFooter && footerTarget && createPortal(actions, footerTarget)}
+  </>;
 };
