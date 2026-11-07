@@ -19,7 +19,7 @@ CREATE TABLE public.taxpay_site_logo (
   )
 );
 
-\i supabase/migrations/20261107162000_taxpay_site_logo_crop_dimensions.sql
+\i supabase/migrations/20261107165907_taxpay_site_logo_crop_dimensions_20261107.sql
 
 -- Copy the actual post-migration check to an isolated table, then exercise it.
 CREATE TEMP TABLE cms_logo_dimension_test (
