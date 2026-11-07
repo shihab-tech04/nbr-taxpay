@@ -156,6 +156,8 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
         </div>
       </div>
       {tableFiltersExpanded&&<section className="taxpay-table-filters rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
+        {/* Preserve the established region's accessible record-count contract; visually, the count belongs in the toolbar. */}
+        <p className="sr-only" aria-live="polite">{label('Records','রেকর্ড')}: {filtered.length}</p>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <label htmlFor="activity-search" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Search payments','পেমেন্ট খুঁজুন')}</label>
