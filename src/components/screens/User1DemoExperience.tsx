@@ -627,25 +627,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const documentRecords=allDocumentRecords.filter(x=>(x.title+' '+x.ref+' '+(x.challan||'')+' '+tr(...labels[x.kind]))
     .toLocaleLowerCase().includes(documentNeedle));
   const documents=<section className={panel+' taxpayer-records-panel'} aria-labelledby="taxpayer-documents-heading">
-    <div className="taxpay-table-toolbar">
-      <div>
-        <h2 id="taxpayer-documents-heading" className="text-base font-semibold">{tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}</h2>
-        <p className="mt-1 text-sm text-taxpay-muted">{tr('Open a record to check its payment details. A recorded entry is not itself an issued certificate.','পেমেন্টের বিস্তারিত দেখতে রেকর্ড খুলুন। নথিভুক্ত তথ্য নিজে কোনো ইস্যুকৃত সনদ নয়।')}</p>
-      </div>
-      <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={documentRecords.length} total={allDocumentRecords.length}/>
-    </div>
-    <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
-      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
-        <span>{tr('Search payment records','পেমেন্ট রেকর্ড খুঁজুন')}</span>
-        <span className="taxpayer-transaction-filter__search">
-          <Search size={17} aria-hidden="true"/>
-          <input type="search" value={documentSearch} onChange={e=>setDocumentSearch(e.target.value)}
-            aria-label={tr('Search payment references','পেমেন্ট রেফারেন্স খুঁজুন')}
-            placeholder={tr('Search name or reference','নাম বা রেফারেন্স খুঁজুন')}/>
-        </span>
-      </label>
-      {documentSearch&&<button type="button" className={action} onClick={()=>setDocumentSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</button>}
-    </TaxPayTableControls>
+    <TaxPayOfficeRegisterToolbar id="taxpayer-documents-heading"
+      title={tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}
+      description={tr('Open a record to check its payment details. A recorded entry is not itself an issued certificate.','পেমেন্টের বিস্তারিত দেখতে রেকর্ড খুলুন। নথিভুক্ত তথ্য নিজে কোনো ইস্যুকৃত সনদ নয়।')}
+      count={documentRecords.length} total={allDocumentRecords.length} countLabel={tr('records','রেকর্ড')}
+      searchValue={documentSearch} onSearchChange={setDocumentSearch}
+      searchLabel={tr('Search payment references','পেমেন্ট রেফারেন্স খুঁজুন')}
+      searchPlaceholder={tr('Search name or reference','নাম বা রেফারেন্স খুঁজুন')}/>
+    <TaxPayActiveFilterChips clearLabel={tr('Clear search','অনুসন্ধান মুছুন')}
+      onClear={()=>setDocumentSearch('')}
+      filters={documentSearch.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+documentSearch.trim(),onRemove:()=>setDocumentSearch('')}]:[]}/>
     {documentRecords.length?<div className="mt-4">
       <TaxPayDataGrid variant="documents" rows={documentRecords} getRowKey={x=>x.id}
         ariaLabel={tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}
@@ -660,6 +651,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             onClick={()=>setSelected(x)} aria-label={tr('View payment details for ','পেমেন্টের বিস্তারিত: ')+x.title}>{tr('View details','বিস্তারিত দেখুন')}</button>}
         ]}/>
     </div>:<p role="status" className="taxpay-table-state mt-4">{documentSearch?tr('No payment records match this search.','এই অনুসন্ধানে কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি।'):tr('No recorded payment references for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেফারেন্স নেই।')}</p>}
+    <TaxPayOfficeRegisterFooter shown={documentRecords.length} total={allDocumentRecords.length}
+      labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
   </section>;
   const allCorrectionRecords=scoped.filter(x=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(x.state));
   const caseNeedle=caseSearch.trim().toLocaleLowerCase();
@@ -672,23 +665,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       {card('Failed, reversed or disputed','ব্যর্থ, প্রত্যাবর্তিত বা বিরোধপূর্ণ',String(allCorrectionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Excluded from confirmed tax credits','নিশ্চিত কর ক্রেডিটে অন্তর্ভুক্ত নয়')}
     </div>
     <section className={panel+' taxpayer-records-panel'} aria-labelledby="taxpayer-exceptions-heading">
-      <div className="taxpay-table-toolbar">
-        <div>
-          <h2 id="taxpayer-exceptions-heading" className="text-base font-semibold">{tr('Cases requiring attention','যেসব বিষয়ে নজর দেওয়া প্রয়োজন')}</h2>
-          <p className="mt-1 text-sm text-taxpay-muted">{tr('Review the recorded reason and status. These entries do not establish a tax credit.','নথিভুক্ত কারণ ও অবস্থা দেখুন। এসব এন্ট্রি কর ক্রেডিট নিশ্চিত করে না।')}</p>
-        </div>
-        <TaxPayTableCounter label={tr('Cases','বিষয়')} shown={correctionRecords.length} total={allCorrectionRecords.length}/>
-      </div>
-      <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
-        <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search">
-          <span>{tr('Search cases','বিষয় খুঁজুন')}</span>
-          <span className="taxpayer-transaction-filter__search">
-            <Search size={17} aria-hidden="true"/>
-            <input type="search" value={caseSearch} onChange={e=>setCaseSearch(e.target.value)}
-              aria-label={tr('Search case references','বিষয়ের রেফারেন্স খুঁজুন')}
-              placeholder={tr('Search case or reference','বিষয় বা রেফারেন্স খুঁজুন')}/>
-          </span>
-        </label>
+      <TaxPayOfficeRegisterToolbar id="taxpayer-exceptions-heading"
+        title={tr('Cases requiring attention','যেসব বিষয়ে নজর দেওয়া প্রয়োজন')}
+        description={tr('Review the recorded reason and status. These entries do not establish a tax credit.','নথিভুক্ত কারণ ও অবস্থা দেখুন। এসব এন্ট্রি কর ক্রেডিট নিশ্চিত করে না।')}
+        count={correctionRecords.length} total={allCorrectionRecords.length} countLabel={tr('cases','বিষয়')}
+        searchValue={caseSearch} onSearchChange={setCaseSearch}
+        searchLabel={tr('Search case references','বিষয়ের রেফারেন্স খুঁজুন')}
+        searchPlaceholder={tr('Search case or reference','বিষয় বা রেফারেন্স খুঁজুন')}
+        filterLabel={tr('Filter','ফিল্টার')} filtersOpen={caseFiltersExpanded}
+        onToggleFilters={()=>setCaseFiltersExpanded(open=>!open)}/>
+      <TaxPayOfficeRegisterFilters open={caseFiltersExpanded} className="taxpayer-transaction-filters taxpay-record-page-filters">
         <label className="taxpayer-transaction-filter"><span>{tr('Status','অবস্থা')}</span>
           <select value={caseStatus} aria-label={tr('Filter case status','বিষয়ের অবস্থা ফিল্টার')}
             onChange={e=>setCaseStatus(e.target.value as State|'all')}>
@@ -696,8 +682,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             {(['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'] as const).map(state=><option key={state} value={state}>{tr(...stateLabels[state])}</option>)}
           </select>
         </label>
-        {(caseSearch||caseStatus!=='all')&&<button type="button" className={action} onClick={()=>{setCaseSearch('');setCaseStatus('all');}}>{tr('Clear filters','ফিল্টার মুছুন')}</button>}
-      </TaxPayTableControls>
+      </TaxPayOfficeRegisterFilters>
+      <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
+        onClear={()=>{setCaseSearch('');setCaseStatus('all');}}
+        filters={[
+          ...(caseSearch.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+caseSearch.trim(),onRemove:()=>setCaseSearch('')}]:[]),
+          ...(caseStatus!=='all'?[{key:'status',label:tr(...stateLabels[caseStatus]),onRemove:()=>setCaseStatus('all')}]:[])
+        ]}/>
       {correctionRecords.length?<div className="mt-4">
         <TaxPayDataGrid variant="exceptions" rows={correctionRecords} getRowKey={x=>x.id}
           ariaLabel={tr('Correction and exception cases','সংশোধন ও ব্যতিক্রমের তালিকা')}
@@ -713,6 +704,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
               onClick={()=>setSelected(x)} aria-label={tr('View case details for ','বিষয়ের বিস্তারিত: ')+x.title}>{tr('View details','বিস্তারিত দেখুন')}</button>}
           ]}/>
       </div>:<p role="status" className="taxpay-table-state mt-4">{caseSearch||caseStatus!=='all'?tr('No cases match the selected filters.','নির্বাচিত ফিল্টারে কোনো বিষয় পাওয়া যায়নি।'):tr('No unresolved or disputed records for this assessment year.','এই করবর্ষে কোনো অমীমাংসিত বা বিরোধপূর্ণ রেকর্ড নেই।')}</p>}
+      <TaxPayOfficeRegisterFooter shown={correctionRecords.length} total={allCorrectionRecords.length}
+        labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('cases','বিষয়')}}/>
     </section>
   </>;
 
