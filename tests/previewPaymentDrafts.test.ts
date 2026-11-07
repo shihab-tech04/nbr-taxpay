@@ -59,17 +59,8 @@ test('SQL gateway owns drafts via active capability, not submitted user ID or pu
   assert.match(sql,/FORCE ROW LEVEL SECURITY/);
   assert.equal(sql.match(/COMMIT;/g)?.length,1,'reject duplicated or truncated SQL migration tails');
   assert.equal(sql.match(/\$function\$;/g)?.length,1,'require exactly one SQL function body');
-  assert.ok(sql.includes("OR (p_form_state->>'step') !~ '^[0123]
-  assert.match(edge,/x-taxpay-guest-capability/);
-  assert.match(edge,/p_capability_hash:capabilityHash/);
-  assert.match(component,/getPreviewDraft\(saved\.id\)/);
-  assert.match(guestFlow,/journey="guest_payment"/);
-  assert.match(travelFlow,/journey="travel_tax"/);
-  assert.doesNotMatch(component,/localStorage|sessionStorage/);
-});
-"));
+  assert.ok(sql.includes("OR (p_form_state->>'step') !~ '^[0123]$'"));
   assert.ok(sql.includes("THEN RAISE EXCEPTION 'INVALID_DRAFT_STATE'; END IF;"));
-
   assert.match(edge,/x-taxpay-guest-capability/);
   assert.match(edge,/p_capability_hash:capabilityHash/);
   assert.match(component,/getPreviewDraft\(saved\.id\)/);
