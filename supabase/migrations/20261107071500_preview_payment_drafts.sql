@@ -86,51 +86,7 @@ BEGIN
       ] END;
     IF EXISTS (SELECT 1 FROM jsonb_object_keys(p_form_state) AS k
                WHERE NOT(k = ANY(v_allowed_keys)))
-      OR (p_form_state->>'step') !~ '^[0123]
-  END IF;
-
-  IF p_action='create' THEN
-    IF p_draft_id IS NOT NULL OR p_expected_version IS NOT NULL
-      THEN RAISE EXCEPTION 'INVALID_DRAFT_REQUEST'; END IF;
-    IF (SELECT count(*) FROM taxpay_guest_private.preview_payment_drafts
-        WHERE owner_demo_id=v_demo_id) >= 30
-      THEN RAISE EXCEPTION 'DRAFT_LIMIT_REACHED'; END IF;
-    INSERT INTO taxpay_guest_private.preview_payment_drafts
-      (owner_demo_id,journey,form_state)
-      VALUES (v_demo_id,p_journey,p_form_state)
-      RETURNING * INTO v_row;
-  ELSIF p_action='update' THEN
-    IF p_draft_id IS NULL OR p_expected_version IS NULL OR p_expected_version < 1
-      THEN RAISE EXCEPTION 'INVALID_DRAFT_REQUEST'; END IF;
-    UPDATE taxpay_guest_private.preview_payment_drafts
-      SET form_state=p_form_state, version=version+1,updated_at=now()
-      WHERE id=p_draft_id AND owner_demo_id=v_demo_id AND version=p_expected_version
-        AND version<2147483647
-      RETURNING * INTO v_row;
-    IF NOT FOUND THEN RAISE EXCEPTION 'DRAFT_CONFLICT'; END IF;
-  ELSIF p_action='delete' THEN
-    IF p_draft_id IS NULL OR p_expected_version IS NULL
-      THEN RAISE EXCEPTION 'INVALID_DRAFT_REQUEST'; END IF;
-    DELETE FROM taxpay_guest_private.preview_payment_drafts
-      WHERE id=p_draft_id AND owner_demo_id=v_demo_id AND version=p_expected_version
-      RETURNING * INTO v_row;
-    IF NOT FOUND THEN RAISE EXCEPTION 'DRAFT_CONFLICT'; END IF;
-    RETURN jsonb_build_object('id',v_row.id,'deleted',true);
-  ELSE
-    RAISE EXCEPTION 'INVALID_DRAFT_REQUEST';
-  END IF;
-
-  RETURN jsonb_build_object('id',v_row.id,'journey',v_row.journey,
-    'formState',v_row.form_state,'version',v_row.version,'updatedAt',v_row.updated_at);
-END;
-$function$;
-
-REVOKE ALL ON FUNCTION public.taxpay_demo_payment_drafts(text,text,uuid,text,jsonb,integer)
-  FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.taxpay_demo_payment_drafts(text,text,uuid,text,jsonb,integer)
-  TO service_role;
-COMMIT;
-
+      OR (p_form_state->>'step') !~ '^[0123]$'
       OR jsonb_typeof(p_form_state->'step') IS DISTINCT FROM 'number'
       OR (p_journey='guest_payment' AND (p_form_state->>'step') NOT IN ('1','2','3'))
       OR (p_journey='travel_tax' AND jsonb_typeof(p_form_state->'passengers') IS DISTINCT FROM 'array')
