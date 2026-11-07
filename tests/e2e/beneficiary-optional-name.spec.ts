@@ -234,6 +234,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   await expect(details).toContainText('User 10');
   await expect(details).toContainText('000000000000');
   await expect(lookup.locator('#beneficiary-name')).toHaveAttribute('readonly','');
+  await expect(lookup.locator('.tin-lookup__name')).toBeHidden();
   await dialog.locator('#beneficiary-tag').selectOption('clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByTestId('beneficiary-records')).toContainText('000000000000');
