@@ -762,8 +762,30 @@
 }
 
 
-/* Reference parity: the question is in the centered modal title, not duplicated. */
-.tax-service-choice__payer-focus {position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+/* Approved Pay Tax entry reference: show the liability question above the two payer cards.
+   Do not collapse it into the modal title; this h3 is also the keyboard focus target. */
+.taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__payer-focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0 0 1.1rem;
+  padding: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border: 0;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+/* Keep header and Continue action visible while the three decisions scroll within
+   the entry body. Payment stages and login retain their own modal dimensions. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(> .taxpay-modal__body > .tax-service-choice[data-view="payer"]) {
+    height: min(740px, calc(100dvh - 32px));
+    max-height: calc(100dvh - 32px);
+  }
+}
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__header {min-height:76px;padding-block:1rem;}
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not(:has(.payment-flow-embedded)) .taxpay-modal__body {padding:1.15rem 1.35rem;}
 .tax-service-choice__access-heading {margin-top:.9rem;padding-top:.9rem;}

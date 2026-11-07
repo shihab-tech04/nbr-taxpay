@@ -206,17 +206,31 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
   }).toBeGreaterThanOrEqual(0);
 });
 
-test('single modal expands when groups are revealed and respects reduced motion', async ({ page }) => {
+test('single modal keeps fixed chrome as groups are revealed and respects reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog).toHaveAttribute('data-size-motion', 'true');
+  const body = dialog.locator('.taxpay-modal__body');
+  const footer = dialog.locator('.taxpay-modal__footer');
+  // Wait for the 99%-to-100% entrance transform before capturing fixed geometry.
+  // Otherwise the scale animation makes the first boundingBox a few pixels smaller.
+  await dialog.evaluate(async element => {
+    await Promise.all(element.getAnimations({ subtree: false })
+      .filter(animation => animation.playState === 'running')
+      .map(animation => animation.finished));
+  });
+  const initialHeight = (await dialog.boundingBox())!.height;
+  const initialFooterY = (await footer.boundingBox())!.y;
+  await expect(dialog).not.toHaveAttribute('data-size-motion', 'true');
+  await expect(dialog.getByRole('heading', { name: 'Whose tax liability are you settling?' })).toBeVisible();
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
-  await expect(dialog).toHaveCSS('transition-property', /height/);
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(dialog.locator('[data-payment-access]')).toHaveCount(2);
+  await expect.poll(async () => (await dialog.boundingBox())!.height).toBeCloseTo(initialHeight, 0);
+  expect((await footer.boundingBox())!.y).toBeCloseTo(initialFooterY, 0);
+  expect(await body.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(dialog).toHaveCSS('animation-name', 'none');
   await expect(dialog).toHaveCSS('transition-property', 'none');
