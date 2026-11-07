@@ -54,6 +54,8 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(null);
+  // Once a payer starts a journey, Back returns to its original chooser, not the draft gate.
+  const [draftEntryCompleted, setDraftEntryCompleted] = useState(false);
   const [draftEntryBlocking, setDraftEntryBlocking] = useState(Boolean(verifiedUser || previewAccount));
   const draftActor: PaymentDraftActor | null = verifiedUser
     ? { kind: 'authenticated', userId: verifiedUser.id }
@@ -76,7 +78,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const beginPayment = (withAccount: boolean) => {
     if(withAccount&&verifiedUser?.id)
       void recordAccountActivity(verifiedUser.id,'PAYMENT_STARTED','wizard').catch(()=>undefined);
-    setDraftToResume(null); setUseAccount(withAccount); setStage(1); setView('payment');
+    setDraftToResume(null); setDraftEntryCompleted(true); setUseAccount(withAccount); setStage(1); setView('payment');
   };
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
@@ -164,7 +166,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </>}
         {view === 'payer' ? <PaymentDraftEntryGate
            actor={draftActor} ownerKey={draftOwnerKey}
-           enabled={Boolean(draftActor && !initialService && !paymentBeneficiaryPrefill)}
+           enabled={Boolean(!draftEntryCompleted && draftActor && !initialService && !paymentBeneficiaryPrefill)}
            language={language}
            serviceLabel={id => {
              const service = PAYMENT_SERVICE_CHOICES.find(item => item.id === id);
@@ -175,6 +177,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              setTopLevel(draft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX');
              setPayerForSelf(draft.service === 'TRAVEL_TAX' ? true : draft.form_payload.forSelf as boolean);
              setDraftToResume(draft);
+             setDraftEntryCompleted(true);
              setUseAccount(true);
              setStage(1);
              setView('payment');
