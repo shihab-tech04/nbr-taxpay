@@ -70,3 +70,49 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
   await expect(payment.locator('#guest-tin')).toHaveCount(0);
 });
+
+
+test('signed-in payment puts Save Draft left and Continue right in one compact modal footer row', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
+  await login.getByLabel('Password', { exact: true }).fill('user2');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login).toHaveCount(0);
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+
+  const footer = dialog.locator('.taxpay-modal__footer-actions');
+  const save = footer.getByRole('button', { name: 'Save Draft' });
+  const resume = footer.getByRole('button', { name: 'Continue Draft' });
+  const next = footer.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(save).toBeVisible();
+  await expect(resume).toBeVisible();
+  await expect(next).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__body').getByRole('button', { name: 'Save Draft' })).toHaveCount(0);
+  await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);
+
+  for (const width of [1280, 375, 320]) {
+    await page.setViewportSize({ width, height: 812 });
+    const saveRect = await save.boundingBox();
+    const nextRect = await next.boundingBox();
+    const footerRect = await footer.boundingBox();
+    expect(saveRect && nextRect && footerRect, 'footer action geometry').toBeTruthy();
+    if (!saveRect || !nextRect || !footerRect) continue;
+    expect(Math.abs(saveRect.y - nextRect.y), 'both actions stay on the same row').toBeLessThanOrEqual(3);
+    expect(saveRect.x).toBeLessThan(nextRect.x);
+    expect(saveRect.width).toBeLessThan(footerRect.width * .6);
+    expect(nextRect.width).toBeLessThan(footerRect.width * .8);
+    expect(nextRect.x + nextRect.width).toBeLessThanOrEqual(footerRect.x + footerRect.width + 2);
+    const overflow = await footer.evaluate(element => element.scrollWidth - element.clientWidth);
+    expect(overflow, 'modal footer must not horizontally overflow').toBeLessThanOrEqual(2);
+  }
+
+  await next.click();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
+  await expect(footer.getByRole('button', { name: 'Save Draft' })).toBeVisible();
+  await dialog.locator('.taxpay-modal__back').click();
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+});
