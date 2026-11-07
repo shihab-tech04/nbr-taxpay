@@ -7,7 +7,7 @@ type Account = 'user29' | 'user30';
  * Never connects to hosted taxpayer data.
  */
 test('payment form drafts survive another browser, protect owner isolation and reject stale edits', async ({ browser }, info) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   const raw = process.env.TAXPAY_LOCAL_SUPABASE_URL;
   const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
   if (!raw || !key) throw new Error('Disposable local Supabase is required.');
@@ -43,6 +43,48 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await a.locator('#guest-notice-ref').fill(marker);
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
     await expect(a.getByText('Draft saved to your account. You can continue in another browser.')).toBeVisible();
+
+    // The existing draft makes Pay Tax open its compact two-choice modal.
+    // Regression: choosing Start new must EXPAND to the original complete payer
+    // selection, never leave the second card clipped behind the footer.
+    const entry = await open('user29');
+    await entry.goto('/?action=landing');
+    await entry.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+    const entryModal = entry.getByRole('dialog', { name: 'Pay Tax' });
+    const draftGate = entryModal.getByTestId('account-draft-entry');
+    await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+    const compactHeight = await entryModal.evaluate(node => node.getBoundingClientRect().height);
+    await draftGate.getByRole('button', { name: 'Continue from draft' }).click();
+    await expect(draftGate.getByTestId('saved-payment-draft-list').locator('[data-draft-id]').first()).toBeVisible();
+    await entryModal.locator('.taxpay-modal__header .taxpay-modal__back').click();
+    await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+    await draftGate.getByRole('button', { name: 'Start new Tax payment' }).click();
+    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
+    await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
+
+    const measure = () => entryModal.evaluate(modal => {
+      const cards = Array.from(modal.querySelectorAll<HTMLElement>('[data-payer-relationship]'));
+      const body = modal.querySelector<HTMLElement>('.taxpay-modal__body');
+      const footer = modal.querySelector<HTMLElement>('.taxpay-modal__footer');
+      return {
+        height: modal.getBoundingClientRect().height,
+        cardCount: cards.length,
+        finalCardBottom: cards.at(-1)?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
+        bodyBottom: body?.getBoundingClientRect().bottom ?? 0,
+        footerTop: footer?.getBoundingClientRect().top ?? 0,
+        bodyScrollHeight: body?.scrollHeight ?? Number.POSITIVE_INFINITY,
+        bodyClientHeight: body?.clientHeight ?? 0,
+      };
+    });
+    await expect.poll(async () => {
+      const m = await measure();
+      return m.cardCount === 2 && m.finalCardBottom <= m.bodyBottom - 1 &&
+        m.finalCardBottom <= m.footerTop - 1 && m.bodyScrollHeight <= m.bodyClientHeight + 2 &&
+        m.height >= compactHeight + 35;
+    }, { timeout: 10_000, message: 'Start new must expand the modal and reveal both payer cards above its footer' }).toBe(true);
+    console.log('DRAFT_TO_ORIGINAL_MODAL_GEOMETRY', JSON.stringify({ project: info.project.name, compactHeight, expanded: await measure() }));
+    await entry.screenshot({ path: 'test-results/draft-to-original-payer-' + info.project.name + '.png' });
+    await entryModal.getByRole('button', { name: 'Close payment services' }).click();
 
     const b = await open('user29');
     await b.locator('.payment-form-draft-controls__open').click();
