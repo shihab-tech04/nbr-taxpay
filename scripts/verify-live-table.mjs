@@ -24,7 +24,13 @@ try{
   await page.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
   const panel=page.locator('.taxpayer-transaction-panel');
   await expect(panel.getByTestId('convay-table-toolbar')).toBeVisible({timeout:30000});
+  await expect(panel.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
+  const filterButton=panel.getByRole('button',{name:'Filter',exact:true});
+  await expect(filterButton).toHaveAttribute('aria-expanded','false');
+  await filterButton.click();
+  await expect(filterButton).toHaveAttribute('aria-expanded','true');
   await expect(panel.getByTestId('convay-table-filters')).toBeVisible();
+  await expect(panel.getByRole('combobox',{name:'Transaction category'})).toBeVisible();
   await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th'))
     .toHaveText(['Payment','Reference','Payment type','Date','Amount','Status','Actions']);
   const rows=panel.getByTestId('taxpayer-transaction-table').locator('tbody tr');
