@@ -12,3 +12,8 @@ export function sampleUserNumberForTin(tin:string):number|null {
   if(index<0)return null;
   return index<10?(index===0?10:index):index+1;
 }
+
+export function sampleTinForUserNumber(userNumber:number):string|null {
+  if(!Number.isInteger(userNumber)||userNumber<1||userNumber>30)return null;
+  return SAMPLE_TIN_SUGGESTIONS[userNumber===10?0:userNumber<=9?userNumber:userNumber-1];
+}
