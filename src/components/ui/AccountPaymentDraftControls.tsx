@@ -119,12 +119,12 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       onClick={() => void save()} disabled={busy || loading}>
       {busy ? (bn ? 'সংরক্ষণ হচ্ছে…' : 'Working…') : (bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft')}
     </button>
-    <button type="button" className="payment-form-draft-controls__open"
+    {actionTarget === undefined && <button type="button" className="payment-form-draft-controls__open"
       onClick={() => setExpanded(open => !open)} disabled={busy} aria-expanded={expanded}>
       <span className="payment-form-draft-controls__open-long">{bn ? 'সংরক্ষিত খসড়া' : 'Continue Draft'}</span>
       <span className="payment-form-draft-controls__open-short">{bn ? 'খসড়া' : 'Drafts'}</span>
       {!loading ? ' (' + rows.length + ')' : ''}
-    </button>
+    </button>}
   </div>;
 
   return <section className="payment-form-draft-controls" aria-label={bn ? 'আমার পেমেন্ট খসড়া' : 'My payment drafts'}>
