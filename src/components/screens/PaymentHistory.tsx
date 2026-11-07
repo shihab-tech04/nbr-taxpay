@@ -1,4 +1,4 @@
-import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableState,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
@@ -103,6 +103,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser, previewAccount } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
+  const [tableFiltersExpanded,setTableFiltersExpanded]=useState(true);
   const [year, setYear] = useState('ALL');
   const [category, setCategory] = useState('ALL');
   const [lifecycleReceipt,setLifecycleReceipt]=useState<ChallanReceipt|null>(null);
@@ -141,7 +142,20 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
       <TaxpayerPageHeading title={label('Payments & activity','পেমেন্ট ও লেনদেন')}
         description={label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
       {activityTabs && <TaxpayerActivityTabs />}
-      <section className="taxpay-table-filters rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
+      <div className="taxpay-office-table-heading rounded-xl border border-taxpay-border bg-white px-4 sm:px-5">
+        <div className="taxpay-office-table-heading__identity">
+          <h2>{label('Payment records','পেমেন্টের তথ্য')}</h2>
+          <TaxPayTableCounter label={label('Records','রেকর্ড')} shown={filtered.length} total={receipts.length}/>
+        </div>
+        <div className="taxpay-office-table-heading__actions">
+          <TaxPayTableFilterToggle expanded={tableFiltersExpanded} onToggle={()=>setTableFiltersExpanded(open=>!open)} label={label('Filter','ফিল্টার')}/>
+          <button type="button" onClick={exportDemo} disabled={!filtered.length}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
+            <Download aria-hidden="true" size={16}/>{label('Export records','রেকর্ড নিন')}
+          </button>
+        </div>
+      </div>
+      {tableFiltersExpanded&&<section className="taxpay-table-filters rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <label htmlFor="activity-search" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Search payments','পেমেন্ট খুঁজুন')}</label>
@@ -169,14 +183,14 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             </select>
           </div>
         </div>
-        <div className="taxpay-table-toolbar mt-3">
-          <p aria-live="polite" className="text-sm text-taxpay-muted">{label('Records','রেকর্ড')}: {filtered.length}</p>
-          <button type="button" onClick={exportDemo} disabled={!filtered.length}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
-            <Download aria-hidden="true" size={16}/>{label('Export records','রেকর্ড নিন')}
-          </button>
-        </div>
-      </section>
+      </section>}
+      <TaxPayActiveFilterChips clearLabel={label('Clear all','সব ফিল্টার মুছুন')}
+        onClear={()=>{setQuery('');setYear('ALL');setCategory('ALL');}}
+        filters={[
+          ...(query.trim()?[{key:'search',label:label('Search: ','অনুসন্ধান: ')+query.trim(),onRemove:()=>setQuery('')}]:[]),
+          ...(year!=='ALL'?[{key:'year',label:year,onRemove:()=>setYear('ALL')}]:[]),
+          ...(category!=='ALL'?[{key:'category',label:bn?CATEGORY_LABELS[category]?.bn??category:CATEGORY_LABELS[category]?.en??category,onRemove:()=>setCategory('ALL')}]:[])
+        ]}/>
       <section aria-label={label('Payment records','পেমেন্টের তথ্য')} className="taxpay-data-table-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
         {filtered.length===0 ? (
           <TaxPayTableState className="rounded-lg bg-taxpay-background p-5">
