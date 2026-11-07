@@ -54,7 +54,7 @@ test('user1 Activity keeps its approved transaction register without appended SQ
   await signIn(page, 'user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
-  await page.getByRole('button',{name:'Open transaction history'}).click();
+  await page.getByRole('button',{name:'View all activity'}).click();
   const tabs = page.getByRole('navigation',{name:'Activity sections'});
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
