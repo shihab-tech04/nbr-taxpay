@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import type {DemoUserId} from '../../src/data/demoUsers';
@@ -98,7 +99,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     dialog=first.getByRole('dialog',{name:'Beneficiary entry'});
     await dialog.locator('#beneficiary-tin').fill(tin);
     await dialog.locator('#beneficiary-name').fill(personName);
-    await dialog.locator('#beneficiary-tag').selectOption('clients');
+    await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
     await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     await expect(first.getByTestId('beneficiary-records')).toContainText(personName);
     await expect(first.getByTestId('beneficiary-records')).toContainText(tin);
