@@ -425,6 +425,10 @@ jobs:
         env:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
+      - name: Verify payment footer Save Draft left and Continue right at all breakpoints
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/payment-draft-footer-layout.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()
         uses: actions/upload-artifact@v4
