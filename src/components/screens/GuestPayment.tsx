@@ -340,6 +340,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
+  const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
   const pendingStoryRef = useRef<{ payload: StoryPaymentInput; receipt: ChallanReceipt } | null>(null);
   const [batchAttempt, setBatchAttempt] = useState<OtherTaxBatch | null>(null);
   const batchAttemptRef = useRef<OtherTaxBatch | null>(null);
@@ -1256,7 +1257,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {signedInAccount && isPaymentDraftService(category) && step <= 2 &&
           <AccountPaymentDraftControls service={category} language={language}
             snapshot={snapshotAccountDraft} restore={restoreAccountDraft}
-            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
+            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
+            actionTarget={embedded ? draftFooterTarget : undefined} />}
 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
@@ -1667,6 +1669,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
                 <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
               </button>
+              {signedInAccount && isPaymentDraftService(category) &&
+                <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
               <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next} disabled={!canContinueStep1}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
@@ -1675,6 +1679,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
+            {signedInAccount && isPaymentDraftService(category) &&
+              <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
             <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={otherBatch && (!batchValid || !storyAmountSupported)}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
