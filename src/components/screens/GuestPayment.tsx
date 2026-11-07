@@ -33,6 +33,8 @@ import { paymentAmountRowColumns } from '../../services/paymentAmountLayout';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import { findV11GuestNotice, type V11GuestNotice } from '../../services/v11GuestInput';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
+import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
@@ -335,6 +337,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [attemptReceipt, setAttemptReceipt] = useState<ChallanReceipt | null>(null);
   const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const pendingStoryRef = useRef<{ payload: StoryPaymentInput; receipt: ChallanReceipt } | null>(null);
   const [batchAttempt, setBatchAttempt] = useState<OtherTaxBatch | null>(null);
   const batchAttemptRef = useRef<OtherTaxBatch | null>(null);
@@ -344,6 +347,65 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [errorMessage, setErrorMessage] = useState('');
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
   const [errorHeadId, setErrorHeadId] = useState<number | null>(null);
+
+
+  // Save only editable form inputs. Current permission checks, TIN lookups,
+  // gateway status and payment authorizations must be re-established on resume.
+  const snapshotAccountDraft = (): Record<string, unknown> => ({
+    schemaVersion: 1, category, step: Math.min(step, 2),
+    forSelf, tin, payerName, otherTaxpayerName, additionalTaxpayers,
+    otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
+    incomeTaxType, selectedHeadIds, amountInputs,
+  });
+  const restoreAccountDraft = (saved: Record<string, unknown>) => {
+    if (saved.schemaVersion !== 1 || saved.category !== category)
+      throw new Error('Saved payment category does not match the selected service.');
+    const stringField = (key: string) => typeof saved[key] === 'string' ? String(saved[key]) : '';
+    if (saved.forSelf !== null && typeof saved.forSelf !== 'boolean')
+      throw new Error('Saved payer relationship is invalid.');
+    setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
+    setTin(stringField('tin')); setPayerName(stringField('payerName'));
+    setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
+    setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || '2026-27');
+    setNoticeReference(stringField('noticeReference'));
+    setIncomeTaxType(saved.incomeTaxType === 'COMPANY' || saved.incomeTaxType === 'NON_COMPANY'
+      ? saved.incomeTaxType : null);
+    const heads = Array.isArray(saved.selectedHeadIds)
+      ? saved.selectedHeadIds.filter((id): id is number => typeof id === 'number' && Number.isSafeInteger(id)) : [];
+    setSelectedHeadIds(heads);
+    const amounts = saved.amountInputs && typeof saved.amountInputs === 'object' && !Array.isArray(saved.amountInputs)
+      ? saved.amountInputs as Record<number, string> : {};
+    setAmountInputs(Object.fromEntries(Object.entries(amounts).filter(([key, value]) =>
+      /^\d+$/.test(key) && typeof value === 'string' && value.length <= 20
+    )) as Record<number, string>);
+    setAdditionalTaxpayers(Array.isArray(saved.additionalTaxpayers)
+      ? saved.additionalTaxpayers.filter((person): person is OtherTaxTaxpayer =>
+        person && typeof person.id === 'string' && typeof person.tin === 'string' &&
+        typeof person.name === 'string').slice(0,100) : []);
+    setOtherTaxLines(Array.isArray(saved.otherTaxLines)
+      ? saved.otherTaxLines.filter((line): line is OtherTaxAllocation =>
+        line && typeof line.taxpayerId === 'string' &&
+        typeof line.headId === 'number' && typeof line.assessmentYear === 'string').slice(0,300) : []);
+    setLastSearchedTin(null); setVerifiedReference(null);
+    setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); setConfirmedOtherTaxTins({});
+    setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null); setAcknowledged(false);
+    setPaymentPhase('review'); setAttemptReceipt(null); setCreatedReceipt(null);
+    setErrorMessage(''); setErrorField(null); setErrorHeadId(null);
+    setStep(saved.step === 2 ? 2 : 1);
+  };
+  // A confirmed receipt is the only signal allowed to retire a draft.
+  useEffect(() => {
+    if (!selectedAccountDraft || !createdReceipt || paymentPhase !== 'settled') return;
+    const actor: PaymentDraftActor | null = authenticatedUser
+      ? {kind:'authenticated',userId:authenticatedUser.id}
+      : previewAccount ? {kind:'preview',profileId:previewAccount.id} : null;
+    if (!actor) return;
+    let active = true;
+    void deletePaymentFormDraft(actor,selectedAccountDraft).then(() => {
+      if (active) setSelectedAccountDraft(null);
+    }).catch(() => { /* keep the draft available for safe manual recovery */ });
+    return () => { active = false; };
+  }, [createdReceipt?.id, paymentPhase, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id]);
 
   const errorDescription = (field: GuestErrorField, hintId?: string) => {
     const ids = [hintId, errorField === field && errorMessage ? `${ERROR_ID}-${field}` : undefined].filter(Boolean);
@@ -1176,6 +1238,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         </ol>
         </>}
 
+        {signedInAccount && isPaymentDraftService(category) && step <= 2 &&
+          <AccountPaymentDraftControls service={category} language={language}
+            snapshot={snapshotAccountDraft} restore={restoreAccountDraft}
+            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
+
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__identity' : ''}`}>
@@ -1513,7 +1580,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <ArrowLeft className="w-4 h-4" />
                 <span>{commonCopy.btnBack}</span>
               </button>
-              {backendConfigured && (
+              {backendConfigured && !signedInAccount && (
                 <button type="button" onClick={() => navigate('secure_workspace', { draftCategory: category })}
                   className="min-h-11 px-4 py-2 border border-taxpay-primary text-taxpay-primary rounded-lg text-xs sm:text-sm font-semibold focus-visible:outline focus-visible:outline-2">
                   {copy.draft}

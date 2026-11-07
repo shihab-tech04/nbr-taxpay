@@ -25,7 +25,8 @@ type RpcName =
   | 'taxpay_guest_beneficiary_delete_list'
   | 'taxpay_demo_profile_login'
   | 'taxpay_demo_profile_settings'
-  | 'taxpay_demo_recover_story1_session';
+  | 'taxpay_demo_recover_story1_session'
+  | 'taxpay_demo_payment_form_drafts';
 
 function response(value: unknown, status: number, origin: string): Response {
   return new Response(status === 204 ? null : JSON.stringify(value), {
@@ -54,6 +55,10 @@ function publicError(error: unknown): { status: number; code: string } {
   if (/LEGACY_SESSION_ALREADY_LINKED/.test(message)) return { status: 409, code: 'LEGACY_SESSION_ALREADY_LINKED' };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
   if (/BENEFICIARY_ALREADY_IN_LIST/.test(message)) return { status: 409, code: 'BENEFICIARY_ALREADY_IN_LIST' };
+  if (/INVALID_DRAFT_PAYLOAD|INVALID_DRAFT_ACTION/.test(message))
+    return { status: 400, code: message.split(':')[0] };
+  if (/DRAFT_CONFLICT/.test(message)) return { status: 409, code: 'DRAFT_CONFLICT' };
+  if (/DRAFT_NOT_FOUND/.test(message)) return { status: 404, code: 'DRAFT_NOT_FOUND' };
   if (/23505|duplicate key value|already exists/.test(message)) return { status: 409, code: 'LIST_NAME_TAKEN' };
   if (/NOT_FOUND/.test(message)) return { status: 404, code: 'NOT_FOUND' };
   return { status: 503, code: 'SERVICE_UNAVAILABLE' };
@@ -138,6 +143,34 @@ Deno.serve(async (request: Request) => {
         throw new Error('INVALID_PREFERENCE');
       data = await rpc(client, 'taxpay_demo_profile_settings', {
         p_capability_hash, p_key: key, p_value: value,
+      });
+    } else if (typeof action === 'string' && action.startsWith('payment-draft-')) {
+      const draftAction = action.slice('payment-draft-'.length);
+      if (!['list', 'get', 'create', 'update', 'delete'].includes(draftAction))
+        throw new Error('INVALID_DRAFT_ACTION');
+      const id = body.id ?? null;
+      const revision = body.revision ?? null;
+      const service = body.service ?? null;
+      const payload = body.payload ?? null;
+      const services = [
+        'TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
+        'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX',
+      ];
+      if (id !== null && (typeof id !== 'string' || !uuidPattern.test(id)))
+        throw new Error('INVALID_DRAFT_PAYLOAD');
+      if (revision !== null && (!Number.isSafeInteger(revision) || Number(revision) < 1))
+        throw new Error('INVALID_DRAFT_PAYLOAD');
+      if (service !== null && (typeof service !== 'string' || !services.includes(service)))
+        throw new Error('INVALID_DRAFT_PAYLOAD');
+      if (payload !== null && (typeof payload !== 'object' || Array.isArray(payload) ||
+          JSON.stringify(payload).length > 64_000))
+        throw new Error('INVALID_DRAFT_PAYLOAD');
+      if (draftAction === 'create' && (id !== null || revision !== null)) throw new Error('INVALID_DRAFT_PAYLOAD');
+      if (draftAction === 'update' && (!id || revision === null)) throw new Error('INVALID_DRAFT_PAYLOAD');
+      if (draftAction === 'delete' && (!id || revision === null)) throw new Error('INVALID_DRAFT_PAYLOAD');
+      data = await rpc(client, 'taxpay_demo_payment_form_drafts', {
+        p_capability_hash, p_action: draftAction, p_draft_id: id,
+        p_service: service, p_payload: payload, p_revision: revision,
       });
     } else if (action === 'demo-recover-payments') {
       if (typeof body.legacySessionId !== 'string' || !uuidPattern.test(body.legacySessionId))
