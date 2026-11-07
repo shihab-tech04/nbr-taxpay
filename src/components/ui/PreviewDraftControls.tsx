@@ -11,12 +11,13 @@ type Props = {
   disabled?:boolean;
   capture:()=>PreviewFormDraftState;
   restore:(state:PreviewFormDraftState)=>void;
+  onActiveChange?:(draft:{id:string;version:number}|null)=>void;
 };
 
 /** One approved account-only control: server readback, versioned updates and cross-browser recovery.
  * Never changes the payment journey's own primary/back/footer actions.
  */
-export function PreviewDraftControls({journey,accountId,language,disabled=false,capture,restore}:Props) {
+export function PreviewDraftControls({journey,accountId,language,disabled=false,capture,restore,onActiveChange}:Props) {
   const [items,setItems]=useState<PreviewDraftSummary[]>([]);
   const [loading,setLoading]=useState(false);
   const [busy,setBusy]=useState(false);
@@ -40,7 +41,7 @@ export function PreviewDraftControls({journey,accountId,language,disabled=false,
     }finally{setLoading(false);}
   };
   useEffect(()=>{
-    setItems([]);setActive(null);setOpen(false);setMessage('');setConfirmDelete(null);
+    setItems([]);setActive(null);onActiveChange?.(null);setOpen(false);setMessage('');setConfirmDelete(null);
     if(ownerVerified)void refresh();
   },[accountId,ownerVerified,journey]);
 
@@ -58,6 +59,7 @@ export function PreviewDraftControls({journey,accountId,language,disabled=false,
         canonical(reread.formState)!==canonical(state))
         throw new Error('DRAFT_READBACK_UNVERIFIED');
       setActive({id:saved.id,version:saved.version});
+      onActiveChange?.({id:saved.id,version:saved.version});
       await refresh();
       setMessage(label('Draft saved to your account. No payment was submitted.',
         'খসড়াটি আপনার অ্যাকাউন্টে সংরক্ষিত হয়েছে। কোনো পেমেন্ট জমা হয়নি।'));
@@ -79,6 +81,7 @@ export function PreviewDraftControls({journey,accountId,language,disabled=false,
       if(full.journey!==journey)throw new Error('INVALID_DRAFT_RESPONSE');
       restore(full.formState);
       setActive({id:full.id,version:full.version});
+      onActiveChange?.({id:full.id,version:full.version});
       setMessage(label('Draft restored. Review taxpayer and payment details before continuing.',
         'খসড়া ফেরত এসেছে। এগোনোর আগে করদাতা ও পেমেন্টের তথ্য যাচাই করুন।'));
       setOpen(false);
@@ -93,7 +96,7 @@ export function PreviewDraftControls({journey,accountId,language,disabled=false,
     setBusy(true);setMessage('');
     try{
       await deletePreviewDraft(row.id,row.version);
-      if(active?.id===row.id)setActive(null);
+      if(active?.id===row.id){setActive(null);onActiveChange?.(null);}
       setConfirmDelete(null);
       await refresh();
       setMessage(label('Draft deleted. No transaction was affected.',
