@@ -1,4 +1,6 @@
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
+import {PreviewDraftControls} from '../ui/PreviewDraftControls';
+import type {TravelTaxDraftState} from '../../services/previewPaymentDrafts';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
@@ -36,7 +38,7 @@ function maskPassport(passport: string) {
  * government A-Challan integration. An API owner can replace those boundaries.
  */
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt } = useTaxState();
+  const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
@@ -624,6 +626,31 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
     </>;
   }
 
+
+  const capturePreviewDraft=():TravelTaxDraftState=>({
+    schema:'1',journey:'travel_tax',step:step===3?2:step,
+    mode,port,waterPort,destination,travelDate,passengers,phone,
+    paymentChannel,methodGroup,paymentMethod
+  });
+  const restorePreviewDraft=(input:TravelTaxDraftState)=>{
+    setMode(input.mode);setPort(input.port);setWaterPort(input.waterPort);
+    setDestination(input.destination);setTravelDate(input.travelDate);
+    // Stored passport inputs are not verified identity. Recheck every passenger on resume.
+    const restored=input.passengers.map(person=>({
+      ...person,identitySource:person.nationality==='BD'?'PENDING' as const:'MANUAL' as const,
+    }));
+    setPassengers(restored);
+    setPhone(input.phone);
+    setPaymentChannel(input.paymentChannel);
+    setMethodGroup(input.methodGroup);
+    setPaymentMethod(input.paymentMethod as ChallanReceipt['paymentMethod'] | null);
+    setEditingPassengerId(restored[0]?.id??null);
+    setConfirmedPassengerIds([]);
+    setAcknowledged(false);setSimulateDecline(false);setReceiptReviewOpen(false);
+    setPassengerIssue(null);setError('');
+    setStep(0);
+  };
+
   return (
     <div className={'travel-flow' + (bn ? ' font-bengali' : '')} lang={language} data-step={step}
       data-receipt-review={receiptReviewOpen && !!createdReceipt ? 'true' : undefined}>
@@ -641,6 +668,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
             </button>
           ))}
         </nav>}
+        {previewAccount && !createdReceipt && <div className="mb-3">
+          <PreviewDraftControls journey="travel_tax" accountId={previewAccount.id} language={language}
+            disabled={processing || bankSlipPending} capture={capturePreviewDraft}
+            restore={state=>{if(state.journey==='travel_tax')restorePreviewDraft(state);}} />
+        </div>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
 
