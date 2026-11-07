@@ -200,8 +200,8 @@ export function TaxPayDataGrid<Row>({
         role={!renderMobileCard&&onViewRow?'button':undefined}
         tabIndex={!renderMobileCard&&onViewRow?0:undefined}
         onClick={!renderMobileCard&&onViewRow?(event)=>{
-          if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]')!==event.currentTarget &&
-             (event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]'))return;
+          const interactive=(event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]');
+          if(interactive&&interactive!==event.currentTarget)return;
           onViewRow(row);
         }:undefined}
         onKeyDown={!renderMobileCard&&onViewRow?(event)=>{
