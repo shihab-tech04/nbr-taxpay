@@ -1,4 +1,4 @@
-import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableState,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, FileText } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
@@ -18,6 +18,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const [error,setError]=useState('');
   const [revision,setRevision]=useState(0);
   const [search,setSearch]=useState('');
+  const [filtersOpen,setFiltersOpen]=useState(false);
   const [tagFilter,setTagFilter]=useState<'all'|PaymentTagGroup>('all');
   const [tags,setTags]=useState<{owner:string|null;status:'loading'|'ready'|'error';people:Beneficiary[]}>({owner:null,status:'loading',people:[]});
   const [selected,setSelected]=useState<BeneficiaryPaymentEntry|null>(null);
@@ -50,22 +51,16 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   },[rows,search,tagFilter,visibleTags]);
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" data-testid="beneficiary-payment-history"
     aria-label={tr('Individual beneficiary payment history','প্রতিটি উপকারভোগীর পেমেন্টের ইতিহাস')}>
-    <div className="taxpay-table-toolbar">
-      <div className="taxpay-table-toolbar__actions">
-        <h2 className="taxpay-table-toolbar__title">{tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}</h2>
-        <p className="taxpay-table-count" aria-live="polite">{filtered.length} {tr('records','রেকর্ড')}</p>
-      </div>
-      <div className="taxpay-table-toolbar__search flex min-h-11 min-w-0 items-center gap-2 rounded-lg border border-taxpay-border bg-white px-3">
-        <Search size={17} className="shrink-0 text-taxpay-muted" aria-hidden="true"/>
-        <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
-          aria-label={tr('Search beneficiary, TIN or payment reference','উপকারভোগী, টিআইএন বা রেফারেন্স খুঁজুন')}
-          placeholder={tr('Search beneficiary, TIN or reference','নাম, টিআইএন বা রেফারেন্স খুঁজুন')}
-          className="min-h-11 w-full min-w-0 bg-transparent text-sm outline-none"/>
-      </div>
-    </div>
-    <div className="mt-3 flex flex-wrap gap-3">
-      <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm text-taxpay-muted">
-        {tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}
+    <TaxPayOfficeRegisterToolbar title={tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}
+      count={filtered.length} total={rows.length} countLabel={tr('records','রেকর্ড')}
+      searchValue={search} onSearchChange={setSearch}
+      searchLabel={tr('Search beneficiary, TIN or payment reference','উপকারভোগী, টিআইএন বা রেফারেন্স খুঁজুন')}
+      searchPlaceholder={tr('Search beneficiary, TIN or reference','নাম, টিআইএন বা রেফারেন্স খুঁজুন')}
+      filtersOpen={filtersOpen} onToggleFilters={()=>setFiltersOpen(open=>!open)}
+      filterLabel={tr('Filter','ফিল্টার')}/>
+    <TaxPayOfficeRegisterFilters open={filtersOpen}>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
         <select value={tagFilter} onChange={event=>setTagFilter(event.target.value as 'all'|PaymentTagGroup)}
           aria-label={tr('Filter beneficiary payments by tag','ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার')}
           className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
@@ -73,7 +68,13 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagGroupLabels[group][language]}</option>)}
         </select>
       </label>
-    </div>
+    </TaxPayOfficeRegisterFilters>
+    <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
+      onClear={()=>{setSearch('');setTagFilter('all');}}
+      filters={[
+        ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
+        ...(tagFilter!=='all'?[{key:'tag',label:paymentTagGroupLabels[tagFilter][language],onRemove:()=>setTagFilter('all')}]:[])
+      ]}/>
     {visibleTags.status==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Saved tags unavailable; categories were not guessed.','সংরক্ষিত ট্যাগ পাওয়া যায়নি; শ্রেণি অনুমান করা হয়নি।')}</p>}
     {loading&&<p className="mt-4 text-sm text-taxpay-muted" role="status">{tr('Loading saved payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>}
     {error&&<div className="mt-4" role="alert">
@@ -126,6 +127,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
     </div>
 
     </>}
+    <TaxPayOfficeRegisterFooter shown={filtered.length} total={rows.length}
+      labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
       <ReceiptView receipt={selected.receipt} embedded/>
