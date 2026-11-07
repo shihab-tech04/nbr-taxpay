@@ -1660,8 +1660,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </button>
             </>
           ) : step === 2 ? (<>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
-              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            <button type="button" className="tax-service-choice__cancel" aria-label={commonCopy.btnBack} onClick={() => { clearValidationError(); setStep(1); }}>
+              <ArrowLeft size={17} aria-hidden="true" /><span className="payment-flow-embedded__back-text">{commonCopy.btnBack}</span>
             </button>
             <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={otherBatch && (!batchValid || !storyAmountSupported)}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
