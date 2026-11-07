@@ -49,35 +49,20 @@ test('user8 begins with no saved activity or personal tax profile; user6 data st
   await expect(page.getByText('Account type')).toBeVisible();
 });
 
-test('user1 retains existing scenario plus its separate stored travel-tax example', async ({ page }) => {
+test('user1 Activity keeps its approved transaction register without appended SQL sample panels', async ({ page }) => {
   requireDisposableBackend();
   await signIn(page, 'user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  // SQL-backed records remain in Transactions, not Dashboard or the
-  // reference-only Track payment route.
   await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   await page.getByRole('button',{name:'Open transaction history'}).click();
-  const panel = page.getByTestId('demo-sql-service-panel');
-  await expect(panel).toHaveAttribute('data-scenario-user', 'user1');
-  const register = panel.getByTestId('taxpay-service-record-register');
-  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
-  await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
-
-  const search = register.getByRole('searchbox',{name:'Search service records'});
-  await search.fill('SAMPLE-SRV-003');
-  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
-  await search.fill('not-an-existing-reference');
-  await expect(register.getByText('No service records match your search and filters.')).toBeVisible();
-  await register.getByRole('button',{name:'Clear filters'}).click();
-  await register.getByRole('combobox',{name:'Sort service records'}).selectOption('oldest');
-  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
-  await register.getByRole('combobox',{name:'Filter record status'}).selectOption('SIMULATED');
-  await expect(register.getByRole('table').getByText('SAMPLE-SRV-003')).toBeVisible();
-  await register.getByRole('button',{name:'Clear filters'}).click();
-
   const tabs = page.getByRole('navigation',{name:'Activity sections'});
-  await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveCount(0);
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
-  await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
+  await expect(page.getByText('DEMO-PAY-02').first()).toBeVisible();
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  await expect(page.getByTestId('recovered-story-payments')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
+  // The user6/user8 tests above continue covering the underlying SQL fixtures.
 });

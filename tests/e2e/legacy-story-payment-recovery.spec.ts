@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 
 /** Browser journey uses intercepted fictional transport; SQL ownership is tested
  * separately against disposable PostgreSQL. No hosted payment rows are created. */
-test('prior-browser Story1 receipts survive profile recovery and refresh without changing Transactions',async({page})=>{
+test('prior-browser Story1 recovery preserves original data without duplicating Activity panels',async({page})=>{
   test.setTimeout(90_000);
   const primary='00000000-0000-4000-8000-000000010001';
   const legacy='00000000-0000-4000-8000-000000020002';
@@ -110,32 +110,29 @@ test('prior-browser Story1 receipts survive profile recovery and refresh without
     }catch(e){return {error:String(e)};}
   });
   console.log('Direct browser payment list probe:',JSON.stringify(listProbe));
-  await expect.poll(async()=>{
-    const rows=await page.getByTestId('recovered-story-payments').allTextContents();
-    if(rows.some(text=>text.includes(payment)))return true;
-    console.log('Immediate recovered records:',JSON.stringify({
-      alerts:await page.locator('[role="alert"]').allTextContents(),
-      paymentRequests,failedRequests,
-      session:await page.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null')?.paymentSessionId)
-    }));
-    return false;
-  },{timeout:12000}).toBe(true);
+  // The legacy link remains functional, but the two unrequested panels must
+  // not be appended beneath the approved Transactions register.
+  expect(listProbe.status).toBe(200);
+  expect(listProbe.body?.data?.items?.some((row:{id:string})=>row.id===payment)).toBe(true);
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
+  await expect(page.getByTestId('recovered-story-payments')).toHaveCount(0);
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   await page.reload({waitUntil:'domcontentloaded'});
   await expect(page).toHaveURL(/action=history/);
-  // Include the actual post-refresh content in CI failures so a missing
-  // persisted read can be distinguished from a route or session reset.
-  await expect.poll(async()=>{
-    const visible=await page.getByTestId('recovered-story-payments').allTextContents();
-    if(visible.some(text=>text.includes(payment)))return true;
-    const alerts=await page.locator('[role="alert"]').allTextContents();
-    const recoverySections=await page.getByRole('heading',{name:/Earlier saved payment|আগের সংরক্ষিত/}).allTextContents();
-    console.log('Recovery readback probe:',JSON.stringify({
-      url:page.url(),alerts,recoverySections,paymentRequests,failedRequests,
-      profile:await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user')),
-      visible:visible.map(text=>text.slice(0,100))
-    }));
-    return false;
-  },{timeout:12000}).toBe(true);
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  // The recovery response is still queryable from the same authorized session.
+  const reread=await page.evaluate(async()=>{
+    const saved=sessionStorage.getItem('korbritto.demo-profile-session.v1');
+    const id=saved?JSON.parse(saved).paymentSessionId:null;
+    if(!id)return {error:'no owner session'};
+    const response=await fetch('https://eyqhoavnitkrajvyqvxn.supabase.co/functions/v1/demo-story1-taxpay/payments?sessionId='+encodeURIComponent(id)+'&page=1&perPage=100',{cache:'no-store'});
+    return {status:response.status,body:await response.json()};
+  });
+  expect(reread.status).toBe(200);
+  expect(reread.body?.data?.items?.some((row:{id:string})=>row.id===payment)).toBe(true);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBeNull();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toHaveCount(0);
 });

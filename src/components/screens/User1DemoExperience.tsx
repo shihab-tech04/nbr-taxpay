@@ -3,9 +3,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
-import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import {LegacyPaymentRecovery} from './PaymentHistory';
-import {RecoveredStoryHistory} from './RecoveredStoryHistory';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -773,8 +771,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {route==='history'&&activePreviewSession()?.profileId==='user1'&&<LegacyPaymentRecovery language={language}/>}
-    {route==='history'&&activePreviewSession()?.profileId==='user1'&&<RecoveredStoryHistory profileId="user1" language={language} skipDemoRegister/>}
-    {route==='history'&&<DemoServiceRecordsPanel userId="user1" language={language}/>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}
