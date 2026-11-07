@@ -1,4 +1,4 @@
-import {expect,test,type Page} from '@playwright/test';
+import {expect,test,type BrowserContext,type Page} from '@playwright/test';
 
 /** Two independent browser contexts, actual disposable Postgres + Edge Function; no hosted credentials. */
 test('signed-in preview draft saves, resumes, updates, isolates and deletes across browsers',async({browser},info)=>{
@@ -10,7 +10,7 @@ test('signed-in preview draft saves, resumes, updates, isolates and deletes acro
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing draft persistence tests against hosted SQL.');
   const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
-  const contexts=[];
+  const contexts:BrowserContext[]=[];
   const make=async()=>{
     const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
     contexts.push(context);
@@ -63,7 +63,6 @@ test('signed-in preview draft saves, resumes, updates, isolates and deletes acro
     await otherPanel.getByRole('button',{name:'Delete',exact:true}).click();
     await otherPanel.getByRole('button',{name:'Confirm delete'}).click();
     await expect(otherPanel.getByRole('status')).toContainText('Draft deleted');
-    await otherPanel.getByRole('button',{name:/My drafts/}).click();
     await expect(otherPanel.getByText('No saved drafts.')).toBeVisible();
   }finally{
     await Promise.all(contexts.map(context=>context.close()));
