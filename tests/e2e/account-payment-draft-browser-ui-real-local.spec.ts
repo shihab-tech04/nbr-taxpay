@@ -205,3 +205,66 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await Promise.allSettled(contexts.map(context => context.close()));
   }
 });
+
+test('user1 Overview shows account-scoped saved drafts with Continue and confirmed Delete', async ({ browser }, info) => {
+  test.setTimeout(120_000);
+  const raw = process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  if (!raw || !key) throw new Error('Disposable local Supabase is required.');
+  const endpoint = new URL(raw);
+  if (endpoint.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname)) {
+    throw new Error('Refusing hosted SQL draft browser test.');
+  }
+  const context = await browser.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+    viewport: info.project.name.startsWith('mobile') ? { width: 375, height: 812 } : { width: 1280, height: 800 },
+  });
+  try {
+    const page = await context.newPage();
+    page.setDefaultTimeout(10_000);
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
+    await page.getByLabel('Password', { exact: true }).fill('user1');
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+
+    // Create an actual owner-scoped local SQL draft, not a fixture card.
+    await page.goto('/?action=guest');
+    await page.locator('#guest-payer-self').check();
+    const marker = 'USER1-OVERVIEW-DRAFT-' + Date.now();
+    await page.locator('#guest-notice-ref').fill(marker);
+    await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+
+    await page.goto('/?action=taxpayer_home');
+    const workspace = page.getByTestId('user1-synthetic-workspace');
+    const cards = workspace.getByTestId('dashboard-payment-drafts');
+    await expect(cards.getByRole('heading', { name: 'Saved payment drafts' })).toBeVisible();
+    const savedCard = cards.locator('[data-draft-id]').first();
+    await expect(savedCard).toBeVisible();
+    const id = await savedCard.getAttribute('data-draft-id');
+    expect(id).toBeTruthy();
+    // Preserve existing user1 financial dashboard; insert cards after the heading.
+    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
+    await savedCard.getByRole('button', { name: 'Continue' }).click();
+    const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);
+    await payment.getByRole('button', { name: 'Close payment services' }).click();
+
+    const matching = workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]');
+    await expect(matching).toBeVisible();
+    await matching.getByRole('button', { name: 'Delete' }).click();
+    await expect(matching.getByRole('button', { name: 'Confirm delete' })).toBeVisible();
+    await matching.getByRole('button', { name: 'Cancel' }).click();
+    await expect(matching).toBeVisible();
+    await matching.getByRole('button', { name: 'Delete' }).click();
+    await matching.getByRole('button', { name: 'Confirm delete' }).click();
+    await expect(matching).toHaveCount(0);
+    // Other user1 saved drafts must not be deleted or changed by this action.
+    await page.reload();
+    await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});

@@ -30,7 +30,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
         return;
       }
       recovered=true;data={recovered:1};
-    }else if(action==='lists'||action==='people')data=[];
+    }else if(action==='lists'||action==='people'||action==='payment-draft-list')data=[];
     else if(action==='open')data={active:true};
     else throw new Error('Unexpected action '+action);
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});

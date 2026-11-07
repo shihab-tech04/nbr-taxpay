@@ -57,7 +57,8 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
         const list={id:uuid(nextList++),name:String(body.name),created_at:now};
         profile.lists.push(list);
         data=list;
-      }else if(action==='open')data={active:true};
+      }else if(action==='payment-draft-list')data=[];
+      else if(action==='open')data={active:true};
       else throw Error('Unexpected action '+action);
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
     });

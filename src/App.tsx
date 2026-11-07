@@ -133,7 +133,7 @@ const MainRouter: React.FC = () => {
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
     if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
-      return <User1DemoExperience route={currentRoute} activityTabs={showActivitySections} />;
+      return <User1DemoExperience route={currentRoute} activityTabs={showActivitySections} onResumePaymentDraft={resumeDashboardPayment} />;
     }
     switch (currentRoute) {
       // Public Screens
