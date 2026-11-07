@@ -206,9 +206,10 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(rail).toBeVisible();
-  // The dashboard stays mounted, but its duplicate Pay actions are suppressed.
-  await expect(rail.locator('.taxpayer-reference-main-action')).toHaveCount(0);
-  await expect(page.locator('.citizen-pay')).toHaveCount(0);
+  // The existing sidebar Pay action stays mounted beneath the modal.
+  // Its global floating duplicate remains hidden by the approved desktop CSS.
+  await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
+  await expect(page.locator('.citizen-pay')).toBeHidden();
 });
 
 test('desktop guest account access keeps the existing payment type chooser',async({page},info)=>{
