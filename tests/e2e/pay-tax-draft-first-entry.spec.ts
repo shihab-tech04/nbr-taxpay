@@ -37,6 +37,43 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const draftEntry = dialog.getByTestId('account-draft-entry');
   await expect(draftEntry.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+  const entryCards = draftEntry.locator('[data-draft-entry-option]');
+  await expect(entryCards).toHaveCount(2);
+  // Same approved card geometry, token-based colored icons and navigation arrows
+  // as the existing My Tax Liability / Other Tax entry cards at 320/375/desktop.
+  const visual = await entryCards.evaluateAll(cards => cards.map(card => {
+    const icon = card.querySelector<HTMLElement>('.tax-service-choice__icon')!;
+    const arrow = card.querySelector<HTMLElement>('.tax-service-choice__access-arrow')!;
+    const copy = card.querySelector<HTMLElement>('.tax-service-choice__copy')!;
+    const cardBox = card.getBoundingClientRect();
+    const iconBox = icon.getBoundingClientRect();
+    const arrowBox = arrow.getBoundingClientRect();
+    return {
+      option: card.getAttribute('data-draft-entry-option'),
+      row: getComputedStyle(card).flexDirection,
+      radius: getComputedStyle(card).borderRadius,
+      borderWidth: getComputedStyle(card).borderTopWidth,
+      iconWidth: iconBox.width,
+      iconHeight: iconBox.height,
+      iconColor: getComputedStyle(icon).color,
+      iconBackground: getComputedStyle(icon).backgroundColor,
+      arrowColor: getComputedStyle(arrow).color,
+      textFont: getComputedStyle(copy.querySelector('strong')!).fontSize,
+      inBounds: iconBox.left >= cardBox.left - 1 && arrowBox.right <= cardBox.right + 1,
+      centered: Math.abs((iconBox.top + iconBox.height / 2) - (arrowBox.top + arrowBox.height / 2)) <= 1,
+    };
+  }));
+  expect(visual.map(row => row.option)).toEqual(['NEW', 'RESUME']);
+  expect(new Set(visual.map(row => row.iconColor)).size).toBe(2);
+  expect(new Set(visual.map(row => row.iconBackground)).size).toBe(2);
+  expect(visual.every(row => row.iconBackground !== 'rgba(0, 0, 0, 0)' &&
+    row.iconBackground !== 'rgb(255, 255, 255)' &&
+    row.row === 'row' && row.borderWidth === '1px' &&
+    row.iconWidth === visual[0].iconWidth && row.iconHeight === visual[0].iconHeight &&
+    row.radius === visual[0].radius && row.textFont === visual[0].textFont &&
+    row.arrowColor !== 'rgb(0, 0, 0)' && row.inBounds && row.centered)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth))
+    .toBeLessThanOrEqual(2);
   await draftEntry.getByRole('button', { name: 'Continue from draft' }).click();
   // The shared modal header owns Back. Never show a stray body button or blank footer.
   const headerBack = dialog.locator('.taxpay-modal__header .taxpay-modal__back');
