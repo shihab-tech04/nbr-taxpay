@@ -91,3 +91,33 @@ test('user1 synthetic data is isolated from user2 and authenticated records',asy
   await page.goto('/?action=taxpayer_home');
   await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
 });
+
+
+test('user1 Activity retains the approved transaction table and removes redundant payment panels',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Target desktop/mobile Activity regression');
+  await page.goto('/?action=history&demoUser=user1');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  const transactions=page.locator('.taxpayer-transaction-panel');
+  await expect(transactions).toBeVisible();
+  await expect(transactions.getByRole('heading',{name:'Transaction history'})).toBeVisible();
+  await expect(transactions.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
+  await expect(transactions.getByRole('combobox',{name:'Transaction category'})).toBeVisible();
+  await expect(transactions.getByRole('combobox',{name:'Transaction status'})).toBeVisible();
+  await expect(transactions.getByRole('button',{name:'Export CSV'})).toBeVisible();
+  // Neither SQL fixture details nor a second saved-history register belongs
+  // underneath the one approved Activity table. Do not delete their source data.
+  await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
+  await expect(page.getByTestId('recovered-story-payments')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
+  const search=transactions.getByRole('searchbox',{name:'Search transaction reference'});
+  await search.fill('DEMO-PAY-02');
+  await expect(transactions.getByText('DEMO-PAY-02').first()).toBeVisible();
+  await search.fill('not-an-existing-reference');
+  await expect(transactions.getByRole('heading',{name:'No matching records'})).toBeVisible();
+  await search.clear();
+  await expect(transactions.getByRole('heading',{name:'No matching records'})).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
+    .toBeLessThanOrEqual(2);
+});
