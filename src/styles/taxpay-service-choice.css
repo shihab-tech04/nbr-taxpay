@@ -2264,3 +2264,20 @@
     display: inline;
   }
 }
+
+
+@media (max-width: 360px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer {
+    padding-inline: 8px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+    column-gap: 4px;
+  }
+  .payment-form-draft-controls__actions { gap: 4px; }
+  .payment-form-draft-controls__actions button { padding-inline: 6px; font-size: 12px; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+    padding-inline: 7px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}
