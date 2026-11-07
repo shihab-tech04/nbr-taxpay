@@ -30,7 +30,20 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   const primary = list.getByTestId('other-tax-primary-taxpayer');
   await expect(primary.getByTestId('shared-taxpayer-tin-lookup')).toHaveCount(1);
   await expect(primary.locator('.tin-lookup__name')).toBeHidden();
-  await primary.locator('#guest-tin').fill('111111111111');
+  // Focus alone must not reveal suggestions; only deliberate typing opens them.
+  const entry = primary.locator('#guest-tin');
+  await entry.focus();
+  await expect(entry).toHaveAttribute('aria-expanded','false');
+  await expect(page.getByRole('listbox',{name:'Suggested TIN numbers'})).toHaveCount(0);
+  await entry.fill('1');
+  const suggestionBox=page.getByRole('listbox',{name:'Suggested TIN numbers'});
+  await expect(suggestionBox).toBeVisible();
+  const relative=await entry.evaluate(element=>({bottom:element.getBoundingClientRect().bottom}));
+  const popupRect=await suggestionBox.boundingBox();
+  expect(popupRect!.y).toBeGreaterThanOrEqual(relative.bottom-1);
+  // Search dismisses suggestions rather than leaving them over subsequent controls.
+  await entry.fill('111111111111');
+
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await expect(primary.getByTestId('searched-taxpayer-card')).toContainText('User 1');
