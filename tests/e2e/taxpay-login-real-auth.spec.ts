@@ -7,12 +7,21 @@ test('a User ID popup session never creates a Supabase authenticated user',async
   // disconnected test mocks that endpoint rather than calling production.
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
     const body=route.request().postDataJSON() as {action?:string;userId?:string};
-    if(body.action!=='demo-login'||body.userId!=='user2')throw Error('Unexpected demo endpoint call');
-    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:{
-      profileId:'user2',capability:'E'.repeat(43),
+    // The signed-in overview reads saved beneficiary lists for its new tag
+    // breakdown. Allow only read-only capability calls, never a second login,
+    // account mutation, payment or a Supabase Auth grant.
+    const settings={
       paymentSessionId:'00000000-0000-4000-8000-000000000002',
       language:'en',selectedListId:null,
-    }})});
+    };
+    let data:unknown;
+    if(body.action==='demo-login'&&body.userId==='user2')
+      data={...settings,profileId:'user2',capability:'E'.repeat(43)};
+    else if(body.action==='demo-settings')data=settings;
+    else if(body.action==='open')data={active:true};
+    else if(body.action==='lists'||body.action==='people')data=[];
+    else throw Error('Unexpected or non-read-only demo endpoint call: '+body.action);
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
   page.on('request',req=>{
     if(new URL(req.url()).hostname.endsWith('.supabase.co') && /\/auth\/v1\/token/.test(req.url()))
