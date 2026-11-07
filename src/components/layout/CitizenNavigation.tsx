@@ -94,7 +94,8 @@ export function CitizenNavigation() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
-  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused && !isPaymentServiceChoiceOpen;
+  // A payment dialog covers the page but must never remove the existing Pay action behind it.
+  const showPay = !inTransaction && currentRoute !== 'wizard' && (!inputFocused || isPaymentServiceChoiceOpen);
   const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
     setCompact(false);
