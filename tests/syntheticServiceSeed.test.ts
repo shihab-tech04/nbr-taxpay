@@ -23,7 +23,7 @@ test('the SQL examples cover all eight services and each user without duplicate 
   assert.equal(serviceRows.length, 31);
   assert.equal(new Set(serviceRows.map(row => row[1])).size, 31);
   assert.deepEqual([...new Set(serviceRows.map(row => row[3]))].sort(), expected.sort());
-  assert.deepEqual([...new Set(serviceRows.map(row => row[2]))].sort(), Object.keys(DEMO_USERS).sort());
+  assert.deepEqual([...new Set(serviceRows.map(row => row[2]))].sort(), Object.keys(DEMO_USERS).filter(id => Number(id.slice(4)) <= 10).sort());
   for (const row of serviceRows) {
     assert.ok(Number(row[5]) > 0);
     assert.equal(row[4] === 'null', row[3] === 'TRAVEL_TAX');

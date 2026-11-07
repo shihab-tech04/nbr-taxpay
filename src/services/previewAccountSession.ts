@@ -1,14 +1,14 @@
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 import type {DemoUserId} from '../data/demoUsers';
 
-/** Public fictional user1-user10 profile, never Supabase Auth or tax ownership.
+/** Public fictional user1-user30 profile, never Supabase Auth or tax ownership.
  * A server-issued random capability selects the same synthetic data on each browser.
  */
 export const PREVIEW_USER_KEY='taxpay-taxpayer-preview-user';
 const PREVIEW_SESSION_KEY='korbritto.demo-profile-session.v1';
 const capabilityPattern=/^[A-Za-z0-9_-]{43}$/;
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const demoIdPattern=/^user(?:10|[1-9])$/;
+const demoIdPattern=/^user(?:[1-9]|[12][0-9]|30)$/;
 export type DemoSettings={language:'en'|'bn';selectedListId:string|null;paymentSessionId:string};
 export type PreviewSession=DemoSettings&{profileId:DemoUserId;capability:string};
 const outstanding=new Map<string,Map<'language'|'selected-list',string>>();

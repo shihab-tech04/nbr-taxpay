@@ -101,7 +101,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
             onClick={() => setShowRecovery(open => !open)}>{bn ? 'অ্যাকাউন্ট পুনরুদ্ধার' : 'Recover Account'}</button>
         </div>
         {showRecovery && <p id="taxpayer-login-recovery" className="taxpayer-login-recovery" role="status">
-          {bn ? 'বর্তমান user1–user10 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user10 accounts, the password is the same as the User ID.'}
+          {bn ? 'বর্তমান user1–user30 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user30 accounts, the password is the same as the User ID.'}
         </p>}
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'

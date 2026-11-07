@@ -64,7 +64,7 @@ begin
   if (select count(*) from public.sim_tax_service_records) <> 19 then
     raise exception 'Anonymous PostgREST client cannot read fictional service records';
   end if;
-  if (select count(*) from public.sim_payment_users where role_code is not null) <> 10 then
+  if (select count(*) from public.sim_payment_users where role_code is not null) <> 30 then
     raise exception 'Anonymous PostgREST client cannot read synthetic profile metadata';
   end if;
 end;

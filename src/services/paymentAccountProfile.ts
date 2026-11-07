@@ -18,7 +18,7 @@ function toPaymentProfile(user: DemoUser): PaymentAccountProfile {
     tin: user.tin,
     nameEn: user.nameEn,
     nameBn: user.nameBn,
-    // Clearly synthetic contact/jurisdiction data, scoped to the ten previews.
+    // Clearly synthetic contact/jurisdiction data, scoped to the thirty previews.
     receiptMobile: `017${String(sequence).padStart(8, '0')}`,
     taxZone: `Taxes Zone ${sequence}`,
     taxCircle: user.taxCircle,

@@ -3,7 +3,7 @@
  * Demonstration states are NOT government payments, challans or tax credits.
  */
 export const TAXPAY_SIMULATION_CONTRACT_VERSION = '1.0.0' as const;
-export const simulationUsers = ['user1','user2','user3','user4','user5','user6','user7','user8','user9','user10'] as const;
+export const simulationUsers = ['user1','user2','user3','user4','user5','user6','user7','user8','user9','user10','user11','user12','user13','user14','user15','user16','user17','user18','user19','user20','user21','user22','user23','user24','user25','user26','user27','user28','user29','user30'] as const;
 export type SimulationUser = typeof simulationUsers[number];
 export const simulationCategories = ['TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY','SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT'] as const;
 export type SimulationCategory = typeof simulationCategories[number];
