@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
-type Account = 'user9' | 'user10';
+type Account = 'user23' | 'user24';
 
 /** Full React Save Draft → another browser → Continue Draft acceptance.
  * Uses the disposable local Supabase/Edge service, not intercepted REST routes.
@@ -38,16 +38,16 @@ test('payment form drafts survive another browser, protect owner isolation and r
     return page;
   };
   try {
-    const a = await open('user9');
+    const a = await open('user23');
     const marker = 'CROSS-BROWSER-DRAFT-' + Date.now();
     await a.locator('#guest-notice-ref').fill(marker);
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
     await expect(a.getByText('Draft saved to your account. You can continue in another browser.')).toBeVisible();
 
-    const b = await open('user9');
+    const b = await open('user23');
     await b.getByRole('button', { name: /Continue Draft/ }).click();
-    await expect(b.getByRole('button', { name: 'Continue', exact: true })).toBeVisible();
-    await b.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(b.getByRole('button', { name: 'Continue', exact: true }).first()).toBeVisible();
+    await b.getByRole('button', { name: 'Continue', exact: true }).first().click();
     await expect(b.locator('#guest-notice-ref')).toHaveValue(marker);
     await b.locator('#guest-notice-ref').fill(marker + '-UPDATED');
     await b.getByRole('button', { name: 'Save Draft', exact: true }).click();
@@ -58,7 +58,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
     await expect(a.getByRole('alert').filter({ hasText: /changed in another session/ })).toBeVisible();
 
-    const unrelated = await open('user10');
+    const unrelated = await open('user24');
     await unrelated.getByRole('button', { name: /Continue Draft/ }).click();
     await expect(unrelated.getByText('Payment draft', { exact: true })).toHaveCount(0);
     await expect(unrelated.locator('#guest-notice-ref')).not.toHaveValue(marker + '-UPDATED');
@@ -69,7 +69,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(b.getByText('Draft deleted.')).toBeVisible();
 
     // A fresh same-account browser does not recover a deleted draft.
-    const fresh = await open('user9');
+    const fresh = await open('user23');
     await fresh.getByRole('button', { name: /Continue Draft/ }).click();
     await expect(fresh.getByText('Payment draft', { exact: true })).toHaveCount(0);
   } finally {
