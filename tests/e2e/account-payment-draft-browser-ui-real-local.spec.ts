@@ -62,6 +62,33 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
     await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
 
+    // Start new is itself reached from the saved-draft choice modal.
+    // Its Back action belongs in the existing header and must return to that
+    // choice, NOT close Pay Tax or add another bottom/body action.
+    const newPaymentBack = entryModal.locator('.taxpay-modal__header .taxpay-modal__back');
+    await expect(newPaymentBack).toBeVisible();
+    await expect(newPaymentBack).toHaveAttribute('aria-label', 'Back');
+    await expect(entryModal.locator('.taxpay-modal__header .taxpay-modal__close')).toBeVisible();
+    await expect(entryModal.locator('.taxpay-modal__body button[aria-label="Back"]')).toHaveCount(0);
+    const headerSpacing = await entryModal.locator('.taxpay-modal__header').evaluate(header => {
+      const back = header.querySelector<HTMLElement>('.taxpay-modal__back')!.getBoundingClientRect();
+      const title = header.querySelector<HTMLElement>('.taxpay-modal__title')!.getBoundingClientRect();
+      const close = header.querySelector<HTMLElement>('.taxpay-modal__close')!.getBoundingClientRect();
+      return { beforeTitle: title.left - back.right, beforeClose: close.left - title.right };
+    });
+    expect(headerSpacing.beforeTitle).toBeGreaterThanOrEqual(7);
+    expect(headerSpacing.beforeClose).toBeGreaterThanOrEqual(7);
+
+    await newPaymentBack.click();
+    await expect(draftGate.getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+    await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+    await expect(entryModal.locator('.taxpay-modal__footer')).toHaveCount(0);
+    await expect(newPaymentBack).toHaveCount(0);
+    await draftGate.getByRole('button', { name: 'Start new Tax payment' }).click();
+    await expect(newPaymentBack).toBeVisible();
+    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
+    await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
+
     const measure = () => entryModal.evaluate(modal => {
       const cards = Array.from(modal.querySelectorAll<HTMLElement>('[data-payer-relationship]'));
       const body = modal.querySelector<HTMLElement>('.taxpay-modal__body');
