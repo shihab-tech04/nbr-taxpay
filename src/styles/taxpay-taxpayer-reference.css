@@ -1112,7 +1112,7 @@
 /* Tax Ledger / Activity screenshot corrections, 2026-11-02.
    Narrowly scoped to these existing views; shared design tokens remain unchanged. */
 .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-transaction-filters {
-  grid-template-columns:minmax(240px,1.65fr) repeat(3,minmax(140px,1fr));
+  grid-template-columns:minmax(210px,1.55fr) repeat(4,minmax(135px,1fr));
   gap:12px;
   margin-top:16px;
 }

@@ -4,6 +4,9 @@ import {supabase} from '../../services/supabaseClient';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {ASSESSMENT_YEARS} from '../../data/mockData';
 import {getDemoUser} from '../../data/demoUsers';
+import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
+import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
+import {PAYMENT_TAG_GROUPS,paymentTagGroupForTin,paymentTagGroupLabels,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {checkedOwnerRecordCount, type AccountActivityCounts} from '../../services/accountActivityCounts';
 import {loadPrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
 import type {PrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
@@ -35,6 +38,9 @@ const initialScenario:ScenarioState={ownerUid:null,phase:'loading',profileId:nul
 export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNavigate,dashboardYear,onDashboardYearChange})=>{
   const [state,setState]=useState<State>(initial);
   const [scenario,setScenario]=useState<ScenarioState>(initialScenario);
+  const [tagSnapshot,setTagSnapshot]=useState<{owner:string|null;phase:'loading'|'ready'|'error';people:Beneficiary[]}>({
+    owner:null,phase:'loading',people:[]
+  });
   const [assessmentYear,setAssessmentYear]=useState('');
   const [revision,setRevision]=useState(0);
   const {user}=useAccountIdentity();
@@ -79,6 +85,17 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     });
     return()=>{active=false;};
   },[ownerUid,revision]);
+  useEffect(()=>{
+    let active=true;
+    setTagSnapshot({owner:ownerUid,phase:'loading',people:[]});
+    void loadBeneficiaries(ownerUid).then(result=>{
+      if(active)setTagSnapshot({owner:ownerUid,phase:'ready',people:result.people});
+    }).catch(()=>{
+      if(active)setTagSnapshot({owner:ownerUid,phase:'error',people:[]});
+    });
+    return()=>{active=false;};
+  },[ownerUid,revision]);
+  const visibleTags=tagSnapshot.owner===ownerUid?tagSnapshot:{owner:null,phase:'loading' as const,people:[]};
   const visible=state.ownerUid===ownerUid?state:{ownerUid,phase:'loading' as const,counts:null};
   const visibleScenario=scenario.ownerUid===ownerUid?scenario:{ownerUid,phase:'loading' as const,profileId:null,transactions:[]};
   const storedYears=visibleScenario.transactions.flatMap(transaction=>
@@ -113,6 +130,18 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   }
   const categoryRows=simulationCategories.map(category=>({category,amount:categoryTotals.get(category)??0n}))
     .filter(row=>row.amount>0n);
+  const tagSpending=new Map<PaymentTagGroup,bigint>(PAYMENT_TAG_GROUPS.map(group=>[group,0n]));
+  for(const transaction of yearTransactions){
+    // A beneficiary-only receipt belongs to someone else's initiated spending.
+    if(transaction.participantView==='beneficiary'||transaction.state!=='SIMULATED')continue;
+    for(const allocation of transaction.allocations){
+      const match=/^user(\d+)$/.exec(allocation.beneficiary);
+      const lookupTin=match?sampleTinForUserNumber(Number(match[1])):null;
+      const group=paymentTagGroupForTin(lookupTin??undefined,visibleTags.people);
+      tagSpending.set(group,(tagSpending.get(group)??0n)+BigInt(allocation.amountMinor));
+    }
+  }
+  const tagSpendingTotal=[...tagSpending.values()].reduce((sum,value)=>sum+value,0n);
   const serviceLabels=(transaction:DashboardSimulationTransaction)=>[...new Set(transaction.allocations.map(allocation=>
     simulationCategoryLabels[allocation.category][language]))].join(', ');
   const assessmentYears=(transaction:DashboardSimulationTransaction)=>[...new Set(transaction.allocations.map(allocation=>allocation.assessmentYear))].join(', ');
@@ -265,6 +294,21 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             })}
           </div>
         </figure>}
+        {yearTransactions.length>0&&<section className="mt-4 rounded-xl border border-taxpay-border bg-white p-3"
+          data-testid="account-beneficiary-spending" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>
+            <p className="font-semibold tabular-nums text-taxpay-text">{visibleTags.phase==='ready'?scenarioAmountLabel(tagSpendingTotal):'—'}</p>
+          </div>
+          {visibleTags.phase==='loading'&&<p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('Loading saved tags…','সংরক্ষিত ট্যাগ লোড হচ্ছে…')}</p>}
+          {visibleTags.phase==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Cannot verify saved tags. No amounts are categorized.','সংরক্ষিত ট্যাগ যাচাই সম্ভব হয়নি। কোনো অর্থ শ্রেণিবদ্ধ করা হয়নি।')}</p>}
+          {visibleTags.phase==='ready'&&<div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {PAYMENT_TAG_GROUPS.map(group=><div key={group} className="rounded-lg border border-taxpay-border p-3" data-testid={'account-tag-spend-'+group}>
+              <p className="text-xs text-taxpay-muted">{paymentTagGroupLabels[group][language]}</p>
+              <p className="mt-1 font-semibold tabular-nums text-taxpay-text">{scenarioAmountLabel(tagSpending.get(group)??0n)}</p>
+            </div>)}
+          </div>}
+        </section>}
         {yearTransactions.length===0?<p role="status" className="mt-3 rounded-lg border border-dashed border-taxpay-border bg-slate-50 p-3 text-sm text-taxpay-muted">
           {visibleScenario.transactions.length===0
             ?tr('No stored payment activity is linked to this scenario profile.','এই সিনারিও প্রোফাইলে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।')

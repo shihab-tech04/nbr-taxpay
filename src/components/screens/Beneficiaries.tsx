@@ -10,6 +10,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
+import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {UiButton,UiInput,UiSelect} from '../ui/Controls';
 import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
@@ -19,8 +20,7 @@ import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,valid
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
-// Reuse the exact sample TIN suggestions used by Other Tax's progressive lookup.
-const SUGGESTED_TINS = Array.from({length:10},(_,index)=>String(index).repeat(12));
+// The same 30 approved lookup aliases are shared with all TaxPay TIN entries.
 interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
@@ -703,7 +703,7 @@ export function Beneficiaries(){
             name={searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin)
               ? (bn ? lookupSampleTaxpayer(tin)!.nameBn : lookupSampleTaxpayer(tin)!.nameEn) : name}
             canSearch={/^\d{12}$/.test(tin)}
-            suggestedTins={SUGGESTED_TINS.filter(candidate=>!existingTins.has(candidate))}
+            suggestedTins={SAMPLE_TIN_SUGGESTIONS.filter(candidate=>!existingTins.has(candidate))}
             hideNameField={Boolean(reviewedBeneficiaryMatch)}
             editableName={!(searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin))}
             onNameChange={setName}

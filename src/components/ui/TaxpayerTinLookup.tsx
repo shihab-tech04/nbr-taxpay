@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { SAMPLE_TIN_SUGGESTIONS } from '../../data/sampleTinSuggestions';
 
 /**
  * Shared TaxPay TIN → taxpayer-name entry pattern.
@@ -46,7 +47,7 @@ export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
   heading, tinLabel, nameLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins, hideNameField = false,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);

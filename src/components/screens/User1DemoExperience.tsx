@@ -9,6 +9,8 @@ import {RecoveredStoryHistory} from './RecoveredStoryHistory';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {DEMO_USERS} from '../../data/demoUsers';
+import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
+import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
 import {EventBasedTaxLedger, PaymentLifecycleDetails, type TaxAccountEvent} from './EventBasedTaxLedger';
@@ -23,7 +25,7 @@ type Kind = 'income'|'tds'|'ait'|'travel'|'refund'|'adjustment';
 type State = 'POSTED'|'PENDING'|'FAILED'|'REVERSED'|'DISPUTED'|'REQUESTED';
 type RecordItem = {
   id:string; year:string; date:string; kind:Kind; amount:number; state:State;
-  title:string; detail:string; channel:string; ref:string; challan?:string;
+  title:string; detail:string; channel:string; ref:string; challan?:string; beneficiaryTin?:string;
 };
 const taxYears = [
   {year:'2025-2026',liability:180000,description:'Salary and professional income'},
@@ -36,9 +38,9 @@ const events:readonly RecordItem[] = [
   {id:'U1-003',year:'2025-2026',date:'2026-01-18',kind:'tds',amount:9000,state:'POSTED',title:'Bank interest withholding',detail:'Bank withholding entry',channel:'Bank channel (unverified)',ref:'DEMO-ETDS-BANK-02'},
   {id:'U1-004',year:'2025-2026',date:'2026-03-15',kind:'ait',amount:12000,state:'POSTED',title:'Additional advance tax',detail:'Advance-tax allocation entry',channel:'Bank channel (unverified)',ref:'DEMO-AIT-02',challan:'DEMO-CH-AIT-02'},
   {id:'U1-005',year:'2025-2026',date:'2026-03-29',kind:'tds',amount:12000,state:'POSTED',title:'Professional fee withholding',detail:'Professional fee withholding entry',channel:'Deductor channel (unverified)',ref:'DEMO-ETDS-PRO-03'},
-  {id:'U1-006',year:'2025-2026',date:'2026-04-08',kind:'travel',amount:6500,state:'POSTED',title:'Travel tax payment',detail:'Separate travel-tax category; not an income-tax credit',channel:'Card channel (unverified)',ref:'DEMO-TRAVEL-01',challan:'DEMO-CH-TRAVEL-01'},
-  {id:'U1-007',year:'2025-2026',date:'2026-06-21',kind:'income',amount:30000,state:'POSTED',title:'Tax with return — part 1',detail:'Payment status and ledger allocation',channel:'Bank transfer channel (unverified)',ref:'DEMO-PAY-01',challan:'DEMO-CH-INC-01'},
-  {id:'U1-008',year:'2025-2026',date:'2026-09-14',kind:'income',amount:45000,state:'POSTED',title:'Tax with return — part 2',detail:'Payment status and linked ledger entry',channel:'Mobile banking channel (unverified)',ref:'DEMO-PAY-02',challan:'DEMO-CH-INC-02'},
+  {id:'U1-006',year:'2025-2026',date:'2026-04-08',kind:'travel',amount:6500,state:'POSTED',title:'Travel tax payment',detail:'Separate travel-tax category; not an income-tax credit',channel:'Card channel (unverified)',ref:'DEMO-TRAVEL-01',challan:'DEMO-CH-TRAVEL-01',beneficiaryTin:'888888888888'},
+  {id:'U1-007',year:'2025-2026',date:'2026-06-21',kind:'income',amount:30000,state:'POSTED',title:'Tax with return — part 1',detail:'Payment status and ledger allocation',channel:'Bank transfer channel (unverified)',ref:'DEMO-PAY-01',challan:'DEMO-CH-INC-01',beneficiaryTin:'222222222222'},
+  {id:'U1-008',year:'2025-2026',date:'2026-09-14',kind:'income',amount:45000,state:'POSTED',title:'Tax with return — part 2',detail:'Payment status and linked ledger entry',channel:'Mobile banking channel (unverified)',ref:'DEMO-PAY-02',challan:'DEMO-CH-INC-02',beneficiaryTin:'909000000011'},
   {id:'U1-009',year:'2025-2026',date:'2026-10-12',kind:'income',amount:14000,state:'PENDING',title:'Pending bank reconciliation',detail:'No settlement or ledger credit assigned',channel:'Internet banking channel (unverified)',ref:'DEMO-PAY-PEND-01'},
   {id:'U1-010',year:'2025-2026',date:'2026-09-23',kind:'income',amount:9000,state:'FAILED',title:'Failed payment attempt',detail:'Gateway failure — no settlement',channel:'Card channel (unverified)',ref:'DEMO-PAY-FAIL-01'},
   {id:'U1-011',year:'2025-2026',date:'2026-05-04',kind:'income',amount:5000,state:'REVERSED',title:'Reversed attempted payment',detail:'Reversed payment, excluded from credits',channel:'Mobile banking channel (unverified)',ref:'DEMO-PAY-REV-01'},
@@ -91,6 +93,25 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const bn=language==='bn';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
+  const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
+  const [tagLoadState,setTagLoadState]=useState<'loading'|'ready'|'error'>('loading');
+  const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup>('all');
+  useEffect(()=>{
+    let active=true;
+    if(activePreviewSession()?.profileId!=='user1'){
+      setSavedTagPeople([]);setTagLoadState('ready');
+      return()=>{active=false;};
+    }
+    setTagLoadState('loading');
+    void loadBeneficiaries(null).then(result=>{
+      if(active){setSavedTagPeople(result.people);setTagLoadState('ready');}
+    }).catch(()=>{
+      if(active){setSavedTagPeople([]);setTagLoadState('error');}
+    });
+    return()=>{active=false;};
+  },[route]);
+  const paymentTag=(item:RecordItem)=>paymentTagGroupForTin(item.beneficiaryTin,savedTagPeople);
+  const paymentTagLabel=(group:PaymentTagGroup)=>paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
     return taxYears.some(x=>x.year===initial) ? initial! : '2025-2026';
@@ -139,12 +160,17 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
   const [selected,setSelected]=useState<RecordItem|null>(null);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
-  const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,monthFilter,query]);
+  const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&(paymentTagFilter==='all'||(tagLoadState==='ready'&&paymentTag(x)===paymentTagFilter))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,monthFilter,query,paymentTagFilter,savedTagPeople,tagLoadState]);
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
-  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter]);
+  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter]);
   const availableHistoryMonths=[...new Set(scoped.map(x=>x.date.slice(0,7)))].sort();
+  const recordedDirectPayments=scoped.filter(item=>item.state==='POSTED'&&(['income','ait','travel'] as Kind[]).includes(item.kind));
+  const taggedPaymentTotal=recordedDirectPayments.reduce((sum,item)=>sum+item.amount,0);
+  const taggedPaymentBreakdown=PAYMENT_TAG_GROUPS.map(group=>({
+    group,amount:recordedDirectPayments.filter(item=>paymentTag(item)===group).reduce((sum,item)=>sum+item.amount,0)
+  }));
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
   const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-[11px] font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
@@ -204,7 +230,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <label className="taxpayer-transaction-filter"><span>{tr('Status','অবস্থা')}</span><select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} value={status} onChange={e=>{setReviewFilter(null);setStatus(e.target.value as State|'all');}}>
         <option value="all">{tr('All statuses','সব অবস্থা')}</option>{(Object.keys(stateLabels) as State[]).map(s=><option key={s} value={s}>{tr(...stateLabels[s])}</option>)}
       </select></label>
+      <label className="taxpayer-transaction-filter"><span>{tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
+        <select aria-label={tr('Filter transactions by beneficiary tag','উপকারভোগীর ট্যাগ দিয়ে লেনদেন ফিল্টার')}
+          value={paymentTagFilter} onChange={event=>setPaymentTagFilter(event.target.value as 'all'|PaymentTagGroup)}>
+          <option value="all">{tr('All tags','সব ট্যাগ')}</option>
+          {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagLabel(group)}</option>)}
+        </select>
+      </label>
     </TaxPayTableControls>
+    {tagLoadState==='error'&&<p className="px-3 text-sm text-taxpay-error" role="alert">{tr('Saved beneficiary tags could not be loaded.','সংরক্ষিত উপকারভোগীর ট্যাগ লোড করা যায়নি।')}</p>}
     {reviewFilter&&<div className="taxpayer-transaction-count">
       <button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>
@@ -304,6 +338,26 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
         'Posted payments only. Pending, failed and reversed attempts are excluded.','শুধু পোস্টকৃত পরিশোধ; অপেক্ষমাণ, ব্যর্থ ও বাতিল লেনদেন বাদ।')}
       {summaryCard('Still remaining','এখনও বাকি কর',money(totals.outstanding),
         'Opening liability minus eligible posted TDS, advance tax and direct payments.','প্রাথমিক করদায় থেকে যোগ্য উৎসে কর, অগ্রিম কর ও সরাসরি পরিশোধ বাদ।',true)}
+    </section>
+    <section className={panel} data-testid="beneficiary-spending-breakdown" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">{tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}</h2>
+          <p className="mt-1 text-xs text-taxpay-muted">{tr('Recorded direct and advance payments and travel tax; pending, failed, reversed and unmatched entries excluded.','নথিভুক্ত সরাসরি ও অগ্রিম পরিশোধ এবং ভ্রমণ কর; অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল লেনদেন বাদ।')}</p>
+        </div>
+        <p className="text-lg font-semibold tabular-nums" data-testid="tagged-payment-total">{tagLoadState==='ready'?money(taggedPaymentTotal):'—'}</p>
+      </div>
+      {tagLoadState==='loading'&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('Loading saved beneficiary categories…','সংরক্ষিত উপকারভোগীর শ্রেণি লোড হচ্ছে…')}</p>}
+      {tagLoadState==='error'&&<p role="alert" className="mt-3 text-sm text-taxpay-error">{tr('Spending categories are unavailable. Amounts were not attributed.','ব্যয়ের শ্রেণি পাওয়া যায়নি। কোনো অর্থ শ্রেণিবদ্ধ করা হয়নি।')}</p>}
+      {tagLoadState==='ready'&&<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {taggedPaymentBreakdown.map(({group,amount:groupAmount})=><div key={group} className="rounded-lg border border-taxpay-border bg-taxpay-surface px-3 py-3" data-testid={'tag-spend-'+group}>
+          <p className="text-xs text-taxpay-muted">{paymentTagLabel(group)}</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums">{money(groupAmount)}</p>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-taxpay-light">
+            <div className="h-full rounded-full bg-taxpay-primary" style={{width:(taggedPaymentTotal?groupAmount*100/taggedPaymentTotal:0)+'%'}}/>
+          </div>
+        </div>)}
+      </div>}
     </section>
     <section className={panel+' taxpayer-dashboard-attention'} aria-labelledby="taxpayer-attention-title">
       <div className="flex flex-wrap items-center justify-between gap-3">

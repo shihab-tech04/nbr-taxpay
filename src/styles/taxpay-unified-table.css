@@ -994,7 +994,7 @@ table.taxpay-unified-table {
 }
 .taxpay-taxpayer-reference .taxpayer-workspace .taxpayer-transaction-panel .taxpayer-convay-table-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.6fr) repeat(3,minmax(125px,1fr));
+  grid-template-columns: minmax(210px, 1.55fr) repeat(4,minmax(125px,1fr));
   align-items: end;
   gap: 12px;
   margin: 0 -20px;

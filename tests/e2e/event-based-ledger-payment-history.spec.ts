@@ -95,7 +95,7 @@ test('activity filters share one desktop row and details use the shared wide mod
   await page.setViewportSize({width:1600,height:900});
   await page.goto(history);
   const controls=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-filters > label');
-  await expect(controls).toHaveCount(4);
+  await expect(controls).toHaveCount(5);
   const positions=await controls.evaluateAll(nodes=>nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
   expect(new Set(positions).size).toBe(1);
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-ETDS-SAL-01');

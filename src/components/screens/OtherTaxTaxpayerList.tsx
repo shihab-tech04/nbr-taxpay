@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
+import { SAMPLE_TIN_SUGGESTIONS } from '../../data/sampleTinSuggestions';
 import type { OtherTaxTaxpayer, OtherTaxAllocation } from './OtherTaxBatchComposer';
 
 interface Props {
@@ -38,7 +39,7 @@ export function OtherTaxTaxpayerList({
   const canSearch = (tin: string) => (allowSyntheticDemoTin || lockedPrimary ? /^\d{12,13}$/ : /^\d{12}$/).test(tin);
   const notFoundLabel = bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.';
   // Existing lookup fixtures; do not create new taxpayers or change payment data.
-  const suggestedTins = Array.from({length: 10}, (_, index) => String(index).repeat(12));
+  const suggestedTins = SAMPLE_TIN_SUGGESTIONS;
   const progressive = requireConfirmation && allowAdditional;
   const revealAddAction = (id: string) => requestAnimationFrame(() => requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>(id === 'primary'
