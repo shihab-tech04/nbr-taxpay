@@ -21,3 +21,13 @@ test('draft ownership and SQL readback safeguards survive UI refinement', () => 
     assert.ok(source.includes(safeguard), `missing draft safeguard: ${safeguard}`);
   }
 });
+
+test('shared record controls animate subtly and respect reduced motion', () => {
+  const css = readFileSync('src/styles/taxpay-unified-table.css', 'utf8');
+  assert.match(css, /Korbritto accessible record-interaction motion/);
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(css, /transition: background-color 160ms ease-out/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /transition: none;/);
+  assert.match(css, /\.taxpay-mobile-table-card\[role="button"\]:focus-visible/);
+});
