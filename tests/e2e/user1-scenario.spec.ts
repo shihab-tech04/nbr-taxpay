@@ -105,6 +105,7 @@ test('user1 Activity retains the approved transaction table and removes redundan
   await expect(transactions).toBeVisible();
   await expect(transactions.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(transactions.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
+  await transactions.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(transactions.getByRole('combobox',{name:'Transaction category'})).toBeVisible();
   await expect(transactions.getByRole('combobox',{name:'Transaction status'})).toBeVisible();
   await expect(transactions.getByRole('button',{name:'Export CSV'})).toBeVisible();

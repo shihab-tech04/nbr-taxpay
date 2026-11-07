@@ -16,6 +16,7 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByRole('heading', {name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('heading', {name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('searchbox', {name:'Search transaction reference'})).toBeVisible();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox', {name:'Transaction status'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').filter({visible:true}).first()).toBeVisible();
 });
@@ -71,6 +72,7 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
       if(route==='ledger') {
         await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+        await page.getByTestId('event-tax-ledger').getByRole('button',{name:'Filter',exact:true}).click();
         await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toBeVisible();
       } else if(['account_profile','account_settings','journey'].includes(route))
         await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);

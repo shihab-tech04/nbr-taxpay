@@ -1211,3 +1211,130 @@ table.taxpay-unified-table {
 @media(prefers-reduced-motion:reduce) {
   .taxpay-taxpayer-reference .taxpay-office-filter-toggle {transition:none;}
 }
+
+
+/* Single Korbritto implementation of the Office Management record-register shell.
+ * Applies only to taxpayer record workspaces, not payment or receipt print layouts.
+ * One toolbar (heading/count/search/filter/existing actions), advanced panel and footer. */
+.taxpay-taxpayer-reference .taxpay-office-register__toolbar {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:12px;min-width:0;padding:12px 0;
+  border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
+}
+.taxpay-taxpayer-reference .taxpay-office-register__identity {
+  display:flex;align-items:center;gap:10px;flex:1 1 260px;min-width:0;flex-wrap:wrap;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__identity > div {min-width:0;}
+.taxpay-taxpayer-reference .taxpay-office-register__title {
+  margin:0;color:var(--taxpay-table-text,#172033);
+  font-size:16px;font-weight:650;line-height:1.5;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__description {
+  color:var(--taxpay-table-muted,#5f6b7a);
+  font-size:14px;line-height:1.45;margin:2px 0 0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__count {
+  display:inline-flex;align-items:center;justify-content:center;min-height:24px;
+  padding:3px 8px;border-radius:999px;background:var(--taxpay-table-heading,#f7f9fc);
+  color:var(--taxpay-table-muted,#5f6b7a);font-size:14px;line-height:1.3;
+  white-space:nowrap;font-weight:500;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions {
+  display:flex;flex:0 1 auto;align-items:center;justify-content:flex-end;
+  flex-wrap:wrap;gap:8px;min-width:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search {
+  flex:0 1 225px;width:225px;min-width:160px;max-width:300px;min-height:40px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search input {
+  min-height:38px;font-size:14px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-office-filter-toggle {
+  min-height:40px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions > button {
+  min-height:40px;display:inline-flex;align-items:center;gap:8px;
+  font-size:14px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__filters,
+.taxpay-taxpayer-reference .taxpay-table-controls.taxpay-office-register__filters {
+  margin:0;padding:12px;background:var(--taxpay-table-heading,#f7f9fc);
+  border:0;border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
+  border-radius:0;min-width:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__filters > label,
+.taxpay-taxpayer-reference .taxpay-office-register__filters > div {
+  min-width:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__footer {
+  display:flex;align-items:center;justify-content:flex-start;
+  padding:12px 4px 0;min-height:42px;border-top:1px solid var(--taxpay-table-border,#e1e6ee);
+  color:var(--taxpay-table-muted,#5f6b7a);font-size:14px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__toolbar + .taxpay-office-register__footer {
+  border-top:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__toolbar ~ .taxpay-office-active-filters {
+  margin:0;padding:8px 10px;border-radius:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__toolbar ~ .taxpay-table-viewport,
+.taxpay-taxpayer-reference .taxpay-office-register__toolbar ~ .taxpay-data-table {
+  margin-top:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__toolbar ~ .taxpay-unified-table {
+  margin-top:0;
+}
+.taxpay-taxpayer-reference .taxpay-unified-table thead th,
+.taxpay-taxpayer-reference .taxpay-record-list__columns {
+  font-size:14px;font-weight:600;
+  background:var(--taxpay-table-heading,#f7f9fc);
+}
+.taxpay-taxpayer-reference .taxpay-unified-table tbody tr {
+  min-height:52px;
+}
+.taxpay-taxpayer-reference .taxpay-unified-table td {
+  padding-top:10px;padding-bottom:10px;
+}
+@media(max-width:760px) {
+  .taxpay-taxpayer-reference .taxpay-office-register__toolbar {align-items:stretch;}
+  .taxpay-taxpayer-reference .taxpay-office-register__identity,
+  .taxpay-taxpayer-reference .taxpay-office-register__actions {width:100%;flex-basis:100%;justify-content:flex-start;}
+  .taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search {
+    width:100%;max-width:none;flex:1 1 100%;
+  }
+  .taxpay-taxpayer-reference .taxpay-office-register__filters {
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .taxpay-taxpayer-reference .taxpay-office-register__actions button {transition:none;}
+}
+
+
+/* Beneficiary list is a primary workspace switch, never an advanced filter. */
+.taxpay-taxpayer-reference .beneficiary-directory__list-context {
+  display:flex;align-items:center;padding:12px 0;
+  border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
+}
+.taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-directory__list-filter {
+  width:min(100%,320px);min-width:0;
+}
+.taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-list-picker {
+  width:100%;
+}
+@media(max-width:700px) {
+  .taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-directory__list-filter {width:100%;}
+}
+
+
+/* PSR search: the outer field owns the focus ring and border, never the input. */
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search input {
+  background:transparent!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search:focus-within {
+  outline:2px solid var(--taxpay-table-primary,#085587);
+  outline-offset:2px;
+}

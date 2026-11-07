@@ -35,7 +35,7 @@ test('transaction search has one outer focus boundary at mobile and desktop widt
     await page.getByRole('button',{name:'View all activity'}).click();
     await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
     await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
-    const wrapper=page.locator('.taxpayer-transaction-filter__search');
+    const wrapper=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
     const search=wrapper.locator('input[type="search"]');
     await expect(search).toHaveCount(1);
     await expect(search).toHaveCSS('border-top-width','0px');

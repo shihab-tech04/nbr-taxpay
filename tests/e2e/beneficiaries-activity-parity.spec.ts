@@ -42,13 +42,14 @@ for(const language of ['en','bn'] as const){
     await expect(screen.getByRole('button',{name:t('Sign in with email','ইমেইল দিয়ে সাইন ইন')})).toHaveCount(0);
     await expect(screen.getByRole('heading',{level:1,name:t('Beneficiaries','উপকারভোগী')})).toBeVisible();
     await expect(screen.getByRole('heading',{level:2,name:t('Beneficiary list','উপকারভোগীর তালিকা')})).toBeVisible();
+    await screen.getByRole('button',{name:t('Filter','ফিল্টার'),exact:true}).click();
     const filters=screen.locator('.taxpayer-transaction-filters.beneficiary-directory__filters');
     await expect(filters).toBeVisible();
-    const selectList=filters.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')});
+    const selectList=screen.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')});
     await expect(selectList).toContainText('Clients');
-    const search=filters.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
+    const search=screen.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
     await expect(search).toBeVisible();
-    await expect(screen.locator('.beneficiary-directory__count')).toContainText('2');
+    await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
     const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');

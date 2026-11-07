@@ -29,9 +29,9 @@ test('attention actions retain their filtered Activity and correction routes',as
     await page.goto(dashboard);
     await page.getByRole('button',{name:'View '+label+': '+count}).click();
     await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-    await expect(page.getByText('Records: '+count)).toBeVisible();
+    await expect(page.locator('.taxpay-office-register__count')).toContainText(String(count));
     await page.getByRole('button',{name:'Clear review filter'}).click();
-    await expect(page.getByText('Records: 14')).toBeVisible();
+    await expect(page.locator('.taxpay-office-register__count')).toContainText('14');
   }
   await page.goto(dashboard);
   await page.getByRole('button',{name:'Review exceptions'}).click();

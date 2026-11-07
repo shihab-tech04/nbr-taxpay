@@ -1,4 +1,4 @@
-import {TaxPayDataGrid,TaxPayTableState,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableState,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, { useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
@@ -103,7 +103,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   const { receipts, selectReceipt, language, taxpayerProfile, userRole, demoUser, previewAccount } = useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const [query, setQuery] = useState('');
-  const [tableFiltersExpanded,setTableFiltersExpanded]=useState(true);
+  const [tableFiltersExpanded,setTableFiltersExpanded]=useState(false);
   const [year, setYear] = useState('ALL');
   const [category, setCategory] = useState('ALL');
   const [lifecycleReceipt,setLifecycleReceipt]=useState<ChallanReceipt|null>(null);
@@ -138,36 +138,26 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/>{previewAccount&&activePreviewSession()?.profileId===previewAccount.id&&<RecoveredStoryHistory profileId={previewAccount.id} language={language}/>}</>;
 
   return (
-    <div className={`mx-auto max-w-5xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
+    <div className={`mx-auto max-w-7xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
       <TaxpayerPageHeading title={label('Payments & activity','পেমেন্ট ও লেনদেন')}
         description={label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
       {activityTabs && <TaxpayerActivityTabs />}
-      <div className="taxpay-office-table-heading rounded-xl border border-taxpay-border bg-white px-4 sm:px-5">
-        <div className="taxpay-office-table-heading__identity">
-          <h2>{label('Payment records','পেমেন্টের তথ্য')}</h2>
-          <TaxPayTableCounter label={label('Records','রেকর্ড')} shown={filtered.length} total={receipts.length}/>
-        </div>
-        <div className="taxpay-office-table-heading__actions">
-          <TaxPayTableFilterToggle expanded={tableFiltersExpanded} onToggle={()=>setTableFiltersExpanded(open=>!open)} label={label('Filter','ফিল্টার')}/>
-          <button type="button" onClick={exportDemo} disabled={!filtered.length}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
+      <section className="rounded-xl border border-taxpay-border bg-white px-4 sm:px-5" aria-label={label('Payment register','পেমেন্ট নিবন্ধন')}>
+        <TaxPayOfficeRegisterToolbar title={label('Payment records','পেমেন্টের তথ্য')}
+          count={filtered.length} total={receipts.length} countLabel={label('records','রেকর্ড')}
+          searchValue={query} onSearchChange={setQuery}
+          searchLabel={label('Search payments','পেমেন্ট খুঁজুন')}
+          searchPlaceholder={label('Reference or payer','রেফারেন্স বা পরিশোধকারী')}
+          filterLabel={label('Filter','ফিল্টার')} filtersOpen={tableFiltersExpanded}
+          onToggleFilters={()=>setTableFiltersExpanded(open=>!open)}
+          actions={<button type="button" onClick={exportDemo} disabled={!filtered.length}
+            className="inline-flex items-center gap-2 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark hover:bg-taxpay-light disabled:opacity-50">
             <Download aria-hidden="true" size={16}/>{label('Export records','রেকর্ড নিন')}
-          </button>
-        </div>
-      </div>
-      {tableFiltersExpanded&&<section className="taxpay-table-filters rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" aria-label={label('Search and filters','খোঁজ ও ফিল্টার')}>
-        {/* Preserve the established region's accessible record-count contract; visually, the count belongs in the toolbar. */}
-        <p className="sr-only" aria-live="polite">{label('Records','রেকর্ড')}: {filtered.length}</p>
+          </button>}/>
+        <TaxPayOfficeRegisterFilters open={tableFiltersExpanded} ariaLabel={label('Search and filters','খোঁজ ও ফিল্টার')}>
+          {/* Keep previous accessibility contract for the expanded panel without a second visible count. */}
+          <p className="sr-only" aria-live="polite">{label('Records','রেকর্ড')}: {filtered.length}</p>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div>
-            <label htmlFor="activity-search" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Search payments','পেমেন্ট খুঁজুন')}</label>
-            <div className="relative">
-              <Search aria-hidden="true" size={17} className="absolute left-3 top-3.5 text-taxpay-muted"/>
-              <input id="activity-search" type="search" value={query} onChange={e=>setQuery(e.target.value)}
-                placeholder={label('Reference or payer','রেফারেন্স বা পরিশোধকারী')}
-                className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white pl-10 pr-3 text-sm text-taxpay-text focus-visible:outline-taxpay-primary"/>
-            </div>
-          </div>
           <div>
             <label htmlFor="activity-year" className="mb-1 block text-sm font-semibold text-taxpay-text">{label('Assessment year','করবর্ষ')}</label>
             <select id="activity-year" value={year} onChange={e=>setYear(e.target.value)}
@@ -185,15 +175,15 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             </select>
           </div>
         </div>
-      </section>}
-      <TaxPayActiveFilterChips clearLabel={label('Clear all','সব ফিল্টার মুছুন')}
+        </TaxPayOfficeRegisterFilters>
+        <TaxPayActiveFilterChips clearLabel={label('Clear all','সব ফিল্টার মুছুন')}
         onClear={()=>{setQuery('');setYear('ALL');setCategory('ALL');}}
         filters={[
           ...(query.trim()?[{key:'search',label:label('Search: ','অনুসন্ধান: ')+query.trim(),onRemove:()=>setQuery('')}]:[]),
           ...(year!=='ALL'?[{key:'year',label:year,onRemove:()=>setYear('ALL')}]:[]),
           ...(category!=='ALL'?[{key:'category',label:bn?CATEGORY_LABELS[category]?.bn??category:CATEGORY_LABELS[category]?.en??category,onRemove:()=>setCategory('ALL')}]:[])
         ]}/>
-      <section aria-label={label('Payment records','পেমেন্টের তথ্য')} className="taxpay-data-table-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+      <div className="taxpay-office-register__body">
         {filtered.length===0 ? (
           <TaxPayTableState className="rounded-lg bg-taxpay-background p-5">
             <h2 className="text-base font-semibold text-taxpay-text">{label('No matching records','মিল পাওয়া যায়নি')}</h2>
@@ -229,6 +219,9 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
             </>}/>
 
         </>}
+      </div>
+        <TaxPayOfficeRegisterFooter shown={filtered.length} total={receipts.length}
+          labels={{showing:label('Showing','দেখানো হচ্ছে'),of:label('of','মোট'),records:label('records','রেকর্ড')}}/>
       </section>
       {lifecycleReceipt&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
         onClose={()=>setLifecycleReceipt(null)} hideFooter className="taxpayer-transaction-detail">

@@ -56,6 +56,7 @@ test('taxpayer mobile home and activity support Bangla without overflows',async(
   await page.getByRole('button',{name:'লেনদেনের ইতিহাস খুলুন'}).click();
   await expect(page.getByRole('heading',{name:'পেমেন্ট ও লেনদেন'})).toBeVisible();
   await expect(page.getByLabel('পেমেন্ট খুঁজুন')).toBeVisible();
+  await page.getByRole('button',{name:'ফিল্টার',exact:true}).click();
   await expect(page.getByLabel('করবর্ষ')).toBeVisible();
   await expect(page.getByLabel('পেমেন্টের ধরন')).toBeVisible();
 });

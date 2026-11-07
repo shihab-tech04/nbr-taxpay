@@ -216,7 +216,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(recordList.first()).toHaveClass(/beneficiary-directory__tabular-row|taxpay-mobile-table-card/);
   await expect(page.getByRole('checkbox',{name:'Select all visible beneficiaries'})).toBeVisible();
   await expect(page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table')).toHaveCount(1);
-  const searchControl=page.locator('.beneficiary-directory__filters .taxpayer-transaction-filter__search');
+  const searchControl=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
   await expect(searchControl).toHaveCSS('border-top-width','1px');
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('border-top-width','0px');
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('background-color','rgba(0, 0, 0, 0)');

@@ -11,10 +11,11 @@ test('history uses one content panel and aligned, legible payment rows',async({p
 
   await expect(panel.getByRole('heading',{name:'Transaction history'})).toBeVisible();
   await expect(workspace.getByText('Payment & activity count')).toHaveCount(0);
-  await expect(panel.getByText('Records: 14')).toBeVisible();
+  await expect(panel.locator('.taxpay-office-register__count')).toHaveText('14 records');
   const toolbar=panel.getByTestId('convay-table-toolbar');
   const filters=panel.getByTestId('convay-table-filters');
   await expect(toolbar).toBeVisible();
+  await toolbar.getByRole('button',{name:'Filter'}).click();
   await expect(filters).toBeVisible();
   await expect(toolbar.getByRole('button',{name:'Export CSV'})).toBeVisible();
   const visuals=await Promise.all([toolbar,filters].map(element=>element.evaluate(node=>{

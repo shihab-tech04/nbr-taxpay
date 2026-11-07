@@ -267,6 +267,7 @@ test('bound SQL ledger keeps historical and new mixed-year allocations independe
   await page.goto('/?action=ledger');
   const ledger=page.getByTestId('event-tax-ledger');
   await expect(ledger).toBeVisible();
+  await ledger.getByRole('button',{name:'Filter',exact:true}).click();
   const years=ledger.getByRole('combobox',{name:'Filter ledger by year'});
   await years.selectOption('2026-27');
   await expect(ledger.locator('tbody tr')).toHaveCount(1);

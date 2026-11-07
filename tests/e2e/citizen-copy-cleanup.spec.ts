@@ -32,6 +32,7 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
     await expect(main).toBeVisible();
     if (route==='ledger') {
       await expect(main.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+      await main.getByRole('button',{name:'Filter',exact:true}).click();
       await expect(main.getByRole('combobox',{name:'Filter ledger by year'})).toBeVisible();
     } else if (['account_profile','account_settings','journey'].includes(route))
       await expect(main.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);

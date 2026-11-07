@@ -97,7 +97,8 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.match(page,/beneficiary-directory__tabular-row/);
   assert.match(page,/mobileTestId="beneficiary-directory-mobile"/);
   assert.match(page,/renderMobileCard=\{person=>/);
-  assert.match(page,/taxpayer-transaction-filter__search/);
+  assert.match(page,/<TaxPayOfficeRegisterToolbar/);
+  assert.match(page,/searchLabel=\{tr\('Search this list'/);
   assert.match(page,/Select all visible beneficiaries/);
   assert.doesNotMatch(page,/beneficiary-directory hidden md:block|beneficiary-directory__mobile md:hidden/);
   assert.match(shared,/\.beneficiary-directory__actions/);

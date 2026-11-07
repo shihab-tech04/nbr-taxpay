@@ -98,7 +98,8 @@ test('actual signed-in payment paths use shared semantic desktop tables and comp
    assert.match(source,/TaxPayTableCounter/,name);
    assert.match(source,/mobileTestId=/,name);
    assert.match(source,/getRowKey=/,name);
-   assert.match(source,/type="search"/,name);
+   assert.match(source,/<TaxPayOfficeRegisterToolbar/,name);
+   assert.match(shared,/type="search"/,name);
  }
  assert.match(activity,/onClick=\{\(\)=>setSelectedPayment\(tx\)\}/);
  assert.match(activity,/tx\.allocations\.map/);
