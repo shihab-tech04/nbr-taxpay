@@ -121,6 +121,12 @@ test('user1 Activity retains the approved transaction table and removes redundan
   await expect(transactions.getByRole('heading',{name:'No matching records'})).toBeVisible();
   await search.clear();
   await expect(transactions.getByRole('heading',{name:'No matching records'})).toHaveCount(0);
+  // Pagination remains functional after removing only the appended panels.
+  const pagination=transactions.getByRole('navigation',{name:'Page navigation'});
+  await expect(pagination.getByRole('button',{name:'Next'})).toBeVisible();
+  await pagination.getByRole('button',{name:'Next'}).click();
+  await expect(pagination.getByRole('button',{name:'Page 2'})).toHaveAttribute('aria-current','page');
+  await expect(pagination).toContainText('Showing 11–14 of 14 records');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
     .toBeLessThanOrEqual(2);
 });
