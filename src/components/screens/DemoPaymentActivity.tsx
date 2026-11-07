@@ -13,7 +13,7 @@ import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {PaymentLifecycleDetails} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
-import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState,TaxPayTableFilterToggle,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import {
   simulationUsers,simulationCategories,simulationCategoryLabels,loadSimulationHistory,submitSimulatedPayment,
   parseSimulatedAmount,formatSimulatedAmount,getBoundSimulationUser,getPrivateSimulationHistory,submitPrivateSimulationPayment,getDemoStoryPaymentHistory,
@@ -39,6 +39,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState('');
   const [recordQuery,setRecordQuery]=useState('');
+  const [recordFiltersExpanded,setRecordFiltersExpanded]=useState(true);
   const [recordYear,setRecordYear]=useState('all');
   const [recordTag,setRecordTag]=useState<'all'|PaymentTagGroup>('all');
   const [savedTags,setSavedTags]=useState<{status:'loading'|'ready'|'error';people:Beneficiary[]}>({status:'loading',people:[]});
@@ -324,9 +325,16 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       </button>)}
     </nav>
     <section className="space-y-3" data-testid="signed-in-payment-activity" aria-label={txt('Transaction history','লেনদেনের ইতিহাস')}>
-      <div className="taxpay-table-toolbar"><h2 className="text-base font-semibold">{txt('Transaction history','লেনদেনের ইতিহাস')}</h2>
-        <TaxPayTableCounter label={txt('Records','রেকর্ড')} shown={visibleRows.length} total={rows.length}/></div>
-      <TaxPayTableControls className="taxpay-record-page-filters">
+      <div className="taxpay-office-table-heading">
+        <div className="taxpay-office-table-heading__identity">
+          <h2>{txt('Transaction history','লেনদেনের ইতিহাস')}</h2>
+          <TaxPayTableCounter label={txt('Records','রেকর্ড')} shown={visibleRows.length} total={rows.length}/>
+        </div>
+        <div className="taxpay-office-table-heading__actions">
+          <TaxPayTableFilterToggle expanded={recordFiltersExpanded} onToggle={()=>setRecordFiltersExpanded(open=>!open)} label={txt('Filter','ফিল্টার')}/>
+        </div>
+      </div>
+      {recordFiltersExpanded&&<TaxPayTableControls className="taxpay-record-page-filters">
         <label className="taxpayer-transaction-filter"><span>{txt('Search transactions','লেনদেন খুঁজুন')}</span>
           <input type="search" value={recordQuery} onChange={event=>setRecordQuery(event.target.value)}
             aria-label={txt('Search transactions','লেনদেন খুঁজুন')}
@@ -346,10 +354,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             <option value="all">{txt('All tags','সব ট্যাগ')}</option>
             {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagGroupLabels[group][language]}</option>)}
           </select></label>
-        {(recordQuery||recordYear!=='all'||recordTag!=='all')&&<button type="button" onClick={()=>{setRecordQuery('');setRecordYear('all');setRecordTag('all');}}
-          className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary">
-          {txt('Clear filters','ফিল্টার মুছুন')}</button>}
-      </TaxPayTableControls>
+      </TaxPayTableControls>}
+      <TaxPayActiveFilterChips clearLabel={txt('Clear filters','ফিল্টার মুছুন')}
+        onClear={()=>{setRecordQuery('');setRecordYear('all');setRecordTag('all');}}
+        filters={[
+          ...(recordQuery.trim()?[{key:'search',label:txt('Search: ','অনুসন্ধান: ')+recordQuery.trim(),onRemove:()=>setRecordQuery('')}]:[]),
+          ...(recordYear!=='all'?[{key:'year',label:recordYear,onRemove:()=>setRecordYear('all')}]:[]),
+          ...(recordTag!=='all'?[{key:'tag',label:paymentTagGroupLabels[recordTag][language],onRemove:()=>setRecordTag('all')}]:[])
+        ]}/>
       {loading?<TaxPayTableState>{txt('Loading transactions…','লেনদেন লোড হচ্ছে…')}</TaxPayTableState>:
        loadError?<div role="alert" className="rounded-xl border border-taxpay-border bg-white p-4">
          <p>{txt('Unable to load transactions.','লেনদেন লোড করা যায়নি।')}</p>
