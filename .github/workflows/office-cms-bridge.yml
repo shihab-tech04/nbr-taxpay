@@ -5,6 +5,8 @@ on:
       - 'supabase/functions/office-cms-publish/**'
       - 'supabase/migrations/20261107071500_office_authenticated_taxpay_banner_bridge.sql'
       - 'tests/integration/officeCmsBridge.integration.sql'
+      - 'supabase/migrations/*site_logo*.sql'
+      - 'tests/integration/cmsLogoDimensions.integration.sql'
       - '.github/workflows/office-cms-bridge.yml'
   workflow_dispatch:
 permissions:
@@ -33,6 +35,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify invoker-only SQL function and banner order/version
         run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/officeCmsBridge.integration.sql
+      - name: Verify approved logo crop against the migrated SQL constraint
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/cmsLogoDimensions.integration.sql
   edge-types:
     runs-on: ubuntu-latest
     steps:
