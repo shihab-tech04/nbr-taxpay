@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEMO_USERS, getDemoUser } from '../src/data/demoUsers';
 
-test('ten explicitly identified synthetic scenarios remain distinct and non-authorizing', () => {
- assert.equal(Object.keys(DEMO_USERS).length,10);
- for(let i=1;i<=10;i++){
+test('thirty explicitly identified synthetic scenarios remain distinct and non-authorizing', () => {
+ assert.equal(Object.keys(DEMO_USERS).length,30);
+ for(let i=1;i<=30;i++){
   const user=getDemoUser('user'+i);
   assert.ok(user);
   assert.equal(user.id,'user'+i);
@@ -21,5 +21,5 @@ test('ten explicitly identified synthetic scenarios remain distinct and non-auth
  assert.equal(getDemoUser('user10')?.tin, '1010101010101');
 });
 test('invalid IDs and crafted redirect fragments never produce a demo role', () => {
- for(const id of [null,'','user0','user11','admin','user1&action=officer_home','../user1']) assert.equal(getDemoUser(id),null);
+ for(const id of [null,'','user0','user31','admin','user1&action=officer_home','../user1']) assert.equal(getDemoUser(id),null);
 });
