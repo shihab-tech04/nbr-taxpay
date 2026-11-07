@@ -40,8 +40,13 @@ jobs:
         run: |
           npm run lint
           npm run test:domain
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
       - name: Compile public review-only application with scoped hosted Auth / RLS
@@ -91,8 +96,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Verify preserved ledger and receipt contracts
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -152,6 +162,42 @@ jobs:
           path: test-results/screenshots/taxpay-unified-*.png
           if-no-files-found: warn
           retention-days: 14
+      - name: Verify direct-service banner referral retains service and skips duplicate chooser
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/taxpay-direct-service-entry.spec.ts --project=desktop-1280 --project=mobile-375
+      - name: Verify SQL-backed stationary banner copy and image override contract
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://banner-cms-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/banner-cms-sql-sync.spec.ts --project=desktop-1280 --project=mobile-320
+
+  payment-ux-e2e:
+    name: Payment wizard and calculation acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Verify payment wizard UX and large-amount precision
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -168,18 +214,6 @@ jobs:
         env:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/v11-form-input-parity.spec.ts
-      - name: Verify direct-service banner referral retains service and skips duplicate chooser
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/taxpay-direct-service-entry.spec.ts --project=desktop-1280 --project=mobile-375
-      - name: Verify SQL-backed stationary banner copy and image override contract
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://banner-cms-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/banner-cms-sql-sync.spec.ts --project=desktop-1280 --project=mobile-320
 
   public-e2e:
     name: Public and signed-in journey acceptance
@@ -197,8 +231,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Verify purposeful public homepage and selected navigation state
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -248,8 +287,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium --only-shell
       # Check newly changed recovery first for fast failure feedback; retain
       # all existing signed-in payment/beneficiary acceptance unchanged.
       - name: Verify stable fictional login data across fresh browsers
@@ -287,8 +331,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Verify synthetic receipts and simulated bank slips
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -326,8 +375,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Check public routes and disconnected backend state
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -337,7 +391,7 @@ jobs:
 
   verification-gate:
     name: Build and verify static preview
-    needs: [compile, core-e2e, public-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e]
+    needs: [compile, core-e2e, payment-ux-e2e, public-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -402,10 +456,15 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
+      - name: Restore deployed browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install deployed browser verification dependencies
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium --only-shell
 
       - name: Verify deployed private-route authentication boundary in Chromium
         env:
