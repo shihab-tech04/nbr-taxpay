@@ -133,7 +133,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   const tagSpending=new Map<PaymentTagGroup,bigint>(PAYMENT_TAG_GROUPS.map(group=>[group,0n]));
   for(const transaction of yearTransactions){
     // A beneficiary-only receipt belongs to someone else's initiated spending.
-    if(transaction.participantView==='beneficiary')continue;
+    if(transaction.participantView==='beneficiary'||transaction.state!=='SIMULATED')continue;
     for(const allocation of transaction.allocations){
       const match=/^user(\d+)$/.exec(allocation.beneficiary);
       const lookupTin=match?sampleTinForUserNumber(Number(match[1])):null;
@@ -297,7 +297,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         {yearTransactions.length>0&&<section className="mt-4 rounded-xl border border-taxpay-border bg-white p-3"
           data-testid="account-beneficiary-spending" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold text-taxpay-text">{tr('Payments I initiated by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী আমার শুরু করা পেমেন্ট')}</h3>
+            <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>
             <p className="font-semibold tabular-nums text-taxpay-text">{visibleTags.phase==='ready'?scenarioAmountLabel(tagSpendingTotal):'—'}</p>
           </div>
           {visibleTags.phase==='loading'&&<p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('Loading saved tags…','সংরক্ষিত ট্যাগ লোড হচ্ছে…')}</p>}
