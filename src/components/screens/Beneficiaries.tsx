@@ -503,7 +503,7 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
-            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}</span>
+            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span className="hidden sm:inline">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}</span><span className="sm:hidden">{tr('Tag','ট্যাগ')}</span>
               <SearchableSelect id="beneficiary-filter-tag" ariaLabel={tr('Filter by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে ফিল্টার')}
                 value={tagFilter==='friends_family'&&relationshipFilter!=='all'
                   ?'friends_family:'+relationshipFilter:tagFilter}
