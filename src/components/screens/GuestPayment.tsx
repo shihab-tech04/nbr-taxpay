@@ -376,7 +376,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const amounts = saved.amountInputs && typeof saved.amountInputs === 'object' && !Array.isArray(saved.amountInputs)
       ? saved.amountInputs as Record<number, string> : {};
     setAmountInputs(Object.fromEntries(Object.entries(amounts).filter(([key, value]) =>
-      /^\\d+$/.test(key) && typeof value === 'string' && value.length <= 20
+      /^\d+$/.test(key) && typeof value === 'string' && value.length <= 20
     )) as Record<number, string>);
     setAdditionalTaxpayers(Array.isArray(saved.additionalTaxpayers)
       ? saved.additionalTaxpayers.filter((person): person is OtherTaxTaxpayer =>
