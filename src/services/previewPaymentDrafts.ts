@@ -38,7 +38,7 @@ const integer=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isS
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const keys=(v:Record<string,unknown>,allowed:readonly string[])=>Object.keys(v).every(k=>allowed.includes(k));
 const nullable=(v:unknown,values:readonly string[])=>v===null||(typeof v==='string'&&values.includes(v));
-const arrays=(v:unknown,max:number)=>Array.isArray(v)&&v.length<=max;
+const arrays=(v:unknown,max:number):v is unknown[]=>Array.isArray(v)&&v.length<=max;
 const methods=(v:unknown)=>v===null||text(v,50);
 const parseBase=(v:Record<string,unknown>,journey:DraftJourney)=>
   v.schema==='1'&&v.journey===journey;
