@@ -1,6 +1,17 @@
 import { expect, type Locator } from '@playwright/test';
 /** Payer relationship is the entry decision, while original financial service IDs remain unchanged. */
 export async function enterTaxPayService(dialog: Locator, serviceId: string, payer: 'SELF' | 'OTHER' = 'SELF') {
+  // Account-owned drafts introduce a first decision. Tests for the existing
+  // new-payment journey deliberately select Start new before the payer cards.
+  const entry = dialog.getByTestId('account-draft-entry');
+  const startNew = entry.getByRole('button', { name: 'Start new Tax payment' });
+  await expect.poll(async () => {
+    if (await startNew.isVisible().catch(() => false)) return 'draft-choice';
+    if (await dialog.locator('[data-payer-relationship]').count() === 2) return 'payer';
+    if (await entry.getByRole('alert').count()) return 'draft-error';
+    return 'loading';
+  }, { timeout: 15000 }).not.toBe('loading');
+  if (await startNew.isVisible().catch(() => false)) await startNew.click();
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await dialog.locator(`[data-payer-relationship="${payer}"]`).click();
   await expect(dialog.locator('[data-payment-entry]')).toHaveCount(2);
