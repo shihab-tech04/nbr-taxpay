@@ -11,6 +11,7 @@ import { ServiceCategoryTag, type ServiceCategoryCode } from '../ui/ServiceCateg
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { taxpayerGreeting, isReturningTaxpayer } from '../../services/taxpayerGreeting';
 import { AccountActivitySummary } from './AccountActivitySummary';
+import {PreviewBeneficiarySpending} from './PreviewBeneficiarySpending';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
@@ -159,7 +160,10 @@ export const TaxpayerDashboard: React.FC = () => {
         onNavigate={(route) => navigate(route)} />
       {serviceShortcut}
     </> : <>
-    {previewAccount && demoUser && !user && <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>}
+    {previewAccount && demoUser && !user && <>
+      <PreviewBeneficiarySpending profileId={previewAccount.id} language={language}/>
+      <DemoServiceRecordsPanel userId={demoUser.id} language={language}/>
+    </>}
     <section aria-label={tr('Payment records summary','পেমেন্ট রেকর্ডের সারসংক্ষেপ')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {metrics.map((m,i)=><article className={card} key={m.en}>
         <div className="flex justify-between gap-2"><p className="text-sm text-slate-500">{tr(m.en,m.bn)}</p><span data-payment-service={i===1?'SOURCE_TAX_DEPOSIT':i===2?'TRAVEL_TAX':'TAX_WITH_RETURN'} className="taxpayer-dashboard__category-icon rounded-lg p-2">{i===1?<ShieldCheck size={19} aria-hidden="true"/>:i===2?<Receipt size={19} aria-hidden="true"/>:<WalletCards size={19} aria-hidden="true"/>}</span></div>
