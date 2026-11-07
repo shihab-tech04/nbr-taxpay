@@ -1,62 +1,106 @@
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 import { activePreviewSession } from './previewAccountSession';
+import type { OtherTaxTaxpayer, OtherTaxAllocation } from '../components/screens/OtherTaxBatchComposer';
+import type { TravelPassenger, TravelMode } from '../data/travelTax2026';
 
-/** One draft is resumable payment FORM progress, never a payment or receipt. */
-export type WizardDraftState = {
-  category: string;
-  assessmentYear: string;
-  selectedHeadId: number;
-  taxAmount: number;
-  penaltyAmount: number;
-  surchargeAmount: number;
-  interestAmount: number;
-  note: string;
-  paymentMethod: string;
-  step: 1 | 2 | 3;
+/** Cross-browser form progress belongs to the verified preview capability, never browser storage.
+ * Draft payloads cannot authorize a beneficiary, confirm a passport or submit a payment.
+ */
+export type DraftJourney = 'guest_payment' | 'travel_tax';
+export type GuestPaymentDraftState = {
+  schema:'1'; journey:'guest_payment'; step:1|2|3;
+  forSelf:boolean|null; tin:string; payerName:string; otherTaxpayerName:string;
+  additionalTaxpayers:OtherTaxTaxpayer[]; otherTaxLines:OtherTaxAllocation[];
+  phone:string; receiptEmail:string; assessmentYear:string; noticeReference:string;
+  incomeTaxType:'NON_COMPANY'|'COMPANY'|null; category:string;
+  selectedHeadIds:number[]; amountInputs:Record<string,string>;
+  paymentChannel:'NOW'|'OTC'|null; methodGroup:'mfs'|'bank'|'card'|null;
+  paymentMethod:string|null;
 };
+export type TravelTaxDraftState = {
+  schema:'1'; journey:'travel_tax'; step:0|1|2; mode:TravelMode;
+  port:string; waterPort:string; destination:string; travelDate:string;
+  passengers:TravelPassenger[]; phone:string;
+  paymentChannel:'NOW'|'OTC'|null; methodGroup:'mfs'|'bank'|'card'|null;
+  paymentMethod:string|null;
+};
+export type PreviewFormDraftState = GuestPaymentDraftState | TravelTaxDraftState;
 export type PreviewDraftSummary = {
-  id: string;
-  journey: 'wizard';
-  category: string;
-  step: 1 | 2 | 3;
-  version: number;
-  updatedAt: string;
+  id:string; journey:DraftJourney; category:string; step:number;
+  version:number; updatedAt:string;
 };
-export type PreviewWizardDraft = PreviewDraftSummary & { formState: WizardDraftState };
+export type PreviewSavedDraft = PreviewDraftSummary & { formState:PreviewFormDraftState };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const categories = new Set(['TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
   'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT']);
-const channels = new Set(['BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD','BEFTN_RTGS']);
-const amountKeys = ['taxAmount','penaltyAmount','surchargeAmount','interestAmount'] as const;
-const formKeys = new Set(['category','assessmentYear','selectedHeadId',...amountKeys,'note','paymentMethod','step']);
+const text=(v:unknown,max:number)=>typeof v==='string'&&v.length<=max;
+const integer=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max;
+const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const keys=(v:Record<string,unknown>,allowed:readonly string[])=>Object.keys(v).every(k=>allowed.includes(k));
+const nullable=(v:unknown,values:readonly string[])=>v===null||(typeof v==='string'&&values.includes(v));
+const arrays=(v:unknown,max:number)=>Array.isArray(v)&&v.length<=max;
+const methods=(v:unknown)=>v===null||text(v,50);
+const parseBase=(v:Record<string,unknown>,journey:DraftJourney)=>
+  v.schema==='1'&&v.journey===journey;
 
-function object(value:unknown):value is Record<string,unknown>{
-  return !!value && typeof value==='object' && !Array.isArray(value);
+export function parseGuestPaymentDraft(v:unknown):GuestPaymentDraftState|null {
+  if(!obj(v)||!parseBase(v,'guest_payment')||!keys(v,[
+    'schema','journey','step','forSelf','tin','payerName','otherTaxpayerName',
+    'additionalTaxpayers','otherTaxLines','phone','receiptEmail','assessmentYear',
+    'noticeReference','incomeTaxType','category','selectedHeadIds','amountInputs',
+    'paymentChannel','methodGroup','paymentMethod'
+  ])||!integer(v.step,1,3)||(v.forSelf!==null&&typeof v.forSelf!=='boolean')||
+    !text(v.tin,13)||!text(v.payerName,160)||!text(v.otherTaxpayerName,160)||
+    !text(v.phone,11)||!text(v.receiptEmail,180)||!text(v.noticeReference,160)||
+    !text(v.assessmentYear,20)||!nullable(v.incomeTaxType,['NON_COMPANY','COMPANY'])||
+    typeof v.category!=='string'||!categories.has(v.category)||
+    !nullable(v.paymentChannel,['NOW','OTC'])||
+    !nullable(v.methodGroup,['mfs','bank','card'])||!methods(v.paymentMethod)||
+    !arrays(v.additionalTaxpayers,20)||!arrays(v.otherTaxLines,80)||
+    !arrays(v.selectedHeadIds,40)||!obj(v.amountInputs))return null;
+  if(!v.additionalTaxpayers.every((p:unknown)=>obj(p)&&keys(p,['id','tin','name'])&&
+    text(p.id,50)&&text(p.tin,13)&&text(p.name,160)))return null;
+  if(!v.otherTaxLines.every((l:unknown)=>obj(l)&&keys(l,['id','taxpayerId','headId','assessmentYear','amount'])&&
+    text(l.id,50)&&text(l.taxpayerId,50)&&integer(l.headId,1,1000000)&&
+    text(l.assessmentYear,20)&&text(l.amount,40)))return null;
+  if(!v.selectedHeadIds.every((id:unknown)=>integer(id,1,1000000)))return null;
+  if(Object.keys(v.amountInputs).length>40||Object.entries(v.amountInputs)
+    .some(([k,a])=>!/^\d{1,7}$/.test(k)||!text(a,40)))return null;
+  return v as GuestPaymentDraftState;
 }
-function validAmount(value:unknown):value is number {
-  return typeof value==='number' && Number.isFinite(value) && value>=0 && value<=99999999999 &&
-    Math.round(value*100)===value*100;
+export function parseTravelTaxDraft(v:unknown):TravelTaxDraftState|null {
+  if(!obj(v)||!parseBase(v,'travel_tax')||!keys(v,[
+    'schema','journey','step','mode','port','waterPort','destination','travelDate',
+    'passengers','phone','paymentChannel','methodGroup','paymentMethod'
+  ])||!integer(v.step,0,2)||(v.mode!=='LAND'&&v.mode!=='WATER')||
+    !text(v.port,100)||!text(v.waterPort,100)||!text(v.destination,160)||
+    !text(v.travelDate,10)||!text(v.phone,11)||
+    !nullable(v.paymentChannel,['NOW','OTC'])||
+    !nullable(v.methodGroup,['mfs','bank','card'])||!methods(v.paymentMethod)||
+    !arrays(v.passengers,20)||v.passengers.length===0)return null;
+  if(!v.passengers.every((p:unknown)=>obj(p)&&keys(p,[
+    'id','nationality','passport','name','ageBand','birthDate','country',
+    'identitySource','medicalPortReferral'
+  ])&&text(p.id,50)&&(p.nationality==='BD'||p.nationality==='FOREIGN')&&
+    text(p.passport,30)&&text(p.name,160)&&text(p.birthDate,10)&&
+    text(p.country,80)&&['ADULT','CHILD','UNDER5'].includes(String(p.ageBand))&&
+    ['PASSPORT_SAMPLE','MANUAL','PENDING'].includes(String(p.identitySource))&&
+    typeof p.medicalPortReferral==='boolean'))return null;
+  return v as TravelTaxDraftState;
 }
-export function parseWizardDraftState(value:unknown):WizardDraftState|null {
-  if(!object(value)||Object.keys(value).some(k=>!formKeys.has(k))||
-    typeof value.category!=='string'||!categories.has(value.category)||
-    typeof value.assessmentYear!=='string'||value.assessmentYear.length>30||
-    !Number.isSafeInteger(value.selectedHeadId)||Number(value.selectedHeadId)<1||
-    typeof value.note!=='string'||value.note.length>300||
-    typeof value.paymentMethod!=='string'||!channels.has(value.paymentMethod)||
-    (value.step!==1&&value.step!==2&&value.step!==3)||
-    amountKeys.some(k=>!validAmount(value[k])))return null;
-  return value as WizardDraftState;
+export function parsePreviewFormDraft(value:unknown):PreviewFormDraftState|null {
+  if(!obj(value))return null;
+  return value.journey==='guest_payment'?parseGuestPaymentDraft(value):
+    value.journey==='travel_tax'?parseTravelTaxDraft(value):null;
 }
 function summary(value:unknown):PreviewDraftSummary|null {
-  if(!object(value)||typeof value.id!=='string'||!uuid.test(value.id)||
-    value.journey!=='wizard'||typeof value.category!=='string'||!categories.has(value.category)||
-    (value.step!==1&&value.step!==2&&value.step!==3)||
-    !Number.isSafeInteger(value.version)||Number(value.version)<1||
-    typeof value.updatedAt!=='string'||!Number.isFinite(Date.parse(value.updatedAt)))return null;
+  if(!obj(value)||typeof value.id!=='string'||!uuid.test(value.id)||
+    (value.journey!=='guest_payment'&&value.journey!=='travel_tax')||
+    !text(value.category,55)||!integer(value.step,0,3)||
+    !integer(value.version,1,2147483647)||typeof value.updatedAt!=='string'||
+    !Number.isFinite(Date.parse(value.updatedAt)))return null;
   return value as PreviewDraftSummary;
 }
-
 async function request(action:string,fields:Record<string,unknown>={}):Promise<unknown>{
   const session=activePreviewSession();
   if(!session)throw new Error('SESSION_EXPIRED');
@@ -68,48 +112,48 @@ async function request(action:string,fields:Record<string,unknown>={}):Promise<u
       'x-taxpay-guest-capability':session.capability,
     },body:JSON.stringify({action,...fields})
   });
-  const body=await result.json().catch(()=>null) as
-    {success?:boolean;data?:unknown;code?:string}|null;
-  // Discard any in-flight result that belongs to a now-signed-out/changed account.
+  const body=await result.json().catch(()=>null) as {success?:boolean;data?:unknown;code?:string}|null;
   const current=activePreviewSession();
   if(!current||current.profileId!==session.profileId||current.capability!==session.capability)
     throw new Error('SESSION_CHANGED');
   if(!result.ok||body?.success!==true)throw new Error(body?.code||'DRAFT_SERVICE_UNAVAILABLE');
   return body.data;
 }
-export async function listPreviewWizardDrafts():Promise<PreviewDraftSummary[]>{
+export async function listPreviewDrafts():Promise<PreviewDraftSummary[]> {
   const data=await request('list');
   if(!Array.isArray(data))throw new Error('INVALID_DRAFT_RESPONSE');
   const parsed=data.map(summary);
   if(parsed.some(row=>row===null))throw new Error('INVALID_DRAFT_RESPONSE');
   return parsed as PreviewDraftSummary[];
 }
-export async function getPreviewWizardDraft(id:string):Promise<PreviewWizardDraft>{
+export async function getPreviewDraft(id:string):Promise<PreviewSavedDraft>{
   if(!uuid.test(id))throw new Error('INVALID_DRAFT_REQUEST');
   const raw=await request('get',{id});
-  if(!object(raw))throw new Error('INVALID_DRAFT_RESPONSE');
-  const meta=summary({...raw,category:object(raw.formState)?raw.formState.category:null,
-    step:object(raw.formState)?raw.formState.step:null});
-  const state=parseWizardDraftState(raw.formState);
-  if(!meta||!state)throw new Error('INVALID_DRAFT_RESPONSE');
+  if(!obj(raw))throw new Error('INVALID_DRAFT_RESPONSE');
+  const state=parsePreviewFormDraft(raw.formState);
+  if(!state)throw new Error('INVALID_DRAFT_RESPONSE');
+  const meta=summary({...raw,category:state.journey==='guest_payment'?state.category:'TRAVEL_TAX',
+    step:state.step});
+  if(!meta||meta.journey!==state.journey)throw new Error('INVALID_DRAFT_RESPONSE');
   return {...meta,formState:state};
 }
-export async function savePreviewWizardDraft(
-  state:WizardDraftState,existing?:{id:string;version:number}|null
-):Promise<PreviewWizardDraft>{
-  if(!parseWizardDraftState(state))throw new Error('INVALID_DRAFT_REQUEST');
+export async function savePreviewDraft(
+  state:PreviewFormDraftState,existing?:{id:string;version:number}|null
+):Promise<PreviewSavedDraft>{
+  if(!parsePreviewFormDraft(state))throw new Error('INVALID_DRAFT_REQUEST');
   const raw=await request(existing?'update':'create',{
     ...(existing?{id:existing.id,expectedVersion:existing.version}:{}),
-    formState:state,
+    journey:state.journey,formState:state
   });
-  if(!object(raw))throw new Error('INVALID_DRAFT_RESPONSE');
-  const meta=summary({...raw,category:state.category,step:state.step});
-  if(!meta||!parseWizardDraftState(raw.formState))throw new Error('INVALID_DRAFT_RESPONSE');
-  return {...meta,formState:state};
+  if(!obj(raw))throw new Error('INVALID_DRAFT_RESPONSE');
+  const meta=summary({...raw,category:state.journey==='guest_payment'?state.category:'TRAVEL_TAX',step:state.step});
+  const confirmed=parsePreviewFormDraft(raw.formState);
+  if(!meta||meta.journey!==state.journey||!confirmed)
+    throw new Error('INVALID_DRAFT_RESPONSE');
+  return {...meta,formState:confirmed};
 }
-export async function deletePreviewWizardDraft(id:string,version:number):Promise<void>{
-  if(!uuid.test(id)||!Number.isSafeInteger(version)||version<1)
-    throw new Error('INVALID_DRAFT_REQUEST');
+export async function deletePreviewDraft(id:string,version:number):Promise<void>{
+  if(!uuid.test(id)||!integer(version,1,2147483647))throw new Error('INVALID_DRAFT_REQUEST');
   const raw=await request('delete',{id,expectedVersion:version});
-  if(!object(raw)||raw.id!==id||raw.deleted!==true)throw new Error('INVALID_DRAFT_RESPONSE');
+  if(!obj(raw)||raw.id!==id||raw.deleted!==true)throw new Error('INVALID_DRAFT_RESPONSE');
 }
