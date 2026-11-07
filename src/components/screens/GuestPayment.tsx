@@ -1,5 +1,5 @@
 import { PreviewDraftControls } from '../ui/PreviewDraftControls';
-import type { GuestPaymentDraftState } from '../../services/previewPaymentDrafts';
+import { deletePreviewDraft, type GuestPaymentDraftState } from '../../services/previewPaymentDrafts';
 import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -337,6 +337,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [attemptReceipt, setAttemptReceipt] = useState<ChallanReceipt | null>(null);
   const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [activeSavedDraft,setActiveSavedDraft]=useState<{id:string;version:number}|null>(null);
+  useEffect(()=>{
+    if(paymentPhase!=='settled'||!createdReceipt||!activeSavedDraft)return;
+    // Only an already recorded successful synthetic payment closes its source draft.
+    let active=true;
+    void deletePreviewDraft(activeSavedDraft.id,activeSavedDraft.version).then(()=>{
+      if(active)setActiveSavedDraft(null);
+    }).catch(()=>{/* Keep a newer version or failed deletion available for explicit recovery. */});
+    return ()=>{active=false;};
+  },[paymentPhase,createdReceipt,activeSavedDraft]);
+
   const pendingStoryRef = useRef<{ payload: StoryPaymentInput; receipt: ChallanReceipt } | null>(null);
   const [batchAttempt, setBatchAttempt] = useState<OtherTaxBatch | null>(null);
   const batchAttemptRef = useRef<OtherTaxBatch | null>(null);
@@ -1216,6 +1227,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {previewAccount && step <= 3 && <div className="mb-4">
           <PreviewDraftControls journey="guest_payment" accountId={previewAccount.id} language={language}
             disabled={isProcessing || Boolean(batchAttempt)} capture={capturePreviewDraft}
+            onActiveChange={setActiveSavedDraft}
             restore={state=>{if(state.journey==='guest_payment')restorePreviewDraft(state);}}/>
         </div>}
 
