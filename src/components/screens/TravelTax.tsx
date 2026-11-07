@@ -4,6 +4,9 @@ import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
+import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
+import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
   LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
@@ -36,7 +39,8 @@ function maskPassport(passport: string) {
  * government A-Challan integration. An API owner can replace those boundaries.
  */
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt } = useTaxState();
+  const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
+  const { user: authenticatedUser } = useAccountIdentity();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
@@ -64,7 +68,56 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [processing, setProcessing] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
+
+
+  // Only account-based draft snapshots are persisted. Unverified preview-account
+  // passports are re-entered on resume because preview credentials are public.
+  const snapshotTravelDraft = (): Record<string, unknown> => ({
+    schemaVersion: 1, step: Math.min(step, 2), mode, port, waterPort,
+    destination, travelDate, phone,
+    passengers: previewAccount
+      ? passengers.map(person => ({ ...person, passport: '', identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL' }))
+      : passengers,
+  });
+  const restoreTravelDraft = (saved: Record<string, unknown>) => {
+    if (saved.schemaVersion !== 1 || !Array.isArray(saved.passengers))
+      throw new Error('Saved travel form could not be verified.');
+    const restored = saved.passengers.filter((person): person is TravelPassenger =>
+      Boolean(person && typeof person.id === 'string' && typeof person.name === 'string' &&
+      typeof person.passport === 'string' && typeof person.birthDate === 'string' &&
+      (person.nationality === 'BD' || person.nationality === 'FOREIGN'))
+    ).slice(0,20);
+    if (!restored.length) throw new Error('Saved passenger information was incomplete.');
+    setMode(saved.mode === 'WATER' ? 'WATER' : 'LAND');
+    setPort(typeof saved.port === 'string' ? saved.port : '');
+    setWaterPort(typeof saved.waterPort === 'string' ? saved.waterPort : '');
+    setDestination(typeof saved.destination === 'string' ? saved.destination : '');
+    setTravelDate(typeof saved.travelDate === 'string' ? saved.travelDate : '');
+    setPhone(typeof saved.phone === 'string' ? saved.phone : '');
+    setPassengers(restored.map(person => ({
+      ...person, identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL',
+    })));
+    setConfirmedPassengerIds([]); setEditingPassengerId(restored[0].id);
+    setPassportSuggestionsFor(null); setPassengerIssue(null);
+    setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null);
+    setAcknowledged(false); setSimulateDecline(false); setCreatedReceipt(null);
+    setBankSlipPending(false); setReceiptReviewOpen(false); setProcessing(false);
+    setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
+  };
+  useEffect(() => {
+    if (!selectedAccountDraft || !createdReceipt || bankSlipPending) return;
+    const actor: PaymentDraftActor | null = authenticatedUser
+      ? {kind:'authenticated',userId:authenticatedUser.id}
+      : previewAccount ? {kind:'preview',profileId:previewAccount.id} : null;
+    if (!actor) return;
+    let active = true;
+    void deletePaymentFormDraft(actor,selectedAccountDraft).then(() => {
+      if (active) setSelectedAccountDraft(null);
+    }).catch(() => { /* preserve a recoverable draft if SQL cleanup fails */ });
+    return () => { active = false; };
+  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id]);
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
   // The receipt takes over the wizard. Reset its scroll position when it
@@ -643,6 +696,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
+          {(authenticatedUser || previewAccount) && !createdReceipt &&
+            <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
+              snapshot={snapshotTravelDraft} restore={restoreTravelDraft}
+              selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
 
           {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')}>
             <PaymentFormSection number={1} title={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')} hideHeading={embedded}>
