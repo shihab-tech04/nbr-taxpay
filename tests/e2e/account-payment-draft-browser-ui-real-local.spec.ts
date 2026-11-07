@@ -7,7 +7,7 @@ type Account = 'user9' | 'user10';
  * Never connects to hosted taxpayer data.
  */
 test('payment form drafts survive another browser, protect owner isolation and reject stale edits', async ({ browser }, info) => {
-  test.setTimeout(120_000);
+  test.setTimeout(90_000);
   const raw = process.env.TAXPAY_LOCAL_SUPABASE_URL;
   const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
   if (!raw || !key) throw new Error('Disposable local Supabase is required.');
@@ -22,6 +22,8 @@ test('payment form drafts survive another browser, protect owner isolation and r
     const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport });
     contexts.push(context);
     const page = await context.newPage();
+    page.setDefaultTimeout(9_000);
+    page.setDefaultNavigationTimeout(20_000);
     await page.goto('/?action=taxpayer_login');
     await page.getByRole('textbox', { name: 'User ID' }).fill(id);
     await page.getByLabel('Password', { exact: true }).fill(id);
@@ -67,6 +69,6 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await fresh.getByRole('button', { name: /Continue Draft/ }).click();
     await expect(fresh.getByText('Payment draft', { exact: true })).toHaveCount(0);
   } finally {
-    await Promise.all(contexts.map(context => context.close()));
+    await Promise.allSettled(contexts.map(context => context.close()));
   }
 });
