@@ -44,4 +44,4 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/office-cms-publish-isolated"
           cp supabase/functions/office-cms-publish/index.ts "$RUNNER_TEMP/office-cms-publish-isolated/index.ts"
-          deno check "$RUNNER_TEMP/office-cms-publish-isolated/index.ts"
+          (cd "$RUNNER_TEMP/office-cms-publish-isolated" && deno check index.ts)
