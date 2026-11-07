@@ -1,6 +1,6 @@
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import {PreviewDraftControls} from '../ui/PreviewDraftControls';
-import type {TravelTaxDraftState} from '../../services/previewPaymentDrafts';
+import {deletePreviewDraft,type TravelTaxDraftState} from '../../services/previewPaymentDrafts';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
@@ -66,6 +66,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
   const [processing, setProcessing] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [activeSavedDraft,setActiveSavedDraft]=useState<{id:string;version:number}|null>(null);
+  useEffect(()=>{
+    if(!createdReceipt||bankSlipPending||!activeSavedDraft)return;
+    // Do not delete drafts for pending bank slips or unfinished payment attempts.
+    let active=true;
+    void deletePreviewDraft(activeSavedDraft.id,activeSavedDraft.version).then(()=>{
+      if(active)setActiveSavedDraft(null);
+    }).catch(()=>{/* Preserve recoverable draft when cleanup cannot be confirmed. */});
+    return ()=>{active=false;};
+  },[createdReceipt,bankSlipPending,activeSavedDraft]);
+
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
@@ -671,6 +682,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, onBackTo
         {previewAccount && !createdReceipt && <div className="mb-3">
           <PreviewDraftControls journey="travel_tax" accountId={previewAccount.id} language={language}
             disabled={processing || bankSlipPending} capture={capturePreviewDraft}
+            onActiveChange={setActiveSavedDraft}
             restore={state=>{if(state.journey==='travel_tax')restorePreviewDraft(state);}} />
         </div>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
