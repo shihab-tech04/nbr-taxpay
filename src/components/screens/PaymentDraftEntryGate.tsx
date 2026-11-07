@@ -121,23 +121,23 @@ export function PaymentDraftEntryGate({
           {tr('How would you like to proceed?', 'আপনি কীভাবে এগোতে চান?')}
         </h3>
         <div className="tax-service-choice__grid tax-service-choice__payer-grid" role="group" aria-label={tr('Payment start options', 'পেমেন্ট শুরুর বিকল্প')}>
-          <button type="button" className="tax-service-choice__card" onClick={() => onModeChange('new')}>
-            <span className="tax-service-choice__icon"><FileCheck2 size={23} aria-hidden="true" /></span>
+          <button type="button" data-draft-entry-option="NEW" className="tax-service-choice__card" onClick={() => onModeChange('new')}>
+            <span className="tax-service-choice__icon"><FileCheck2 size={23} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className="tax-service-choice__copy">
               <strong>{tr('Start new Tax payment', 'নতুন কর পরিশোধ শুরু করুন')}</strong>
               <span className="tax-service-choice__description">{tr('Follow the existing payment steps.', 'বিদ্যমান কর পরিশোধের ধাপ অনুসরণ করুন।')}</span>
             </span>
-            <ArrowRight size={18} aria-hidden="true" />
+            <ArrowRight className="tax-service-choice__access-arrow" size={18} strokeWidth={1.9} aria-hidden="true" />
           </button>
-          <button type="button" className="tax-service-choice__card" onClick={() => onModeChange('list')}>
-            <span className="tax-service-choice__icon"><FolderOpen size={23} aria-hidden="true" /></span>
+          <button type="button" data-draft-entry-option="RESUME" className="tax-service-choice__card" onClick={() => onModeChange('list')}>
+            <span className="tax-service-choice__icon"><FolderOpen size={23} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className="tax-service-choice__copy">
               <strong>{tr('Continue from draft', 'সংরক্ষিত খসড়া থেকে চালিয়ে যান')}</strong>
               <span className="tax-service-choice__description">
                 {tr('Choose a saved payment (' + catalog.rows.length + ').', 'সংরক্ষিত পেমেন্ট (' + catalog.rows.length + ') থেকে বেছে নিন।')}
               </span>
             </span>
-            <ArrowRight size={18} aria-hidden="true" />
+            <ArrowRight className="tax-service-choice__access-arrow" size={18} strokeWidth={1.9} aria-hidden="true" />
           </button>
         </div>
       </>
