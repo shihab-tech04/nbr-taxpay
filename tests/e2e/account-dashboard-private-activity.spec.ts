@@ -181,7 +181,8 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
   await expect(phase.getByText('Coverage details are not available yet')).toHaveCount(0);
   await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 6,500');
-  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toBeVisible();
+  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toHaveCount(0);
+  await expect(phase.getByRole('heading',{name:'By tax year'})).toBeVisible();
   await phase.getByRole('button',{name:'2024-2025'}).click();
   await expect(financialCards.nth(3)).toContainText('৳ 10,000');
   await examples.getByRole('button',{name:'Hide examples'}).click();
