@@ -31,6 +31,10 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await page.goto('/?action=guest');
     await expect(page.getByRole('button', { name: 'Save Draft', exact: true })).toBeVisible();
+    // The approved form intentionally starts with no payer relationship chosen.
+    // Select self before using the receipt-reference input; do not bypass this UX gate.
+    await page.locator('#guest-payer-self').check();
+    await expect(page.locator('#guest-notice-ref')).toBeVisible();
     return page;
   };
   try {
