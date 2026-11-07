@@ -1,5 +1,5 @@
 import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
-import {ChevronLeft,ChevronRight,Search} from 'lucide-react';
+import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
 /** Shared Korbritto table primitives.
  * The Board Meeting reference guides presentation only; the caller retains
@@ -28,6 +28,32 @@ export function TaxPayMobileTableCard({className,...rest}:ComponentPropsWithoutR
 export function TaxPayTableControls({className,...rest}:DivProps) {
   return <div {...rest} className={merge('taxpay-table-controls',className)}/>;
 }
+
+/** Office Management-style disclosure; callers retain filter and query ownership. */
+export function TaxPayTableFilterToggle({expanded,onToggle,label}:{
+  expanded:boolean;onToggle:()=>void;label:string;
+}) {
+  return <button type="button" className="taxpay-office-filter-toggle" onClick={onToggle}
+    aria-expanded={expanded} aria-label={label}>
+    <Filter size={16} aria-hidden="true"/>{label}
+  </button>;
+}
+export type TaxPayActiveFilter = {key:string;label:string;onRemove:()=>void};
+export function TaxPayActiveFilterChips({filters,clearLabel,onClear}:{
+  filters:readonly TaxPayActiveFilter[];clearLabel:string;onClear:()=>void;
+}) {
+  if(!filters.length)return null;
+  return <div className="taxpay-office-active-filters" aria-label="Active table filters">
+    <div className="taxpay-office-active-filters__chips">{filters.map(filter=>
+      <button type="button" key={filter.key} className="taxpay-office-active-filters__chip"
+        aria-label={filter.label} onClick={filter.onRemove}>
+        <span>{filter.label}</span><X size={13} aria-hidden="true"/>
+      </button>
+    )}</div>
+    <button type="button" className="taxpay-office-active-filters__clear" onClick={onClear}>{clearLabel}</button>
+  </div>;
+}
+
 /** Count presentation is centralized; caller owns filtering and totals. */
 export function TaxPayTableCounter({shown,total,label}:{shown:number;total?:number;label:string}) {
   return <p className="taxpay-table-count" role="status" aria-live="polite">{label}: {shown}{total!==undefined&&<span className="taxpay-table-count__total">/ {total}</span>}</p>;
