@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
@@ -48,6 +48,7 @@ export function Beneficiaries(){
   const [relationship,setRelationship]=useState<BeneficiaryRelation|''>('');
   const [otherLabel,setOtherLabel]=useState('');
   const [tagFilter,setTagFilter]=useState('all');
+  const [filtersExpanded,setFiltersExpanded]=useState(true);
   const [relationshipFilter,setRelationshipFilter]=useState('all');
   const [searchedBeneficiaryTin,setSearchedBeneficiaryTin]=useState<string|null>(null);
   const [filename,setFilename]=useState('');
@@ -445,15 +446,18 @@ export function Beneficiaries(){
         <UiButton type="button" variant="outline" onClick={()=>void reloadData()}>{tr('Try again','আবার চেষ্টা করুন')}</UiButton>
       </div>}
       {!checkingIdentity&&!loading&&!error&&<>
-        <div className="taxpayer-transaction-panel__heading beneficiary-directory__heading taxpay-table-toolbar">
+        <div className="taxpayer-transaction-panel__heading beneficiary-directory__heading taxpay-office-table-heading">
           <div className="min-w-0">
             <h2 id="beneficiary-list-heading" className="text-xl font-bold text-taxpay-text">{tr('Beneficiary list','উপকারভোগীর তালিকা')}</h2>
             <p className="mt-1 text-sm text-taxpay-muted">{tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}</p>
           </div>
+          <div className="taxpay-office-table-heading__actions">
+            <TaxPayTableFilterToggle expanded={filtersExpanded} onToggle={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}} label={tr('Filter','ফিল্টার')}/>
           {lists.length>0&&<p className="beneficiary-directory__list-total" role="status" aria-live="polite">
             <UsersRound size={17} aria-hidden="true"/>
             <strong>{listPeople.length}</strong> {tr(listPeople.length===1?'beneficiary':'beneficiaries','জন উপকারভোগী')}
           </p>}
+          </div>
         </div>
 
         {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
@@ -462,7 +466,7 @@ export function Beneficiaries(){
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
 
         </div>:<>
-          <TaxPayTableControls className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
+          {filtersExpanded&&<TaxPayTableControls className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
             <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
@@ -505,7 +509,14 @@ export function Beneficiaries(){
                   placeholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}/>
               </span>
             </label>
-          </TaxPayTableControls>
+          </TaxPayTableControls>}
+          <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
+            onClear={()=>{setSearch('');setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}
+            filters={[
+              ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
+              ...(tagFilter!=='all'?[{key:'tag',label:tagFilter==='clients'?tr('Clients','ক্লায়েন্ট'):tagFilter==='friends_family'?tr('Friends & family members','বন্ধু ও পরিবারের সদস্য'):tagFilter==='others'?tr('Others','অন্যান্য'):tr('Uncategorized','শ্রেণিবিহীন'),onRemove:()=>{setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}]:[]),
+              ...(tagFilter==='friends_family'&&relationshipFilter!=='all'?[{key:'relationship',label:beneficiaryTagLabel('friends_family',relationshipFilter as BeneficiaryRelation,language).split(' · ').at(-1)??relationshipFilter,onRemove:()=>{setRelationshipFilter('all');setSelectedIds([]);}}]:[])
+            ]}/>
           <div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar">
             <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={filteredPeople.length} total={listPeople.length}/>
             <div className="beneficiary-directory__bulk-actions">
