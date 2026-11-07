@@ -66,8 +66,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await dialog.locator('#beneficiary-edit-list').click();
     await expect(dialog.locator('#beneficiary-edit-list')).toHaveAttribute('data-value',family);
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
-    await chooseBeneficiaryOption(dialog,'beneficiary-edit-tag','friends_family');
-    await chooseBeneficiaryOption(dialog,'beneficiary-edit-relationship','father');
+    await chooseBeneficiaryOption(dialog,'beneficiary-edit-tag','friends_family:father');
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeEnabled();
     await chooseBeneficiaryOption(dialog,'beneficiary-edit-list',clients);
     await dialog.getByRole('button',{name:'Save changes'}).click();
@@ -78,8 +77,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     const movedRow=recordRows().filter({hasText:'012345678901'});
     await movedRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
-    await expect(dialog.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','friends_family');
-    await expect(dialog.locator('#beneficiary-edit-relationship')).toHaveAttribute('data-value','father');
+    await expect(dialog.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','friends_family:father');
     await expect(dialog.locator('#beneficiary-edit-list')).toHaveAttribute('data-value',clients);
     await chooseBeneficiaryOption(dialog,'beneficiary-edit-tag','others');
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
