@@ -4,7 +4,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.58.0';
 
 const OFFICE_URL = 'https://ihbtabrvmyiwikqqbhrf.supabase.co';
 const OFFICE_PUBLIC_KEY = 'sb_publishable_PyxzQzcf77wnlJQFepowrA_0MfhqGd5';
-const OFFICE_PUBLISHER_UID = '3c62128a-8755-41e5-af1c-8e5848c95bc7';
+const OFFICE_PUBLISHER_UID = 'a05f8fc6-a134-4a43-9b94-54881d858783';
 const OFFICE_PUBLISHER_EMAIL = 'shihabshajib01@gmail.com';
 const ALLOWED_ORIGINS = new Set(['https://shihab-tech04.github.io','http://localhost:3000']);
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
