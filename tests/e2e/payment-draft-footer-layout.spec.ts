@@ -3,7 +3,7 @@ import { enterTaxPayService } from './pay-tax-entry-helper';
 
 // Layout-only regression: never save data or submit a payment to hosted SQL.
 for (const width of [320, 375, 1280]) {
-  test('signed-in payment footer keeps draft actions left and Continue right at ' + width + 'px', async ({ page }, info) => {
+  test('signed-in payment footer keeps Save Draft left and Continue right without Drafts at ' + width + 'px', async ({ page }, info) => {
     const expectedProject = width === 1280 ? 'desktop-1280' : 'mobile-' + width;
     test.skip(info.project.name !== expectedProject, 'The targeted viewport belongs to its own device project');
     await page.setViewportSize({ width, height: 850 });
@@ -23,19 +23,18 @@ for (const width of [320, 375, 1280]) {
     const resume = actionGroup.locator('.payment-form-draft-controls__open');
     const next = footer.getByRole('button', { name: 'Continue to purpose & amount' });
     await expect(save).toBeVisible();
-    await expect(resume).toBeVisible();
+    await expect(resume).toHaveCount(0);
     await expect(next).toBeVisible();
     await expect(modal.locator('.taxpay-modal__body .payment-form-draft-controls__actions')).toHaveCount(0);
     const geometry = async () => {
-      const [left, middle, right, bar] = await Promise.all([
-        save.boundingBox(), resume.boundingBox(), next.boundingBox(), footer.boundingBox(),
+      const [left, right, bar] = await Promise.all([
+        save.boundingBox(), next.boundingBox(), footer.boundingBox(),
       ]);
-      expect(left && middle && right && bar).toBeTruthy();
-      if (!left || !middle || !right || !bar) return;
-      console.log('PAYMENT_FOOTER_GEOMETRY', JSON.stringify({ width, left, middle, right, bar }));
+      expect(left && right && bar).toBeTruthy();
+      if (!left || !right || !bar) return;
+      console.log('PAYMENT_FOOTER_GEOMETRY', JSON.stringify({ width, left, right, bar }));
       expect(Math.abs(left.y - right.y)).toBeLessThan(6);
-      expect(left.x + left.width).toBeLessThanOrEqual(middle.x + 2);
-      expect(middle.x + middle.width).toBeLessThanOrEqual(right.x + 2);
+      expect(left.x + left.width).toBeLessThanOrEqual(right.x + 2);
       expect(right.x + right.width).toBeLessThanOrEqual(bar.x + bar.width + 1);
       expect(left.width).toBeLessThan(bar.width * .5);
       expect(right.width).toBeLessThan(bar.width * .7);
@@ -44,6 +43,7 @@ for (const width of [320, 375, 1280]) {
     await next.click();
     await expect(modal.locator('.taxpay-modal__step-count')).toContainText('2/4');
     await expect(footer.getByRole('button', { name: 'Save Draft' })).toBeVisible();
+    await expect(footer.locator('.payment-form-draft-controls__open')).toHaveCount(0);
     await expect(footer.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
     await expect(modal.locator('.taxpay-modal__body .payment-form-draft-controls__actions')).toHaveCount(0);
     const step2Save = await footer.getByRole('button', { name: 'Save Draft' }).boundingBox();
