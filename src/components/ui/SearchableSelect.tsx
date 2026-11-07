@@ -75,19 +75,16 @@ export function SearchableSelect({
     const trigger=triggerRef.current;
     if(!trigger)return;
     const dialog=trigger.closest<HTMLElement>('.taxpay-modal');
-    const modalBody=dialog?.querySelector<HTMLElement>('.taxpay-modal__body');
     const measure=()=>{
       const rect=trigger.getBoundingClientRect();
-      const area=modalBody?.getBoundingClientRect();
-      const limitTop=area?.top??8;
-      const limitBottom=area?.bottom??(window.innerHeight-8);
-      const below=Math.max(0,limitBottom-rect.bottom-5);
-      const above=Math.max(0,rect.top-limitTop-5);
-      const desired=Math.min(270,58+filtered.length*43);
-      const abovePreferred=below<Math.min(150,desired)&&above>below;
-      const available=Math.max(80,Math.min(desired,abovePreferred?above:below));
       const modalRect=dialog?.getBoundingClientRect();
-      const top=(abovePreferred?rect.top-available-4:rect.bottom+4)-(modalRect?.top??0);
+      // Open downwards consistently; the portal can overlap the fixed footer
+      // without increasing the height of the modal's scrolling form.
+      const limitBottom=Math.min(window.innerHeight-8,(modalRect?.bottom??window.innerHeight)-10);
+      const below=Math.max(0,limitBottom-rect.bottom-5);
+      const desired=Math.min(270,58+filtered.length*43);
+      const available=Math.max(48,Math.min(desired,below));
+      const top=rect.bottom+4-(modalRect?.top??0);
       const left=rect.left-(modalRect?.left??0);
       setPosition({top,left,width:rect.width,maxHeight:available,inDialog:!!dialog});
     };
