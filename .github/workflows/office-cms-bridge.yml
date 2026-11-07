@@ -1,0 +1,47 @@
+name: Office-authorized CMS bridge security and runtime
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/office-cms-publish/**'
+      - 'supabase/migrations/20261107071500_office_authenticated_taxpay_banner_bridge.sql'
+      - 'tests/integration/officeCmsBridge.integration.sql'
+      - '.github/workflows/office-cms-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sql-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: bridge-test
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: bridge-test
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify invoker-only SQL function and banner order/version
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/officeCmsBridge.integration.sql
+  edge-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck the Office Auth bearer-token bridge
+        run: |
+          mkdir -p "$RUNNER_TEMP/office-cms-publish-isolated"
+          cp supabase/functions/office-cms-publish/index.ts "$RUNNER_TEMP/office-cms-publish-isolated/index.ts"
+          (cd "$RUNNER_TEMP/office-cms-publish-isolated" && deno check index.ts)
