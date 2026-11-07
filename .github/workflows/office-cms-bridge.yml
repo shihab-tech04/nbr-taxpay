@@ -41,4 +41,4 @@ jobs:
         with:
           deno-version: v2.x
       - name: Typecheck the Office Auth bearer-token bridge
-        run: deno check --allow-slow-types supabase/functions/office-cms-publish/index.ts
+        run: deno check supabase/functions/office-cms-publish/index.ts
