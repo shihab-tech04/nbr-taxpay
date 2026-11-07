@@ -27,7 +27,6 @@ export const AuthenticatedDashboardPosition: React.FC<{
   const sample=exampleMode?getIllustrativeDashboardYear(year):null;
   const money=(value:number|undefined)=>value===undefined?'—':formatIllustrativeTaka(value,language);
   const coverage=sample?Math.min(100,Math.round(100*sample.applied/sample.liability)):0;
-  const monthlyMax=sample?Math.max(1,...sample.months.map(m=>m.tds+m.ait+m.direct+m.travel)):1;
   const rows=[
     {en:'Total tax',bn:'মোট আয়কর'},
     {en:'Tax already deducted or paid early',bn:'উৎসে কাটা বা অগ্রিম পরিশোধিত কর'},
@@ -42,7 +41,7 @@ export const AuthenticatedDashboardPosition: React.FC<{
     {en:'Direct tax payments',bn:'সরাসরি কর পরিশোধ'},
   ];
   const visibleYears=[...new Set([year,...years.slice(0,3)])];
-  return <div className="space-y-4" data-testid="authenticated-dashboard-v11">
+  return <div className="taxpay-auth-bento" data-testid="authenticated-dashboard-v11">
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
     <section aria-labelledby="account-quick-actions-title" className={panel}>
       <div className="flex items-center gap-2">
@@ -106,33 +105,18 @@ export const AuthenticatedDashboardPosition: React.FC<{
           ?tr('Example only — no tax credit has been assigned to this account.','শুধু উদাহরণ — এই অ্যাকাউন্টে কোনো কর ক্রেডিট যোগ করা হয়নি।')
           :tr('No verified assessment or posted tax credits are linked to this account for this year.','এই করবর্ষের যাচাইকৃত কর নির্ধারণ বা নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই।')}</p>
       </section>
-      <section className={panel} aria-labelledby="account-monthly-activity-title">
+      <section className={panel} aria-labelledby="account-travel-summary-title">
         <div className="flex items-center gap-2">
           <CalendarDays size={18} aria-hidden="true" className="text-taxpay-primary"/>
-          <h2 id="account-monthly-activity-title" className="text-base font-semibold text-taxpay-text">{tr('Monthly activity','মাসভিত্তিক কার্যক্রম')}</h2>
+          <h2 id="account-travel-summary-title" className="text-base font-semibold text-taxpay-text">{tr('Travel tax is separate','ভ্রমণ কর পৃথক')}</h2>
         </div>
-        {sample ? <div className="mt-4 min-w-0 overflow-x-auto" role="region" aria-label={tr('Example monthly activity chart','উদাহরণের মাসভিত্তিক কার্যক্রম')} tabIndex={0}>
-          <div className="flex h-44 min-w-[360px] items-end gap-3 border-b border-taxpay-border px-2 pb-1" role="list">
-            {sample.months.map(m=>{
-              const total=m.tds+m.ait+m.direct+m.travel;
-              const monthLabel=new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(m.month+'-01T00:00:00Z'));
-              return <div role="listitem" key={m.month} aria-label={monthLabel+': '+money(total)}
-                className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
-                <span className="text-[10px] text-taxpay-muted">{Math.round(total/1000)}k</span>
-                <div className="w-full max-w-10 rounded-t bg-taxpay-primary" style={{height:Math.max(5,115*total/monthlyMax)}}/>
-                <span className="text-center text-[10px] text-taxpay-muted">{monthLabel}</span>
-              </div>;
-            })}
-          </div>
-          <p className="mt-2 text-xs text-taxpay-muted">{tr('Illustrative records only; travel tax stays separate from income-tax credits.','শুধু উদাহরণ; ভ্রমণ কর আয়কর ক্রেডিট থেকে পৃথক।')}</p>
-        </div>:<div className="mt-4 flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-taxpay-border bg-slate-50 px-4 py-6 text-center">
-          <CircleHelp size={22} aria-hidden="true" className="text-taxpay-muted"/>
-          <p className="mt-2 text-sm font-medium text-taxpay-text">{unavailable}</p>
-          <p className="mt-1 text-xs text-taxpay-muted">{exampleMode
-            ?tr('No example exists for this assessment year.','এই করবর্ষের জন্য কোনো উদাহরণ নেই।')
-            :tr('Account payment activity for this year is not available.','এই করবর্ষের অ্যাকাউন্ট পরিশোধ কার্যক্রম পাওয়া যায়নি।')}</p>
-        </div>}
-        <button type="button" className={action+' mt-3'} onClick={()=>onNavigate('history')}>{tr('View payment history','পেমেন্টের ইতিহাস দেখুন')}<ArrowRight size={15} aria-hidden="true"/></button>
+        <p className="mt-3 text-sm leading-6 text-taxpay-muted">
+          {tr('Travel tax is recorded as a separate service. It is never included in income-tax credits or the outstanding income-tax balance.',
+            'ভ্রমণ কর পৃথক সেবায় নথিভুক্ত হয়। এটি আয়কর ক্রেডিট বা আয়করের অবশিষ্ট দায়ের অন্তর্ভুক্ত নয়।')}
+        </p>
+        <button type="button" className={action+' mt-3'} onClick={()=>onNavigate('history')}>
+          {tr('View payment activity','পেমেন্ট কার্যক্রম দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+        </button>
       </section>
     </div>
 

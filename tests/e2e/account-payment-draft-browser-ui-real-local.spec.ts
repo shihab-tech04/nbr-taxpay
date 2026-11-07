@@ -262,7 +262,10 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
     const layoutUnderModal = await cards.boundingBox();
     expect(layoutUnderModal).not.toBeNull();
-    expect(Math.abs(layoutUnderModal!.y - layoutBefore!.y)).toBeLessThanOrEqual(2);
+    // Opening a modal intentionally scroll-locks the page and can change viewport Y.
+    // Compare the card's dimensions, not its scroll-relative screen coordinate.
+    expect(Math.abs(layoutUnderModal!.width - layoutBefore!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(layoutUnderModal!.height - layoutBefore!.height)).toBeLessThanOrEqual(2);
     await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
     await payment.getByRole('button', { name: 'Close payment services' }).click();
     await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
