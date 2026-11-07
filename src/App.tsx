@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
@@ -9,6 +9,7 @@ import { CitizenFooter } from './components/layout/CitizenFooter';
 import { TaxpayerLoginDialog } from './components/screens/TaxpayerLoginDialog';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
+import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
 
 // Screens
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
@@ -56,7 +57,16 @@ const previewReadOnlyRoutes = new Set([
 const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
+  const [dashboardPaymentDraft, setDashboardPaymentDraft] = useState<PaymentFormDraft | null>(null);
+  // Close always clears the one-shot resume request. No draft IDs in URLs or storage.
+  useEffect(() => {
+    if (!isPaymentServiceChoiceOpen) setDashboardPaymentDraft(null);
+  }, [isPaymentServiceChoiceOpen]);
+  const resumeDashboardPayment = (draft: PaymentFormDraft) => {
+    setDashboardPaymentDraft(draft);
+    setPaymentServiceChoiceOpen(true);
+  };
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
@@ -153,9 +163,9 @@ const MainRouter: React.FC = () => {
 
       // Taxpayer Screens
       case 'taxpayer_home':
-        return <TaxpayerDashboard />;
+        return <TaxpayerDashboard onResumePaymentDraft={resumeDashboardPayment} />;
       case 'dashboard':
-        return <TaxpayerDashboard />;
+        return <TaxpayerDashboard onResumePaymentDraft={resumeDashboardPayment} />;
       case 'wizard':
         return <PaymentWizard />;
       case 'history':
@@ -254,7 +264,7 @@ const MainRouter: React.FC = () => {
             <PaymentDetailView embedded />
           </TaxPayModal>)}
       <ParityRegisterModal />
-      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} />}
+      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} />}
       {loginOverlay && <TaxpayerLoginDialog />}
       {beneficiaryLoginRequired && <TaxpayerLoginDialog
         preservePaymentJourney
