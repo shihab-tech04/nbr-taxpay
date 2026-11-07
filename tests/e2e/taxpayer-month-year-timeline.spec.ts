@@ -21,9 +21,10 @@ test('all-year month filtering remains accessible in Activity after dashboard ch
   const months=page.getByRole('combobox',{name:'Transaction month'});
   await months.selectOption('2025-09');
   await expect(page).toHaveURL(/monthFilter=2025-09/);
-  await expect(page.getByText('DEMO-ETDS-01').filter({visible:true}).first()).toBeVisible();
+  await expect(page.getByText('DEMO-ETDS-SAL-01').filter({visible:true}).first()).toBeVisible();
   await months.selectOption('2026-03');
   await expect(page).toHaveURL(/monthFilter=2026-03/);
+  await expect(page.getByText('DEMO-ETDS-PRO-03').filter({visible:true}).first()).toBeVisible();
   await page.reload();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-03');
 });
