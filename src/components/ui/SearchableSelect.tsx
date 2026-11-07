@@ -67,7 +67,7 @@ export function SearchableSelect({
     document.addEventListener('pointerdown',closeOutside);
     return()=>document.removeEventListener('pointerdown',closeOutside);
   },[open]);
-  useEffect(()=>{if(open)searchRef.current?.focus();else setQuery('');},[open]);
+  useEffect(()=>{if(open&&position)searchRef.current?.focus();else if(!open)setQuery('');},[open,Boolean(position)]);
   useEffect(()=>setActive(enabled[0]??-1),[query,options,open]);
 
   useLayoutEffect(()=>{
