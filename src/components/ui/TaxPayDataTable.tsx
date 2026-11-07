@@ -90,11 +90,11 @@ export function TaxPayOfficeRegisterToolbar({
     </div>
   </header>;
 }
-export function TaxPayOfficeRegisterFilters({open,children,className,id,testId}:{
-  open:boolean;children:ReactNode;className?:string;id?:string;testId?:string;
+export function TaxPayOfficeRegisterFilters({open,children,className,id,testId,ariaLabel}:{
+  open:boolean;children:ReactNode;className?:string;id?:string;testId?:string;ariaLabel?:string;
 }){
   if(!open)return null;
-  return <TaxPayTableControls id={id} data-testid={testId} className={merge('taxpay-office-register__filters',className)}>{children}</TaxPayTableControls>;
+  return <TaxPayTableControls id={id} data-testid={testId} role={ariaLabel?'region':undefined} aria-label={ariaLabel} className={merge('taxpay-office-register__filters',className)}>{children}</TaxPayTableControls>;
 }
 export function TaxPayOfficeRegisterFooter({shown,total,labels}:{
   shown:number;total:number;labels?:{showing:string;of:string;records:string};
