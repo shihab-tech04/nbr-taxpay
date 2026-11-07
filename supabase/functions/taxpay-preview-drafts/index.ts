@@ -86,7 +86,7 @@ Deno.serve(async request=>{
     const {data,error}=await admin().rpc('taxpay_demo_payment_drafts',{
       p_capability_hash:capabilityHash,
       p_action:a,p_draft_id:id,
-      p_journey:a==='create'||a==='update'?'wizard':null,
+      p_journey:a==='create'||a==='update'?(body.journey==='guest_payment'||body.journey==='travel_tax'?body.journey:null):null,
       p_form_state:a==='create'||a==='update'?state:null,
       p_expected_version:expectedVersion
     });
