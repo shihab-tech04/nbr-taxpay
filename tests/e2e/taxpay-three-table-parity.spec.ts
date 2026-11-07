@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type Page} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
@@ -72,17 +73,18 @@ for(const language of ['en','bn'] as const){
         await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
         await expect(search.getByRole('searchbox')).toBeVisible();
         const [listBox,searchBox]=await Promise.all([context.boundingBox(),search.boundingBox()]);
-        if(!listBox||!searchBox)throw Error('Missing selected list or shared table search');
+        if(!listBox||!searchBox)throw Error('Missing list switch or shared search');
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
         await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
         const filters=page.locator('.beneficiary-directory__filters');
         const tag=filters.locator('.beneficiary-directory__tag-filter');
         await expect(tag).toBeVisible();
-        await tag.locator('select').selectOption('friends_family');
-        const relationship=filters.locator('.beneficiary-directory__relationship-filter');
-        await expect(relationship).toBeVisible();
-        await tag.locator('select').selectOption('all');
-        await expect(relationship).toHaveCount(0);
+        // The approved combined Tag + Relationship is still one grouped searchable selector.
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','friends_family:father');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','friends_family:father');
+        await expect(filters.locator('.beneficiary-directory__relationship-filter')).toHaveCount(0);
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','all');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','all');
       }
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'
