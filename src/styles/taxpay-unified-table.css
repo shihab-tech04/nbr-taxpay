@@ -1325,3 +1325,16 @@ table.taxpay-unified-table {
 @media(max-width:700px) {
   .taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-directory__list-filter {width:100%;}
 }
+
+
+/* PSR search: the outer field owns the focus ring and border, never the input. */
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search input {
+  background:transparent!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+.taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search:focus-within {
+  outline:2px solid var(--taxpay-table-primary,#085587);
+  outline-offset:2px;
+}
