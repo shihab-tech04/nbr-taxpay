@@ -1110,3 +1110,27 @@ table.taxpay-unified-table {
     white-space: normal;
   }
 }
+
+/* Shared record-table motion: perceptible feedback without shifting content or delaying actions. */
+.taxpay-record-toolbar__search,
+.taxpay-record-toolbar__controls :is(button,select),
+.taxpay-table-tabs > button,
+.taxpay-table-pagination__button,
+.taxpay-table-pagination__page,
+.taxpay-mobile-table-card {
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.taxpay-mobile-table-card:focus-within {
+  border-color: var(--taxpay-table-primary, #085587);
+  box-shadow: 0 0 0 2px var(--taxpay-table-selected, #eaf2ff);
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-record-toolbar__search,
+  .taxpay-record-toolbar__controls :is(button,select),
+  .taxpay-table-tabs > button,
+  .taxpay-table-pagination__button,
+  .taxpay-table-pagination__page,
+  .taxpay-mobile-table-card {
+    transition: none;
+  }
+}
