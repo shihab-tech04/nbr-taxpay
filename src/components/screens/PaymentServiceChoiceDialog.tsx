@@ -12,6 +12,8 @@ import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog'
 import { useAccountIdentity } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
+import { PaymentDraftEntryGate } from './PaymentDraftEntryGate';
+import type { PaymentFormDraft, PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { taxpayerBrandName } from '../../config/brand';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
@@ -51,6 +53,13 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   // Only signed-out users need to choose between account sign-in and walk-in.
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
+  const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(null);
+  const [draftEntryBlocking, setDraftEntryBlocking] = useState(Boolean(verifiedUser || previewAccount));
+  const draftActor: PaymentDraftActor | null = verifiedUser
+    ? { kind: 'authenticated', userId: verifiedUser.id }
+    : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
+  const draftOwnerKey = draftActor ? draftActor.kind + ':' +
+    (draftActor.kind === 'authenticated' ? draftActor.userId : draftActor.profileId) : '';
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -60,13 +69,14 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const close = () => setPaymentServiceChoiceOpen(false);
   const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const shortStages = [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
-  const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
-  const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
+  const effectiveSelected: ServiceId | null = draftToResume?.service ?? selected;
+  const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === effectiveSelected);
+  const paymentAccess = effectiveSelected ? resolvePaymentServiceAccess(effectiveSelected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
   const beginPayment = (withAccount: boolean) => {
     if(withAccount&&verifiedUser?.id)
       void recordAccountActivity(verifiedUser.id,'PAYMENT_STARTED','wizard').catch(()=>undefined);
-    setUseAccount(withAccount); setStage(1); setView('payment');
+    setDraftToResume(null); setUseAccount(withAccount); setStage(1); setView('payment');
   };
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
@@ -77,6 +87,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     openLogin();
   };
   const returnToService = () => {
+    setDraftToResume(null);
     setStage(1);
     setView('payer');
   };
@@ -118,7 +129,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         ? <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} />
         : (
         <div className="tax-service-choice__actions">
-          {view === 'payer' && <button type="button" className="tax-service-choice__continue"
+          {view === 'payer' && !draftEntryBlocking && <button type="button" className="tax-service-choice__continue"
              disabled={payerForSelf === null || !selected || (multiBeneficiaryPrefill && selected !== 'OTHER_TAX_PAYMENT') || (accountLoading && !previewAccount)
                || !selectedAccess}
              onClick={advanceToPayment}>
@@ -151,7 +162,24 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
             <span>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</span>
           </p>
         </>}
-        {view === 'payer' ? <>
+        {view === 'payer' ? <PaymentDraftEntryGate
+           actor={draftActor} ownerKey={draftOwnerKey}
+           enabled={Boolean(draftActor && !initialService && !paymentBeneficiaryPrefill)}
+           language={language}
+           serviceLabel={id => {
+             const service = PAYMENT_SERVICE_CHOICES.find(item => item.id === id);
+             return service ? tr(service.en, service.bn) : id;
+           }}
+           onBlockingChange={setDraftEntryBlocking}
+           onResume={draft => {
+             setTopLevel(draft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX');
+             setPayerForSelf(draft.service === 'TRAVEL_TAX' ? true : draft.form_payload.forSelf as boolean);
+             setDraftToResume(draft);
+             setUseAccount(true);
+             setStage(1);
+             setView('payment');
+           }}
+         >
            <h3 ref={payerHeadingRef} tabIndex={-1} id="tax-service-choice-question" className="tax-service-choice__payer-focus">{tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?')}</h3>
            <div className="tax-service-choice__grid tax-service-choice__payer-grid" role="group" aria-label={tr('Taxpayer relationship', 'করদাতার সঙ্গে সম্পর্ক')}>
              {[
@@ -208,14 +236,18 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              <FolderOpen size={17} aria-hidden="true" />
              {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
            </button>}
-         </> : view === 'login' ? (
+         </PaymentDraftEntryGate> : view === 'login' ? (
            <TaxpayerLoginDialog embedded preservePaymentJourney emailReturnTo="taxpayer_home" onClose={() => setView('payer')} onValidityChange={setLoginReady} onSuccess={() => beginPayment(true)} />
-         ) : selected === 'TRAVEL_TAX' ? (
-          <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
-        ) : selected ? (
-          <GuestPayment key={`${selected}-${payerForSelf}`} embedded initialCategory={selected} initialForSelf={payerForSelf ?? undefined}
+         ) : effectiveSelected === 'TRAVEL_TAX' ? (
+          <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : 'travel-tax-modal'}
+            embedded fourStepJourney initialDraft={draftToResume ?? undefined}
+            onBackToService={returnToService} onStageChange={reportStage} />
+        ) : effectiveSelected ? (
+          <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : effectiveSelected + '-' + String(payerForSelf)}
+            embedded initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
+            initialDraft={draftToResume ?? undefined}
             initialBeneficiary={payerForSelf === false ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
-            isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
+            isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
       </section>
