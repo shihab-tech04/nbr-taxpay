@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
@@ -45,8 +46,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
-  await addDialog.locator('#beneficiary-tag').selectOption('friends_family');
-  await addDialog.locator('#beneficiary-relationship').selectOption('father');
+  await chooseBeneficiaryOption(addDialog,'beneficiary-tag','friends_family:father');
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('012345678901');
@@ -91,7 +91,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const importAlerts=await page.locator('[role="alert"]').allTextContents();
   const importDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await expect(importDialog.getByText(/Upload ready:/),'Excel parser / import errors: '+JSON.stringify(importAlerts)).toBeVisible();
-  await importDialog.locator('#beneficiary-tag').selectOption('clients');
+  await chooseBeneficiaryOption(importDialog,'beneficiary-tag','clients');
   await importDialog.getByRole('button',{name:'Next',exact:true}).click();
   await expect(importDialog.getByText('Already saved in this list.')).toBeVisible();
   await expect(importDialog.getByText('1 valid, 1 needing attention')).toBeVisible();
