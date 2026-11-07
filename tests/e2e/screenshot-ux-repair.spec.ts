@@ -39,12 +39,12 @@ test('mobile transaction details use a contained sheet with a visible close cont
   await expect(dialog).toHaveCount(0);
 });
 
-test('mobile monthly activity help opens fully within the dashboard width',async({page},info)=>{
+test('mobile bento tax-position help opens fully within the dashboard width',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
   await enterUser1(page);
-  const row=page.locator('.taxpayer-monthly-help-row');
-  await row.locator('.taxpayer-inline-help > summary').click();
-  const content=row.locator('.taxpayer-inline-help__content');
+  const position=page.locator('.taxpay-bento-position');
+  await position.locator('.taxpayer-inline-help > summary').click();
+  const content=position.locator('.taxpayer-inline-help__content');
   await expect(content).toBeVisible();
   const bounds=await content.boundingBox();
   expect(bounds).not.toBeNull();
@@ -148,18 +148,19 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
 });
 
-test('mobile travel-tax explanation stays within the dashboard rather than clipping off-screen',async({page},info)=>{
-  test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
+test('mobile bento retains separate travel tax and opens its approved payment modal',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile travel-tax shortcut');
   await enterUser1(page);
-  const summary=page.locator('.taxpayer-travel-tax-summary');
-  await summary.locator('.taxpayer-inline-help > summary').click();
-  const tooltip=summary.locator('.taxpayer-inline-help__content');
-  await expect(tooltip).toBeVisible();
-  const box=await tooltip.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.x+box!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
-  await expect(tooltip).toContainText('Travel tax is reported separately');
+  const position=page.locator('.taxpay-bento-position');
+  await expect(position).toContainText('Travel tax (separate)');
+  await expect(position).toContainText('৳ 6,500');
+  await page.locator('.taxpay-bento-hero').getByRole('button',{name:'Travel tax'}).click();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const bounds=await dialog.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(-1);
+  expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
 test('mobile public Help entry clears the footer identity area',async({page},info)=>{
