@@ -148,7 +148,6 @@ for(const language of ['en','bn'] as const){
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
     await chooseBeneficiaryOption(edit,'beneficiary-edit-tag','friends_family:father');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveCount(0);
-    await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeEnabled();
     await expect(edit.locator('#beneficiary-edit-list')).toHaveAttribute('data-value','00000000-0000-4000-8000-000000000101');
     await edit.getByRole('button',{name:t('Cancel','বাতিল')}).click();
