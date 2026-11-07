@@ -1144,3 +1144,70 @@ table.taxpay-unified-table {
     transition: none;
   }
 }
+
+
+/* Office Management PSR / All Taxpayers toolbar pattern.
+ * Uses existing Korbritto tokens and does not alter form or data semantics. */
+.taxpay-taxpayer-reference .taxpay-office-table-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:12px 0;
+  border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
+}
+.taxpay-taxpayer-reference .taxpay-office-table-heading__identity {
+  display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-table-heading__identity h2 {
+  margin:0;font-size:16px;line-height:1.5;font-weight:650;color:var(--taxpay-table-text,#172033);
+}
+.taxpay-taxpayer-reference .taxpay-office-table-heading__actions {
+  display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-filter-toggle {
+  display:inline-flex;justify-content:center;align-items:center;gap:8px;
+  min-height:44px;padding:8px 13px;border:1px solid var(--taxpay-table-border,#e1e6ee);
+  border-radius:8px;background:var(--taxpay-table-surface,#fff);
+  color:var(--taxpay-table-primary,#2c5ead);font-size:14px;font-weight:600;
+  cursor:pointer;transition:background-color 160ms ease,border-color 160ms ease;
+}
+.taxpay-taxpayer-reference .taxpay-office-filter-toggle:hover,
+.taxpay-taxpayer-reference .taxpay-office-filter-toggle[aria-expanded="true"] {
+  background:var(--taxpay-table-hover,#f1f6ff);
+  border-color:var(--taxpay-table-primary,#2c5ead);
+}
+.taxpay-taxpayer-reference .taxpay-office-filter-toggle:focus-visible,
+.taxpay-taxpayer-reference .taxpay-office-active-filters button:focus-visible {
+  outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;
+}
+.taxpay-taxpayer-reference .taxpay-office-active-filters {
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;padding:10px 12px;
+  background:var(--taxpay-table-heading,#f7f9fc);
+  border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
+}
+.taxpay-taxpayer-reference .taxpay-office-active-filters__chips {
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;
+}
+.taxpay-taxpayer-reference .taxpay-office-active-filters__chip {
+  display:inline-flex;align-items:center;gap:6px;max-width:100%;
+  min-height:32px;padding:4px 9px;border:1px solid var(--taxpay-table-border,#e1e6ee);
+  border-radius:999px;background:var(--taxpay-table-surface,#fff);
+  color:var(--taxpay-table-primary,#2c5ead);font-size:14px;
+}
+.taxpay-taxpayer-reference .taxpay-office-active-filters__chip span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.taxpay-taxpayer-reference .taxpay-office-active-filters__clear {
+  min-height:32px;padding:4px 8px;border:0;background:transparent;
+  color:var(--taxpay-table-primary,#2c5ead);font-size:14px;cursor:pointer;
+}
+@media(max-width:700px) {
+  .taxpay-taxpayer-reference .taxpay-office-table-heading {align-items:stretch;}
+  .taxpay-taxpayer-reference .taxpay-office-table-heading__identity,
+  .taxpay-taxpayer-reference .taxpay-office-table-heading__actions {width:100%;}
+  .taxpay-taxpayer-reference .taxpay-office-table-heading__actions {justify-content:flex-start;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .taxpay-taxpayer-reference .taxpay-office-filter-toggle {transition:none;}
+}
