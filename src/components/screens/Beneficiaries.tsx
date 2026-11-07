@@ -448,7 +448,7 @@ export function Beneficiaries(){
       {!checkingIdentity&&!loading&&!error&&<>
         <TaxPayOfficeRegisterToolbar id="beneficiary-list-heading"
           title={tr('Beneficiary list','উপকারভোগীর তালিকা')}
-          description={activeListRecord?tr('Selected list: ','নির্বাচিত তালিকা: ')+activeListRecord.name:tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}
+          description={tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}
           count={filteredPeople.length} total={listPeople.length} countLabel={tr('records','রেকর্ড')}
           searchValue={search} onSearchChange={setSearch}
           searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
@@ -462,7 +462,7 @@ export function Beneficiaries(){
           <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
 
         </div>:<>
-          <TaxPayOfficeRegisterFilters open={filtersExpanded} className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
+          <div className="beneficiary-directory__list-context">
             <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
@@ -481,6 +481,8 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
+          </div>
+          <TaxPayOfficeRegisterFilters open={filtersExpanded} className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
             <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag','ট্যাগ')}</span>
               <UiSelect aria-label={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')} value={tagFilter} onChange={event=>{setTagFilter(event.target.value);setRelationshipFilter('all');setSelectedIds([]);}}>
                 <option value="all">{tr('All tags','সব ট্যাগ')}</option>
