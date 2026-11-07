@@ -46,6 +46,15 @@ for (const width of [320, 375, 1280]) {
     await expect(footer.getByRole('button', { name: 'Save Draft' })).toBeVisible();
     await expect(footer.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
     await expect(modal.locator('.taxpay-modal__body .payment-form-draft-controls__actions')).toHaveCount(0);
+    const step2Save = await footer.getByRole('button', { name: 'Save Draft' }).boundingBox();
+    const step2Next = await footer.getByRole('button', { name: 'Continue to payment channel' }).boundingBox();
+    const step2Footer = await footer.boundingBox();
+    expect(step2Save && step2Next && step2Footer).toBeTruthy();
+    if (step2Save && step2Next && step2Footer) {
+      expect(Math.abs(step2Save.y - step2Next.y)).toBeLessThan(6);
+      expect(step2Save.x + step2Save.width).toBeLessThan(step2Next.x);
+      expect(step2Next.width).toBeLessThan(step2Footer.width * .7);
+    }
     await page.screenshot({ path: 'test-results/payment-footer-drafts-' + width + '.png' });
   });
 }
