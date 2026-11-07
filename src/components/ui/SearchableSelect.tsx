@@ -151,7 +151,7 @@ export function SearchableSelect({
           const groupStart=!!option.group&&(index===0||option.group!==filtered[index-1].group);
           return <React.Fragment key={option.value}>
             {groupStart&&<li role="presentation" className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-taxpay-primary">{option.group}</li>}
-            <li id={id+'-option-'+index} role="option" aria-selected={value===option.value}
+            <li id={id+'-option-'+index} role="option" data-option-value={option.value} aria-selected={value===option.value}
               aria-disabled={option.disabled||undefined}
               className={'flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm transition-colors '+
                 (option.disabled?'cursor-not-allowed opacity-50 ':'hover:bg-taxpay-light ')+
@@ -172,7 +172,7 @@ export function SearchableSelect({
     dialog??document.body
   );
   return <>
-    <button ref={triggerRef} id={id} type="button" disabled={disabled}
+    <button ref={triggerRef} id={id} data-value={value} type="button" disabled={disabled}
       aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open}
       aria-controls={open?id+'-options':undefined} aria-required={required||undefined}
       onClick={toggle}
