@@ -1110,3 +1110,37 @@ table.taxpay-unified-table {
     white-space: normal;
   }
 }
+
+
+/* Korbritto accessible record-interaction motion.
+ * Appearance-only: never animate payment totals, table geometry or form validation.
+ * Receipt/certificate print tables are intentionally not part of this contract. */
+.taxpay-mobile-table-card[role="button"] { cursor: pointer; }
+.taxpay-mobile-table-card[role="button"]:focus-visible {
+  outline: 2px solid var(--taxpay-table-primary, #085587);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .taxpay-table-tabs > button,
+  .taxpay-record-toolbar__controls button,
+  .taxpay-table-pagination :is(.taxpay-table-pagination__button,.taxpay-table-pagination__page),
+  .taxpay-unified-table tbody tr,
+  .taxpay-record-list__row,
+  .taxpay-mobile-table-card[role="button"] {
+    transition: background-color 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out;
+  }
+  .taxpay-mobile-table-card[role="button"]:hover {
+    border-color: var(--taxpay-table-primary, #085587);
+    box-shadow: 0 1px 5px rgba(8,85,135,.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taxpay-table-tabs > button,
+  .taxpay-record-toolbar__controls button,
+  .taxpay-table-pagination :is(.taxpay-table-pagination__button,.taxpay-table-pagination__page),
+  .taxpay-unified-table tbody tr,
+  .taxpay-record-list__row,
+  .taxpay-mobile-table-card[role="button"] {
+    transition: none;
+  }
+}
