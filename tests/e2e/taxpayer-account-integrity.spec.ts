@@ -8,7 +8,7 @@ test('generic taxpayer preview shows the same payer receipts in dashboard and ac
   await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
   await page.getByRole('button',{name:'Open transaction history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByRole('region',{name:'Search and filters'})).toContainText(/Records\s*:\s*3/);
+  await expect(page.locator('.taxpay-office-register__count')).toContainText('3');
   await expect(page.getByText('AC-2025-06-DEMO-REF-003').filter({visible:true}).first()).toBeVisible();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   if (await rail.isVisible()) await rail.getByRole('button',{name:'Tax ledger',exact:true}).click();
