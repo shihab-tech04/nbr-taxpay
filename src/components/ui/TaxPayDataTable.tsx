@@ -196,7 +196,19 @@ export function TaxPayDataGrid<Row>({
        rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:<>
       {variant==='tabular'?<TaxPayTableViewport className="hidden md:block">{desktopTable}</TaxPayTableViewport>:desktopTable}
     <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
-      {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}>
+      {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}
+        role={!renderMobileCard&&onViewRow?'button':undefined}
+        tabIndex={!renderMobileCard&&onViewRow?0:undefined}
+        onClick={!renderMobileCard&&onViewRow?(event)=>{
+          if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]')!==event.currentTarget &&
+             (event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"]'))return;
+          onViewRow(row);
+        }:undefined}
+        onKeyDown={!renderMobileCard&&onViewRow?(event)=>{
+          if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){
+            event.preventDefault();onViewRow(row);
+          }
+        }:undefined}>
         {renderMobileCard ? renderMobileCard(row) : <dl className="taxpay-mobile-table-card__fields">
           {columns.map(column=><div className="taxpay-mobile-table-card__field" key={column.key}>
             <dt>{column.header}</dt>
