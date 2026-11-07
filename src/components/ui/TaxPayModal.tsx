@@ -148,7 +148,7 @@ export function TaxPayModal({
       }}
     >
       <div
-        className={`taxpay-modal public-service-dialog ${className}`.trim()}
+        className={`relative taxpay-modal public-service-dialog ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}

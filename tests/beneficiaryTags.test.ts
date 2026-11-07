@@ -55,7 +55,8 @@ test('Edit beneficiary covers fixed tags, family relations, Others and optional 
   const edge=readFileSync('supabase/functions/taxpay-guest-beneficiaries/index.ts','utf8');
   const sql=readFileSync('supabase/migrations/20261103170000_taxpay_guest_beneficiary_edit_classification.sql','utf8');
   assert.match(screen,/id="beneficiary-edit-tag"/);
-  assert.match(screen,/id="beneficiary-edit-relationship"/);
+  assert.match(screen,/value=\{beneficiaryChoiceValue\(editTag,editRelationship\)\}/);
+  assert.doesNotMatch(screen,/id="beneficiary-edit-relationship"/);
   assert.match(screen,/id="beneficiary-edit-other-label" required maxLength=\{80\}/);
   assert.match(screen,/editBeneficiaryClassification\(owner,editPerson,editTargetList,classification\)/);
   assert.match(screen,/Move to list \(optional\)/);

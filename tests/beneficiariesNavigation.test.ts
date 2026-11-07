@@ -84,7 +84,11 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.match(shared,/\.taxpay-citizen-shell\s+\.taxpayer-page-heading/);
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-page-heading/);
   assert.doesNotMatch(taxpayer,/\.taxpay-taxpayer-reference\s+\.taxpayer-account-(?:center|heading|panel)/);
-  assert.ok(page.includes("import {UiButton,UiInput,UiSelect} from '../ui/Controls';"));
+  assert.ok(page.includes("import {UiButton,UiInput} from '../ui/Controls';"));
+  assert.ok(page.includes("import {SearchableSelect} from '../ui/SearchableSelect';"));
+  assert.match(page,/classificationOptions/);
+  assert.doesNotMatch(page,/id="beneficiary-relationship"/);
+  assert.match(page,/<SearchableSelect id="beneficiary-edit-tag"/);
   assert.doesNotMatch(page,/TaxpayerPageHeading|taxpayer-account-center|taxpayer-account-panel/);
   // One column definition supplies semantic desktop columns and accessible
   // mobile cards, without duplicating business logic or losing actions.

@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {test,expect,type Page} from '@playwright/test';
 import {mkdirSync,readFileSync} from 'node:fs';
 
@@ -135,21 +136,21 @@ test('failed new-list import stays recoverable and retries against the same crea
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await dialog.locator('#beneficiary-target-list').selectOption('new');
+  await chooseBeneficiaryOption(dialog,'beneficiary-target-list','new');
   await dialog.locator('#beneficiary-new-list-name').fill('Imported list');
 
   transport.failNextAdd();
-  await dialog.locator('#beneficiary-tag').selectOption('others');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(dialog.getByRole('alert')).toBeVisible();
-  const retryTarget=await dialog.locator('#beneficiary-target-list').inputValue();
+  const retryTarget=await dialog.locator('#beneficiary-target-list').getAttribute('data-value');
   expect(retryTarget).not.toBe('new');
   expect(transport.createListCount()).toBe(2);
   await expect(dialog.getByRole('button',{name:'Back'})).toBeEnabled();
   await expect(dialog.getByRole('button',{name:'Finish import'})).toBeEnabled();
 
-  await dialog.locator('#beneficiary-tag').selectOption('others');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
@@ -192,7 +193,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Synthetic Guest One');
-  await dialog.locator('#beneficiary-tag').selectOption('clients');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expectRecord('Synthetic Guest One');
 
@@ -205,7 +206,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(dialog.getByText('Already saved in this list.')).toBeVisible();
   await expect(dialog.getByText('1 valid, 1 needing attention')).toBeVisible();
   await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await dialog.locator('#beneficiary-tag').selectOption('others');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expectRecord('Local Beneficiary Two');
@@ -247,7 +248,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
   await expect(dialog.getByText('Synthetic Guest One')).toBeVisible();
-  await dialog.locator('#beneficiary-edit-list').selectOption({label:'Guest Work'});
+  await chooseBeneficiaryOption(dialog,'beneficiary-edit-list',{label:'Guest Work'});
   await dialog.getByRole('button',{name:'Save changes'}).click();
   await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Guest Work');
   await expectRecord('Synthetic Guest One');
@@ -299,7 +300,7 @@ test('signed-out guest payment hides saved beneficiaries even with stored entrie
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Saved Guest Taxpayer');
-  await dialog.locator('#beneficiary-tag').selectOption('clients');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
 
