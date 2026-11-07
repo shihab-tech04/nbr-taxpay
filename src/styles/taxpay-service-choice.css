@@ -206,14 +206,16 @@
 /* Entry cards are presentation choices, not financial service identities.
    Reuse existing design-system service palettes without changing original IDs. */
 .tax-service-choice__card[data-payer-relationship="SELF"],
-.tax-service-choice__card[data-payment-entry="TAX_WITH_RETURN"] {
+.tax-service-choice__card[data-payment-entry="TAX_WITH_RETURN"],
+.tax-service-choice__card[data-draft-entry-option="NEW"] {
   --choice-primary: var(--service-return-primary);
   --choice-bg: var(--service-return-bg);
   --choice-border: var(--service-return-border);
   --choice-text: var(--service-return-text);
 }
 .tax-service-choice__card[data-payer-relationship="OTHER"],
-.tax-service-choice__card[data-payment-entry="OTHER_TAX"] {
+.tax-service-choice__card[data-payment-entry="OTHER_TAX"],
+.tax-service-choice__card[data-draft-entry-option="RESUME"] {
   --choice-primary: var(--service-general-primary);
   --choice-bg: var(--service-general-bg);
   --choice-border: var(--service-general-border);
@@ -239,6 +241,12 @@
 }
 .tax-service-choice__card:hover {
   background: var(--color-taxpay-surface-subtle);
+}
+/* Draft entry rows are navigation actions, not selected radio choices.
+   Keep the shared card/icon geometry; only reuse existing palette and arrow cues. */
+.tax-service-choice__card[data-draft-entry-option] > .tax-service-choice__access-arrow {
+  color: var(--choice-primary);
+  margin-inline-start: .5rem;
 }
 .tax-service-choice__card[aria-pressed="true"] {
   /* The 1px border + clipped 2px inset stroke make a 3px left accent.
