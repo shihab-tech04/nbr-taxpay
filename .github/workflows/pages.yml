@@ -664,7 +664,7 @@ jobs:
 
   deploy:
     name: Publish verified static build
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: always() && needs.verification-gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: verification-gate
     runs-on: ubuntu-latest
     environment:
