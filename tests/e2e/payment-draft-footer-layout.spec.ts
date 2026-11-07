@@ -58,3 +58,63 @@ for (const width of [320, 375, 1280]) {
     await page.screenshot({ path: 'test-results/payment-footer-drafts-' + width + '.png' });
   });
 }
+
+
+test('Pay Tax header reserves the Back column without overlapping the title in EN/BN', async ({ page }, testInfo) => {
+  // Layout-only regression: reproduce the same shared modal header's Back state
+  // without writing account drafts, payments or authentication records.
+  for (const language of ['en', 'bn'] as const) {
+    const translated = language === 'bn';
+    const label = translated ? 'কর পরিশোধ' : 'Pay Tax';
+    await page.goto(translated ? '/?action=landing&lang=bn' : '/?action=landing');
+    await page.getByRole('button', { name: label, exact: true }).first().click();
+    const modal = page.getByRole('dialog', { name: label });
+    const header = modal.locator('.taxpay-modal__header');
+    const title = header.locator('.taxpay-modal__title');
+    const close = header.locator('.taxpay-modal__close');
+    await expect(title).toHaveText(label);
+    await expect(close).toBeVisible();
+    await expect(header.locator('.taxpay-modal__back')).toHaveCount(0);
+
+    // The first Pay Tax screen has no Back; its heading aligns with the cards.
+    const initial = await header.evaluate(node =>
+      node.querySelector('.taxpay-modal__title')!.getBoundingClientRect().left -
+      node.getBoundingClientRect().left
+    );
+    expect(initial, 'No-Back title must align with the modal body').toBeGreaterThanOrEqual(0);
+    expect(initial).toBeLessThan(40);
+
+    // Replicate the exact shared TaxPayModal header state used by the draft list.
+    // CSS must update its grid placement when Back replaces the placeholder.
+    await header.evaluate(node => {
+      const placeholder = node.querySelector('.taxpay-modal__back-placeholder');
+      if (!placeholder) throw new Error('Missing shared modal Back placeholder');
+      const back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'taxpay-modal__back';
+      back.setAttribute('aria-label', 'Back');
+      placeholder.replaceWith(back);
+    });
+
+    const layout = await header.evaluate(node => {
+      const back = node.querySelector('.taxpay-modal__back')!.getBoundingClientRect();
+      const title = node.querySelector('.taxpay-modal__title')!.getBoundingClientRect();
+      const close = node.querySelector('.taxpay-modal__close')!.getBoundingClientRect();
+      return {
+        backRight: back.right,
+        titleLeft: title.left,
+        titleRight: title.right,
+        closeLeft: close.left,
+        textAlign: getComputedStyle(node.querySelector('.taxpay-modal__title')!).textAlign,
+      };
+    });
+    expect(layout.titleLeft - layout.backRight,
+      'Back must never overlap the Pay Tax title').toBeGreaterThanOrEqual(7);
+    expect(layout.closeLeft - layout.titleRight,
+      'The title must not overlap Close').toBeGreaterThanOrEqual(7);
+    expect(layout.textAlign).toBe('left');
+    await page.screenshot({
+      path: 'test-results/pay-tax-modal-back-header-' + language + '-' + testInfo.project.name + '.png',
+    });
+  }
+});
