@@ -681,15 +681,20 @@
   text-align: center;
   font-weight: 650;
 }
-/* Only the Pay Tax entry screen has no Back: align its heading with its choice cards. */
+/* Keep the Pay Tax entry title beside the header Back arrow when present.
+   Only the no-Back entry screen may span the empty first grid column. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"])
   .taxpay-modal__header .taxpay-modal__title {
-  grid-column: 1 / 3;
+  grid-column: 2;
   grid-row: 1;
   text-align: left;
   min-width: 0;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"])
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"]):not(:has(.taxpay-modal__back))
+  .taxpay-modal__header .taxpay-modal__title {
+  grid-column: 1 / 3;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"]):not(:has(.taxpay-modal__back))
   .taxpay-modal__back-placeholder { display: none; }
 .taxpay-citizen-shell .taxpay-modal .taxpay-modal__back,
 .taxpay-citizen-shell .taxpay-modal .taxpay-modal__close {
