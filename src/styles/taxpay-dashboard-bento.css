@@ -102,3 +102,28 @@
 @media(prefers-reduced-motion:reduce){
  .taxpay-bento-hero__actions button{transition:none}
 }
+
+
+/* The real-account variant has no fabricated balances or monthly history. */
+.taxpay-auth-bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;min-width:0}
+.taxpay-auth-bento>*{min-width:0;max-width:100%}
+.taxpay-auth-bento>div:nth-child(1){grid-column:span 12}
+.taxpay-auth-bento>div:nth-child(2){grid-column:span 6;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-content:start}
+.taxpay-auth-bento>div:nth-child(3),.taxpay-auth-bento>section:nth-child(3){grid-column:span 6}
+.taxpay-auth-bento>div:nth-child(4){grid-column:span 12}
+.taxpay-bento-grid .taxpay-bento-position .taxpayer-dashboard-kpi{padding:12px;border-radius:11px;box-shadow:none}
+.taxpay-bento-grid .taxpay-bento-position .taxpayer-dashboard-kpi>p:last-child{font-size:18px;line-height:1.3;margin-top:10px}
+.taxpay-bento-grid .taxpay-bento-position .taxpayer-dashboard-kpi .taxpayer-inline-help{flex-shrink:0}
+.taxpay-auth-bento .taxpay-table-viewport{max-width:100%}
+@media(max-width:1299px){
+ .taxpay-auth-bento>div:nth-child(2),.taxpay-auth-bento>div:nth-child(3),.taxpay-auth-bento>section:nth-child(3){grid-column:span 12}
+ .taxpay-auth-bento>div:nth-child(2){grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:799px){
+ .taxpay-auth-bento>div:nth-child(1),.taxpay-auth-bento>div:nth-child(2),.taxpay-auth-bento>div:nth-child(4){grid-column:span 12}
+ .taxpay-auth-bento>div:nth-child(2){grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:479px){
+ .taxpay-bento-grid .taxpay-bento-position [aria-label="Financial summary"]{grid-template-columns:minmax(0,1fr)}
+ .taxpay-bento-grid .taxpay-bento-position .taxpayer-dashboard-kpi>p:last-child{font-size:19px}
+}
