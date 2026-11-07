@@ -4,8 +4,8 @@ import { enterTaxPayService } from './pay-tax-entry-helper';
 test('signed-in Pay Tax offers saved drafts before original journey and restores the selected form', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
-  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
-  await login.getByLabel('Password', { exact: true }).fill('user2');
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user28');
+  await login.getByLabel('Password', { exact: true }).fill('user28');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
 
