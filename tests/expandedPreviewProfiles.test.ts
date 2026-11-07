@@ -1,26 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
 import { DEMO_USER_IDS, DEMO_USERS, getDemoUser } from '../src/data/demoUsers';
 import { simulationUsers } from '../src/contracts/paymentSimulationContract';
 import { demoUserIds } from '../src/data/demoPaymentTransactions';
 
-describe('30 fictional payment profile coverage', () => {
- it('provides exactly thirty consistently named profiles across the app and the SQL simulation contract', () => {
-  expect(DEMO_USER_IDS).toHaveLength(30);
-  expect(simulationUsers).toEqual(DEMO_USER_IDS);
-  expect(demoUserIds).toEqual(DEMO_USER_IDS);
-  expect(new Set(DEMO_USER_IDS)).toHaveProperty('size',30);
- });
- it('preserves all original profiles and gives each additional preview a distinct, sample-only 13-digit TIN', () => {
-  const ids=DEMO_USER_IDS.map(id=>getDemoUser(id));
-  expect(ids.every(Boolean)).toBe(true);
-  expect(new Set(ids.map(p=>p?.tin)).size).toBe(30);
-  for(const p of ids){expect(p?.tin).toMatch(/^[0-9]{13}$/);}
-  expect(DEMO_USERS.user1.nameEn).toBe('Md. Arif Rahman');
-  expect(DEMO_USERS.user30.id).toBe('user30');
- });
- it('rejects preview account IDs outside the approved 1–30 range', () => {
-  expect(getDemoUser('user0')).toBeNull();
-  expect(getDemoUser('user31')).toBeNull();
-  expect(getDemoUser('admin')).toBeNull();
- });
+test('30 preview profiles share the same published simulation identity contract', () => {
+ assert.equal(DEMO_USER_IDS.length,30);
+ assert.deepEqual([...simulationUsers],[...DEMO_USER_IDS]);
+ assert.deepEqual([...demoUserIds],[...DEMO_USER_IDS]);
+ assert.equal(new Set(DEMO_USER_IDS).size,30);
+});
+test('user1 identity is preserved, new fictional TINs are distinct and all IDs are bounded', () => {
+ const profiles=DEMO_USER_IDS.map(id=>getDemoUser(id));
+ assert.ok(profiles.every(Boolean));
+ assert.equal(new Set(profiles.map(p=>p?.tin)).size,30);
+ for(const profile of profiles)assert.match(profile!.tin,/^[0-9]{13}$/);
+ assert.equal(DEMO_USERS.user1.nameEn,'Md. Arif Rahman');
+ assert.equal(DEMO_USERS.user30.id,'user30');
+ for(const invalid of ['user0','user31','admin'])assert.equal(getDemoUser(invalid),null);
 });
