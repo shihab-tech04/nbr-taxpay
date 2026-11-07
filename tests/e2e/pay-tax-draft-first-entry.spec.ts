@@ -41,6 +41,25 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   const headerBack = dialog.locator('.taxpay-modal__header .taxpay-modal__back');
   await expect(headerBack).toBeVisible();
   await expect(headerBack).toHaveAttribute('aria-label', 'Back');
+  // The shared header grid must put the title after Back, never over the arrow.
+  // This test runs at 320px, 375px, and desktop in the existing browser projects.
+  const headerPositions = await dialog.locator('.taxpay-modal__header').evaluate(header => {
+    const back = header.querySelector<HTMLElement>('.taxpay-modal__back')!;
+    const title = header.querySelector<HTMLElement>('.taxpay-modal__title')!;
+    const close = header.querySelector<HTMLElement>('.taxpay-modal__close')!;
+    return {
+      backRight: back.getBoundingClientRect().right,
+      titleLeft: title.getBoundingClientRect().left,
+      titleRight: title.getBoundingClientRect().right,
+      closeLeft: close.getBoundingClientRect().left,
+      titleText: title.textContent?.trim(),
+    };
+  });
+  expect(headerPositions.titleText).toBe('Pay Tax');
+  expect(headerPositions.titleLeft - headerPositions.backRight,
+    'Pay Tax title must begin after the Back button, without overlap').toBeGreaterThanOrEqual(7);
+  expect(headerPositions.closeLeft - headerPositions.titleRight,
+    'Pay Tax title must end before the Close button').toBeGreaterThanOrEqual(7);
   // Keep the approved X alongside the header arrow; neither action belongs in the body.
   await expect(dialog.locator('.taxpay-modal__header .taxpay-modal__close')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__footer')).toHaveCount(0);
@@ -48,6 +67,13 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   await headerBack.click();
   await expect(draftEntry.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
   await expect(headerBack).toHaveCount(0);
+  // Without a Back action, the same approved header starts at the card alignment.
+  const noBackAlignment = await dialog.locator('.taxpay-modal__header').evaluate(header => {
+    const title = header.querySelector<HTMLElement>('.taxpay-modal__title')!;
+    return title.getBoundingClientRect().left - header.getBoundingClientRect().left;
+  });
+  expect(noBackAlignment).toBeGreaterThanOrEqual(0);
+  expect(noBackAlignment).toBeLessThan(40);
   await draftEntry.getByRole('button', { name: 'Continue from draft' }).click();
   await expect(headerBack).toBeVisible();
   const savedList = draftEntry.getByTestId('saved-payment-draft-list');
