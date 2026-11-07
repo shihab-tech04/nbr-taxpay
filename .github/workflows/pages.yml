@@ -17,10 +17,41 @@ concurrency:
 
 jobs:
 
+  preflight:
+    name: Verified PR and immutable build provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      pull-requests: read
+    outputs:
+      mode: ${{ steps.probe.outputs.mode }}
+      head: ${{ steps.probe.outputs.head }}
+      tree: ${{ steps.probe.outputs.tree }}
+      run: ${{ steps.probe.outputs.run }}
+      artifact: ${{ steps.probe.outputs.artifact }}
+    steps:
+      - name: Inspect current release source and merge parents
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check verifier regression cases
+        run: node --test scripts/ci/verified-merge-release.test.mjs
+      - name: Confirm exact-source PR acceptance and review artifact
+        id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ci/verified-merge-release.mjs
+
   # Compile and browser acceptance execute independently. The original named
   # required gate still blocks Pages until every original test has passed.
   compile:
     name: Compile, typecheck, domain and production bundle
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:
@@ -74,6 +105,23 @@ jobs:
           echo 'PASS: public Pages build has approved publishable-only review endpoint; no privileged key shipped'
       - name: Verify actual production bundle blocks unauthenticated taxpayer/sample routes
         run: npx playwright test --config playwright.production.config.ts
+      - name: Stamp reviewed PR bundle provenance
+        if: github.event_name == 'pull_request'
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '{"prHead":"%s","sourceTree":"%s"}\n' "$PR_HEAD" "$(git rev-parse 'HEAD^{tree}')" > dist/taxpay-reviewed-provenance.json
+      - name: Retain immutable tested bundle for exact-source Main deployment
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-reviewed-dist-${{ github.event.pull_request.head.sha }}
+          path: dist/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
       - name: Upload Pages artifact (main only)
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
@@ -82,6 +130,8 @@ jobs:
 
   core-e2e:
     name: Payment, ledger and beneficiaries acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -136,6 +186,8 @@ jobs:
         run: node scripts/verify-live-public-auth.mjs
   core-beneficiary-e2e:
     name: Beneficiary records and table visual acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -187,6 +239,8 @@ jobs:
           retention-days: 14
   core-cms-e2e:
     name: CMS banner and direct-service acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -223,6 +277,8 @@ jobs:
 
   payment-ux-e2e:
     name: Payment wizard and calculation acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -252,6 +308,8 @@ jobs:
         run: npx playwright test tests/e2e/mobile-payment-footer-calculation.spec.ts tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts
   payment-progress-e2e:
     name: Payment progress and v11 input acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -286,6 +344,8 @@ jobs:
 
   public-e2e:
     name: Public and signed-in journey acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -332,6 +392,8 @@ jobs:
 
   public-login-e2e:
     name: Taxpayer signed-in desktop and mobile acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -376,6 +438,8 @@ jobs:
 
   beneficiary-picker-e2e:
     name: Signed-in beneficiary picker acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -420,6 +484,8 @@ jobs:
 
   public-support-e2e:
     name: Public receipts and workspace acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -460,6 +526,8 @@ jobs:
 
   route-e2e:
     name: Public routes (shard ${{ matrix.shard }}/6)
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -492,16 +560,106 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/6
 
+  reuse-reviewed-build:
+    name: Reuse exact-source verified PR bundle
+    needs: preflight
+    if: needs.preflight.outputs.mode == 'reuse'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: read
+      pages: read
+    steps:
+      - name: Download immutable artifact from accepted exact-head PR workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: taxpay-reviewed-dist-${{ needs.preflight.outputs.head }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.preflight.outputs.run }}
+          github-token: ${{ github.token }}
+          path: dist/
+      - name: Match artifact provenance to merged source tree and preserve release safety
+        env:
+          EXPECTED_HEAD: ${{ needs.preflight.outputs.head }}
+          EXPECTED_TREE: ${{ needs.preflight.outputs.tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const proof=JSON.parse(readFileSync('dist/taxpay-reviewed-provenance.json','utf8'));
+          assert.deepEqual(proof,{prHead:process.env.EXPECTED_HEAD,sourceTree:process.env.EXPECTED_TREE});
+          console.log('PASS: immutable PR build tree equals production merge tree');
+          NODE
+          test -s dist/index.html
+          grep -q '/nbr-taxpay/assets/' dist/index.html
+          ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
+          ! grep -q '/src/main.tsx' dist/index.html
+          grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets
+          ! grep -REq 'sb_secret_|service_role' dist/assets
+          ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
+          ! grep -REq '(^|[^0-9])[0-9]{17}([^0-9]|$)' dist/assets
+          ! grep -REq '\+?880[0-9 ()-]{8,}' dist/assets
+          find dist/assets -type f -name '*.js' -size +0c | grep -q .
+          rm dist/taxpay-reviewed-provenance.json
+          echo 'PASS: reviewed artifact safety and exact tree verified'
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+      - name: Upload exact-source reviewed Pages bundle
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/
+
   verification-gate:
     name: Build and verify static preview
-    needs: [compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-login-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e]
+    if: always()
+    needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-login-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Confirm all unchanged acceptance suites and production checks passed
+      - name: Confirm mandatory check paths, including reused verified PR evidence
+        shell: bash
+        env:
+          PREFLIGHT: ${{ needs.preflight.result }}
+          MODE: ${{ needs.preflight.outputs.mode }}
+          COMPILE: ${{ needs.compile.result }}
+          CORE: ${{ needs.core-e2e.result }}
+          BENEFICIARY: ${{ needs.core-beneficiary-e2e.result }}
+          CMS: ${{ needs.core-cms-e2e.result }}
+          PAYMENT: ${{ needs.payment-ux-e2e.result }}
+          PROGRESS: ${{ needs.payment-progress-e2e.result }}
+          PUBLIC: ${{ needs.public-e2e.result }}
+          PUBLIC_LOGIN: ${{ needs.public-login-e2e.result }}
+          PICKER: ${{ needs.beneficiary-picker-e2e.result }}
+          SUPPORT: ${{ needs.public-support-e2e.result }}
+          ROUTES: ${{ needs.route-e2e.result }}
+          REUSED: ${{ needs.reuse-reviewed-build.result }}
         run: |
-          echo "PASS: compiled artifact, domain, release safety, and all parallel browser acceptance lanes succeeded"
+          set -euo pipefail
+          test "$PREFLIGHT" = success
+          case "$MODE" in
+            full)
+              test "$REUSED" = skipped
+              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_LOGIN" "$PICKER" "$SUPPORT" "$ROUTES"; do
+                test "$result" = success
+              done
+              echo 'PASS: every independent live-build and browser acceptance lane passed'
+              ;;
+            reuse)
+              test "$REUSED" = success
+              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_LOGIN" "$PICKER" "$SUPPORT" "$ROUTES"; do
+                test "$result" = skipped
+              done
+              echo 'PASS: byte-identical artifact from fully verified PR, without retesting unchanged source'
+              ;;
+            *)
+              echo "FAIL: unrecognized verified release mode" >&2
+              exit 1
+              ;;
+          esac
 
 
   deploy:
