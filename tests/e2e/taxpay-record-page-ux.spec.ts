@@ -23,7 +23,7 @@ for (const language of ['en','bn'] as const) {
     expect(caseActionHeight).toBeGreaterThanOrEqual(44);
     await page.getByRole('searchbox',{name:tr('Search case references','বিষয়ের রেফারেন্স খুঁজুন')}).fill('zz-no-matches');
     await expect(cases).toHaveCount(0);
-    await page.getByRole('button',{name:tr('Clear filters','ফিল্টার মুছুন')}).click();
+    await page.getByRole('button',{name:tr('Clear all','সব ফিল্টার মুছুন')}).click();
     await expect(cases.getByRole('row').nth(1)).toBeVisible();
     if(desktop){
       const columns=await cases.locator('.taxpay-record-list__row').first().evaluate(
