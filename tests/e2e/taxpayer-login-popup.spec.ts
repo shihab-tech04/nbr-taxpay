@@ -24,8 +24,8 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await dialog.getByRole('button',{name:'Hide password'}).click();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
   await expect(page.locator('#public-home-title')).toBeVisible();
-  await dialog.getByRole('textbox',{name:'User ID'}).fill('user11');
-  await dialog.getByLabel('Password',{exact:true}).fill('user11');
+  await dialog.getByRole('textbox',{name:'User ID'}).fill('user31');
+  await dialog.getByLabel('Password',{exact:true}).fill('user31');
   await dialog.getByRole('button',{name:'Sign In'}).click();
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);

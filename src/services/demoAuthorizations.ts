@@ -102,7 +102,7 @@ export function declineDemoAuthorization(
   return records.map(r => r.id === recordId ? {...r, status: 'DENIED', consentCode: '000000'} : r);
 }
 
-// Browser storage is used only to let user1–user10 demonstrate switching roles
+// Browser storage is used only to let user1–user30 demonstrate switching roles
 // in the same browser. It is never used for SQL/ACS/ledger authorization.
 export function loadDemoAuthorizations(): DemoAuthorization[] {
   try {
