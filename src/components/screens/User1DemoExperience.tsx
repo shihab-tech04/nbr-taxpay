@@ -3,6 +3,8 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
+import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
@@ -86,7 +88,7 @@ const panel='rounded-2xl border border-taxpay-border bg-taxpay-surface p-4 shado
 const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface px-3 text-sm font-medium text-taxpay-dark transition hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary';
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
 export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
-export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=({route,activityTabs=false})=>{
+export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
   const {navigate,language,setLanguage,routeParams}=useTaxState();
   const bn=language==='bn';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
@@ -768,6 +770,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean}>=
       <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
     </section>}
     {header}
+    {overviewRoute && onResumePaymentDraft && <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} />}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {route==='history'&&activePreviewSession()?.profileId==='user1'&&<LegacyPaymentRecovery language={language}/>}
