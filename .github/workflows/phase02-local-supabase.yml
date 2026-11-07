@@ -134,6 +134,12 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/previewProfileNonemptyPersistence.sql
 
+      - name: Verify account-scoped payment form drafts, readback, optimistic conflicts and cross-account isolation
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/accountPaymentFormDraftIsolation.sql
+
       - name: Verify explicit prior-browser fictional payment recovery and isolation
         shell: bash
         run: |
