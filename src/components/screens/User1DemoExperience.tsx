@@ -309,6 +309,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <span>{item.label}</span><strong className="tabular-nums">{item.count}</strong>
           </button>)}
       </div>
+      <button type="button" className="self-end min-h-10 px-2 text-sm font-medium text-white underline underline-offset-4" onClick={()=>navigate('corrections')}>
+        {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
+      </button>
     </section>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
@@ -329,6 +332,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <div><dt>{tr('Already covered','সমন্বিত')}</dt><dd>{money(totals.applied)}</dd></div>
         <div><dt>{tr('Remaining','অবশিষ্ট')}</dt><dd>{money(totals.outstanding)}</dd></div>
       </dl>
+      <p className="text-xs text-taxpay-muted">{tr('Travel tax (separate)','ভ্রমণ কর (পৃথক)')}: <strong className="tabular-nums text-taxpay-text">{money(totals.travel)}</strong></p>
       {view('ledger','View tax ledger','কর লেজার দেখুন')}
     </section>
     <div className="taxpay-bento-coverage">
