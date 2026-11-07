@@ -47,7 +47,7 @@ test('rejects excessive arrays, invalid types and payment result steps',()=>{
   assert.equal(parseTravelTaxDraft({...travel,passengers:[{...travel.passengers[0],passport:'x'.repeat(60)}]}),null);
 });
 test('SQL gateway owns drafts via active capability, not submitted user ID or public role',()=>{
-  const sql=readFileSync('supabase/migrations/20261107071500_preview_payment_drafts.sql','utf8');
+  const sql=readFileSync('supabase/migrations/20261107134500_preview_payment_drafts.sql','utf8');
   const edge=readFileSync('supabase/functions/taxpay-preview-drafts/index.ts','utf8');
   const component=readFileSync('src/components/ui/PreviewDraftControls.tsx','utf8');
   const guestFlow=readFileSync('src/components/screens/GuestPayment.tsx','utf8');
