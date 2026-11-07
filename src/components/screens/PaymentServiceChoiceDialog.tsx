@@ -120,7 +120,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       // Re-measure the approved modal height on every such transition so the
       // full original payer cards and footer cannot inherit the compact draft height.
       motionKey={`${view}:${view === 'payer' ? `${draftEntryMode}:${draftEntryBlocking ? 'draft' : 'original'}` : stage}`}
-      onBack={view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
+      onBack={view === 'payer' && !draftEntryCompleted && draftActor &&
+        !initialService && !paymentBeneficiaryPrefill && draftEntryMode === 'new'
+        ? () => setDraftEntryMode('choice')
+        : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
         : view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
         const back = document.querySelector<HTMLButtonElement>(
