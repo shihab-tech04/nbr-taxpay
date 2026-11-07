@@ -113,7 +113,10 @@ test('user1 Activity retains the approved transaction table and removes redundan
   await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
   const search=transactions.getByRole('searchbox',{name:'Search transaction reference'});
   await search.fill('DEMO-PAY-02');
-  await expect(transactions.getByText('DEMO-PAY-02').first()).toBeVisible();
+  const visibleRows=info.project.name==='mobile-375'
+    ? transactions.getByTestId('taxpayer-transaction-mobile-cards')
+    : transactions.getByRole('table',{name:'Payment transactions'});
+  await expect(visibleRows.getByText('DEMO-PAY-02').first()).toBeVisible();
   await search.fill('not-an-existing-reference');
   await expect(transactions.getByRole('heading',{name:'No matching records'})).toBeVisible();
   await search.clear();
