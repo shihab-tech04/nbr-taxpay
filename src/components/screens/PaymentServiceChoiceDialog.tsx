@@ -37,26 +37,26 @@ export const TAXPAY_ENTRY_CHOICES = [
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
-export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
+export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
-  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(paymentBeneficiaryPrefill ? false : null);
-  const [topLevel, setTopLevel] = useState<TopLevelService | null>(paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
+  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : paymentBeneficiaryPrefill ? false : null);
+  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  const [view, setView] = useState<'payer' | 'login' | 'payment'>('payer');
+  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft ? 'payment' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [useAccount, setUseAccount] = useState(false);
+  const [useAccount, setUseAccount] = useState(Boolean(initialDraft));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
-  const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(null);
+  const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
   // Back from taxpayer details returns to payer choices without losing
   // the route back to the signed-in user's original saved-draft decision.
-  const [draftEntryCompleted, setDraftEntryCompleted] = useState(false);
+  const [draftEntryCompleted, setDraftEntryCompleted] = useState(Boolean(initialDraft));
   const [enteredFromDraftChoice, setEnteredFromDraftChoice] = useState(false);
   const [draftEntryMode, setDraftEntryMode] = useState<'choice' | 'list' | 'new'>('choice');
   const changeDraftEntryMode = useCallback((next: 'choice' | 'list' | 'new') => {
@@ -145,7 +145,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       } : undefined}
       backLabel={tr('Back', 'ফিরুন')}
       hideFooter={view === 'payer' && draftEntryBlocking}
-      service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
+      service={view === 'login' ? 'login' : view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'
         ? <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} />
@@ -161,7 +161,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       )}
     >
       <section key={view} ref={flowRef} data-view={view}
-        className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+        className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
           <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>

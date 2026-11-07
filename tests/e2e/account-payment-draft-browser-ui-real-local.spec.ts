@@ -42,7 +42,22 @@ test('payment form drafts survive another browser, protect owner isolation and r
     const marker = 'CROSS-BROWSER-DRAFT-' + Date.now();
     await a.locator('#guest-notice-ref').fill(marker);
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
-    await expect(a.getByText('Draft saved to your account. You can continue in another browser.')).toBeVisible();
+    await expect(a.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+    await expect(a.getByText('Draft saved to your account. You can continue in another browser.')).toHaveCount(0);
+
+    // Dashboard uses the same owner-scoped SQL drafts, not local copies.
+    const dashboard = await open('user29');
+    await dashboard.goto('/?action=taxpayer_home');
+    const cards = dashboard.getByTestId('dashboard-payment-drafts');
+    const firstCard = cards.locator('[data-draft-id]').first();
+    await expect(firstCard).toBeVisible();
+    const draftId = await firstCard.getAttribute('data-draft-id');
+    expect(draftId).toBeTruthy();
+    await firstCard.getByRole('button', { name: 'Continue' }).click();
+    const restoredModal = dashboard.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(restoredModal.locator('#guest-notice-ref')).toHaveValue(marker);
+    await restoredModal.getByRole('button', { name: 'Close payment services' }).click();
+    await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
 
     // The existing draft makes Pay Tax open its compact two-choice modal.
     // Regression: choosing Start new must EXPAND to the original complete payer
@@ -111,7 +126,6 @@ test('payment form drafts survive another browser, protect owner isolation and r
     }, { timeout: 10_000, message: 'Start new must expand the modal and reveal both payer cards above its footer' }).toBe(true);
     console.log('DRAFT_TO_ORIGINAL_MODAL_GEOMETRY', JSON.stringify({ project: info.project.name, compactHeight, expanded: await measure() }));
     await entry.screenshot({ path: 'test-results/draft-to-original-payer-' + info.project.name + '.png' });
-
     // A second Back must survive after entering and leaving Taxpayer details.
     // This is the exact real-world regression: the payer screen previously
     // lost its Back arrow after a payment started.
@@ -145,7 +159,8 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(b.locator('#guest-notice-ref')).toHaveValue(marker);
     await b.locator('#guest-notice-ref').fill(marker + '-UPDATED');
     await b.getByRole('button', { name: 'Save Draft', exact: true }).click();
-    await expect(b.getByText('Draft saved to your account. You can continue in another browser.')).toBeVisible();
+    await expect(b.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+    await expect(b.getByText('Draft saved to your account. You can continue in another browser.')).toHaveCount(0);
 
     // Browser A is still at the older revision; no silent loss of Browser B's changes.
     await a.locator('#guest-notice-ref').fill(marker + '-STALE');
@@ -157,6 +172,23 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(unrelated.getByText('Payment draft', { exact: true })).toHaveCount(0);
     await expect(unrelated.locator('#guest-notice-ref')).not.toHaveValue(marker + '-UPDATED');
 
+    // Separate owner: dashboard Delete is a two-action confirmation and persists.
+    await unrelated.locator('#guest-notice-ref').fill('DASHBOARD-DELETE-' + Date.now());
+    await unrelated.getByRole('button', { name: 'Save Draft' }).click();
+    await expect(unrelated.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+    await unrelated.goto('/?action=taxpayer_home');
+    const otherCards = unrelated.getByTestId('dashboard-payment-drafts');
+    const otherCard = otherCards.locator('[data-draft-id]').first();
+    await expect(otherCard).toBeVisible();
+    await otherCard.getByRole('button', { name: 'Delete' }).click();
+    await expect(otherCard.getByRole('button', { name: 'Confirm delete' })).toBeVisible();
+    await otherCard.getByRole('button', { name: 'Cancel' }).click();
+    await expect(otherCard).toBeVisible();
+    await otherCard.getByRole('button', { name: 'Delete' }).click();
+    await otherCard.getByRole('button', { name: 'Confirm delete' }).click();
+    await expect(otherCard).toHaveCount(0);
+
+
     await b.locator('.payment-form-draft-controls__open').click();
     await b.getByRole('button', { name: 'Delete', exact: true }).first().click();
     await b.getByRole('button', { name: 'Confirm delete', exact: true }).click();
@@ -166,6 +198,9 @@ test('payment form drafts survive another browser, protect owner isolation and r
     const fresh = await open('user29');
     await fresh.locator('.payment-form-draft-controls__open').click();
     await expect(fresh.getByText('Payment draft', { exact: true })).toHaveCount(0);
+    await dashboard.goto('/?action=taxpayer_home');
+    await expect(dashboard.getByTestId('dashboard-payment-drafts')
+      .locator('[data-draft-id="' + draftId + '"]')).toHaveCount(0);
   } finally {
     await Promise.allSettled(contexts.map(context => context.close()));
   }

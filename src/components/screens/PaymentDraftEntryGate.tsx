@@ -26,6 +26,21 @@ type Catalog = {
   rows: PaymentFormDraft[];
 };
 
+
+/** Shared draft integrity gate for the payment chooser and dashboard cards. */
+export function assertResumablePaymentDraft(draft: PaymentFormDraft, language: 'en' | 'bn'): void {
+  const message = (en: string, bn: string) => language === 'bn' ? bn : en;
+  if (draft.form_payload.schemaVersion !== 1)
+    throw new Error(message('The draft format is unsupported.', 'এই খসড়ার বিন্যাস সমর্থিত নয়।'));
+  if (draft.service === 'TRAVEL_TAX') {
+    if (!Array.isArray(draft.form_payload.passengers))
+      throw new Error(message('Saved passenger details could not be verified.', 'সংরক্ষিত যাত্রীর তথ্য যাচাই করা যায়নি।'));
+  } else if (draft.form_payload.category !== draft.service ||
+             (typeof draft.form_payload.forSelf !== 'boolean' && draft.form_payload.forSelf !== null)) {
+    throw new Error(message('Saved taxpayer details could not be verified.', 'সংরক্ষিত করদাতার তথ্য যাচাই করা যায়নি।'));
+  }
+}
+
 /** Show the start/resume decision only when the signed-in account actually has drafts.
  * A fresh payment still uses the original, unchanged payer/service selector.
  */
@@ -69,15 +84,7 @@ export function PaymentDraftEntryGate({
       const rows = await listPaymentFormDrafts(actor);
       const latest = rows.find(item => item.id === draft.id);
       if (!latest) throw new Error(tr('This draft is no longer available. Reload the list.', 'এই খসড়াটি আর পাওয়া যাচ্ছে না। তালিকা নতুন করে লোড করুন।'));
-      if (latest.form_payload.schemaVersion !== 1)
-        throw new Error(tr('The draft format is unsupported.', 'এই খসড়ার বিন্যাস সমর্থিত নয়।'));
-      if (latest.service === 'TRAVEL_TAX') {
-        if (!Array.isArray(latest.form_payload.passengers))
-          throw new Error(tr('Saved passenger details could not be verified.', 'সংরক্ষিত যাত্রীর তথ্য যাচাই করা যায়নি।'));
-      } else if (latest.form_payload.category !== latest.service ||
-                 (typeof latest.form_payload.forSelf !== 'boolean' && latest.form_payload.forSelf !== null)) {
-        throw new Error(tr('Saved taxpayer details could not be verified.', 'সংরক্ষিত করদাতার তথ্য যাচাই করা যায়নি।'));
-      }
+      assertResumablePaymentDraft(latest, language);
       setCatalog({ ownerKey, status: 'ready', rows });
       onResume(latest);
     } catch (reason) {

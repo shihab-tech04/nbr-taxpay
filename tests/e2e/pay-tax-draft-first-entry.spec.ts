@@ -30,7 +30,8 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   const marker = 'DRAFT-ENTRY-' + Date.now().toString();
   await notice.fill(marker);
   await dialog.getByRole('button', { name: 'Save Draft' }).click();
-  await expect(dialog.getByText('Draft saved to your account. You can continue in another browser.')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+  await expect(dialog.getByText('Draft saved to your account. You can continue in another browser.')).toHaveCount(0);
 
   await dialog.getByRole('button', { name: 'Close payment services' }).click();
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();

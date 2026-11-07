@@ -14,12 +14,14 @@ import { AccountActivitySummary } from './AccountActivitySummary';
 import {PreviewBeneficiarySpending} from './PreviewBeneficiarySpending';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
+import { DashboardPaymentDrafts } from './DashboardPaymentDrafts';
+import type { PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
 type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
 const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
-export const TaxpayerDashboard: React.FC = () => {
+export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: PaymentFormDraft) => void }> = ({ onResumePaymentDraft }) => {
   const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
@@ -112,6 +114,8 @@ export const TaxpayerDashboard: React.FC = () => {
         </label>
         {!user && <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>}
       </div>} />
+    {(user || previewAccount) && onResumePaymentDraft &&
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} />}
     {user ? <>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3" data-testid="dashboard-example-controls">
         <p className="min-w-0 text-sm text-taxpay-muted">{exampleMode
