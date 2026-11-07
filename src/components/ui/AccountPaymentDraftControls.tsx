@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Check } from 'lucide-react';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import {
@@ -36,6 +37,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setPendingDelete(null);
     setError(null);
     setFeedback(null);
+    setSavedSnapshot(null);
     if (!actor) return () => { active = false; };
     setLoading(true);
     void listPaymentFormDrafts(actor, service).then(result => {
@@ -66,15 +69,17 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
 
   const save = async () => {
     if (!actor || busy) return;
-    setBusy(true); setError(null); setFeedback(null);
+    setBusy(true); setError(null); setFeedback(null); setSavedSnapshot(null);
     try {
       const payload = snapshot();
       const existing = selectedDraft?.service === service ? selectedDraft : undefined;
       const result = await savePaymentFormDraft(actor, service, payload, existing);
       onSelectedDraft(result);
-      await refresh();
-      setFeedback(bn ? 'খসড়া আপনার অ্যাকাউন্টে সংরক্ষিত হয়েছে। অন্য ব্রাউজারেও পাওয়া যাবে।'
-        : 'Draft saved to your account. You can continue in another browser.');
+      setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
+        (a, b) => b.updated_at.localeCompare(a.updated_at)));
+      // The SQL write and readback have already completed. Show success only in
+      // the button; no extra success banner below the payment form.
+      setSavedSnapshot(JSON.stringify(payload));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Save was not confirmed.');
     } finally { setBusy(false); }
@@ -88,6 +93,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       const current = latest.find(row => row.id === draft.id);
       if (!current) throw new Error(bn ? 'খসড়াটি আর পাওয়া যাচ্ছে না।' : 'Draft was not found.');
       restore(current.form_payload);
+      setSavedSnapshot(null);
       onSelectedDraft(current);
       setRows(latest);
       setExpanded(false);
@@ -114,10 +120,15 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     } finally { setBusy(false); }
   };
 
+  const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
   const actions = <div className="payment-form-draft-controls__actions">
     <button type="button" className="payment-form-draft-controls__save"
       onClick={() => void save()} disabled={busy || loading}>
-      {busy ? (bn ? 'সংরক্ষণ হচ্ছে…' : 'Working…') : (bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft')}
+      <span aria-live="polite" className="inline-flex items-center justify-center gap-1.5">
+        {busy ? (bn ? 'সংরক্ষণ হচ্ছে…' : 'Saving…')
+          : savedNow ? <><Check size={16} strokeWidth={2.5} aria-hidden="true" />{bn ? 'খসড়া সংরক্ষিত' : 'Draft Saved'}</>
+          : (bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft')}
+      </span>
     </button>
     {actionTarget === undefined && <button type="button" className="payment-form-draft-controls__open"
       onClick={() => setExpanded(open => !open)} disabled={busy} aria-expanded={expanded}>
