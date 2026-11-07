@@ -1171,6 +1171,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // Revalidate taxpayer/beneficiary ownership, notices and amounts after cross-browser restore.
     setVerifiedReference(null);setLastSearchedTin(null);setAuthorizedTaxpayerId(null);
     setAuthorizedTaxpayerIds({});setConfirmedOtherTaxTins({});setAvailableSavedTins(null);
+    setBeneficiaryRefreshKey(v=>v+1);
     setAcknowledged(false);setErrorMessage('');setErrorField(null);setErrorHeadId(null);
     setStep(1);
   };
