@@ -3,7 +3,9 @@ import { enterTaxPayService } from './pay-tax-entry-helper';
 
 // Layout-only regression: never save data or submit a payment to hosted SQL.
 for (const width of [320, 375, 1280]) {
-  test('signed-in payment footer keeps draft actions left and Continue right at ' + width + 'px', async ({ page }) => {
+  test('signed-in payment footer keeps draft actions left and Continue right at ' + width + 'px', async ({ page }, info) => {
+    const expectedProject = width === 1280 ? 'desktop-1280' : 'mobile-' + width;
+    test.skip(info.project.name !== expectedProject, 'The targeted viewport belongs to its own device project');
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/?action=taxpayer_login');
     const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
@@ -30,6 +32,7 @@ for (const width of [320, 375, 1280]) {
       ]);
       expect(left && middle && right && bar).toBeTruthy();
       if (!left || !middle || !right || !bar) return;
+      console.log('PAYMENT_FOOTER_GEOMETRY', JSON.stringify({ width, left, middle, right, bar }));
       expect(Math.abs(left.y - right.y)).toBeLessThan(6);
       expect(left.x + left.width).toBeLessThanOrEqual(middle.x + 2);
       expect(middle.x + middle.width).toBeLessThanOrEqual(right.x + 2);
