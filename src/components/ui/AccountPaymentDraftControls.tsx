@@ -119,6 +119,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const actions = <div className={`payment-form-draft-controls__actions${placeActionsInFooter ? ' payment-form-draft-controls__actions--footer' : ''}`}>
 
       <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        aria-label={bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft'}
         onClick={() => void save()} disabled={busy || loading}>
         <span className="payment-form-draft-controls__label-long">{busy ? (bn ? 'সংরক্ষণ হচ্ছে…' : 'Working…') : (bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft')}</span>
         <span className="payment-form-draft-controls__label-short" aria-hidden="true">{busy ? '…' : (bn ? 'খসড়া' : 'Save Draft')}</span>
