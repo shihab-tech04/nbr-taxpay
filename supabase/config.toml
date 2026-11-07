@@ -388,6 +388,12 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/taxpay-guest-beneficiaries/index.ts"
 
+[functions.taxpay-preview-drafts]
+enabled = true
+# Preview capability is independently verified in the Edge handler and SQL owner gate.
+verify_jwt = false
+entrypoint = "./functions/taxpay-preview-drafts/index.ts"
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

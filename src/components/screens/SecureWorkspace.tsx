@@ -334,7 +334,7 @@ export const SecureWorkspace: React.FC = () => {
   return (
     <section lang={bn ? 'bn' : 'en'} className="taxpayer-reference-secure max-w-4xl mx-auto space-y-5 pb-12">
       <header className="bg-white border border-slate-200 rounded-xl p-6">
-        <h1 className="font-serif-fraunces text-2xl font-bold text-emerald-950">{copy.workspaceTitle}</h1>
+        <h1 className="text-2xl font-bold text-taxpay-text">{copy.workspaceTitle}</h1>
         <p className="text-sm text-slate-600 mt-2">{copy.workspaceDescription}</p>
       </header>
       {!backendConfigured ? (
@@ -348,18 +348,18 @@ export const SecureWorkspace: React.FC = () => {
         </article>
       ) : authLoading ? <p role="status">{copy.checkingSession}</p> : !user ? (
         <form onSubmit={login} className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 space-y-4">
-          <h2 className="text-lg font-bold text-emerald-950">{copy.signInHeading}</h2>
+          <h2 className="text-lg font-bold text-taxpay-text">{copy.signInHeading}</h2>
           <p className="text-sm text-slate-600">{copy.signInDescription}</p>
           <label htmlFor="taxpay-auth-email" className="block text-sm font-semibold">{copy.emailAddress}</label>
           <UiInput id="taxpay-auth-email" required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
-            className="min-h-11 w-full px-3 py-3 border border-slate-300 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700" placeholder={copy.emailPlaceholder}/>
+            className="min-h-11 w-full px-3 py-3 border border-slate-300 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" placeholder={copy.emailPlaceholder}/>
           <div className="flex flex-wrap items-center gap-4">
             <UiButton type="submit" disabled={busy}>{copy.sendSignInLink}</UiButton>
-            <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+            <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-taxpay-primary underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
               href={bn ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
               {bn ? 'ইউজার আইডি দিয়ে লগইন' : 'Login with User ID'}
             </a>
-            {sampleJourneysEnabled && <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+            {sampleJourneysEnabled && <a className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-taxpay-primary underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
               href={bn ? '?action=taxpayer_home&demoUser=user1&lang=bn' : '?action=taxpayer_home&demoUser=user1'}>
               {bn ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
             </a>}
@@ -368,14 +368,14 @@ export const SecureWorkspace: React.FC = () => {
       ) : (
         <>
           <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap justify-between gap-3 items-center">
-            <div><h2 className="font-bold text-emerald-950">{copy.signedInTitle}</h2><p className="text-xs text-slate-600">{user.email}</p></div>
-            <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>navigate('taxpayer_home')} className="min-h-11 border border-blue-700 bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold text-sm">{bn?'আমার ড্যাশবোর্ড':'My dashboard'}</button>
+            <div><h2 className="font-bold text-taxpay-text">{copy.signedInTitle}</h2><p className="text-sm text-slate-600">{user.email}</p></div>
+            <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>navigate('taxpayer_home')} className="min-h-11 border border-taxpay-primary bg-taxpay-primary text-white rounded-lg px-4 py-2 font-semibold text-sm">{bn?'আমার ড্যাশবোর্ড':'My dashboard'}</button>
             <button type="button" onClick={signOut} disabled={busy} className="min-h-11 border border-slate-300 rounded-lg px-4 py-2 font-semibold text-sm">{copy.signOut}</button></div>
           </div>
           <form ref={draftFormRef} onSubmit={createDraft} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-            <h2 className="font-serif-fraunces text-xl font-bold text-emerald-950">{copy.draftHeading}</h2>
-            <p className="text-xs text-slate-500">{copy.draftStorageNotice}</p>
-            {editingDraftId && <p role="status" className="text-sm bg-emerald-50 border border-emerald-200 rounded-lg p-3">{copy.editingDraftNotice}</p>}
+            <h2 className="text-xl font-bold text-taxpay-text">{copy.draftHeading}</h2>
+            <p className="text-sm text-slate-500">{copy.draftStorageNotice}</p>
+            {editingDraftId && <p role="status" className="text-sm bg-taxpay-light border border-taxpay-border rounded-lg p-3">{copy.editingDraftNotice}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="text-sm font-semibold">{copy.paymentPurpose}
                 <select className="block w-full mt-2 border border-slate-300 rounded-lg p-3" value={draft.purpose} onChange={e => {
@@ -392,7 +392,7 @@ export const SecureWorkspace: React.FC = () => {
               </label>
               <label className="text-sm font-semibold">{copy.assessmentYear}
                 <input required className="block w-full mt-2 border border-slate-300 rounded-lg p-3" aria-describedby="draft-year-help" value={draft.assessmentYear} onChange={e => setDraft(p => ({ ...p, assessmentYear: e.target.value }))} placeholder={copy.assessmentYearPlaceholder}/>
-                <p id="draft-year-help" className="mt-1 text-xs font-normal text-slate-600">{copy.assessmentYearHelp}</p>
+                <p id="draft-year-help" className="mt-1 text-sm font-normal text-slate-600">{copy.assessmentYearHelp}</p>
               </label>
               <label className="text-sm font-semibold">{copy.proposedAmount}
                 <input required inputMode="decimal" className="block w-full mt-2 border border-slate-300 rounded-lg p-3" value={draft.amount} onChange={e => setDraft(p => ({ ...p, amount: e.target.value }))} placeholder={copy.amountPlaceholder}/>
@@ -403,12 +403,12 @@ export const SecureWorkspace: React.FC = () => {
                 className="block w-full mt-2 border border-slate-300 rounded-lg p-3" rows={2}/>
             </label>
             <div className="flex flex-wrap gap-3">
-              <button type="submit" disabled={busy} className="min-h-11 px-5 py-3 rounded-lg bg-emerald-950 text-white font-semibold disabled:opacity-50">{busy ? copy.savingDraft : editingDraftId ? copy.updateDraft : copy.saveDraft}</button>
+              <button type="submit" disabled={busy} className="min-h-11 px-5 py-3 rounded-lg bg-taxpay-primary text-white font-semibold disabled:opacity-50">{busy ? copy.savingDraft : editingDraftId ? copy.updateDraft : copy.saveDraft}</button>
               {editingDraftId && <button type="button" disabled={busy} onClick={cancelDraftEditing} className="min-h-11 px-5 py-3 rounded-lg border border-slate-300 font-semibold disabled:opacity-50">{copy.cancelEditing}</button>}
             </div>
           </form>
           <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-3">
-            <h2 className="font-serif-fraunces text-xl font-bold text-emerald-950">{copy.savedDrafts}</h2>
+            <h2 className="text-xl font-bold text-taxpay-text">{copy.savedDrafts}</h2>
             {message?.kind === 'copy' && ['couldNotLoadDrafts', 'sessionExpiredLoad', 'draftSavedRefreshFailed', 'draftReadBackNotConfirmed', 'draftConflict', 'deletionNotConfirmed'].includes(message.key) && (
               <button type="button" disabled={busy || draftLoading} onClick={retryLoad}
                 className="min-h-11 px-4 py-2 border border-taxpay-primary text-taxpay-primary rounded-lg font-semibold focus-visible:outline focus-visible:outline-2">
@@ -420,17 +420,17 @@ export const SecureWorkspace: React.FC = () => {
                 {rows.map(row => <li key={row.id} className="py-3 flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 break-words">
                     <p className="text-sm font-semibold">{copy.categories[row.category]} · {copy.assessmentYearShort} {row.assessment_year}</p>
-                    <p className="text-xs text-slate-600">৳ {formatBdtMinorUnits(row.amount_minor, language)} · {copy.privateDraftOnly}</p>
-                    {row.memo && <p className="text-xs text-slate-500">{row.memo}</p>}
+                    <p className="text-sm text-slate-600">৳ {formatBdtMinorUnits(row.amount_minor, language)} · {copy.privateDraftOnly}</p>
+                    {row.memo && <p className="text-sm text-slate-500">{row.memo}</p>}
                   </div>
                   <div className="flex flex-col items-stretch gap-2">
-                    <button type="button" disabled={busy} onClick={() => resumeDraft(row)} className="min-h-11 px-3 py-2 border border-emerald-700 rounded-lg text-sm font-semibold text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700">
+                    <button type="button" disabled={busy} onClick={() => resumeDraft(row)} className="min-h-11 px-3 py-2 border border-taxpay-primary rounded-lg text-sm font-semibold text-taxpay-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
                       {copy.resumeDraft}
                     </button>
                     <button type="button" disabled={busy} onClick={() => deleteDraft(row.id)} className="min-h-11 px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600">
                       {pendingDelete === row.id ? copy.confirmDelete : copy.deleteDraft}
                     </button>
-                    {pendingDelete === row.id && <button type="button" onClick={() => setPendingDelete(null)} className="min-h-11 px-3 py-2 text-sm font-semibold text-emerald-900">{copy.cancel}</button>}
+                    {pendingDelete === row.id && <button type="button" onClick={() => setPendingDelete(null)} className="min-h-11 px-3 py-2 text-sm font-semibold text-taxpay-primary">{copy.cancel}</button>}
                   </div>
                 </li>)}
               </ul>

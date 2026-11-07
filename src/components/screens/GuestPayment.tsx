@@ -1,3 +1,5 @@
+import { PreviewDraftControls } from '../ui/PreviewDraftControls';
+import { deletePreviewDraft, type GuestPaymentDraftState } from '../../services/previewPaymentDrafts';
 import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -335,6 +337,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [attemptReceipt, setAttemptReceipt] = useState<ChallanReceipt | null>(null);
   const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [activeSavedDraft,setActiveSavedDraft]=useState<{id:string;version:number}|null>(null);
+  useEffect(()=>{
+    if(paymentPhase!=='settled'||!createdReceipt||!activeSavedDraft)return;
+    // Only an already recorded successful synthetic payment closes its source draft.
+    let active=true;
+    void deletePreviewDraft(activeSavedDraft.id,activeSavedDraft.version).then(()=>{
+      if(active)setActiveSavedDraft(null);
+    }).catch(()=>{/* Keep a newer version or failed deletion available for explicit recovery. */});
+    return ()=>{active=false;};
+  },[paymentPhase,createdReceipt,activeSavedDraft]);
+
   const pendingStoryRef = useRef<{ payload: StoryPaymentInput; receipt: ChallanReceipt } | null>(null);
   const [batchAttempt, setBatchAttempt] = useState<OtherTaxBatch | null>(null);
   const batchAttemptRef = useRef<OtherTaxBatch | null>(null);
@@ -1139,6 +1152,41 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     </div>
   );
 
+
+  // Saving work never saves payment attempts, verified authorizations or consent.
+  const capturePreviewDraft = ():GuestPaymentDraftState => ({
+    schema:'1',journey:'guest_payment',step,
+    forSelf,tin,payerName,otherTaxpayerName,additionalTaxpayers,otherTaxLines,
+    phone,receiptEmail,assessmentYear,noticeReference,incomeTaxType,category,
+    selectedHeadIds,amountInputs:Object.fromEntries(Object.entries(amountInputs)),
+    paymentChannel,methodGroup,paymentMethod
+  });
+  const restorePreviewDraft=(input:GuestPaymentDraftState)=>{
+    setForSelf(input.forSelf);
+    setTin(input.tin);
+    setPayerName(input.payerName);
+    setOtherTaxpayerName(input.otherTaxpayerName);
+    setAdditionalTaxpayers(input.additionalTaxpayers);
+    setOtherTaxLines(input.otherTaxLines);
+    setPhone(input.phone);
+    setReceiptEmail(input.receiptEmail);
+    setAssessmentYear(input.assessmentYear);
+    setNoticeReference(input.noticeReference);
+    setIncomeTaxType(input.incomeTaxType);
+    setCategory(input.category as PaymentCategory);
+    setSelectedHeadIds(input.selectedHeadIds);
+    setAmountInputs(Object.fromEntries(Object.entries(input.amountInputs).map(([key,value])=>[Number(key),value])));
+    setPaymentChannel(input.paymentChannel);
+    setMethodGroup(input.methodGroup);
+    setPaymentMethod(input.paymentMethod as ChallanReceipt['paymentMethod'] | null);
+    // Revalidate taxpayer/beneficiary ownership, notices and amounts after cross-browser restore.
+    setVerifiedReference(null);setLastSearchedTin(null);setAuthorizedTaxpayerId(null);
+    setAuthorizedTaxpayerIds({});setConfirmedOtherTaxTins({});setAvailableSavedTins(null);
+    setBeneficiaryRefreshKey(v=>v+1);
+    setAcknowledged(false);setErrorMessage('');setErrorField(null);setErrorHeadId(null);
+    setStep(1);
+  };
+
   return (
     <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
       {/* Title & Mode Banner */}
@@ -1175,6 +1223,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           ))}
         </ol>
         </>}
+
+        {previewAccount && step <= 3 && <div className="mb-4">
+          <PreviewDraftControls journey="guest_payment" accountId={previewAccount.id} language={language}
+            disabled={isProcessing || Boolean(batchAttempt)} capture={capturePreviewDraft}
+            onActiveChange={setActiveSavedDraft}
+            restore={state=>{if(state.journey==='guest_payment')restorePreviewDraft(state);}}/>
+        </div>}
 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
