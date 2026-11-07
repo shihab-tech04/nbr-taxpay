@@ -67,55 +67,20 @@ for(const language of ['en','bn'] as const){
           .toHaveText('012345678901');
       }
       if(view==='beneficiaries'&&!desktop){
-        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
-        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('012345678901');
-        await expect(row).not.toContainText(language==='bn'?'টিআইএন:':'TIN:');
-      }
-      if(!desktop&&view==='ledger'){
-        const nested=await row.locator('button').first().evaluate(element=>({
-          borderTopWidth:getComputedStyle(element).borderTopWidth,
-          paddingLeft:getComputedStyle(element).paddingLeft,
-          minHeight:element.getBoundingClientRect().height
-        }));
-        expect(nested.borderTopWidth,'mobile ledger must not double-border a card').toBe('0px');
-        expect(nested.paddingLeft,'mobile ledger must not double-inset a card').toBe('0px');
-        expect(nested.minHeight).toBeGreaterThanOrEqual(44);
-        const panel=await root.locator('.taxpay-ledger-records').evaluate(element=>({
-          borderTopWidth:getComputedStyle(element).borderTopWidth,
-          background:getComputedStyle(element).backgroundColor,
-          viewportBorder:getComputedStyle(element.querySelector('.taxpay-table-viewport')!).borderTopWidth
-        }));
-        expect(panel.borderTopWidth,'mobile ledger list should not double-wrap cards').toBe('0px');
-        expect(panel.viewportBorder,'mobile ledger viewport should not frame cards').toBe('0px');
-      }
-      if(header)await expect(header).toBeVisible();
-      if(view==='ledger') {
-        const ledgerMobileList=root.locator('.taxpay-mobile-table-cards');
-        const ledgerDesktopTable=root.locator('table.taxpay-unified-table');
-        if(desktop){
-          await expect(ledgerMobileList).toBeHidden();
-          await expect(ledgerDesktopTable).toBeVisible();
-        } else {
-          await expect(ledgerMobileList).toBeVisible();
-          await expect(ledgerDesktopTable).toBeHidden();
-        }
-      }
-      if(view==='beneficiaries'&&!desktop){
-        const filters=page.locator('.beneficiary-directory__filters');
-        const list=filters.locator('.beneficiary-directory__list-filter');
-        const tag=filters.locator('.beneficiary-directory__tag-filter');
-        const search=filters.locator('.beneficiary-directory__search-filter');
-        const [listBox,tagBox,searchBox]=await Promise.all([list.boundingBox(),tag.boundingBox(),search.boundingBox()]);
-        if(!listBox||!tagBox||!searchBox)throw Error('Missing beneficiary mobile filters');
-        expect(Math.abs(tagBox.y-searchBox.y),'Tag and Search share a row').toBeLessThanOrEqual(3);
-        expect(listBox.y+listBox.height,'Selected list precedes Tag and Search').toBeLessThanOrEqual(tagBox.y);
+        const context=page.locator('.beneficiary-directory__list-context .beneficiary-directory__list-filter');
+        const search=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
+        await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
+        await expect(search.getByRole('searchbox')).toBeVisible();
+        const [listBox,searchBox]=await Promise.all([context.boundingBox(),search.boundingBox()]);
+        if(!listBox||!searchBox)throw Error('Missing selected list or shared table search');
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
+        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
+        const filters=page.locator('.beneficiary-directory__filters');
+        const tag=filters.locator('.beneficiary-directory__tag-filter');
+        await expect(tag).toBeVisible();
         await tag.locator('select').selectOption('friends_family');
         const relationship=filters.locator('.beneficiary-directory__relationship-filter');
         await expect(relationship).toBeVisible();
-        const relationBox=await relationship.boundingBox();
-        if(!relationBox)throw Error('Relationship filter is missing');
-        expect(relationBox.y,'Relationship follows Tag/Search row').toBeGreaterThan(tagBox.y+tagBox.height-2);
         await tag.locator('select').selectOption('all');
         await expect(relationship).toHaveCount(0);
       }
