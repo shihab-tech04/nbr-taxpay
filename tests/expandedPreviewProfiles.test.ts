@@ -14,7 +14,7 @@ describe('30 fictional payment profile coverage', () => {
   const ids=DEMO_USER_IDS.map(id=>getDemoUser(id));
   expect(ids.every(Boolean)).toBe(true);
   expect(new Set(ids.map(p=>p?.tin)).size).toBe(30);
-  for(const p of ids){expect(p?.tin).toMatch(/^\\d{13}$/);}
+  for(const p of ids){expect(p?.tin).toMatch(/^[0-9]{13}$/);}
   expect(DEMO_USERS.user1.nameEn).toBe('Md. Arif Rahman');
   expect(DEMO_USERS.user30.id).toBe('user30');
  });
