@@ -4,7 +4,7 @@ export async function ensureNewPaymentEntry(dialog: Locator) {
   // Account-owned drafts introduce a first decision. Tests for the existing
   // new-payment journey deliberately select Start new before the payer cards.
   const entry = dialog.getByTestId('account-draft-entry');
-  const startNew = entry.getByRole('button', { name: 'Start new Tax payment' });
+  const startNew = entry.getByRole('button', { name: /Start new Tax payment|নতুন কর পরিশোধ শুরু করুন/ });
   await expect.poll(async () => {
     if (await startNew.isVisible().catch(() => false)) return 'draft-choice';
     if (await dialog.locator('[data-payer-relationship]').count() === 2) return 'payer';
