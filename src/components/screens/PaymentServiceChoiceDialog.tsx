@@ -116,7 +116,10 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       onClose={close}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer'}
-      motionKey={view}
+      // Draft choice/list/new swap content inside the same payer view.
+      // Re-measure the approved modal height on every such transition so the
+      // full original payer cards and footer cannot inherit the compact draft height.
+      motionKey={`${view}:${view === 'payer' ? `${draftEntryMode}:${draftEntryBlocking ? 'draft' : 'original'}` : stage}`}
       onBack={view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
         : view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
