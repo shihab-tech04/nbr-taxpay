@@ -46,7 +46,7 @@ export function TaxPayActiveFilterChips({filters,clearLabel,onClear}:{
   return <div className="taxpay-office-active-filters" aria-label="Active table filters">
     <div className="taxpay-office-active-filters__chips">{filters.map(filter=>
       <button type="button" key={filter.key} className="taxpay-office-active-filters__chip"
-        aria-label={filter.label} onClick={filter.onRemove}>
+        aria-label={'Remove filter: '+filter.label} onClick={filter.onRemove}>
         <span>{filter.label}</span><X size={13} aria-hidden="true"/>
       </button>
     )}</div>
