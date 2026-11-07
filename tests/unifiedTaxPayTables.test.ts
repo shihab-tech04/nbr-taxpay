@@ -146,3 +146,19 @@ test('every signed-in payment history uses visible Convay column hierarchy, not 
  assert.match(css,/table\.taxpay-convay-signed-in-table tbody td/);
  assert.match(css,/table\.taxpay-convay-signed-in-table tbody tr:nth-child\(even\)/);
 });
+
+test('draft workspace follows the Korbritto blue type scale instead of legacy green/serif styling',()=>{
+  const src=read('src/components/screens/SecureWorkspace.tsx');
+  assert.doesNotMatch(src,/emerald|font-serif-fraunces/);
+  assert.match(src,/bg-taxpay-primary/);
+  assert.match(src,/text-taxpay-text/);
+  assert.doesNotMatch(src,/text-xs/);
+});
+
+test('shared table feedback is subtle and disabled for reduced-motion preferences',()=>{
+  const css=read('src/styles/taxpay-unified-table.css');
+  assert.match(css,/Shared record-table motion/);
+  assert.match(css,/\.taxpay-table-pagination__button/);
+  assert.match(css,/\.taxpay-mobile-table-card:focus-within/);
+  assert.match(css,/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.taxpay-table-pagination__button[\s\S]*?transition: none/);
+});
