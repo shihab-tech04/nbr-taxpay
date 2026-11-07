@@ -13,6 +13,7 @@ import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {UiButton,UiInput} from '../ui/Controls';
 import {SearchableSelect} from '../ui/SearchableSelect';
+import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
 import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
@@ -30,6 +31,26 @@ export function Beneficiaries(){
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
+  // A single searchable grouped menu selects both the stored tag and relationship.
+  const familyGroup=tr('FRIENDS & FAMILY MEMBERS','বন্ধু ও পরিবারের সদস্য');
+  const familyChoices=BENEFICIARY_RELATIONS.map(relation=>({
+    value:'friends_family:'+relation,
+    label:beneficiaryTagLabel('friends_family',relation,language).split(' · ').at(-1)??relation,
+    group:familyGroup
+  }));
+  const classificationOptions=[
+    {value:'clients',label:tr('Clients','ক্লায়েন্ট'),group:tr('CLIENTS','ক্লায়েন্ট')},
+    ...familyChoices,
+    {value:'others',label:tr('Others — specify','অন্যান্য — লিখুন'),group:tr('OTHERS','অন্যান্য')}
+  ];
+  const classificationFilters=[
+    {value:'all',label:tr('All tags','সব ট্যাগ')},
+    {value:'clients',label:tr('Clients','ক্লায়েন্ট'),group:tr('CLIENTS','ক্লায়েন্ট')},
+    {value:'friends_family',label:tr('All family & friends','সব বন্ধু ও পরিবার'),group:familyGroup},
+    ...familyChoices,
+    {value:'others',label:tr('Others','অন্যান্য'),group:tr('OTHERS','অন্যান্য')},
+    {value:'legacy',label:tr('Uncategorized','শ্রেণিবিহীন'),group:tr('OTHERS','অন্যান্য')}
+  ];
   const displayName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
   const [people,setPeople]=useState<Beneficiary[]>([]);
@@ -482,23 +503,19 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
-            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag','ট্যাগ')}</span>
-              <SearchableSelect id="beneficiary-filter-tag" ariaLabel={tr('Filter by tag','ট্যাগ দিয়ে ফিল্টার')}
-                value={tagFilter} onChange={value=>{setTagFilter(value);setRelationshipFilter('all');setSelectedIds([]);}}
-                searchPlaceholder={tr('Search tags','ট্যাগ খুঁজুন')}
-                options={[{value:'all',label:tr('All tags','সব ট্যাগ')},
-                  {value:'clients',label:tr('Clients','ক্লায়েন্ট')},
-                  {value:'friends_family',label:tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')},
-                  {value:'others',label:tr('Others','অন্যান্য')},
-                  {value:'legacy',label:tr('Uncategorized','শ্রেণিবিহীন')}]}/>
+            <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span>{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}</span>
+              <SearchableSelect id="beneficiary-filter-tag" ariaLabel={tr('Filter by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে ফিল্টার')}
+                value={tagFilter==='friends_family'&&relationshipFilter!=='all'
+                  ?'friends_family:'+relationshipFilter:tagFilter}
+                onChange={value=>{
+                  const choice=beneficiaryChoiceParts(value);
+                  setTagFilter(value==='all'||value==='legacy'?value:choice.tag||'friends_family');
+                  setRelationshipFilter(choice.relationship||'all');
+                  setSelectedIds([]);
+                }}
+                searchPlaceholder={tr('Search tags or relationships','ট্যাগ বা সম্পর্ক খুঁজুন')}
+                options={classificationFilters}/>
             </label>
-            {tagFilter==='friends_family'&&<label className="taxpayer-transaction-filter beneficiary-directory__relationship-filter"><span>{tr('Relationship','সম্পর্ক')}</span>
-              <SearchableSelect id="beneficiary-filter-relationship" ariaLabel={tr('Filter by relationship','সম্পর্ক দিয়ে ফিল্টার')}
-                value={relationshipFilter} onChange={value=>{setRelationshipFilter(value);setSelectedIds([]);}}
-                searchPlaceholder={tr('Search relationships','সম্পর্ক খুঁজুন')}
-                options={[{value:'all',label:tr('All relationships','সব সম্পর্ক')},
-                  ...BENEFICIARY_RELATIONS.map(value=>({value,label:beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)??value}))]}/>
-            </label>}
             <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search beneficiary-directory__search-filter">
               <span>{tr('Search','খুঁজুন')}</span>
               <span className="taxpayer-transaction-filter__search">
@@ -678,20 +695,16 @@ export function Beneficiaries(){
           {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
         </div>
         <div className="space-y-2 rounded-lg border border-taxpay-border p-3" data-testid="beneficiary-tag-fields">
-          <label htmlFor="beneficiary-tag" className="block text-sm font-semibold text-taxpay-text">{tr('Tag','ট্যাগ')} *</label>
-          <SearchableSelect id="beneficiary-tag" required value={tag}
-            onChange={value=>{setTag(value as BeneficiaryTag|'');setRelationship('');setOtherLabel('');setModalError('');}}
-            placeholder={tr('Select a tag','ট্যাগ বাছুন')} searchPlaceholder={tr('Search tags','ট্যাগ খুঁজুন')}
-            options={[{value:'clients',label:tr('Clients','ক্লায়েন্ট')},
-              {value:'friends_family',label:tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')},
-              {value:'others',label:tr('Others','অন্যান্য')}]}/>
-          {tag==='friends_family'&&<>
-            <label htmlFor="beneficiary-relationship" className="block text-sm font-semibold text-taxpay-text">{tr('Relationship','সম্পর্ক')} *</label>
-            <SearchableSelect id="beneficiary-relationship" required value={relationship}
-              onChange={value=>{setRelationship(value as BeneficiaryRelation|'');setModalError('');}}
-              placeholder={tr('Select a relationship','সম্পর্ক বাছুন')} searchPlaceholder={tr('Search relationships','সম্পর্ক খুঁজুন')}
-              options={BENEFICIARY_RELATIONS.map(value=>({value,label:beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)??value}))}/>
-          </>}
+          <label htmlFor="beneficiary-tag" className="block text-sm font-semibold text-taxpay-text">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')} *</label>
+          <SearchableSelect id="beneficiary-tag" required
+            value={beneficiaryChoiceValue(tag,relationship)}
+            onChange={value=>{
+              const choice=beneficiaryChoiceParts(value);
+              setTag(choice.tag);setRelationship(choice.relationship);setOtherLabel('');setModalError('');
+            }}
+            placeholder={tr('Select a tag or relationship','ট্যাগ বা সম্পর্ক বাছুন')}
+            searchPlaceholder={tr('Search by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে খুঁজুন')}
+            options={classificationOptions}/>
           {tag==='others'&&<div className="space-y-1" data-testid="beneficiary-other-label-field">
             <label htmlFor="beneficiary-other-label" className="block text-sm font-semibold text-taxpay-text">{tr('Specify other category','অন্যান্য শ্রেণি লিখুন')} *</label>
             <UiInput id="beneficiary-other-label" required maxLength={80} value={otherLabel}
@@ -765,21 +778,17 @@ export function Beneficiaries(){
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
         <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
         <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
-        <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag','ট্যাগ')} {editLegacyMove?tr('(optional for list move)','(তালিকা স্থানান্তরে ঐচ্ছিক)'):'*'}</label>
-          <SearchableSelect id="beneficiary-edit-tag" required={!editLegacyMove} value={editTag}
-            onChange={value=>{setEditTag(value as BeneficiaryTag|'');setEditRelationship('');setEditOtherLabel('');setModalError('');}}
-            placeholder={tr('Select a tag','ট্যাগ বাছুন')} searchPlaceholder={tr('Search tags','ট্যাগ খুঁজুন')}
-            options={[{value:'clients',label:tr('Clients','ক্লায়েন্ট')},
-              {value:'friends_family',label:tr('Friends & family members','বন্ধু ও পরিবারের সদস্য')},
-              {value:'others',label:tr('Others','অন্যান্য')}]}/>
+        <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')} {editLegacyMove?tr('(optional for list move)','(তালিকা স্থানান্তরে ঐচ্ছিক)'):'*'}</label>
+          <SearchableSelect id="beneficiary-edit-tag" required={!editLegacyMove}
+            value={beneficiaryChoiceValue(editTag,editRelationship)}
+            onChange={value=>{
+              const choice=beneficiaryChoiceParts(value);
+              setEditTag(choice.tag);setEditRelationship(choice.relationship);setEditOtherLabel('');setModalError('');
+            }}
+            placeholder={tr('Select a tag or relationship','ট্যাগ বা সম্পর্ক বাছুন')}
+            searchPlaceholder={tr('Search by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে খুঁজুন')}
+            options={classificationOptions}/>
         </div>
-        {editTag==='friends_family'&&<div>
-          <label htmlFor="beneficiary-edit-relationship" className="mb-1 block text-sm font-semibold">{tr('Relationship','সম্পর্ক')} *</label>
-          <SearchableSelect id="beneficiary-edit-relationship" required value={editRelationship}
-            onChange={value=>{setEditRelationship(value as BeneficiaryRelation|'');setModalError('');}}
-            placeholder={tr('Select a relationship','সম্পর্ক বাছুন')} searchPlaceholder={tr('Search relationships','সম্পর্ক খুঁজুন')}
-            options={BENEFICIARY_RELATIONS.map(value=>({value,label:beneficiaryTagLabel('friends_family',value,language).split(' · ').at(-1)??value}))}/>
-        </div>}
         {editTag==='others'&&<div>
           <label htmlFor="beneficiary-edit-other-label" className="mb-1 block text-sm font-semibold">{tr('Specify other category','অন্যান্য শ্রেণি লিখুন')} *</label>
           <UiInput id="beneficiary-edit-other-label" required maxLength={80} value={editOtherLabel} onChange={event=>{setEditOtherLabel(event.target.value);setModalError('');}} placeholder={tr('Enter a description (max 80 characters)','বর্ণনা লিখুন (সর্বোচ্চ ৮০ অক্ষর)')}/>
