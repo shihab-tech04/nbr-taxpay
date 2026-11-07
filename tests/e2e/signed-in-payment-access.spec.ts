@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { ensureNewPaymentEntry } from './pay-tax-entry-helper';
 
 for (const locale of ['en', 'bn'] as const) {
   test(`already signed-in ${locale.toUpperCase()} taxpayer skips redundant account/walk-in choice for both payers`, async ({ page }) => {
@@ -11,6 +12,7 @@ for (const locale of ['en', 'bn'] as const) {
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
     await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
     const payment = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
+    await ensureNewPaymentEntry(payment);
 
     for (const payer of ['OTHER', 'SELF'] as const) {
       await payment.locator(`[data-payer-relationship="${payer}"]`).click();

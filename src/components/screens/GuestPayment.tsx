@@ -181,6 +181,8 @@ interface GuestPaymentProps {
   embedded?: boolean;
   withAccount?: boolean;
   initialCategory?: PaymentCategory;
+  /** Previously verified account-owned draft selected at Pay Tax entry. */
+  initialDraft?: PaymentFormDraft;
   /** Payer relationship is chosen before service selection in the Pay Tax modal. */
   initialForSelf?: boolean;
   initialBeneficiary?: { tin: string; name: string; additional?: { tin: string; name: string }[] };
@@ -188,7 +190,7 @@ interface GuestPaymentProps {
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -393,6 +395,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setErrorMessage(''); setErrorField(null); setErrorHeadId(null);
     setStep(saved.step === 2 ? 2 : 1);
   };
+  useEffect(() => {
+    if (!initialDraft) return;
+    try {
+      if (initialDraft.service !== category) throw new Error('Saved payment service does not match.');
+      restoreAccountDraft(initialDraft.form_payload);
+      setSelectedAccountDraft(initialDraft);
+    } catch (cause) {
+      setErrorMessage(cause instanceof Error ? cause.message : 'Saved payment could not be restored.');
+      setErrorField(null);
+    }
+    // A different draft remounts the form. Do not reset inputs on normal renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDraft?.id]);
   // A confirmed receipt is the only signal allowed to retire a draft.
   useEffect(() => {
     if (!selectedAccountDraft || !createdReceipt || paymentPhase !== 'settled') return;

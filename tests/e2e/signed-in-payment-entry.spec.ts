@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, ensureNewPaymentEntry } from './pay-tax-entry-helper';
 
 test('an already signed-in taxpayer starts payment without a second login prompt', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
@@ -13,6 +13,7 @@ test('an already signed-in taxpayer starts payment without a second login prompt
   await page.goto('/?action=landing');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await ensureNewPaymentEntry(payment);
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
