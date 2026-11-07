@@ -219,15 +219,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={filtered.length} total={scoped.length}/>
       </div>
       <div className="taxpay-office-table-heading__actions">
-        <label className="taxpay-record-toolbar__search">
-          <Search size={17} aria-hidden="true"/>
-          <input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/>
-        </label>
         <TaxPayTableFilterToggle expanded={transactionFiltersExpanded} onToggle={()=>setTransactionFiltersExpanded(open=>!open)} label={tr('Filter','ফিল্টার')}/>
         <button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}><Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>
       </div>
     </div>
     {transactionFiltersExpanded&&<TaxPayTableControls className="taxpayer-transaction-filters taxpayer-convay-table-filters" data-testid="convay-table-filters">
+      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
       </select></label>
