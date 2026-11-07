@@ -1188,6 +1188,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     );
   }
 
+  const draftActionsInFooter = embedded && Boolean(signedInAccount) && isPaymentDraftService(category) && step <= 2;
+
   const receiptEmailControl = (
     <div>
       <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
@@ -1241,7 +1243,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {signedInAccount && isPaymentDraftService(category) && step <= 2 &&
           <AccountPaymentDraftControls service={category} language={language}
             snapshot={snapshotAccountDraft} restore={restoreAccountDraft}
-            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
+            selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
+            placeActionsInFooter={draftActionsInFooter} footerTarget={modalFooterTarget} />}
 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (
@@ -1636,7 +1639,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         )}
       </div>
       {embedded && modalFooterTarget && createPortal(
-        <div className="payment-flow-embedded__footer-actions">
+        <div className={`payment-flow-embedded__footer-actions${draftActionsInFooter ? ' payment-flow-embedded__footer-actions--with-drafts' : ''}`}>
           {mobilePaymentFooter && step <= 3 && (
             <details key={step} className="payment-flow-embedded__mobile-summary" data-testid="mobile-payment-calculation">
               <summary className="payment-flow-embedded__mobile-summary-toggle" data-testid="mobile-payment-calculation-toggle">
@@ -1649,9 +1652,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           )}
           {step === 1 ? (
             <>
-              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
+              {!draftActionsInFooter && <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
                 <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
-              </button>
+              </button>}
               <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next} disabled={!canContinueStep1}>
                 <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
