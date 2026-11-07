@@ -318,12 +318,52 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts tests/e2e/travel-receipt-modal-parity.spec.ts tests/e2e/travel-tax-2026-journeys.spec.ts
+        run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: taxpay-citizen-browser-evidence
+          path: |
+            test-results/screenshots/
+            playwright-report/
+          if-no-files-found: ignore
+
+
+  public-travel-e2e:
+    name: Travel receipt and passport responsive acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium --only-shell
+      - name: Verify preserved travel journeys and receipt modal parity
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/travel-receipt-modal-parity.spec.ts tests/e2e/travel-tax-2026-journeys.spec.ts
+      - name: Upload responsive citizen screenshots and Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-travel-responsive-evidence
           path: |
             test-results/screenshots/
             playwright-report/
@@ -405,12 +445,6 @@ jobs:
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/demo-profile-cross-browser.spec.ts tests/e2e/legacy-story-payment-recovery.spec.ts tests/e2e/preview-profile-pending-save.spec.ts --project=desktop-1280
-      - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Verify hosted persistence from live Pages with synthetic smoke data and cleanup
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -418,6 +452,41 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: node scripts/verify-hosted-profile-persistence.mjs
 
+  beneficiary-selection-e2e:
+    name: Beneficiary picker viewport acceptance (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop-1280, mobile-320, mobile-375]
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium --only-shell
+      # Check newly changed recovery first for fast failure feedback; retain
+      # all existing signed-in payment/beneficiary acceptance unchanged.
+      - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=${{ matrix.project }}
   public-support-e2e:
     name: Public receipts and workspace acceptance
     runs-on: ubuntu-latest
@@ -459,13 +528,13 @@ jobs:
         run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts tests/e2e/account-tax-journey-private.spec.ts
 
   route-e2e:
-    name: Public routes (shard ${{ matrix.shard }}/6)
+    name: Public routes (shard ${{ matrix.shard }}/8)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     permissions:
       contents: read
     steps:
@@ -490,11 +559,11 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/6
+        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/8
 
   verification-gate:
     name: Build and verify static preview
-    needs: [compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-login-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e]
+    needs: [compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, beneficiary-picker-e2e, beneficiary-selection-e2e, public-support-e2e, route-e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
